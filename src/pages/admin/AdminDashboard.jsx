@@ -150,50 +150,83 @@ const AdminDashboard = () => {
 
       {isSuperAdmin && (
         <>
-          <div className="admin-widgets-grid">
-            <Link to="/admin/comptes-clients" className="admin-widget">
-              <div className="admin-widget-label">Clients</div>
-              <div className="admin-widget-value">{stats.totalClients}</div>
-            </Link>
-            <Link to="/admin/comptes-admin" className="admin-widget">
-              <div className="admin-widget-label">Admins</div>
-              <div className="admin-widget-value">{adminCount}</div>
-            </Link>
-            <Link to="/admin/crm" className="admin-widget">
-              <div className="admin-widget-label">Leads CRM</div>
-              <div className="admin-widget-value">{crmLeadCount}</div>
-            </Link>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Projets totaux</div>
-              <div className="admin-widget-value">{stats.totalProjects}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Projets archivés</div>
-              <div className="admin-widget-value">{stats.archivedProjects}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">En retard (deadlines)</div>
-              <div className="admin-widget-value">{stats.overdueDeadlines}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Relances dépassées</div>
-              <div className="admin-widget-value">{stats.overdueReminders}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Priorité haute</div>
-              <div className="admin-widget-value">{stats.highPriority}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Statut En cours</div>
-              <div className="admin-widget-value">{stats.statusCounts.EN_COURS}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Statut En attente</div>
-              <div className="admin-widget-value">{stats.statusCounts.EN_ATTENTE}</div>
-            </div>
-            <div className="admin-widget">
-              <div className="admin-widget-label">Statut Terminé</div>
-              <div className="admin-widget-value">{stats.statusCounts.TERMINE}</div>
+          <div className="portal-card" style={{ marginTop: 32 }}>
+            <div className="admin-stats-dashboard">
+              {/* Catégorie: Comptes */}
+              <div className="admin-stats-category">
+                <h3 className="admin-stats-category-title">Comptes</h3>
+                <div className="admin-stats-row">
+                  <Link to="/admin/comptes-clients" className="admin-stats-item">
+                    <div className="admin-stats-label">Clients</div>
+                    <div className="admin-stats-value admin-stats-value--clients">{stats.totalClients}</div>
+                  </Link>
+                  <Link to="/admin/comptes-admin" className="admin-stats-item">
+                    <div className="admin-stats-label">Admins</div>
+                    <div className="admin-stats-value admin-stats-value--admins">{adminCount}</div>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Catégorie: Projets */}
+              <div className="admin-stats-category">
+                <h3 className="admin-stats-category-title">Projets</h3>
+                <div className="admin-stats-row">
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Total</div>
+                    <div className="admin-stats-value admin-stats-value--total">{stats.totalProjects}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Actifs</div>
+                    <div className="admin-stats-value admin-stats-value--active">{stats.activeProjects}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Archivés</div>
+                    <div className="admin-stats-value admin-stats-value--archived">{stats.archivedProjects}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Catégorie: Statuts */}
+              <div className="admin-stats-category">
+                <h3 className="admin-stats-category-title">Statuts</h3>
+                <div className="admin-stats-row">
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">En cours</div>
+                    <div className="admin-stats-value admin-stats-value--en-cours">{stats.statusCounts.EN_COURS}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">En attente</div>
+                    <div className="admin-stats-value admin-stats-value--en-attente">{stats.statusCounts.EN_ATTENTE}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Terminé</div>
+                    <div className="admin-stats-value admin-stats-value--termine">{stats.statusCounts.TERMINE}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Catégorie: Alertes & Priorités */}
+              <div className="admin-stats-category">
+                <h3 className="admin-stats-category-title">Alertes & Priorités</h3>
+                <div className="admin-stats-row">
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Priorité haute</div>
+                    <div className="admin-stats-value admin-stats-value--high-priority">{stats.highPriority}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Retards (deadlines)</div>
+                    <div className="admin-stats-value admin-stats-value--overdue">{stats.overdueDeadlines}</div>
+                  </div>
+                  <div className="admin-stats-item">
+                    <div className="admin-stats-label">Relances dépassées</div>
+                    <div className="admin-stats-value admin-stats-value--overdue-reminders">{stats.overdueReminders}</div>
+                  </div>
+                  <Link to="/admin/crm" className="admin-stats-item">
+                    <div className="admin-stats-label">Leads CRM</div>
+                    <div className="admin-stats-value admin-stats-value--leads">{crmLeadCount}</div>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
