@@ -155,14 +155,14 @@ const AdminDashboard = () => {
               {/* Catégorie: Comptes */}
               <div className="admin-stats-category">
                 <h3 className="admin-stats-category-title">Comptes</h3>
-                <div className="admin-stats-row">
-                  <Link to="/admin/comptes-clients" className="admin-stats-item">
-                    <div className="admin-stats-label">Clients</div>
-                    <div className="admin-stats-value admin-stats-value--clients">{stats.totalClients}</div>
+                <div className="admin-stats-list">
+                  <Link to="/admin/comptes-clients" className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Clients</span>
+                    <span className="admin-stats-list-value admin-stats-value--clients">{stats.totalClients}</span>
                   </Link>
-                  <Link to="/admin/comptes-admin" className="admin-stats-item">
-                    <div className="admin-stats-label">Admins</div>
-                    <div className="admin-stats-value admin-stats-value--admins">{adminCount}</div>
+                  <Link to="/admin/comptes-admin" className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Admins</span>
+                    <span className="admin-stats-list-value admin-stats-value--admins">{adminCount}</span>
                   </Link>
                 </div>
               </div>
@@ -170,18 +170,18 @@ const AdminDashboard = () => {
               {/* Catégorie: Projets */}
               <div className="admin-stats-category">
                 <h3 className="admin-stats-category-title">Projets</h3>
-                <div className="admin-stats-row">
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Total</div>
-                    <div className="admin-stats-value admin-stats-value--total">{stats.totalProjects}</div>
+                <div className="admin-stats-list">
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Total</span>
+                    <span className="admin-stats-list-value admin-stats-value--total">{stats.totalProjects}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Actifs</div>
-                    <div className="admin-stats-value admin-stats-value--active">{stats.activeProjects}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Actifs</span>
+                    <span className="admin-stats-list-value admin-stats-value--active">{stats.activeProjects}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Archivés</div>
-                    <div className="admin-stats-value admin-stats-value--archived">{stats.archivedProjects}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Archivés</span>
+                    <span className="admin-stats-list-value admin-stats-value--archived">{stats.archivedProjects}</span>
                   </div>
                 </div>
               </div>
@@ -189,18 +189,18 @@ const AdminDashboard = () => {
               {/* Catégorie: Statuts */}
               <div className="admin-stats-category">
                 <h3 className="admin-stats-category-title">Statuts</h3>
-                <div className="admin-stats-row">
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">En cours</div>
-                    <div className="admin-stats-value admin-stats-value--en-cours">{stats.statusCounts.EN_COURS}</div>
+                <div className="admin-stats-list">
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">En cours</span>
+                    <span className="admin-stats-list-value admin-stats-value--en-cours">{stats.statusCounts.EN_COURS}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">En attente</div>
-                    <div className="admin-stats-value admin-stats-value--en-attente">{stats.statusCounts.EN_ATTENTE}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">En attente</span>
+                    <span className="admin-stats-list-value admin-stats-value--en-attente">{stats.statusCounts.EN_ATTENTE}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Terminé</div>
-                    <div className="admin-stats-value admin-stats-value--termine">{stats.statusCounts.TERMINE}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Terminé</span>
+                    <span className="admin-stats-list-value admin-stats-value--termine">{stats.statusCounts.TERMINE}</span>
                   </div>
                 </div>
               </div>
@@ -208,22 +208,22 @@ const AdminDashboard = () => {
               {/* Catégorie: Alertes & Priorités */}
               <div className="admin-stats-category">
                 <h3 className="admin-stats-category-title">Alertes & Priorités</h3>
-                <div className="admin-stats-row">
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Priorité haute</div>
-                    <div className="admin-stats-value admin-stats-value--high-priority">{stats.highPriority}</div>
+                <div className="admin-stats-list">
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Priorité haute</span>
+                    <span className="admin-stats-list-value admin-stats-value--high-priority">{stats.highPriority}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Retards (deadlines)</div>
-                    <div className="admin-stats-value admin-stats-value--overdue">{stats.overdueDeadlines}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Retards (deadlines)</span>
+                    <span className="admin-stats-list-value admin-stats-value--overdue">{stats.overdueDeadlines}</span>
                   </div>
-                  <div className="admin-stats-item">
-                    <div className="admin-stats-label">Relances dépassées</div>
-                    <div className="admin-stats-value admin-stats-value--overdue-reminders">{stats.overdueReminders}</div>
+                  <div className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Relances dépassées</span>
+                    <span className="admin-stats-list-value admin-stats-value--overdue-reminders">{stats.overdueReminders}</span>
                   </div>
-                  <Link to="/admin/crm" className="admin-stats-item">
-                    <div className="admin-stats-label">Leads CRM</div>
-                    <div className="admin-stats-value admin-stats-value--leads">{crmLeadCount}</div>
+                  <Link to="/admin/crm" className="admin-stats-list-item">
+                    <span className="admin-stats-list-label">Leads CRM</span>
+                    <span className="admin-stats-list-value admin-stats-value--leads">{crmLeadCount}</span>
                   </Link>
                 </div>
               </div>
