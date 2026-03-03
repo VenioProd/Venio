@@ -26,6 +26,12 @@ router.use(requireAdmin)
 
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
 
+// Scope leads to the current commercial (SUPER_ADMIN sees all)
+function scopeFilter(req: Request): Record<string, unknown> {
+  if (req.user!.role === 'SUPER_ADMIN') return {}
+  return { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }
+}
+
 function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, any> {
   const payload: Record<string, any> = {}
   if (body.company !== undefined) payload.company = String(body.company || '').trim()
@@ -129,16 +135,24 @@ async function ensureClientForWonLead(lead: any, actorId: string | null = null, 
 // List leads with filters
 router.get('/leads', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filter: Record<string, unknown> = {}
+    const scope = scopeFilter(req)
+    const filter: Record<string, unknown> = { ...scope }
     if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
-    if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo
+    if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
     if (req.query.search) {
       const q = String(req.query.search).trim()
-      filter.$or = [
+      const searchOr = [
         { company: { $regex: q, $options: 'i' } },
         { contactName: { $regex: q, $options: 'i' } },
         { contactEmail: { $regex: q, $options: 'i' } },
       ]
+      // Merge search $or with scope $or using $and
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or as Record<string, unknown>[] }, { $or: searchOr }]
+        delete filter.$or
+      } else {
+        filter.$or = searchOr
+      }
     }
     const leads = await Lead.find(filter).sort({ updatedAt: -1 })
     return res.json({ leads })
@@ -148,9 +162,9 @@ router.get('/leads', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Reques
 })
 
 // Pipeline grouped by status
-router.get('/pipeline', requirePermission(PERMISSIONS.VIEW_CRM), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/pipeline', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const leads = await Lead.find({}).sort({ updatedAt: -1 })
+    const leads = await Lead.find(scopeFilter(req)).sort({ updatedAt: -1 })
     const columns = CRM_STATUSES.map((status) => ({
       status,
       leads: leads.filter((lead) => lead.status === status),
@@ -179,7 +193,11 @@ router.post(
     // Load settings for automation control
     const settings = await CrmSettings.getSettings()
 
-    // Round-robin assignment (if enabled)
+    // Auto-assign to self for non-SUPER_ADMIN
+    if (!payload.assignedTo && req.user!.role !== 'SUPER_ADMIN') {
+      payload.assignedTo = req.user!.id
+    }
+    // Round-robin assignment (if enabled and still no assignee)
     if (!payload.assignedTo && settings.roundRobinEnabled) {
       payload.assignedTo = await getRoundRobinAssignee()
     }
@@ -252,6 +270,13 @@ router.patch('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req
     const lead = await Lead.findById(req.params.id)
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' })
+    }
+    // Scope check for non-SUPER_ADMIN
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      const userId = req.user!.id
+      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
     }
 
     // Load settings for automation control
@@ -353,6 +378,13 @@ router.get('/leads/:id', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Re
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' })
     }
+    // Scope check for non-SUPER_ADMIN
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      const userId = req.user!.id
+      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+    }
     return res.json({ lead })
   } catch (err) {
     return next(err)
@@ -365,6 +397,13 @@ router.delete('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (re
     const lead = await Lead.findById(req.params.id)
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' })
+    }
+    // Scope check for non-SUPER_ADMIN
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      const userId = req.user!.id
+      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
     }
     await lead.deleteOne()
     // Also delete related activities
@@ -394,7 +433,8 @@ router.get('/alerts', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Reque
     const coldThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const staleThreshold = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
 
-    const activeFilter = { status: { $nin: ['WON', 'LOST'] } }
+    const scope = scopeFilter(req)
+    const activeFilter = { status: { $nin: ['WON', 'LOST'] }, ...scope }
 
     const [coldLeads, overdueLeads, staleLeads] = await Promise.all([
       // Cold leads: no contact for 7+ days

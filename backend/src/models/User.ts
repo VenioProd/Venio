@@ -50,6 +50,8 @@ const userSchema = new mongoose.Schema<IUser>(
     // 2FA fields
     twoFactorSecret: { type: String, default: null },
     twoFactorEnabled: { type: Boolean, default: false },
+    // Custom permissions override (null = use role defaults)
+    customPermissions: { type: [String], default: null },
   },
   { timestamps: true }
 )

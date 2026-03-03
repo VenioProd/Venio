@@ -58,30 +58,51 @@ const AdminNew = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [form, setForm] = useState<{ name: string; email: string; password: string; role: string }>({ name: '', email: '', password: '', role: 'ADMIN' })
+  const [customMode, setCustomMode] = useState(false)
+  const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const { errors: fieldErrors, validate, validateField } = useFormValidation<AdminFormField>(adminValidationSchema)
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+
   const availableRoles = useMemo(() => {
-    return ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN' || user?.role === 'SUPER_ADMIN')
-  }, [user?.role])
+    return ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN' || isSuperAdmin)
+  }, [isSuperAdmin])
+
+  const roleDefaults = useMemo(() => getPermissionsForRole(form.role), [form.role])
+
+  // Reset custom permissions to role defaults when role changes or custom mode toggles
+  const handleToggleCustom = () => {
+    if (!customMode) {
+      setCustomPermissions([...roleDefaults])
+    }
+    setCustomMode(!customMode)
+  }
+
+  const handlePermToggle = (perm: string) => {
+    setCustomPermissions((prev) =>
+      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+    )
+  }
 
   const selectedPermissions = useMemo(() => {
     if (form.role === 'SUPER_ADMIN') {
       return ['Tous les droits disponibles']
     }
-    return getPermissionsForRole(form.role).map((permission) => permissionLabels[permission] || permission)
-  }, [form.role])
+    const perms = customMode ? customPermissions : roleDefaults
+    return perms.map((permission) => permissionLabels[permission] || permission)
+  }, [form.role, customMode, customPermissions, roleDefaults])
 
   const missingPermissions = useMemo(() => {
     if (form.role === 'SUPER_ADMIN') {
       return []
     }
-    const rolePermissions = new Set(getPermissionsForRole(form.role))
+    const activePerms = new Set(customMode ? customPermissions : roleDefaults)
     return allPermissions
-      .filter((permission) => !rolePermissions.has(permission))
+      .filter((permission) => !activePerms.has(permission))
       .map((permission) => permissionLabels[permission] || permission)
-  }, [form.role])
+  }, [form.role, customMode, customPermissions, roleDefaults])
 
   const handleBlur = (field: AdminFormField) => {
     validateField(field, form[field])
@@ -93,9 +114,13 @@ const AdminNew = () => {
     setError('')
     setLoading(true)
     try {
+      const payload: Record<string, unknown> = { ...form }
+      if (customMode && form.role !== 'SUPER_ADMIN') {
+        payload.customPermissions = customPermissions
+      }
       const data = await apiFetch<{ user: User }>('/api/admin/admins', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       navigate(`/admin/comptes-admin/${data.user._id}`)
     } catch (err: unknown) {
@@ -167,27 +192,57 @@ const AdminNew = () => {
             <p style={{ marginTop: 8, color: 'rgba(255, 255, 255, 0.6)', fontSize: 13 }}>
               {roleMeta[form.role]?.description || 'Sélectionnez un rôle.'}
             </p>
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
-                Droits associés
-              </div>
-              <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.75)', fontSize: 13 }}>
-                {selectedPermissions.map((permission) => (
-                  <li key={permission}>{permission}</li>
-                ))}
-              </ul>
-            </div>
-            {missingPermissions.length > 0 && (
+            {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
-                  Droits non accordés
-                </div>
-                <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.6)', fontSize: 13 }}>
-                  {missingPermissions.map((permission) => (
-                    <li key={permission}>{permission}</li>
-                  ))}
-                </ul>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                  <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
+                  Personnaliser les droits
+                </label>
               </div>
+            )}
+            {customMode && form.role !== 'SUPER_ADMIN' ? (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)', marginBottom: 8 }}>
+                  Droits personnalisés
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
+                  {allPermissions.map((perm) => (
+                    <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                      <input
+                        type="checkbox"
+                        checked={customPermissions.includes(perm)}
+                        onChange={() => handlePermToggle(perm)}
+                      />
+                      {permissionLabels[perm] || perm}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
+                    Droits associés
+                  </div>
+                  <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.75)', fontSize: 13 }}>
+                    {selectedPermissions.map((permission) => (
+                      <li key={permission}>{permission}</li>
+                    ))}
+                  </ul>
+                </div>
+                {missingPermissions.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
+                      Droits non accordés
+                    </div>
+                    <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.6)', fontSize: 13 }}>
+                      {missingPermissions.map((permission) => (
+                        <li key={permission}>{permission}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </div>
           {error && <div className="admin-error">{error}</div>}

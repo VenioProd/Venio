@@ -1,4 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
@@ -16,8 +19,72 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 
+// Middleware: permission OR assignee of the task
+function requirePermissionOrAssignee(permission: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // SUPER_ADMIN always passes
+    if (req.user!.role === 'SUPER_ADMIN') return next()
+
+    // Check permission via DB lookup
+    const u = await User.findById(req.user!.id).select('customPermissions')
+    const { hasPermissionResolved } = await import('../../lib/permissions.js')
+    if (hasPermissionResolved(req.user!.role, permission as any, u?.customPermissions ?? null)) {
+      return next()
+    }
+
+    // Fallback: check if user is assignee of this task
+    const task = await Task.findOne({ _id: req.params.taskId, project: req.params.projectId }).select('assignee')
+    if (task && task.assignee && task.assignee.toString() === req.user!.id) {
+      return next()
+    }
+
+    return res.status(403).json({ error: 'Accès refusé' })
+  }
+}
+
 const TASK_STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE']
 const TASK_PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
+
+// ─── Multer config for task attachments ───
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain', 'text/csv',
+  'application/zip', 'application/x-zip-compressed',
+  'video/mp4', 'video/quicktime', 'video/webm',
+  'audio/mpeg', 'audio/wav', 'audio/ogg',
+  'application/json',
+])
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'tasks')
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+    cb(null, uploadDir)
+  },
+  filename: (_req, file, cb) => {
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+    cb(null, uniqueSuffix + '-' + safeName)
+  },
+})
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`))
+    }
+  },
+})
 
 // GET /api/admin/projects/:projectId/tasks
 router.get('/:projectId/tasks', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
@@ -226,7 +293,101 @@ router.delete('/:projectId/tasks/:taskId', requirePermission(PERMISSIONS.MANAGE_
       return res.status(404).json({ error: 'Tâche non trouvée' })
     }
 
+    // Cleanup attachment files from disk
+    if (task.attachments && task.attachments.length > 0) {
+      for (const att of task.attachments) {
+        if (att.storagePath && fs.existsSync(att.storagePath)) {
+          fs.unlinkSync(att.storagePath)
+        }
+      }
+    }
+
     await logActivity({ project: projectId, action: 'TASK_DELETED', actor: req.user!.id, summary: `Tâche supprimée : ${task.title}` })
+
+    return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// ─── Task Attachments ───
+
+// POST /api/admin/projects/:projectId/tasks/:taskId/attachments
+router.post('/:projectId/tasks/:taskId/attachments', requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const task = await Task.findOne({ _id: req.params.taskId, project: req.params.projectId })
+    if (!task) {
+      return res.status(404).json({ error: 'Tâche non trouvée' })
+    }
+
+    const file = req.file as Express.Multer.File | undefined
+    if (!file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' })
+    }
+
+    task.attachments.push({
+      originalName: file.originalname,
+      storagePath: file.path,
+      mimeType: file.mimetype,
+      size: file.size,
+      uploadedBy: req.user!.id,
+      uploadedAt: new Date(),
+    } as any)
+
+    await task.save()
+    await task.populate('attachments.uploadedBy', 'name email')
+
+    return res.status(201).json({ attachments: task.attachments })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// GET /api/admin/projects/:projectId/tasks/:taskId/attachments/:attachmentId/download
+router.get('/:projectId/tasks/:taskId/attachments/:attachmentId/download', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const task = await Task.findOne({ _id: req.params.taskId, project: req.params.projectId })
+    if (!task) {
+      return res.status(404).json({ error: 'Tâche non trouvée' })
+    }
+
+    const attachment = task.attachments.find(a => a._id.toString() === req.params.attachmentId)
+    if (!attachment) {
+      return res.status(404).json({ error: 'Pièce jointe non trouvée' })
+    }
+
+    if (!fs.existsSync(attachment.storagePath)) {
+      return res.status(404).json({ error: 'Fichier introuvable sur le disque' })
+    }
+
+    return res.download(attachment.storagePath, attachment.originalName)
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /api/admin/projects/:projectId/tasks/:taskId/attachments/:attachmentId
+router.delete('/:projectId/tasks/:taskId/attachments/:attachmentId', requirePermission(PERMISSIONS.MANAGE_TASKS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const task = await Task.findOne({ _id: req.params.taskId, project: req.params.projectId })
+    if (!task) {
+      return res.status(404).json({ error: 'Tâche non trouvée' })
+    }
+
+    const attachment = task.attachments.find(a => a._id.toString() === req.params.attachmentId)
+    if (!attachment) {
+      return res.status(404).json({ error: 'Pièce jointe non trouvée' })
+    }
+
+    // Remove file from disk
+    if (attachment.storagePath && fs.existsSync(attachment.storagePath)) {
+      fs.unlinkSync(attachment.storagePath)
+    }
+
+    await Task.updateOne(
+      { _id: task._id },
+      { $pull: { attachments: { _id: attachment._id } } }
+    )
 
     return res.json({ success: true })
   } catch (err) {
@@ -258,7 +419,7 @@ router.get('/:projectId/tasks/:taskId/comments', requirePermission(PERMISSIONS.V
 // POST /api/admin/projects/:projectId/tasks/:taskId/comments
 router.post(
   '/:projectId/tasks/:taskId/comments',
-  requirePermission(PERMISSIONS.MANAGE_TASKS),
+  requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
   body('content').trim().notEmpty().withMessage('Le commentaire ne peut pas être vide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

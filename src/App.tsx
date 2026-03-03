@@ -47,6 +47,7 @@ const TemplateList = lazy(() => import('./pages/admin/TemplateList'))
 const Analytics = lazy(() => import('./pages/admin/Analytics'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
 const AuditLog = lazy(() => import('./pages/admin/AuditLog'))
+const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function App() {
@@ -112,6 +113,14 @@ function App() {
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profil"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <AdminProfile />
             </ProtectedRoute>
           }
         />

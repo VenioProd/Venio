@@ -12,6 +12,7 @@ const AdminLogin = () => {
   const [needs2FA, setNeeds2FA] = useState(false)
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   if (user?.role && isAdminRole(user.role)) {
     return <Navigate to="/admin" replace />
@@ -59,14 +60,37 @@ const AdminLogin = () => {
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: event.target.value })}
                 required
               />
-              <input
-                className="portal-input"
-                type="password"
-                placeholder="Mot de passe"
-                value={form.password}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="portal-input"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mot de passe"
+                  value={form.password}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                  required
+                  style={{ width: '100%', paddingRight: '44px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    padding: '4px',
+                    lineHeight: 1,
+                  }}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
             </>
           ) : (
             <input

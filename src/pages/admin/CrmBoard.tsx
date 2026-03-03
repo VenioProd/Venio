@@ -458,14 +458,16 @@ const CrmBoard = () => {
               </option>
             ))}
           </select>
-          <select className="crm-table-filter" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)}>
-            <option value="">Tous les commerciaux</option>
-            {admins.map((a) => (
-              <option key={a._id} value={a._id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          {user?.role === 'SUPER_ADMIN' && (
+            <select className="crm-table-filter" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)}>
+              <option value="">Tous les commerciaux</option>
+              {admins.map((a) => (
+                <option key={a._id} value={a._id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          )}
           {activeFilters > 0 && (
             <button
               className="crm-table-filter-clear"
@@ -905,14 +907,16 @@ const CrmBoard = () => {
                     </option>
                   ))}
                 </select>
-                <select className="portal-input" value={form.assignedTo} onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}>
-                  <option value="">Commercial (optionnel)</option>
-                  {admins.map((admin) => (
-                    <option key={admin._id} value={admin._id}>
-                      {admin.name}
-                    </option>
-                  ))}
-                </select>
+                {user?.role === 'SUPER_ADMIN' && (
+                  <select className="portal-input" value={form.assignedTo} onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}>
+                    <option value="">Commercial (optionnel)</option>
+                    {admins.map((admin) => (
+                      <option key={admin._id} value={admin._id}>
+                        {admin.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   className="portal-input"
                   type="datetime-local"

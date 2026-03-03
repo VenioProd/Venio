@@ -4,7 +4,7 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireAnyPermission, requirePermission } from '../../middleware/role.js'
 import User from '../../models/User.js'
-import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
+import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
 
 const router = express.Router()
@@ -66,12 +66,23 @@ router.post(
       }
     }
 
+    // Custom permissions (SUPER_ADMIN only)
+    let customPermissions: string[] | null = null
+    const allPermValues = Object.values(PERMISSIONS) as string[]
+    if (req.body.customPermissions !== undefined && req.user!.role === 'SUPER_ADMIN') {
+      if (Array.isArray(req.body.customPermissions)) {
+        const validated = req.body.customPermissions.filter((p: string) => allPermValues.includes(p))
+        customPermissions = validated.length > 0 ? validated : null
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await User.create({
       email: normalizedEmail,
       passwordHash,
       role: nextRole,
       name,
+      customPermissions,
     })
 
     const safeUser = await User.findById(user._id).select('-passwordHash')
@@ -142,6 +153,17 @@ router.patch(
     }
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10)
+    }
+
+    // Custom permissions (SUPER_ADMIN only)
+    if (req.body.customPermissions !== undefined && req.user!.role === 'SUPER_ADMIN') {
+      if (req.body.customPermissions === null) {
+        user.customPermissions = null
+      } else if (Array.isArray(req.body.customPermissions)) {
+        const allPermValues = Object.values(PERMISSIONS) as string[]
+        const validated = req.body.customPermissions.filter((p: string) => allPermValues.includes(p))
+        user.customPermissions = validated.length > 0 ? validated : null
+      }
     }
 
     await user.save()

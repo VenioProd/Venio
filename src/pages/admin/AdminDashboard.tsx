@@ -164,6 +164,12 @@ const AdminDashboard = () => {
                 <span className="portal-action-label">CRM</span>
               </Link>
             )}
+            <Link className="portal-button secondary portal-action-link" to="/admin/profil" title="Mon profil">
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              </span>
+              <span className="portal-action-label">Mon profil</span>
+            </Link>
             <button className="portal-button secondary portal-action-link" onClick={logout} type="button" title="Se deconnecter">
               <span className="portal-action-icon" aria-hidden>
                 <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>

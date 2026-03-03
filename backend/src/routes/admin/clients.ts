@@ -100,9 +100,17 @@ function isActiveClientStatus(status: string): boolean {
   return ['PROSPECT', 'ACTIF', 'EN_PAUSE'].includes(status)
 }
 
-async function ensureClient(clientId: string): Promise<any> {
+async function ensureClient(clientId: string, req?: Request): Promise<any> {
   if (!mongoose.isValidObjectId(clientId)) return null
-  return User.findOne({ _id: clientId, role: 'CLIENT' })
+  const client = await User.findOne({ _id: clientId, role: 'CLIENT' })
+  if (!client) return null
+  // Scope check: non-SUPER_ADMIN can only access their own clients
+  if (req && req.user && req.user.role !== 'SUPER_ADMIN') {
+    if (!client.ownerAdminId || client.ownerAdminId.toString() !== req.user.id) {
+      return null
+    }
+  }
+  return client
 }
 
 async function logActivity({ clientId, actorId, type, label, payload = {} }: {
@@ -146,6 +154,11 @@ router.get('/', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Reque
     const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>)
 
     const filter: Record<string, unknown> = { role: 'CLIENT' }
+
+    // Scope to own clients for non-SUPER_ADMIN
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      filter.ownerAdminId = req.user!.id
+    }
 
     if (q) {
       const regex = new RegExp(String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
@@ -225,6 +238,11 @@ router.post(
 
     const payload = normalizeClientPayload(req.body)
 
+    // Auto-assign to self for non-SUPER_ADMIN
+    if (req.user!.role !== 'SUPER_ADMIN' && !payload.ownerAdminId) {
+      payload.ownerAdminId = req.user!.id
+    }
+
     if (payload.ownerAdminId && !mongoose.isValidObjectId(payload.ownerAdminId)) {
       return error(res, 422, 'Invalid ownerAdminId', 'INVALID_OWNER')
     }
@@ -269,7 +287,7 @@ router.post(
 
 router.get('/:id', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) {
       return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
     }
@@ -284,7 +302,7 @@ router.get('/:id', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Re
 // Get Nextcloud cloud folder info for a client
 router.get('/:id/cloud', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) {
       return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
     }
@@ -307,7 +325,7 @@ router.patch(
       return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
     }
 
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) {
       return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
     }
@@ -370,7 +388,7 @@ router.post('/:id/archive', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async
       return error(res, 403, 'Only SUPER_ADMIN can archive a client', 'FORBIDDEN_ARCHIVE')
     }
 
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) {
       return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
     }
@@ -399,7 +417,7 @@ router.post('/:id/reactivate', requirePermission(PERMISSIONS.MANAGE_CLIENTS), as
       return error(res, 403, 'Only SUPER_ADMIN can reactivate a client', 'FORBIDDEN_REACTIVATE')
     }
 
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) {
       return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
     }
@@ -424,7 +442,7 @@ router.post('/:id/reactivate', requirePermission(PERMISSIONS.MANAGE_CLIENTS), as
 
 router.get('/:id/contacts', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const contacts = await ClientContact.find({ clientId: client._id }).sort({ isMain: -1, updatedAt: -1 }).lean()
@@ -436,7 +454,7 @@ router.get('/:id/contacts', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async
 
 router.post('/:id/contacts', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const { firstName, lastName, email, phone, role, isMain, notes } = req.body || {}
@@ -475,7 +493,7 @@ router.post('/:id/contacts', requirePermission(PERMISSIONS.MANAGE_CLIENTS), asyn
 
 router.patch('/:id/contacts/:contactId', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const contact = await ClientContact.findOne({ _id: req.params.contactId, clientId: client._id })
@@ -520,7 +538,7 @@ router.patch('/:id/contacts/:contactId', requirePermission(PERMISSIONS.MANAGE_CL
 
 router.delete('/:id/contacts/:contactId', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const contact = await ClientContact.findOneAndDelete({ _id: req.params.contactId, clientId: client._id })
@@ -544,7 +562,7 @@ router.delete('/:id/contacts/:contactId', requirePermission(PERMISSIONS.MANAGE_C
 
 router.get('/:id/notes', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const notes = await ClientNote.find({ clientId: client._id })
@@ -560,7 +578,7 @@ router.get('/:id/notes', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (r
 
 router.post('/:id/notes', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const { content, pinned } = req.body || {}
@@ -593,7 +611,7 @@ router.post('/:id/notes', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (
 
 router.patch('/:id/notes/:noteId', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const note = await ClientNote.findOne({ _id: req.params.noteId, clientId: client._id })
@@ -631,7 +649,7 @@ router.patch('/:id/notes/:noteId', requirePermission(PERMISSIONS.MANAGE_CLIENTS)
 
 router.delete('/:id/notes/:noteId', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const note = await ClientNote.findOneAndDelete({ _id: req.params.noteId, clientId: client._id })
@@ -655,7 +673,7 @@ router.delete('/:id/notes/:noteId', requirePermission(PERMISSIONS.MANAGE_CLIENTS
 
 router.get('/:id/activities', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const activities = await ClientActivity.find({ clientId: client._id })
@@ -672,7 +690,7 @@ router.get('/:id/activities', requirePermission(PERMISSIONS.MANAGE_CLIENTS), asy
 
 router.get('/:id/projects', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const includeArchived = req.query.archived === 'true'
@@ -709,7 +727,7 @@ router.get('/:id/projects', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async
 
 router.get('/:id/progress', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const projects = await Project.find({
@@ -789,7 +807,7 @@ router.get('/:id/progress', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async
 
 router.get('/:id/deliverables', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const projects = await Project.find({ client: client._id }).select('_id name').lean()
@@ -828,7 +846,7 @@ router.get('/:id/deliverables', requirePermission(PERMISSIONS.MANAGE_CLIENTS), a
 
 router.get('/:id/billing/summary', requirePermission(PERMISSIONS.VIEW_BILLING), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const docs = await BillingDocument.find({ client: client._id }).select('type status total currency').lean()
@@ -870,7 +888,7 @@ router.get('/:id/billing/summary', requirePermission(PERMISSIONS.VIEW_BILLING), 
 
 router.get('/:id/billing/documents', requirePermission(PERMISSIONS.VIEW_BILLING), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await ensureClient(req.params.id as string)
+    const client = await ensureClient(req.params.id as string, req)
     if (!client) return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
 
     const documents = await BillingDocument.find({ client: client._id })

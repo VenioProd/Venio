@@ -5,7 +5,7 @@ import { body, validationResult } from 'express-validator'
 import { TOTP } from 'otpauth'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
-import { ADMIN_ROLES, getPermissionsForRole } from '../lib/permissions.js'
+import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import auth from '../middleware/auth.js'
 
 const router = express.Router()
@@ -80,7 +80,7 @@ router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }
-    const permissions = getPermissionsForRole(user.role)
+    const permissions = resolvePermissions(user.role, user.customPermissions)
     return res.json({ user: { ...user.toObject(), permissions } })
   } catch (err) {
     return next(err)

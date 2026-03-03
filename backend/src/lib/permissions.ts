@@ -49,3 +49,14 @@ export function getPermissionsForRole(role: UserRole): Permission[] {
   if (!rolePermissions) return []
   return Array.from(rolePermissions)
 }
+
+export function resolvePermissions(role: UserRole, customPermissions: string[] | null): Permission[] {
+  if (Array.isArray(customPermissions)) return customPermissions as Permission[]
+  return getPermissionsForRole(role)
+}
+
+export function hasPermissionResolved(role: UserRole, permission: Permission, customPermissions: string[] | null): boolean {
+  if (role === 'SUPER_ADMIN') return true
+  const perms = resolvePermissions(role, customPermissions)
+  return perms.includes(permission)
+}

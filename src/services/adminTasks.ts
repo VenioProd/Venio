@@ -1,5 +1,5 @@
-import { apiFetch } from '../lib/api'
-import type { Task, TaskFormData, TaskComment } from '../types/task.types'
+import { apiFetch, getToken } from '../lib/api'
+import type { Task, TaskFormData, TaskComment, TaskAttachment } from '../types/task.types'
 
 export async function fetchTasks(projectId: string): Promise<Task[]> {
   const res = await apiFetch(`/api/admin/projects/${projectId}/tasks`) as { tasks: Task[] }
@@ -51,6 +51,50 @@ export async function addComment(projectId: string, taskId: string, content: str
 
 export async function deleteComment(projectId: string, taskId: string, commentId: string): Promise<void> {
   await apiFetch(`/api/admin/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
+    method: 'DELETE',
+  })
+}
+
+// ─── Task Attachments ───
+
+export async function uploadAttachment(projectId: string, taskId: string, file: File): Promise<TaskAttachment[]> {
+  const token = getToken()
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await fetch(`/api/admin/projects/${projectId}/tasks/${taskId}/attachments`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error((data as any).error || 'Erreur upload')
+  }
+  const data = await response.json()
+  return (data as any).attachments
+}
+
+export async function downloadAttachment(projectId: string, taskId: string, attachmentId: string, fileName: string): Promise<void> {
+  const token = getToken()
+  const response = await fetch(`/api/admin/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!response.ok) {
+    throw new Error('Erreur telechargement')
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+export async function deleteAttachment(projectId: string, taskId: string, attachmentId: string): Promise<void> {
+  await apiFetch(`/api/admin/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`, {
     method: 'DELETE',
   })
 }

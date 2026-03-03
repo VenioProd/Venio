@@ -1,6 +1,15 @@
 export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE'
 export type TaskPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
+export interface TaskAttachment {
+  _id: string
+  originalName: string
+  mimeType: string
+  size: number
+  uploadedBy: { _id: string; name: string } | string
+  uploadedAt: string
+}
+
 export interface Task {
   _id: string
   project: string
@@ -13,6 +22,7 @@ export interface Task {
   tags: string[]
   order: number
   createdBy: { _id: string; name: string; email: string }
+  attachments?: TaskAttachment[]
   createdAt: string
   updatedAt: string
 }

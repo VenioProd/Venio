@@ -39,6 +39,7 @@ export interface IUser extends Document {
   archivedAt: Date | null
   twoFactorSecret: string | null
   twoFactorEnabled: boolean
+  customPermissions: string[] | null
   createdAt: Date
   updatedAt: Date
 }
@@ -87,6 +88,16 @@ export interface IProject extends Document {
 }
 
 // ─── Task ───
+export interface ITaskAttachment {
+  _id: Types.ObjectId
+  originalName: string
+  storagePath: string
+  mimeType: string
+  size: number
+  uploadedBy: Types.ObjectId
+  uploadedAt: Date
+}
+
 export interface ITask extends Document {
   project: Types.ObjectId
   title: string
@@ -98,6 +109,7 @@ export interface ITask extends Document {
   tags: string[]
   order: number
   createdBy: Types.ObjectId
+  attachments: ITaskAttachment[]
   createdAt: Date
   updatedAt: Date
 }

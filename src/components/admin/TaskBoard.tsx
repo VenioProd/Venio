@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
-import { fetchTasks, createTask, updateTask, moveTask, deleteTask, fetchComments, addComment, deleteComment } from '../../services/adminTasks'
+import { fetchTasks, createTask, updateTask, moveTask, deleteTask, fetchComments, addComment, deleteComment, uploadAttachment, downloadAttachment, deleteAttachment } from '../../services/adminTasks'
 import ConfirmModal from '../ConfirmModal'
-import type { Task, TaskStatus, TaskPriority, TaskComment } from '../../types/task.types'
+import type { Task, TaskStatus, TaskPriority, TaskComment, TaskAttachment } from '../../types/task.types'
 import type { AdminUser } from '../../types/crm.types'
 import '../../styles/task-board.css'
 
@@ -44,11 +44,17 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+
+  // canInteract: can upload files + comment (manage_tasks OR assignee)
+  const isAssignee = editingTask?.assignee?._id === user?._id
+  const canInteract = canManage || isAssignee
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [comments, setComments] = useState<TaskComment[]>([])
   const [commentText, setCommentText] = useState('')
   const [commentLoading, setCommentLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -189,6 +195,54 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
     }
   }
 
+  const handleUploadAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editingTask) return
+    setUploading(true)
+    setError('')
+    try {
+      const attachments = await uploadAttachment(projectId, editingTask._id, file)
+      setEditingTask({ ...editingTask, attachments })
+      setTasks((prev) =>
+        prev.map((t) => (t._id === editingTask._id ? { ...t, attachments } : t))
+      )
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erreur upload')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!editingTask) return
+    setError('')
+    try {
+      await deleteAttachment(projectId, editingTask._id, attachmentId)
+      const updated = (editingTask.attachments || []).filter((a) => a._id !== attachmentId)
+      setEditingTask({ ...editingTask, attachments: updated })
+      setTasks((prev) =>
+        prev.map((t) => (t._id === editingTask._id ? { ...t, attachments: updated } : t))
+      )
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erreur suppression fichier')
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} o`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  }
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return '🖼'
+    if (mimeType === 'application/pdf') return '📄'
+    if (mimeType.startsWith('video/')) return '🎬'
+    if (mimeType.startsWith('audio/')) return '🎵'
+    return '📎'
+  }
+
   const formatTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
     const minutes = Math.floor(diff / 60000)
@@ -249,7 +303,8 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                   className={`task-card ${isOverdue(task.dueDate) && task.status !== 'TERMINE' ? 'task-card-overdue' : ''}`}
                   draggable={canManage}
                   onDragStart={(e) => handleDragStart(e, task._id)}
-                  onClick={() => canManage && openEditModal(task)}
+                  onClick={() => openEditModal(task)}
+                  style={{ cursor: 'pointer' }}
                 >
                   <div className="task-card-header">
                     <span className="task-card-title">{task.title}</span>
@@ -295,81 +350,176 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       {showModal && (
         <div className="task-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="task-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{editingTask ? 'Modifier la tache' : 'Nouvelle tache'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="task-form-group">
-                <label>Titre *</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="task-form-group">
-                <label>Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="task-form-row">
+            <h3>{editingTask ? (canManage ? 'Modifier la tache' : 'Detail de la tache') : 'Nouvelle tache'}</h3>
+            {canManage ? (
+              <form onSubmit={handleSubmit}>
                 <div className="task-form-group">
-                  <label>Statut</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}
-                  >
-                    {TASK_COLUMNS.map((c) => (
-                      <option key={c.key} value={c.key}>{c.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="task-form-group">
-                  <label>Priorite</label>
-                  <select
-                    value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
-                  >
-                    {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
-                      <option key={key} value={key}>{cfg.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="task-form-row">
-                <div className="task-form-group">
-                  <label>Assignee</label>
-                  <select
-                    value={form.assignee}
-                    onChange={(e) => setForm({ ...form, assignee: e.target.value })}
-                  >
-                    <option value="">Non assigne</option>
-                    {admins.map((admin) => (
-                      <option key={admin._id} value={admin._id}>{admin.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="task-form-group">
-                  <label>Echeance</label>
+                  <label>Titre *</label>
                   <input
-                    type="date"
-                    value={form.dueDate}
-                    onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    required
+                    autoFocus
                   />
                 </div>
+                <div className="task-form-group">
+                  <label>Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+                <div className="task-form-row">
+                  <div className="task-form-group">
+                    <label>Statut</label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}
+                    >
+                      {TASK_COLUMNS.map((c) => (
+                        <option key={c.key} value={c.key}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="task-form-group">
+                    <label>Priorite</label>
+                    <select
+                      value={form.priority}
+                      onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
+                    >
+                      {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+                        <option key={key} value={key}>{cfg.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="task-form-row">
+                  <div className="task-form-group">
+                    <label>Assignee</label>
+                    <select
+                      value={form.assignee}
+                      onChange={(e) => setForm({ ...form, assignee: e.target.value })}
+                    >
+                      <option value="">Non assigne</option>
+                      {admins.map((admin) => (
+                        <option key={admin._id} value={admin._id}>{admin.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="task-form-group">
+                    <label>Echeance</label>
+                    <input
+                      type="date"
+                      value={form.dueDate}
+                      onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="task-form-actions">
+                  <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="portal-btn">
+                    {editingTask ? 'Enregistrer' : 'Creer'}
+                  </button>
+                </div>
+              </form>
+            ) : editingTask && (
+              <div className="task-detail-readonly">
+                <div className="task-form-group">
+                  <label>Titre</label>
+                  <p className="task-readonly-value">{editingTask.title}</p>
+                </div>
+                {editingTask.description && (
+                  <div className="task-form-group">
+                    <label>Description</label>
+                    <p className="task-readonly-value">{editingTask.description}</p>
+                  </div>
+                )}
+                <div className="task-form-row">
+                  <div className="task-form-group">
+                    <label>Statut</label>
+                    <p className="task-readonly-value">{TASK_COLUMNS.find(c => c.key === editingTask.status)?.label}</p>
+                  </div>
+                  <div className="task-form-group">
+                    <label>Priorite</label>
+                    <p className="task-readonly-value">{PRIORITY_CONFIG[editingTask.priority].label}</p>
+                  </div>
+                </div>
+                <div className="task-form-row">
+                  <div className="task-form-group">
+                    <label>Assignee</label>
+                    <p className="task-readonly-value">{editingTask.assignee?.name || 'Non assigne'}</p>
+                  </div>
+                  <div className="task-form-group">
+                    <label>Echeance</label>
+                    <p className="task-readonly-value">{editingTask.dueDate ? formatDate(editingTask.dueDate) : 'Aucune'}</p>
+                  </div>
+                </div>
+                <div className="task-form-actions">
+                  <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
+                    Fermer
+                  </button>
+                </div>
               </div>
-              <div className="task-form-actions">
-                <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
-                  Annuler
-                </button>
-                <button type="submit" className="portal-btn">
-                  {editingTask ? 'Enregistrer' : 'Creer'}
-                </button>
+            )}
+
+            {/* Attachments — only in edit mode */}
+            {editingTask && (
+              <div className="task-attachments-section">
+                <h4 className="task-attachments-title">
+                  Pieces jointes ({editingTask.attachments?.length || 0})
+                </h4>
+                <div className="task-attachments-list">
+                  {(!editingTask.attachments || editingTask.attachments.length === 0) && (
+                    <p className="task-attachments-empty">Aucune piece jointe</p>
+                  )}
+                  {editingTask.attachments?.map((att) => (
+                    <div key={att._id} className="task-attachment-item">
+                      <span className="task-attachment-icon">{getFileIcon(att.mimeType)}</span>
+                      <div className="task-attachment-info">
+                        <span className="task-attachment-name">{att.originalName}</span>
+                        <span className="task-attachment-size">{formatFileSize(att.size)}</span>
+                      </div>
+                      <button
+                        className="task-attachment-download"
+                        onClick={() => downloadAttachment(projectId, editingTask._id, att._id, att.originalName).catch(() => setError('Erreur telechargement'))}
+                      >
+                        Telecharger
+                      </button>
+                      {canManage && (
+                        <button
+                          className="task-attachment-delete"
+                          onClick={() => handleDeleteAttachment(att._id)}
+                        >
+                          x
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {canInteract && (
+                  <div className="task-attachment-upload">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleUploadAttachment}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="task-attachment-upload-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? 'Envoi en cours...' : '+ Ajouter un fichier'}
+                    </button>
+                  </div>
+                )}
               </div>
-            </form>
+            )}
 
             {/* Comment thread — only in edit mode */}
             {editingTask && (
@@ -404,7 +554,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                     </div>
                   ))}
                 </div>
-                {canManage && (
+                {canInteract && (
                   <div className="task-comment-input">
                     <textarea
                       value={commentText}
