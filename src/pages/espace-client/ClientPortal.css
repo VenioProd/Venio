@@ -122,16 +122,14 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   margin-left: 0;
 }
 
-.portal-action-link:hover .portal-action-label,
-.portal-actions-reveal:hover .portal-action-label {
+.portal-action-link:hover .portal-action-label {
   opacity: 1;
   max-width: 180px;
   margin-left: 8px;
 }
 
 /* Même comportement en GPU OFF */
-body.gpu-off .portal-action-link:hover .portal-action-label,
-body.gpu-off .portal-actions-reveal:hover .portal-action-label {
+body.gpu-off .portal-action-link:hover .portal-action-label {
   opacity: 1 !important;
   max-width: 180px !important;
   margin-left: 8px !important;
