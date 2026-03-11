@@ -244,34 +244,93 @@ const AdminList = () => {
       />
 
       {credentialsModal && (
-        <div className="confirm-modal-overlay" onClick={() => setCredentialsModal(null)}>
-          <div className="confirm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <h2 className="confirm-modal__title">Identifiants de {credentialsModal.admin.name}</h2>
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', margin: '16px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{credentialsModal.admin.email}</span>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}
+          onClick={() => setCredentialsModal(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-card)', border: '1px solid rgba(14,165,233,0.25)', borderRadius: 16,
+              padding: 32, maxWidth: 440, width: '100%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(14,165,233,0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, rgba(14,165,233,0.2), rgba(14,165,233,0.05))',
+                border: '1px solid rgba(14,165,233,0.3)', fontSize: 18,
+              }}>
+                {(credentialsModal.admin.name || '?').charAt(0).toUpperCase()}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{credentialsModal.password}</span>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{credentialsModal.admin.name}</h2>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>Identifiants de connexion</p>
               </div>
             </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 16px' }}>
-              Le mot de passe a ete reinitialise. Copiez-le ou envoyez-le par email.
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '14px 16px',
+                border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 13, letterSpacing: '0.02em' }}>{credentialsModal.admin.email}</span>
+              </div>
+              <div style={{
+                background: 'rgba(14,165,233,0.04)', borderRadius: 10, padding: '14px 16px',
+                border: '1px solid rgba(14,165,233,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Mot de passe</span>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.05em' }}>{credentialsModal.password}</span>
+              </div>
+            </div>
+
+            <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 20px', lineHeight: 1.5 }}>
+              Un nouveau mot de passe a ete genere. Copiez-le ou envoyez-le par email.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button className="confirm-modal__btn confirm-modal__btn--confirm" type="button" onClick={handleCopyCredentials} style={{ flex: 1 }}>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleCopyCredentials}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
+                  fontWeight: 600, fontSize: 13, transition: 'all 0.2s', letterSpacing: '0.03em',
+                }}
+              >
                 {copied ? 'Copie !' : 'Copier'}
               </button>
-              <button className="confirm-modal__btn confirm-modal__btn--confirm" type="button" onClick={handleSendEmail} disabled={sending || emailSent} style={{ flex: 1 }}>
-                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
-              </button>
-              <button className="confirm-modal__btn confirm-modal__btn--cancel" type="button" onClick={() => setCredentialsModal(null)} style={{ flex: '1 1 100%' }}>
-                Fermer
+              <button
+                type="button"
+                onClick={handleSendEmail}
+                disabled={sending || emailSent}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(14,165,233,0.35)', color: '#38bdf8',
+                  fontWeight: 600, fontSize: 13, transition: 'all 0.2s', letterSpacing: '0.03em',
+                  opacity: sending || emailSent ? 0.6 : 1,
+                }}
+              >
+                {emailSent ? 'Envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
               </button>
             </div>
-            {emailError && <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>}
+
+            <button
+              type="button"
+              onClick={() => setCredentialsModal(null)}
+              style={{
+                width: '100%', marginTop: 10, padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
+                fontWeight: 500, fontSize: 13, transition: 'all 0.2s',
+              }}
+            >
+              Fermer
+            </button>
+
+            {emailError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 10 }}>{emailError}</p>}
           </div>
         </div>
       )}
