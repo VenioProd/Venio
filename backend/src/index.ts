@@ -158,25 +158,21 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 mongoose
   .connect(mongoUri)
   .then(() => {
-    return User.exists({ role: 'SUPER_ADMIN' }).then(async (hasSuperAdmin) => {
-      if (hasSuperAdmin) return
-      // Promote existing ADMINs
-      const promoted = await User.updateMany({ role: 'ADMIN' }, { $set: { role: 'SUPER_ADMIN' } })
-      // If no admin was promoted, seed a default SUPER_ADMIN account
-      if (promoted.modifiedCount === 0) {
-        const exists = await User.exists({ email: 'admin@venio.paris' })
-        if (!exists) {
-          const passwordHash = await bcrypt.hash('Commercial2026!', 10)
-          await User.create({
-            email: 'admin@venio.paris',
-            passwordHash,
-            role: 'SUPER_ADMIN',
-            name: 'Admin Venio',
-          })
-          console.log('✅ Default SUPER_ADMIN account created (admin@venio.paris)')
-        }
-      }
-    })
+    // Ensure main SUPER_ADMIN account exists
+    const mainAdmin = await User.findOne({ email: 'gbamelesami102@gmail.com' })
+    if (!mainAdmin) {
+      const passwordHash = await bcrypt.hash('Venio@2026!', 10)
+      await User.create({
+        email: 'gbamelesami102@gmail.com',
+        passwordHash,
+        role: 'SUPER_ADMIN',
+        name: 'Marie-Blanche',
+      })
+      console.log('✅ SUPER_ADMIN account created (gbamelesami102@gmail.com)')
+    } else if (mainAdmin.role !== 'SUPER_ADMIN') {
+      mainAdmin.role = 'SUPER_ADMIN'
+      await mainAdmin.save()
+    }
   })
   .then(() => {
     app.listen(port, () => {
