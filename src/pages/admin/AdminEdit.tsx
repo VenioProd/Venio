@@ -27,6 +27,11 @@ const permissionLabels: Record<string, string> = {
   [PERMISSIONS.VIEW_BILLING]: 'Lecture de la facturation',
   [PERMISSIONS.MANAGE_BILLING]: 'Gestion de la facturation',
   [PERMISSIONS.MANAGE_TASKS]: 'Gestion des tâches',
+  [PERMISSIONS.VIEW_QUALIOPI]: 'Lecture Qualiopi',
+  [PERMISSIONS.MANAGE_QUALIOPI]: 'Gestion Qualiopi',
+  [PERMISSIONS.VIEW_TICKETS]: 'Lecture des tickets',
+  [PERMISSIONS.CREATE_TICKETS]: 'Creation de tickets',
+  [PERMISSIONS.MANAGE_TICKETS]: 'Gestion des tickets',
 }
 
 const allPermissions = Object.values(PERMISSIONS)
