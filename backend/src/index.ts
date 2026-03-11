@@ -41,6 +41,7 @@ import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
+import bcrypt from 'bcryptjs'
 import User from './models/User.js'
 import { startScheduler } from './lib/crmScheduler.js'
 
@@ -159,7 +160,22 @@ mongoose
   .then(() => {
     return User.exists({ role: 'SUPER_ADMIN' }).then(async (hasSuperAdmin) => {
       if (hasSuperAdmin) return
-      await User.updateMany({ role: 'ADMIN' }, { $set: { role: 'SUPER_ADMIN' } })
+      // Promote existing ADMINs
+      const promoted = await User.updateMany({ role: 'ADMIN' }, { $set: { role: 'SUPER_ADMIN' } })
+      // If no admin was promoted, seed a default SUPER_ADMIN account
+      if (promoted.modifiedCount === 0) {
+        const exists = await User.exists({ email: 'admin@venio.paris' })
+        if (!exists) {
+          const passwordHash = await bcrypt.hash('Commercial2026!', 10)
+          await User.create({
+            email: 'admin@venio.paris',
+            passwordHash,
+            role: 'SUPER_ADMIN',
+            name: 'Admin Venio',
+          })
+          console.log('✅ Default SUPER_ADMIN account created (admin@venio.paris)')
+        }
+      }
     })
   })
   .then(() => {
