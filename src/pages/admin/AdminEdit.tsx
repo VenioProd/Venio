@@ -294,38 +294,73 @@ const AdminEdit = () => {
       </div>
 
       <div className="portal-card" style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 16 }}>Identifiants de connexion</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-primary)' }}>Identifiants de connexion</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
           Generez un nouveau mot de passe pour cet administrateur. Vous pourrez ensuite le copier ou l'envoyer par email.
         </p>
 
         {generatedPassword ? (
           <>
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{admin?.email}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '14px 16px',
+                border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 13, letterSpacing: '0.02em' }}>{admin?.email}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nouveau mot de passe</span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{generatedPassword}</span>
+              <div style={{
+                background: 'rgba(14,165,233,0.04)', borderRadius: 10, padding: '14px 16px',
+                border: '1px solid rgba(14,165,233,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Mot de passe</span>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.05em' }}>{generatedPassword}</span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button className="portal-button" type="button" onClick={handleCopyCredentials} style={{ flex: 1, minWidth: 160 }}>
-                {copied ? 'Copie !' : 'Copier les identifiants'}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button" onClick={handleCopyCredentials}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
+                  fontWeight: 600, fontSize: 13, letterSpacing: '0.03em',
+                }}
+              >
+                {copied ? 'Copie !' : 'Copier'}
               </button>
-              <button className="portal-button secondary" type="button" onClick={handleSendEmail} disabled={sending || emailSent} style={{ flex: 1, minWidth: 160 }}>
-                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
+              <button
+                type="button" onClick={handleSendEmail} disabled={sending || emailSent}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(14,165,233,0.35)', color: '#38bdf8',
+                  fontWeight: 600, fontSize: 13, letterSpacing: '0.03em',
+                  opacity: sending || emailSent ? 0.6 : 1,
+                }}
+              >
+                {emailSent ? 'Envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
               </button>
-              <button className="portal-button secondary" type="button" onClick={handleResetPassword} disabled={resetting} style={{ flex: 1, minWidth: 160 }}>
+              <button
+                type="button" onClick={handleResetPassword} disabled={resetting}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
+                  fontWeight: 500, fontSize: 13,
+                }}
+              >
                 {resetting ? 'Generation...' : 'Regenerer'}
               </button>
             </div>
-            {emailError && <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>}
+            {emailError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 10 }}>{emailError}</p>}
           </>
         ) : (
-          <button className="portal-button" type="button" onClick={handleResetPassword} disabled={resetting}>
+          <button
+            type="button" onClick={handleResetPassword} disabled={resetting}
+            style={{
+              padding: '12px 24px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
+              fontWeight: 600, fontSize: 13, letterSpacing: '0.03em',
+            }}
+          >
             {resetting ? 'Generation...' : 'Generer un nouveau mot de passe'}
           </button>
         )}
