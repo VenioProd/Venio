@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import {
   archiveAdminClient,
   createAdminClientContact,
@@ -63,6 +64,7 @@ interface NoteOrActivity {
 
 const ClientAccountDetail = () => {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { userId } = useParams<{ userId: string }>()
 
   const [activeTab, setActiveTab] = useTabState('overview')
@@ -231,8 +233,10 @@ const ClientAccountDetail = () => {
     try {
       const data = await updateAdminClient(userId!, patch) as Record<string, unknown>
       setClient(data.client as Client)
+      showToast('Modifications enregistrees', 'success')
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur mise à jour')
+      showToast('Erreur lors de la mise a jour', 'error')
     } finally {
       setSaving(false)
     }

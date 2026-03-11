@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
 import type { User, AdminRole } from '../../types/auth.types'
 import CustomSelect from '../../components/admin/CustomSelect'
@@ -34,6 +35,7 @@ const AdminEdit = () => {
   const { userId } = useParams<{ userId: string }>()
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
+  const { showToast } = useToast()
   const [admin, setAdmin] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<{ name: string; role: string; password: string }>({ name: '', role: 'ADMIN', password: '' })
@@ -127,8 +129,10 @@ const AdminEdit = () => {
       setAdmin(data.user)
       if (form.password) setStoredPassword(form.password)
       setForm((prev) => ({ ...prev, password: '' }))
+      showToast('Modifications enregistrees', 'success')
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur mise à jour admin')
+      showToast('Erreur lors de la mise a jour', 'error')
     } finally {
       setLoading(false)
     }

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import FormField from '../../components/FormField'
 import { useFormValidation } from '../../hooks/useFormValidation'
 import type { ValidationSchema } from '../../hooks/useFormValidation'
@@ -62,6 +63,7 @@ const allPermissions = Object.values(PERMISSIONS)
 const AdminNew = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<{ name: string; email: string; password: string; role: string }>({ name: '', email: '', password: '', role: 'ADMIN' })
   const [customMode, setCustomMode] = useState(false)
@@ -159,6 +161,7 @@ const AdminNew = () => {
         body: JSON.stringify(payload),
       })
       setCreatedUser({ id: data.user._id, name: form.name, email: form.email, password: form.password })
+      showToast('Compte admin cree avec succes', 'success')
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur creation admin')
     } finally {

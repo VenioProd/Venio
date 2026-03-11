@@ -5,6 +5,7 @@ import FormField from '../../components/FormField'
 import { useFormValidation } from '../../hooks/useFormValidation'
 import type { ValidationSchema } from '../../hooks/useFormValidation'
 import { CRM_SERVICE_TYPES } from '../../lib/formatUtils'
+import { useToast } from '../../context/ToastContext'
 import { createAdminClient } from '../../services/adminClients'
 import type { AdminUser } from '../../types/crm.types'
 import type { Client } from '../../types/client.types'
@@ -43,6 +44,7 @@ interface ClientForm {
 
 const ClientAccountNew = () => {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<ClientForm>({
@@ -110,8 +112,10 @@ const ClientAccountNew = () => {
       }
       const data = await createAdminClient(payload) as { client: Client }
       setCreatedClient({ id: data.client._id, name: form.name, email: form.email, password: form.password })
+      showToast('Compte client cree avec succes', 'success')
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur creation compte')
+      showToast('Erreur lors de la creation', 'error')
     } finally {
       setLoading(false)
     }

@@ -3,7 +3,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requirePermission, requireAnyPermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import QualiopiCriterion from '../../models/QualiopiCriterion.js'
 
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } })
 
 // GET all criteria with indicators and sub-elements
-router.get('/', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     let criteria = await QualiopiCriterion.find()
       .sort({ number: 1 })
@@ -232,7 +232,7 @@ router.post('/criteria/:criterionId/indicators/:indicatorId/sub/:subId/files', r
 })
 
 // GET download file (searches in indicator files AND sub-element files)
-router.get('/files/:fileId/download', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/files/:fileId/download', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { fileId } = req.params
     // Search in indicator-level files first

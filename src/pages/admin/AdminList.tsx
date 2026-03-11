@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import type { User } from '../../types/auth.types'
 import '../espace-client/ClientPortal.css'
@@ -28,6 +29,7 @@ const ROLE_AVATARS: Record<string, string> = {
 
 const AdminList = () => {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [admins, setAdmins] = useState<User[]>([])
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -91,8 +93,10 @@ const AdminList = () => {
     try {
       await apiFetch(`/api/admin/admins/${deleteTarget}`, { method: 'DELETE' })
       setAdmins((prev) => prev.filter((admin) => admin._id !== deleteTarget))
+      showToast('Administrateur supprime', 'success')
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur suppression admin')
+      showToast('Erreur lors de la suppression', 'error')
     } finally {
       setDeleteTarget(null)
     }

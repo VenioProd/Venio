@@ -1,6 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requirePermission, requireAnyPermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import QualiopiQuestionnaire from '../../models/QualiopiQuestionnaire.js'
 import QualiopiCreationToken from '../../models/QualiopiCreationToken.js'
@@ -16,7 +16,7 @@ router.use(requireAdmin)
 // ── Creation links (MUST be before /:id routes) ──
 
 // GET all creation tokens
-router.get('/creation-links', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/creation-links', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const links = await QualiopiCreationToken.find().sort({ createdAt: -1 }).lean()
     res.json(links)
@@ -42,7 +42,7 @@ router.delete('/creation-links/:tokenId', requirePermission(PERMISSIONS.MANAGE_Q
 })
 
 // GET all questionnaires (without full responses to keep it light)
-router.get('/', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const list = await QualiopiQuestionnaire.find()
       .select('title description active token questions responses createdAt')
@@ -61,7 +61,7 @@ router.get('/', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (_req: Req
 })
 
 // GET single questionnaire with all responses
-router.get('/:id', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = await QualiopiQuestionnaire.findById(req.params.id).lean()
     if (!q) return res.status(404).json({ message: 'Questionnaire introuvable' })
@@ -126,7 +126,7 @@ router.delete('/:id', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (req
 })
 
 // GET download PDF for a specific response
-router.get('/:id/responses/:responseId/pdf', requirePermission(PERMISSIONS.MANAGE_QUALIOPI), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id/responses/:responseId/pdf', requireAnyPermission([PERMISSIONS.VIEW_QUALIOPI, PERMISSIONS.MANAGE_QUALIOPI]), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = await QualiopiQuestionnaire.findById(req.params.id).lean()
     if (!q) return res.status(404).json({ message: 'Questionnaire introuvable' })
