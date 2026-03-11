@@ -55,14 +55,17 @@ const QualiopiBoard = () => {
   const load = useCallback(async () => {
     try {
       setError(null)
-      const [data, adminData] = await Promise.all([
-        apiFetch<QualiopiCriterion[]>('/api/admin/qualiopi'),
-        apiFetch<{ users: { _id: string; name: string; role: string }[] }>('/api/admin/admins'),
-      ])
+      const data = await apiFetch<QualiopiCriterion[]>('/api/admin/qualiopi')
       setCriteria(data)
-      const allAdmins = adminData?.users || []
-      setAdmins(allAdmins.filter((a) => a.role === 'SUPER_ADMIN'))
       setExpandedCriteria(new Set())
+      // Load admins separately — RH may not have MANAGE_ADMINS permission
+      try {
+        const adminData = await apiFetch<{ users: { _id: string; name: string; role: string }[] }>('/api/admin/admins')
+        const allAdmins = adminData?.users || []
+        setAdmins(allAdmins.filter((a) => a.role === 'SUPER_ADMIN'))
+      } catch {
+        setAdmins([])
+      }
     } catch (err: any) {
       console.error(err)
       setError(err.message || 'Erreur lors du chargement')
