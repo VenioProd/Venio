@@ -72,8 +72,11 @@ export function getPermissionsForRole(role: UserRole): Permission[] {
 }
 
 export function resolvePermissions(role: UserRole, customPermissions: string[] | null): Permission[] {
-  if (Array.isArray(customPermissions)) return customPermissions as Permission[]
-  return getPermissionsForRole(role)
+  const rolePerms = getPermissionsForRole(role)
+  if (!Array.isArray(customPermissions) || customPermissions.length === 0) return rolePerms
+  // Merge: role defaults + custom (no duplicates)
+  const merged = new Set<string>([...rolePerms, ...customPermissions])
+  return Array.from(merged) as Permission[]
 }
 
 export function hasPermissionResolved(role: UserRole, permission: Permission, customPermissions: string[] | null): boolean {

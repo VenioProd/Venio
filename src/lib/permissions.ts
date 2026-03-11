@@ -41,6 +41,7 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.VIEW_CONTENT,
     PERMISSIONS.VIEW_QUALIOPI,
+    PERMISSIONS.MANAGE_QUALIOPI,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
   ]),
@@ -66,10 +67,13 @@ export function getPermissionsForRole(role: string): string[] {
 
 export function resolveUserPermissions(user: User | null): string[] {
   if (!user) return []
-  if (Array.isArray(user.permissions) && user.permissions.length > 0) {
-    return user.permissions
+  const rolePerms = getPermissionsForRole(user.role)
+  if (!Array.isArray(user.permissions) || user.permissions.length === 0) {
+    return rolePerms
   }
-  return getPermissionsForRole(user.role)
+  // Merge: role defaults + custom (no duplicates)
+  const merged = new Set<string>([...rolePerms, ...user.permissions])
+  return Array.from(merged)
 }
 
 export function hasPermission(user: User | null, permission: string): boolean {
