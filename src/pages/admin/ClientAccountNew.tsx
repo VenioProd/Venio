@@ -44,6 +44,7 @@ interface ClientForm {
 const ClientAccountNew = () => {
   const navigate = useNavigate()
   const [admins, setAdmins] = useState<AdminUser[]>([])
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<ClientForm>({
     companyName: '',
     serviceType: '',
@@ -155,14 +156,24 @@ const ClientAccountNew = () => {
               />
             </FormField>
             <FormField label="Mot de passe" error={fieldErrors.password} required>
-              <input
-                className="portal-input"
-                type="password"
-                placeholder="Mot de passe sécurisé"
-                value={form.password}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
-                onBlur={() => handleBlur('password')}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="portal-input"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mot de passe sécurisé"
+                  value={form.password}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                  onBlur={() => handleBlur('password')}
+                  style={{ paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 18 }}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
             </FormField>
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Téléphone</label>

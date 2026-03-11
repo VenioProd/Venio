@@ -62,6 +62,7 @@ const allPermissions = Object.values(PERMISSIONS)
 const AdminNew = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<{ name: string; email: string; password: string; role: string }>({ name: '', email: '', password: '', role: 'ADMIN' })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
@@ -170,14 +171,24 @@ const AdminNew = () => {
             />
           </FormField>
           <FormField label="Mot de passe" error={fieldErrors.password} required>
-            <input
-              className="portal-input"
-              type="password"
-              placeholder="Mot de passe sécurisé"
-              value={form.password}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
-              onBlur={() => handleBlur('password')}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="portal-input"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Mot de passe sécurisé"
+                value={form.password}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                onBlur={() => handleBlur('password')}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 18 }}
+              >
+                {showPassword ? '🙈' : '👁'}
+              </button>
+            </div>
           </FormField>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>

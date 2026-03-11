@@ -35,6 +35,7 @@ const AdminEdit = () => {
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const [admin, setAdmin] = useState<User | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState<{ name: string; role: string; password: string }>({ name: '', role: 'ADMIN', password: '' })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
@@ -207,13 +208,23 @@ const AdminEdit = () => {
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Nouveau mot de passe (optionnel)
             </label>
-            <input
-              className="portal-input"
-              type="password"
-              placeholder="Laisser vide pour ne pas changer"
-              value={form.password}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="portal-input"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Laisser vide pour ne pas changer"
+                value={form.password}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 18 }}
+              >
+                {showPassword ? '🙈' : '👁'}
+              </button>
+            </div>
           </div>
           <div className="admin-button-group">
             <button className="portal-button" type="submit" disabled={loading}>
