@@ -8,6 +8,7 @@ import { CRM_SERVICE_TYPES } from '../../lib/formatUtils'
 import { createAdminClient } from '../../services/adminClients'
 import type { AdminUser } from '../../types/crm.types'
 import type { Client } from '../../types/client.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 
 type ClientFormField = 'companyName' | 'name' | 'email' | 'password'
@@ -113,7 +114,7 @@ const ClientAccountNew = () => {
           <span>/</span>
           <Link to="/admin/comptes-clients">Comptes clients</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>Nouveau compte</span>
+          <span style={{ color: 'var(--text-primary)' }}>Nouveau compte</span>
         </div>
         <h1>Nouveau compte client</h1>
       </div>
@@ -131,13 +132,8 @@ const ClientAccountNew = () => {
               />
             </FormField>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Service (pour lequel le client paie)</label>
-              <select className="portal-input" value={form.serviceType} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, serviceType: event.target.value })}>
-                <option value="">—</option>
-                {CRM_SERVICE_TYPES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Service (pour lequel le client paie)</label>
+              <CustomSelect className="portal-input" value={form.serviceType} onChange={(v) => setForm({ ...form, serviceType: v })} options={[{ value: '', label: '—' }, ...CRM_SERVICE_TYPES.map((s) => ({ value: s, label: s }))]} />
             </div>
             <FormField label="Nom du contact" error={fieldErrors.name} required>
               <input
@@ -169,7 +165,7 @@ const ClientAccountNew = () => {
               />
             </FormField>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Téléphone</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Téléphone</label>
               <input
                 className="portal-input"
                 placeholder="+33 ..."
@@ -178,7 +174,7 @@ const ClientAccountNew = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Site web</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Site web</label>
               <input
                 className="portal-input"
                 placeholder="https://..."
@@ -187,24 +183,15 @@ const ClientAccountNew = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Source</label>
-              <select className="portal-input" value={form.source} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, source: event.target.value })}>
-                {SOURCE_OPTIONS.map((source) => (
-                  <option key={source} value={source}>{source}</option>
-                ))}
-              </select>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Source</label>
+              <CustomSelect className="portal-input" value={form.source} onChange={(v) => setForm({ ...form, source: v })} options={SOURCE_OPTIONS.map((s) => ({ value: s, label: s }))} />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Owner interne</label>
-              <select className="portal-input" value={form.ownerAdminId} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, ownerAdminId: event.target.value })}>
-                <option value="">Non assigné</option>
-                {admins.map((admin) => (
-                  <option key={admin._id} value={admin._id}>{admin.name} ({admin.role})</option>
-                ))}
-              </select>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Owner interne</label>
+              <CustomSelect className="portal-input" value={form.ownerAdminId} onChange={(v) => setForm({ ...form, ownerAdminId: v })} options={[{ value: '', label: 'Non assigné' }, ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.role})` }))]} />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255, 255, 255, 0.7)' }}>Tags (séparés par des virgules)</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>Tags (séparés par des virgules)</label>
               <input
                 className="portal-input"
                 placeholder="premium, urgent, saas"

@@ -32,7 +32,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   }
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       setToken(null)
       const currentPath = window.location.pathname
       if (currentPath.startsWith('/admin')) {

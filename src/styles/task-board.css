@@ -537,3 +537,171 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ── Light Mode ── */
+[data-theme="light"] .task-board-loading {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-column {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .task-column-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-column-count {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+[data-theme="light"] .task-add-btn {
+  background: #fafbfc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-add-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .task-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .task-card:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .task-card-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-card-delete {
+  color: #cbd5e1;
+}
+
+[data-theme="light"] .task-card-desc {
+  color: #64748b;
+}
+
+[data-theme="light"] .task-assignee {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .task-due {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .task-modal h3 {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-form-group label {
+  color: #475569;
+}
+
+[data-theme="light"] .task-form-group input,
+[data-theme="light"] .task-form-group select,
+[data-theme="light"] .task-form-group textarea {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+[data-theme="light"] .task-attachments-section {
+  border-top-color: #f1f5f9;
+}
+
+[data-theme="light"] .task-attachments-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-attachments-empty {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-attachment-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .task-attachment-name {
+  color: #334155;
+}
+
+[data-theme="light"] .task-attachment-size {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-attachment-upload-btn {
+  background: #fafbfc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-attachment-upload-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .task-attachment-delete {
+  color: #cbd5e1;
+}
+
+[data-theme="light"] .task-readonly-value {
+  color: #334155;
+}
+
+[data-theme="light"] .task-comments-section {
+  border-top-color: #f1f5f9;
+}
+
+[data-theme="light"] .task-comments-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-comments-empty {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-comment {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .task-comment-author {
+  color: #0f172a;
+}
+
+[data-theme="light"] .task-comment-time {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .task-comment-delete {
+  color: #cbd5e1;
+}
+
+[data-theme="light"] .task-comment-content {
+  color: #334155;
+}
+
+[data-theme="light"] .task-comment-input textarea {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}

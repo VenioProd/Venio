@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
-import { PERMISSIONS } from '../../lib/permissions.js'
+import { PERMISSIONS, ADMIN_ROLES } from '../../lib/permissions.js'
 import User from '../../models/User.js'
 import Project from '../../models/Project.js'
 import ProjectItem from '../../models/ProjectItem.js'
@@ -248,7 +248,7 @@ router.post(
     }
 
     if (payload.ownerAdminId) {
-      const ownerUser = await User.findOne({ _id: payload.ownerAdminId, role: { $in: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] } })
+      const ownerUser = await User.findOne({ _id: payload.ownerAdminId, role: { $in: ADMIN_ROLES } })
       if (!ownerUser) {
         return error(res, 422, 'ownerAdminId must reference an admin account', 'INVALID_OWNER')
       }
@@ -354,7 +354,7 @@ router.patch(
       }
 
       if (payload.ownerAdminId) {
-        const ownerUser = await User.findOne({ _id: payload.ownerAdminId, role: { $in: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] } })
+        const ownerUser = await User.findOne({ _id: payload.ownerAdminId, role: { $in: ADMIN_ROLES } })
         if (!ownerUser) {
           return error(res, 422, 'ownerAdminId must reference an admin account', 'INVALID_OWNER')
         }

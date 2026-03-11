@@ -7,6 +7,7 @@ import { useFormValidation } from '../../hooks/useFormValidation'
 import type { ValidationSchema } from '../../hooks/useFormValidation'
 import { ADMIN_ROLES, getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
 import type { User } from '../../types/auth.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -32,6 +33,10 @@ const roleMeta: Record<string, { label: string; description: string }> = {
   ADMIN: {
     label: 'Contributeur',
     description: 'Gestion des clients, projets, CRM, contenu et facturation.',
+  },
+  RH: {
+    label: 'RH',
+    description: 'Gestion des ressources humaines, tickets internes et Qualiopi en lecture.',
   },
   VIEWER: {
     label: 'Lecture seule',
@@ -138,7 +143,7 @@ const AdminNew = () => {
           <span>/</span>
           <Link to="/admin/comptes-admin">Comptes admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>Nouvel administrateur</span>
+          <span style={{ color: 'var(--text-primary)' }}>Nouvel administrateur</span>
         </div>
         <h1>Nouveau compte admin</h1>
       </div>
@@ -175,26 +180,21 @@ const AdminNew = () => {
             />
           </FormField>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Rôle
             </label>
-            <select
+            <CustomSelect
               className="portal-input"
               value={form.role}
-              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, role: event.target.value })}
-            >
-              {availableRoles.map((role) => (
-                <option key={role} value={role}>
-                  {roleMeta[role]?.label || role}
-                </option>
-              ))}
-            </select>
-            <p style={{ marginTop: 8, color: 'rgba(255, 255, 255, 0.6)', fontSize: 13 }}>
+              onChange={(v) => setForm({ ...form, role: v })}
+              options={availableRoles.map((role) => ({ value: role, label: roleMeta[role]?.label || role }))}
+            />
+            <p style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 13 }}>
               {roleMeta[form.role]?.description || 'Sélectionnez un rôle.'}
             </p>
             {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
               <div style={{ marginTop: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
                   <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
                   Personnaliser les droits
                 </label>
@@ -202,12 +202,12 @@ const AdminNew = () => {
             )}
             {customMode && form.role !== 'SUPER_ADMIN' ? (
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
                   Droits personnalisés
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
                   {allPermissions.map((perm) => (
-                    <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                    <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
                       <input
                         type="checkbox"
                         checked={customPermissions.includes(perm)}
@@ -221,10 +221,10 @@ const AdminNew = () => {
             ) : (
               <>
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
+                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
                     Droits associés
                   </div>
-                  <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.75)', fontSize: 13 }}>
+                  <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
                     {selectedPermissions.map((permission) => (
                       <li key={permission}>{permission}</li>
                     ))}
@@ -232,10 +232,10 @@ const AdminNew = () => {
                 </div>
                 {missingPermissions.length > 0 && (
                   <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
+                    <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
                       Droits non accordés
                     </div>
-                    <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.6)', fontSize: 13 }}>
+                    <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-muted)', fontSize: 13 }}>
                       {missingPermissions.map((permission) => (
                         <li key={permission}>{permission}</li>
                       ))}

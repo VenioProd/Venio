@@ -168,3 +168,54 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* ── Light Mode ── */
+[data-theme="light"] .notif-bell-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .notif-bell-icon {
+  color: #475569;
+}
+
+[data-theme="light"] .notif-dropdown {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .notif-dropdown-header {
+  border-bottom-color: #f1f5f9;
+}
+
+[data-theme="light"] .notif-dropdown-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .notif-empty {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .notif-item {
+  border-bottom-color: #f1f5f9;
+}
+
+[data-theme="light"] .notif-item:hover {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .notif-item-unread {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+[data-theme="light"] .notif-item-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .notif-item-message {
+  color: #64748b;
+}
+
+[data-theme="light"] .notif-item-time {
+  color: #94a3b8;
+}

@@ -20,8 +20,21 @@ interface HotLead {
   budget: number | null
 }
 
+interface DashBrief {
+  _id: string
+  intitule: string
+  briefPriority: 'P1' | 'P2' | 'P3'
+  statut: string
+  deadline: string
+  entity: string
+  contexte?: string
+  livrablesAttendus?: string
+  project?: { _id: string; name: string }
+}
+
 interface DashboardData {
   myTasks: (Task & { project?: { _id: string; name: string } })[]
+  myBriefs: DashBrief[]
   overdueTasks: (Task & { project?: { _id: string; name: string } })[]
   tasksByStatus: Record<string, number>
   activeProjectCount: number
@@ -44,6 +57,20 @@ const STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Termine',
 }
 
+const BRIEF_STATUS_LABELS: Record<string, string> = {
+  A_FAIRE: 'A faire',
+  EN_COURS: 'En cours',
+  EN_REVIEW: 'En review',
+  VALIDE: 'Valide',
+  LIVRE: 'Livre',
+}
+
+const BRIEF_PRIORITY_COLORS: Record<string, string> = {
+  P1: '#ef4444',
+  P2: '#f59e0b',
+  P3: '#64748b',
+}
+
 const PROJECT_STATUS_LABELS: Record<string, string> = {
   EN_COURS: 'En cours',
   EN_ATTENTE: 'En attente',
@@ -59,6 +86,10 @@ const AdminDashboard = () => {
   const [crmAlerts, setCrmAlerts] = useState<CrmAlerts>({ coldLeads: [], overdueLeads: [], staleLeads: [] })
   const [allProjects, setAllProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
+  const [expandedTask, setExpandedTask] = useState<string | null>(null)
+  const [expandedOverdue, setExpandedOverdue] = useState<string | null>(null)
+  const [expandedProject, setExpandedProject] = useState<string | null>(null)
 
   const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
@@ -164,17 +195,35 @@ const AdminDashboard = () => {
                 <span className="portal-action-label">CRM</span>
               </Link>
             )}
-            <Link className="portal-button secondary portal-action-link" to="/admin/profil" title="Mon profil">
+            {(user?.role === 'SUPER_ADMIN' || user?.role === 'RH') && (
+              <Link className="portal-button portal-action-link" to="/admin/qualiopi" title="Qualiopi">
+                <span className="portal-action-icon" aria-hidden>
+                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                </span>
+                <span className="portal-action-label">Qualiopi</span>
+              </Link>
+            )}
+            {hasPermission(user as User, PERMISSIONS.VIEW_PROJECTS) && (
+            <Link className="portal-button portal-action-link" to="/admin/gestion" title="Gestion de projets">
               <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
               </span>
-              <span className="portal-action-label">Mon profil</span>
+              <span className="portal-action-label">Gestion</span>
             </Link>
-            <button className="portal-button secondary portal-action-link" onClick={logout} type="button" title="Se deconnecter">
+            )}
+            {user?.role === 'SUPER_ADMIN' && (
+            <Link className="portal-button portal-action-link" to="/admin/tickets" title="Tickets">
               <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
               </span>
-              <span className="portal-action-label">Deconnexion</span>
+              <span className="portal-action-label">Tickets</span>
+            </Link>
+            )}
+            <Link className="portal-profile-btn" to="/admin/profil" title="Mon profil">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+            </Link>
+            <button className="portal-logout-btn" onClick={logout} type="button" title="Se deconnecter">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
             </button>
           </div>
         </div>
@@ -198,9 +247,13 @@ const AdminDashboard = () => {
               <div className="admin-stat-label">Mes taches</div>
               <div className="admin-stat-value">{data.myTasks.length}</div>
             </div>
-            <div className="admin-stat-card" style={data.overdueTasks.length > 0 ? { borderColor: 'rgba(239,68,68,0.3)' } : {}}>
-              <div className="admin-stat-label">Taches en retard</div>
-              <div className="admin-stat-value" style={data.overdueTasks.length > 0 ? { color: '#ef4444' } : {}}>
+            <div className="admin-stat-card">
+              <div className="admin-stat-label">Mes briefs</div>
+              <div className="admin-stat-value">{data.myBriefs.length}</div>
+            </div>
+            <div className="admin-stat-card" style={data.overdueTasks.length > 0 ? { borderColor: '#ef4444', boxShadow: '0 0 20px rgba(239,68,68,0.2), inset 0 0 30px rgba(239,68,68,0.05)' } : {}}>
+              <div className="admin-stat-label" style={data.overdueTasks.length > 0 ? { color: '#fca5a5' } : {}}>Taches en retard</div>
+              <div className="admin-stat-value" style={data.overdueTasks.length > 0 ? { color: '#ef4444', textShadow: '0 0 20px rgba(239,68,68,0.5)' } : {}}>
                 {data.overdueTasks.length}
               </div>
             </div>
@@ -219,31 +272,66 @@ const AdminDashboard = () => {
               <div className="admin-form-section" style={{ marginBottom: 0 }}>
                 <h2>Mes taches</h2>
                 {data.myTasks.length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Aucune tache assignee</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucune tache assignee</p>
                 ) : (
                   <div className="dash-task-list">
-                    {data.myTasks.map((task) => (
-                      <Link
-                        key={task._id}
-                        to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
-                        className="dash-task-item"
-                      >
-                        <span
-                          className="dash-task-priority"
-                          style={{ background: PRIORITY_COLORS[task.priority] || '#0ea5e9' }}
-                        />
-                        <div className="dash-task-info">
-                          <span className="dash-task-title">{task.title}</span>
-                          <span className="dash-task-project">{(task.project as { name?: string })?.name || ''}</span>
+                    {data.myTasks.map((task) => {
+                      const isExp = expandedTask === task._id
+                      return (
+                        <div key={task._id}>
+                          <div
+                            className="dash-task-item"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setExpandedTask(isExp ? null : task._id)}
+                          >
+                            <span
+                              className="dash-task-priority"
+                              style={{ background: PRIORITY_COLORS[task.priority] || '#0ea5e9' }}
+                            />
+                            <div className="dash-task-info">
+                              <span className="dash-task-title">{task.title}</span>
+                              <span className="dash-task-project">{(task.project as { name?: string })?.name || ''}</span>
+                            </div>
+                            <span className="dash-task-status">{STATUS_LABELS[task.status] || task.status}</span>
+                            {task.dueDate && (
+                              <span className={`dash-task-due ${new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}>
+                                {formatDate(task.dueDate)}
+                              </span>
+                            )}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                              style={{ transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', opacity: 0.4, flexShrink: 0 }}>
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </div>
+                          {isExp && (
+                            <div className="dash-brief-details">
+                              {task.description && (
+                                <div className="dash-brief-field">
+                                  <span className="dash-brief-label">Description</span>
+                                  <p>{task.description}</p>
+                                </div>
+                              )}
+                              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
+                                <span>Priorite : <strong style={{ color: PRIORITY_COLORS[task.priority] }}>{task.priority}</strong></span>
+                                <span>Statut : <strong>{STATUS_LABELS[task.status] || task.status}</strong></span>
+                                {task.dueDate && <span>Echeance : <strong>{new Date(task.dueDate).toLocaleDateString('fr-FR')}</strong></span>}
+                                {task.tags && task.tags.length > 0 && <span>Tags : {task.tags.join(', ')}</span>}
+                              </div>
+                              {canViewProjects && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Link
+                                    to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
+                                    style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}
+                                  >
+                                    Voir le projet →
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <span className="dash-task-status">{STATUS_LABELS[task.status] || task.status}</span>
-                        {task.dueDate && (
-                          <span className={`dash-task-due ${new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}>
-                            {formatDate(task.dueDate)}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -279,30 +367,132 @@ const AdminDashboard = () => {
                   <>
                     <h2 style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>Taches en retard</h2>
                     <div className="dash-task-list">
-                      {data.overdueTasks.map((task) => (
-                        <Link
-                          key={task._id}
-                          to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
-                          className="dash-task-item"
-                        >
-                          <span className="dash-task-priority" style={{ background: '#ef4444' }} />
-                          <div className="dash-task-info">
-                            <span className="dash-task-title">{task.title}</span>
-                            <span className="dash-task-project">{(task.project as { name?: string })?.name || ''}</span>
+                      {data.overdueTasks.map((task) => {
+                        const isExp = expandedOverdue === task._id
+                        return (
+                          <div key={task._id}>
+                            <div
+                              className="dash-task-item"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => setExpandedOverdue(isExp ? null : task._id)}
+                            >
+                              <span className="dash-task-priority" style={{ background: '#ef4444' }} />
+                              <div className="dash-task-info">
+                                <span className="dash-task-title">{task.title}</span>
+                                <span className="dash-task-project">{(task.project as { name?: string })?.name || ''}</span>
+                              </div>
+                              <span className="dash-task-due overdue">{formatDate(task.dueDate)}</span>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                style={{ transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', opacity: 0.4, flexShrink: 0 }}>
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </div>
+                            {isExp && (
+                              <div className="dash-brief-details">
+                                {task.description && (
+                                  <div className="dash-brief-field">
+                                    <span className="dash-brief-label">Description</span>
+                                    <p>{task.description}</p>
+                                  </div>
+                                )}
+                                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
+                                  <span>Priorite : <strong style={{ color: PRIORITY_COLORS[task.priority] }}>{task.priority}</strong></span>
+                                  <span>Statut : <strong>{STATUS_LABELS[task.status] || task.status}</strong></span>
+                                  {task.dueDate && <span>Echeance : <strong style={{ color: '#ef4444' }}>{new Date(task.dueDate).toLocaleDateString('fr-FR')}</strong></span>}
+                                </div>
+                                {canViewProjects && (
+                                  <div style={{ marginTop: 8 }}>
+                                    <Link
+                                      to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
+                                      style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}
+                                    >
+                                      Voir le projet →
+                                    </Link>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <span className="dash-task-due overdue">{formatDate(task.dueDate)}</span>
-                        </Link>
-                      ))}
+                        )
+                      })}
                     </div>
                   </>
                 )}
 
                 {data.hotLeads.length === 0 && data.overdueTasks.length === 0 && (
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Rien a signaler</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Rien a signaler</p>
                 )}
               </div>
             </div>
           </div>
+
+          {/* My Briefs */}
+          {data.myBriefs.length > 0 && (
+            <div className="portal-card" style={{ marginTop: 24 }}>
+              <div className="admin-form-section" style={{ marginBottom: 0 }}>
+                <h2>Mes briefs</h2>
+                <div className="dash-task-list">
+                  {data.myBriefs.map((brief) => {
+                    const isExpanded = expandedBrief === brief._id
+                    const isOverdue = new Date(brief.deadline) < new Date()
+                    return (
+                      <div key={brief._id}>
+                        <div
+                          className="dash-task-item"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setExpandedBrief(isExpanded ? null : brief._id)}
+                        >
+                          <span
+                            className="dash-task-priority"
+                            style={{ background: BRIEF_PRIORITY_COLORS[brief.briefPriority] || '#0ea5e9' }}
+                          />
+                          <div className="dash-task-info">
+                            <span className="dash-task-title">{brief.intitule}</span>
+                            <span className="dash-task-project">
+                              {(brief.project as { name?: string })?.name || ''}
+                              {brief.entity !== 'VENIO' ? ` — ${brief.entity}` : ''}
+                            </span>
+                          </div>
+                          <span className="dash-task-status">{BRIEF_STATUS_LABELS[brief.statut] || brief.statut}</span>
+                          <span className={`dash-task-due ${isOverdue ? 'overdue' : ''}`}>
+                            {formatDate(brief.deadline)}
+                          </span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                            style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', opacity: 0.4, flexShrink: 0 }}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                        {isExpanded && (
+                          <div className="dash-brief-details">
+                            {brief.contexte && (
+                              <div className="dash-brief-field">
+                                <span className="dash-brief-label">Contexte</span>
+                                <p>{brief.contexte}</p>
+                              </div>
+                            )}
+                            {brief.livrablesAttendus && (
+                              <div className="dash-brief-field">
+                                <span className="dash-brief-label">Livrables attendus</span>
+                                <p>{brief.livrablesAttendus}</p>
+                              </div>
+                            )}
+                            <div style={{ marginTop: 8 }}>
+                              <Link
+                                to={`/admin/gestion?view=briefs`}
+                                style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}
+                              >
+                                Voir tous les briefs →
+                              </Link>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Recent Projects */}
           {data.recentProjects.length > 0 && (
@@ -310,19 +500,58 @@ const AdminDashboard = () => {
               <div className="admin-form-section" style={{ marginBottom: 0 }}>
                 <h2>Projets recents</h2>
                 <div className="dash-task-list">
-                  {data.recentProjects.map((project) => (
-                    <Link key={project._id} to={`/admin/projets/${project._id}`} className="dash-task-item">
-                      <span
-                        className="dash-task-priority"
-                        style={{ background: PRIORITY_COLORS[project.priority || 'NORMALE'] || '#0ea5e9' }}
-                      />
-                      <div className="dash-task-info">
-                        <span className="dash-task-title">{project.name}</span>
-                        <span className="dash-task-project">{(project.client as { name?: string })?.name || ''}</span>
+                  {data.recentProjects.map((project) => {
+                    const isExp = expandedProject === project._id
+                    return (
+                      <div key={project._id}>
+                        <div
+                          className="dash-task-item"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setExpandedProject(isExp ? null : project._id)}
+                        >
+                          <span
+                            className="dash-task-priority"
+                            style={{ background: PRIORITY_COLORS[project.priority || 'NORMALE'] || '#0ea5e9' }}
+                          />
+                          <div className="dash-task-info">
+                            <span className="dash-task-title">{project.name}</span>
+                            <span className="dash-task-project">{(project.client as { name?: string })?.name || ''}</span>
+                          </div>
+                          <span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                            style={{ transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', opacity: 0.4, flexShrink: 0 }}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                        {isExp && (
+                          <div className="dash-brief-details">
+                            {project.description && (
+                              <div className="dash-brief-field">
+                                <span className="dash-brief-label">Description</span>
+                                <p>{project.description}</p>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
+                              {project.responsible && <span>Responsable : <strong>{project.responsible}</strong></span>}
+                              {project.priority && <span>Priorite : <strong style={{ color: PRIORITY_COLORS[project.priority] }}>{project.priority}</strong></span>}
+                              {project.startDate && <span>Debut : <strong>{new Date(project.startDate).toLocaleDateString('fr-FR')}</strong></span>}
+                              {project.endDate && <span>Fin : <strong>{new Date(project.endDate).toLocaleDateString('fr-FR')}</strong></span>}
+                            </div>
+                            {canViewProjects && (
+                              <div style={{ marginTop: 8 }}>
+                                <Link
+                                  to={`/admin/projets/${project._id}`}
+                                  style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}
+                                >
+                                  Voir le projet →
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
-                    </Link>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </div>

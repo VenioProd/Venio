@@ -46,7 +46,7 @@ const AdminLogin = () => {
     <div className="portal-container">
       <div className="portal-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
         <h1 style={{ marginBottom: '8px' }}>Connexion Admin</h1>
-        <p style={{ color: 'rgba(255, 255, 255, 0.6)', marginBottom: '24px' }}>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
           {needs2FA ? 'Entrez le code de votre application d\'authentification' : 'Accès réservé aux administrateurs'}
         </p>
         <form onSubmit={handleSubmit} className="portal-list">
@@ -80,7 +80,7 @@ const AdminLogin = () => {
                     transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
-                    color: 'rgba(255, 255, 255, 0.4)',
+                    color: 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: '16px',
                     padding: '4px',

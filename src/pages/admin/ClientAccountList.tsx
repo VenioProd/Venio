@@ -5,6 +5,7 @@ import { exportToCsv } from '../../lib/exportCsv'
 import { SkeletonRow } from '../../components/Skeleton'
 import type { Client } from '../../types/client.types'
 import type { PaginationMeta } from '../../types/api.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -100,7 +101,7 @@ const ClientAccountList = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>Comptes clients</span>
+          <span style={{ color: 'var(--text-primary)' }}>Comptes clients</span>
         </div>
         <div className="admin-header">
           <h1>Comptes clients</h1>
@@ -144,21 +145,9 @@ const ClientAccountList = () => {
             value={filters.q}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => updateFilter('q', event.target.value)}
           />
-          <select className="portal-input" value={filters.status} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => updateFilter('status', event.target.value)}>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <select className="portal-input" value={filters.health} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => updateFilter('health', event.target.value)}>
-            {HEALTH_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <select className="portal-input" value={filters.sort} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => updateFilter('sort', event.target.value)}>
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+          <CustomSelect className="portal-input" value={filters.status} onChange={(v) => updateFilter('status', v)} options={STATUS_OPTIONS} />
+          <CustomSelect className="portal-input" value={filters.health} onChange={(v) => updateFilter('health', v)} options={HEALTH_OPTIONS} />
+          <CustomSelect className="portal-input" value={filters.sort} onChange={(v) => updateFilter('sort', v)} options={SORT_OPTIONS} />
         </div>
       </div>
 
@@ -168,49 +157,54 @@ const ClientAccountList = () => {
         </div>
       )}
 
-      <div className="portal-card" style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24 }}>
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="portal-card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonRow key={i} />
             ))}
           </div>
         ) : clients.length === 0 ? (
-          <div className="admin-empty-state">
-            <div className="admin-empty-state-icon">👥</div>
-            <p className="admin-empty-state-text">Aucun compte client</p>
+          <div className="portal-card">
+            <div className="admin-empty-state">
+              <div className="admin-empty-state-icon">👥</div>
+              <p className="admin-empty-state-text">Aucun compte client</p>
+            </div>
           </div>
         ) : (
           <>
-            <div className="admin-list">
+            <div className="client-cards-grid">
               {clients.map((client) => (
-                <div key={client._id} className="admin-list-item">
-                  <div className="admin-list-item-content">
-                    <h3 className="admin-list-item-title">{client.companyName || client.name}</h3>
-                    <p className="admin-list-item-subtitle">
-                      {client.serviceType && <span className="portal-badge" style={{ marginRight: 8 }}>{client.serviceType}</span>}
-                      {client.companyName && client.companyName !== client.name && (
-                        <span style={{ opacity: 0.85 }}>Contact : {client.name}</span>
-                      )}
-                      {(!client.companyName || client.companyName === client.name) && client.email}
-                      {client.companyName && client.companyName !== client.name && ` • ${client.email}`}
-                    </p>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
-                      <span className="portal-badge">{STATUS_LABELS[client.status] || client.status || 'Actif'}</span>
-                      <span className="portal-badge" style={{ border: `1px solid ${HEALTH_COLORS[client.healthStatus || ''] || '#64748b'}` }}>
-                        Santé: {client.healthStatus || 'N/A'}
-                      </span>
-                      <span className="portal-badge">
-                        Owner: {client.ownerAdminId?.name || 'Non assigné'}
-                      </span>
+                <Link key={client._id} to={`/admin/comptes-clients/${client._id}`} className="client-card">
+                  <div className="client-card-header">
+                    <div className="client-card-avatar">
+                      {(client.companyName || client.name || '?').charAt(0).toUpperCase()}
                     </div>
+                    <span
+                      className="client-card-health"
+                      style={{ background: HEALTH_COLORS[client.healthStatus || ''] || '#64748b' }}
+                      title={`Santé: ${client.healthStatus || 'N/A'}`}
+                    />
                   </div>
-                  <div className="admin-list-item-actions">
-                    <Link className="portal-button secondary" to={`/admin/comptes-clients/${client._id}`}>
-                      Voir détails
-                    </Link>
+                  <h3 className="client-card-name">{client.companyName || client.name}</h3>
+                  {client.companyName && client.companyName !== client.name && (
+                    <p className="client-card-contact">{client.name}</p>
+                  )}
+                  <p className="client-card-email">{client.email}</p>
+                  <div className="client-card-tags">
+                    <span className={`client-card-status client-card-status--${(client.status || 'ACTIF').toLowerCase()}`}>
+                      {STATUS_LABELS[client.status] || client.status || 'Actif'}
+                    </span>
+                    {client.serviceType && (
+                      <span className="client-card-service">{client.serviceType}</span>
+                    )}
                   </div>
-                </div>
+                  <div className="client-card-footer">
+                    <span className="client-card-owner">
+                      {client.ownerAdminId?.name || 'Non assigné'}
+                    </span>
+                  </div>
+                </Link>
               ))}
             </div>
 

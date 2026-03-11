@@ -1,4 +1,4 @@
-export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'VIEWER'
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
 export type ClientRole = 'CLIENT'
 export type UserRole = AdminRole | ClientRole
 
@@ -13,6 +13,9 @@ export type Permission =
   | 'edit_content'
   | 'view_billing'
   | 'manage_billing'
+  | 'view_tickets'
+  | 'create_tickets'
+  | 'manage_tickets'
 
 export interface User {
   _id: string

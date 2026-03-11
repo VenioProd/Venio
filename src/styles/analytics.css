@@ -184,3 +184,58 @@
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
 }
+
+/* ── Light Mode ── */
+[data-theme="light"] .analytics-kpi {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .analytics-kpi-label {
+  color: #64748b;
+}
+
+[data-theme="light"] .analytics-kpi-value {
+  color: #0f172a;
+}
+
+[data-theme="light"] .analytics-kpi-sub {
+  color: #64748b;
+}
+
+[data-theme="light"] .analytics-chart-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .analytics-chart-card h3 {
+  color: #0f172a;
+}
+
+[data-theme="light"] .analytics-bar-label {
+  color: #475569;
+}
+
+[data-theme="light"] .analytics-bar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .analytics-bar-value {
+  color: #0f172a;
+}
+
+[data-theme="light"] .analytics-month-label {
+  color: #64748b;
+}
+
+[data-theme="light"] .analytics-month-count {
+  color: #334155;
+}
+
+[data-theme="light"] .analytics-funnel-label {
+  color: #475569;
+}
+
+[data-theme="light"] .analytics-funnel-bar span {
+  color: #ffffff;
+}

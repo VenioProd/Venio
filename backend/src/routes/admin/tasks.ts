@@ -42,7 +42,7 @@ function requirePermissionOrAssignee(permission: string) {
   }
 }
 
-const TASK_STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE']
+const TASK_STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE', 'VALIDE', 'NON_VALIDE', 'A_MODIFIER']
 const TASK_PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
 
 // ─── Multer config for task attachments ───
@@ -126,7 +126,7 @@ router.post(
         return res.status(404).json({ error: 'Projet non trouvé' })
       }
 
-      const { title, description, status, priority, assignee, dueDate, tags } = req.body
+      const { title, description, status, priority, assignee, dueDate, startDate, estimatedDuration, progress, tags } = req.body
 
       // Auto-order: put at end of the target column
       const targetStatus = status || 'A_FAIRE'
@@ -141,6 +141,9 @@ router.post(
         priority: priority || 'NORMALE',
         assignee: assignee || null,
         dueDate: dueDate ? new Date(dueDate) : null,
+        startDate: startDate ? new Date(startDate) : null,
+        estimatedDuration: estimatedDuration != null ? Number(estimatedDuration) : null,
+        progress: progress != null ? Math.min(100, Math.max(0, Number(progress))) : 0,
         tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string' && (t as string).trim()) : [],
         order,
         createdBy: req.user!.id,
@@ -184,7 +187,7 @@ router.post(
 // PATCH /api/admin/projects/:projectId/tasks/:taskId
 router.patch(
   '/:projectId/tasks/:taskId',
-  requirePermission(PERMISSIONS.MANAGE_TASKS),
+  requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
   body('title').optional().trim().notEmpty().withMessage('Le titre ne peut pas être vide'),
   body('status').optional().isIn(TASK_STATUSES).withMessage('Statut invalide'),
   body('priority').optional().isIn(TASK_PRIORITIES).withMessage('Priorité invalide'),
@@ -202,16 +205,34 @@ router.patch(
         return res.status(404).json({ error: 'Tâche non trouvée' })
       }
 
-      const { title, description, status, priority, assignee, dueDate, tags } = req.body
+      // If user doesn't have MANAGE_TASKS permission, restrict to progress only
+      let isAssigneeOnly = false
+      if (req.user!.role !== 'SUPER_ADMIN') {
+        const u = await User.findById(req.user!.id).select('customPermissions')
+        const { hasPermissionResolved } = await import('../../lib/permissions.js')
+        if (!hasPermissionResolved(req.user!.role, PERMISSIONS.MANAGE_TASKS as any, u?.customPermissions ?? null)) {
+          isAssigneeOnly = true
+        }
+      }
+
+      const { title, description, status, priority, assignee, dueDate, startDate, estimatedDuration, progress, tags } = req.body
       const oldAssignee = task.assignee ? String(task.assignee) : null
 
-      if (title !== undefined) task.title = title
-      if (description !== undefined) task.description = description
-      if (status !== undefined) task.status = status
-      if (priority !== undefined) task.priority = priority
-      if (assignee !== undefined) task.assignee = assignee || null
-      if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : null
-      if (tags !== undefined) task.tags = Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string' && (t as string).trim()) : []
+      if (isAssigneeOnly) {
+        // Assignee can only update progress
+        if (progress !== undefined) task.progress = Math.min(100, Math.max(0, Number(progress)))
+      } else {
+        if (title !== undefined) task.title = title
+        if (description !== undefined) task.description = description
+        if (status !== undefined) task.status = status
+        if (priority !== undefined) task.priority = priority
+        if (assignee !== undefined) task.assignee = assignee || null
+        if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : null
+        if (startDate !== undefined) task.startDate = startDate ? new Date(startDate) : null
+        if (estimatedDuration !== undefined) task.estimatedDuration = estimatedDuration != null ? Number(estimatedDuration) : null
+        if (progress !== undefined) task.progress = Math.min(100, Math.max(0, Number(progress)))
+        if (tags !== undefined) task.tags = Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string' && (t as string).trim()) : []
+      }
 
       await task.save()
       await task.populate('assignee', 'name email')

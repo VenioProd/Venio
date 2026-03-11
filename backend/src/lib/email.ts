@@ -586,6 +586,110 @@ export async function sendProjectStatusEmail({ to, recipientName, projectName, o
   }
 }
 
+/**
+ * Envoie un email de notification d'attribution de brief de mission.
+ */
+export async function sendBriefAssignedEmail({ to, destinataireName, briefTitle, projectName, priority, deadline, assignedBy }: { to: string; destinataireName: string; briefTitle: string; projectName: string; priority: string; deadline: string; assignedBy: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
+  const appName = process.env.APP_NAME || 'Venio'
+  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const gestionUrl = `${baseUrl}/gestion`
+
+  const PRIORITY_LABELS: Record<string, string> = { P1: 'Urgente', P2: 'Normale', P3: 'Basse' }
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Brief de mission : ${briefTitle}`,
+      text: [
+        `Bonjour ${destinataireName},`,
+        '',
+        `${assignedBy} vous a attribué un nouveau brief de mission :`,
+        '',
+        `  Brief : ${briefTitle}`,
+        `  Projet : ${projectName}`,
+        `  Priorité : ${PRIORITY_LABELS[priority] || priority}`,
+        `  Deadline : ${deadline}`,
+        '',
+        `Voir vos briefs : ${gestionUrl}`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(destinataireName)},</p>`,
+        `<p><strong>${escapeHtml(assignedBy)}</strong> vous a attribué un nouveau brief de mission :</p>`,
+        `<div style="margin: 16px 0; padding: 16px; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 4px;">`,
+        `<p style="margin: 0 0 8px; font-weight: 600; font-size: 16px;">${escapeHtml(briefTitle)}</p>`,
+        `<table style="border-collapse: collapse; font-size: 14px;">`,
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Projet</td><td style="padding: 4px 0; font-weight: 500;">${escapeHtml(projectName)}</td></tr>`,
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Priorité</td><td style="padding: 4px 0; font-weight: 500;">${escapeHtml(PRIORITY_LABELS[priority] || priority)}</td></tr>`,
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Deadline</td><td style="padding: 4px 0; font-weight: 500;">${escapeHtml(deadline)}</td></tr>`,
+        `</table>`,
+        `</div>`,
+        `<p><a href="${escapeHtml(gestionUrl)}" style="display: inline-block; padding: 10px 20px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 6px;">Voir mes briefs</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email quand un super admin répond à un ticket interne.
+ */
+export async function sendTicketReplyEmail({
+  to, authorName, replierName, ticketTitle, replyMessage,
+}: {
+  to: string; authorName: string; replierName: string; ticketTitle: string; replyMessage: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configure' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const from = process.env.SMTP_FROM || 'admin@venio.paris'
+  const baseUrl = process.env.BASE_URL || 'http://localhost:5173'
+  const ticketsUrl = `${baseUrl}/admin/tickets`
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Reponse a votre ticket : ${ticketTitle}`,
+      text: [
+        `Bonjour ${authorName},`,
+        '',
+        `${replierName} a repondu a votre ticket "${ticketTitle}" :`,
+        '',
+        `  "${replyMessage}"`,
+        '',
+        `Voir le ticket : ${ticketsUrl}`,
+        '',
+        `— L'equipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(authorName)},</p>`,
+        `<p><strong>${escapeHtml(replierName)}</strong> a repondu a votre ticket :</p>`,
+        `<div style="margin: 16px 0; padding: 16px; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 4px;">`,
+        `<p style="margin: 0 0 8px; font-weight: 600; font-size: 15px; color: #0ea5e9;">${escapeHtml(ticketTitle)}</p>`,
+        `<p style="margin: 0; font-size: 14px; color: #334155; white-space: pre-line;">${escapeHtml(replyMessage)}</p>`,
+        `</div>`,
+        `<p><a href="${escapeHtml(ticketsUrl)}" style="display: inline-block; padding: 10px 20px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 6px;">Voir le ticket</a></p>`,
+        `<p style="color: #94a3b8; font-size: 12px;">— L'equipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
 function escapeHtml(s: string | null | undefined): string {
   if (s == null) return ''
   return String(s)

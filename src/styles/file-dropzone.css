@@ -80,3 +80,21 @@
   font-size: 13px;
   color: #ef4444;
 }
+
+/* ── Light Mode ── */
+[data-theme="light"] .file-dropzone {
+  border-color: #e2e8f0;
+  background: #fafbfc;
+}
+
+[data-theme="light"] .file-dropzone-placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .file-dropzone-name {
+  color: #334155;
+}
+
+[data-theme="light"] .file-dropzone-size {
+  color: #94a3b8;
+}

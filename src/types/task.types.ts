@@ -1,4 +1,4 @@
-export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE'
+export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE' | 'VALIDE' | 'NON_VALIDE' | 'A_MODIFIER'
 export type TaskPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
 export interface TaskAttachment {
@@ -12,13 +12,16 @@ export interface TaskAttachment {
 
 export interface Task {
   _id: string
-  project: string
+  project: string | { _id: string; name: string }
   title: string
   description: string
   status: TaskStatus
   priority: TaskPriority
   assignee: { _id: string; name: string; email: string } | null
   dueDate: string | null
+  startDate: string | null
+  estimatedDuration: number | null
+  progress: number
   tags: string[]
   order: number
   createdBy: { _id: string; name: string; email: string }
@@ -34,6 +37,9 @@ export interface TaskFormData {
   priority: TaskPriority
   assignee: string
   dueDate: string
+  startDate: string
+  estimatedDuration: number | null
+  progress: number
   tags: string[]
 }
 

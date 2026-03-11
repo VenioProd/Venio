@@ -14,6 +14,18 @@ const roleLabels: Record<string, string> = {
   VIEWER: 'Lecture seule',
 }
 
+const ROLE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  SUPER_ADMIN: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
+  ADMIN: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
+  VIEWER: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
+}
+
+const ROLE_AVATARS: Record<string, string> = {
+  SUPER_ADMIN: 'linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(202, 138, 4, 0.12))',
+  ADMIN: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.1))',
+  VIEWER: 'linear-gradient(135deg, rgba(100, 116, 180, 0.25), rgba(100, 116, 180, 0.1))',
+}
+
 const AdminList = () => {
   const { user } = useAuth()
   const [admins, setAdmins] = useState<User[]>([])
@@ -55,7 +67,7 @@ const AdminList = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>Comptes admin</span>
+          <span style={{ color: 'var(--text-primary)' }}>Comptes admin</span>
         </div>
         <div className="admin-header">
           <h1>Comptes admin</h1>
@@ -95,38 +107,61 @@ const AdminList = () => {
         </div>
       )}
 
-      <div className="portal-card" style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24 }}>
         {admins.length === 0 ? (
-          <div className="admin-empty-state">
-            <div className="admin-empty-state-icon">🛡️</div>
-            <p className="admin-empty-state-text">Aucun compte admin</p>
+          <div className="portal-card">
+            <div className="admin-empty-state">
+              <div className="admin-empty-state-icon">🛡️</div>
+              <p className="admin-empty-state-text">Aucun compte admin</p>
+            </div>
           </div>
         ) : (
-          <div className="admin-list">
-            {admins.map((admin) => (
-              <div key={admin._id} className="admin-list-item">
-                <div className="admin-list-item-content">
-                  <h3 className="admin-list-item-title">{admin.name}</h3>
-                  <p className="admin-list-item-subtitle">
-                    {admin.email} · {roleLabels[admin.role] || admin.role}
-                  </p>
+          <div className="admin-cards-grid">
+            {admins.map((admin) => {
+              const colors = ROLE_COLORS[admin.role] || ROLE_COLORS.VIEWER
+              return (
+                <div key={admin._id} className="admin-member-card">
+                  <div className="client-card-header">
+                    <div
+                      className="client-card-avatar"
+                      style={{ background: ROLE_AVATARS[admin.role] || ROLE_AVATARS.VIEWER }}
+                    >
+                      {(admin.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    {user?._id === admin._id && (
+                      <span className="admin-card-you">Vous</span>
+                    )}
+                  </div>
+                  <h3 className="client-card-name">{admin.name}</h3>
+                  <p className="client-card-email">{admin.email}</p>
+                  <div className="client-card-tags">
+                    <span
+                      className="admin-card-role"
+                      style={{
+                        background: colors.bg,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      }}
+                    >
+                      {roleLabels[admin.role] || admin.role}
+                    </span>
+                  </div>
+                  <div className="admin-card-actions">
+                    <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
+                      Modifier
+                    </Link>
+                    <button
+                      className="admin-card-btn admin-card-btn--delete"
+                      type="button"
+                      onClick={() => handleDelete(admin._id)}
+                      disabled={user?._id === admin._id}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
-                <div className="admin-list-item-actions">
-                  <Link className="portal-button secondary" to={`/admin/comptes-admin/${admin._id}`}>
-                    Modifier
-                  </Link>
-                  <button
-                    className="portal-button secondary"
-                    type="button"
-                    onClick={() => handleDelete(admin._id)}
-                    disabled={user?._id === admin._id}
-                    title={user?._id === admin._id ? 'Suppression interdite' : 'Supprimer'}
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

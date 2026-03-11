@@ -24,6 +24,7 @@ import {
 import { CRM_SERVICE_TYPES } from '../../lib/formatUtils'
 import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '../../types/client.types'
 import type { Project } from '../../types/project.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -107,8 +108,8 @@ const ClientAccountDetail = () => {
         listAdminClientContacts(userId!),
         listAdminClientNotes(userId!),
         listAdminClientActivities(userId!),
-        getAdminClientBillingSummary(userId!),
-        listAdminClientBillingDocuments(userId!),
+        getAdminClientBillingSummary(userId!).catch(() => ({ summary: null })),
+        listAdminClientBillingDocuments(userId!).catch(() => ({ documents: [] })),
         getAdminClientCloud(userId!).catch(() => ({ cloud: null })),
       ]) as [
         Record<string, unknown>,
@@ -268,7 +269,7 @@ const ClientAccountDetail = () => {
           <span>/</span>
           <Link to="/admin/comptes-clients">Comptes clients</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>{client?.companyName || client?.name || 'Chargement...'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{client?.companyName || client?.name || 'Chargement...'}</span>
         </div>
 
         {client && (
@@ -276,10 +277,10 @@ const ClientAccountDetail = () => {
             <div>
               <h1 style={{ marginBottom: 8 }}>{client.companyName || client.name || 'Société non renseignée'}</h1>
               {client.serviceType && (
-                <p style={{ color: 'rgba(255,255,255,0.8)', margin: '0 0 4px 0', fontWeight: 600 }}>Service : {client.serviceType}</p>
+                <p style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}>Service : {client.serviceType}</p>
               )}
-              <p style={{ color: 'rgba(255,255,255,0.65)', margin: 0 }}>Contact : {client.name}</p>
-              <p style={{ color: 'rgba(255,255,255,0.5)', margin: '4px 0 0 0' }}>{client.email}</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Contact : {client.name}</p>
+              <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>{client.email}</p>
             </div>
             <div className="admin-actions">
               <Link className="portal-button portal-action-link" to={`/admin/projets/nouveau?clientId=${userId}`} title="Ajouter un projet">
@@ -297,18 +298,19 @@ const ClientAccountDetail = () => {
           </div>
         )}
 
-        <div className="admin-tabs" style={{ marginTop: 0 }}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      </div>
+
+      <div className="admin-tabs" style={{ marginTop: 20 }}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {error && <div className="admin-error" style={{ marginTop: 24 }}>{error}</div>}
@@ -352,47 +354,33 @@ const ClientAccountDetail = () => {
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: 8, opacity: 0.7 }}>Service (pour lequel le client paie)</label>
-                    <select
+                    <CustomSelect
                       className="portal-input"
                       value={client?.serviceType || ''}
-                      onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-                        const v = event.target.value
+                      onChange={(v) => {
                         setClient((current) => current ? { ...current, serviceType: v } : current)
                         saveClientPatch({ serviceType: v })
                       }}
-                      disabled={saving}
-                    >
-                      <option value="">—</option>
-                      {CRM_SERVICE_TYPES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                      options={[{ value: '', label: '—' }, ...CRM_SERVICE_TYPES.map((s) => ({ value: s, label: s }))]}
+                    />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: 8, opacity: 0.7 }}>Statut client</label>
-                    <select
+                    <CustomSelect
                       className="portal-input"
                       value={client?.status || 'ACTIF'}
-                      onChange={(event: React.ChangeEvent<HTMLSelectElement>) => saveClientPatch({ status: event.target.value })}
-                      disabled={saving}
-                    >
-                      {STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => saveClientPatch({ status: v })}
+                      options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))}
+                    />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: 8, opacity: 0.7 }}>Santé</label>
-                    <select
+                    <CustomSelect
                       className="portal-input"
                       value={client?.healthStatus || 'BON'}
-                      onChange={(event: React.ChangeEvent<HTMLSelectElement>) => saveClientPatch({ healthStatus: event.target.value })}
-                      disabled={saving}
-                    >
-                      {HEALTH_OPTIONS.map((health) => (
-                        <option key={health} value={health}>{health}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => saveClientPatch({ healthStatus: v })}
+                      options={HEALTH_OPTIONS.map((h) => ({ value: h, label: h }))}
+                    />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: 8, opacity: 0.7 }}>Téléphone</label>

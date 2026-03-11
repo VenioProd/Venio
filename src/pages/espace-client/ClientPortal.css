@@ -8,8 +8,8 @@
 }
 
 .portal-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 16px;
   padding: 24px;
   color: var(--text-primary);
@@ -25,8 +25,8 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
   color: var(--text-primary);
 }
 
@@ -72,15 +72,21 @@ div:has(> input.portal-input[type="datetime-local"])::after {
 .portal-button {
   padding: 12px 16px;
   border-radius: 10px;
-  border: none;
-  background: #ffffff;
-  color: #000000;
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  background: rgba(14, 165, 233, 0.12);
+  color: #7dd3fc;
   font-weight: 600;
   cursor: pointer;
 }
 
+.portal-button:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: rgba(14, 165, 233, 0.7);
+  color: #fff;
+}
+
 .portal-button.secondary {
-  background: var(--bg-card);
+  background: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
@@ -114,26 +120,11 @@ div:has(> input.portal-input[type="datetime-local"])::after {
 }
 
 .portal-action-label {
-  opacity: 0;
-  max-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: opacity 0.2s ease, max-width 0.25s ease;
-  margin-left: 0;
-}
-
-.portal-action-link:hover .portal-action-label {
   opacity: 1;
   max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
   margin-left: 8px;
-}
-
-/* Même comportement en GPU OFF */
-body.gpu-off .portal-action-link:hover .portal-action-label {
-  opacity: 1 !important;
-  max-width: 180px !important;
-  margin-left: 8px !important;
-  transition-duration: 0.15s !important;
 }
 
 .portal-list {
@@ -202,16 +193,39 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
 }
 
 .client-dashboard-logout {
-  padding: 8px 14px;
-  font-size: 0.875rem;
+  padding: 9px 18px 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
   background: transparent;
-  color: var(--primary-light);
-  border: 1px solid rgba(14, 165, 233, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.client-dashboard-logout:hover {
-  background: rgba(14, 165, 233, 0.12);
-  border-color: var(--primary);
+.client-dashboard-logout[title="Mon profil"] {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.client-dashboard-logout[title="Mon profil"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.15);
+  color: #fff;
+}
+
+.client-dashboard-logout[title="Déconnexion"] {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.14);
+  color: rgba(252, 129, 129, 0.95);
+}
+
+.client-dashboard-logout[title="Déconnexion"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
 }
 
 .client-dashboard-hero {
@@ -578,7 +592,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
 .client-dashboard-empty {
   text-align: center;
   padding: 64px 24px;
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 16px;
 }
@@ -693,7 +707,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
   gap: 8px;
   margin-bottom: 32px;
   padding: 6px;
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   overflow-x: auto;
@@ -770,7 +784,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
 
 .client-project-item {
   padding: 24px;
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   transition: all 0.2s ease;
@@ -905,7 +919,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
 .client-project-empty-state {
   text-align: center;
   padding: 80px 24px;
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 16px;
 }
@@ -989,7 +1003,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
 
 .client-project-document:hover {
   border-color: rgba(14, 165, 233, 0.3);
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
 }
 
 .client-project-document-icon {
@@ -1306,7 +1320,7 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
@@ -1449,4 +1463,50 @@ body.gpu-off .portal-action-link:hover .portal-action-label {
     width: 100%;
     padding-left: 38px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLIENT PORTAL — LIGHT MODE OVERRIDES
+   ═══════════════════════════════════════════════════════ */
+
+[data-theme="light"] .portal-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .portal-input {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+[data-theme="light"] .portal-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .portal-input:focus {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+[data-theme="light"] input.portal-input[type="date"],
+[data-theme="light"] input.portal-input[type="datetime-local"] {
+  color-scheme: light;
+}
+
+[data-theme="light"] .portal-button {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+[data-theme="light"] .portal-button:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: #0ea5e9;
+  color: #0369a1;
+}
+
+[data-theme="light"] .portal-action-link {
+  color: #475569;
+  border-color: #e2e8f0;
 }

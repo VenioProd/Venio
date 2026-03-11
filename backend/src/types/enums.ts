@@ -1,6 +1,6 @@
 // ─── User ───
-export type UserRole = 'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'VIEWER'
-export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'VIEWER'
+export type UserRole = 'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
 export type HealthStatus = 'BON' | 'ATTENTION' | 'CRITIQUE'
@@ -12,7 +12,7 @@ export type ProjectPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
 
 // ─── Task ───
-export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE'
+export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE' | 'VALIDE' | 'NON_VALIDE' | 'A_MODIFIER'
 export type TaskPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
 // ─── CRM ───
@@ -36,7 +36,7 @@ export type ActivityAction =
   | 'ITEM_CREATED' | 'ITEM_DELETED' | 'UPDATE_POSTED' | 'BILLING_CREATED'
 
 // ─── Notification ───
-export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED'
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY'
 
 // ─── Audit ───
 export type AuditAction = 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'PASSWORD_CHANGED' | 'PROFILE_UPDATED'
@@ -49,6 +49,21 @@ export type Permission =
   | 'manage_admins' | 'manage_clients' | 'view_crm' | 'manage_crm'
   | 'view_projects' | 'edit_projects' | 'view_content' | 'edit_content'
   | 'view_billing' | 'manage_billing' | 'manage_tasks'
+  | 'view_qualiopi' | 'manage_qualiopi'
+  | 'view_tickets' | 'create_tickets' | 'manage_tickets'
 
 // ─── CRM Settings ───
 export type EscalationAction = 'NOTIFY_MANAGER' | 'REASSIGN' | 'BOTH'
+
+// ─── Qualiopi ───
+export type QualiopiStatus = 'A_FAIRE' | 'EN_COURS' | 'FAIT' | 'BLOQUE' | 'NON_CONCERNE'
+
+// ─── Mission Brief ───
+export type BriefEntity = 'VENIO' | 'CREATIO' | 'DECISIO' | 'FORMATIO'
+export type BriefPriority = 'P1' | 'P2' | 'P3'
+export type BriefStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'VALIDE' | 'LIVRE' | 'NON_VALIDE' | 'A_AMELIORER'
+
+// ─── Internal Tickets ───
+export type TicketCategory = 'QUESTION' | 'DEMANDE' | 'PROBLEME'
+export type TicketPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
+export type TicketStatus = 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'

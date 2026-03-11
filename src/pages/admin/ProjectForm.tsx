@@ -14,6 +14,7 @@ import type { User } from '../../types/auth.types'
 import type { Project } from '../../types/project.types'
 import type { ProjectTemplate } from '../../types/template.types'
 import { fetchTemplates } from '../../services/templates'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -212,12 +213,12 @@ const ProjectForm = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>Nouveau projet</span>
+          <span style={{ color: 'var(--text-primary)' }}>Nouveau projet</span>
         </div>
         <div className="admin-header">
           <div>
             <h1>Créer un nouveau projet</h1>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '8px 0 0 0', fontSize: '15px' }}>
+            <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
               Configurez tous les paramètres du projet pour une gestion optimale
             </p>
           </div>
@@ -235,16 +236,12 @@ const ProjectForm = () => {
               </div>
             </div>
             <div className="portal-list">
-              <select
+              <CustomSelect
                 className="portal-input"
-                defaultValue=""
-                onChange={(e) => { if (e.target.value) applyTemplate(e.target.value) }}
-              >
-                <option value="">-- Aucun template (formulaire vide) --</option>
-                {templates.map((t) => (
-                  <option key={t._id} value={t._id}>{t.name}</option>
-                ))}
-              </select>
+                value=""
+                onChange={(v) => { if (v) applyTemplate(v) }}
+                options={[{ value: '', label: '-- Aucun template (formulaire vide) --' }, ...templates.map((t) => ({ value: t._id, label: t.name }))]}
+              />
             </div>
           </div>
         )}
@@ -264,19 +261,12 @@ const ProjectForm = () => {
                   <span className="project-form-label-icon">👤</span>
                   Client
                 </label>
-                <select
+                <CustomSelect
                   className="portal-input"
                   value={form.clientId}
-                  onChange={(event) => setForm({ ...form, clientId: event.target.value })}
-                  required
-                >
-                  <option value="">Sélectionner un client</option>
-                  {clients.map((client) => (
-                    <option key={client._id} value={client._id}>
-                      {client.name} - {client.email}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, clientId: v })}
+                  options={[{ value: '', label: 'Sélectionner un client' }, ...clients.map((c) => ({ value: c._id, label: `${c.name} - ${c.email}` }))]}
+                />
               </div>
 
               <div className="project-form-field">
@@ -327,15 +317,16 @@ const ProjectForm = () => {
                     <span className="project-form-label-icon">📊</span>
                     Statut
                   </label>
-                  <select
+                  <CustomSelect
                     className="portal-input"
                     value={form.status}
-                    onChange={(event) => setForm({ ...form, status: event.target.value })}
-                  >
-                    <option value="EN_COURS">En cours</option>
-                    <option value="EN_ATTENTE">En attente</option>
-                    <option value="TERMINE">Terminé</option>
-                  </select>
+                    onChange={(v) => setForm({ ...form, status: v })}
+                    options={[
+                      { value: 'EN_COURS', label: 'En cours' },
+                      { value: 'EN_ATTENTE', label: 'En attente' },
+                      { value: 'TERMINE', label: 'Terminé' },
+                    ]}
+                  />
                 </div>
 
                 <div className="project-form-field">
@@ -478,16 +469,17 @@ const ProjectForm = () => {
                     <span className="project-form-label-icon">🎚️</span>
                     Priorité
                   </label>
-                  <select
+                  <CustomSelect
                     className="portal-input"
                     value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  >
-                    <option value="BASSE">🟢 Basse</option>
-                    <option value="NORMALE">🔵 Normale</option>
-                    <option value="HAUTE">🟡 Haute</option>
-                    <option value="URGENTE">🔴 Urgente</option>
-                  </select>
+                    onChange={(v) => setForm({ ...form, priority: v })}
+                    options={[
+                      { value: 'BASSE', label: '🟢 Basse' },
+                      { value: 'NORMALE', label: '🔵 Normale' },
+                      { value: 'HAUTE', label: '🟡 Haute' },
+                      { value: 'URGENTE', label: '🔴 Urgente' },
+                    ]}
+                  />
                 </div>
 
                 <div className="project-form-field">
@@ -557,7 +549,7 @@ const ProjectForm = () => {
                 )}
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', background: 'transparent', borderRadius: '8px' }}>
                 <input
                   type="checkbox"
                   checked={form.isArchived}
@@ -685,16 +677,16 @@ const ProjectForm = () => {
                     }}
                     style={{ width: 160 }}
                   />
-                  <select
+                  <CustomSelect
                     className="portal-input"
                     value={form.budget.currency}
-                    onChange={(e) => setForm({ ...form, budget: { ...form.budget, currency: e.target.value } })}
-                    style={{ width: 100 }}
-                  >
-                    <option value="EUR">EUR €</option>
-                    <option value="USD">USD $</option>
-                    <option value="CHF">CHF</option>
-                  </select>
+                    onChange={(v) => setForm({ ...form, budget: { ...form.budget, currency: v } })}
+                    options={[
+                      { value: 'EUR', label: 'EUR €' },
+                      { value: 'USD', label: 'USD $' },
+                      { value: 'CHF', label: 'CHF' },
+                    ]}
+                  />
                 </div>
                 <input
                   className="portal-input"
@@ -723,16 +715,16 @@ const ProjectForm = () => {
                     }}
                     style={{ width: 160 }}
                   />
-                  <select
+                  <CustomSelect
                     className="portal-input"
                     value={form.billing.billingStatus}
-                    onChange={(e) => setForm({ ...form, billing: { ...form.billing, billingStatus: e.target.value } })}
-                    style={{ width: 160 }}
-                  >
-                    <option value="NON_FACTURE">Non facturé</option>
-                    <option value="PARTIEL">Partiel</option>
-                    <option value="FACTURE">Facturé</option>
-                  </select>
+                    onChange={(v) => setForm({ ...form, billing: { ...form.billing, billingStatus: v } })}
+                    options={[
+                      { value: 'NON_FACTURE', label: 'Non facturé' },
+                      { value: 'PARTIEL', label: 'Partiel' },
+                      { value: 'FACTURE', label: 'Facturé' },
+                    ]}
+                  />
                 </div>
                 <input
                   className="portal-input"

@@ -5,6 +5,8 @@ import fs from 'fs/promises'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
+import Task from '../../models/Task.js'
+import MissionBrief from '../../models/MissionBrief.js'
 import ProjectUpdate from '../../models/ProjectUpdate.js'
 import User from '../../models/User.js'
 import Document from '../../models/Document.js'
@@ -13,7 +15,6 @@ import ActivityLog from '../../models/ActivityLog.js'
 import { logActivity } from '../../lib/activityLog.js'
 import { sendClientProjectUpdateEmail, sendProjectStatusEmail } from '../../lib/email.js'
 import { generateProjectRecapPdf } from '../../lib/pdfProjectRecap.js'
-import Task from '../../models/Task.js'
 import ProjectSection from '../../models/ProjectSection.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 
@@ -47,6 +48,7 @@ router.use(requireAdmin)
 
 router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = (req as any).user
     const filter: Record<string, unknown> = {}
     if (req.query.clientId) {
       filter.client = req.query.clientId
@@ -58,6 +60,17 @@ router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Reques
     } else {
       filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
     }
+
+    // Non-SUPER_ADMIN : seulement les projets où l'utilisateur a des tâches ou briefs
+    if (user.role !== 'SUPER_ADMIN') {
+      const [taskProjectIds, briefProjectIds] = await Promise.all([
+        Task.distinct('project', { assignee: user.id }),
+        MissionBrief.distinct('project', { destinataire: user.id }),
+      ])
+      const allProjectIds = [...new Set([...taskProjectIds.map(String), ...briefProjectIds.map(String)])]
+      filter._id = { $in: allProjectIds }
+    }
+
     const query = Project.find(filter).sort({ updatedAt: -1 })
     if (req.query.includeClient === 'true') {
       query.populate('client', 'name email')

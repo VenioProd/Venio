@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useI18n } from '../context/I18nContext'
 import { isAdminRole } from '../lib/permissions'
 import NotificationBell from './admin/NotificationBell'
+import TicketFab from './admin/TicketFab'
 import ThemeToggle from './ThemeToggle'
 import LanguageSwitch from './LanguageSwitch'
 import './Navbar.css'
@@ -14,6 +15,7 @@ const Navbar = () => {
   const { user } = useAuth()
   const { t } = useI18n()
   const showNotifBell = user && isAdminRole(user.role)
+  const showTicketFab = user && isAdminRole(user.role) && user.role !== 'SUPER_ADMIN' && location.pathname.startsWith('/admin')
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
@@ -29,7 +31,7 @@ const Navbar = () => {
     document.body.style.overflow = 'unset'
   }
 
-  return (
+  return (<>
     <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="logo" onClick={closeMobileMenu}>VENIO</Link>
@@ -171,9 +173,24 @@ const Navbar = () => {
             </svg>
             {t('nav.admin')}
           </Link>
+          <div className="mobile-menu-bottom">
+            {showNotifBell && <ThemeToggle />}
+            <LanguageSwitch />
+          </div>
         </div>
       </div>
     </nav>
+    {showTicketFab && (
+      <>
+        <TicketFab />
+        <Link to="/admin/tickets" className="ticket-fab-tickets" title="Mes demandes">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </Link>
+      </>
+    )}
+  </>
   )
 }
 

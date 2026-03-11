@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ToastContainer from './components/ToastContainer'
@@ -23,6 +23,8 @@ const APropos = lazy(() => import('./pages/APropos'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Legal = lazy(() => import('./pages/Legal'))
 const CGU = lazy(() => import('./pages/CGU'))
+const PublicQuestionnaire = lazy(() => import('./pages/PublicQuestionnaire'))
+const PublicQuestionnaireBuilder = lazy(() => import('./pages/PublicQuestionnaireBuilder'))
 
 // Lazy-loaded: Espace client
 const ClientLogin = lazy(() => import('./pages/espace-client/Login'))
@@ -48,9 +50,15 @@ const Analytics = lazy(() => import('./pages/admin/Analytics'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
 const AuditLog = lazy(() => import('./pages/admin/AuditLog'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
+const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
+const TicketList = lazy(() => import('./pages/admin/TicketList'))
+const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function App() {
+  const location = useLocation()
+  const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
+
   useEffect(() => {
     document.body.classList.add('gpu-off')
     localStorage.setItem('gpu-mode', 'false')
@@ -64,7 +72,7 @@ function App() {
     <ThemeProvider>
     <NotificationProvider>
     <ToastProvider>
-      <Navbar />
+      {!isPublicQuestionnaire && <Navbar />}
       <Suspense fallback={null}>
       <Routes>
         {/* Site vitrine */}
@@ -78,6 +86,8 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/legal" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
+        <Route path="/questionnaire/creer/:token" element={<PublicQuestionnaireBuilder />} />
+        <Route path="/questionnaire/:token" element={<PublicQuestionnaire />} />
 
         {/* Espace client */}
         <Route path="/espace-client/login" element={<ClientLogin />} />
@@ -255,6 +265,32 @@ function App() {
           }
         />
         <Route
+          path="/admin/qualiopi"
+          element={
+            <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
+              <QualiopiBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tickets"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <TicketList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/gestion"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                <GestionBoard />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/crm/settings"
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
@@ -266,7 +302,7 @@ function App() {
         />
       </Routes>
       </Suspense>
-      <Footer />
+      {!isPublicQuestionnaire && <Footer />}
       <ToastContainer />
       <Suspense fallback={null}>
         <SearchModal />

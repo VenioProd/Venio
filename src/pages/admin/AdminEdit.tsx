@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
 import type { User, AdminRole } from '../../types/auth.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -116,12 +117,12 @@ const AdminEdit = () => {
           <span>/</span>
           <Link to="/admin/comptes-admin">Comptes admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>{admin?.name || 'Administrateur'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{admin?.name || 'Administrateur'}</span>
         </div>
         <div className="admin-header">
           <div>
             <h1 style={{ marginBottom: '8px' }}>{admin?.name || 'Administrateur'}</h1>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: 0 }}>
+            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
               {admin?.email} · {roleLabels[admin?.role || ''] || admin?.role}
             </p>
           </div>
@@ -137,7 +138,7 @@ const AdminEdit = () => {
       <div className="portal-card" style={{ marginTop: 24 }}>
         <form className="portal-list" onSubmit={handleSubmit}>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Nom complet
             </label>
             <input
@@ -149,33 +150,35 @@ const AdminEdit = () => {
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Rôle
             </label>
-            <select
+            <CustomSelect
               className="portal-input"
               value={form.role}
-              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, role: event.target.value })}
-            >
-              {admin?.role === 'SUPER_ADMIN' && <option value="SUPER_ADMIN">Super admin</option>}
-              <option value="ADMIN">Contributeur</option>
-              <option value="VIEWER">Lecture seule</option>
-            </select>
+              onChange={(v) => setForm({ ...form, role: v })}
+              options={[
+                ...(admin?.role === 'SUPER_ADMIN' ? [{ value: 'SUPER_ADMIN', label: 'Super admin' }] : []),
+                { value: 'ADMIN', label: 'Contributeur' },
+                { value: 'RH', label: 'RH' },
+                { value: 'VIEWER', label: 'Lecture seule' },
+              ]}
+            />
           </div>
           {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
                 <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
                 Personnaliser les droits
               </label>
               {customMode ? (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)', marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
                     Droits personnalisés
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
                     {allPermissions.map((perm) => (
-                      <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                      <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
                         <input
                           type="checkbox"
                           checked={customPermissions.includes(perm)}
@@ -188,10 +191,10 @@ const AdminEdit = () => {
                 </div>
               ) : (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'rgba(255, 255, 255, 0.5)' }}>
+                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
                     Droits par défaut du rôle
                   </div>
-                  <ul style={{ marginTop: 8, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.75)', fontSize: 13 }}>
+                  <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
                     {roleDefaults.map((perm) => (
                       <li key={perm}>{permissionLabels[perm] || perm}</li>
                     ))}
@@ -201,7 +204,7 @@ const AdminEdit = () => {
             </div>
           )}
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Nouveau mot de passe (optionnel)
             </label>
             <input

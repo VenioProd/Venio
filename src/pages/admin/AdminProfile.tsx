@@ -90,7 +90,7 @@ const AdminProfile = () => {
     transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     fontSize: '16px',
     padding: '4px',

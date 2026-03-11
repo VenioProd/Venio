@@ -8,7 +8,7 @@ const taskSchema = new mongoose.Schema<ITask>(
     description: { type: String, default: '' },
     status: {
       type: String,
-      enum: ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE'],
+      enum: ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE', 'VALIDE', 'NON_VALIDE', 'A_MODIFIER'],
       default: 'A_FAIRE',
     },
     priority: {
@@ -18,6 +18,9 @@ const taskSchema = new mongoose.Schema<ITask>(
     },
     assignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     dueDate: { type: Date, default: null },
+    startDate: { type: Date, default: null },
+    estimatedDuration: { type: Number, default: null },
+    progress: { type: Number, default: 0, min: 0, max: 100 },
     tags: [{ type: String, trim: true }],
     order: { type: Number, default: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

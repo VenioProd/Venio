@@ -7,7 +7,8 @@ import type {
   ItemType, ItemStatus, DocumentType,
   BillingDocumentType, BillingDocumentStatus,
   ActivityAction, AuditAction, NotificationType,
-  NoteVisibility, EscalationAction,
+  NoteVisibility, EscalationAction, QualiopiStatus,
+  BriefEntity, BriefPriority, BriefStatus,
 } from './enums.js'
 
 // ─── User ───
@@ -106,6 +107,9 @@ export interface ITask extends Document {
   priority: TaskPriority
   assignee: Types.ObjectId | null
   dueDate: Date | null
+  startDate: Date | null
+  estimatedDuration: number | null
+  progress: number
   tags: string[]
   order: number
   createdBy: Types.ObjectId
@@ -420,12 +424,111 @@ export interface IProjectUpdate extends Document {
   createdAt: Date
 }
 
+// ─── MissionBrief ───
+export interface IBriefDateCle {
+  label: string
+  date: Date
+}
+
+export interface IMissionBrief extends Document {
+  project: Types.ObjectId
+  task: Types.ObjectId | null
+  destinataire: Types.ObjectId
+  entity: BriefEntity
+  briefPriority: BriefPriority
+  deadline: Date
+  intitule: string
+  contexte: string
+  livrablesAttendus: string
+  formatLivrable: string[]
+  ressources: string
+  pointsVigilance: string
+  pointIntermediaire: Date | null
+  validationPar: Types.ObjectId | null
+  statut: BriefStatus
+  datesCles: IBriefDateCle[]
+  commentaires: string
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── TaskComment ───
 export interface ITaskComment extends Document {
   task: Types.ObjectId
   author: Types.ObjectId
   content: string
   mentions: Types.ObjectId[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── Qualiopi ───
+export interface IQualiopiSubElement {
+  _id?: Types.ObjectId
+  title: string
+  status: QualiopiStatus
+  assignee: Types.ObjectId | null
+  dueDate: Date | null
+  files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedAt: Date }[]
+  notes: string
+  order: number
+}
+
+export interface IQualiopiIndicator {
+  _id?: Types.ObjectId
+  number: number
+  title: string
+  status: QualiopiStatus
+  assignee: Types.ObjectId | null
+  startDate: Date | null
+  endDate: Date | null
+  subElements: IQualiopiSubElement[]
+  files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedAt: Date }[]
+  order: number
+}
+
+export interface IQualiopiCriterion extends Document {
+  number: number
+  title: string
+  objective: string
+  indicators: IQualiopiIndicator[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+/* ── Qualiopi Questionnaires ── */
+
+export interface IQualiopiQuestion {
+  type: 'rating' | 'text' | 'multiple_choice'
+  label: string
+  options: string[]
+  required: boolean
+  order: number
+}
+
+export interface IQualiopiAnswer {
+  questionIndex: number
+  value: string
+}
+
+export interface IQualiopiQuestionnaireResponse {
+  _id: Types.ObjectId
+  respondentName: string
+  respondentEmail: string
+  formation: string
+  answers: IQualiopiAnswer[]
+  submittedAt: Date
+}
+
+export interface IQualiopiQuestionnaire extends Document {
+  title: string
+  description: string
+  questions: IQualiopiQuestion[]
+  active: boolean
+  token: string
+  responses: IQualiopiQuestionnaireResponse[]
+  createdBy: Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }

@@ -1,6 +1,6 @@
 import type { UserRole, AdminRole, Permission } from '../types/enums.js'
 
-export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'VIEWER']
+export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER']
 
 export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_ADMINS: 'manage_admins',
@@ -14,6 +14,11 @@ export const PERMISSIONS: Record<string, Permission> = {
   VIEW_BILLING: 'view_billing',
   MANAGE_BILLING: 'manage_billing',
   MANAGE_TASKS: 'manage_tasks',
+  VIEW_QUALIOPI: 'view_qualiopi',
+  MANAGE_QUALIOPI: 'manage_qualiopi',
+  VIEW_TICKETS: 'view_tickets',
+  CREATE_TICKETS: 'create_tickets',
+  MANAGE_TICKETS: 'manage_tickets',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
@@ -29,8 +34,23 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_BILLING,
     PERMISSIONS.MANAGE_BILLING,
     PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
   ]),
-  VIEWER: new Set([PERMISSIONS.VIEW_PROJECTS, PERMISSIONS.VIEW_CONTENT, PERMISSIONS.VIEW_BILLING]),
+  RH: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_QUALIOPI,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
+  VIEWER: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
   CLIENT: new Set<Permission>(),
 }
 

@@ -149,7 +149,7 @@ export default function Calendar() {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#fff' }}>Calendrier</span>
+          <span style={{ color: 'var(--text-primary)' }}>Calendrier</span>
         </div>
         <div className="admin-header">
           <h1>Calendrier</h1>

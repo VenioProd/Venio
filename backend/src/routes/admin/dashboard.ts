@@ -5,6 +5,7 @@ import Task from '../../models/Task.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import Lead from '../../models/Lead.js'
+import MissionBrief from '../../models/MissionBrief.js'
 
 const router = express.Router()
 
@@ -70,6 +71,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       // Lead model may not exist in all setups
     }
 
+    // My briefs (assigned to me, not done)
+    const myBriefs = await MissionBrief.find({
+      destinataire: userId,
+      statut: { $nin: ['VALIDE', 'LIVRE'] },
+    })
+      .sort({ briefPriority: 1, deadline: 1 })
+      .limit(10)
+      .populate('project', 'name')
+
     // Recent projects (last 5 updated)
     const recentProjects = await Project.find({
       $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
@@ -81,6 +91,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     return res.json({
       myTasks,
+      myBriefs,
       overdueTasks,
       tasksByStatus,
       activeProjectCount,

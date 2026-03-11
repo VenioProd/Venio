@@ -1,6 +1,6 @@
 import type { Permission, User, UserRole } from '../types/auth.types'
 
-export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as const
+export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] as const
 
 export const PERMISSIONS = {
   MANAGE_ADMINS: 'manage_admins',
@@ -14,6 +14,11 @@ export const PERMISSIONS = {
   VIEW_BILLING: 'view_billing',
   MANAGE_BILLING: 'manage_billing',
   MANAGE_TASKS: 'manage_tasks',
+  VIEW_QUALIOPI: 'view_qualiopi',
+  MANAGE_QUALIOPI: 'manage_qualiopi',
+  VIEW_TICKETS: 'view_tickets',
+  CREATE_TICKETS: 'create_tickets',
+  MANAGE_TICKETS: 'manage_tickets',
 } as const
 
 const ROLE_PERMISSIONS: Record<string, Set<string>> = {
@@ -29,8 +34,23 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.VIEW_BILLING,
     PERMISSIONS.MANAGE_BILLING,
     PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
   ]),
-  VIEWER: new Set([PERMISSIONS.VIEW_PROJECTS, PERMISSIONS.VIEW_CONTENT, PERMISSIONS.VIEW_BILLING]),
+  RH: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_QUALIOPI,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
+  VIEWER: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
   CLIENT: new Set([]),
 }
 

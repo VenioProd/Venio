@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import { CRM_SERVICE_TYPES, fromDateTimeLocal, toDateTimeLocal } from '../../lib/formatUtils'
 import ConfirmModal from '../../components/ConfirmModal'
+import CustomSelect from '../../components/admin/CustomSelect'
 import type { Lead, LeadAlert, LeadFormData, PipelineColumn, AdminUser, CrmStatusConfig } from '../../types/crm.types'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
@@ -378,20 +379,12 @@ const CrmBoard = () => {
                 {lead.budget != null && <span className="crm-badge">{lead.budget} €</span>}
               </div>
               <div className="crm-card-row" style={{ marginTop: 8 }}>
-                <select
+                <CustomSelect
                   className="portal-input"
                   value={lead.assignedTo || ''}
-                  onChange={(e) => handleUpdateLead(lead._id, { assignedTo: e.target.value || null })}
-                  disabled={!canManageCrm}
-                  style={{ fontSize: 12, padding: '6px 8px' }}
-                >
-                  <option value="">Non assigné</option>
-                  {admins.map((admin) => (
-                    <option key={admin._id} value={admin._id}>
-                      {admin.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => handleUpdateLead(lead._id, { assignedTo: v || null })}
+                  options={[{ value: '', label: 'Non assigné' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+                />
                 {assigned && (
                   <span className="crm-card-meta" style={{ margin: 0 }}>
                     {assigned.name}
@@ -442,31 +435,25 @@ const CrmBoard = () => {
           )}
         </div>
         <div className="crm-table-filters">
-          <select className="crm-table-filter" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">Tous les statuts</option>
-            {CRM_STATUSES.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <select className="crm-table-filter" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            <option value="">Toutes priorités</option>
-            {CRM_PRIORITIES.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+          <CustomSelect
+            className="crm-table-filter"
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={[{ value: '', label: 'Tous les statuts' }, ...CRM_STATUSES.map((s) => ({ value: s.key, label: s.label }))]}
+          />
+          <CustomSelect
+            className="crm-table-filter"
+            value={filterPriority}
+            onChange={setFilterPriority}
+            options={[{ value: '', label: 'Toutes priorités' }, ...CRM_PRIORITIES.map((p) => ({ value: p.key, label: p.label }))]}
+          />
           {user?.role === 'SUPER_ADMIN' && (
-            <select className="crm-table-filter" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)}>
-              <option value="">Tous les commerciaux</option>
-              {admins.map((a) => (
-                <option key={a._id} value={a._id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              className="crm-table-filter"
+              value={filterAssignee}
+              onChange={setFilterAssignee}
+              options={[{ value: '', label: 'Tous les commerciaux' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+            />
           )}
           {activeFilters > 0 && (
             <button
@@ -583,18 +570,12 @@ const CrmBoard = () => {
                           </td>
                           <td className="crm-td">
                             {canManageCrm ? (
-                              <select
+                              <CustomSelect
                                 className="crm-inline-select"
                                 value={lead.priority || 'NORMALE'}
-                                onChange={(e) => handleUpdateLead(lead._id, { priority: e.target.value })}
-                                style={{ '--select-color': priorityInfo?.color || '#0ea5e9' } as React.CSSProperties}
-                              >
-                                {CRM_PRIORITIES.map((p) => (
-                                  <option key={p.key} value={p.key}>
-                                    {p.label}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={(v) => handleUpdateLead(lead._id, { priority: v })}
+                                options={CRM_PRIORITIES.map((p) => ({ value: p.key, label: p.label }))}
+                              />
                             ) : (
                               <span className="crm-priority-badge" style={{ '--priority-color': priorityInfo?.color || '#0ea5e9' } as React.CSSProperties}>
                                 {priorityInfo?.label || lead.priority}
@@ -609,18 +590,12 @@ const CrmBoard = () => {
                           </td>
                           <td className="crm-td crm-td-temperature">
                             {canManageCrm ? (
-                              <select
+                              <CustomSelect
                                 className="crm-inline-select"
                                 value={lead.leadTemperature || 'TIEDE'}
-                                onChange={(e) => handleUpdateLead(lead._id, { leadTemperature: e.target.value })}
-                                style={{ '--select-color': TEMPERATURE_MAP[lead.leadTemperature || '']?.color || '#f59e0b' } as React.CSSProperties}
-                              >
-                                {CRM_TEMPERATURES.map((t) => (
-                                  <option key={t.key} value={t.key}>
-                                    {t.label}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={(v) => handleUpdateLead(lead._id, { leadTemperature: v })}
+                                options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
+                              />
                             ) : (
                               <span className="crm-temperature-badge" style={{ '--temp-color': TEMPERATURE_MAP[lead.leadTemperature || '']?.color || '#f59e0b' } as React.CSSProperties}>
                                 {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}
@@ -629,18 +604,12 @@ const CrmBoard = () => {
                           </td>
                           <td className="crm-td">
                             {canManageCrm ? (
-                              <select
+                              <CustomSelect
                                 className="crm-inline-select crm-inline-assignee"
                                 value={lead.assignedTo || ''}
-                                onChange={(e) => handleUpdateLead(lead._id, { assignedTo: e.target.value || null })}
-                              >
-                                <option value="">Non assigné</option>
-                                {admins.map((admin) => (
-                                  <option key={admin._id} value={admin._id}>
-                                    {admin.name}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={(v) => handleUpdateLead(lead._id, { assignedTo: v || null })}
+                                options={[{ value: '', label: 'Non assigné' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+                              />
                             ) : (
                               <span>{assigned?.name || 'Non assigné'}</span>
                             )}
@@ -656,19 +625,12 @@ const CrmBoard = () => {
                             <td className="crm-td crm-td-actions">
                               <div className="crm-row-actions">
                                 {/* Status change dropdown */}
-                                <select
+                                <CustomSelect
                                   className="crm-inline-select crm-inline-status"
                                   value={lead.status}
-                                  onChange={(e) => handleUpdateLead(lead._id, { status: e.target.value })}
-                                  title="Changer le statut"
-                                  style={{ '--select-color': STATUS_MAP[lead.status]?.color || '#0ea5e9' } as React.CSSProperties}
-                                >
-                                  {CRM_STATUSES.map((s) => (
-                                    <option key={s.key} value={s.key}>
-                                      → {s.label}
-                                    </option>
-                                  ))}
-                                </select>
+                                  onChange={(v) => handleUpdateLead(lead._id, { status: v })}
+                                  options={CRM_STATUSES.map((s) => ({ value: s.key, label: `→ ${s.label}` }))}
+                                />
                                 {/* Notes button */}
                                 <button
                                   className="crm-btn-notes"
@@ -753,12 +715,12 @@ const CrmBoard = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>CRM & Prospection</span>
+          <span style={{ color: 'var(--text-primary)' }}>CRM & Prospection</span>
         </div>
         <div className="admin-header">
           <div>
             <h1>CRM & Prospection</h1>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '8px 0 0 0', fontSize: '15px' }}>
+            <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
               Pipeline commercial avec attribution, relances et automatisations
             </p>
           </div>
@@ -877,14 +839,12 @@ const CrmBoard = () => {
                   value={form.contactPhone}
                   onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
                 />
-                <select className="portal-input" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
-                  <option value="">Source</option>
-                  {CRM_SOURCES.map((source) => (
-                    <option key={source} value={source}>
-                      {source}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  className="portal-input"
+                  value={form.source}
+                  onChange={(v) => setForm({ ...form, source: v })}
+                  options={[{ value: '', label: 'Source' }, ...CRM_SOURCES.map((s) => ({ value: s, label: s }))]}
+                />
                 <input
                   className="portal-input"
                   placeholder="Budget estimé"
@@ -894,28 +854,30 @@ const CrmBoard = () => {
                   value={form.budget}
                   onChange={(e) => setForm({ ...form, budget: e.target.value })}
                 />
-                <select className="portal-input" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-                  <option value="BASSE">Priorité basse</option>
-                  <option value="NORMALE">Priorité normale</option>
-                  <option value="HAUTE">Priorité haute</option>
-                  <option value="URGENTE">Priorité urgente</option>
-                </select>
-                <select className="portal-input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  {CRM_STATUSES.map((status) => (
-                    <option key={status.key} value={status.key}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  className="portal-input"
+                  value={form.priority}
+                  onChange={(v) => setForm({ ...form, priority: v })}
+                  options={[
+                    { value: 'BASSE', label: 'Priorité basse' },
+                    { value: 'NORMALE', label: 'Priorité normale' },
+                    { value: 'HAUTE', label: 'Priorité haute' },
+                    { value: 'URGENTE', label: 'Priorité urgente' },
+                  ]}
+                />
+                <CustomSelect
+                  className="portal-input"
+                  value={form.status}
+                  onChange={(v) => setForm({ ...form, status: v })}
+                  options={CRM_STATUSES.map((s) => ({ value: s.key, label: s.label }))}
+                />
                 {user?.role === 'SUPER_ADMIN' && (
-                  <select className="portal-input" value={form.assignedTo} onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}>
-                    <option value="">Commercial (optionnel)</option>
-                    {admins.map((admin) => (
-                      <option key={admin._id} value={admin._id}>
-                        {admin.name}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    className="portal-input"
+                    value={form.assignedTo}
+                    onChange={(v) => setForm({ ...form, assignedTo: v })}
+                    options={[{ value: '', label: 'Commercial (optionnel)' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+                  />
                 )}
                 <input
                   className="portal-input"
@@ -923,21 +885,18 @@ const CrmBoard = () => {
                   value={form.nextActionAt ? toDateTimeLocal(form.nextActionAt) : ''}
                   onChange={(e) => setForm({ ...form, nextActionAt: e.target.value })}
                 />
-                <select className="portal-input" value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })}>
-                  <option value="">Type de service</option>
-                  {CRM_SERVICE_TYPES.map((service) => (
-                    <option key={service} value={service}>
-                      {service}
-                    </option>
-                  ))}
-                </select>
-                <select className="portal-input" value={form.leadTemperature} onChange={(e) => setForm({ ...form, leadTemperature: e.target.value })}>
-                  {CRM_TEMPERATURES.map((temp) => (
-                    <option key={temp.key} value={temp.key}>
-                      {temp.label}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  className="portal-input"
+                  value={form.serviceType}
+                  onChange={(v) => setForm({ ...form, serviceType: v })}
+                  options={[{ value: '', label: 'Type de service' }, ...CRM_SERVICE_TYPES.map((s) => ({ value: s, label: s }))]}
+                />
+                <CustomSelect
+                  className="portal-input"
+                  value={form.leadTemperature}
+                  onChange={(v) => setForm({ ...form, leadTemperature: v })}
+                  options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
+                />
                 <input
                   className="portal-input"
                   placeholder="Notes internes"
@@ -1071,52 +1030,40 @@ const CrmBoard = () => {
                   <div className="crm-modal-quick-grid">
                     <div className="crm-modal-quick-field">
                       <label>Statut</label>
-                      <select
+                      <CustomSelect
                         className="portal-input"
                         value={expandedLead.status || 'LEAD'}
-                        onChange={(e) => {
-                          const v = e.target.value
+                        onChange={(v) => {
                           setExpandedLead((prev) => prev ? { ...prev, status: v } : prev)
                           handleUpdateLead(expandedLead._id, { status: v })
                         }}
-                      >
-                        {CRM_STATUSES.map((s) => (
-                          <option key={s.key} value={s.key}>{s.label}</option>
-                        ))}
-                      </select>
+                        options={CRM_STATUSES.map((s) => ({ value: s.key, label: s.label }))}
+                      />
                     </div>
                     <div className="crm-modal-quick-field">
                       <label>Chaleur</label>
-                      <select
+                      <CustomSelect
                         className="portal-input"
                         value={expandedLead.leadTemperature || 'TIEDE'}
-                        onChange={(e) => {
-                          const v = e.target.value
+                        onChange={(v) => {
                           setExpandedLead((prev) => prev ? { ...prev, leadTemperature: v } : prev)
                           handleUpdateLead(expandedLead._id, { leadTemperature: v })
                         }}
-                      >
-                        {CRM_TEMPERATURES.map((t) => (
-                          <option key={t.key} value={t.key}>{t.label}</option>
-                        ))}
-                      </select>
+                        options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
+                      />
                     </div>
                     <div className="crm-modal-quick-field">
                       <label>Assigné à</label>
-                      <select
+                      <CustomSelect
                         className="portal-input"
                         value={expandedLead.assignedTo || ''}
-                        onChange={(e) => {
-                          const v = e.target.value || null
-                          setExpandedLead((prev) => prev ? { ...prev, assignedTo: v } : prev)
-                          handleUpdateLead(expandedLead._id, { assignedTo: v })
+                        onChange={(v) => {
+                          const val = v || null
+                          setExpandedLead((prev) => prev ? { ...prev, assignedTo: val } : prev)
+                          handleUpdateLead(expandedLead._id, { assignedTo: val })
                         }}
-                      >
-                        <option value="">Non assigné</option>
-                        {admins.filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role)).map((admin) => (
-                          <option key={admin._id} value={admin._id}>{admin.name}</option>
-                        ))}
-                      </select>
+                        options={[{ value: '', label: 'Non assigné' }, ...admins.filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role)).map((admin) => ({ value: admin._id, label: admin.name }))]}
+                      />
                     </div>
                     <div className="crm-modal-quick-field">
                       <label>Prochaine action</label>

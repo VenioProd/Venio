@@ -100,7 +100,7 @@ export default function Analytics() {
   if (loading) {
     return (
       <div className="portal-container">
-        <div style={{ textAlign: 'center', padding: 48, color: 'rgba(255,255,255,0.5)' }}>Chargement des statistiques...</div>
+        <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Chargement des statistiques...</div>
       </div>
     )
   }
@@ -124,7 +124,7 @@ export default function Analytics() {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#fff' }}>Statistiques</span>
+          <span style={{ color: 'var(--text-primary)' }}>Statistiques</span>
         </div>
         <div className="admin-header">
           <h1>Statistiques & Reporting</h1>

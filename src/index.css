@@ -152,10 +152,10 @@ p,
 }
 
 .confirm-modal--danger {
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: rgba(14, 165, 233, 0.35);
   box-shadow:
     0 0 40px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(239, 68, 68, 0.08);
+    0 0 20px rgba(14, 165, 233, 0.08);
 }
 
 .confirm-modal--warning {
@@ -266,11 +266,11 @@ p,
 }
 
 .confirm-modal__btn--confirm.confirm-modal__btn--danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
 }
 
 .confirm-modal__btn--confirm.confirm-modal__btn--danger:hover {
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.4);
 }
 
 .confirm-modal__btn--confirm.confirm-modal__btn--warning {

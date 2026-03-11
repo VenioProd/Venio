@@ -31,6 +31,12 @@ import adminMessageRoutes from './routes/admin/messages.js'
 import adminAuditRoutes from './routes/admin/audit.js'
 import adminTwoFactorRoutes from './routes/admin/twoFactor.js'
 import adminBackupRoutes from './routes/admin/backup.js'
+import adminQualiopiRoutes from './routes/admin/qualiopi.js'
+import adminQualiopiQuestRoutes from './routes/admin/qualiopiQuestionnaires.js'
+import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
+import adminTicketRoutes from './routes/admin/tickets.js'
+import adminGestionRoutes from './routes/admin/gestion.js'
+import adminBriefRoutes from './routes/admin/briefs.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import User from './models/User.js'
@@ -112,6 +118,12 @@ app.use('/api/admin/projects', adminMessageRoutes)
 app.use('/api/admin/audit', adminAuditRoutes)
 app.use('/api/admin/2fa', adminTwoFactorRoutes)
 app.use('/api/admin/backups', adminBackupRoutes)
+app.use('/api/admin/qualiopi', adminQualiopiRoutes)
+app.use('/api/admin/qualiopi-questionnaires', adminQualiopiQuestRoutes)
+app.use('/api/questionnaire', publicQuestionnaireRoutes)
+app.use('/api/admin/tickets', adminTicketRoutes)
+app.use('/api/admin/gestion', adminGestionRoutes)
+app.use('/api/admin/briefs', adminBriefRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

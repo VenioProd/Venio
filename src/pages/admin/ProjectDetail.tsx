@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useConfirm } from '../../hooks/useConfirm'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
 import { apiFetch, getToken } from '../../lib/api'
@@ -28,12 +29,14 @@ import TaskBoard from '../../components/admin/TaskBoard'
 import ActivityTimeline from '../../components/admin/ActivityTimeline'
 import ProjectChat from '../../components/admin/ProjectChat'
 import FileDropZone from '../../components/admin/FileDropZone'
+import CustomSelect from '../../components/admin/CustomSelect'
 
 const BILLING_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', ISSUED: 'Émis', SENT: 'Envoyé', ACCEPTED: 'Accepté', PAID: 'Payé', CANCELLED: 'Annulé' }
 
 const AdminProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const { confirm, ConfirmDialog } = useConfirm()
   const [project, setProject] = useState<Project | null>(null)
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
@@ -479,7 +482,7 @@ const AdminProjectDetail = () => {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!confirm('Supprimer cette section ?')) return
+    if (!await confirm({ message: 'Supprimer cette section ?', title: 'Suppression' })) return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${id}/sections/${sectionId}`, {
@@ -556,7 +559,7 @@ const AdminProjectDetail = () => {
 
   const handleDeleteItem = async (itemId: string) => {
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!confirm('Supprimer cet élément ?')) return
+    if (!await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' })) return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${id}/items/${itemId}`, {
@@ -610,11 +613,12 @@ const AdminProjectDetail = () => {
 
   return (
     <div className="portal-container">
+      {ConfirmDialog}
       <div className="portal-card">
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#ffffff' }}>{project?.name || 'Projet'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{project?.name || 'Projet'}</span>
         </div>
         {project && (
           <div className="admin-header">
@@ -716,7 +720,7 @@ const AdminProjectDetail = () => {
           <h2>Détails du projet</h2>
           <form className="portal-list" onSubmit={handleSave}>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Nom du projet
               </label>
               <input
@@ -728,7 +732,7 @@ const AdminProjectDetail = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Description
               </label>
               <textarea
@@ -741,22 +745,23 @@ const AdminProjectDetail = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Statut
               </label>
-              <select
+              <CustomSelect
                 className="portal-input"
                 value={form.status}
-                onChange={(event) => setForm({ ...form, status: event.target.value })}
-              >
-                <option value="EN_COURS">En cours</option>
-                <option value="EN_ATTENTE">En attente</option>
-                <option value="TERMINE">Terminé</option>
-              </select>
+                onChange={(v) => setForm({ ...form, status: v })}
+                options={[
+                  { value: 'EN_COURS', label: 'En cours' },
+                  { value: 'EN_ATTENTE', label: 'En attente' },
+                  { value: 'TERMINE', label: 'Terminé' },
+                ]}
+              />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Numéro de projet
               </label>
               <input
@@ -769,7 +774,7 @@ const AdminProjectDetail = () => {
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ flex: '1 1 160px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                   Date de début
                 </label>
                 <input
@@ -780,7 +785,7 @@ const AdminProjectDetail = () => {
                 />
               </div>
               <div style={{ flex: '1 1 160px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                   Fin prévue
                 </label>
                 <input
@@ -791,7 +796,7 @@ const AdminProjectDetail = () => {
                 />
               </div>
               <div style={{ flex: '1 1 160px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                   Livraison réelle
                 </label>
                 <input
@@ -804,23 +809,24 @@ const AdminProjectDetail = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Priorité
               </label>
-              <select
+              <CustomSelect
                 className="portal-input"
                 value={form.priority ?? 'NORMALE'}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-              >
-                <option value="BASSE">Basse</option>
-                <option value="NORMALE">Normale</option>
-                <option value="HAUTE">Haute</option>
-                <option value="URGENTE">Urgente</option>
-              </select>
+                onChange={(v) => setForm({ ...form, priority: v })}
+                options={[
+                  { value: 'BASSE', label: 'Basse' },
+                  { value: 'NORMALE', label: 'Normale' },
+                  { value: 'HAUTE', label: 'Haute' },
+                  { value: 'URGENTE', label: 'Urgente' },
+                ]}
+              />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Responsable projet
               </label>
               <input
@@ -832,7 +838,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Résumé (une phrase)
               </label>
               <input
@@ -844,7 +850,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Notes internes (admin uniquement)
               </label>
               <textarea
@@ -860,7 +866,7 @@ const AdminProjectDetail = () => {
             <h2 style={{ marginTop: 24, marginBottom: 16 }}>Options de module</h2>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Types de prestation
               </label>
               <datalist id="detail-service-types-suggestions">
@@ -897,7 +903,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Types de livrables
               </label>
               <datalist id="detail-deliverable-types-suggestions">
@@ -934,7 +940,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Deadlines
               </label>
               {(form.deadlines || []).map((d, i) => (
@@ -966,7 +972,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Budget
               </label>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -982,16 +988,16 @@ const AdminProjectDetail = () => {
                   }}
                   style={{ width: 140 }}
                 />
-                <select
+                <CustomSelect
                   className="portal-input"
                   value={form.budget?.currency ?? 'EUR'}
-                  onChange={(e) => setForm({ ...form, budget: { ...form.budget, currency: e.target.value } })}
-                  style={{ width: 100 }}
-                >
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                  <option value="CHF">CHF</option>
-                </select>
+                  onChange={(v) => setForm({ ...form, budget: { ...form.budget, currency: v } })}
+                  options={[
+                    { value: 'EUR', label: 'EUR' },
+                    { value: 'USD', label: 'USD' },
+                    { value: 'CHF', label: 'CHF' },
+                  ]}
+                />
               </div>
               <input
                 className="portal-input"
@@ -1003,7 +1009,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginTop: 20, marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Tags
               </label>
               <datalist id="detail-tags-suggestions">
@@ -1040,7 +1046,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Facturation
               </label>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1056,16 +1062,16 @@ const AdminProjectDetail = () => {
                   }}
                   style={{ width: 140 }}
                 />
-                <select
+                <CustomSelect
                   className="portal-input"
                   value={form.billing?.billingStatus ?? 'NON_FACTURE'}
-                  onChange={(e) => setForm({ ...form, billing: { ...form.billing, billingStatus: e.target.value } })}
-                  style={{ width: 160 }}
-                >
-                  <option value="NON_FACTURE">Non facturé</option>
-                  <option value="PARTIEL">Partiel</option>
-                  <option value="FACTURE">Facturé</option>
-                </select>
+                  onChange={(v) => setForm({ ...form, billing: { ...form.billing, billingStatus: v } })}
+                  options={[
+                    { value: 'NON_FACTURE', label: 'Non facturé' },
+                    { value: 'PARTIEL', label: 'Partiel' },
+                    { value: 'FACTURE', label: 'Facturé' },
+                  ]}
+                />
               </div>
               <input
                 className="portal-input"
@@ -1077,7 +1083,7 @@ const AdminProjectDetail = () => {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Date de rappel
               </label>
               <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -1133,7 +1139,7 @@ const AdminProjectDetail = () => {
                   </div>
                 )}
                 {billingDocuments.length === 0 ? (
-                  <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
                     Aucun devis ou facture. Créez-en un avec les boutons ci-dessus.
                   </p>
                 ) : (
@@ -1148,7 +1154,7 @@ const AdminProjectDetail = () => {
                             {BILLING_STATUS_LABELS[doc.status] || doc.status}
                           </span>
                         </div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                           Total : {Number(doc.total || 0).toFixed(2)} {doc.currency || 'EUR'}
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1274,35 +1280,29 @@ const AdminProjectDetail = () => {
             <h2>Ajouter un élément</h2>
             {canEditContent ? (
               <form className="portal-list" onSubmit={handleAddItem}>
-              <select
+              <CustomSelect
                 className="portal-input"
                 value={itemForm.section as string}
-                onChange={(e) => setItemForm({ ...itemForm, section: e.target.value })}
-              >
-                <option value="">Sans section</option>
-                {sections.map((section) => (
-                  <option key={section._id} value={section._id}>
-                    {section.title}
-                  </option>
-                ))}
-              </select>
-              <select
+                onChange={(v) => setItemForm({ ...itemForm, section: v })}
+                options={[{ value: '', label: 'Sans section' }, ...sections.map((s) => ({ value: s._id, label: s.title }))]}
+              />
+              <CustomSelect
                 className="portal-input"
                 value={itemForm.type as string}
-                onChange={(e) => setItemForm({ ...itemForm, type: e.target.value })}
-                required
-              >
-                <option value="LIVRABLE">Livrable</option>
-                <option value="DEVIS">Devis</option>
-                <option value="FACTURE">Facture</option>
-                <option value="CONTRAT">Contrat</option>
-                <option value="CAHIER_DES_CHARGES">Cahier des charges</option>
-                <option value="MAQUETTE">Maquette</option>
-                <option value="DOCUMENTATION">Documentation</option>
-                <option value="LIEN">Lien</option>
-                <option value="NOTE">Note</option>
-                <option value="AUTRE">Autre</option>
-              </select>
+                onChange={(v) => setItemForm({ ...itemForm, type: v })}
+                options={[
+                  { value: 'LIVRABLE', label: 'Livrable' },
+                  { value: 'DEVIS', label: 'Devis' },
+                  { value: 'FACTURE', label: 'Facture' },
+                  { value: 'CONTRAT', label: 'Contrat' },
+                  { value: 'CAHIER_DES_CHARGES', label: 'Cahier des charges' },
+                  { value: 'MAQUETTE', label: 'Maquette' },
+                  { value: 'DOCUMENTATION', label: 'Documentation' },
+                  { value: 'LIEN', label: 'Lien' },
+                  { value: 'NOTE', label: 'Note' },
+                  { value: 'AUTRE', label: 'Autre' },
+                ]}
+              />
               <input
                 className="portal-input"
                 placeholder="Titre"
@@ -1337,16 +1337,17 @@ const AdminProjectDetail = () => {
                 />
               )}
               {itemForm.type === 'LIVRABLE' && (
-                <select
+                <CustomSelect
                   className="portal-input"
                   value={itemForm.status as string}
-                  onChange={(e) => setItemForm({ ...itemForm, status: e.target.value })}
-                >
-                  <option value="EN_ATTENTE">En attente</option>
-                  <option value="EN_COURS">En cours</option>
-                  <option value="TERMINE">Terminé</option>
-                  <option value="VALIDE">Validé</option>
-                </select>
+                  onChange={(v) => setItemForm({ ...itemForm, status: v })}
+                  options={[
+                    { value: 'EN_ATTENTE', label: 'En attente' },
+                    { value: 'EN_COURS', label: 'En cours' },
+                    { value: 'TERMINE', label: 'Terminé' },
+                    { value: 'VALIDE', label: 'Validé' },
+                  ]}
+                />
               )}
               <FileDropZone
                 onFile={(file) => setSelectedFile(file)}
@@ -1471,7 +1472,7 @@ const AdminProjectDetail = () => {
                   </div>
                 </div>
                 {section.description && (
-                  <p style={{ color: 'rgba(255, 255, 255, 0.6)', marginBottom: 16 }}>{section.description}</p>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{section.description}</p>
                 )}
                 <div className="admin-list">
                   {getItemsBySection(section._id).length === 0 ? (
@@ -1593,7 +1594,7 @@ const AdminProjectDetail = () => {
                   <div key={update._id} className="admin-update-item">
                     <strong>{update.title}</strong>
                     <p>{update.description}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)', marginTop: '8px' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
                       {new Date(update.createdAt).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'long',

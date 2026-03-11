@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import type { AdminUser } from '../../types/crm.types'
+import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -215,7 +216,7 @@ export default function CrmSettings() {
     <div className="portal-container crm-page-container">
       <div className="portal-header">
         <Link to="/admin/crm" className="portal-back-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Retour au CRM
@@ -627,16 +628,16 @@ export default function CrmSettings() {
                   <h3>Action d'escalade</h3>
                   <p>Que faire lors de l'escalade</p>
                 </div>
-                <select
+                <CustomSelect
                   className="crm-settings-select"
                   value={settings.escalationAction}
-                  onChange={(e) => updateSetting('escalationAction', e.target.value)}
-                  disabled={!canManage}
-                >
-                  <option value="NOTIFY_MANAGER">Notifier le manager</option>
-                  <option value="REASSIGN">Réassigner à un autre commercial</option>
-                  <option value="BOTH">Les deux</option>
-                </select>
+                  onChange={(v) => updateSetting('escalationAction', v)}
+                  options={[
+                    { value: 'NOTIFY_MANAGER', label: 'Notifier le manager' },
+                    { value: 'REASSIGN', label: 'Réassigner à un autre commercial' },
+                    { value: 'BOTH', label: 'Les deux' },
+                  ]}
+                />
               </div>
 
               {(settings.escalationAction === 'NOTIFY_MANAGER' || settings.escalationAction === 'BOTH') && (
@@ -645,19 +646,12 @@ export default function CrmSettings() {
                     <h3>Manager à notifier</h3>
                     <p>Sélectionner le manager qui recevra les notifications</p>
                   </div>
-                  <select
+                  <CustomSelect
                     className="crm-settings-select"
                     value={settings.escalationManagerId || ''}
-                    onChange={(e) => updateSetting('escalationManagerId', e.target.value || null)}
-                    disabled={!canManage}
-                  >
-                    <option value="">-- Sélectionner --</option>
-                    {admins.map((admin) => (
-                      <option key={admin._id} value={admin._id}>
-                        {admin.name} ({admin.email})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => updateSetting('escalationManagerId', v || null)}
+                    options={[{ value: '', label: '-- Sélectionner --' }, ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.email})` }))]}
+                  />
                 </div>
               )}
             </>
@@ -937,20 +931,20 @@ export default function CrmSettings() {
                   <h3>Jour d'envoi</h3>
                   <p>Jour de la semaine pour l'envoi du rapport</p>
                 </div>
-                <select
+                <CustomSelect
                   className="crm-settings-select"
-                  value={settings.weeklyReportDay}
-                  onChange={(e) => updateSetting('weeklyReportDay', parseInt(e.target.value))}
-                  disabled={!canManage}
-                >
-                  <option value={0}>Dimanche</option>
-                  <option value={1}>Lundi</option>
-                  <option value={2}>Mardi</option>
-                  <option value={3}>Mercredi</option>
-                  <option value={4}>Jeudi</option>
-                  <option value={5}>Vendredi</option>
-                  <option value={6}>Samedi</option>
-                </select>
+                  value={String(settings.weeklyReportDay)}
+                  onChange={(v) => updateSetting('weeklyReportDay', parseInt(v))}
+                  options={[
+                    { value: '0', label: 'Dimanche' },
+                    { value: '1', label: 'Lundi' },
+                    { value: '2', label: 'Mardi' },
+                    { value: '3', label: 'Mercredi' },
+                    { value: '4', label: 'Jeudi' },
+                    { value: '5', label: 'Vendredi' },
+                    { value: '6', label: 'Samedi' },
+                  ]}
+                />
               </div>
 
               <div className="crm-settings-item crm-settings-item-sub">

@@ -179,3 +179,81 @@
   color: rgba(255, 255, 255, 0.5);
   font-family: inherit;
 }
+
+/* ── Light Mode ── */
+[data-theme="light"] .search-overlay {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .search-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .search-input-wrapper {
+  border-bottom-color: #f1f5f9;
+}
+
+[data-theme="light"] .search-input-icon {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-input {
+  color: #0f172a;
+}
+
+[data-theme="light"] .search-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-kbd {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+[data-theme="light"] .search-loading,
+[data-theme="light"] .search-empty {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-result-item {
+  color: #0f172a;
+}
+
+[data-theme="light"] .search-result-item:hover,
+[data-theme="light"] .search-result-item.selected {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .search-result-icon {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .search-result-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .search-result-subtitle {
+  color: #64748b;
+}
+
+[data-theme="light"] .search-result-type {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .search-hints p {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-hints-shortcuts span {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-hints-shortcuts kbd {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}

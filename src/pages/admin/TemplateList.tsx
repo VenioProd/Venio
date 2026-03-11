@@ -62,7 +62,7 @@ export default function TemplateList() {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: '#fff' }}>Templates projet</span>
+          <span style={{ color: 'var(--text-primary)' }}>Templates projet</span>
         </div>
         <div className="admin-header">
           <h1>Templates de projet</h1>
@@ -97,7 +97,7 @@ export default function TemplateList() {
 
       <div className="admin-form-section" style={{ marginTop: 24 }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 48, color: 'rgba(255,255,255,0.5)' }}>Chargement...</div>
+          <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Chargement...</div>
         ) : templates.length === 0 ? (
           <div className="admin-empty-state" style={{ padding: 48 }}>
             <p className="admin-empty-state-text">Aucun template. Creez-en un pour accelerer la creation de projets.</p>
