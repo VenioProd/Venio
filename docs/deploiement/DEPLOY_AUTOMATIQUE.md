@@ -17,7 +17,7 @@ Guide pour configurer le déploiement automatique via GitHub Actions. Une fois c
 1. Connectez-vous à votre [espace client Ionos](https://www.ionos.fr/)
 2. Allez dans **"Hébergement"** → **"FTP"**
 3. Notez ces informations :
-   - **Serveur FTP** : `ftp.venio.paris` ou l'adresse IP fournie
+   - **Serveur FTP** : `ftp.venio.pro` ou l'adresse IP fournie
    - **Identifiant FTP** : (votre identifiant)
    - **Mot de passe FTP** : (votre mot de passe)
    - **Répertoire web** : généralement `/httpdocs/` ou `/www/`
@@ -31,7 +31,7 @@ Guide pour configurer le déploiement automatique via GitHub Actions. Une fois c
 
    **Secret 1 : `FTP_SERVER`**
    - Name: `FTP_SERVER`
-   - Secret: Votre serveur FTP (ex: `ftp.venio.paris` ou l'IP)
+   - Secret: Votre serveur FTP (ex: `ftp.venio.pro` ou l'IP)
 
    **Secret 2 : `FTP_USERNAME`**
    - Name: `FTP_USERNAME`

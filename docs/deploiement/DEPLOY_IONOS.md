@@ -5,7 +5,7 @@ Guide simple pour publier et mettre à jour votre site sur votre domaine Ionos.
 ## 📋 Prérequis
 
 - ✅ Compte Ionos avec hébergement web activé
-- ✅ Domaine `venio.paris` configuré
+- ✅ Domaine `venio.pro` configuré
 - ✅ Identifiants FTP/SFTP (disponibles dans l'espace client Ionos)
 - ✅ Client FTP installé (FileZilla recommandé)
 
@@ -16,7 +16,7 @@ Guide simple pour publier et mettre à jour votre site sur votre domaine Ionos.
 1. Connectez-vous à votre [espace client Ionos](https://www.ionos.fr/)
 2. Allez dans **"Hébergement"** → **"FTP"**
 3. Notez ces informations :
-   - **Serveur FTP** : `ftp.venio.paris` ou l'adresse IP fournie
+   - **Serveur FTP** : `ftp.venio.pro` ou l'adresse IP fournie
    - **Identifiant FTP** : (votre identifiant)
    - **Mot de passe FTP** : (votre mot de passe)
    - **Répertoire web** : généralement `/httpdocs/` ou `/www/`
@@ -69,7 +69,7 @@ Cette commande :
 ### Étape 3 : Vérifier
 
 1. Attendez quelques minutes (propagation DNS)
-2. Visitez `https://venio.paris`
+2. Visitez `https://venio.pro`
 3. Testez toutes les routes : `/realisations`, `/contact`, `/a-propos`, etc.
 
 ## 🔄 Mettre à jour le site (workflow simple)

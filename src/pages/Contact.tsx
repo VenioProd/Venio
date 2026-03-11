@@ -63,7 +63,7 @@ const Contact = () => {
       const templateParams = {
         from_name: `${formData.prenom} ${formData.nom}`,
         from_email: formData.email,
-        to_email: 'contact@venio.paris',
+        to_email: 'contact@venio.pro',
         subject: `Contact Venio - ${formData.sujet || 'Sans sujet'}`,
         entreprise: formData.entreprise || 'Non renseignée',
         message: formData.message,
@@ -88,7 +88,7 @@ const Contact = () => {
       alert('Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.')
     } catch (error: unknown) {
       console.error('Erreur lors de l\'envoi:', error)
-      alert('Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.paris')
+      alert('Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.pro')
       setIsSubmitting(false)
     }
   }
@@ -130,7 +130,7 @@ const Contact = () => {
             <div className="contact-info">
               <h2>Email direct</h2>
               <div className="info-item">
-                <a href="mailto:contact@venio.paris">contact@venio.paris</a>
+                <a href="mailto:contact@venio.pro">contact@venio.pro</a>
               </div>
             </div>
 

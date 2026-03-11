@@ -21,7 +21,7 @@ const CGU = () => {
           <div className="cgu-section">
             <p>
               Les présentes conditions générales d'utilisation (ci-après les "CGU") ont pour objet de définir 
-              les modalités et conditions d'utilisation du site web venio.paris (ci-après le "Site") édité par Venio.
+              les modalités et conditions d'utilisation du site web venio.pro (ci-après le "Site") édité par Venio.
             </p>
             
             <h3>1. Objet</h3>
@@ -64,7 +64,7 @@ const CGU = () => {
             <p>
               Les informations recueillies sur le Site sont enregistrées dans un fichier informatisé par Venio. 
               Conformément à la loi "informatique et libertés" et au RGPD, vous pouvez exercer votre droit d'accès 
-              aux données vous concernant et les faire rectifier en contactant : contact@venio.paris
+              aux données vous concernant et les faire rectifier en contactant : contact@venio.pro
             </p>
 
             <h3>7. Cookies</h3>

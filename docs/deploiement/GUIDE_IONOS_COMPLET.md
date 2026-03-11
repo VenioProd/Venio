@@ -63,7 +63,7 @@ jobs:
 
       - name: ✅ Déploiement terminé
         run: |
-          echo "✅ Site déployé avec succès sur https://venio.paris"
+          echo "✅ Site déployé avec succès sur https://venio.pro"
           echo "🔄 Les modifications peuvent prendre quelques minutes à apparaître"
 ```
 
@@ -420,7 +420,7 @@ jobs:
 
       - name: ✅ Déploiement terminé
         run: |
-          echo "✅ Site déployé avec succès sur https://venio.paris"
+          echo "✅ Site déployé avec succès sur https://venio.pro"
           echo "🔄 Les modifications peuvent prendre quelques minutes à apparaître"
 ```
 

@@ -26,7 +26,7 @@ const Legal = () => {
               <strong>Siège social :</strong> 60 Rue François 1er, 75008 Paris, France<br />
               <strong>SIREN :</strong> 939549473<br />
               <strong>Code NAF / APE :</strong> 7022Z<br />
-              <strong>Email :</strong> contact@venio.paris
+              <strong>Email :</strong> contact@venio.pro
             </p>
           </div>
 

@@ -18,7 +18,7 @@ Guide pratique pour configurer le déploiement automatique sur Ionos.
 
    ```
    Serveur FTP : _________________________
-   (ex: ftp.venio.paris ou une adresse IP)
+   (ex: ftp.venio.pro ou une adresse IP)
    
    Identifiant FTP : _____________________
    (votre nom d'utilisateur FTP)
@@ -49,7 +49,7 @@ Cette étape permet de vérifier que vos identifiants fonctionnent avant de les 
 3. Remplissez les champs :
 
    - **Nom** : `Ionos - Venio` (ou un nom de votre choix)
-   - **Serveur** : Votre serveur FTP (ex: `ftp.venio.paris`)
+   - **Serveur** : Votre serveur FTP (ex: `ftp.venio.pro`)
    - **Protocole** : `FTP` (ou `SFTP` si disponible)
    - **Port** : `21` (pour FTP) ou `22` (pour SFTP)
    - **Nom d'utilisateur** : Votre identifiant FTP
@@ -86,7 +86,7 @@ Cette étape permet de vérifier que vos identifiants fonctionnent avant de les 
 1. Cliquez sur **"New repository secret"** (Nouveau secret du dépôt)
 2. Remplissez :
    - **Name** : `FTP_SERVER` (en majuscules, exactement comme ça)
-   - **Secret** : Votre serveur FTP (ex: `ftp.venio.paris` ou l'adresse IP)
+   - **Secret** : Votre serveur FTP (ex: `ftp.venio.pro` ou l'adresse IP)
 3. Cliquez sur **"Add secret"**
 
 ### 3.3 Créer le deuxième secret : FTP_USERNAME
@@ -168,7 +168,7 @@ git push origin master
 ### 4.4 Tester le site
 
 1. Attendez quelques minutes après le déploiement
-2. Visitez `https://venio.paris`
+2. Visitez `https://venio.pro`
 3. Testez les différentes pages : `/realisations`, `/contact`, `/a-propos`, etc.
 
 ---
@@ -241,7 +241,7 @@ Avant de considérer que tout est configuré, vérifiez :
 - [ ] J'ai créé les 4 secrets GitHub (FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_SERVER_DIR)
 - [ ] J'ai poussé le workflow sur GitHub
 - [ ] Le déploiement automatique a réussi (coche verte dans Actions)
-- [ ] Le site est accessible sur https://venio.paris
+- [ ] Le site est accessible sur https://venio.pro
 - [ ] Les routes fonctionnent (pas d'erreur 404 sur /realisations, /contact, etc.)
 
 Une fois toutes ces cases cochées, vous êtes prêt ! 🎉

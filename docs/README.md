@@ -20,7 +20,7 @@ npm install    # Installer les dépendances
 npm run dev    # Lancer le serveur (localhost:5501)
 ```
 
-### Pour déployer sur IONOS (venio.paris)
+### Pour déployer sur IONOS (venio.pro)
 
 **Option 1 : Déploiement automatique (recommandé) 🤖**
 ```bash
@@ -168,13 +168,13 @@ Le design utilise :
 
 Votre site est connecté à GitHub (`https://github.com/raphaelbentv/Venio.git`). Voici comment le publier en ligne :
 
-### Option 1 : IONOS (Hébergement avec domaine venio.paris) ⭐ Recommandé
+### Option 1 : IONOS (Hébergement avec domaine venio.pro) ⭐ Recommandé
 
-Cette option permet de déployer le site sur votre propre domaine `venio.paris` hébergé chez IONOS France.
+Cette option permet de déployer le site sur votre propre domaine `venio.pro` hébergé chez IONOS France.
 
 #### Prérequis
 - ✅ Compte IONOS avec hébergement web activé
-- ✅ Domaine `venio.paris` configuré chez IONOS
+- ✅ Domaine `venio.pro` configuré chez IONOS
 - ✅ Identifiants FTP/SFTP IONOS (disponibles dans l'espace client)
 - ✅ Client FTP installé (FileZilla, Cyberduck, Transmit, etc.)
 
@@ -192,7 +192,7 @@ Cette option permet de déployer le site sur votre propre domaine `venio.paris` 
    - Connectez-vous à votre espace client IONOS
    - Allez dans "Hébergement" → "FTP"
    - Notez :
-     - Serveur FTP (ex: `ftp.venio.paris` ou l'IP fournie)
+     - Serveur FTP (ex: `ftp.venio.pro` ou l'IP fournie)
      - Identifiant FTP
      - Mot de passe FTP
      - Répertoire web (généralement `/httpdocs/` ou `/www/`)
@@ -231,16 +231,16 @@ Cette option permet de déployer le site sur votre propre domaine `venio.paris` 
    ```
 
 4. **Vérifier le DNS** :
-   - Dans votre espace IONOS, vérifiez que le domaine `venio.paris` pointe vers votre hébergement
+   - Dans votre espace IONOS, vérifiez que le domaine `venio.pro` pointe vers votre hébergement
    - Type A ou CNAME doit être configuré correctement
 
 5. **Activer HTTPS/SSL** :
-   - Dans l'espace client IONOS, activez le certificat SSL pour `venio.paris`
+   - Dans l'espace client IONOS, activez le certificat SSL pour `venio.pro`
    - IONOS propose généralement Let's Encrypt gratuitement
 
 6. **Tester** :
    - Attendez quelques minutes (propagation DNS)
-   - Visitez `https://venio.paris`
+   - Visitez `https://venio.pro`
    - Testez toutes les routes : `/realisations`, `/contact`, `/a-propos`, etc.
 
 #### Mettre à jour le site après modifications

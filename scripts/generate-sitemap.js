@@ -6,7 +6,7 @@ import { dirname } from 'path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const siteUrl = 'https://venio.paris'
+const siteUrl = 'https://venio.pro'
 const currentDate = new Date().toISOString().split('T')[0]
 
 const routes = [
