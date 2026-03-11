@@ -1,99 +1,50 @@
-name: 🚀 Déploiement automatique sur Ionos
+name: 🚀 Déploiement automatique sur VPS
 
 on:
   push:
     branches:
-      - main  # Déploie automatiquement quand vous poussez sur main
+      - main
     paths-ignore:
       - 'README.md'
-      - 'DEPLOY_IONOS.md'
+      - 'docs/**'
       - '.gitignore'
-  workflow_dispatch:  # Permet de déclencher manuellement depuis GitHub
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Build et déploiement sur Ionos
+    name: Build et déploiement sur VPS
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
+
     steps:
-      - name: 📥 Checkout du code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 📥 Installer les dépendances
-        run: npm ci --include=dev
-
-      - name: 🔧 Configurer l'environnement de build
+      - name: 🔐 Configurer SSH
         run: |
-          echo "NODE_ENV=production" >> $GITHUB_ENV
-          echo "Build environment configured"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: 🏗️ Build du projet
-        run: npm run build:ionos
-
-      - name: ✅ Vérifier le build
-        run: npm run deploy:check
-
-      - name: 🔎 Vérifier le contexte git
+      - name: 🚀 Déployer via SSH
         run: |
-          if [ ! -d .git ]; then
-            echo "::error::.git directory missing before deploy"
-            exit 1
-          fi
-          git rev-parse --is-inside-work-tree
-          if [ -f .git/shallow ]; then
-            git fetch --prune --unshallow
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
+            set -e
+            cd /opt/docker/openclaw/config/workspace/projects/venio
+            echo "📥 Pull du code..."
+            git fetch origin main
+            git reset --hard origin/main
+            echo "🏗️ Rebuild du container..."
+            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            echo "✅ Déploiement terminé"
+          DEPLOY
+
+      - name: ✅ Vérifier le site
+        run: |
+          sleep 10
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.pro)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Site en ligne sur https://venio.pro (HTTP $STATUS)"
           else
-            git fetch --prune
+            echo "⚠️ Le site a répondu avec HTTP $STATUS"
           fi
-          git log --oneline -n 1
-
-      - name: 🔐 Vérifier les secrets et le dossier de build
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
-        run: |
-          missing=0
-          for key in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
-            if [ -z "${!key}" ]; then
-              echo "::error::Secret manquant ou vide: $key"
-              missing=1
-            fi
-          done
-
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
-
-          if [ ! -d "${{ github.workspace }}/dist" ]; then
-            echo "::error::Dossier de build introuvable: ${{ github.workspace }}/dist"
-            exit 1
-          fi
-
-      - name: 🚀 Déployer sur Ionos via SFTP
-        uses: milanmk/actions-file-deployer@master
-        with:
-          remote-protocol: 'sftp'
-          remote-host: ${{ secrets.FTP_SERVER }}
-          remote-user: ${{ secrets.FTP_USERNAME }}
-          remote-password: ${{ secrets.FTP_PASSWORD }}
-          remote-port: 22
-          remote-path: ${{ secrets.FTP_SERVER_DIR }}
-          local-path: ${{ github.workspace }}/dist
-          sync: 'full'
-
-      - name: ✅ Déploiement terminé
-        run: |
-          echo "✅ Site déployé avec succès sur https://venio.pro"
-          echo "🔄 Les modifications peuvent prendre quelques minutes à apparaître"
