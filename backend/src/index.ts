@@ -157,7 +157,7 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 
 mongoose
   .connect(mongoUri)
-  .then(() => {
+  .then(async () => {
     // Ensure main SUPER_ADMIN account exists
     const mainAdmin = await User.findOne({ email: 'gbamelesami102@gmail.com' })
     if (!mainAdmin) {
