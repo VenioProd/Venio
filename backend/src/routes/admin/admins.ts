@@ -6,6 +6,7 @@ import { requireAdmin, requireAnyPermission, requirePermission } from '../../mid
 import User from '../../models/User.js'
 import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
+import { sendAdminCredentials } from '../../lib/email.js'
 
 const router = express.Router()
 
@@ -194,6 +195,32 @@ router.delete('/:userId', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (r
     }
 
     await user.deleteOne()
+    return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// Send credentials by email
+router.post('/:userId/send-credentials', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = req.body || {}
+    if (!password) {
+      return res.status(400).json({ error: 'Le mot de passe est requis pour envoyer les identifiants.' })
+    }
+    const user = await User.findById(req.params.userId)
+    if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      return res.status(404).json({ error: 'Admin not found' })
+    }
+    const result = await sendAdminCredentials({
+      to: user.email,
+      name: user.name,
+      email: user.email,
+      password,
+    })
+    if (!result.sent) {
+      return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
+    }
     return res.json({ success: true })
   } catch (err) {
     return next(err)

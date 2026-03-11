@@ -68,6 +68,11 @@ const AdminNew = () => {
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [createdUser, setCreatedUser] = useState<{ id: string; name: string; email: string; password: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
   const { errors: fieldErrors, validate, validateField } = useFormValidation<AdminFormField>(adminValidationSchema)
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
@@ -110,6 +115,31 @@ const AdminNew = () => {
       .map((permission) => permissionLabels[permission] || permission)
   }, [form.role, customMode, customPermissions, roleDefaults])
 
+  const handleCopyCredentials = async () => {
+    if (!createdUser) return
+    const text = `Identifiants de connexion Venio\n\nEmail : ${createdUser.email}\nMot de passe : ${createdUser.password}\n\nConnexion : ${window.location.origin}/admin/login`
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  const handleSendEmail = async () => {
+    if (!createdUser) return
+    setSending(true)
+    setEmailError('')
+    try {
+      await apiFetch(`/api/admin/admins/${createdUser.id}/send-credentials`, {
+        method: 'POST',
+        body: JSON.stringify({ password: createdUser.password }),
+      })
+      setEmailSent(true)
+    } catch (err: unknown) {
+      setEmailError((err as Error).message || "Erreur lors de l'envoi")
+    } finally {
+      setSending(false)
+    }
+  }
+
   const handleBlur = (field: AdminFormField) => {
     validateField(field, form[field])
   }
@@ -128,12 +158,82 @@ const AdminNew = () => {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      navigate(`/admin/comptes-admin/${data.user._id}`)
+      setCreatedUser({ id: data.user._id, name: form.name, email: form.email, password: form.password })
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur creation admin')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (createdUser) {
+    return (
+      <div className="portal-container">
+        <div className="portal-card">
+          <div className="admin-breadcrumb">
+            <Link to="/admin">Admin</Link>
+            <span>/</span>
+            <Link to="/admin/comptes-admin">Comptes admin</Link>
+            <span>/</span>
+            <span style={{ color: 'var(--text-primary)' }}>Compte cree</span>
+          </div>
+          <h1>Compte cree avec succes</h1>
+        </div>
+
+        <div className="portal-card" style={{ marginTop: 24 }}>
+          <div style={{ padding: '8px 0' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>
+              Le compte de <strong style={{ color: 'var(--text-primary)' }}>{createdUser.name}</strong> a ete cree. Voici ses identifiants de connexion :
+            </p>
+
+            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdUser.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdUser.password}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                className="portal-button"
+                type="button"
+                onClick={handleCopyCredentials}
+                style={{ flex: 1, minWidth: 180 }}
+              >
+                {copied ? 'Copie !' : 'Copier les identifiants'}
+              </button>
+
+              <button
+                className="portal-button secondary"
+                type="button"
+                onClick={handleSendEmail}
+                disabled={sending || emailSent}
+                style={{ flex: 1, minWidth: 180 }}
+              >
+                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
+              </button>
+            </div>
+
+            {emailError && (
+              <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>
+            )}
+
+            <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+              <Link className="portal-button" to={`/admin/comptes-admin/${createdUser.id}`} style={{ textAlign: 'center', flex: 1 }}>
+                Voir le profil
+              </Link>
+              <Link className="portal-button secondary" to="/admin/comptes-admin" style={{ textAlign: 'center', flex: 1 }}>
+                Retour a la liste
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

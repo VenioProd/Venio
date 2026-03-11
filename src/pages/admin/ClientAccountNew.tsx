@@ -59,6 +59,8 @@ const ClientAccountNew = () => {
   })
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [createdClient, setCreatedClient] = useState<{ id: string; name: string; email: string; password: string } | null>(null)
+  const [copied, setCopied] = useState(false)
   const { errors: fieldErrors, validate, validateField } = useFormValidation<ClientFormField>(clientValidationSchema)
 
   useEffect(() => {
@@ -72,6 +74,14 @@ const ClientAccountNew = () => {
     }
     loadAdmins()
   }, [])
+
+  const handleCopyCredentials = async () => {
+    if (!createdClient) return
+    const text = `Identifiants de connexion Venio\n\nEmail : ${createdClient.email}\nMot de passe : ${createdClient.password}\n\nConnexion : ${window.location.origin}/login`
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
 
   const handleBlur = (field: ClientFormField) => {
     validateField(field, form[field])
@@ -99,12 +109,66 @@ const ClientAccountNew = () => {
           .filter(Boolean),
       }
       const data = await createAdminClient(payload) as { client: Client }
-      navigate(`/admin/comptes-clients/${data.client._id}`)
+      setCreatedClient({ id: data.client._id, name: form.name, email: form.email, password: form.password })
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur creation compte')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (createdClient) {
+    return (
+      <div className="portal-container">
+        <div className="portal-card">
+          <div className="admin-breadcrumb">
+            <Link to="/admin">Admin</Link>
+            <span>/</span>
+            <Link to="/admin/comptes-clients">Comptes clients</Link>
+            <span>/</span>
+            <span style={{ color: 'var(--text-primary)' }}>Compte cree</span>
+          </div>
+          <h1>Compte client cree avec succes</h1>
+        </div>
+
+        <div className="portal-card" style={{ marginTop: 24 }}>
+          <div style={{ padding: '8px 0' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>
+              Le compte de <strong style={{ color: 'var(--text-primary)' }}>{createdClient.name}</strong> a ete cree. Voici ses identifiants de connexion :
+            </p>
+
+            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdClient.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdClient.password}</span>
+              </div>
+            </div>
+
+            <button
+              className="portal-button"
+              type="button"
+              onClick={handleCopyCredentials}
+              style={{ width: '100%' }}
+            >
+              {copied ? 'Copie !' : 'Copier les identifiants'}
+            </button>
+
+            <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+              <Link className="portal-button" to={`/admin/comptes-clients/${createdClient.id}`} style={{ textAlign: 'center', flex: 1 }}>
+                Voir le profil
+              </Link>
+              <Link className="portal-button secondary" to="/admin/comptes-clients" style={{ textAlign: 'center', flex: 1 }}>
+                Retour a la liste
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
