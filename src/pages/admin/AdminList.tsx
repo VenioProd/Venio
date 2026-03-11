@@ -31,6 +31,12 @@ const AdminList = () => {
   const [admins, setAdmins] = useState<User[]>([])
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [credentialsModal, setCredentialsModal] = useState<{ admin: User; password: string } | null>(null)
+  const [resetting, setResetting] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +52,57 @@ const AdminList = () => {
 
   const handleDelete = (adminId: string) => {
     setDeleteTarget(adminId)
+  }
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
+    let pwd = ''
+    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
+    return pwd
+  }
+
+  const handleGetCredentials = async (admin: User) => {
+    const newPwd = generatePassword()
+    setResetting(admin._id)
+    setCopied(false)
+    setEmailSent(false)
+    setEmailError('')
+    try {
+      await apiFetch(`/api/admin/admins/${admin._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password: newPwd }),
+      })
+      setCredentialsModal({ admin, password: newPwd })
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erreur reinitialisation')
+    } finally {
+      setResetting(null)
+    }
+  }
+
+  const handleCopyCredentials = async () => {
+    if (!credentialsModal) return
+    const text = `Identifiants de connexion Venio\n\nEmail : ${credentialsModal.admin.email}\nMot de passe : ${credentialsModal.password}\n\nConnexion : ${window.location.origin}/admin/login`
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  const handleSendEmail = async () => {
+    if (!credentialsModal) return
+    setSending(true)
+    setEmailError('')
+    try {
+      await apiFetch(`/api/admin/admins/${credentialsModal.admin._id}/send-credentials`, {
+        method: 'POST',
+        body: JSON.stringify({ password: credentialsModal.password }),
+      })
+      setEmailSent(true)
+    } catch (err: unknown) {
+      setEmailError((err as Error).message || "Erreur lors de l'envoi")
+    } finally {
+      setSending(false)
+    }
   }
 
   const confirmDelete = async () => {
@@ -146,7 +203,16 @@ const AdminList = () => {
                       {roleLabels[admin.role] || admin.role}
                     </span>
                   </div>
-                  <div className="admin-card-actions">
+                  <div className="admin-card-actions" style={{ flexWrap: 'wrap' }}>
+                    <button
+                      className="admin-card-btn admin-card-btn--edit"
+                      type="button"
+                      onClick={() => handleGetCredentials(admin)}
+                      disabled={resetting === admin._id}
+                      style={{ flex: '1 1 100%' }}
+                    >
+                      {resetting === admin._id ? 'Generation...' : 'Identifiants'}
+                    </button>
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
                       Modifier
                     </Link>
@@ -176,6 +242,39 @@ const AdminList = () => {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {credentialsModal && (
+        <div className="confirm-modal-overlay" onClick={() => setCredentialsModal(null)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <h2 className="confirm-modal__title">Identifiants de {credentialsModal.admin.name}</h2>
+            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', margin: '16px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{credentialsModal.admin.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
+                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{credentialsModal.password}</span>
+              </div>
+            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 16px' }}>
+              Le mot de passe a ete reinitialise. Copiez-le ou envoyez-le par email.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className="confirm-modal__btn confirm-modal__btn--confirm" type="button" onClick={handleCopyCredentials} style={{ flex: 1 }}>
+                {copied ? 'Copie !' : 'Copier'}
+              </button>
+              <button className="confirm-modal__btn confirm-modal__btn--confirm" type="button" onClick={handleSendEmail} disabled={sending || emailSent} style={{ flex: 1 }}>
+                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
+              </button>
+              <button className="confirm-modal__btn confirm-modal__btn--cancel" type="button" onClick={() => setCredentialsModal(null)} style={{ flex: '1 1 100%' }}>
+                Fermer
+              </button>
+            </div>
+            {emailError && <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
