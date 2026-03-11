@@ -79,11 +79,67 @@ const ClientAccountDetail = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [saving, setSaving] = useState<boolean>(false)
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [resetting, setResetting] = useState(false)
 
   const [contactDraft, setContactDraft] = useState<ContactDraft>({ firstName: '', lastName: '', email: '', phone: '' })
   const [noteDraft, setNoteDraft] = useState<string>('')
 
   const canArchive = user?.role === 'SUPER_ADMIN'
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
+    let pwd = ''
+    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
+    return pwd
+  }
+
+  const handleResetClientPassword = async () => {
+    const newPwd = generatePassword()
+    setResetting(true)
+    setEmailSent(false)
+    setEmailError('')
+    try {
+      await apiFetch(`/api/admin/clients/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password: newPwd }),
+      })
+      setGeneratedPassword(newPwd)
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erreur reinitialisation')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  const handleCopyClientCredentials = async () => {
+    if (!client || !generatedPassword) return
+    const text = `Identifiants de connexion Venio\n\nEmail : ${client.email}\nMot de passe : ${generatedPassword}\n\nConnexion : ${window.location.origin}/login`
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  const handleSendClientEmail = async () => {
+    if (!generatedPassword) return
+    setSending(true)
+    setEmailError('')
+    try {
+      await apiFetch(`/api/admin/clients/${userId}/send-credentials`, {
+        method: 'POST',
+        body: JSON.stringify({ password: generatedPassword }),
+      })
+      setEmailSent(true)
+    } catch (err: unknown) {
+      setEmailError((err as Error).message || "Erreur lors de l'envoi")
+    } finally {
+      setSending(false)
+    }
+  }
 
   const loadAll = async () => {
     setLoading(true)
@@ -596,6 +652,44 @@ const ClientAccountDetail = () => {
               </div>
             )}
           </>
+        )}
+      </div>
+
+      <div className="portal-card" style={{ marginTop: 24 }}>
+        <h2 style={{ fontSize: 16, marginBottom: 16 }}>Identifiants de connexion</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+          Generez un nouveau mot de passe pour ce client. Vous pourrez ensuite le copier ou l'envoyer par email.
+        </p>
+
+        {generatedPassword ? (
+          <>
+            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{client?.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nouveau mot de passe</span>
+                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{generatedPassword}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button className="portal-button" type="button" onClick={handleCopyClientCredentials} style={{ flex: 1, minWidth: 160 }}>
+                {copied ? 'Copie !' : 'Copier les identifiants'}
+              </button>
+              <button className="portal-button secondary" type="button" onClick={handleSendClientEmail} disabled={sending || emailSent} style={{ flex: 1, minWidth: 160 }}>
+                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
+              </button>
+              <button className="portal-button secondary" type="button" onClick={handleResetClientPassword} disabled={resetting} style={{ flex: 1, minWidth: 160 }}>
+                {resetting ? 'Generation...' : 'Regenerer'}
+              </button>
+            </div>
+            {emailError && <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>}
+          </>
+        ) : (
+          <button className="portal-button" type="button" onClick={handleResetClientPassword} disabled={resetting}>
+            {resetting ? 'Generation...' : 'Generer un nouveau mot de passe'}
+          </button>
         )}
       </div>
     </div>

@@ -5,6 +5,7 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS, ADMIN_ROLES } from '../../lib/permissions.js'
+import { sendAdminCredentials } from '../../lib/email.js'
 import User from '../../models/User.js'
 import Project from '../../models/Project.js'
 import ProjectItem from '../../models/ProjectItem.js'
@@ -897,6 +898,32 @@ router.get('/:id/billing/documents', requirePermission(PERMISSIONS.VIEW_BILLING)
       .lean()
 
     return ok(res, { documents })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// Reset password and/or send credentials by email
+router.post('/:id/send-credentials', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = req.body || {}
+    if (!password) {
+      return res.status(400).json({ error: 'Le mot de passe est requis.' })
+    }
+    const client = await User.findById(req.params.id)
+    if (!client || client.role !== 'CLIENT') {
+      return res.status(404).json({ error: 'Client not found' })
+    }
+    const result = await sendAdminCredentials({
+      to: client.email,
+      name: client.name,
+      email: client.email,
+      password,
+    })
+    if (!result.sent) {
+      return res.status(500).json({ error: result.error || "Erreur lors de l'envoi." })
+    }
+    return res.json({ success: true })
   } catch (err) {
     return next(err)
   }
