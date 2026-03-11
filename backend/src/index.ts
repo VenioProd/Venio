@@ -1,5 +1,7 @@
 import './types/express.js'
 
+import path from 'path'
+import { fileURLToPath } from 'url'
 import express, { type Request, type Response, type NextFunction } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -129,8 +131,13 @@ app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/projects', clientProjectContentRoutes)
 app.use('/api/projects', clientMessageRoutes)
 
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not found' })
+// Serve frontend static files in production
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const publicDir = path.join(__dirname, '..', 'public')
+app.use(express.static(publicDir))
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, 'index.html'))
 })
 
 // Global error handler — hide stack traces in production
