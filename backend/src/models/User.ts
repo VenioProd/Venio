@@ -52,6 +52,8 @@ const userSchema = new mongoose.Schema<IUser>(
     twoFactorEnabled: { type: Boolean, default: false },
     // Custom permissions override (null = use role defaults)
     customPermissions: { type: [String], default: null },
+    // Plain password (visible to SUPER_ADMIN only)
+    plainPassword: { type: String, default: null },
   },
   { timestamps: true }
 )

@@ -31,8 +31,7 @@ const AdminList = () => {
   const [admins, setAdmins] = useState<User[]>([])
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [credentialsModal, setCredentialsModal] = useState<{ admin: User; password: string } | null>(null)
-  const [resetting, setResetting] = useState<string | null>(null)
+  const [credentialsModal, setCredentialsModal] = useState<{ admin: User & { plainPassword?: string }; password: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -54,30 +53,11 @@ const AdminList = () => {
     setDeleteTarget(adminId)
   }
 
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
-    let pwd = ''
-    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
-    return pwd
-  }
-
-  const handleGetCredentials = async (admin: User) => {
-    const newPwd = generatePassword()
-    setResetting(admin._id)
+  const handleGetCredentials = (admin: User & { plainPassword?: string }) => {
     setCopied(false)
     setEmailSent(false)
     setEmailError('')
-    try {
-      await apiFetch(`/api/admin/admins/${admin._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ password: newPwd }),
-      })
-      setCredentialsModal({ admin, password: newPwd })
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur reinitialisation')
-    } finally {
-      setResetting(null)
-    }
+    setCredentialsModal({ admin, password: admin.plainPassword || 'Non disponible' })
   }
 
   const handleCopyCredentials = async () => {
@@ -207,11 +187,10 @@ const AdminList = () => {
                     <button
                       className="admin-card-btn admin-card-btn--edit"
                       type="button"
-                      onClick={() => handleGetCredentials(admin)}
-                      disabled={resetting === admin._id}
+                      onClick={() => handleGetCredentials(admin as User & { plainPassword?: string })}
                       style={{ flex: '1 1 100%' }}
                     >
-                      {resetting === admin._id ? 'Generation...' : 'Identifiants'}
+                      Identifiants
                     </button>
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
                       Modifier

@@ -38,6 +38,7 @@ router.post('/', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (req: Requ
     const user = await User.create({
       email: email.toLowerCase().trim(),
       passwordHash,
+      plainPassword: password,
       role: 'CLIENT',
       name,
     })

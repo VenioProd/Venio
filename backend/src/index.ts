@@ -165,6 +165,7 @@ mongoose
       await User.create({
         email: 'gbamelesami102@gmail.com',
         passwordHash,
+        plainPassword: 'Venio@2026!',
         role: 'SUPER_ADMIN',
         name: 'Marie-Blanche',
       })

@@ -41,12 +41,11 @@ const AdminEdit = () => {
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+  const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [emailError, setEmailError] = useState('')
-  const [resetting, setResetting] = useState(false)
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
   const roleDefaults = useMemo(() => getPermissionsForRole(form.role), [form.role])
@@ -57,6 +56,7 @@ const AdminEdit = () => {
         const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`)
         const u = data.user
         setAdmin(u)
+        setStoredPassword((u as any).plainPassword || null)
         setForm({ name: u.name || '', role: u.role || 'ADMIN', password: '' })
         // Initialize custom permissions from server
         if (Array.isArray((u as any).customPermissions) && (u as any).customPermissions.length > 0) {
@@ -83,47 +83,22 @@ const AdminEdit = () => {
     )
   }
 
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
-    let pwd = ''
-    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
-    return pwd
-  }
-
-  const handleResetPassword = async () => {
-    const newPwd = generatePassword()
-    setResetting(true)
-    setEmailSent(false)
-    setEmailError('')
-    try {
-      await apiFetch(`/api/admin/admins/${userId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ password: newPwd }),
-      })
-      setGeneratedPassword(newPwd)
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur reinitialisation')
-    } finally {
-      setResetting(false)
-    }
-  }
-
   const handleCopyCredentials = async () => {
-    if (!admin || !generatedPassword) return
-    const text = `Identifiants de connexion Venio\n\nEmail : ${admin.email}\nMot de passe : ${generatedPassword}\n\nConnexion : ${window.location.origin}/admin/login`
+    if (!admin || !storedPassword) return
+    const text = `Identifiants de connexion Venio\n\nEmail : ${admin.email}\nMot de passe : ${storedPassword}\n\nConnexion : ${window.location.origin}/admin/login`
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
   }
 
   const handleSendEmail = async () => {
-    if (!generatedPassword) return
+    if (!storedPassword) return
     setSending(true)
     setEmailError('')
     try {
       await apiFetch(`/api/admin/admins/${userId}/send-credentials`, {
         method: 'POST',
-        body: JSON.stringify({ password: generatedPassword }),
+        body: JSON.stringify({ password: storedPassword }),
       })
       setEmailSent(true)
     } catch (err: unknown) {
@@ -150,6 +125,7 @@ const AdminEdit = () => {
         body: JSON.stringify(payload),
       })
       setAdmin(data.user)
+      if (form.password) setStoredPassword(form.password)
       setForm((prev) => ({ ...prev, password: '' }))
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur mise à jour admin')
@@ -295,11 +271,8 @@ const AdminEdit = () => {
 
       <div className="portal-card" style={{ marginTop: 24 }}>
         <h2 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-primary)' }}>Identifiants de connexion</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-          Generez un nouveau mot de passe pour cet administrateur. Vous pourrez ensuite le copier ou l'envoyer par email.
-        </p>
 
-        {generatedPassword ? (
+        {storedPassword ? (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
               <div style={{
@@ -314,7 +287,7 @@ const AdminEdit = () => {
                 border: '1px solid rgba(14,165,233,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Mot de passe</span>
-                <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.05em' }}>{generatedPassword}</span>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.05em' }}>{storedPassword}</span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -339,30 +312,13 @@ const AdminEdit = () => {
               >
                 {emailSent ? 'Envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
               </button>
-              <button
-                type="button" onClick={handleResetPassword} disabled={resetting}
-                style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
-                  fontWeight: 500, fontSize: 13,
-                }}
-              >
-                {resetting ? 'Generation...' : 'Regenerer'}
-              </button>
             </div>
             {emailError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 10 }}>{emailError}</p>}
           </>
         ) : (
-          <button
-            type="button" onClick={handleResetPassword} disabled={resetting}
-            style={{
-              padding: '12px 24px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
-              fontWeight: 600, fontSize: 13, letterSpacing: '0.03em',
-            }}
-          >
-            {resetting ? 'Generation...' : 'Generer un nouveau mot de passe'}
-          </button>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
+            Le mot de passe n'est pas disponible. Modifiez-le via le champ ci-dessus pour le mettre a jour.
+          </p>
         )}
       </div>
     </div>

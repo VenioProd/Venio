@@ -149,6 +149,7 @@ router.post(
       }
 
       user.passwordHash = await bcrypt.hash(newPassword, 10)
+      user.plainPassword = newPassword
       await user.save()
 
       AuditLog.create({ userId: user._id, email: user.email, action: 'PASSWORD_CHANGED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
@@ -184,6 +185,7 @@ router.post(
       const admin = await User.create({
         email: email.toLowerCase().trim(),
         passwordHash,
+        plainPassword: password,
         role: 'SUPER_ADMIN',
         name,
       })

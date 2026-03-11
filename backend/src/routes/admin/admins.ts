@@ -81,6 +81,7 @@ router.post(
     const user = await User.create({
       email: normalizedEmail,
       passwordHash,
+      plainPassword: password,
       role: nextRole,
       name,
       customPermissions,
@@ -154,6 +155,7 @@ router.patch(
     }
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10)
+      user.plainPassword = password
     }
 
     // Custom permissions (SUPER_ADMIN only)
