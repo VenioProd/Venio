@@ -21,7 +21,7 @@ async function countSuperAdmins(): Promise<number> {
 
 router.get(
   '/',
-  requireAnyPermission([PERMISSIONS.MANAGE_ADMINS, PERMISSIONS.VIEW_CRM]),
+  requireAnyPermission([PERMISSIONS.MANAGE_ADMINS, PERMISSIONS.VIEW_CRM, PERMISSIONS.MANAGE_QUALIOPI]),
   async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find(adminFilter).select('-passwordHash').sort({ createdAt: -1 })
