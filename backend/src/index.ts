@@ -190,7 +190,19 @@ mongoose
       /@demo\.local$/,
       /@venio-fictif\.local$/,
     ]
-    const testClientExact = ['demo@venio.com']
+    const testClientExact = [
+      'demo@venio.com',
+      't.bernard@agencelumiere.com',
+      'c.roux@ecosolutions.eu',
+      'marie.dupont@techvision.fr',
+      'julie@startupflow.io',
+      'p.lefebvre@maisonverte.fr',
+      'sophie@digitalfirst.co',
+      'lucas@studionord.fr',
+      'n.simon@datadrive.io',
+      'emma@artetcie.com',
+      'a.girard@scaleuplab.com',
+    ]
 
     // Find all test users
     const testAdmins = await User.find({ email: { $in: testAdminEmails } })
@@ -226,6 +238,18 @@ mongoose
       await LeadActivity.deleteMany({ leadId: { $in: leadIds } })
       const deletedLeads = await Lead.deleteMany({ _id: { $in: leadIds } })
       console.log(`🧹 Cleaned up ${deletedLeads.deletedCount} demo lead(s)`)
+    }
+
+    // Delete any remaining fictional projects (from seedClientProjects)
+    const fictionalProjects = await Project.deleteMany({
+      $or: [
+        { internalNotes: { $regex: /fictif/i } },
+        { internalNotes: { $regex: /seed/i } },
+        { projectNumber: { $regex: /^PROJ-DEMO-/ } },
+      ],
+    })
+    if (fictionalProjects.deletedCount > 0) {
+      console.log(`🧹 Cleaned up ${fictionalProjects.deletedCount} fictional project(s)`)
     }
   })
   .then(() => {
