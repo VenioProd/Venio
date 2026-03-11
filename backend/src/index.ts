@@ -43,6 +43,10 @@ import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
+import Project from './models/Project.js'
+import Lead from './models/Lead.js'
+import LeadActivity from './models/LeadActivity.js'
+import ClientActivity from './models/ClientActivity.js'
 import { startScheduler } from './lib/crmScheduler.js'
 
 dotenv.config()
@@ -173,6 +177,55 @@ mongoose
     } else if (mainAdmin.role !== 'SUPER_ADMIN') {
       mainAdmin.role = 'SUPER_ADMIN'
       await mainAdmin.save()
+    }
+
+    // Cleanup fictional/test data
+    const testAdminEmails = [
+      'hugo@venio.paris',
+      'ines@venio.paris',
+      'maxime@venio.paris',
+    ]
+    // Demo client emails from seed scripts
+    const testClientPatterns = [
+      /@demo\.local$/,
+      /@venio-fictif\.local$/,
+    ]
+    const testClientExact = ['demo@venio.com']
+
+    // Find all test users
+    const testAdmins = await User.find({ email: { $in: testAdminEmails } })
+    const testClients = await User.find({
+      $or: [
+        { email: { $in: testClientExact } },
+        { email: { $regex: '@demo\\.local$' } },
+        { email: { $regex: '@venio-fictif\\.local$' } },
+      ],
+    })
+    const allTestUsers = [...testAdmins, ...testClients]
+    const allTestUserIds = allTestUsers.map((u) => u._id)
+
+    if (allTestUserIds.length > 0) {
+      // Delete projects belonging to test clients
+      const deletedProjects = await Project.deleteMany({ client: { $in: allTestUserIds } })
+      // Delete client activities
+      await ClientActivity.deleteMany({ clientId: { $in: allTestUserIds } })
+      // Delete the test users
+      const deletedUsers = await User.deleteMany({ _id: { $in: allTestUserIds } })
+      console.log(`🧹 Cleaned up ${deletedUsers.deletedCount} test account(s), ${deletedProjects.deletedCount} project(s)`)
+    }
+
+    // Delete demo leads (from seedDemoData)
+    const demoLeadCompanies = [
+      'TechVision SAS', 'Agence Lumière', 'Startup Flow', 'Maison Verte',
+      'Digital First', 'Studio Nord', 'Eco Solutions', 'DataDrive',
+      'Art & Cie', 'Scale Up Lab',
+    ]
+    const demoLeads = await Lead.find({ company: { $in: demoLeadCompanies } })
+    if (demoLeads.length > 0) {
+      const leadIds = demoLeads.map((l) => l._id)
+      await LeadActivity.deleteMany({ leadId: { $in: leadIds } })
+      const deletedLeads = await Lead.deleteMany({ _id: { $in: leadIds } })
+      console.log(`🧹 Cleaned up ${deletedLeads.deletedCount} demo lead(s)`)
     }
   })
   .then(() => {
