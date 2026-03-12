@@ -43,7 +43,7 @@ jobs:
             if ! grep -q "proxy_pass" "$NGINX_CONF" 2>/dev/null; then
               echo "🔧 Mise a jour Nginx: proxy vers Docker port 4000..."
               cp nginx/venio.pro.conf "$NGINX_CONF"
-              nginx -t && systemctl reload nginx
+              nginx -t && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || true)
               echo "✅ Nginx mis a jour"
             fi
 
