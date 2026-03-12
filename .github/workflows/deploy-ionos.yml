@@ -40,19 +40,20 @@ jobs:
 
             # Ensure Nginx proxies to Docker container
             NGINX_CONF="/etc/nginx/sites-available/venio.pro"
-            echo "🔧 Mise a jour Nginx config..."
             cp nginx/venio.pro.conf "$NGINX_CONF"
-            nginx -t
-            # Try all known ways to reload nginx
-            systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || killall -HUP nginx 2>/dev/null || true
-            echo "✅ Nginx config applied"
-            # Debug: show what processes listen on 8200
-            ss -tlnp | grep 8200 || echo "Nothing listening on 8200"
-            echo "=== Curl port 8200 ==="
-            curl -s -o /dev/null -w "localhost:8200 => HTTP %{http_code}\n" http://localhost:8200/ || true
-            curl -s http://localhost:8200/ | head -5 || true
-            echo "=== Docker compose config ==="
-            cat docker-compose.prod.yml 2>/dev/null || echo "No docker-compose.prod.yml"
+            # Find and reload OpenClaw's nginx (runs in Docker, not systemd)
+            NGINX_CONTAINER=$(docker ps --format '{{.Names}}' | grep -i nginx | head -1)
+            if [ -n "$NGINX_CONTAINER" ]; then
+              echo "🔧 Reloading nginx in container: $NGINX_CONTAINER"
+              docker exec "$NGINX_CONTAINER" nginx -t && docker exec "$NGINX_CONTAINER" nginx -s reload
+              echo "✅ Nginx reloaded"
+            else
+              echo "⚠️ No nginx container found, trying host nginx..."
+              nginx -t 2>/dev/null && (killall -HUP nginx 2>/dev/null || true)
+            fi
+            # Debug
+            echo "=== All containers ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -20
 
             echo "✅ Déploiement terminé"
           DEPLOY
