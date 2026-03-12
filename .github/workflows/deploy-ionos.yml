@@ -39,37 +39,15 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --force-recreate
 
             # Ensure Nginx proxies to Docker container
-            NGINX_CONF="/etc/nginx/sites-available/venio.pro"
-            cp nginx/venio.pro.conf "$NGINX_CONF"
-            # Find and reload OpenClaw's nginx (runs in Docker, not systemd)
-            NGINX_CONTAINER=$(docker ps --format '{{.Names}}' | grep -i nginx | head -1)
-            if [ -n "$NGINX_CONTAINER" ]; then
-              echo "🔧 Reloading nginx in container: $NGINX_CONTAINER"
-              docker exec "$NGINX_CONTAINER" nginx -t && docker exec "$NGINX_CONTAINER" nginx -s reload
-              echo "✅ Nginx reloaded"
-            else
-              echo "⚠️ No nginx container found, trying host nginx..."
-              nginx -t 2>/dev/null && (killall -HUP nginx 2>/dev/null || true)
-            fi
-            # Debug
-            echo "=== All containers ==="
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -20
+            cp nginx/venio.pro.conf /etc/nginx/sites-available/venio.pro
+            killall -HUP nginx 2>/dev/null || true
 
             echo "✅ Déploiement terminé"
           DEPLOY
 
-      - name: 📋 Logs du container
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'LOGS'
-            sleep 10
-            echo "=== Container status ==="
-            docker ps -a --filter name=venio --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "=== Last 30 lines ==="
-            docker logs venio --tail 30 2>&1
-          LOGS
-
       - name: ✅ Vérifier le site
         run: |
+          sleep 15
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.pro)
           if [ "$STATUS" = "200" ]; then
             echo "✅ Site en ligne sur https://venio.pro (HTTP $STATUS)"
