@@ -38,14 +38,16 @@ jobs:
             docker compose -f docker-compose.prod.yml build --no-cache
             docker compose -f docker-compose.prod.yml up -d --force-recreate
 
-            # Fix Nginx: copy proxy config from repo if needed
+            # Ensure Nginx proxies to Docker container
             NGINX_CONF="/etc/nginx/sites-available/venio.pro"
-            if ! grep -q "proxy_pass" "$NGINX_CONF" 2>/dev/null; then
-              echo "🔧 Mise a jour Nginx: proxy vers Docker port 4000..."
-              cp nginx/venio.pro.conf "$NGINX_CONF"
-              nginx -t && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || true)
-              echo "✅ Nginx mis a jour"
-            fi
+            echo "🔧 Mise a jour Nginx config..."
+            cp nginx/venio.pro.conf "$NGINX_CONF"
+            nginx -t
+            # Try all known ways to reload nginx
+            systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || killall -HUP nginx 2>/dev/null || true
+            echo "✅ Nginx config applied"
+            # Debug: show what processes listen on 8200
+            ss -tlnp | grep 8200 || echo "Nothing listening on 8200"
 
             echo "✅ Déploiement terminé"
           DEPLOY
