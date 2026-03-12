@@ -48,6 +48,11 @@ jobs:
             echo "✅ Nginx config applied"
             # Debug: show what processes listen on 8200
             ss -tlnp | grep 8200 || echo "Nothing listening on 8200"
+            echo "=== Curl port 8200 ==="
+            curl -s -o /dev/null -w "localhost:8200 => HTTP %{http_code}\n" http://localhost:8200/ || true
+            curl -s http://localhost:8200/ | head -5 || true
+            echo "=== Docker compose config ==="
+            cat docker-compose.prod.yml 2>/dev/null || echo "No docker-compose.prod.yml"
 
             echo "✅ Déploiement terminé"
           DEPLOY
