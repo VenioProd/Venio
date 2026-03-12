@@ -39,9 +39,18 @@ jobs:
             echo "✅ Déploiement terminé"
           DEPLOY
 
+      - name: 📋 Logs du container
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'LOGS'
+            sleep 15
+            echo "=== Docker container status ==="
+            docker ps -a --filter name=venio --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "=== Last 80 lines of logs ==="
+            docker logs venio --tail 80 2>&1
+          LOGS
+
       - name: ✅ Vérifier le site
         run: |
-          sleep 10
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.pro)
           if [ "$STATUS" = "200" ]; then
             echo "✅ Site en ligne sur https://venio.pro (HTTP $STATUS)"
