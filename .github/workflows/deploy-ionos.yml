@@ -47,6 +47,12 @@ jobs:
             docker ps -a --filter name=venio --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             echo "=== Last 80 lines of logs ==="
             docker logs venio --tail 80 2>&1
+            echo "=== Public dir contents ==="
+            docker exec venio ls -la /app/public/ 2>&1 | head -20
+            echo "=== Health check ==="
+            docker exec venio wget -qO- http://localhost:4000/api/health 2>&1 || true
+            echo "=== Curl from host ==="
+            curl -s -o /dev/null -w "localhost:4000 => HTTP %{http_code}\n" http://localhost:4000/ || true
           LOGS
 
       - name: ✅ Vérifier le site
