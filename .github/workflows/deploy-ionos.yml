@@ -53,6 +53,12 @@ jobs:
             docker exec venio wget -qO- http://localhost:4000/api/health 2>&1 || true
             echo "=== Curl from host ==="
             curl -s -o /dev/null -w "localhost:4000 => HTTP %{http_code}\n" http://localhost:4000/ || true
+            echo "=== Nginx config for venio ==="
+            cat /etc/nginx/sites-enabled/venio* 2>/dev/null || cat /etc/nginx/conf.d/venio* 2>/dev/null || echo "No venio nginx config found"
+            echo "=== Nginx default config ==="
+            grep -r "venio\|4000\|3000" /etc/nginx/ 2>/dev/null | head -20 || true
+            echo "=== Nginx status ==="
+            nginx -t 2>&1 || true
           LOGS
 
       - name: ✅ Vérifier le site
