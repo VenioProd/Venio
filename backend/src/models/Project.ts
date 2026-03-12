@@ -34,6 +34,7 @@ const projectSchema = new mongoose.Schema<IProject>(
       default: 'NORMALE',
     },
     responsible: { type: String, default: '' },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     internalNotes: { type: String, default: '' },
     isArchived: { type: Boolean, default: false },
     tags: { type: [String], default: [] },

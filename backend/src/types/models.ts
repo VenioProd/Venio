@@ -79,6 +79,7 @@ export interface IProject extends Document {
   projectNumber: string
   priority: ProjectPriority
   responsible: string
+  assignedTo: Types.ObjectId | null
   internalNotes: string
   isArchived: boolean
   tags: string[]

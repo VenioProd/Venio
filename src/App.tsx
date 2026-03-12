@@ -53,6 +53,7 @@ const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
 const TicketList = lazy(() => import('./pages/admin/TicketList'))
 const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
+const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function App() {
@@ -277,6 +278,14 @@ function App() {
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <TicketList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/acces-outils"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <ToolAccessList />
             </ProtectedRoute>
           }
         />

@@ -39,6 +39,7 @@ import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
+import adminToolAccessRoutes from './routes/admin/toolAccess.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import bcrypt from 'bcryptjs'
@@ -131,6 +132,7 @@ app.use('/api/questionnaire', publicQuestionnaireRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
+app.use('/api/admin/tool-access', adminToolAccessRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

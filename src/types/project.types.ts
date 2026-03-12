@@ -17,6 +17,7 @@ export interface Project {
   deliveredAt?: string
   priority?: string
   responsible?: string
+  assignedTo?: { _id: string; name: string; email: string } | null
   summary?: string
   internalNotes?: string
   serviceTypes?: string[]

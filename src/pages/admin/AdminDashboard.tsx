@@ -219,6 +219,12 @@ const AdminDashboard = () => {
               <span className="portal-action-label">Tickets</span>
             </Link>
             )}
+            <Link className="portal-button portal-action-link" to="/admin/acces-outils" title="Acces outils">
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              </span>
+              <span className="portal-action-label">Outils</span>
+            </Link>
             <Link className="portal-profile-btn" to="/admin/profil" title="Mon profil">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
             </Link>
@@ -532,7 +538,7 @@ const AdminDashboard = () => {
                               </div>
                             )}
                             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
-                              {project.responsible && <span>Responsable : <strong>{project.responsible}</strong></span>}
+                              {(project.assignedTo?.name || project.responsible) && <span>Responsable : <strong>{project.assignedTo?.name || project.responsible}</strong></span>}
                               {project.priority && <span>Priorite : <strong style={{ color: PRIORITY_COLORS[project.priority] }}>{project.priority}</strong></span>}
                               {project.startDate && <span>Debut : <strong>{new Date(project.startDate).toLocaleDateString('fr-FR')}</strong></span>}
                               {project.endDate && <span>Fin : <strong>{new Date(project.endDate).toLocaleDateString('fr-FR')}</strong></span>}
@@ -630,7 +636,7 @@ const AdminDashboard = () => {
                             </td>
                             <td><span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span></td>
                             <td>{project.priority || '--'}</td>
-                            <td>{project.responsible || '--'}</td>
+                            <td>{project.assignedTo?.name || project.responsible || '--'}</td>
                             <td>
                               {project.budget?.amount != null ? `${Number(project.budget.amount).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}` : '--'}
                             </td>

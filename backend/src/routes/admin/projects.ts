@@ -61,17 +61,18 @@ router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Reques
       filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
     }
 
-    // Non-SUPER_ADMIN : seulement les projets où l'utilisateur a des tâches ou briefs
+    // Non-SUPER_ADMIN : projets assignés directement, ou via tâches/briefs
     if (user.role !== 'SUPER_ADMIN') {
-      const [taskProjectIds, briefProjectIds] = await Promise.all([
+      const [taskProjectIds, briefProjectIds, assignedProjectIds] = await Promise.all([
         Task.distinct('project', { assignee: user.id }),
         MissionBrief.distinct('project', { destinataire: user.id }),
+        Project.distinct('_id', { assignedTo: user.id }),
       ])
-      const allProjectIds = [...new Set([...taskProjectIds.map(String), ...briefProjectIds.map(String)])]
+      const allProjectIds = [...new Set([...taskProjectIds.map(String), ...briefProjectIds.map(String), ...assignedProjectIds.map(String)])]
       filter._id = { $in: allProjectIds }
     }
 
-    const query = Project.find(filter).sort({ updatedAt: -1 })
+    const query = Project.find(filter).sort({ updatedAt: -1 }).populate('assignedTo', 'name email')
     if (req.query.includeClient === 'true') {
       query.populate('client', 'name email')
     }
@@ -84,7 +85,7 @@ router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Reques
 
 router.get('/:id', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const project = await Project.findById(req.params.id)
+    const project = await Project.findById(req.params.id).populate('assignedTo', 'name email')
     if (!project) {
       return res.status(404).json({ error: 'Project not found' })
     }
@@ -160,6 +161,7 @@ function normalizeOptions(body: Record<string, any>): Record<string, any> {
   if (body.projectNumber !== undefined) opts.projectNumber = typeof body.projectNumber === 'string' ? body.projectNumber : ''
   if (body.priority !== undefined && ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'].includes(body.priority)) opts.priority = body.priority
   if (body.responsible !== undefined) opts.responsible = typeof body.responsible === 'string' ? body.responsible : ''
+  if (body.assignedTo !== undefined) opts.assignedTo = body.assignedTo || null
   if (body.internalNotes !== undefined) opts.internalNotes = typeof body.internalNotes === 'string' ? body.internalNotes : ''
   if (body.isArchived !== undefined) opts.isArchived = Boolean(body.isArchived)
   if (Array.isArray(body.tags)) opts.tags = body.tags.filter((s: unknown) => typeof s === 'string' && (s as string).trim())
@@ -234,6 +236,7 @@ router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: R
     if (body.projectNumber !== undefined) update.projectNumber = options.projectNumber !== undefined ? options.projectNumber : body.projectNumber
     if (body.priority !== undefined) update.priority = options.priority !== undefined ? options.priority : body.priority
     if (body.responsible !== undefined) update.responsible = options.responsible !== undefined ? options.responsible : body.responsible
+    if (body.assignedTo !== undefined) update.assignedTo = body.assignedTo || null
     if (body.internalNotes !== undefined) update.internalNotes = options.internalNotes !== undefined ? options.internalNotes : body.internalNotes
     if (body.isArchived !== undefined) update.isArchived = options.isArchived !== undefined ? options.isArchived : body.isArchived
     if (body.tags !== undefined) update.tags = options.tags !== undefined ? options.tags : body.tags

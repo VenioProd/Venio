@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import type { Project, ProjectDocument, ProjectUpdate, ProjectSection, ProjectItem, ProjectBudget, ProjectBilling } from '../../types/project.types'
 import type { BillingDocument } from '../../types/client.types'
+import type { AdminUser } from '../../types/crm.types'
 import TaskBoard from '../../components/admin/TaskBoard'
 import ActivityTimeline from '../../components/admin/ActivityTimeline'
 import ProjectChat from '../../components/admin/ProjectChat'
@@ -52,6 +53,7 @@ const AdminProjectDetail = () => {
     deliveredAt: string
     priority: string
     responsible: string
+    assignedTo: string
     summary: string
     internalNotes: string
     serviceTypes: string[]
@@ -72,6 +74,7 @@ const AdminProjectDetail = () => {
     deliveredAt: '',
     priority: 'NORMALE',
     responsible: '',
+    assignedTo: '',
     summary: '',
     internalNotes: '',
     serviceTypes: [],
@@ -100,6 +103,7 @@ const AdminProjectDetail = () => {
     status: 'EN_ATTENTE',
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [admins, setAdmins] = useState<AdminUser[]>([])
   const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([])
   const [error, setError] = useState<string>('')
   const [activeTab, setActiveTab] = useTabState('content')
@@ -198,6 +202,11 @@ const AdminProjectDetail = () => {
       setSections(sectionsRes.sections || [])
       setItems(itemsRes.items || [])
       setBillingDocuments(billingRes.documents || [])
+      // Load admins for assignedTo dropdown
+      try {
+        const adminsData = await apiFetch<{ users?: AdminUser[] }>('/api/admin/admins')
+        setAdmins(adminsData.users || [])
+      } catch { setAdmins([]) }
       if (projectRes.project) {
         const p = projectRes.project
         const deadlines = (p.deadlines || []).map((d) => ({
@@ -228,6 +237,7 @@ const AdminProjectDetail = () => {
           deliveredAt: p.deliveredAt ? (typeof p.deliveredAt === 'string' ? p.deliveredAt.slice(0, 10) : new Date(p.deliveredAt).toISOString().slice(0, 10)) : '',
           priority: p.priority || 'NORMALE',
           responsible: p.responsible || '',
+          assignedTo: (p as any).assignedTo?._id || (p as any).assignedTo || '',
           summary: p.summary || '',
           internalNotes: p.internalNotes || '',
           serviceTypes: Array.isArray(p.serviceTypes) ? p.serviceTypes : [],
@@ -264,6 +274,7 @@ const AdminProjectDetail = () => {
         deliveredAt: form.deliveredAt ? new Date(form.deliveredAt).toISOString() : null,
         priority: form.priority || 'NORMALE',
         responsible: form.responsible || '',
+        assignedTo: form.assignedTo || null,
         summary: form.summary || '',
         internalNotes: form.internalNotes || '',
         serviceTypes: form.serviceTypes || [],
@@ -827,13 +838,13 @@ const AdminProjectDetail = () => {
 
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                Responsable projet
+                Responsable projet (admin assigne)
               </label>
-              <input
+              <CustomSelect
                 className="portal-input"
-                placeholder="Nom du responsable"
-                value={form.responsible ?? ''}
-                onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                value={form.assignedTo}
+                onChange={(v) => setForm({ ...form, assignedTo: v })}
+                options={[{ value: '', label: 'Non assigne' }, ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.role})` }))]}
               />
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
+import type { AdminUser } from '../../types/crm.types'
 import {
   formatCurrency,
   parseCurrency,
@@ -33,6 +34,7 @@ const ProjectForm = () => {
     deliveredAt: string
     priority: string
     responsible: string
+    assignedTo: string
     summary: string
     internalNotes: string
     serviceTypes: string[]
@@ -54,6 +56,7 @@ const ProjectForm = () => {
     deliveredAt: '',
     priority: 'NORMALE',
     responsible: '',
+    assignedTo: '',
     summary: '',
     internalNotes: '',
     serviceTypes: [],
@@ -69,17 +72,20 @@ const ProjectForm = () => {
   const [deliverableTypeInput, setDeliverableTypeInput] = useState<string>('')
   const [tagInput, setTagInput] = useState<string>('')
   const [templates, setTemplates] = useState<ProjectTemplate[]>([])
+  const [admins, setAdmins] = useState<AdminUser[]>([])
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [clientsData, templatesData] = await Promise.all([
+        const [clientsData, templatesData, adminsData] = await Promise.all([
           apiFetch<{ users?: User[] }>('/api/admin/users?role=CLIENT'),
           fetchTemplates().catch(() => []),
+          apiFetch<{ users?: AdminUser[] }>('/api/admin/admins').catch(() => ({ users: [] })),
         ])
         setClients(clientsData.users || [])
         setTemplates(templatesData)
+        setAdmins(adminsData.users || [])
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement comptes')
       }
@@ -171,6 +177,7 @@ const ProjectForm = () => {
         deliveredAt: form.deliveredAt ? new Date(form.deliveredAt).toISOString() : null,
         priority: form.priority,
         responsible: form.responsible || '',
+        assignedTo: form.assignedTo || null,
         summary: form.summary || '',
         internalNotes: form.internalNotes || '',
         serviceTypes: form.serviceTypes,
@@ -485,13 +492,13 @@ const ProjectForm = () => {
                 <div className="project-form-field">
                   <label className="project-form-label">
                     <span className="project-form-label-icon">👨‍💼</span>
-                    Responsable
+                    Responsable (admin assigne)
                   </label>
-                  <input
+                  <CustomSelect
                     className="portal-input"
-                    placeholder="Nom du responsable"
-                    value={form.responsible}
-                    onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                    value={form.assignedTo}
+                    onChange={(v) => setForm({ ...form, assignedTo: v })}
+                    options={[{ value: '', label: 'Non assigne' }, ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.role})` }))]}
                   />
                 </div>
               </div>
