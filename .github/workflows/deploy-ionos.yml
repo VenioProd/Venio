@@ -36,6 +36,35 @@ jobs:
             echo "🏗️ Rebuild du container..."
             docker compose -f docker-compose.prod.yml build --no-cache
             docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+            # Fix Nginx config: proxy to Docker container instead of serving static files
+            NGINX_CONF="/etc/nginx/sites-available/venio.pro"
+            if ! grep -q "proxy_pass" "$NGINX_CONF" 2>/dev/null; then
+              echo "🔧 Mise a jour de la config Nginx pour proxy vers Docker..."
+              cat > "$NGINX_CONF" << 'NGINX'
+            server {
+                listen 127.0.0.1:8200;
+                server_name venio.pro www.venio.pro;
+
+                location / {
+                    proxy_pass http://127.0.0.1:4000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_cache_bypass $http_upgrade;
+                }
+            }
+            NGINX
+              nginx -t && systemctl reload nginx
+              echo "✅ Nginx mis a jour et recharge"
+            else
+              echo "✅ Nginx config deja en mode proxy"
+            fi
+
             echo "✅ Déploiement terminé"
           DEPLOY
 
