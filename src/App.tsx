@@ -66,6 +66,10 @@ function App() {
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  useEffect(() => {
     document.body.classList.add('gpu-off')
     localStorage.setItem('gpu-mode', 'false')
     return () => {
