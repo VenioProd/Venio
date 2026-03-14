@@ -53,7 +53,7 @@ const Contact = () => {
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
       if (!serviceId || !templateId || !publicKey) {
-        setFormStatus({ type: 'error', message: 'Le formulaire de contact n\'est pas encore configuré. Contactez-nous directement à contact@venio.pro' })
+        setFormStatus({ type: 'error', message: 'Le formulaire de contact n\'est pas encore configuré. Contactez-nous directement à contact@venio.paris' })
         setIsSubmitting(false)
         return
       }
@@ -63,7 +63,7 @@ const Contact = () => {
       const templateParams = {
         from_name: `${formData.prenom} ${formData.nom}`,
         from_email: formData.email,
-        to_email: 'contact@venio.pro',
+        to_email: 'contact@venio.paris',
         subject: `Contact Venio - ${formData.sujet || 'Sans sujet'}`,
         entreprise: formData.entreprise || 'Non renseignée',
         message: formData.message,
@@ -76,7 +76,7 @@ const Contact = () => {
       setCaptchaVerified(false)
       setFormStatus({ type: 'success', message: 'Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.' })
     } catch {
-      setFormStatus({ type: 'error', message: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.pro' })
+      setFormStatus({ type: 'error', message: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.paris' })
     } finally {
       setIsSubmitting(false)
     }
@@ -119,7 +119,7 @@ const Contact = () => {
             <div className="contact-info">
               <h2>Email direct</h2>
               <div className="info-item">
-                <a href="mailto:contact@venio.pro">contact@venio.pro</a>
+                <a href="mailto:contact@venio.paris">contact@venio.paris</a>
               </div>
             </div>
 

@@ -26,7 +26,7 @@ const Legal = () => {
               <strong>Siège social :</strong> 60 Rue François 1er, 75008 Paris, France<br />
               <strong>SIREN :</strong> 939549473<br />
               <strong>Code NAF / APE :</strong> 7022Z<br />
-              <strong>Email :</strong> contact@venio.pro
+              <strong>Email :</strong> contact@venio.paris
             </p>
           </div>
 
@@ -47,7 +47,7 @@ const Legal = () => {
             </p>
             <p>
               Pour exercer vos droits ou pour toute question relative a vos donnees personnelles, contactez-nous a :
-              <strong> contact@venio.pro</strong>
+              <strong> contact@venio.paris</strong>
             </p>
             <p>
               Pour plus d'informations, consultez notre{' '}

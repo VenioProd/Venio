@@ -28,7 +28,7 @@ const Footer = () => {
         <div className="footer-col">
           <h4>Social</h4>
           <a href="https://instagram.com/venio.paris" target="_blank" rel="noopener noreferrer">Instagram</a>
-          <a href="mailto:contact@venio.pro">Email</a>
+          <a href="mailto:contact@venio.paris">Email</a>
         </div>
       </div>
       

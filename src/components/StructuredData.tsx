@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom'
 
 const StructuredData = ({ type = 'home' }) => {
   const location = useLocation()
-  const siteUrl = 'https://venio.pro'
+  const siteUrl = 'https://venio.paris'
   const currentUrl = `${siteUrl}${location.pathname}`
 
   const getStructuredData = () => {
@@ -16,7 +16,7 @@ const StructuredData = ({ type = 'home' }) => {
       "logo": `${siteUrl}/logo.png`,
       "contactPoint": {
         "@type": "ContactPoint",
-        "email": "contact@venio.pro",
+        "email": "contact@venio.paris",
         "contactType": "customer service"
       },
       "sameAs": [

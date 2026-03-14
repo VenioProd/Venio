@@ -24,7 +24,7 @@ const Confidentialite = () => {
               <strong>Venio</strong><br />
               Representant legal : Raphael BENTVELZEN<br />
               Siege social : 60 Rue Francois 1er, 75008 Paris, France<br />
-              Email : contact@venio.pro<br />
+              Email : contact@venio.paris<br />
               SIREN : 939549473
             </p>
           </div>
@@ -33,7 +33,7 @@ const Confidentialite = () => {
             <h2>Donnees collectees</h2>
             <h3>1. Donnees collectees via le formulaire de contact</h3>
             <p>
-              Lorsque vous utilisez le formulaire de contact du site venio.pro, nous collectons les informations suivantes :
+              Lorsque vous utilisez le formulaire de contact du site venio.paris, nous collectons les informations suivantes :
             </p>
             <ul>
               <li>Prenom et nom</li>
@@ -66,7 +66,7 @@ const Confidentialite = () => {
           <div className="legal-section">
             <h2>Cookies</h2>
             <p>
-              Le site venio.pro utilise uniquement des <strong>cookies techniques strictement necessaires</strong> au fonctionnement du site :
+              Le site venio.paris utilise uniquement des <strong>cookies techniques strictement necessaires</strong> au fonctionnement du site :
             </p>
             <ul>
               <li>Token d'authentification pour l'espace client et l'espace administrateur</li>
@@ -114,7 +114,7 @@ const Confidentialite = () => {
               <li><strong>Droit d'opposition :</strong> vous opposer au traitement de vos donnees</li>
             </ul>
             <p>
-              Pour exercer vos droits, contactez-nous a : <strong>contact@venio.pro</strong>
+              Pour exercer vos droits, contactez-nous a : <strong>contact@venio.paris</strong>
             </p>
             <p>
               Vous pouvez egalement introduire une reclamation aupres de la <strong>CNIL</strong> (Commission Nationale de
@@ -126,7 +126,7 @@ const Confidentialite = () => {
             <h2>Modification de cette politique</h2>
             <p>
               Venio se reserve le droit de modifier la presente politique de confidentialite a tout moment.
-              La version en vigueur est celle accessible sur le site venio.pro. Derniere mise a jour : mars 2026.
+              La version en vigueur est celle accessible sur le site venio.paris. Derniere mise a jour : mars 2026.
             </p>
           </div>
         </section>
