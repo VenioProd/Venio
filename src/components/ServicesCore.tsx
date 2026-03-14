@@ -48,7 +48,7 @@ const ServicesCore = () => {
                 <p className="service-solution">{service.solution}</p>
                 <p className="service-result">{service.result}</p>
               </div>
-              <span className="service-core-card-link">En savoir plus →</span>
+              <span className="service-core-card-link">En savoir plus</span>
             </Link>
           ))}
         </div>
