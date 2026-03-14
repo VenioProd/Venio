@@ -41,7 +41,6 @@ export interface IUser extends Document {
   twoFactorSecret: string | null
   twoFactorEnabled: boolean
   customPermissions: string[] | null
-  plainPassword: string | null
   createdAt: Date
   updatedAt: Date
 }

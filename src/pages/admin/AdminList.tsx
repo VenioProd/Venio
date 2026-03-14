@@ -33,11 +33,7 @@ const AdminList = () => {
   const [admins, setAdmins] = useState<User[]>([])
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [credentialsModal, setCredentialsModal] = useState<{ admin: User & { plainPassword?: string }; password: string } | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  const [emailError, setEmailError] = useState('')
+  const [impersonating, setImpersonating] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -55,35 +51,20 @@ const AdminList = () => {
     setDeleteTarget(adminId)
   }
 
-  const handleGetCredentials = (admin: User & { plainPassword?: string }) => {
-    setCopied(false)
-    setEmailSent(false)
-    setEmailError('')
-    setCredentialsModal({ admin, password: admin.plainPassword || 'Non disponible' })
-  }
-
-  const handleCopyCredentials = async () => {
-    if (!credentialsModal) return
-    const text = `Identifiants de connexion Venio\n\nEmail : ${credentialsModal.admin.email}\nMot de passe : ${credentialsModal.password}\n\nConnexion : ${window.location.origin}/admin/login`
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
-  }
-
-  const handleSendEmail = async () => {
-    if (!credentialsModal) return
-    setSending(true)
-    setEmailError('')
+  const handleImpersonate = async (adminId: string) => {
+    setImpersonating(adminId)
     try {
-      await apiFetch(`/api/admin/admins/${credentialsModal.admin._id}/send-credentials`, {
+      const data = await apiFetch<{ token: string; user: { role: string } }>(`/api/admin/admins/impersonate/${adminId}`, {
         method: 'POST',
-        body: JSON.stringify({ password: credentialsModal.password }),
       })
-      setEmailSent(true)
+      // Open in new tab with the impersonated token
+      const targetPath = data.user.role === 'CLIENT' ? '/espace-client' : '/admin'
+      const url = `${window.location.origin}${targetPath}?impersonate=${data.token}`
+      window.open(url, '_blank')
     } catch (err: unknown) {
-      setEmailError((err as Error).message || "Erreur lors de l'envoi")
+      showToast((err as Error).message || 'Erreur', 'error')
     } finally {
-      setSending(false)
+      setImpersonating(null)
     }
   }
 
@@ -188,14 +169,17 @@ const AdminList = () => {
                     </span>
                   </div>
                   <div className="admin-card-actions" style={{ flexWrap: 'wrap' }}>
-                    <button
-                      className="admin-card-btn admin-card-btn--edit"
-                      type="button"
-                      onClick={() => handleGetCredentials(admin as User & { plainPassword?: string })}
-                      style={{ flex: '1 1 100%' }}
-                    >
-                      Identifiants
-                    </button>
+                    {user?.role === 'SUPER_ADMIN' && user?._id !== admin._id && (
+                      <button
+                        className="admin-card-btn admin-card-btn--edit"
+                        type="button"
+                        onClick={() => handleImpersonate(admin._id)}
+                        disabled={impersonating === admin._id}
+                        style={{ flex: '1 1 100%' }}
+                      >
+                        {impersonating === admin._id ? 'Connexion...' : 'Se connecter en tant que'}
+                      </button>
+                    )}
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
                       Modifier
                     </Link>
@@ -226,97 +210,6 @@ const AdminList = () => {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {credentialsModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}
-          onClick={() => setCredentialsModal(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg-card)', border: '1px solid rgba(14,165,233,0.25)', borderRadius: 16,
-              padding: 32, maxWidth: 440, width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(14,165,233,0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(135deg, rgba(14,165,233,0.2), rgba(14,165,233,0.05))',
-                border: '1px solid rgba(14,165,233,0.3)', fontSize: 18,
-              }}>
-                {(credentialsModal.admin.name || '?').charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{credentialsModal.admin.name}</h2>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>Identifiants de connexion</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '14px 16px',
-                border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 13, letterSpacing: '0.02em' }}>{credentialsModal.admin.email}</span>
-              </div>
-              <div style={{
-                background: 'rgba(14,165,233,0.04)', borderRadius: 10, padding: '14px 16px',
-                border: '1px solid rgba(14,165,233,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>Mot de passe</span>
-                <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.05em' }}>{credentialsModal.password}</span>
-              </div>
-            </div>
-
-            <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 20px', lineHeight: 1.5 }}>
-              Un nouveau mot de passe a ete genere. Copiez-le ou envoyez-le par email.
-            </p>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                type="button"
-                onClick={handleCopyCredentials}
-                style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
-                  fontWeight: 600, fontSize: 13, transition: 'all 0.2s', letterSpacing: '0.03em',
-                }}
-              >
-                {copied ? 'Copie !' : 'Copier'}
-              </button>
-              <button
-                type="button"
-                onClick={handleSendEmail}
-                disabled={sending || emailSent}
-                style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
-                  background: 'transparent', border: '1px solid rgba(14,165,233,0.35)', color: '#38bdf8',
-                  fontWeight: 600, fontSize: 13, transition: 'all 0.2s', letterSpacing: '0.03em',
-                  opacity: sending || emailSent ? 0.6 : 1,
-                }}
-              >
-                {emailSent ? 'Envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setCredentialsModal(null)}
-              style={{
-                width: '100%', marginTop: 10, padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
-                fontWeight: 500, fontSize: 13, transition: 'all 0.2s',
-              }}
-            >
-              Fermer
-            </button>
-
-            {emailError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 10 }}>{emailError}</p>}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

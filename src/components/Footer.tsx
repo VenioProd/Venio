@@ -27,19 +27,21 @@ const Footer = () => {
         
         <div className="footer-col">
           <h4>Social</h4>
-          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://instagram.com/venio.paris" target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href="mailto:contact@venio.pro">Email</a>
         </div>
       </div>
       
       <div className="footer-bottom">
-        <p>© 2025 Venio — Lucidité, efficacité, refus du mensonge</p>
+        <p>© 2026 Venio — Lucidité, efficacité, refus du mensonge</p>
         <div className="footer-legal">
-          <Link to="/legal">Mentions légales</Link>
+          <Link to="/legal">Mentions legales</Link>
           <span> | </span>
           <Link to="/cgu">CGU</Link>
           <span> | </span>
-          <Link to="/legal">CGV</Link>
+          <Link to="/cgv">CGV</Link>
+          <span> | </span>
+          <Link to="/confidentialite">Confidentialite</Link>
         </div>
       </div>
     </footer>

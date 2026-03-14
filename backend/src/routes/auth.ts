@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { body, validationResult } from 'express-validator'
@@ -6,7 +7,11 @@ import { TOTP } from 'otpauth'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
 import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
+import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
+
+// In-memory store for reset tokens (simple approach, clears on restart)
+const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
 
 const router = express.Router()
 
@@ -149,7 +154,6 @@ router.post(
       }
 
       user.passwordHash = await bcrypt.hash(newPassword, 10)
-      user.plainPassword = newPassword
       await user.save()
 
       AuditLog.create({ userId: user._id, email: user.email, action: 'PASSWORD_CHANGED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
@@ -185,13 +189,106 @@ router.post(
       const admin = await User.create({
         email: email.toLowerCase().trim(),
         passwordHash,
-        plainPassword: password,
         role: 'SUPER_ADMIN',
         name,
       })
 
       const token = signToken(admin)
       return res.status(201).json({ token })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// POST /api/auth/forgot-password
+router.post(
+  '/forgot-password',
+  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg })
+      }
+
+      const { email } = req.body
+      const user = await User.findOne({ email: email.toLowerCase().trim() })
+
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json({ message: 'Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.' })
+      }
+
+      // Generate reset token
+      const token = crypto.randomBytes(32).toString('hex')
+      resetTokens.set(token, {
+        userId: user._id.toString(),
+        expiresAt: Date.now() + 3600000, // 1 hour
+      })
+
+      // Clean expired tokens
+      for (const [key, val] of resetTokens) {
+        if (val.expiresAt < Date.now()) resetTokens.delete(key)
+      }
+
+      const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
+      const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
+      const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
+
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl,
+      })
+
+      return res.json({ message: 'Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.' })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// POST /api/auth/reset-password
+router.post(
+  '/reset-password',
+  body('token').notEmpty().withMessage('Token requis'),
+  body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg })
+      }
+
+      const { token, password } = req.body
+      const entry = resetTokens.get(token)
+
+      if (!entry || entry.expiresAt < Date.now()) {
+        resetTokens.delete(token)
+        return res.status(400).json({ error: 'Lien de reinitialisation expire ou invalide.' })
+      }
+
+      const user = await User.findById(entry.userId)
+      if (!user) {
+        resetTokens.delete(token)
+        return res.status(400).json({ error: 'Utilisateur introuvable.' })
+      }
+
+      user.passwordHash = await bcrypt.hash(password, 10)
+      await user.save()
+
+      resetTokens.delete(token)
+
+      AuditLog.create({
+        userId: user._id,
+        email: user.email,
+        action: 'PASSWORD_RESET',
+        ip: req.headers['x-forwarded-for'] || req.ip || '',
+        userAgent: req.headers['user-agent'] || '',
+      }).catch(() => {})
+
+      return res.json({ message: 'Mot de passe reinitialise avec succes.' })
     } catch (err) {
       return next(err)
     }

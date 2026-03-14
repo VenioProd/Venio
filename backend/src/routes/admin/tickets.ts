@@ -18,13 +18,17 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+  filename: (_req, file, cb) => {
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, `${Date.now()}-${safeName}`)
+  },
 })
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
 // Serve uploaded files
 router.get('/files/:filename', (req: Request, res: Response) => {
-  const filePath = path.join(uploadsDir, req.params.filename as string)
+  const filePath = path.resolve(uploadsDir, req.params.filename as string)
+  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
   res.sendFile(filePath)
 })

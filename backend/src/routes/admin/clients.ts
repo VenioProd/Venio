@@ -260,7 +260,6 @@ router.post(
     const client = await User.create({
       email: normalizedEmail,
       passwordHash,
-      plainPassword: password,
       role: 'CLIENT',
       name: String(name).trim(),
       ...payload,
@@ -365,7 +364,6 @@ router.patch(
 
     if (req.body?.password) {
       payload.passwordHash = await bcrypt.hash(String(req.body.password), 10)
-      payload.plainPassword = String(req.body.password)
     }
 
     const updated = await User.findByIdAndUpdate(client._id, payload, { new: true }).select('-passwordHash').populate('ownerAdminId', 'name email role').lean()

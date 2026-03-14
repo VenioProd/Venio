@@ -26,6 +26,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // Handle impersonation via URL parameter
+    const params = new URLSearchParams(window.location.search)
+    const impersonateToken = params.get('impersonate')
+    if (impersonateToken) {
+      setToken(impersonateToken)
+      // Clean URL
+      params.delete('impersonate')
+      const cleanUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname
+      window.history.replaceState({}, '', cleanUrl)
+      loadUser()
+      return
+    }
+
     const token = getToken()
     if (token) {
       loadUser()

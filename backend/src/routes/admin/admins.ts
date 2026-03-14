@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireAnyPermission, requirePermission } from '../../middleware/role.js'
@@ -81,7 +82,6 @@ router.post(
     const user = await User.create({
       email: normalizedEmail,
       passwordHash,
-      plainPassword: password,
       role: nextRole,
       name,
       customPermissions,
@@ -155,7 +155,6 @@ router.patch(
     }
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10)
-      user.plainPassword = password
     }
 
     // Custom permissions (SUPER_ADMIN only)
@@ -224,6 +223,30 @@ router.post('/:userId/send-credentials', requirePermission(PERMISSIONS.MANAGE_AD
       return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
     }
     return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/admins/impersonate/:userId — SUPER_ADMIN only
+router.post('/impersonate/:userId', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Seul le Super Admin peut utiliser cette fonctionnalité' })
+    }
+
+    const target = await User.findById(req.params.userId)
+    if (!target) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' })
+    }
+
+    const token = jwt.sign(
+      { id: target._id, role: target.role, email: target.email, name: target.name },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '2h' } as jwt.SignOptions
+    )
+
+    return res.json({ token, user: { _id: target._id, email: target.email, name: target.name, role: target.role } })
   } catch (err) {
     return next(err)
   }

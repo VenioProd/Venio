@@ -690,6 +690,51 @@ export async function sendTicketReplyEmail({
   }
 }
 
+/**
+ * Envoie un email de reinitialisation de mot de passe.
+ */
+export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: string; name: string; resetUrl: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configure (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Reinitialisation de votre mot de passe`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Vous avez demande la reinitialisation de votre mot de passe sur ${appName}.`,
+        '',
+        `Cliquez sur le lien suivant pour definir un nouveau mot de passe :`,
+        resetUrl,
+        '',
+        `Ce lien est valable pendant 1 heure.`,
+        '',
+        `Si vous n'avez pas fait cette demande, ignorez cet email.`,
+        '',
+        `— L'equipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Vous avez demande la reinitialisation de votre mot de passe sur <strong>${escapeHtml(appName)}</strong>.</p>`,
+        `<p><a href="${escapeHtml(resetUrl)}" style="display: inline-block; padding: 12px 24px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Reinitialiser mon mot de passe</a></p>`,
+        `<p style="color: #666; font-size: 13px;">Ce lien est valable pendant 1 heure.</p>`,
+        `<p style="color: #666; font-size: 13px;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>`,
+        `<p>— L'equipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
 function escapeHtml(s: string | null | undefined): string {
   if (s == null) return ''
   return String(s)

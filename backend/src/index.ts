@@ -64,8 +64,30 @@ if (!mongoUri) {
 // Security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: isProd ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "https://api.emailjs.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+    },
+  } : false,
 }))
+
+// Force HTTPS in production
+if (isProd) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`)
+    }
+    next()
+  })
+}
 
 // Compression
 app.use(compression())
@@ -165,20 +187,33 @@ mongoose
   .connect(mongoUri)
   .then(async () => {
     // Ensure main SUPER_ADMIN account exists
-    const mainAdmin = await User.findOne({ email: 'gbamelesami102@gmail.com' })
-    if (!mainAdmin) {
-      const passwordHash = await bcrypt.hash('Venio@2026!', 10)
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL
+    const adminPassword = process.env.SUPER_ADMIN_PASSWORD
+    if (!adminEmail || !adminPassword) {
+      console.log('ℹ️  SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD not set, skipping admin bootstrap')
+    }
+    const mainAdmin = adminEmail ? await User.findOne({ email: adminEmail }) : null
+    if (!mainAdmin && adminEmail && adminPassword) {
+      const passwordHash = await bcrypt.hash(adminPassword, 10)
       await User.create({
-        email: 'gbamelesami102@gmail.com',
+        email: adminEmail,
         passwordHash,
-        plainPassword: 'Venio@2026!',
         role: 'SUPER_ADMIN',
-        name: 'Marie-Blanche',
+        name: process.env.SUPER_ADMIN_NAME || 'Marie-Blanche',
       })
-      console.log('✅ SUPER_ADMIN account created (gbamelesami102@gmail.com)')
-    } else if (mainAdmin.role !== 'SUPER_ADMIN') {
+      console.log(`✅ SUPER_ADMIN account created (${adminEmail})`)
+    } else if (mainAdmin && mainAdmin.role !== 'SUPER_ADMIN') {
       mainAdmin.role = 'SUPER_ADMIN'
       await mainAdmin.save()
+    }
+
+    // One-time migration: remove plainPassword field from all users
+    const migrated = await User.updateMany(
+      { plainPassword: { $exists: true } },
+      { $unset: { plainPassword: '' } }
+    )
+    if (migrated.modifiedCount > 0) {
+      console.log(`🔒 Removed plainPassword from ${migrated.modifiedCount} user(s)`)
     }
 
     // Cleanup fictional/test data

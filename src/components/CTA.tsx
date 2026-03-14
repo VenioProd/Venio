@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import './CTA.css'
 
 const CTA = () => {
@@ -10,7 +11,7 @@ const CTA = () => {
       <p className="cta-text">
         Discutons de votre projet avec lucidité. Sans discours creux.
       </p>
-      <a href="#contact" className="hero-cta">Prendre contact →</a>
+      <Link to="/contact" className="hero-cta">Prendre contact →</Link>
     </section>
   )
 }

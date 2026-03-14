@@ -140,7 +140,7 @@ router.get('/leads', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Reques
     if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
     if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
     if (req.query.search) {
-      const q = String(req.query.search).trim()
+      const q = String(req.query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       const searchOr = [
         { company: { $regex: q, $options: 'i' } },
         { contactName: { $regex: q, $options: 'i' } },

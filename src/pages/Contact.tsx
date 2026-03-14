@@ -26,6 +26,7 @@ const Contact = () => {
     message: ''
   })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -37,29 +38,28 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setFormStatus(null)
+
     if (!captchaVerified) {
-      alert('Veuillez compléter la vérification mathématique')
+      setFormStatus({ type: 'error', message: 'Veuillez compléter la vérification mathématique.' })
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // Configuration EmailJS
-      // IMPORTANT: Remplacez ces valeurs par vos clés EmailJS
-      // 1. Créez un compte sur https://www.emailjs.com
-      // 2. Créez un service email (Gmail, Outlook, etc.)
-      // 3. Créez un template email
-      // 4. Récupérez votre Public Key, Service ID et Template ID
-      
-      const serviceId = 'YOUR_SERVICE_ID' // À remplacer
-      const templateId = 'YOUR_TEMPLATE_ID' // À remplacer
-      const publicKey = 'YOUR_PUBLIC_KEY' // À remplacer
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
-      // Initialiser EmailJS avec votre clé publique
+      if (!serviceId || !templateId || !publicKey) {
+        setFormStatus({ type: 'error', message: 'Le formulaire de contact n\'est pas encore configuré. Contactez-nous directement à contact@venio.pro' })
+        setIsSubmitting(false)
+        return
+      }
+
       emailjs.init(publicKey)
 
-      // Préparer les paramètres du template
       const templateParams = {
         from_name: `${formData.prenom} ${formData.nom}`,
         from_email: formData.email,
@@ -70,25 +70,14 @@ const Contact = () => {
         sujet: formData.sujet || 'Non renseigné'
       }
 
-      // Envoi de l'email
       await emailjs.send(serviceId, templateId, templateParams)
 
-      // Réinitialiser le formulaire
-      setFormData({
-        prenom: '',
-        nom: '',
-        email: '',
-        entreprise: '',
-        sujet: '',
-        message: ''
-      })
+      setFormData({ prenom: '', nom: '', email: '', entreprise: '', sujet: '', message: '' })
       setCaptchaVerified(false)
-      setIsSubmitting(false)
-      
-      alert('Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.')
-    } catch (error: unknown) {
-      console.error('Erreur lors de l\'envoi:', error)
-      alert('Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.pro')
+      setFormStatus({ type: 'success', message: 'Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.' })
+    } catch {
+      setFormStatus({ type: 'error', message: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.pro' })
+    } finally {
       setIsSubmitting(false)
     }
   }
@@ -192,8 +181,13 @@ const Contact = () => {
                   required
                 ></textarea>
                 <MathCaptcha onVerify={setCaptchaVerified} />
-                <button 
-                  type="submit" 
+                {formStatus && (
+                  <p style={{ color: formStatus.type === 'success' ? '#22c55e' : '#ef4444', fontSize: '14px', margin: '8px 0' }}>
+                    {formStatus.message}
+                  </p>
+                )}
+                <button
+                  type="submit"
                   className="form-submit"
                   disabled={!captchaVerified || isSubmitting}
                 >

@@ -1,18 +1,29 @@
-import React, { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
 import '../espace-client/ClientPortal.css'
 
 const AdminLogin = () => {
   const { user, login, logout } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const resetToken = searchParams.get('reset')
   const [form, setForm] = useState<{ email: string; password: string }>({ email: '', password: '' })
   const [totpCode, setTotpCode] = useState('')
   const [needs2FA, setNeeds2FA] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetMode, setResetMode] = useState(!!resetToken)
+  const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState<boolean>(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (resetToken) setResetMode(true)
+  }, [resetToken])
 
   if (user?.role && isAdminRole(user.role)) {
     return <Navigate to="/admin" replace />
@@ -119,14 +130,94 @@ const AdminLogin = () => {
               Retour
             </button>
           )}
-          {!needs2FA && (
+          {!needs2FA && !forgotMode && !resetMode && (
             <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
-              <a href="mailto:contact@venio.fr?subject=Réinitialisation mot de passe admin" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
-                Mot de passe oublié ?
-              </a>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(true); setError(''); setSuccess('') }}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Mot de passe oublie ?
+              </button>
             </p>
           )}
+          {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
         </form>
+
+        {forgotMode && (
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            setError(''); setSuccess(''); setLoading(true)
+            try {
+              const data = await apiFetch<{ message: string }>('/api/auth/forgot-password', {
+                method: 'POST',
+                body: JSON.stringify({ email: form.email }),
+              })
+              setSuccess(data.message)
+            } catch (err: unknown) {
+              setError((err as Error).message || 'Erreur')
+            } finally {
+              setLoading(false)
+            }
+          }} className="portal-list" style={{ marginTop: 24 }}>
+            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Mot de passe oublie</h2>
+            <input
+              className="portal-input"
+              type="email"
+              placeholder="Votre email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+            {error && <div className="admin-error">{error}</div>}
+            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            <button className="portal-button" type="submit" disabled={loading}>
+              {loading ? 'Envoi...' : 'Envoyer le lien'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setForgotMode(false); setError(''); setSuccess('') }}
+              style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px' }}
+            >
+              Retour
+            </button>
+          </form>
+        )}
+
+        {resetMode && (
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            setError(''); setSuccess(''); setLoading(true)
+            try {
+              const data = await apiFetch<{ message: string }>('/api/auth/reset-password', {
+                method: 'POST',
+                body: JSON.stringify({ token: resetToken, password: newPassword }),
+              })
+              setSuccess(data.message + ' Vous pouvez maintenant vous connecter.')
+              setResetMode(false)
+            } catch (err: unknown) {
+              setError((err as Error).message || 'Erreur')
+            } finally {
+              setLoading(false)
+            }
+          }} className="portal-list" style={{ marginTop: 24 }}>
+            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Nouveau mot de passe</h2>
+            <input
+              className="portal-input"
+              type="password"
+              placeholder="Nouveau mot de passe (6 caracteres min.)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+            {error && <div className="admin-error">{error}</div>}
+            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            <button className="portal-button" type="submit" disabled={loading}>
+              {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )

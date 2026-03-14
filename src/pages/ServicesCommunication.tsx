@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
@@ -109,16 +110,12 @@ const ServicesCommunication = () => {
 
           <div className="services-cta">
             <h2>Parlons de votre projet</h2>
-            <form className="contact-form">
-              <div className="form-row">
-                <input type="text" placeholder="Prénom" required />
-                <input type="text" placeholder="Nom" required />
-              </div>
-              <input type="email" placeholder="Email" required />
-              <input type="text" placeholder="Entreprise" />
-              <textarea placeholder="Décrivez votre projet" rows={6} required></textarea>
-              <button type="submit" className="form-submit">Envoyer</button>
-            </form>
+            <p className="section-intro">
+              Vous avez un projet de communication ou de branding ? Parlons-en.
+            </p>
+            <Link to="/contact" className="form-submit" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+              Nous contacter
+            </Link>
           </div>
         </section>
       </div>

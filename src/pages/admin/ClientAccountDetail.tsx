@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { apiFetch } from '../../lib/api'
 import { useTabState } from '../../hooks/useTabState'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -87,6 +88,7 @@ const ClientAccountDetail = () => {
   const [emailSent, setEmailSent] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [resetting, setResetting] = useState(false)
+  const [impersonating, setImpersonating] = useState(false)
 
   const [contactDraft, setContactDraft] = useState<ContactDraft>({ firstName: '', lastName: '', email: '', phone: '' })
   const [noteDraft, setNoteDraft] = useState<string>('')
@@ -140,6 +142,20 @@ const ClientAccountDetail = () => {
       setEmailError((err as Error).message || "Erreur lors de l'envoi")
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleImpersonateClient = async () => {
+    setImpersonating(true)
+    try {
+      const data = await apiFetch<{ token: string }>(`/api/admin/admins/impersonate/${userId}`, {
+        method: 'POST',
+      })
+      window.open(`${window.location.origin}/espace-client?impersonate=${data.token}`, '_blank')
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Erreur', 'error')
+    } finally {
+      setImpersonating(false)
     }
   }
 
@@ -694,6 +710,19 @@ const ClientAccountDetail = () => {
           <button className="portal-button" type="button" onClick={handleResetClientPassword} disabled={resetting}>
             {resetting ? 'Generation...' : 'Generer un nouveau mot de passe'}
           </button>
+        )}
+        {user?.role === 'SUPER_ADMIN' && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+            <button
+              className="portal-button secondary"
+              type="button"
+              onClick={handleImpersonateClient}
+              disabled={impersonating}
+              style={{ width: '100%' }}
+            >
+              {impersonating ? 'Connexion...' : 'Se connecter en tant que ce client'}
+            </button>
+          </div>
         )}
       </div>
     </div>

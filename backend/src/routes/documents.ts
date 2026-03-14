@@ -29,7 +29,12 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
       await document.save()
     }
 
+    // Prevent path traversal attacks
+    const uploadsDir = path.resolve(process.cwd(), 'uploads')
     const filePath = path.resolve(process.cwd(), document.storagePath)
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
     return res.download(filePath, document.originalName)
   } catch (err) {
     return next(err)

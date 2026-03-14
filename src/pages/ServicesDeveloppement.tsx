@@ -1,28 +1,11 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { Link } from 'react-router-dom'
 import GradientMeshBackground from '../components/GradientMeshBackground'
-import MathCaptcha from '../components/MathCaptcha'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './ServicesPage.css'
 
 const ServicesDeveloppement = () => {
-  const [captchaVerified, setCaptchaVerified] = useState<boolean>(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    setSelectedFile(file)
-  }
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!captchaVerified) {
-      alert('Veuillez compléter la vérification mathématique')
-      return
-    }
-    // Ici vous pouvez ajouter la logique d'envoi du formulaire
-    alert('Formulaire envoyé avec succès !')
-  }
 
   return (
     <>
@@ -134,51 +117,12 @@ const ServicesDeveloppement = () => {
 
           <div className="services-cta">
             <h2>Parlons de votre projet</h2>
-            <form className="contact-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <input type="text" placeholder="Prénom" required />
-                <input type="text" placeholder="Nom" required />
-              </div>
-              <input type="email" placeholder="Email" required />
-              <input type="text" placeholder="Entreprise" />
-              <textarea placeholder="Décrivez votre projet" rows={6} required></textarea>
-              <div className="form-file">
-                <label htmlFor="brief" className="file-label">Brief technique (PDF, optionnel)</label>
-                <div className="file-input-wrapper">
-                  <input 
-                    type="file" 
-                    id="brief" 
-                    accept=".pdf" 
-                    onChange={handleFileChange}
-                    className="file-input"
-                  />
-                  <label htmlFor="brief" className="file-button">
-                    {selectedFile ? selectedFile.name : 'Choisir un fichier'}
-                  </label>
-                  {selectedFile && (
-                    <button 
-                      type="button" 
-                      className="file-remove"
-                      onClick={() => {
-                        setSelectedFile(null)
-                        const el = document.getElementById('brief') as HTMLInputElement | null
-                        if (el) el.value = ''
-                      }}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
-              <MathCaptcha onVerify={setCaptchaVerified} />
-              <button 
-                type="submit" 
-                className="form-submit"
-                disabled={!captchaVerified}
-              >
-                Envoyer
-              </button>
-            </form>
+            <p className="section-intro">
+              Vous avez un projet de developpement ? Parlons-en.
+            </p>
+            <Link to="/contact" className="form-submit" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+              Nous contacter
+            </Link>
           </div>
         </section>
       </div>

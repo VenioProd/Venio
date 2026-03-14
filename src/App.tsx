@@ -10,6 +10,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { I18nProvider } from './context/I18nContext'
 import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
+import CookieConsent from './components/CookieConsent'
 import './App.css'
 
 // Lazy-loaded: Site vitrine
@@ -23,6 +24,8 @@ const APropos = lazy(() => import('./pages/APropos'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Legal = lazy(() => import('./pages/Legal'))
 const CGU = lazy(() => import('./pages/CGU'))
+const CGV = lazy(() => import('./pages/CGV'))
+const Confidentialite = lazy(() => import('./pages/Confidentialite'))
 const PublicQuestionnaire = lazy(() => import('./pages/PublicQuestionnaire'))
 const PublicQuestionnaireBuilder = lazy(() => import('./pages/PublicQuestionnaireBuilder'))
 
@@ -87,6 +90,8 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/legal" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
+        <Route path="/cgv" element={<CGV />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/questionnaire/creer/:token" element={<PublicQuestionnaireBuilder />} />
         <Route path="/questionnaire/:token" element={<PublicQuestionnaire />} />
 
@@ -312,6 +317,7 @@ function App() {
       </Routes>
       </Suspense>
       {!isPublicQuestionnaire && <Footer />}
+      <CookieConsent />
       <ToastContainer />
       <Suspense fallback={null}>
         <SearchModal />

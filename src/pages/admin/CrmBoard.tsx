@@ -288,7 +288,7 @@ const CrmBoard = () => {
     try {
       const res = await apiFetch<{ client?: { name: string } }>(`/api/admin/crm/leads/${lead._id}/convert-to-client`, { method: 'POST' })
       if (res.client) {
-        alert(`Client cr\u00e9\u00e9 avec succ\u00e8s : ${res.client.name}`)
+        setError('')
         await load()
       }
     } catch (err: unknown) {
