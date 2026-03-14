@@ -374,7 +374,7 @@ const AdminDashboard = () => {
                   <>
                     <h2 className="dash-section-title" style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>Taches en retard</h2>
                     <div className="dash-task-list">
-                      {data.overdueTasks.slice(0, 5).map((task) => {
+                      {data.overdueTasks.slice(0, 3).map((task) => {
                         const isExp = expandedOverdue === task._id
                         return (
                           <div key={task._id}>
@@ -423,7 +423,7 @@ const AdminDashboard = () => {
                         )
                       })}
                     </div>
-                    {data.overdueTasks.length > 5 && (
+                    {data.overdueTasks.length > 3 && (
                       <div style={{ marginTop: 8, textAlign: 'right' }}>
                         <Link to="/admin/gestion" style={{ color: '#ef4444', fontSize: 13, textDecoration: 'none' }}>
                           Voir toutes ({data.overdueTasks.length}) →
@@ -625,7 +625,7 @@ const AdminDashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {allProjects.filter(p => !p.isArchived).slice(0, 5).map((project) => (
+                        {allProjects.filter(p => !p.isArchived).slice(0, 3).map((project) => (
                           <tr key={project._id}>
                             <td>{project.client?.name || '--'}</td>
                             <td>
@@ -642,7 +642,7 @@ const AdminDashboard = () => {
                       </tbody>
                     </table>
                   </div>
-                  {allProjects.filter(p => !p.isArchived).length > 5 && (
+                  {allProjects.filter(p => !p.isArchived).length > 3 && (
                     <div style={{ marginTop: 12, textAlign: 'right' }}>
                       <Link to="/admin/gestion" style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
                         Voir tous les projets ({allProjects.filter(p => !p.isArchived).length}) →
