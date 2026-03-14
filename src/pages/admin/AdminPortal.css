@@ -3546,6 +3546,14 @@ a.portal-button {
   min-height: 0;
 }
 
+.dash-section-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
 .dash-task-list {
   display: flex;
   flex-direction: column;

@@ -159,7 +159,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="portal-container">
-      <div className="portal-card">
         <div className="admin-header">
           <h1>Tableau de bord</h1>
           <div className="admin-actions portal-actions-reveal">
@@ -239,7 +238,6 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
-      </div>
 
       {loading ? (
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -280,9 +278,8 @@ const AdminDashboard = () => {
           {/* Two columns: My Tasks + Hot Leads */}
           <div className="dash-two-cols" style={{ marginTop: 24 }}>
             {/* My Tasks */}
-            <div className="portal-card dash-col">
-              <div className="admin-form-section" style={{ marginBottom: 0 }}>
-                <h2>Mes taches</h2>
+            <div className="dash-col">
+                <h2 className="dash-section-title">Mes taches</h2>
                 {data.myTasks.length === 0 ? (
                   <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucune tache assignee</p>
                 ) : (
@@ -346,15 +343,13 @@ const AdminDashboard = () => {
                     })}
                   </div>
                 )}
-              </div>
             </div>
 
             {/* Hot Leads + Overdue Tasks */}
-            <div className="portal-card dash-col">
-              <div className="admin-form-section" style={{ marginBottom: 0 }}>
+            <div className="dash-col">
                 {data.hotLeads.length > 0 && (
                   <>
-                    <h2>Leads chauds</h2>
+                    <h2 className="dash-section-title">Leads chauds</h2>
                     <div className="dash-task-list">
                       {data.hotLeads.map((lead) => (
                         <Link key={lead._id} to="/admin/crm" className="dash-task-item">
@@ -377,7 +372,7 @@ const AdminDashboard = () => {
 
                 {data.overdueTasks.length > 0 && (
                   <>
-                    <h2 style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>Taches en retard</h2>
+                    <h2 className="dash-section-title" style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>Taches en retard</h2>
                     <div className="dash-task-list">
                       {data.overdueTasks.map((task) => {
                         const isExp = expandedOverdue === task._id
@@ -434,15 +429,13 @@ const AdminDashboard = () => {
                 {data.hotLeads.length === 0 && data.overdueTasks.length === 0 && (
                   <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Rien a signaler</p>
                 )}
-              </div>
             </div>
           </div>
 
           {/* My Briefs */}
           {data.myBriefs.length > 0 && (
-            <div className="portal-card" style={{ marginTop: 24 }}>
-              <div className="admin-form-section" style={{ marginBottom: 0 }}>
-                <h2>Mes briefs</h2>
+            <div style={{ marginTop: 24 }}>
+                <h2 className="dash-section-title">Mes briefs</h2>
                 <div className="dash-task-list">
                   {data.myBriefs.map((brief) => {
                     const isExpanded = expandedBrief === brief._id
@@ -502,15 +495,13 @@ const AdminDashboard = () => {
                     )
                   })}
                 </div>
-              </div>
             </div>
           )}
 
           {/* Recent Projects */}
           {data.recentProjects.length > 0 && (
-            <div className="portal-card" style={{ marginTop: 24 }}>
-              <div className="admin-form-section" style={{ marginBottom: 0 }}>
-                <h2>Projets recents</h2>
+            <div style={{ marginTop: 24 }}>
+                <h2 className="dash-section-title">Projets recents</h2>
                 <div className="dash-task-list">
                   {data.recentProjects.map((project) => {
                     const isExp = expandedProject === project._id
@@ -565,7 +556,6 @@ const AdminDashboard = () => {
                     )
                   })}
                 </div>
-              </div>
             </div>
           )}
 
@@ -615,9 +605,8 @@ const AdminDashboard = () => {
                 </Link>
               </div>
 
-              <div className="portal-card" style={{ marginTop: 24 }}>
-                <div className="admin-form-section" style={{ marginBottom: 0 }}>
-                  <h2>Etat des projets clients</h2>
+              <div style={{ marginTop: 24 }}>
+                  <h2 className="dash-section-title">Etat des projets clients</h2>
                   <div className="admin-table-wrapper">
                     <table className="admin-table">
                       <thead>
@@ -654,7 +643,6 @@ const AdminDashboard = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
               </div>
             </>
           )}
