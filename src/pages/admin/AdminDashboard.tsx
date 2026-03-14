@@ -374,7 +374,7 @@ const AdminDashboard = () => {
                   <>
                     <h2 className="dash-section-title" style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>Taches en retard</h2>
                     <div className="dash-task-list">
-                      {data.overdueTasks.map((task) => {
+                      {data.overdueTasks.slice(0, 5).map((task) => {
                         const isExp = expandedOverdue === task._id
                         return (
                           <div key={task._id}>
@@ -423,6 +423,13 @@ const AdminDashboard = () => {
                         )
                       })}
                     </div>
+                    {data.overdueTasks.length > 5 && (
+                      <div style={{ marginTop: 8, textAlign: 'right' }}>
+                        <Link to="/admin/gestion" style={{ color: '#ef4444', fontSize: 13, textDecoration: 'none' }}>
+                          Voir toutes ({data.overdueTasks.length}) →
+                        </Link>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -614,14 +621,11 @@ const AdminDashboard = () => {
                           <th>Client</th>
                           <th>Projet</th>
                           <th>Statut</th>
-                          <th>Priorite</th>
-                          <th>Responsable</th>
                           <th>Budget</th>
-                          <th>Dates</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {allProjects.map((project) => (
+                        {allProjects.filter(p => !p.isArchived).slice(0, 5).map((project) => (
                           <tr key={project._id}>
                             <td>{project.client?.name || '--'}</td>
                             <td>
@@ -630,19 +634,21 @@ const AdminDashboard = () => {
                               </Link>
                             </td>
                             <td><span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span></td>
-                            <td>{project.priority || '--'}</td>
-                            <td>{project.assignedTo?.name || project.responsible || '--'}</td>
                             <td>
                               {project.budget?.amount != null ? `${Number(project.budget.amount).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}` : '--'}
-                            </td>
-                            <td>
-                              {project.startDate ? new Date(project.startDate).toLocaleDateString('fr-FR') : '--'} → {project.endDate ? new Date(project.endDate).toLocaleDateString('fr-FR') : '--'}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  {allProjects.filter(p => !p.isArchived).length > 5 && (
+                    <div style={{ marginTop: 12, textAlign: 'right' }}>
+                      <Link to="/admin/gestion" style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
+                        Voir tous les projets ({allProjects.filter(p => !p.isArchived).length}) →
+                      </Link>
+                    </div>
+                  )}
               </div>
             </>
           )}
