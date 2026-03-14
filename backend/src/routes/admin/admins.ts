@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { body, validationResult } from 'express-validator'
@@ -8,6 +9,7 @@ import User from '../../models/User.js'
 import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
 import { sendAdminCredentials } from '../../lib/email.js'
+import { resetTokens } from '../auth.js'
 
 const router = express.Router()
 
@@ -223,6 +225,34 @@ router.post('/:userId/send-credentials', requirePermission(PERMISSIONS.MANAGE_AD
       return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
     }
     return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/admins/:userId/reset-link — generate a password reset link (no email sent)
+router.post('/:userId/reset-link', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Seul le Super Admin peut générer un lien de réinitialisation' })
+    }
+
+    const user = await User.findById(req.params.userId)
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' })
+    }
+
+    const token = crypto.randomBytes(32).toString('hex')
+    resetTokens.set(token, {
+      userId: user._id.toString(),
+      expiresAt: Date.now() + 3600000, // 1 hour
+    })
+
+    const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
+    const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
+    const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
+
+    return res.json({ resetUrl })
   } catch (err) {
     return next(err)
   }

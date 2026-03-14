@@ -11,7 +11,7 @@ import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 
 // In-memory store for reset tokens (simple approach, clears on restart)
-const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
+export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
 
 const router = express.Router()
 

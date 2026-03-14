@@ -34,6 +34,7 @@ const AdminList = () => {
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [impersonating, setImpersonating] = useState<string | null>(null)
+  const [resetting, setResetting] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -65,6 +66,19 @@ const AdminList = () => {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
       setImpersonating(null)
+    }
+  }
+
+  const handleResetLink = async (adminId: string) => {
+    setResetting(adminId)
+    try {
+      const data = await apiFetch<{ resetUrl: string }>(`/api/admin/admins/${adminId}/reset-link`, { method: 'POST' })
+      await navigator.clipboard.writeText(data.resetUrl)
+      showToast('Lien de reinitialisation copie dans le presse-papiers', 'success')
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Erreur', 'error')
+    } finally {
+      setResetting(null)
     }
   }
 
@@ -170,15 +184,26 @@ const AdminList = () => {
                   </div>
                   <div className="admin-card-actions" style={{ flexWrap: 'wrap' }}>
                     {user?.role === 'SUPER_ADMIN' && user?._id !== admin._id && (
-                      <button
-                        className="admin-card-btn admin-card-btn--edit"
-                        type="button"
-                        onClick={() => handleImpersonate(admin._id)}
-                        disabled={impersonating === admin._id}
-                        style={{ flex: '1 1 100%' }}
-                      >
-                        {impersonating === admin._id ? 'Connexion...' : 'Se connecter en tant que'}
-                      </button>
+                      <>
+                        <button
+                          className="admin-card-btn admin-card-btn--edit"
+                          type="button"
+                          onClick={() => handleImpersonate(admin._id)}
+                          disabled={impersonating === admin._id}
+                          style={{ flex: '1 1 100%' }}
+                        >
+                          {impersonating === admin._id ? 'Connexion...' : 'Se connecter en tant que'}
+                        </button>
+                        <button
+                          className="admin-card-btn admin-card-btn--edit"
+                          type="button"
+                          onClick={() => handleResetLink(admin._id)}
+                          disabled={resetting === admin._id}
+                          style={{ flex: '1 1 100%' }}
+                        >
+                          {resetting === admin._id ? 'Generation...' : 'Copier lien reinitialisation'}
+                        </button>
+                      </>
                     )}
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
                       Modifier

@@ -89,6 +89,7 @@ const ClientAccountDetail = () => {
   const [emailError, setEmailError] = useState('')
   const [resetting, setResetting] = useState(false)
   const [impersonating, setImpersonating] = useState(false)
+  const [resettingClient, setResettingClient] = useState(false)
 
   const [contactDraft, setContactDraft] = useState<ContactDraft>({ firstName: '', lastName: '', email: '', phone: '' })
   const [noteDraft, setNoteDraft] = useState<string>('')
@@ -156,6 +157,19 @@ const ClientAccountDetail = () => {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
       setImpersonating(false)
+    }
+  }
+
+  const handleResetLinkClient = async () => {
+    setResettingClient(true)
+    try {
+      const data = await apiFetch<{ resetUrl: string }>(`/api/admin/admins/${userId}/reset-link`, { method: 'POST' })
+      await navigator.clipboard.writeText(data.resetUrl)
+      showToast('Lien de reinitialisation copie dans le presse-papiers', 'success')
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Erreur', 'error')
+    } finally {
+      setResettingClient(false)
     }
   }
 
@@ -721,6 +735,15 @@ const ClientAccountDetail = () => {
               style={{ width: '100%' }}
             >
               {impersonating ? 'Connexion...' : 'Se connecter en tant que ce client'}
+            </button>
+            <button
+              className="portal-button secondary"
+              type="button"
+              onClick={handleResetLinkClient}
+              disabled={resettingClient}
+              style={{ width: '100%', marginTop: 8 }}
+            >
+              {resettingClient ? 'Generation...' : 'Copier lien reinitialisation mdp'}
             </button>
           </div>
         )}
