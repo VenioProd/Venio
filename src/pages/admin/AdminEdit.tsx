@@ -48,6 +48,8 @@ const AdminEdit = () => {
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [savedPassword, setSavedPassword] = useState<string | null>(null)
+  const [copiedCreds, setCopiedCreds] = useState(false)
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
   const roleDefaults = useMemo(() => getPermissionsForRole(form.role), [form.role])
@@ -101,6 +103,9 @@ const AdminEdit = () => {
         body: JSON.stringify(payload),
       })
       setAdmin(data.user)
+      if (form.password) {
+        setSavedPassword(form.password)
+      }
       setForm((prev) => ({ ...prev, password: '' }))
       showToast('Modifications enregistrees', 'success')
     } catch (err: unknown) {
@@ -142,6 +147,39 @@ const AdminEdit = () => {
       {error && (
         <div className="admin-error" style={{ marginTop: 24 }}>
           {error}
+        </div>
+      )}
+
+      {savedPassword && admin && (
+        <div className="portal-card" style={{ marginTop: 24 }}>
+          <div style={{ padding: '8px 0' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 14 }}>
+              Le mot de passe de <strong style={{ color: 'var(--text-primary)' }}>{admin.name}</strong> a ete mis a jour. Voici les nouveaux identifiants :
+            </p>
+            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{admin.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{savedPassword}</span>
+              </div>
+            </div>
+            <button
+              className="portal-button"
+              type="button"
+              style={{ width: '100%' }}
+              onClick={async () => {
+                const text = `Identifiants de connexion Venio\n\nEmail : ${admin.email}\nMot de passe : ${savedPassword}\n\nConnexion : ${window.location.origin}/admin/login`
+                await navigator.clipboard.writeText(text)
+                setCopiedCreds(true)
+                setTimeout(() => setCopiedCreds(false), 2500)
+              }}
+            >
+              {copiedCreds ? 'Copie !' : 'Copier les identifiants'}
+            </button>
+          </div>
         </div>
       )}
 
