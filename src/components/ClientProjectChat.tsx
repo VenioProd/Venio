@@ -30,7 +30,9 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight
+    }
   }
 
   const fetchMessages = async () => {

@@ -19,7 +19,7 @@ const Hero = () => {
         <p className="hero-subtext">
           Venio construit ce qui doit exister. Pas ce qui rassure.
         </p>
-        <Link to="/services" className="hero-cta">Voir ce que nous faisons</Link>
+        <Link to="/services/communication" className="hero-cta">Voir ce que nous faisons</Link>
       </div>
     </section>
   )
