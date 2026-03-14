@@ -430,18 +430,19 @@
 }
 
 .admin-widget-label {
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
   margin-bottom: 8px;
 }
 
 .admin-widget-value {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   color: #ff0080;
-  text-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+  text-shadow: 0 0 20px rgba(255, 0, 128, 0.5);
 }
 
 /* Colored variants for widgets */
@@ -553,7 +554,8 @@
 
 .admin-stat-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3548,10 +3550,11 @@ a.portal-button {
 
 .dash-section-title {
   margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
   letter-spacing: -0.02em;
+  text-transform: uppercase;
 }
 
 .dash-task-list {
