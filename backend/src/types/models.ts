@@ -203,6 +203,7 @@ export interface IBillingDocument extends Document {
   currency: string
   note: string
   pdfStoragePath: string | null
+  reminderSentAt: Date | null
   createdBy: Types.ObjectId
   createdAt: Date
   updatedAt: Date
@@ -294,6 +295,13 @@ export interface ICrmSettings extends Document {
   weeklyReportDay: number
   weeklyReportTime: string
   weeklyReportRecipients: string[]
+  // Automation toggles
+  invoiceRemindersEnabled: boolean
+  taskRemindersEnabled: boolean
+  projectNotificationsEnabled: boolean
+  briefRemindersEnabled: boolean
+  clientHealthAutoUpdate: boolean
+  invoiceReminderDays: number
   createdAt: Date
   updatedAt: Date
 }

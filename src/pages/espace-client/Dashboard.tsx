@@ -102,6 +102,21 @@ const ClientDashboard = () => {
               </span>
               <span className="portal-action-label">Mon profil</span>
             </Link>
+            <Link
+              to="/espace-client/guide"
+              className="portal-button client-dashboard-logout portal-action-link"
+              title="Guide d'utilisation"
+              style={{ textDecoration: 'none' }}
+            >
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </span>
+              <span className="portal-action-label">Aide</span>
+            </Link>
             <button
               className="portal-button client-dashboard-logout portal-action-link"
               onClick={logout}

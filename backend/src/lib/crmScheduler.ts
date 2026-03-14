@@ -2,6 +2,9 @@ import Lead from '../models/Lead.js'
 import Task from '../models/Task.js'
 import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
+import BillingDocument from '../models/BillingDocument.js'
+import Project from '../models/Project.js'
+import MissionBrief from '../models/MissionBrief.js'
 import { ADMIN_ROLES } from './permissions.js'
 import {
   getDaysSinceContact,
@@ -19,6 +22,9 @@ import {
   sendProposalReminderEmail,
   sendWeeklyReportEmail,
   sendTaskAssignedEmail,
+  sendInvoiceReminderEmail,
+  sendTaskReminderEmail,
+  sendBriefReminderEmail,
 } from './email.js'
 
 interface SchedulerResult {
@@ -45,6 +51,36 @@ interface OverdueTasksResult {
   error?: string
 }
 
+interface InvoiceReminderResult {
+  processed: number
+  sent: number
+  error?: string
+}
+
+interface TaskReminderResult {
+  processed: number
+  notified: number
+  error?: string
+}
+
+interface ProjectDeadlineResult {
+  processed: number
+  notified: number
+  error?: string
+}
+
+interface BriefReminderResult {
+  processed: number
+  notified: number
+  error?: string
+}
+
+interface ClientHealthResult {
+  processed: number
+  updated: number
+  error?: string
+}
+
 // Track last run times to avoid duplicate runs
 const lastRunTimes: Record<string, string | null> = {
   coldLeads: null,
@@ -53,6 +89,11 @@ const lastRunTimes: Record<string, string | null> = {
   proposalReminder: null,
   weeklyReport: null,
   overdueTasks: null,
+  invoiceReminders: null,
+  taskReminders: null,
+  projectDeadlines: null,
+  briefReminders: null,
+  clientHealth: null,
 }
 
 /**
@@ -361,6 +402,274 @@ export async function processOverdueTasks(): Promise<OverdueTasksResult> {
 }
 
 /**
+ * Process invoice reminders — send reminder emails for overdue invoices
+ */
+export async function processInvoiceReminders(): Promise<InvoiceReminderResult> {
+  try {
+    const settings = await CrmSettings.getSettings()
+    if (!settings.invoiceRemindersEnabled) return { processed: 0, sent: 0 }
+
+    const reminderThreshold = new Date()
+    reminderThreshold.setDate(reminderThreshold.getDate() - settings.invoiceReminderDays)
+
+    // Find sent invoices that are past due and haven't had a reminder sent
+    const overdueInvoices = await BillingDocument.find({
+      type: 'INVOICE',
+      status: { $in: ['SENT', 'ISSUED'] },
+      dueAt: { $lt: new Date(), $ne: null },
+      reminderSentAt: null,
+    }).populate('client', 'name email')
+
+    let sent = 0
+    for (const invoice of overdueInvoices) {
+      const client = invoice.client as unknown as { _id?: string; name?: string; email?: string } | null
+      if (!client?.email) continue
+
+      const dueAt = invoice.dueAt!
+      const daysPastDue = Math.floor((Date.now() - dueAt.getTime()) / (1000 * 60 * 60 * 24))
+
+      // Only send if past the configured reminder threshold
+      if (daysPastDue < settings.invoiceReminderDays) continue
+
+      const amountStr = `${invoice.total.toLocaleString('fr-FR')} ${invoice.currency}`
+      const result = await sendInvoiceReminderEmail({
+        to: client.email,
+        name: client.name || client.email,
+        invoiceNumber: invoice.number,
+        amount: amountStr,
+        daysPastDue,
+      })
+
+      if (result.sent) {
+        invoice.reminderSentAt = new Date()
+        await invoice.save()
+        sent++
+      }
+    }
+
+    return { processed: overdueInvoices.length, sent }
+  } catch (err) {
+    console.error('Error processing invoice reminders:', err)
+    return { processed: 0, sent: 0, error: (err as Error).message }
+  }
+}
+
+/**
+ * Process task deadline reminders — notify assignees of tasks due within 24 hours
+ */
+export async function processTaskDeadlineReminders(): Promise<TaskReminderResult> {
+  try {
+    const settings = await CrmSettings.getSettings()
+    if (!settings.taskRemindersEnabled) return { processed: 0, notified: 0 }
+
+    const now = new Date()
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+    // Find tasks with dueDate within next 24 hours that are not completed
+    const upcomingTasks = await Task.find({
+      dueDate: { $gte: now, $lte: tomorrow },
+      status: { $nin: ['TERMINE', 'VALIDE'] },
+      assignee: { $ne: null },
+    }).populate('assignee', 'name email').populate('project', 'name')
+
+    let notified = 0
+    for (const task of upcomingTasks) {
+      const assignee = task.assignee as unknown as { _id?: string; name?: string; email?: string } | null
+      const project = task.project as unknown as { _id?: string; name?: string } | null
+      if (!assignee?._id) continue
+
+      // Create in-app notification
+      await createNotification({
+        recipient: assignee._id,
+        type: 'TASK_UPDATED',
+        title: 'Tâche bientôt à échéance',
+        message: `"${task.title}" dans ${project?.name || 'un projet'} arrive à échéance demain`,
+        link: `/admin/projects/${project?._id}?tab=tasks`,
+      }).catch(() => {})
+
+      // Send email
+      if (assignee.email) {
+        const dueDateStr = task.dueDate!.toLocaleDateString('fr-FR')
+        await sendTaskReminderEmail({
+          to: assignee.email,
+          name: assignee.name || assignee.email,
+          taskTitle: task.title,
+          projectName: project?.name || 'Projet',
+          dueDate: dueDateStr,
+        }).catch(() => {})
+      }
+
+      notified++
+    }
+
+    return { processed: upcomingTasks.length, notified }
+  } catch (err) {
+    console.error('Error processing task deadline reminders:', err)
+    return { processed: 0, notified: 0, error: (err as Error).message }
+  }
+}
+
+/**
+ * Process project deadline alerts — notify team of projects ending within 7 days
+ */
+export async function processProjectDeadlineAlerts(): Promise<ProjectDeadlineResult> {
+  try {
+    const settings = await CrmSettings.getSettings()
+    if (!settings.projectNotificationsEnabled) return { processed: 0, notified: 0 }
+
+    const now = new Date()
+    const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+    // Find active projects with endDate within 7 days
+    const projects = await Project.find({
+      endDate: { $gte: now, $lte: inSevenDays },
+      status: { $ne: 'TERMINE' },
+      isArchived: { $ne: true },
+    }).populate('assignedTo', 'name email')
+
+    let notified = 0
+    for (const project of projects) {
+      const assignedTo = project.assignedTo as unknown as { _id?: string; name?: string; email?: string } | null
+      if (!assignedTo?._id) continue
+
+      const daysLeft = Math.ceil((project.endDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+      await createNotification({
+        recipient: assignedTo._id,
+        type: 'PROJECT_UPDATE',
+        title: 'Échéance projet proche',
+        message: `Le projet "${project.name}" arrive à échéance dans ${daysLeft} jour(s)`,
+        link: `/admin/projects/${project._id}`,
+      }).catch(() => {})
+
+      notified++
+    }
+
+    return { processed: projects.length, notified }
+  } catch (err) {
+    console.error('Error processing project deadline alerts:', err)
+    return { processed: 0, notified: 0, error: (err as Error).message }
+  }
+}
+
+/**
+ * Process brief deadline reminders — notify assignees of briefs due within 2 days
+ */
+export async function processBriefDeadlineReminders(): Promise<BriefReminderResult> {
+  try {
+    const settings = await CrmSettings.getSettings()
+    if (!settings.briefRemindersEnabled) return { processed: 0, notified: 0 }
+
+    const now = new Date()
+    const inTwoDays = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
+
+    // Find briefs with deadline within 2 days that are not completed
+    const briefs = await MissionBrief.find({
+      deadline: { $gte: now, $lte: inTwoDays },
+      statut: { $nin: ['VALIDE', 'LIVRE'] },
+    }).populate('destinataire', 'name email')
+
+    let notified = 0
+    for (const brief of briefs) {
+      const destinataire = brief.destinataire as unknown as { _id?: string; name?: string; email?: string } | null
+      if (!destinataire?._id) continue
+
+      const deadlineStr = brief.deadline.toLocaleDateString('fr-FR')
+
+      // Create in-app notification
+      await createNotification({
+        recipient: destinataire._id,
+        type: 'TASK_ASSIGNED',
+        title: 'Brief bientôt à échéance',
+        message: `Le brief "${brief.intitule}" arrive à échéance le ${deadlineStr}`,
+        link: '/admin/gestion',
+      }).catch(() => {})
+
+      // Send email
+      if (destinataire.email) {
+        await sendBriefReminderEmail({
+          to: destinataire.email,
+          name: destinataire.name || destinataire.email,
+          briefTitle: brief.intitule,
+          deadline: deadlineStr,
+        }).catch(() => {})
+      }
+
+      notified++
+    }
+
+    return { processed: briefs.length, notified }
+  } catch (err) {
+    console.error('Error processing brief deadline reminders:', err)
+    return { processed: 0, notified: 0, error: (err as Error).message }
+  }
+}
+
+/**
+ * Auto-update client health status based on activity, projects, and invoices
+ */
+export async function processClientHealthAutoUpdate(): Promise<ClientHealthResult> {
+  try {
+    const settings = await CrmSettings.getSettings()
+    if (!settings.clientHealthAutoUpdate) return { processed: 0, updated: 0 }
+
+    const clients = await User.find({ role: 'CLIENT', status: { $in: ['ACTIF', 'PROSPECT', 'EN_PAUSE'] } })
+
+    let updated = 0
+    for (const client of clients) {
+      const clientId = client._id
+
+      // Gather data points
+      const [activeProjects, overdueInvoices, lastProject] = await Promise.all([
+        Project.countDocuments({ client: clientId, status: 'EN_COURS' }),
+        BillingDocument.countDocuments({
+          client: clientId,
+          type: 'INVOICE',
+          status: { $in: ['SENT', 'ISSUED'] },
+          dueAt: { $lt: new Date() },
+        }),
+        Project.findOne({ client: clientId }).sort({ updatedAt: -1 }).select('updatedAt').lean(),
+      ])
+
+      // Calculate health
+      let newHealth: 'BON' | 'ATTENTION' | 'CRITIQUE' = 'BON'
+
+      // Overdue invoices -> CRITIQUE
+      if (overdueInvoices > 0) {
+        newHealth = 'CRITIQUE'
+      }
+      // No active projects and no recent activity -> ATTENTION
+      else if (activeProjects === 0) {
+        const daysSinceActivity = lastProject?.updatedAt
+          ? Math.floor((Date.now() - new Date(lastProject.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+          : 999
+        if (daysSinceActivity > 30) {
+          newHealth = 'ATTENTION'
+        }
+      }
+      // Last contact long ago -> ATTENTION
+      else if (client.lastContactAt) {
+        const daysSinceContact = Math.floor((Date.now() - new Date(client.lastContactAt).getTime()) / (1000 * 60 * 60 * 24))
+        if (daysSinceContact > 30) {
+          newHealth = 'ATTENTION'
+        }
+      }
+
+      if (client.healthStatus !== newHealth) {
+        client.healthStatus = newHealth
+        await client.save()
+        updated++
+      }
+    }
+
+    return { processed: clients.length, updated }
+  } catch (err) {
+    console.error('Error processing client health auto-update:', err)
+    return { processed: 0, updated: 0, error: (err as Error).message }
+  }
+}
+
+/**
  * Run all scheduled jobs (call this from a cron job or interval)
  */
 export async function runScheduledJobs(): Promise<void> {
@@ -372,7 +681,7 @@ export async function runScheduledJobs(): Promise<void> {
   try {
     const settings = await CrmSettings.getSettings()
 
-    // Daily jobs (run at configured time)
+    // Daily jobs at 08:00 (CRM + task/brief/project reminders)
     const [dailyHour, dailyMinute] = (settings.dailyOverdueEmailTime || '08:00').split(':').map(Number)
     if (currentHour === dailyHour && currentMinute >= dailyMinute && currentMinute < dailyMinute + 5) {
       // Check if already run today
@@ -389,6 +698,52 @@ export async function runScheduledJobs(): Promise<void> {
         lastRunTimes.escalation = today
         lastRunTimes.proposalReminder = today
         lastRunTimes.overdueTasks = today
+      }
+
+      // Task deadline reminders (08:00)
+      if (lastRunTimes.taskReminders !== today) {
+        console.log('[CRM Scheduler] Running task deadline reminders...')
+        await processTaskDeadlineReminders()
+        lastRunTimes.taskReminders = today
+      }
+
+      // Project deadline alerts (08:00)
+      if (lastRunTimes.projectDeadlines !== today) {
+        console.log('[CRM Scheduler] Running project deadline alerts...')
+        await processProjectDeadlineAlerts()
+        lastRunTimes.projectDeadlines = today
+      }
+
+      // Brief deadline reminders (08:00)
+      if (lastRunTimes.briefReminders !== today) {
+        console.log('[CRM Scheduler] Running brief deadline reminders...')
+        await processBriefDeadlineReminders()
+        lastRunTimes.briefReminders = today
+      }
+    }
+
+    // Invoice reminders at 09:00
+    if (currentHour === 9 && currentMinute >= 0 && currentMinute < 5) {
+      const today = now.toDateString()
+      if (lastRunTimes.invoiceReminders !== today) {
+        console.log('[CRM Scheduler] Running invoice reminders...')
+        await processInvoiceReminders()
+        lastRunTimes.invoiceReminders = today
+      }
+    }
+
+    // Client health auto-update (weekly, same day as weekly report)
+    if (
+      currentDay === settings.weeklyReportDay &&
+      currentHour === 6 &&
+      currentMinute >= 0 &&
+      currentMinute < 5
+    ) {
+      const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
+      if (lastRunTimes.clientHealth !== thisWeek) {
+        console.log('[CRM Scheduler] Running client health auto-update...')
+        await processClientHealthAutoUpdate()
+        lastRunTimes.clientHealth = thisWeek
       }
     }
 

@@ -9,6 +9,7 @@ import BillingDocument from '../../models/BillingDocument.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { generateBillingPdf } from '../../lib/pdfBilling.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
+import { sendInvoiceEmail } from '../../lib/email.js'
 
 const router = express.Router()
 
@@ -219,6 +220,26 @@ router.post('/:id/send', requirePermission(PERMISSIONS.MANAGE_BILLING), async (r
     doc.status = doc.type === 'QUOTE' ? 'SENT' : 'SENT'
     doc.sentAt = new Date()
     await doc.save()
+
+    // Auto-email client when invoice is sent
+    if (doc.type === 'INVOICE') {
+      const client = await User.findById(doc.client)
+      if (client?.email) {
+        const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+        const downloadUrl = `${baseUrl}/billing/${doc._id}/pdf`
+        const amountStr = `${doc.total.toLocaleString('fr-FR')} ${doc.currency}`
+        const dueDateStr = doc.dueAt ? doc.dueAt.toLocaleDateString('fr-FR') : 'Non définie'
+        sendInvoiceEmail({
+          to: client.email,
+          name: client.name || client.email,
+          invoiceNumber: doc.number,
+          amount: amountStr,
+          dueDate: dueDateStr,
+          downloadUrl,
+        }).catch(() => {})
+      }
+    }
+
     return res.json({ document: doc.toObject() })
   } catch (err) {
     return next(err)

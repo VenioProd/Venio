@@ -13,7 +13,8 @@ import Document from '../../models/Document.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import ActivityLog from '../../models/ActivityLog.js'
 import { logActivity } from '../../lib/activityLog.js'
-import { sendClientProjectUpdateEmail, sendProjectStatusEmail } from '../../lib/email.js'
+import { sendClientProjectUpdateEmail, sendProjectStatusEmail, sendProjectStartEmail, sendProjectCompleteEmail, sendDeliverableNotificationEmail } from '../../lib/email.js'
+import { createNotification } from '../../lib/notifications.js'
 import { generateProjectRecapPdf } from '../../lib/pdfProjectRecap.js'
 import ProjectSection from '../../models/ProjectSection.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
@@ -259,6 +260,9 @@ router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: R
         // Email client about status change
         const client = await User.findById(project.client)
         if (client?.email) {
+          const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5501/espace-client'
+          const portalUrl = `${clientBaseUrl}/projects/${project._id}`
+
           sendProjectStatusEmail({
             to: client.email,
             recipientName: client.name || client.email,
@@ -266,6 +270,32 @@ router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: R
             oldStatus: oldProject.status,
             newStatus: update.status as string,
             projectId: String(project._id),
+          }).catch(() => {})
+
+          // Send specific start/complete emails
+          if (update.status === 'EN_COURS' && oldProject.status === 'EN_ATTENTE') {
+            sendProjectStartEmail({
+              to: client.email,
+              name: client.name || client.email,
+              projectName: project.name,
+              portalUrl,
+            }).catch(() => {})
+          } else if (update.status === 'TERMINE') {
+            sendProjectCompleteEmail({
+              to: client.email,
+              name: client.name || client.email,
+              projectName: project.name,
+              portalUrl,
+            }).catch(() => {})
+          }
+
+          // Create in-app notification for client
+          createNotification({
+            recipient: client._id as any,
+            type: 'PROJECT_UPDATE',
+            title: `Projet "${project.name}" — statut mis à jour`,
+            message: `Le statut de votre projet est passé à ${update.status}`,
+            link: `/espace-client/projects/${project._id}`,
           }).catch(() => {})
         }
       } else if (update.isArchived !== undefined && update.isArchived !== oldProject.isArchived) {
@@ -373,6 +403,25 @@ router.post('/:id/documents', requirePermission(PERMISSIONS.EDIT_PROJECTS), uplo
     })
 
     await logActivity({ project: project._id, action: 'DOCUMENT_UPLOADED', actor: req.user!.id, summary: `Document uploadé : ${file.originalname}`, metadata: { type, filename: file.originalname } })
+
+    // Notify client about new deliverable/document
+    const docClient = await User.findById(project.client)
+    if (docClient?.email) {
+      sendDeliverableNotificationEmail({
+        to: docClient.email,
+        name: docClient.name || docClient.email,
+        projectName: project.name,
+        deliverableName: file.originalname,
+      }).catch(() => {})
+
+      createNotification({
+        recipient: docClient._id as any,
+        type: 'DOCUMENT_ADDED',
+        title: `Nouveau document sur "${project.name}"`,
+        message: `Le fichier "${file.originalname}" a été ajouté à votre projet`,
+        link: `/espace-client/projects/${project._id}`,
+      }).catch(() => {})
+    }
 
     return res.status(201).json({ document })
   } catch (err) {

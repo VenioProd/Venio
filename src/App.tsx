@@ -57,6 +57,8 @@ const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
 const TicketList = lazy(() => import('./pages/admin/TicketList'))
 const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
 const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
+const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
+const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function App() {
@@ -102,6 +104,14 @@ function App() {
           element={
             <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
               <ClientDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/espace-client/guide"
+          element={
+            <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
+              <ClientGuide />
             </ProtectedRoute>
           }
         />
@@ -301,6 +311,14 @@ function App() {
               <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
                 <GestionBoard />
               </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/guide"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <AdminGuide />
             </ProtectedRoute>
           }
         />

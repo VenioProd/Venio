@@ -38,6 +38,7 @@ const billingDocumentSchema = new mongoose.Schema<IBillingDocument>(
     currency: { type: String, default: 'EUR' },
     note: { type: String, default: '' },
     pdfStoragePath: { type: String, default: null },
+    reminderSentAt: { type: Date, default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

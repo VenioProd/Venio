@@ -109,6 +109,16 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     weeklyReportDay: { type: Number, default: 1 }, // 0=Sunday, 1=Monday, etc.
     weeklyReportTime: { type: String, default: '09:00' },
     weeklyReportRecipients: [{ type: String }], // Email addresses
+
+    // ═══════════════════════════════════════════════════════════════
+    // PROJECT / BILLING / TASK AUTOMATIONS
+    // ═══════════════════════════════════════════════════════════════
+    invoiceRemindersEnabled: { type: Boolean, default: true },
+    taskRemindersEnabled: { type: Boolean, default: true },
+    projectNotificationsEnabled: { type: Boolean, default: true },
+    briefRemindersEnabled: { type: Boolean, default: true },
+    clientHealthAutoUpdate: { type: Boolean, default: true },
+    invoiceReminderDays: { type: Number, default: 7 }, // Days after due date to send reminder
   },
   { timestamps: true }
 )

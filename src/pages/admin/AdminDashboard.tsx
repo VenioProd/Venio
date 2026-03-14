@@ -225,6 +225,12 @@ const AdminDashboard = () => {
               </span>
               <span className="portal-action-label">Outils</span>
             </Link>
+            <Link className="portal-button secondary portal-action-link" to="/admin/guide" title="Guide d'utilisation">
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+              </span>
+              <span className="portal-action-label">Guide</span>
+            </Link>
             <Link className="portal-profile-btn" to="/admin/profil" title="Mon profil">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
             </Link>

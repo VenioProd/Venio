@@ -735,6 +735,346 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
   }
 }
 
+/**
+ * Envoie un email de bienvenue au nouveau client.
+ */
+export async function sendWelcomeEmail({ to, name, email, loginUrl }: { to: string; name: string; email: string; loginUrl: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Bienvenue chez ${appName} !`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Bienvenue chez ${appName} ! Votre compte a été créé avec succès.`,
+        '',
+        `Votre identifiant de connexion : ${email}`,
+        '',
+        `Accéder à votre espace : ${loginUrl}`,
+        '',
+        `Si vous avez des questions, n'hésitez pas à nous contacter.`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Bienvenue chez <strong>${escapeHtml(appName)}</strong> ! Votre compte a été créé avec succès.</p>`,
+        `<p>Votre identifiant de connexion : <code>${escapeHtml(email)}</code></p>`,
+        `<p><a href="${escapeHtml(loginUrl)}" style="display: inline-block; padding: 12px 24px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Accéder à mon espace</a></p>`,
+        `<p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de notification de facture au client.
+ */
+export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDate, downloadUrl }: { to: string; name: string; invoiceNumber: string; amount: string; dueDate: string; downloadUrl: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Facture ${invoiceNumber}`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Veuillez trouver ci-dessous les détails de votre facture :`,
+        '',
+        `  Numéro   : ${invoiceNumber}`,
+        `  Montant  : ${amount}`,
+        `  Échéance : ${dueDate}`,
+        '',
+        `Télécharger la facture : ${downloadUrl}`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Veuillez trouver ci-dessous les détails de votre facture :</p>`,
+        '<table style="border-collapse: collapse; margin: 16px 0;">',
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Numéro</td><td style="padding: 4px 0; font-weight: 600;">${escapeHtml(invoiceNumber)}</td></tr>`,
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Montant</td><td style="padding: 4px 0; font-weight: 600;">${escapeHtml(amount)}</td></tr>`,
+        `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Échéance</td><td style="padding: 4px 0; font-weight: 600;">${escapeHtml(dueDate)}</td></tr>`,
+        '</table>',
+        `<p><a href="${escapeHtml(downloadUrl)}" style="display: inline-block; padding: 10px 20px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 6px;">Télécharger la facture</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de relance de facture impayée.
+ */
+export async function sendInvoiceReminderEmail({ to, name, invoiceNumber, amount, daysPastDue }: { to: string; name: string; invoiceNumber: string; amount: string; daysPastDue: number }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Rappel : Facture ${invoiceNumber} en attente de paiement`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Nous vous rappelons que la facture ${invoiceNumber} d'un montant de ${amount} est en attente de paiement depuis ${daysPastDue} jours.`,
+        '',
+        `Merci de procéder au règlement dans les meilleurs délais.`,
+        '',
+        `Si le paiement a déjà été effectué, veuillez ignorer ce message.`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Nous vous rappelons que la facture <strong>${escapeHtml(invoiceNumber)}</strong> d'un montant de <strong>${escapeHtml(amount)}</strong> est en attente de paiement depuis <strong>${daysPastDue} jours</strong>.</p>`,
+        `<p>Merci de procéder au règlement dans les meilleurs délais.</p>`,
+        `<p style="color: #666; font-size: 13px;">Si le paiement a déjà été effectué, veuillez ignorer ce message.</p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de notification de démarrage de projet.
+ */
+export async function sendProjectStartEmail({ to, name, projectName, portalUrl }: { to: string; name: string; projectName: string; portalUrl: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Votre projet "${projectName}" est lancé !`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Bonne nouvelle ! Votre projet "${projectName}" vient de démarrer.`,
+        '',
+        `Vous pouvez suivre l'avancement depuis votre espace client :`,
+        portalUrl,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Bonne nouvelle ! Votre projet <strong>"${escapeHtml(projectName)}"</strong> vient de démarrer.</p>`,
+        `<p><a href="${escapeHtml(portalUrl)}" style="display: inline-block; padding: 10px 20px; background: #22c55e; color: white; text-decoration: none; border-radius: 6px;">Suivre mon projet</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de notification de projet terminé.
+ */
+export async function sendProjectCompleteEmail({ to, name, projectName, portalUrl }: { to: string; name: string; projectName: string; portalUrl: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Votre projet "${projectName}" est terminé !`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Votre projet "${projectName}" est maintenant terminé.`,
+        '',
+        `Vous pouvez consulter les livrables depuis votre espace client :`,
+        portalUrl,
+        '',
+        `Merci pour votre confiance !`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Votre projet <strong>"${escapeHtml(projectName)}"</strong> est maintenant terminé.</p>`,
+        `<p><a href="${escapeHtml(portalUrl)}" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px;">Voir mon projet</a></p>`,
+        `<p>Merci pour votre confiance !</p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de notification de nouveau livrable.
+ */
+export async function sendDeliverableNotificationEmail({ to, name, projectName, deliverableName }: { to: string; name: string; projectName: string; deliverableName: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+  const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5501/espace-client'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Nouveau document sur "${projectName}"`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Un nouveau document a été ajouté à votre projet "${projectName}" :`,
+        `  ${deliverableName}`,
+        '',
+        `Consultez votre espace client pour le télécharger.`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Un nouveau document a été ajouté à votre projet <strong>"${escapeHtml(projectName)}"</strong> :</p>`,
+        `<div style="margin: 16px 0; padding: 16px; background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">`,
+        `<p style="margin: 0; font-weight: 600;">${escapeHtml(deliverableName)}</p>`,
+        `</div>`,
+        `<p><a href="${escapeHtml(clientBaseUrl)}" style="display: inline-block; padding: 10px 20px; background: #22c55e; color: white; text-decoration: none; border-radius: 6px;">Voir mon espace</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de rappel d'échéance de tâche.
+ */
+export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, dueDate }: { to: string; name: string; taskTitle: string; projectName: string; dueDate: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Rappel : Tâche "${taskTitle}" arrive à échéance`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `La tâche "${taskTitle}" sur le projet "${projectName}" arrive à échéance le ${dueDate}.`,
+        '',
+        `Pensez à la finaliser avant la date limite.`,
+        '',
+        `Accéder au projet : ${baseUrl}/projects`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>La tâche <strong>"${escapeHtml(taskTitle)}"</strong> sur le projet <strong>"${escapeHtml(projectName)}"</strong> arrive à échéance le <strong>${escapeHtml(dueDate)}</strong>.</p>`,
+        `<p>Pensez à la finaliser avant la date limite.</p>`,
+        `<p><a href="${escapeHtml(baseUrl)}/projects" style="display: inline-block; padding: 10px 20px; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px;">Voir mes tâches</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
+/**
+ * Envoie un email de rappel d'échéance de brief de mission.
+ */
+export async function sendBriefReminderEmail({ to, name, briefTitle, deadline }: { to: string; name: string; briefTitle: string; deadline: string }): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) {
+    return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
+  }
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const appName = process.env.APP_NAME || 'Venio'
+  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Rappel : Brief "${briefTitle}" — échéance le ${deadline}`,
+      text: [
+        `Bonjour ${name},`,
+        '',
+        `Le brief de mission "${briefTitle}" arrive à échéance le ${deadline}.`,
+        '',
+        `Pensez à finaliser vos livrables avant la date limite.`,
+        '',
+        `Accéder à la gestion : ${baseUrl}/gestion`,
+        '',
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour ${escapeHtml(name)},</p>`,
+        `<p>Le brief de mission <strong>"${escapeHtml(briefTitle)}"</strong> arrive à échéance le <strong>${escapeHtml(deadline)}</strong>.</p>`,
+        `<p>Pensez à finaliser vos livrables avant la date limite.</p>`,
+        `<p><a href="${escapeHtml(baseUrl)}/gestion" style="display: inline-block; padding: 10px 20px; background: #f97316; color: white; text-decoration: none; border-radius: 6px;">Voir mes briefs</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
+
 function escapeHtml(s: string | null | undefined): string {
   if (s == null) return ''
   return String(s)
