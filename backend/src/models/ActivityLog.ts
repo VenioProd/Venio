@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IActivityLog } from '../types/models.js'
+import type { IActivityLog } from '../types/models/index.js'
 
 const activityLogSchema = new mongoose.Schema<IActivityLog>(
   {

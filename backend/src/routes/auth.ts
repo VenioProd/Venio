@@ -70,6 +70,11 @@ router.post(
 
       AuditLog.create({ userId: user._id, email, action: 'LOGIN_SUCCESS', ip: clientIp, userAgent, metadata: { role: user.role } }).catch(() => {})
 
+      // Track last login
+      user.lastLoginAt = new Date()
+      user.lastLoginIp = typeof clientIp === 'string' ? clientIp : Array.isArray(clientIp) ? clientIp[0] : ''
+      user.save().catch(() => {})
+
       const token = signToken(user)
       return res.json({ token })
     } catch (err) {
@@ -154,6 +159,7 @@ router.post(
       }
 
       user.passwordHash = await bcrypt.hash(newPassword, 10)
+      user.passwordChangedAt = new Date()
       await user.save()
 
       AuditLog.create({ userId: user._id, email: user.email, action: 'PASSWORD_CHANGED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
@@ -276,6 +282,7 @@ router.post(
       }
 
       user.passwordHash = await bcrypt.hash(password, 10)
+      user.passwordChangedAt = new Date()
       await user.save()
 
       resetTokens.delete(token)

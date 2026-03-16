@@ -1,0 +1,42 @@
+import type { Document, Types } from 'mongoose'
+import type {
+  UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus,
+} from '../enums.js'
+
+// ─── User ───
+export interface IUserAddress {
+  line1: string
+  line2: string
+  city: string
+  postalCode: string
+  country: string
+}
+
+export interface IUser extends Document {
+  email: string
+  passwordHash: string
+  role: UserRole
+  name: string
+  companyName: string
+  serviceType: string
+  phone: string
+  website: string
+  address: IUserAddress
+  tags: string[]
+  source: UserSource
+  ownerAdminId: Types.ObjectId | null
+  status: ClientStatus
+  onboardingStatus: OnboardingStatus
+  healthStatus: HealthStatus
+  lastContactAt: Date | null
+  archivedAt: Date | null
+  twoFactorSecret: string | null
+  twoFactorEnabled: boolean
+  customPermissions: string[] | null
+  passwordChangedAt: Date | null
+  lastLoginAt: Date | null
+  lastLoginIp: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}

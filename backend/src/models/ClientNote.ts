@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IClientNote } from '../types/models.js'
+import type { IClientNote } from '../types/models/index.js'
 
 const clientNoteSchema = new mongoose.Schema<IClientNote>(
   {

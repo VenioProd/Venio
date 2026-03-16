@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IClientContact } from '../types/models.js'
+import type { IClientContact } from '../types/models/index.js'
 
 const clientContactSchema = new mongoose.Schema<IClientContact>(
   {

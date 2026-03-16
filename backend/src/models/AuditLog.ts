@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IAuditLog } from '../types/models.js'
+import type { IAuditLog } from '../types/models/index.js'
 
 const auditLogSchema = new mongoose.Schema<IAuditLog>(
   {
@@ -8,7 +8,13 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
     action: {
       type: String,
       required: true,
-      enum: ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT', 'PASSWORD_CHANGED', 'PROFILE_UPDATED'],
+      enum: [
+        'LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT',
+        'PASSWORD_CHANGED', 'PASSWORD_RESET', 'PROFILE_UPDATED',
+        'TOOL_ACCESS_VIEWED', 'TOOL_ACCESS_CREATED', 'TOOL_ACCESS_UPDATED', 'TOOL_ACCESS_DELETED',
+        'BRUTE_FORCE_DETECTED', 'SUSPICIOUS_LOGIN',
+        'PERMISSION_CHANGED', 'ACCOUNT_LOCKED', 'ACCOUNT_UNLOCKED',
+      ],
     },
     ip: { type: String, default: '' },
     userAgent: { type: String, default: '' },

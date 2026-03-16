@@ -8,6 +8,7 @@ export interface IToolAccess extends Document {
   category: 'IA' | 'DESIGN' | 'DEV' | 'MARKETING' | 'COMMUNICATION' | 'GESTION' | 'AUTRE'
   notes: string
   addedBy: mongoose.Types.ObjectId
+  lastRotatedAt: Date | null
   addedByName: string
   createdAt: Date
   updatedAt: Date
@@ -18,7 +19,8 @@ const toolAccessSchema = new Schema<IToolAccess>(
     name: { type: String, required: true, trim: true },
     url: { type: String, default: '', trim: true },
     login: { type: String, required: true, trim: true },
-    password: { type: String, required: true },
+    password: { type: String, required: true }, // encrypted via AES-256-GCM when ENCRYPTION_KEY is set
+    lastRotatedAt: { type: Date, default: null },
     category: {
       type: String,
       enum: ['IA', 'DESIGN', 'DEV', 'MARKETING', 'COMMUNICATION', 'GESTION', 'AUTRE'],

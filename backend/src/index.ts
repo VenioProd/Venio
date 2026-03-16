@@ -15,14 +15,14 @@ import authRoutes from './routes/auth.js'
 import projectRoutes from './routes/projects.js'
 import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
-import adminClientRoutes from './routes/admin/clients.js'
+import adminClientRoutes from './routes/admin/clients/index.js'
 import adminAdminsRoutes from './routes/admin/admins.js'
 import adminProjectRoutes from './routes/admin/projects.js'
 import adminProjectSectionsRoutes from './routes/admin/projectSections.js'
 import adminProjectItemsRoutes from './routes/admin/projectItems.js'
 import adminBillingRoutes from './routes/admin/billing.js'
 import adminCrmRoutes from './routes/admin/crm.js'
-import adminTaskRoutes from './routes/admin/tasks.js'
+import adminTaskRoutes from './routes/admin/tasks/index.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import adminDashboardRoutes from './routes/admin/dashboard.js'
 import adminSearchRoutes from './routes/admin/search.js'
@@ -40,6 +40,7 @@ import adminTicketRoutes from './routes/admin/tickets.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
 import adminToolAccessRoutes from './routes/admin/toolAccess.js'
+import adminAutomationRoutes from './routes/admin/automations.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import bcrypt from 'bcryptjs'
@@ -49,6 +50,7 @@ import Lead from './models/Lead.js'
 import LeadActivity from './models/LeadActivity.js'
 import ClientActivity from './models/ClientActivity.js'
 import { startScheduler } from './lib/crmScheduler.js'
+import { initAutomationEngine } from './automation/index.js'
 
 dotenv.config()
 
@@ -155,6 +157,7 @@ app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/admin/tool-access', adminToolAccessRoutes)
+app.use('/api/admin/automations', adminAutomationRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
@@ -292,8 +295,10 @@ mongoose
   .then(() => {
     app.listen(port, () => {
       console.log(`API running on http://localhost:${port}`)
-      // Start CRM automation scheduler
+      // Start CRM automation scheduler (legacy)
       startScheduler()
+      // Start new automation engine
+      initAutomationEngine()
     })
   })
   .catch((err: unknown) => {

@@ -22,6 +22,11 @@ describe('permissions module', () => {
         'VIEW_BILLING',
         'MANAGE_BILLING',
         'MANAGE_TASKS',
+        'VIEW_QUALIOPI',
+        'MANAGE_QUALIOPI',
+        'VIEW_TICKETS',
+        'CREATE_TICKETS',
+        'MANAGE_TICKETS',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })
@@ -143,16 +148,18 @@ describe('permissions module', () => {
     it('should return an array for ADMIN', () => {
       const perms = getPermissionsForRole('ADMIN')
       expect(Array.isArray(perms)).toBe(true)
-      expect(perms.length).toBe(10) // all except MANAGE_ADMINS
+      expect(perms.length).toBe(12) // all except MANAGE_ADMINS, VIEW_QUALIOPI, MANAGE_QUALIOPI, MANAGE_TICKETS
       expect(perms).not.toContain(PERMISSIONS.MANAGE_ADMINS)
     })
 
-    it('should return 3 permissions for VIEWER', () => {
+    it('should return 5 permissions for VIEWER', () => {
       const perms = getPermissionsForRole('VIEWER')
-      expect(perms.length).toBe(3)
+      expect(perms.length).toBe(5)
       expect(perms).toContain(PERMISSIONS.VIEW_PROJECTS)
       expect(perms).toContain(PERMISSIONS.VIEW_CONTENT)
       expect(perms).toContain(PERMISSIONS.VIEW_BILLING)
+      expect(perms).toContain(PERMISSIONS.VIEW_TICKETS)
+      expect(perms).toContain(PERMISSIONS.CREATE_TICKETS)
     })
 
     it('should return an empty array for CLIENT', () => {

@@ -1,5 +1,5 @@
 import mongoose, { Model } from 'mongoose'
-import type { ICrmSettings } from '../types/models.js'
+import type { ICrmSettings } from '../types/models/index.js'
 
 interface CrmSettingsModel extends Model<ICrmSettings> {
   getSettings(): Promise<ICrmSettings>

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
-import type { IMissionBrief } from '../types/models.js'
+import type { IMissionBrief } from '../types/models/index.js'
 
 const dateCleSchema = new Schema(
   {

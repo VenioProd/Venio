@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { ISequence } from '../types/models.js'
+import type { ISequence } from '../types/models/index.js'
 
 const sequenceSchema = new mongoose.Schema<ISequence>(
   {

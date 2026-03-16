@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { ILeadActivity } from '../types/models.js'
+import type { ILeadActivity } from '../types/models/index.js'
 
 const leadActivitySchema = new mongoose.Schema<ILeadActivity>(
   {

@@ -86,10 +86,15 @@ describe('hasPermission', () => {
 })
 
 describe('resolveUserPermissions', () => {
-  it('returns custom permissions when user has a non-empty permissions array', () => {
+  it('returns role defaults merged with custom permissions (union)', () => {
     const user = makeUser('VIEWER', ['manage_admins', 'edit_projects'])
     const perms = resolveUserPermissions(user)
-    expect(perms).toEqual(['manage_admins', 'edit_projects'])
+    // Should contain role defaults (VIEWER) + custom permissions
+    expect(perms).toContain('view_projects')
+    expect(perms).toContain('view_content')
+    expect(perms).toContain('view_billing')
+    expect(perms).toContain('manage_admins')
+    expect(perms).toContain('edit_projects')
   })
 
   it('falls back to role defaults when permissions array is empty', () => {

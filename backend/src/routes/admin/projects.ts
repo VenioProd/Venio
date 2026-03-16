@@ -13,6 +13,7 @@ import Document from '../../models/Document.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import ActivityLog from '../../models/ActivityLog.js'
 import { logActivity } from '../../lib/activityLog.js'
+import { triggerAutomations } from '../../automation/trigger.js'
 import { sendClientProjectUpdateEmail, sendProjectStatusEmail, sendProjectStartEmail, sendProjectCompleteEmail, sendDeliverableNotificationEmail } from '../../lib/email.js'
 import { createNotification } from '../../lib/notifications.js'
 import { generateProjectRecapPdf } from '../../lib/pdfProjectRecap.js'
@@ -211,6 +212,12 @@ router.post('/', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Reque
 
     await logActivity({ project: project._id, action: 'PROJECT_CREATED', actor: req.user!.id, summary: `Projet "${name}" créé` })
 
+    // Trigger event-driven automations (fire-and-forget)
+    triggerAutomations(
+      ['project.auto_create_full_workspace', 'nextcloud.auto_create_project_structure', 'project.startup_checklist'],
+      { projectId: project._id.toString(), actorId: req.user!.id }
+    )
+
     return res.status(201).json({ project })
   } catch (err) {
     return next(err)
@@ -297,6 +304,14 @@ router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: R
             message: `Le statut de votre projet est passé à ${update.status}`,
             link: `/espace-client/projects/${project._id}`,
           }).catch(() => {})
+        }
+
+        // Trigger closure checklist when project is completed
+        if (update.status === 'TERMINE') {
+          triggerAutomations(
+            ['project.closure_checklist'],
+            { projectId: project._id.toString(), newStatus: 'TERMINE', actorId: req.user!.id }
+          )
         }
       } else if (update.isArchived !== undefined && update.isArchived !== oldProject.isArchived) {
         await logActivity({ project: project._id, action: update.isArchived ? 'PROJECT_ARCHIVED' : 'PROJECT_UNARCHIVED', actor: req.user!.id, summary: update.isArchived ? 'Projet archivé' : 'Projet désarchivé' })

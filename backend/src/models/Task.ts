@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { ITask } from '../types/models.js'
+import type { ITask } from '../types/models/index.js'
 
 const taskSchema = new mongoose.Schema<ITask>(
   {
@@ -24,6 +24,7 @@ const taskSchema = new mongoose.Schema<ITask>(
     tags: [{ type: String, trim: true }],
     order: { type: Number, default: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    isArchived: { type: Boolean, default: false },
     attachments: [{
       originalName: { type: String, required: true },
       storagePath: { type: String, required: true },

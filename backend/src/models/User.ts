@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IUser } from '../types/models.js'
+import type { IUser } from '../types/models/index.js'
 
 const userAddressSchema = new mongoose.Schema(
   {
@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema<IUser>(
     twoFactorEnabled: { type: Boolean, default: false },
     // Custom permissions override (null = use role defaults)
     customPermissions: { type: [String], default: null },
+    // Security tracking
+    passwordChangedAt: { type: Date, default: null },
+    lastLoginAt: { type: Date, default: null },
+    lastLoginIp: { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 )

@@ -7,6 +7,7 @@ import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import ProjectItem from '../../models/ProjectItem.js'
 import Project from '../../models/Project.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
+import { triggerAutomations } from '../../automation/trigger.js'
 
 const router = express.Router()
 
@@ -140,6 +141,14 @@ router.post('/:projectId/items', requirePermission(PERMISSIONS.EDIT_CONTENT), up
     await item.save()
     await item.populate('section', 'title')
     await item.populate('createdBy', 'name email')
+
+    // Trigger deliverable notification if type is LIVRABLE
+    if (type === 'LIVRABLE') {
+      triggerAutomations(
+        ['project.new_deliverable_client_notification'],
+        { itemId: item._id.toString(), projectId, actorId: req.user!.id }
+      )
+    }
 
     res.status(201).json({ item })
   } catch (err) {

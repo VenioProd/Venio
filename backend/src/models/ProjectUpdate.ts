@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IProjectUpdate } from '../types/models.js'
+import type { IProjectUpdate } from '../types/models/index.js'
 
 const projectUpdateSchema = new mongoose.Schema<IProjectUpdate>(
   {

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IBillingDocument } from '../types/models.js'
+import type { IBillingDocument } from '../types/models/index.js'
 
 const billingLineSchema = new mongoose.Schema(
   {

@@ -8,6 +8,7 @@ import { requireAdmin, requireAnyPermission, requirePermission } from '../../mid
 import User from '../../models/User.js'
 import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
+import { triggerAutomations } from '../../automation/trigger.js'
 import { sendAdminCredentials } from '../../lib/email.js'
 import { resetTokens } from '../auth.js'
 
@@ -88,6 +89,12 @@ router.post(
       name,
       customPermissions,
     })
+
+    // Trigger internal user onboarding
+    triggerAutomations(
+      ['onboarding.internal_user_setup'],
+      { userId: user._id.toString(), actorId: req.user!.id }
+    )
 
     const safeUser = await User.findById(user._id).select('-passwordHash')
     return res.status(201).json({ user: safeUser })

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IDocument } from '../types/models.js'
+import type { IDocument } from '../types/models/index.js'
 
 const documentSchema = new mongoose.Schema<IDocument>(
   {

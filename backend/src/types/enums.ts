@@ -3,7 +3,7 @@ export type UserRole = 'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
-export type HealthStatus = 'BON' | 'ATTENTION' | 'CRITIQUE'
+export type HealthStatus = 'EXCELLENT' | 'BON' | 'ATTENTION' | 'CRITIQUE'
 export type UserSource = 'REFERRAL' | 'INBOUND' | 'OUTBOUND' | 'PARTNER' | 'AUTRE'
 
 // ─── Project ───
@@ -39,7 +39,12 @@ export type ActivityAction =
 export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY'
 
 // ─── Audit ───
-export type AuditAction = 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'PASSWORD_CHANGED' | 'PROFILE_UPDATED'
+export type AuditAction =
+  | 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT'
+  | 'PASSWORD_CHANGED' | 'PASSWORD_RESET' | 'PROFILE_UPDATED'
+  | 'TOOL_ACCESS_VIEWED' | 'TOOL_ACCESS_CREATED' | 'TOOL_ACCESS_UPDATED' | 'TOOL_ACCESS_DELETED'
+  | 'BRUTE_FORCE_DETECTED' | 'SUSPICIOUS_LOGIN'
+  | 'PERMISSION_CHANGED' | 'ACCOUNT_LOCKED' | 'ACCOUNT_UNLOCKED'
 
 // ─── Client Note ───
 export type NoteVisibility = 'INTERNE'

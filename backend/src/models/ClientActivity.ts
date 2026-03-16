@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IClientActivity } from '../types/models.js'
+import type { IClientActivity } from '../types/models/index.js'
 
 const clientActivitySchema = new mongoose.Schema<IClientActivity>(
   {

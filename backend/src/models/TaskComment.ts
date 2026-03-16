@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { ITaskComment } from '../types/models.js'
+import type { ITaskComment } from '../types/models/index.js'
 
 const taskCommentSchema = new mongoose.Schema<ITaskComment>(
   {

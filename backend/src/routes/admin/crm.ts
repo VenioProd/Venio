@@ -8,6 +8,7 @@ import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
+import { triggerAutomations } from '../../automation/trigger.js'
 import {
   getRoundRobinAssignee,
   logLeadActivity,
@@ -326,6 +327,12 @@ router.patch('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req
         await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
         // Auto-create project from won lead (fire-and-forget)
         autoCreateProjectFromLead(lead, req.user!.id).catch(() => {})
+
+        // Trigger automation: auto-convert won lead
+        triggerAutomations(
+          ['crm.auto_convert_won_lead'],
+          { leadId: lead._id.toString(), newStatus: 'WON', actorId: req.user!.id }
+        )
       }
     }
 

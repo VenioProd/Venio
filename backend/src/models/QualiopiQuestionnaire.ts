@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import crypto from 'crypto'
-import type { IQualiopiQuestionnaire } from '../types/models.js'
+import type { IQualiopiQuestionnaire } from '../types/models/index.js'
 
 const answerSchema = new mongoose.Schema({
   questionIndex: { type: Number, required: true },

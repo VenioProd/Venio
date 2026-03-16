@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IProjectItem } from '../types/models.js'
+import type { IProjectItem } from '../types/models/index.js'
 
 const projectItemSchema = new mongoose.Schema<IProjectItem>(
   {

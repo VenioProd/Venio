@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import type { IQualiopiCriterion } from '../types/models.js'
+import type { IQualiopiCriterion } from '../types/models/index.js'
 
 const fileSchema = new mongoose.Schema({
   originalName: { type: String, required: true },
