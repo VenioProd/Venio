@@ -1,0 +1,850 @@
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { apiFetch, getToken } from '../../../lib/api'
+import { useAuth } from '../../../context/AuthContext'
+import { useConfirm } from '../../../hooks/useConfirm'
+import { STATUS_CONFIG, REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage, daysRemaining } from './types'
+import type { Intern, ActivityReport } from './types'
+import '../../espace-client/ClientPortal.css'
+import '../AdminPortal.css'
+
+const InternList = () => {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+  const { confirm, ConfirmDialog } = useConfirm()
+  const [searchParams] = useSearchParams()
+
+  // ── Tabs ──
+  const initialTab = searchParams.get('tab') as 'stagiaires' | 'rapports' | 'mes-rapports' || (isSuperAdmin ? 'stagiaires' : 'mes-rapports')
+  const [activeTab, setActiveTab] = useState<'stagiaires' | 'rapports' | 'mes-rapports'>(initialTab)
+
+  // ── Stagiaires ──
+  const [interns, setInterns] = useState<Intern[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingIntern, setEditingIntern] = useState<Intern | null>(null)
+  const [expandedIntern, setExpandedIntern] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [submitting, setSubmitting] = useState(false)
+
+  // ── Modal commentaire ──
+  const [commentModal, setCommentModal] = useState<{ reportId: string; status: string } | null>(null)
+  const [commentText, setCommentText] = useState('')
+
+  // ── Vue rapports : liste ou kanban ──
+  const [reportView, setReportView] = useState<'liste' | 'kanban'>('liste')
+
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '', password: '',
+    poste: '', departement: '', dateDebut: '', dateFin: '',
+    tuteur: '', ecole: '', formation: '', notes: '',
+  })
+
+  // ── Rapports ──
+  const [reports, setReports] = useState<ActivityReport[]>([])
+  const [myReports, setMyReports] = useState<ActivityReport[]>([])
+  const [showReportForm, setShowReportForm] = useState(false)
+  const [reportForm, setReportForm] = useState({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
+  const [reportFiles, setReportFiles] = useState<File[]>([])
+  const reportFileRef = useRef<HTMLInputElement>(null)
+  const [expandedReport, setExpandedReport] = useState<string | null>(null)
+
+  // ── Admins pour tuteur ──
+  const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
+
+  // ── Intern identifie ──
+  const [myIntern, setMyIntern] = useState<Intern | null>(null)
+
+  // ── Load data ──
+  const loadInterns = useCallback(async () => {
+    try {
+      const data = await apiFetch<Intern[]>('/api/admin/interns')
+      setInterns(data)
+    } catch { /* silent */ } finally { setLoading(false) }
+  }, [])
+
+  const loadReports = useCallback(async () => {
+    try {
+      const data = await apiFetch<ActivityReport[]>('/api/admin/interns/reports/all')
+      setReports(data)
+    } catch { /* silent */ }
+  }, [])
+
+  const loadMyReports = useCallback(async () => {
+    try {
+      const data = await apiFetch<ActivityReport[]>('/api/admin/interns/reports/mine')
+      setMyReports(data)
+      setMyIntern({} as Intern) // marque qu'on est stagiaire
+    } catch {
+      setMyIntern(null)
+    }
+  }, [])
+
+  const loadAdmins = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ users: { _id: string; name: string }[] }>('/api/admin/admins')
+      setAdmins(data.users || [])
+    } catch { /* silent */ }
+  }, [])
+
+  useEffect(() => {
+    loadInterns()
+    loadAdmins()
+    loadMyReports()
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'rapports' && isAdmin) loadReports()
+  }, [activeTab])
+
+  // ── Filtered interns ──
+  const filteredInterns = interns.filter((i) => filterStatus === 'all' || i.status === filterStatus)
+
+  // ── Intern CRUD ──
+  const resetForm = () => {
+    setForm({ name: '', email: '', phone: '', password: '', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '' })
+    setEditingIntern(null)
+    setShowForm(false)
+  }
+
+  const handleCreateIntern = async () => {
+    if (!form.name || !form.email || !form.poste || !form.dateDebut || !form.dateFin) return
+    setSubmitting(true)
+    try {
+      await apiFetch('/api/admin/interns', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...form,
+          tuteur: form.tuteur || undefined,
+        }),
+      })
+      resetForm()
+      loadInterns()
+    } catch (err: any) {
+      alert(err.message || 'Erreur')
+    } finally { setSubmitting(false) }
+  }
+
+  const handleEditIntern = (intern: Intern) => {
+    setEditingIntern(intern)
+    setForm({
+      name: intern.userId.name,
+      email: intern.userId.email,
+      phone: intern.userId.phone || '',
+      password: '',
+      poste: intern.poste,
+      departement: intern.departement,
+      dateDebut: intern.dateDebut.split('T')[0],
+      dateFin: intern.dateFin.split('T')[0],
+      tuteur: intern.tuteur?._id || '',
+      ecole: intern.ecole,
+      formation: intern.formation,
+      notes: intern.notes,
+    })
+    setShowForm(true)
+  }
+
+  const handleUpdateIntern = async () => {
+    if (!editingIntern) return
+    setSubmitting(true)
+    try {
+      await apiFetch(`/api/admin/interns/${editingIntern._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          poste: form.poste,
+          departement: form.departement,
+          dateDebut: form.dateDebut,
+          dateFin: form.dateFin,
+          tuteur: form.tuteur || null,
+          ecole: form.ecole,
+          formation: form.formation,
+          notes: form.notes,
+        }),
+      })
+      resetForm()
+      loadInterns()
+    } catch (err: any) {
+      alert(err.message || 'Erreur')
+    } finally { setSubmitting(false) }
+  }
+
+  const handleStatusChange = async (internId: string, status: string) => {
+    try {
+      await apiFetch(`/api/admin/interns/${internId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      loadInterns()
+    } catch { /* silent */ }
+  }
+
+  const handleDeleteIntern = async (internId: string) => {
+    const ok = await confirm({ message: 'Supprimer definitivement ce stagiaire et tous ses rapports ?', title: 'Suppression', variant: 'danger' })
+    if (!ok) return
+    try {
+      await apiFetch(`/api/admin/interns/${internId}`, { method: 'DELETE' })
+      loadInterns()
+    } catch { /* silent */ }
+  }
+
+  // ── Report CRUD ──
+  const handleCreateReport = async () => {
+    if (!reportForm.contenu) return
+    setSubmitting(true)
+    try {
+      const fd = new FormData()
+      fd.append('date', reportForm.date)
+      fd.append('contenu', reportForm.contenu)
+      if (reportForm.taches) {
+        const tachesArr = reportForm.taches.split('\n').filter((t) => t.trim())
+        fd.append('taches', JSON.stringify(tachesArr))
+      }
+      reportFiles.forEach((f) => fd.append('files', f))
+
+      await fetch('/api/admin/interns/reports', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      })
+
+      setReportForm({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
+      setReportFiles([])
+      setShowReportForm(false)
+      loadMyReports()
+      if (isAdmin) loadReports()
+    } catch { /* silent */ } finally { setSubmitting(false) }
+  }
+
+  const handleValidateReport = async (reportId: string, status: string, commentaire?: string) => {
+    try {
+      const fd = new FormData()
+      fd.append('status', status)
+      if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
+      await fetch(`/api/admin/interns/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      })
+      loadReports()
+    } catch { /* silent */ }
+  }
+
+  const handleSubmitComment = async () => {
+    if (!commentModal) return
+    await handleValidateReport(commentModal.reportId, commentModal.status, commentText)
+    setCommentModal(null)
+    setCommentText('')
+  }
+
+  const handleDeleteReport = async (reportId: string) => {
+    const ok = await confirm({ message: 'Supprimer ce rapport ?', title: 'Suppression', variant: 'danger' })
+    if (!ok) return
+    try {
+      await apiFetch(`/api/admin/interns/reports/${reportId}`, { method: 'DELETE' })
+      loadMyReports()
+      if (isAdmin) loadReports()
+    } catch { /* silent */ }
+  }
+
+  // ── Render ──
+  if (loading) return <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>Chargement...</div>
+
+  const tabs = [
+    { key: 'stagiaires', label: 'Stagiaires', count: interns.length },
+    { key: 'rapports', label: 'Tous les rapports', count: reports.length },
+  ]
+
+  const effectiveTab = activeTab
+
+  return (
+    <div className="portal-container">
+      {ConfirmDialog}
+
+      {/* Modal commentaire */}
+      {commentModal && (
+        <div className="confirm-modal-overlay" onClick={() => setCommentModal(null)}>
+          <div className="confirm-modal confirm-modal--info" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="confirm-modal__header">
+              <h2 className="confirm-modal__title">Commentaire pour le stagiaire</h2>
+              <button className="confirm-modal__close" onClick={() => setCommentModal(null)} type="button" aria-label="Fermer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="confirm-modal__body">
+              <div className="ticket-form-field">
+                <label>Votre commentaire</label>
+                <textarea
+                  rows={4}
+                  placeholder="Ecrivez votre retour sur le rapport..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="confirm-modal__footer">
+              <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={() => setCommentModal(null)} type="button">Annuler</button>
+              <button className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info" onClick={handleSubmitComment} type="button">Envoyer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="ticket-hero">
+        <div className="ticket-hero-content">
+          <Link to="/admin" className="ticket-back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Retour au dashboard
+          </Link>
+          <h1 className="ticket-hero-title">Gestion des stagiaires</h1>
+        </div>
+        <button className="ticket-new-btn" onClick={() => { resetForm(); setShowForm(true) }}>
+          + Nouveau stagiaire
+        </button>
+      </div>
+
+      {/* Tabs */}
+      {tabs.length > 1 && (
+        <div className="ticket-tabs">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              className={`ticket-tab ${effectiveTab === t.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(t.key as any)}
+            >
+              {t.label} <span className="ticket-tab-badge">{t.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ═══ TAB: Stagiaires ═══ */}
+      {effectiveTab === 'stagiaires' && isAdmin && (
+        <>
+          {/* Filtres status */}
+          <div className="ticket-stats" style={{ marginBottom: 16 }}>
+            {['all', 'ACTIF', 'TERMINE', 'ANNULE'].map((s) => {
+              const label = s === 'all' ? 'Tous' : STATUS_CONFIG[s]?.label || s
+              const color = s === 'all' ? '#8b5cf6' : STATUS_CONFIG[s]?.color || '#fff'
+              const count = s === 'all' ? interns.length : interns.filter((i) => i.status === s).length
+              return (
+                <button
+                  key={s}
+                  className={`ticket-stat-card ${filterStatus === s ? 'active' : ''}`}
+                  style={{ borderColor: filterStatus === s ? color : 'transparent' }}
+                  onClick={() => setFilterStatus(s)}
+                >
+                  <span style={{ color, fontWeight: 700, fontSize: 22 }}>{count}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Formulaire creation/edition */}
+          {showForm && (
+            <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
+            <div className="ticket-form">
+              <h3 style={{ margin: '0 0 16px', color: '#0ea5e9' }}>{editingIntern ? 'Modifier le stagiaire' : 'Nouveau stagiaire'}</h3>
+              <div className="ticket-form-row">
+                <div className="ticket-form-field">
+                  <label>Nom complet *</label>
+                  <input placeholder="Nom complet" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!!editingIntern} />
+                </div>
+                <div className="ticket-form-field">
+                  <label>Email *</label>
+                  <input type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} disabled={!!editingIntern} />
+                </div>
+              </div>
+              <div className="ticket-form-row">
+                <div className="ticket-form-field">
+                  <label>Telephone</label>
+                  <input placeholder="Telephone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={!!editingIntern} />
+                </div>
+                {!editingIntern ? (
+                  <div className="ticket-form-field">
+                    <label>Mot de passe</label>
+                    <input type="password" placeholder="Defaut: Stage2026!" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  </div>
+                ) : (
+                  <div className="ticket-form-field">
+                    <label>Poste / Mission *</label>
+                    <input placeholder="Poste / Mission" value={form.poste} onChange={(e) => setForm({ ...form, poste: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              {!editingIntern && (
+                <div className="ticket-form-row">
+                  <div className="ticket-form-field">
+                    <label>Poste / Mission *</label>
+                    <input placeholder="Poste / Mission" value={form.poste} onChange={(e) => setForm({ ...form, poste: e.target.value })} />
+                  </div>
+                  <div className="ticket-form-field">
+                    <label>Departement</label>
+                    <input placeholder="Departement" value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} />
+                  </div>
+                </div>
+              )}
+              {editingIntern && (
+                <div className="ticket-form-row">
+                  <div className="ticket-form-field">
+                    <label>Departement</label>
+                    <input placeholder="Departement" value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} />
+                  </div>
+                  <div className="ticket-form-field">
+                    <label>Tuteur</label>
+                    <select value={form.tuteur} onChange={(e) => setForm({ ...form, tuteur: e.target.value })}>
+                      <option value="">-- Tuteur --</option>
+                      {admins.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+              <div className="ticket-form-row">
+                <div className="ticket-form-field">
+                  <label>Date de debut *</label>
+                  <input type="date" value={form.dateDebut} onChange={(e) => setForm({ ...form, dateDebut: e.target.value })} />
+                </div>
+                <div className="ticket-form-field">
+                  <label>Date de fin *</label>
+                  <input type="date" value={form.dateFin} onChange={(e) => setForm({ ...form, dateFin: e.target.value })} />
+                </div>
+              </div>
+              {!editingIntern && (
+                <div className="ticket-form-row">
+                  <div className="ticket-form-field">
+                    <label>Tuteur</label>
+                    <select value={form.tuteur} onChange={(e) => setForm({ ...form, tuteur: e.target.value })}>
+                      <option value="">-- Tuteur --</option>
+                      {admins.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="ticket-form-field">
+                    <label>Ecole / Universite</label>
+                    <input placeholder="Ecole / Universite" value={form.ecole} onChange={(e) => setForm({ ...form, ecole: e.target.value })} />
+                  </div>
+                </div>
+              )}
+              {editingIntern && (
+                <div className="ticket-form-row">
+                  <div className="ticket-form-field">
+                    <label>Ecole / Universite</label>
+                    <input placeholder="Ecole / Universite" value={form.ecole} onChange={(e) => setForm({ ...form, ecole: e.target.value })} />
+                  </div>
+                  <div className="ticket-form-field">
+                    <label>Formation</label>
+                    <input placeholder="Formation" value={form.formation} onChange={(e) => setForm({ ...form, formation: e.target.value })} />
+                  </div>
+                </div>
+              )}
+              {!editingIntern && (
+                <div className="ticket-form-field">
+                  <label>Formation</label>
+                  <input placeholder="Formation" value={form.formation} onChange={(e) => setForm({ ...form, formation: e.target.value })} />
+                </div>
+              )}
+              <div className="ticket-form-field">
+                <label>Notes internes</label>
+                <textarea placeholder="Notes internes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button className="ticket-new-btn" disabled={submitting} onClick={editingIntern ? handleUpdateIntern : handleCreateIntern}>
+                  {submitting ? 'En cours...' : editingIntern ? 'Enregistrer' : 'Creer le stagiaire'}
+                </button>
+                <button className="ticket-back-btn" onClick={resetForm}>Annuler</button>
+              </div>
+            </div>
+            </div>
+          )}
+
+          {/* Liste stagiaires */}
+          <div className="ticket-list">
+            {filteredInterns.length === 0 && (
+              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun stagiaire</p>
+            )}
+            {filteredInterns.map((intern) => {
+              const expanded = expandedIntern === intern._id
+              const statusCfg = STATUS_CONFIG[intern.status]
+              const days = daysRemaining(intern.dateFin)
+              const progress = (() => {
+                const total = new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()
+                const elapsed = Date.now() - new Date(intern.dateDebut).getTime()
+                return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)))
+              })()
+
+              return (
+                <div key={intern._id} className="ticket-card" style={{ borderLeft: `3px solid ${statusCfg.color}` }}>
+                  <div className="ticket-card-header" onClick={() => setExpandedIntern(expanded ? null : intern._id)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: statusCfg.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: statusCfg.color, fontWeight: 700, fontSize: 14 }}>
+                        {intern.userId.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ color: '#fff', fontWeight: 600 }}>{intern.userId.name}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{intern.poste}{intern.departement ? ` — ${intern.departement}` : ''}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                        {formatDate(intern.dateDebut)} → {formatDate(intern.dateFin)}
+                      </span>
+                      {intern.status === 'ACTIF' && (
+                        <span style={{ fontSize: 11, color: days <= 7 ? '#ef4444' : days <= 30 ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}>
+                          {days > 0 ? `${days}j restants` : 'Termine'}
+                        </span>
+                      )}
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: statusCfg.color + '22', color: statusCfg.color }}>
+                        {statusCfg.label}
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                  </div>
+
+                  {expanded && (
+                    <div className="ticket-card-body" style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      {/* Barre de progression */}
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Progression du stage</span>
+                          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{progress}%</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+                          <div style={{ height: '100%', borderRadius: 3, background: statusCfg.color, width: `${progress}%`, transition: 'width 0.3s' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', marginBottom: 16 }}>
+                        <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Email</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.email}</span></div>
+                        {intern.userId.phone && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Telephone</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.phone}</span></div>}
+                        {intern.ecole && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Ecole</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.ecole}</span></div>}
+                        {intern.formation && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Formation</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.formation}</span></div>}
+                        {intern.tuteur && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Tuteur</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.tuteur.name}</span></div>}
+                      </div>
+
+                      {intern.notes && (
+                        <div style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', marginBottom: 16 }}>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Notes</span>
+                          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{intern.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Actions admin */}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button className="ticket-back-btn" onClick={() => handleEditIntern(intern)}>Modifier</button>
+                        {intern.status === 'ACTIF' && (
+                          <button className="ticket-back-btn" style={{ color: '#64748b' }} onClick={() => handleStatusChange(intern._id, 'TERMINE')}>Marquer termine</button>
+                        )}
+                        {intern.status === 'ACTIF' && (
+                          <button className="ticket-back-btn" style={{ color: '#ef4444' }} onClick={() => handleStatusChange(intern._id, 'ANNULE')}>Annuler</button>
+                        )}
+                        {intern.status !== 'ACTIF' && (
+                          <button className="ticket-back-btn" style={{ color: '#22c55e' }} onClick={() => handleStatusChange(intern._id, 'ACTIF')}>Reactiver</button>
+                        )}
+                        {isSuperAdmin && (
+                          <button className="ticket-back-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteIntern(intern._id)}>Supprimer</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ═══ TAB: Tous les rapports (admin) ═══ */}
+      {effectiveTab === 'rapports' && isAdmin && (() => {
+        // Regrouper les rapports par personne
+        const grouped: Record<string, { name: string; reports: ActivityReport[] }> = {}
+        reports.forEach((r) => {
+          const uid = r.userId?._id || 'unknown'
+          if (!grouped[uid]) grouped[uid] = { name: r.userId?.name || 'Inconnu', reports: [] }
+          grouped[uid].reports.push(r)
+        })
+        const people = Object.entries(grouped).sort((a, b) => a[1].name.localeCompare(b[1].name))
+        const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
+        const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
+
+        // Kanban columns
+        const kanbanCols: { key: string; label: string; color: string }[] = [
+          { key: 'SOUMIS', label: 'Soumis', color: '#0ea5e9' },
+          { key: 'BROUILLON', label: 'Brouillon', color: '#f59e0b' },
+          { key: 'VALIDE', label: 'Valide', color: '#22c55e' },
+        ]
+
+        return (
+          <>
+            {/* Toggle vue */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 20 }}>
+              <button
+                onClick={() => setReportView('liste')}
+                style={{
+                  padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                  background: reportView === 'liste' ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
+                  color: reportView === 'liste' ? '#fff' : 'rgba(255,255,255,0.5)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: -2 }}>
+                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                Liste
+              </button>
+              <button
+                onClick={() => setReportView('kanban')}
+                style={{
+                  padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                  background: reportView === 'kanban' ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
+                  color: reportView === 'kanban' ? '#fff' : 'rgba(255,255,255,0.5)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: -2 }}>
+                  <rect x="3" y="3" width="5" height="18" rx="1" /><rect x="10" y="3" width="5" height="12" rx="1" /><rect x="17" y="3" width="5" height="15" rx="1" />
+                </svg>
+                Kanban
+              </button>
+            </div>
+
+            {reports.length === 0 && (
+              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun rapport d'activite</p>
+            )}
+
+            {/* ── VUE LISTE (par personne) ── */}
+            {reportView === 'liste' && (
+              <div className="ticket-list">
+                {people.map(([uid, { name, reports: personReports }]) => {
+                  const validated = personReports.filter((r) => r.status === 'VALIDE').length
+                  const total = personReports.length
+                  const isPersonExpanded = expandedIntern === `reports-${uid}`
+                  const color = getColor(name)
+
+                  return (
+                    <div key={uid} style={{ marginBottom: 16 }}>
+                      <div
+                        className="ticket-card"
+                        style={{ borderLeft: `3px solid ${color}`, cursor: 'pointer' }}
+                        onClick={() => setExpandedIntern(isPersonExpanded ? null : `reports-${uid}`)}
+                      >
+                        <div className="ticket-card-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontWeight: 700, fontSize: 14 }}>
+                              {name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ color: '#fff', fontWeight: 600 }}>{name}</div>
+                              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                                {total} rapport{total > 1 ? 's' : ''} — {validated} valide{validated > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ color: 'rgba(255,255,255,0.3)', transform: isPersonExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                        </div>
+                      </div>
+
+                      {isPersonExpanded && (
+                        <div style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {personReports.map((report) => {
+                            const expanded = expandedReport === report._id
+                            const sCfg = REPORT_STATUS_CONFIG[report.status]
+                            return (
+                              <div key={report._id} className="ticket-card" style={{ borderLeft: `3px solid ${sCfg.color}` }}>
+                                <div className="ticket-card-header" onClick={() => setExpandedReport(expanded ? null : report._id)} style={{ cursor: 'pointer' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                                    <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
+                                    {report.taches.length > 0 && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{report.taches.length} tache(s)</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {report.attachments.length > 0 && (
+                                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>📎 {report.attachments.length}</span>
+                                    )}
+                                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: sCfg.color + '22', color: sCfg.color }}>
+                                      {sCfg.label}
+                                    </span>
+                                    <span style={{ color: 'rgba(255,255,255,0.3)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                                  </div>
+                                </div>
+                                {expanded && renderReportBody(report, true)}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* ── VUE KANBAN (par statut) ── */}
+            {reportView === 'kanban' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 20, alignItems: 'flex-start', width: '100%' }}>
+                {kanbanCols.map((col) => {
+                  const colReports = reports.filter((r) => r.status === col.key)
+                  return (
+                    <div key={col.key} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      {/* Header colonne */}
+                      <div style={{ padding: '14px 16px', borderBottom: '2px solid ' + col.color, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: col.color, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
+                        <span style={{ background: col.color + '22', color: col.color, padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 700 }}>{colReports.length}</span>
+                      </div>
+
+                      {/* Cartes */}
+                      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
+                        {colReports.length === 0 && (
+                          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>Aucun rapport</p>
+                        )}
+                        {colReports.map((report) => {
+                          const expanded = expandedReport === report._id
+                          const color = getColor(report.userId?.name || '')
+                          return (
+                            <div
+                              key={report._id}
+                              style={{
+                                background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                                cursor: 'pointer', transition: 'border-color 0.2s',
+                              }}
+                              onClick={() => setExpandedReport(expanded ? null : report._id)}
+                            >
+                              <div style={{ padding: '14px 16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                                    {(report.userId?.name || '?').charAt(0).toUpperCase()}
+                                  </div>
+                                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{report.userId?.name || 'Inconnu'}</span>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '0 0 10px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
+                                  {report.contenu}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{formatDate(report.date)}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {report.attachments.length > 0 && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>📎 {report.attachments.length}</span>}
+                                    {report.taches.length > 0 && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{report.taches.length} tache(s)</span>}
+                                  </div>
+                                </div>
+                                {report.commentaireAdmin && (
+                                  <div style={{ marginTop: 6, padding: '4px 8px', borderRadius: 4, background: 'rgba(139,92,246,0.08)', borderLeft: '2px solid #8b5cf6' }}>
+                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{report.commentaireAdmin.length > 60 ? report.commentaireAdmin.slice(0, 60) + '...' : report.commentaireAdmin}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {expanded && renderReportBody(report, true)}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )
+      })()}
+
+      {/* Mes rapports supprime — page separee /admin/mes-rapports */}
+    </div>
+  )
+
+  // ── Render report body ──
+  function renderReportBody(report: ActivityReport, showAdminActions: boolean) {
+    return (
+      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* Contenu */}
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: '4px 0 0', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{report.contenu}</p>
+        </div>
+
+        {/* Taches */}
+        {report.taches.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Taches realisees</span>
+            <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
+              {report.taches.map((t, i) => (
+                <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>{t}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Pieces jointes */}
+        {report.attachments.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+              {report.attachments.map((f, i) => (
+                <a
+                  key={i}
+                  href={`/api/admin/interns/reports/files/${f.filename}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Commentaire admin */}
+        {report.commentaireAdmin && (
+          <div style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(139,92,246,0.08)', marginBottom: 12, borderLeft: '3px solid #8b5cf6' }}>
+            <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
+          </div>
+        )}
+
+        {/* Validation info */}
+        {report.status === 'VALIDE' && report.validePar && (
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+            Valide par {report.validePar.name}{report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
+          </div>
+        )}
+
+        {/* Actions admin */}
+        {showAdminActions && isAdmin && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {report.status !== 'VALIDE' && (
+              <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => handleValidateReport(report._id, 'VALIDE')}>
+                Valider
+              </button>
+            )}
+            {report.status === 'VALIDE' && (
+              <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => handleValidateReport(report._id, 'SOUMIS')}>
+                Annuler validation
+              </button>
+            )}
+            <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => {
+              setCommentText(report.commentaireAdmin || '')
+              setCommentModal({ reportId: report._id, status: report.status })
+            }}>
+              Commenter
+            </button>
+          </div>
+        )}
+
+        {/* Actions stagiaire (supprimer si pas valide) */}
+        {!showAdminActions && report.status !== 'VALIDE' && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="ticket-back-btn" style={{ fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteReport(report._id)}>
+              Supprimer
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+}
+
+export default InternList

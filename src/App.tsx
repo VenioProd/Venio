@@ -59,6 +59,8 @@ const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
 const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
+const InternList = lazy(() => import('./pages/admin/InternList'))
+const MyReports = lazy(() => import('./pages/admin/MyReports'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function App() {
@@ -315,6 +317,22 @@ function App() {
               <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
                 <GestionBoard />
               </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/stagiaires"
+          element={
+            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+              <InternList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/mes-rapports"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <MyReports />
             </ProtectedRoute>
           }
         />
