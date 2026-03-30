@@ -29,6 +29,7 @@ export interface User {
   serviceType?: string
   status?: string
   healthStatus?: string
+  tags?: string[]
   createdAt?: string
   updatedAt?: string
 }

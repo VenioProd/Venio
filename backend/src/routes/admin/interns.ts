@@ -58,6 +58,116 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/admin/interns/kpis — KPIs detailles pour tous les stagiaires
+router.get('/kpis', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { status: filterStatus } = req.query
+    const filter: Record<string, unknown> = {}
+    if (filterStatus) filter.status = filterStatus
+    else filter.status = 'ACTIF'
+
+    const interns = await Intern.find(filter)
+      .populate('userId', 'name email phone lastLoginAt')
+      .populate('tuteur', 'name')
+      .sort({ dateDebut: -1 })
+
+    const now = new Date()
+    const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000)
+
+    const kpis = await Promise.all(
+      interns.map(async (intern) => {
+        // Tous les rapports
+        const allReports = await ActivityReport.find({ internId: intern._id }).sort({ date: -1 })
+        const recentReports = allReports.filter((r) => new Date(r.date) >= fourWeeksAgo)
+
+        const totalReports = allReports.length
+        const validated = allReports.filter((r) => r.status === 'VALIDE').length
+        const pending = allReports.filter((r) => r.status === 'SOUMIS').length
+        const drafts = allReports.filter((r) => r.status === 'BROUILLON').length
+
+        // Taches totales
+        const totalTaches = allReports.reduce((sum, r) => sum + r.taches.length, 0)
+        const totalAttachments = allReports.reduce((sum, r) => sum + r.attachments.length, 0)
+
+        // Derniere activite
+        const lastReport = allReports[0] || null
+        const lastActivity = lastReport?.date || null
+        const daysSinceLastReport = lastActivity
+          ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+          : null
+
+        // Progression du stage
+        const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+        const elapsedDays = Math.max(0, Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24)))
+        const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        const progress = totalDays > 0 ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 0
+
+        // Regularite : combien de jours distincts ont un rapport sur les 4 dernieres semaines
+        const uniqueReportDays = new Set(
+          recentReports.map((r) => new Date(r.date).toISOString().split('T')[0])
+        ).size
+        // Jours ouvres approximatifs sur 4 semaines = 20
+        const regularite = Math.min(100, Math.round((uniqueReportDays / 20) * 100))
+
+        // Breakdown hebdomadaire (4 dernieres semaines)
+        const weeks: { weekLabel: string; reports: number; taches: number; validated: number }[] = []
+        for (let w = 0; w < 4; w++) {
+          const weekStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000)
+          const weekEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000)
+          const weekReports = allReports.filter((r) => {
+            const d = new Date(r.date)
+            return d >= weekStart && d < weekEnd
+          })
+          const startStr = weekStart.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+          const endStr = weekEnd.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+          weeks.unshift({
+            weekLabel: `${startStr} - ${endStr}`,
+            reports: weekReports.length,
+            taches: weekReports.reduce((s, r) => s + r.taches.length, 0),
+            validated: weekReports.filter((r) => r.status === 'VALIDE').length,
+          })
+        }
+
+        return {
+          intern: {
+            _id: intern._id,
+            name: (intern.userId as any)?.name || '',
+            email: (intern.userId as any)?.email || '',
+            poste: intern.poste,
+            departement: intern.departement,
+            dateDebut: intern.dateDebut,
+            dateFin: intern.dateFin,
+            tuteur: (intern.tuteur as any)?.name || null,
+            ecole: intern.ecole,
+            status: intern.status,
+          },
+          kpis: {
+            totalReports,
+            validated,
+            pending,
+            drafts,
+            validationRate: totalReports > 0 ? Math.round((validated / totalReports) * 100) : 0,
+            totalTaches,
+            totalAttachments,
+            lastActivity,
+            daysSinceLastReport,
+            regularite,
+            progress,
+            daysRemaining,
+            totalDays,
+            elapsedDays,
+          },
+          weeks,
+        }
+      })
+    )
+
+    res.json(kpis)
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
 // GET /api/admin/interns/stats
 router.get('/stats', requireAdmin, async (_req: Request, res: Response) => {
   try {
@@ -67,6 +177,134 @@ router.get('/stats', requireAdmin, async (_req: Request, res: Response) => {
       Intern.countDocuments(),
     ])
     res.json({ actifs, termines, total })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// GET /api/admin/interns/dashboard — tableau de bord global
+router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const interns = await Intern.find({ status: 'ACTIF' })
+      .populate('userId', 'name email phone')
+      .populate('tuteur', 'name email')
+      .sort({ dateDebut: -1 })
+
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    const dashboard = await Promise.all(
+      interns.map(async (intern) => {
+        const [totalReports, reportsThisWeek, validatedReports, lastReport] = await Promise.all([
+          ActivityReport.countDocuments({ internId: intern._id }),
+          ActivityReport.countDocuments({ internId: intern._id, date: { $gte: weekAgo } }),
+          ActivityReport.countDocuments({ internId: intern._id, status: 'VALIDE' }),
+          ActivityReport.findOne({ internId: intern._id }).sort({ date: -1 }).select('date status'),
+        ])
+
+        const lastActivity = lastReport?.date || null
+        const daysSinceLastReport = lastActivity
+          ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+          : null
+
+        const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+        const elapsedDays = Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+        const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
+        const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+        return {
+          intern: {
+            _id: intern._id,
+            userId: intern.userId,
+            poste: intern.poste,
+            departement: intern.departement,
+            dateDebut: intern.dateDebut,
+            dateFin: intern.dateFin,
+            tuteur: intern.tuteur,
+            ecole: intern.ecole,
+            formation: intern.formation,
+            status: intern.status,
+          },
+          stats: {
+            totalReports,
+            reportsThisWeek,
+            validatedReports,
+            validationRate: totalReports > 0 ? Math.round((validatedReports / totalReports) * 100) : 0,
+            lastActivity,
+            daysSinceLastReport,
+            progress,
+            daysRemaining,
+            totalDays,
+            elapsedDays,
+          },
+        }
+      })
+    )
+
+    // Trier : les plus inactifs en premier (alerte)
+    dashboard.sort((a, b) => {
+      const aDays = a.stats.daysSinceLastReport ?? 999
+      const bDays = b.stats.daysSinceLastReport ?? 999
+      return bDays - aDays
+    })
+
+    res.json(dashboard)
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// GET /api/admin/interns/:id/detail — fiche stagiaire complete
+router.get('/:id/detail', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const intern = await Intern.findById(req.params.id)
+      .populate('userId', 'name email phone lastLoginAt')
+      .populate('tuteur', 'name email')
+      .populate('createdBy', 'name')
+    if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
+
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    const [totalReports, reportsThisWeek, validatedReports, pendingReports, reports] = await Promise.all([
+      ActivityReport.countDocuments({ internId: intern._id }),
+      ActivityReport.countDocuments({ internId: intern._id, date: { $gte: weekAgo } }),
+      ActivityReport.countDocuments({ internId: intern._id, status: 'VALIDE' }),
+      ActivityReport.countDocuments({ internId: intern._id, status: 'SOUMIS' }),
+      ActivityReport.find({ internId: intern._id })
+        .populate('validePar', 'name')
+        .sort({ date: -1 })
+        .limit(50),
+    ])
+
+    const lastReport = reports[0] || null
+    const lastActivity = lastReport?.date || null
+    const daysSinceLastReport = lastActivity
+      ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+      : null
+
+    const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+    const elapsedDays = Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+    const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
+    const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+    res.json({
+      intern,
+      stats: {
+        totalReports,
+        reportsThisWeek,
+        validatedReports,
+        pendingReports,
+        validationRate: totalReports > 0 ? Math.round((validatedReports / totalReports) * 100) : 0,
+        lastActivity,
+        daysSinceLastReport,
+        progress,
+        daysRemaining,
+        totalDays,
+        elapsedDays,
+      },
+      reports,
+    })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -104,14 +342,15 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cet email est deja utilise' })
     }
 
-    // Creer le compte User avec role VIEWER (acces minimal)
+    // Creer le compte User avec role ADMIN + tag STAGIAIRE
     const passwordHash = await bcrypt.hash(password || 'Stage2026!', 10)
     const newUser = await User.create({
       email: email.toLowerCase(),
       passwordHash,
-      role: 'VIEWER',
+      role: 'ADMIN',
       name,
       phone: phone || '',
+      tags: ['STAGIAIRE'],
     })
 
     // Creer la fiche stagiaire

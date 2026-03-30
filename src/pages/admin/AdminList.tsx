@@ -58,10 +58,16 @@ const AdminList = () => {
       const data = await apiFetch<{ token: string; user: { role: string } }>(`/api/admin/admins/impersonate/${adminId}`, {
         method: 'POST',
       })
-      // Open in new tab with the impersonated token
       const targetPath = data.user.role === 'CLIENT' ? '/espace-client' : '/admin'
       const url = `${window.location.origin}${targetPath}?impersonate=${data.token}`
-      window.open(url, '_blank')
+      // Use a temporary <a> link to avoid popup blockers
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
@@ -181,6 +187,18 @@ const AdminList = () => {
                     >
                       {roleLabels[admin.role] || admin.role}
                     </span>
+                    {(admin as any).tags?.includes('STAGIAIRE') && (
+                      <span
+                        className="admin-card-role"
+                        style={{
+                          background: 'rgba(14, 165, 233, 0.12)',
+                          borderColor: 'rgba(14, 165, 233, 0.4)',
+                          color: '#38bdf8',
+                        }}
+                      >
+                        Stagiaire
+                      </span>
+                    )}
                   </div>
                   <div className="admin-card-actions" style={{ flexWrap: 'wrap' }}>
                     {user?.role === 'SUPER_ADMIN' && user?._id !== admin._id && (

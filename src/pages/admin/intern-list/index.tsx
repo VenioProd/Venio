@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { apiFetch, getToken } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { STATUS_CONFIG, REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage, daysRemaining } from './types'
 import type { Intern, ActivityReport } from './types'
+import InternKpi from '../../../components/admin/InternKpi'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -16,8 +17,9 @@ const InternList = () => {
   const [searchParams] = useSearchParams()
 
   // ── Tabs ──
-  const initialTab = searchParams.get('tab') as 'stagiaires' | 'rapports' | 'mes-rapports' || (isSuperAdmin ? 'stagiaires' : 'mes-rapports')
-  const [activeTab, setActiveTab] = useState<'stagiaires' | 'rapports' | 'mes-rapports'>(initialTab)
+  const navigate = useNavigate()
+  const initialTab = searchParams.get('tab') as 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'mes-rapports' || (isSuperAdmin ? 'dashboard' : 'mes-rapports')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'mes-rapports'>(initialTab)
 
   // ── Stagiaires ──
   const [interns, setInterns] = useState<Intern[]>([])
@@ -34,6 +36,8 @@ const InternList = () => {
 
   // ── Vue rapports : liste ou kanban ──
   const [reportView, setReportView] = useState<'liste' | 'kanban'>('liste')
+  const [draggedReportId, setDraggedReportId] = useState<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '',
@@ -49,6 +53,10 @@ const InternList = () => {
   const [reportFiles, setReportFiles] = useState<File[]>([])
   const reportFileRef = useRef<HTMLInputElement>(null)
   const [expandedReport, setExpandedReport] = useState<string | null>(null)
+
+  // ── Dashboard ──
+  const [dashboard, setDashboard] = useState<any[]>([])
+  const [dashboardLoading, setDashboardLoading] = useState(false)
 
   // ── Admins pour tuteur ──
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
@@ -81,6 +89,14 @@ const InternList = () => {
     }
   }, [])
 
+  const loadDashboard = useCallback(async () => {
+    setDashboardLoading(true)
+    try {
+      const data = await apiFetch<any[]>('/api/admin/interns/dashboard')
+      setDashboard(data)
+    } catch { /* silent */ } finally { setDashboardLoading(false) }
+  }, [])
+
   const loadAdmins = useCallback(async () => {
     try {
       const data = await apiFetch<{ users: { _id: string; name: string }[] }>('/api/admin/admins')
@@ -96,7 +112,13 @@ const InternList = () => {
 
   useEffect(() => {
     if (activeTab === 'rapports' && isAdmin) loadReports()
+    if (activeTab === 'dashboard' && isAdmin) loadDashboard()
   }, [activeTab])
+
+  // Charger le dashboard au mount si c'est l'onglet par defaut
+  useEffect(() => {
+    if (initialTab === 'dashboard' && isAdmin) loadDashboard()
+  }, [])
 
   // ── Filtered interns ──
   const filteredInterns = interns.filter((i) => filterStatus === 'all' || i.status === filterStatus)
@@ -251,8 +273,10 @@ const InternList = () => {
   if (loading) return <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>Chargement...</div>
 
   const tabs = [
+    { key: 'dashboard', label: 'Tableau de bord', count: dashboard.length },
     { key: 'stagiaires', label: 'Stagiaires', count: interns.length },
     { key: 'rapports', label: 'Tous les rapports', count: reports.length },
+    { key: 'kpis', label: 'KPIs', count: null as number | null },
   ]
 
   const effectiveTab = activeTab
@@ -317,10 +341,98 @@ const InternList = () => {
               className={`ticket-tab ${effectiveTab === t.key ? 'active' : ''}`}
               onClick={() => setActiveTab(t.key as any)}
             >
-              {t.label} <span className="ticket-tab-badge">{t.count}</span>
+              {t.label} {t.count !== null && <span className="ticket-tab-badge">{t.count}</span>}
             </button>
           ))}
         </div>
+      )}
+
+      {/* ═══ TAB: Tableau de bord ═══ */}
+      {effectiveTab === 'dashboard' && isAdmin && (
+        <>
+          {dashboardLoading ? (
+            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+          ) : dashboard.length === 0 ? (
+            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun stagiaire actif</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, marginTop: 16 }}>
+              {dashboard.map((item: any) => {
+                const { intern: di, stats: ds } = item
+                const alertLevel = ds.daysSinceLastReport === null ? 'none' : ds.daysSinceLastReport > 3 ? 'danger' : ds.daysSinceLastReport > 1 ? 'warning' : 'ok'
+                const alertColors = { none: 'rgba(255,255,255,0.2)', danger: '#ef4444', warning: '#f59e0b', ok: '#22c55e' }
+                const alertColor = alertColors[alertLevel]
+                const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
+                const avatarColor = colors[(di.userId?.name || '').charCodeAt(0) % colors.length]
+
+                return (
+                  <div
+                    key={di._id}
+                    className="portal-card"
+                    style={{ cursor: 'pointer', borderLeft: `3px solid ${alertColor}`, transition: 'transform 0.15s' }}
+                    onClick={() => navigate(`/admin/stagiaires/${di._id}`)}
+                  >
+                    <div style={{ padding: '16px 20px' }}>
+                      {/* Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: avatarColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: avatarColor, fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                          {(di.userId?.name || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{di.userId?.name}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}{di.departement ? ` — ${di.departement}` : ''}</div>
+                        </div>
+                        {alertLevel === 'danger' && (
+                          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#ef444422', color: '#ef4444' }}>
+                            INACTIF {ds.daysSinceLastReport}j
+                          </span>
+                        )}
+                        {alertLevel === 'warning' && (
+                          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#f59e0b22', color: '#f59e0b' }}>
+                            {ds.daysSinceLastReport}j sans rapport
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stats mini */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
+                          <div style={{ color: '#0ea5e9', fontWeight: 700, fontSize: 18 }}>{ds.reportsThisWeek}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Cette semaine</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
+                          <div style={{ color: '#8b5cf6', fontWeight: 700, fontSize: 18 }}>{ds.validationRate}%</div>
+                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Validation</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
+                          <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 18 }}>{ds.totalReports}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Total rapports</div>
+                        </div>
+                      </div>
+
+                      {/* Barre de progression */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Stage : {ds.progress}%</span>
+                          <span style={{ color: ds.daysRemaining <= 7 ? '#ef4444' : ds.daysRemaining <= 30 ? '#f59e0b' : 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                            {ds.daysRemaining > 0 ? `${ds.daysRemaining}j restants` : 'Termine'}
+                          </span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                          <div style={{ height: '100%', borderRadius: 2, width: `${ds.progress}%`, background: ds.progress >= 90 ? '#ef4444' : ds.progress >= 70 ? '#f59e0b' : '#0ea5e9', transition: 'width 0.5s' }} />
+                        </div>
+                      </div>
+
+                      {/* Derniere activite */}
+                      <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+                        Derniere activite : {ds.lastActivity ? formatDate(ds.lastActivity) : 'Aucune'}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* ═══ TAB: Stagiaires ═══ */}
@@ -339,7 +451,7 @@ const InternList = () => {
                   style={{ borderColor: filterStatus === s ? color : 'transparent' }}
                   onClick={() => setFilterStatus(s)}
                 >
-                  <span style={{ color, fontWeight: 700, fontSize: 22 }}>{count}</span>
+                  <span style={{ color, fontWeight: 700, fontSize: 22 }}>{count}</span>{' '}
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{label}</span>
                 </button>
               )
@@ -535,6 +647,7 @@ const InternList = () => {
 
                       {/* Actions admin */}
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => navigate(`/admin/stagiaires/${intern._id}`)}>Voir fiche</button>
                         <button className="ticket-back-btn" onClick={() => handleEditIntern(intern)}>Modifier</button>
                         {intern.status === 'ACTIF' && (
                           <button className="ticket-back-btn" style={{ color: '#64748b' }} onClick={() => handleStatusChange(intern._id, 'TERMINE')}>Marquer termine</button>
@@ -689,7 +802,29 @@ const InternList = () => {
                 {kanbanCols.map((col) => {
                   const colReports = reports.filter((r) => r.status === col.key)
                   return (
-                    <div key={col.key} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                    <div
+                      key={col.key}
+                      style={{
+                        background: dragOverCol === col.key ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                        borderRadius: 10,
+                        border: dragOverCol === col.key ? `1px solid ${col.color}44` : '1px solid rgba(255,255,255,0.06)',
+                        overflow: 'hidden',
+                        transition: 'background 0.2s, border-color 0.2s',
+                      }}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.key) }}
+                      onDragLeave={() => setDragOverCol(null)}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        setDragOverCol(null)
+                        if (draggedReportId) {
+                          const report = reports.find((r) => r._id === draggedReportId)
+                          if (report && report.status !== col.key) {
+                            await handleValidateReport(draggedReportId, col.key)
+                          }
+                          setDraggedReportId(null)
+                        }
+                      }}
+                    >
                       {/* Header colonne */}
                       <div style={{ padding: '14px 16px', borderBottom: '2px solid ' + col.color, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ color: col.color, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
@@ -707,9 +842,13 @@ const InternList = () => {
                           return (
                             <div
                               key={report._id}
+                              draggable
+                              onDragStart={() => setDraggedReportId(report._id)}
+                              onDragEnd={() => { setDraggedReportId(null); setDragOverCol(null) }}
                               style={{
                                 background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
-                                cursor: 'pointer', transition: 'border-color 0.2s',
+                                cursor: 'grab', transition: 'border-color 0.2s, opacity 0.2s',
+                                opacity: draggedReportId === report._id ? 0.5 : 1,
                               }}
                               onClick={() => setExpandedReport(expanded ? null : report._id)}
                             >
@@ -749,6 +888,9 @@ const InternList = () => {
           </>
         )
       })()}
+
+      {/* ═══ TAB: KPIs ═══ */}
+      {effectiveTab === 'kpis' && isAdmin && <InternKpi />}
 
       {/* Mes rapports supprime — page separee /admin/mes-rapports */}
     </div>

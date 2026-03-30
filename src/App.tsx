@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ToastContainer from './components/ToastContainer'
@@ -60,8 +60,15 @@ const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
 const InternList = lazy(() => import('./pages/admin/InternList'))
+const InternDetail = lazy(() => import('./pages/admin/InternDetail'))
 const MyReports = lazy(() => import('./pages/admin/MyReports'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
+
+function ProjectsRedirect() {
+  const { id } = useParams()
+  const location = useLocation()
+  return <Navigate to={`/admin/projets/${id}${location.search}`} replace />
+}
 
 function App() {
   const location = useLocation()
@@ -236,6 +243,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Redirects: /admin/projects/* → /admin/projets/* */}
+        <Route path="/admin/projects/:id" element={<ProjectsRedirect />} />
+        <Route path="/admin/projects" element={<Navigate to="/admin/gestion" replace />} />
+
         <Route
           path="/admin/analytics"
           element={
@@ -325,6 +336,14 @@ function App() {
           element={
             <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
               <InternList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/stagiaires/:id"
+          element={
+            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+              <InternDetail />
             </ProtectedRoute>
           }
         />

@@ -139,6 +139,9 @@ const AdminEdit = () => {
             <h1 style={{ marginBottom: '8px' }}>{admin?.name || 'Administrateur'}</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
               {admin?.email} · {roleLabels[admin?.role || ''] || admin?.role}
+              {(admin as any)?.tags?.includes('STAGIAIRE') && (
+                <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
+              )}
             </p>
           </div>
         </div>
