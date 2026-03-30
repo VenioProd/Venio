@@ -51,6 +51,13 @@ const AdminEdit = () => {
   const [savedPassword, setSavedPassword] = useState<string | null>(null)
   const [copiedCreds, setCopiedCreds] = useState(false)
 
+  // Stagiaire
+  const [isStagiaire, setIsStagiaire] = useState(false)
+  const [internForm, setInternForm] = useState({
+    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '',
+  })
+  const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
+
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
   const roleDefaults = useMemo(() => getPermissionsForRole(form.role), [form.role])
 
@@ -66,11 +73,35 @@ const AdminEdit = () => {
           setCustomMode(true)
           setCustomPermissions((u as any).customPermissions)
         }
+        // Check stagiaire
+        const hasStagiaireTag = (u as any).tags?.includes('STAGIAIRE')
+        setIsStagiaire(!!hasStagiaireTag)
+        if (hasStagiaireTag) {
+          try {
+            const interns = await apiFetch<any[]>('/api/admin/interns')
+            const intern = interns.find((i: any) => i.userId?._id === userId || i.userId === userId)
+            if (intern) {
+              setInternForm({
+                poste: intern.poste || '',
+                departement: intern.departement || '',
+                dateDebut: intern.dateDebut ? intern.dateDebut.split('T')[0] : '',
+                dateFin: intern.dateFin ? intern.dateFin.split('T')[0] : '',
+                tuteur: intern.tuteur?._id || '',
+                ecole: intern.ecole || '',
+                formation: intern.formation || '',
+              })
+            }
+          } catch { /* silent */ }
+        }
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement admin')
       }
     }
     load()
+    // Load admins for tuteur select
+    apiFetch<{ users: { _id: string; name: string }[] }>('/api/admin/admins')
+      .then((d) => setAdmins(d.users || []))
+      .catch(() => {})
   }, [userId])
 
   const handleToggleCustom = () => {
@@ -97,6 +128,21 @@ const AdminEdit = () => {
       }
       if (isSuperAdmin && form.role !== 'SUPER_ADMIN') {
         payload.customPermissions = customMode ? customPermissions : null
+      }
+      // Stagiaire
+      if (isSuperAdmin) {
+        payload.markAsStagiaire = isStagiaire
+        if (isStagiaire) {
+          payload.internInfo = {
+            poste: internForm.poste || undefined,
+            departement: internForm.departement || undefined,
+            dateDebut: internForm.dateDebut || undefined,
+            dateFin: internForm.dateFin || undefined,
+            tuteur: internForm.tuteur || undefined,
+            ecole: internForm.ecole || undefined,
+            formation: internForm.formation || undefined,
+          }
+        }
       }
       const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`, {
         method: 'PATCH',
@@ -254,6 +300,56 @@ const AdminEdit = () => {
               )}
             </div>
           )}
+          {/* Section Stagiaire */}
+          {isSuperAdmin && (
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)', marginBottom: 12 }}>
+                <input type="checkbox" checked={isStagiaire} onChange={(e) => setIsStagiaire(e.target.checked)} />
+                <span style={{ fontWeight: 600 }}>Marquer comme stagiaire</span>
+                {isStagiaire && (
+                  <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
+                )}
+              </label>
+              {isStagiaire && (
+                <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 16, border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Poste / Mission</label>
+                      <input className="portal-input" placeholder="Ex: Commercial, Communication..." value={internForm.poste} onChange={(e) => setInternForm({ ...internForm, poste: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Departement</label>
+                      <input className="portal-input" placeholder="Departement" value={internForm.departement} onChange={(e) => setInternForm({ ...internForm, departement: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Date de debut</label>
+                      <input className="portal-input" type="date" value={internForm.dateDebut} onChange={(e) => setInternForm({ ...internForm, dateDebut: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Date de fin</label>
+                      <input className="portal-input" type="date" value={internForm.dateFin} onChange={(e) => setInternForm({ ...internForm, dateFin: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Tuteur</label>
+                      <select className="portal-input" value={internForm.tuteur} onChange={(e) => setInternForm({ ...internForm, tuteur: e.target.value })}>
+                        <option value="">— Aucun —</option>
+                        {admins.filter((a) => a._id !== userId).map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Ecole / Universite</label>
+                      <input className="portal-input" placeholder="Ecole" value={internForm.ecole} onChange={(e) => setInternForm({ ...internForm, ecole: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Formation</label>
+                      <input className="portal-input" placeholder="Formation" value={internForm.formation} onChange={(e) => setInternForm({ ...internForm, formation: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Nouveau mot de passe (optionnel)

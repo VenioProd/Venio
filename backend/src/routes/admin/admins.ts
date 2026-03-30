@@ -166,6 +166,54 @@ router.patch(
       user.passwordHash = await bcrypt.hash(password, 10)
     }
 
+    // Marquer comme stagiaire (SUPER_ADMIN only)
+    if (req.body.markAsStagiaire !== undefined && req.user!.role === 'SUPER_ADMIN') {
+      const Intern = (await import('../../models/Intern.js')).default
+      if (req.body.markAsStagiaire === true) {
+        // Ajouter le tag STAGIAIRE
+        if (!user.tags) user.tags = []
+        if (!user.tags.includes('STAGIAIRE')) user.tags.push('STAGIAIRE')
+
+        // Creer la fiche Intern si elle n'existe pas
+        const existing = await Intern.findOne({ userId: user._id })
+        if (!existing) {
+          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation } = req.body.internInfo || {}
+          await Intern.create({
+            userId: user._id,
+            poste: poste || user.role || 'Stagiaire',
+            departement: departement || '',
+            dateDebut: dateDebut ? new Date(dateDebut) : new Date(),
+            dateFin: dateFin ? new Date(dateFin) : new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+            tuteur: tuteur || null,
+            ecole: ecole || '',
+            formation: formation || '',
+            createdBy: req.user!.id,
+          })
+        } else if (req.body.internInfo) {
+          // Mettre a jour la fiche existante
+          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation } = req.body.internInfo
+          if (poste !== undefined) existing.poste = poste
+          if (departement !== undefined) existing.departement = departement
+          if (dateDebut !== undefined) existing.dateDebut = new Date(dateDebut)
+          if (dateFin !== undefined) existing.dateFin = new Date(dateFin)
+          if (tuteur !== undefined) existing.tuteur = tuteur || null
+          if (ecole !== undefined) existing.ecole = ecole
+          if (formation !== undefined) existing.formation = formation
+          if (existing.status === 'TERMINE' || existing.status === 'ANNULE') existing.status = 'ACTIF'
+          await existing.save()
+        }
+      } else {
+        // Retirer le tag STAGIAIRE
+        user.tags = (user.tags || []).filter((t: string) => t !== 'STAGIAIRE')
+        // Marquer la fiche Intern comme TERMINE
+        const intern = await Intern.findOne({ userId: user._id })
+        if (intern && intern.status === 'ACTIF') {
+          intern.status = 'TERMINE'
+          await intern.save()
+        }
+      }
+    }
+
     // Custom permissions (SUPER_ADMIN only)
     if (req.body.customPermissions !== undefined && req.user!.role === 'SUPER_ADMIN') {
       if (req.body.customPermissions === null) {
