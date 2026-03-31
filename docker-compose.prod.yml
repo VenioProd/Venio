@@ -4,7 +4,7 @@ services:
     container_name: venio-app
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8200:3000"
+      - "127.0.0.1:4000:3000"
     env_file:
       - path: .env
         required: false
