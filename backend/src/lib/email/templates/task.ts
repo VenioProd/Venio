@@ -1,4 +1,4 @@
-import { getTransporter, escapeHtml } from '../transport.js'
+import { getTransporter, escapeHtml, getAdminBaseUrl } from '../transport.js'
 import { emailLayout, highlightBlock, infoLine } from '../layout.js'
 import type { EmailResult } from '../transport.js'
 
@@ -20,7 +20,7 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
+  const baseUrl = getAdminBaseUrl()
   const projectUrl = `${baseUrl}/projets/${projectId}?tab=tasks`
 
   // Calcul du délai
@@ -92,7 +92,7 @@ export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, 
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
+  const baseUrl = getAdminBaseUrl()
 
   const body = `
     <p>Bonjour <strong>${escapeHtml(name)}</strong>,</p>

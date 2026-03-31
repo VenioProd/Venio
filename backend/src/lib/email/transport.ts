@@ -23,6 +23,17 @@ export function getTransporter(): nodemailer.Transporter | null {
   })
 }
 
+/** URL de base de l'admin — utilisée dans tous les boutons d'email */
+export function getAdminBaseUrl(): string {
+  if (process.env.ADMIN_LOGIN_URL) {
+    return process.env.ADMIN_LOGIN_URL.replace(/\/login\/?$/, '')
+  }
+  if (process.env.APP_URL) {
+    return `${process.env.APP_URL.replace(/\/$/, '')}/admin`
+  }
+  return 'https://venio.paris/admin'
+}
+
 export function escapeHtml(s: string | null | undefined): string {
   if (s == null) return ''
   return String(s)

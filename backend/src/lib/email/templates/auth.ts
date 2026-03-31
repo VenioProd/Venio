@@ -1,4 +1,4 @@
-import { getTransporter, escapeHtml } from '../transport.js'
+import { getTransporter, escapeHtml, getAdminBaseUrl } from '../transport.js'
 import type { EmailResult } from '../transport.js'
 
 /**
@@ -11,7 +11,7 @@ export async function sendAdminCredentials({ to, name, email, password }: { to: 
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const loginUrl = process.env.ADMIN_LOGIN_URL || 'http://localhost:5501/admin/login'
+  const loginUrl = process.env.ADMIN_LOGIN_URL || `${getAdminBaseUrl()}/login`
 
   try {
     await transporter.sendMail({

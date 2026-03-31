@@ -1,4 +1,4 @@
-import { getTransporter, escapeHtml } from '../transport.js'
+import { getTransporter, escapeHtml, getAdminBaseUrl } from '../transport.js'
 import type { EmailResult } from '../transport.js'
 
 /**
@@ -56,7 +56,7 @@ export async function sendProjectStatusEmail({ to, recipientName, projectName, o
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const baseUrl = getAdminBaseUrl()
   const projectUrl = `${baseUrl}/projets/${projectId}`
 
   const STATUS_LABELS: Record<string, string> = { EN_COURS: 'En cours', EN_ATTENTE: 'En attente', TERMINE: 'Terminé' }

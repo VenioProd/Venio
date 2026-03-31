@@ -1,4 +1,4 @@
-import { getTransporter, escapeHtml } from '../transport.js'
+import { getTransporter, escapeHtml, getAdminBaseUrl } from '../transport.js'
 import type { EmailResult } from '../transport.js'
 
 /**
@@ -14,8 +14,7 @@ export async function sendTicketReplyEmail({
 
   const appName = process.env.APP_NAME || 'Venio'
   const from = process.env.SMTP_FROM || 'admin@venio.paris'
-  const baseUrl = process.env.BASE_URL || 'http://localhost:5173'
-  const ticketsUrl = `${baseUrl}/admin/tickets`
+  const ticketsUrl = `${getAdminBaseUrl()}/tickets`
 
   try {
     await transporter.sendMail({

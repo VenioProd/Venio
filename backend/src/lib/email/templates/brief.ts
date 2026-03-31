@@ -1,4 +1,4 @@
-import { getTransporter, escapeHtml } from '../transport.js'
+import { getTransporter, escapeHtml, getAdminBaseUrl } from '../transport.js'
 import type { EmailResult } from '../transport.js'
 
 /**
@@ -11,7 +11,7 @@ export async function sendBriefAssignedEmail({ to, destinataireName, briefTitle,
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const baseUrl = getAdminBaseUrl()
   const gestionUrl = `${baseUrl}/gestion`
 
   const PRIORITY_LABELS: Record<string, string> = { P1: 'Urgente', P2: 'Normale', P3: 'Basse' }
@@ -66,7 +66,7 @@ export async function sendBriefReminderEmail({ to, name, briefTitle, deadline }:
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const baseUrl = getAdminBaseUrl()
 
   try {
     await transporter.sendMail({
