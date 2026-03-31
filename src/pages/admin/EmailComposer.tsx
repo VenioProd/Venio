@@ -83,9 +83,10 @@ export default function EmailComposer() {
   const selectGroup = (group: 'admins' | 'clients') => {
     const list = group === 'admins' ? admins : clients
     const emails = list.map(r => r.email)
+    if (emails.length === 0) return
     setSelectedEmails(prev => {
       const next = new Set(prev)
-      const allIn = emails.every(e => next.has(e))
+      const allIn = emails.length > 0 && emails.every(e => next.has(e))
       if (allIn) emails.forEach(e => next.delete(e))
       else emails.forEach(e => next.add(e))
       return next
@@ -213,17 +214,16 @@ export default function EmailComposer() {
             </div>
 
             {/* Quick select */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            <div style={{ marginBottom: 12 }}>
               <button onClick={() => selectGroup('admins')} style={{
-                flex: 1, padding: '6px 0', borderRadius: 8,
+                width: '100%', padding: '7px 0', borderRadius: 8,
                 border: '1px solid rgba(14,165,233,0.25)', background: 'rgba(14,165,233,0.06)',
-                color: '#38bdf8', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
-              }}>Toute l'équipe</button>
-              <button onClick={() => selectGroup('clients')} style={{
-                flex: 1, padding: '6px 0', borderRadius: 8,
-                border: '1px solid rgba(139,92,246,0.25)', background: 'rgba(139,92,246,0.06)',
-                color: '#a78bfa', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
-              }}>Tous les clients</button>
+                color: '#38bdf8', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+              }}>
+                {admins.length > 0 && admins.every(a => selectedEmails.has(a.email))
+                  ? 'Désélectionner toute l\'équipe'
+                  : `Sélectionner toute l'équipe (${admins.length})`}
+              </button>
             </div>
 
             {/* List */}
