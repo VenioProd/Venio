@@ -29,18 +29,50 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
             set -e
-            cd /opt/docker/openclaw/config/workspace/projects/venio
+            PROJECT_DIR="/opt/docker/openclaw/config/workspace/projects/venio"
+
+            # Recreer le dossier si necessaire
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "📂 Dossier projet introuvable, re-clonage..."
+              mkdir -p "$(dirname $PROJECT_DIR)"
+              rm -rf "$PROJECT_DIR"
+              git clone https://github.com/raphaelbentv/Venio.git "$PROJECT_DIR"
+            fi
+
+            cd "$PROJECT_DIR"
+
+            # Sauvegarder le .env existant s'il existe
+            if [ -f .env ]; then
+              cp .env .env.backup
+            fi
+
+            # Recuperer les env vars du container existant si pas de .env
+            if [ ! -f .env ]; then
+              CONTAINER_ID=$(docker ps -q --filter name=venio 2>/dev/null | head -1)
+              if [ -n "$CONTAINER_ID" ]; then
+                echo "🔑 Recuperation des env vars du container existant..."
+                docker exec "$CONTAINER_ID" env 2>/dev/null | grep -E '^(JWT_SECRET|MONGODB_URI|CORS_ORIGIN|SMTP_|ENCRYPTION_KEY|NODE_ENV)=' > .env 2>/dev/null || true
+              fi
+            fi
+
             echo "📥 Pull du code..."
             git fetch origin main
             git reset --hard origin/main
+
+            # Restaurer le .env apres le reset
+            if [ -f .env.backup ]; then
+              mv .env.backup .env
+            fi
 
             echo "🏗️ Rebuild du container..."
             docker compose -f docker-compose.prod.yml build --no-cache
             docker compose -f docker-compose.prod.yml up -d --force-recreate
 
             # Ensure Nginx proxies to Docker container
-            cp nginx/venio.pro.conf /etc/nginx/sites-available/venio.pro
-            killall -HUP nginx 2>/dev/null || true
+            if [ -f nginx/venio.pro.conf ]; then
+              cp nginx/venio.pro.conf /etc/nginx/sites-available/venio.pro
+              killall -HUP nginx 2>/dev/null || true
+            fi
 
             echo "✅ Déploiement terminé"
           DEPLOY

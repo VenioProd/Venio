@@ -6,7 +6,8 @@ services:
     ports:
       - "127.0.0.1:8200:3000"
     env_file:
-      - .env
+      - path: .env
+        required: false
     volumes:
       - uploads-data:/app/uploads
     environment:
