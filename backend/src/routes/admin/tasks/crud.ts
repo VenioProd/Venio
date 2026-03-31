@@ -100,6 +100,8 @@ router.post(
             projectName: project.name,
             projectId,
             assignedBy: (req.user as any).name || 'Un administrateur',
+            dueDate: dueDate || null,
+            priority: priority || null,
           }).catch(() => {})
         }
       }
@@ -187,6 +189,8 @@ router.patch(
             projectName: project?.name || '',
             projectId,
             assignedBy: (req.user as any).name || 'Un administrateur',
+            dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+            priority: task.priority || null,
           }).catch(() => {})
         }
       }

@@ -1,15 +1,10 @@
 import { escapeHtml } from './transport.js'
 
-const BRAND_COLOR = '#6366f1'
-const BRAND_DARK = '#4f46e5'
-const BG_DARK = '#0f172a'
-const BG_CARD = '#1e293b'
-const TEXT_PRIMARY = '#f1f5f9'
-const TEXT_MUTED = '#94a3b8'
+const BRAND = '#6366f1'
 
 /**
  * Layout HTML partagé pour tous les emails Venio.
- * Compatible Gmail, Outlook, Apple Mail.
+ * Design light, compatible Gmail, Outlook, Apple Mail.
  */
 export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor }: {
   title: string
@@ -21,7 +16,7 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
 }): string {
   const appName = process.env.APP_NAME || 'Venio'
   const year = new Date().getFullYear()
-  const btnColor = ctaColor || BRAND_COLOR
+  const btnColor = ctaColor || BRAND
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -29,54 +24,58 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
-  ${preheader ? `<span style="display:none;font-size:1px;color:#0f172a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${escapeHtml(preheader)}</span>` : ''}
+  ${preheader ? `<span style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${escapeHtml(preheader)}</span>` : ''}
 </head>
-<body style="margin:0;padding:0;background-color:${BG_DARK};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${BG_DARK};">
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
+      <td align="center" style="padding:40px 16px;">
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
-          <!-- Logo / Header -->
+          <!-- Logo -->
           <tr>
-            <td align="center" style="padding-bottom:24px;">
+            <td align="center" style="padding-bottom:28px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:${BRAND_COLOR};width:40px;height:40px;border-radius:10px;text-align:center;vertical-align:middle;">
-                    <span style="color:#fff;font-size:20px;font-weight:700;line-height:40px;">V</span>
+                  <td style="background:${BRAND};width:38px;height:38px;border-radius:10px;text-align:center;vertical-align:middle;">
+                    <span style="color:#fff;font-size:18px;font-weight:800;line-height:38px;">V</span>
                   </td>
-                  <td style="padding-left:12px;">
-                    <span style="color:${TEXT_PRIMARY};font-size:22px;font-weight:700;letter-spacing:-0.5px;">${escapeHtml(appName)}</span>
+                  <td style="padding-left:10px;">
+                    <span style="color:#0f172a;font-size:20px;font-weight:700;letter-spacing:-0.3px;">${escapeHtml(appName)}</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Card -->
+          <!-- Card blanche -->
           <tr>
-            <td style="background-color:${BG_CARD};border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
+            <td style="background-color:#ffffff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <!-- Title bar -->
+                <!-- Barre de couleur en haut -->
+                <tr>
+                  <td style="height:4px;background:${btnColor};border-radius:14px 14px 0 0;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+                <!-- Titre -->
                 <tr>
                   <td style="padding:28px 32px 0 32px;">
-                    <h1 style="margin:0;color:${TEXT_PRIMARY};font-size:20px;font-weight:700;line-height:1.4;">${title}</h1>
+                    <h1 style="margin:0;color:#0f172a;font-size:20px;font-weight:700;line-height:1.3;">${title}</h1>
                   </td>
                 </tr>
-                <!-- Body -->
+                <!-- Contenu -->
                 <tr>
-                  <td style="padding:16px 32px 24px 32px;color:${TEXT_MUTED};font-size:15px;line-height:1.7;">
+                  <td style="padding:16px 32px 8px 32px;color:#475569;font-size:15px;line-height:1.7;">
                     ${body}
                   </td>
                 </tr>
                 ${ctaUrl && ctaLabel ? `
-                <!-- CTA Button -->
+                <!-- Bouton -->
                 <tr>
-                  <td style="padding:0 32px 32px 32px;">
+                  <td style="padding:16px 32px 32px 32px;">
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td style="background:${btnColor};border-radius:10px;">
-                          <a href="${escapeHtml(ctaUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">${escapeHtml(ctaLabel)}</a>
+                        <td style="background:${btnColor};border-radius:8px;">
+                          <a href="${escapeHtml(ctaUrl)}" target="_blank" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${escapeHtml(ctaLabel)}</a>
                         </td>
                       </tr>
                     </table>
@@ -88,12 +87,12 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="padding:24px 0 0 0;">
-              <p style="margin:0;color:#475569;font-size:12px;line-height:1.5;">
+            <td align="center" style="padding:28px 0 0 0;">
+              <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;">
                 ${escapeHtml(appName)} &mdash; Gestion de projets &amp; CRM<br>
-                <a href="https://venio.paris" style="color:#6366f1;text-decoration:none;">venio.paris</a>
+                <a href="https://venio.paris" style="color:${BRAND};text-decoration:none;">venio.paris</a>
               </p>
-              <p style="margin:8px 0 0 0;color:#334155;font-size:11px;">
+              <p style="margin:6px 0 0 0;color:#cbd5e1;font-size:11px;">
                 &copy; ${year} ${escapeHtml(appName)}. Tous droits r&eacute;serv&eacute;s.
               </p>
             </td>
@@ -107,18 +106,14 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
 </html>`
 }
 
-/**
- * Bloc "highlight" pour mettre en valeur une info (nom de tâche, projet, etc.)
- */
+/** Bloc highlight pour mettre en valeur des infos */
 export function highlightBlock(content: string, borderColor?: string): string {
-  return `<div style="margin:16px 0;padding:16px 20px;background:rgba(99,102,241,0.08);border-left:4px solid ${borderColor || BRAND_COLOR};border-radius:0 8px 8px 0;">
+  return `<div style="margin:16px 0;padding:16px 20px;background:#f8fafc;border-left:4px solid ${borderColor || BRAND};border-radius:0 8px 8px 0;">
     ${content}
   </div>`
 }
 
-/**
- * Ligne d'info label: valeur
- */
+/** Ligne label: valeur */
 export function infoLine(label: string, value: string): string {
-  return `<p style="margin:4px 0;"><span style="color:#64748b;font-size:13px;">${escapeHtml(label)} :</span> <strong style="color:${TEXT_PRIMARY};font-size:14px;">${escapeHtml(value)}</strong></p>`
+  return `<p style="margin:6px 0;font-size:14px;"><span style="color:#64748b;">${escapeHtml(label)} :</span> <strong style="color:#0f172a;">${escapeHtml(value)}</strong></p>`
 }

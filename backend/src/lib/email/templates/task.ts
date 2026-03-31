@@ -2,10 +2,18 @@ import { getTransporter, escapeHtml } from '../transport.js'
 import { emailLayout, highlightBlock, infoLine } from '../layout.js'
 import type { EmailResult } from '../transport.js'
 
+function formatDate(d: Date | string | null | undefined): string {
+  if (!d) return '—'
+  const date = typeof d === 'string' ? new Date(d) : d
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
 /**
  * Envoie un email de notification d'assignation de tâche.
  */
-export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, projectName, projectId, assignedBy }: { to: string; assigneeName: string; taskTitle: string; projectName: string; projectId: string; assignedBy: string }): Promise<EmailResult> {
+export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, projectName, projectId, assignedBy, dueDate, priority }: {
+  to: string; assigneeName: string; taskTitle: string; projectName: string; projectId: string; assignedBy: string; dueDate?: string | null; priority?: string | null
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -15,20 +23,45 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
   const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
   const projectUrl = `${baseUrl}/projets/${projectId}?tab=tasks`
 
+  // Calcul du délai
+  let deadlineInfo = ''
+  if (dueDate) {
+    const now = new Date()
+    const due = new Date(dueDate)
+    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays > 0) {
+      deadlineInfo = `${diffDays} jour${diffDays > 1 ? 's' : ''} pour la réaliser`
+    } else if (diffDays === 0) {
+      deadlineInfo = "À rendre aujourd'hui"
+    } else {
+      deadlineInfo = `En retard de ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`
+    }
+  }
+
+  const priorityLabels: Record<string, { label: string; color: string }> = {
+    URGENTE: { label: 'Urgente', color: '#ef4444' },
+    HAUTE: { label: 'Haute', color: '#f59e0b' },
+    NORMALE: { label: 'Normale', color: '#6366f1' },
+    BASSE: { label: 'Basse', color: '#94a3b8' },
+  }
+  const prio = priority ? priorityLabels[priority] || null : null
+
   const body = `
-    <p style="color:#f1f5f9;">Bonjour ${escapeHtml(assigneeName)},</p>
-    <p><strong style="color:#f1f5f9;">${escapeHtml(assignedBy)}</strong> vous a assigné une nouvelle tâche :</p>
+    <p>Bonjour <strong>${escapeHtml(assigneeName)}</strong>,</p>
+    <p><strong>${escapeHtml(assignedBy)}</strong> vous a assigné une nouvelle tâche :</p>
     ${highlightBlock(`
       ${infoLine('Tâche', taskTitle)}
       ${infoLine('Projet', projectName)}
-      ${infoLine('Assignée par', assignedBy)}
+      ${dueDate ? infoLine('Échéance', formatDate(dueDate)) : ''}
+      ${deadlineInfo ? infoLine('Délai', deadlineInfo) : ''}
+      ${prio ? `<p style="margin:6px 0;font-size:14px;"><span style="color:#64748b;">Priorité :</span> <strong style="color:${prio.color};">${prio.label}</strong></p>` : ''}
     `)}
-    <p>Connectez-vous pour voir les détails et commencer à travailler dessus.</p>
+    <p>Connectez-vous pour consulter les détails et commencer à travailler dessus.</p>
   `
 
   const html = emailLayout({
     title: 'Nouvelle tâche assignée',
-    preheader: `${assignedBy} vous a assigné "${taskTitle}" sur ${projectName}`,
+    preheader: `${assignedBy} vous a assigné "${taskTitle}"${dueDate ? ` — échéance le ${formatDate(dueDate)}` : ''}`,
     body,
     ctaUrl: projectUrl,
     ctaLabel: 'Voir la tâche',
@@ -40,7 +73,7 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
       from: `"${appName}" <${from}>`,
       to,
       subject: `[${appName}] Nouvelle tâche : ${taskTitle}`,
-      text: `Bonjour ${assigneeName},\n\n${assignedBy} vous a assigné une nouvelle tâche sur le projet "${projectName}" :\n\nTâche : ${taskTitle}\n\nVoir la tâche : ${projectUrl}\n\n— L'équipe ${appName}`,
+      text: `Bonjour ${assigneeName},\n\n${assignedBy} vous a assigné une nouvelle tâche sur le projet "${projectName}" :\n\nTâche : ${taskTitle}${dueDate ? `\nÉchéance : ${formatDate(dueDate)}` : ''}${deadlineInfo ? `\nDélai : ${deadlineInfo}` : ''}${prio ? `\nPriorité : ${prio.label}` : ''}\n\nVoir la tâche : ${projectUrl}\n\n— L'équipe ${appName}`,
       html,
     })
     return { sent: true }
@@ -62,7 +95,7 @@ export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, 
   const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
 
   const body = `
-    <p style="color:#f1f5f9;">Bonjour ${escapeHtml(name)},</p>
+    <p>Bonjour <strong>${escapeHtml(name)}</strong>,</p>
     <p>Une tâche arrive bientôt à échéance :</p>
     ${highlightBlock(`
       ${infoLine('Tâche', taskTitle)}
