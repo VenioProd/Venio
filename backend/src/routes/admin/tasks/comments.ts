@@ -10,7 +10,7 @@ import { requirePermissionOrAssignee } from './middleware.js'
 
 const router = express.Router({ mergeParams: true })
 
-// GET /api/admin/projects/:projectId/tasks/:taskId/comments
+// GET /api/admin/projets/:projectId/tasks/:taskId/comments
 router.get('/:projectId/tasks/:taskId/comments', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectId = req.params.projectId as string
@@ -29,7 +29,7 @@ router.get('/:projectId/tasks/:taskId/comments', requirePermission(PERMISSIONS.V
   }
 })
 
-// POST /api/admin/projects/:projectId/tasks/:taskId/comments
+// POST /api/admin/projets/:projectId/tasks/:taskId/comments
 router.post(
   '/:projectId/tasks/:taskId/comments',
   requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
@@ -69,7 +69,7 @@ router.post(
               type: 'TASK_UPDATED',
               title: `Mention dans "${task.title}"`,
               message: `${(req.user as any).name || 'Un collègue'} vous a mentionné dans un commentaire`,
-              link: `/admin/projects/${projectId}?tab=tasks`,
+              link: `/admin/projets/${projectId}?tab=tasks`,
             })
           }
         }
@@ -84,7 +84,7 @@ router.post(
             type: 'TASK_UPDATED',
             title: `Nouveau commentaire sur "${task.title}"`,
             message: `${(req.user as any).name || 'Un collègue'} a commenté la tâche "${task.title}" sur "${project?.name || ''}"`,
-            link: `/admin/projects/${projectId}?tab=tasks`,
+            link: `/admin/projets/${projectId}?tab=tasks`,
           })
         }
       }
@@ -96,7 +96,7 @@ router.post(
   }
 )
 
-// DELETE /api/admin/projects/:projectId/tasks/:taskId/comments/:commentId
+// DELETE /api/admin/projets/:projectId/tasks/:taskId/comments/:commentId
 router.delete('/:projectId/tasks/:taskId/comments/:commentId', requirePermission(PERMISSIONS.MANAGE_TASKS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const taskId = req.params.taskId as string

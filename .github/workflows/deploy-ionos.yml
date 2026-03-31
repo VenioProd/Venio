@@ -41,18 +41,9 @@ jobs:
 
             cd "$PROJECT_DIR"
 
-            # Sauvegarder le .env existant s'il existe
+            # Sauvegarder le .env existant
             if [ -f .env ]; then
               cp .env .env.backup
-            fi
-
-            # Recuperer les env vars du container existant si pas de .env
-            if [ ! -f .env ]; then
-              CONTAINER_ID=$(docker ps -q --filter name=venio 2>/dev/null | head -1)
-              if [ -n "$CONTAINER_ID" ]; then
-                echo "🔑 Recuperation des env vars du container existant..."
-                docker exec "$CONTAINER_ID" env 2>/dev/null | grep -E '^(JWT_SECRET|MONGODB_URI|CORS_ORIGIN|SMTP_|ENCRYPTION_KEY|NODE_ENV)=' > .env 2>/dev/null || true
-              fi
             fi
 
             echo "📥 Pull du code..."
@@ -64,31 +55,15 @@ jobs:
               mv .env.backup .env
             fi
 
-            # Arreter tout container/process utilisant le port 8200
-            echo "🛑 Arret des anciens containers..."
+            # Arreter le container venio existant
+            echo "🛑 Arret de l'ancien container..."
             docker compose -f docker-compose.prod.yml down 2>/dev/null || true
             docker stop venio-app 2>/dev/null || true
             docker rm venio-app 2>/dev/null || true
-            # Tuer tout container qui utilise le port 8200
-            for CID in $(docker ps -q 2>/dev/null); do
-              if docker port "$CID" 2>/dev/null | grep -q 8200; then
-                echo "  Arret du container $CID (port 8200)"
-                docker stop "$CID" 2>/dev/null || true
-                docker rm "$CID" 2>/dev/null || true
-              fi
-            done
-            # Si un process non-docker utilise le port
-            fuser -k 8200/tcp 2>/dev/null || true
 
             echo "🏗️ Rebuild du container..."
             docker compose -f docker-compose.prod.yml build --no-cache
             docker compose -f docker-compose.prod.yml up -d
-
-            # Ensure Nginx proxies to Docker container
-            if [ -f nginx/venio.pro.conf ]; then
-              cp nginx/venio.pro.conf /etc/nginx/sites-available/venio.pro
-              killall -HUP nginx 2>/dev/null || true
-            fi
 
             echo "✅ Déploiement terminé"
           DEPLOY
@@ -96,9 +71,9 @@ jobs:
       - name: ✅ Vérifier le site
         run: |
           sleep 15
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.pro)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.paris)
           if [ "$STATUS" = "200" ]; then
-            echo "✅ Site en ligne sur https://venio.pro (HTTP $STATUS)"
+            echo "✅ Site en ligne sur https://venio.paris (HTTP $STATUS)"
           else
             echo "⚠️ Le site a répondu avec HTTP $STATUS"
           fi

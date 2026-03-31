@@ -13,7 +13,7 @@ import { requirePermissionOrAssignee, TASK_STATUSES, TASK_PRIORITIES } from './m
 
 const router = express.Router({ mergeParams: true })
 
-// GET /api/admin/projects/:projectId/tasks
+// GET /api/admin/projets/:projectId/tasks
 router.get('/:projectId/tasks', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectId = req.params.projectId as string
@@ -33,7 +33,7 @@ router.get('/:projectId/tasks', requirePermission(PERMISSIONS.VIEW_PROJECTS), as
   }
 })
 
-// POST /api/admin/projects/:projectId/tasks
+// POST /api/admin/projets/:projectId/tasks
 router.post(
   '/:projectId/tasks',
   requirePermission(PERMISSIONS.MANAGE_TASKS),
@@ -88,7 +88,7 @@ router.post(
           type: 'TASK_ASSIGNED',
           title: `Nouvelle tâche : ${title}`,
           message: `Vous avez été assigné à la tâche "${title}" sur le projet "${project.name}"`,
-          link: `/admin/projects/${projectId}?tab=tasks`,
+          link: `/admin/projets/${projectId}?tab=tasks`,
         })
         // Send email
         const assigneeUser = await User.findById(assignee)
@@ -111,7 +111,7 @@ router.post(
   }
 )
 
-// PATCH /api/admin/projects/:projectId/tasks/:taskId
+// PATCH /api/admin/projets/:projectId/tasks/:taskId
 router.patch(
   '/:projectId/tasks/:taskId',
   requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
@@ -176,7 +176,7 @@ router.patch(
           type: 'TASK_ASSIGNED',
           title: `Tâche assignée : ${task.title}`,
           message: `Vous avez été assigné à la tâche "${task.title}" sur le projet "${project?.name || ''}"`,
-          link: `/admin/projects/${projectId}?tab=tasks`,
+          link: `/admin/projets/${projectId}?tab=tasks`,
         })
         const assigneeUser = await User.findById(newAssignee)
         if (assigneeUser?.email) {
@@ -198,7 +198,7 @@ router.patch(
   }
 )
 
-// PATCH /api/admin/projects/:projectId/tasks/:taskId/move — drag-drop
+// PATCH /api/admin/projets/:projectId/tasks/:taskId/move — drag-drop
 router.patch('/:projectId/tasks/:taskId/move', requirePermission(PERMISSIONS.MANAGE_TASKS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectId = req.params.projectId as string
@@ -231,7 +231,7 @@ router.patch('/:projectId/tasks/:taskId/move', requirePermission(PERMISSIONS.MAN
   }
 })
 
-// DELETE /api/admin/projects/:projectId/tasks/:taskId
+// DELETE /api/admin/projets/:projectId/tasks/:taskId
 router.delete('/:projectId/tasks/:taskId', requirePermission(PERMISSIONS.MANAGE_TASKS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectId = req.params.projectId as string

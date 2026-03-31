@@ -484,7 +484,7 @@ export async function processTaskDeadlineReminders(): Promise<TaskReminderResult
         type: 'TASK_UPDATED',
         title: 'Tâche bientôt à échéance',
         message: `"${task.title}" dans ${project?.name || 'un projet'} arrive à échéance demain`,
-        link: `/admin/projects/${project?._id}?tab=tasks`,
+        link: `/admin/projets/${project?._id}?tab=tasks`,
       }).catch(() => {})
 
       // Send email
@@ -539,7 +539,7 @@ export async function processProjectDeadlineAlerts(): Promise<ProjectDeadlineRes
         type: 'PROJECT_UPDATE',
         title: 'Échéance projet proche',
         message: `Le projet "${project.name}" arrive à échéance dans ${daysLeft} jour(s)`,
-        link: `/admin/projects/${project._id}`,
+        link: `/admin/projets/${project._id}`,
       }).catch(() => {})
 
       notified++

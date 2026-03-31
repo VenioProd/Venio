@@ -9,7 +9,7 @@ export async function sendClientProjectUpdateEmail({ to, clientName, projectName
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {
@@ -54,10 +54,10 @@ export async function sendProjectStatusEmail({ to, recipientName, projectName, o
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
-  const projectUrl = `${baseUrl}/projects/${projectId}`
+  const projectUrl = `${baseUrl}/projets/${projectId}`
 
   const STATUS_LABELS: Record<string, string> = { EN_COURS: 'En cours', EN_ATTENTE: 'En attente', TERMINE: 'Terminé' }
 
@@ -100,7 +100,7 @@ export async function sendProjectStartEmail({ to, name, projectName, portalUrl }
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {
@@ -139,7 +139,7 @@ export async function sendProjectCompleteEmail({ to, name, projectName, portalUr
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {
@@ -181,7 +181,7 @@ export async function sendDeliverableNotificationEmail({ to, name, projectName, 
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5501/espace-client'
 

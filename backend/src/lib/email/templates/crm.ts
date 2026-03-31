@@ -19,7 +19,7 @@ export async function sendLeadAssignmentEmail({ to, assigneeName, lead }: { to: 
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
@@ -85,7 +85,7 @@ export async function sendColdLeadsReminderEmail({ to, assigneeName, leads }: { 
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
@@ -142,7 +142,7 @@ export async function sendOverdueActionsEmail({ to, assigneeName, leads }: { to:
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
@@ -199,7 +199,7 @@ export async function sendEscalationEmail({ to, managerName, lead, assigneeName,
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
@@ -255,7 +255,7 @@ export async function sendProposalReminderEmail({ to, assigneeName, lead, daysIn
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 

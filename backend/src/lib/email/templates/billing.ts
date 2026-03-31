@@ -9,7 +9,7 @@ export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDat
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {
@@ -56,7 +56,7 @@ export async function sendInvoiceReminderEmail({ to, name, invoiceNumber, amount
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {

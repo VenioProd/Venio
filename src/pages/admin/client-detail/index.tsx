@@ -126,7 +126,14 @@ const ClientAccountDetail = () => {
       const data = await apiFetch<{ token: string }>(`/api/admin/admins/impersonate/${userId}`, {
         method: 'POST',
       })
-      window.open(`${window.location.origin}/espace-client?impersonate=${data.token}`, '_blank')
+      const url = `${window.location.origin}/espace-client?impersonate=${data.token}`
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {

@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://venio.pro/sitemap.xml
+Sitemap: https://venio.paris/sitemap.xml
 
 # Disallow admin and private pages
 Disallow: /admin/

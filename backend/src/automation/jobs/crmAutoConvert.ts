@@ -59,7 +59,7 @@ const definition: AutomationDefinition = {
     const passwordHash = await bcrypt.hash(tempPassword, 10)
 
     const newClient = await User.create({
-      email: lead.contactEmail || `${lead.company.toLowerCase().replace(/\s+/g, '-')}@client.venio.pro`,
+      email: lead.contactEmail || `${lead.company.toLowerCase().replace(/\s+/g, '-')}@client.venio.paris`,
       passwordHash,
       role: 'CLIENT',
       name: lead.contactName || lead.company,

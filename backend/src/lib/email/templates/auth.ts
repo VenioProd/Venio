@@ -9,7 +9,7 @@ export async function sendAdminCredentials({ to, name, email, password }: { to: 
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   const loginUrl = process.env.ADMIN_LOGIN_URL || 'http://localhost:5501/admin/login'
 
@@ -60,7 +60,7 @@ export async function sendTestEmail(to: string): Promise<EmailResult> {
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
   try {
     await transporter.sendMail({
@@ -84,7 +84,7 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
   if (!transporter) {
     return { sent: false, error: 'SMTP non configure (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {
@@ -129,7 +129,7 @@ export async function sendWelcomeEmail({ to, name, email, loginUrl }: { to: stri
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.pro'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
 
   try {

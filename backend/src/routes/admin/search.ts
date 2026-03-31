@@ -48,7 +48,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         id: p._id,
         title: (p as any).name,
         subtitle: `Projet — ${(p as any).status}`,
-        link: `/admin/projects/${p._id}`,
+        link: `/admin/projets/${p._id}`,
       })),
       ...clients.map((c) => ({
         type: 'client',
@@ -62,7 +62,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         id: t._id,
         title: (t as any).title,
         subtitle: `Tâche — ${(t as any).project?.name || 'Projet'}`,
-        link: `/admin/projects/${(t as any).project?._id || (t as any).project}?tab=tasks`,
+        link: `/admin/projets/${(t as any).project?._id || (t as any).project}?tab=tasks`,
       })),
       ...leads.map((l) => ({
         type: 'lead',
