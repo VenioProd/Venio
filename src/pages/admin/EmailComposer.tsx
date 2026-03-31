@@ -31,14 +31,12 @@ export default function EmailComposer() {
   const { showToast } = useToast()
 
   const [admins, setAdmins] = useState<Recipient[]>([])
-  const [clients, setClients] = useState<Recipient[]>([])
   const [loadingRecipients, setLoadingRecipients] = useState(true)
 
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set())
   const [customEmail, setCustomEmail] = useState('')
   const [customEmails, setCustomEmails] = useState<string[]>([])
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'admins' | 'clients'>('all')
 
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -54,19 +52,15 @@ export default function EmailComposer() {
 
   useEffect(() => {
     apiFetch<{ admins: Recipient[]; clients: Recipient[] }>('/api/admin/email-composer/recipients')
-      .then(d => { setAdmins(d.admins || []); setClients(d.clients || []) })
+      .then(d => { setAdmins(d.admins || []) })
       .catch(() => {})
       .finally(() => setLoadingRecipients(false))
   }, [])
 
-  const filteredList: (Recipient & { group: 'admin' | 'client' })[] = [
-    ...(filter !== 'clients' ? admins.map(a => ({ ...a, group: 'admin' as const })) : []),
-    ...(filter !== 'admins' ? clients.map(c => ({ ...c, group: 'client' as const })) : []),
-  ].filter(r =>
+  const filteredList = admins.filter(r =>
     !search ||
     r.name.toLowerCase().includes(search.toLowerCase()) ||
-    r.email.toLowerCase().includes(search.toLowerCase()) ||
-    (r.companyName || '').toLowerCase().includes(search.toLowerCase())
+    r.email.toLowerCase().includes(search.toLowerCase())
   )
 
   const totalSelected = selectedEmails.size + customEmails.length
@@ -80,13 +74,12 @@ export default function EmailComposer() {
     })
   }
 
-  const selectGroup = (group: 'admins' | 'clients') => {
-    const list = group === 'admins' ? admins : clients
-    const emails = list.map(r => r.email)
+  const selectAllAdmins = () => {
+    const emails = admins.map(r => r.email)
     if (emails.length === 0) return
     setSelectedEmails(prev => {
       const next = new Set(prev)
-      const allIn = emails.length > 0 && emails.every(e => next.has(e))
+      const allIn = emails.every(e => next.has(e))
       if (allIn) emails.forEach(e => next.delete(e))
       else emails.forEach(e => next.add(e))
       return next
@@ -189,89 +182,97 @@ export default function EmailComposer() {
           </div>
 
           <div style={{ padding: '14px 16px' }}>
-            {/* Search */}
+
+            {/* Recherche */}
             <div className="ticket-form-field" style={{ marginBottom: 10 }}>
               <input
                 type="text"
-                placeholder="Rechercher un nom, email..."
+                placeholder="Rechercher un membre..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
 
-            {/* Filter tabs */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-              {(['all', 'admins', 'clients'] as const).map(f => (
-                <button key={f} onClick={() => setFilter(f)} style={{
-                  flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: filter === f ? 'rgba(14,165,233,0.2)' : 'rgba(255,255,255,0.04)',
-                  color: filter === f ? '#38bdf8' : 'rgba(255,255,255,0.4)',
-                  transition: 'all 0.15s',
-                }}>
-                  {f === 'all' ? 'Tous' : f === 'admins' ? 'Équipe' : 'Clients'}
-                </button>
-              ))}
-            </div>
-
-            {/* Quick select */}
-            <div style={{ marginBottom: 12 }}>
-              <button onClick={() => selectGroup('admins')} style={{
+            {/* Bouton tout sélectionner */}
+            <div style={{ marginBottom: 14 }}>
+              <button onClick={selectAllAdmins} style={{
                 width: '100%', padding: '7px 0', borderRadius: 8,
                 border: '1px solid rgba(14,165,233,0.25)', background: 'rgba(14,165,233,0.06)',
                 color: '#38bdf8', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
               }}>
                 {admins.length > 0 && admins.every(a => selectedEmails.has(a.email))
-                  ? 'Désélectionner toute l\'équipe'
+                  ? "Tout désélectionner"
                   : `Sélectionner toute l'équipe (${admins.length})`}
               </button>
             </div>
 
-            {/* List */}
-            <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 14 }}>
-              {loadingRecipients ? (
-                <div style={{ color: '#475569', fontSize: 13, padding: '12px 4px' }}>Chargement...</div>
-              ) : filteredList.length === 0 ? (
-                <div style={{ color: '#475569', fontSize: 13, padding: '12px 4px' }}>Aucun résultat</div>
-              ) : filteredList.map(r => (
-                <label key={r.email} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                  background: selectedEmails.has(r.email) ? 'rgba(14,165,233,0.1)' : 'rgba(255,255,255,0.02)',
-                  border: selectedEmails.has(r.email) ? '1px solid rgba(14,165,233,0.25)' : '1px solid rgba(255,255,255,0.04)',
-                  transition: 'all 0.15s',
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedEmails.has(r.email)}
-                    onChange={() => toggleEmail(r.email)}
-                    style={{ accentColor: '#0ea5e9', width: 14, height: 14, flexShrink: 0 }}
-                  />
-                  {/* Avatar */}
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                    background: r.group === 'admin' ? 'rgba(14,165,233,0.15)' : 'rgba(139,92,246,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 700, color: r.group === 'admin' ? '#38bdf8' : '#a78bfa',
-                  }}>
-                    {r.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                      {r.tags?.includes('STAGIAIRE') && (
-                        <span style={{ flexShrink: 0, fontSize: 10, background: 'rgba(139,92,246,0.15)', color: '#a78bfa', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>Stage</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {r.group === 'admin' && r.role ? ROLE_LABELS[r.role] || r.role : r.companyName || r.email}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
+            {/* Chips cliquables — membres */}
+            {loadingRecipients ? (
+              <div style={{ color: '#475569', fontSize: 13, padding: '8px 0' }}>Chargement...</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 320, overflowY: 'auto', marginBottom: 14 }}>
+                {filteredList.length === 0 ? (
+                  <div style={{ color: '#475569', fontSize: 13, padding: '8px 0' }}>Aucun résultat</div>
+                ) : filteredList.map(r => {
+                  const selected = selectedEmails.has(r.email)
+                  return (
+                    <button
+                      key={r.email}
+                      type="button"
+                      onClick={() => toggleEmail(r.email)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '9px 12px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                        background: selected ? 'rgba(14,165,233,0.12)' : 'rgba(255,255,255,0.03)',
+                        border: selected ? '1px solid rgba(14,165,233,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                        transition: 'all 0.15s', width: '100%',
+                      }}
+                    >
+                      {/* Avatar */}
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                        background: selected ? 'rgba(14,165,233,0.25)' : 'rgba(255,255,255,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700,
+                        color: selected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
+                        transition: 'all 0.15s',
+                      }}>
+                        {r.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: selected ? '#e2e8f0' : 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {r.name}
+                          {r.tags?.includes('STAGIAIRE') && (
+                            <span style={{ fontSize: 10, background: 'rgba(139,92,246,0.15)', color: '#a78bfa', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>Stage</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+                          {r.email}
+                        </div>
+                      </div>
+                      {/* Indicateur sélection */}
+                      <div style={{
+                        width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                        background: selected ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
+                        border: selected ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}>
+                        {selected && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
-            {/* Custom email */}
+            {/* Adresse externe */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Adresse externe
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
