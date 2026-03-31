@@ -1,4 +1,5 @@
 import { getTransporter, escapeHtml } from '../transport.js'
+import { emailLayout, highlightBlock, infoLine } from '../layout.js'
 import type { EmailResult } from '../transport.js'
 
 /**
@@ -9,36 +10,38 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
   const projectUrl = `${baseUrl}/projets/${projectId}?tab=tasks`
+
+  const body = `
+    <p style="color:#f1f5f9;">Bonjour ${escapeHtml(assigneeName)},</p>
+    <p><strong style="color:#f1f5f9;">${escapeHtml(assignedBy)}</strong> vous a assigné une nouvelle tâche :</p>
+    ${highlightBlock(`
+      ${infoLine('Tâche', taskTitle)}
+      ${infoLine('Projet', projectName)}
+      ${infoLine('Assignée par', assignedBy)}
+    `)}
+    <p>Connectez-vous pour voir les détails et commencer à travailler dessus.</p>
+  `
+
+  const html = emailLayout({
+    title: 'Nouvelle tâche assignée',
+    preheader: `${assignedBy} vous a assigné "${taskTitle}" sur ${projectName}`,
+    body,
+    ctaUrl: projectUrl,
+    ctaLabel: 'Voir la tâche',
+    ctaColor: '#6366f1',
+  })
 
   try {
     await transporter.sendMail({
       from: `"${appName}" <${from}>`,
       to,
-      subject: `[${appName}] Tâche assignée : ${taskTitle}`,
-      text: [
-        `Bonjour ${assigneeName},`,
-        '',
-        `${assignedBy} vous a assigné une nouvelle tâche sur le projet "${projectName}" :`,
-        '',
-        `  Tâche : ${taskTitle}`,
-        '',
-        `Voir la tâche : ${projectUrl}`,
-        '',
-        `— L'équipe ${appName}`,
-      ].join('\n'),
-      html: [
-        `<p>Bonjour ${escapeHtml(assigneeName)},</p>`,
-        `<p><strong>${escapeHtml(assignedBy)}</strong> vous a assigné une nouvelle tâche sur le projet <strong>${escapeHtml(projectName)}</strong> :</p>`,
-        `<div style="margin: 16px 0; padding: 16px; background: #f8fafc; border-left: 4px solid #6366f1; border-radius: 4px;">`,
-        `<p style="margin: 0; font-weight: 600;">${escapeHtml(taskTitle)}</p>`,
-        `</div>`,
-        `<p><a href="${escapeHtml(projectUrl)}" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px;">Voir la tâche</a></p>`,
-        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
-      ].join(''),
+      subject: `[${appName}] Nouvelle tâche : ${taskTitle}`,
+      text: `Bonjour ${assigneeName},\n\n${assignedBy} vous a assigné une nouvelle tâche sur le projet "${projectName}" :\n\nTâche : ${taskTitle}\n\nVoir la tâche : ${projectUrl}\n\n— L'équipe ${appName}`,
+      html,
     })
     return { sent: true }
   } catch (err) {
@@ -54,33 +57,37 @@ export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, 
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
   const appName = process.env.APP_NAME || 'Venio'
-  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'http://localhost:5501/admin'
+  const baseUrl = process.env.ADMIN_LOGIN_URL ? process.env.ADMIN_LOGIN_URL.replace('/login', '') : 'https://venio.paris/admin'
+
+  const body = `
+    <p style="color:#f1f5f9;">Bonjour ${escapeHtml(name)},</p>
+    <p>Une tâche arrive bientôt à échéance :</p>
+    ${highlightBlock(`
+      ${infoLine('Tâche', taskTitle)}
+      ${infoLine('Projet', projectName)}
+      ${infoLine('Échéance', dueDate)}
+    `, '#f59e0b')}
+    <p>Pensez à la finaliser avant la date limite.</p>
+  `
+
+  const html = emailLayout({
+    title: 'Rappel : tâche bientôt à échéance',
+    preheader: `"${taskTitle}" arrive à échéance le ${dueDate}`,
+    body,
+    ctaUrl: `${baseUrl}/gestion`,
+    ctaLabel: 'Voir mes tâches',
+    ctaColor: '#f59e0b',
+  })
 
   try {
     await transporter.sendMail({
       from: `"${appName}" <${from}>`,
       to,
-      subject: `[${appName}] Rappel : Tâche "${taskTitle}" arrive à échéance`,
-      text: [
-        `Bonjour ${name},`,
-        '',
-        `La tâche "${taskTitle}" sur le projet "${projectName}" arrive à échéance le ${dueDate}.`,
-        '',
-        `Pensez à la finaliser avant la date limite.`,
-        '',
-        `Accéder au projet : ${baseUrl}/projects`,
-        '',
-        `— L'équipe ${appName}`,
-      ].join('\n'),
-      html: [
-        `<p>Bonjour ${escapeHtml(name)},</p>`,
-        `<p>La tâche <strong>"${escapeHtml(taskTitle)}"</strong> sur le projet <strong>"${escapeHtml(projectName)}"</strong> arrive à échéance le <strong>${escapeHtml(dueDate)}</strong>.</p>`,
-        `<p>Pensez à la finaliser avant la date limite.</p>`,
-        `<p><a href="${escapeHtml(baseUrl)}/projects" style="display: inline-block; padding: 10px 20px; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px;">Voir mes tâches</a></p>`,
-        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
-      ].join(''),
+      subject: `[${appName}] Rappel : "${taskTitle}" — échéance le ${dueDate}`,
+      text: `Bonjour ${name},\n\nLa tâche "${taskTitle}" sur le projet "${projectName}" arrive à échéance le ${dueDate}.\n\nPensez à la finaliser avant la date limite.\n\n— L'équipe ${appName}`,
+      html,
     })
     return { sent: true }
   } catch (err) {
