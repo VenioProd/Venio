@@ -17,9 +17,9 @@ router.use(requireAdmin)
 router.get('/recipients', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [admins, clients] = await Promise.all([
-      User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] }, isActive: true })
+      User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] }, isActive: { $ne: false } })
         .select('name email role tags').sort({ name: 1 }),
-      User.find({ role: 'CLIENT', isActive: true })
+      User.find({ role: 'CLIENT', isActive: { $ne: false } })
         .select('name email companyName').sort({ name: 1 }),
     ])
     const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
