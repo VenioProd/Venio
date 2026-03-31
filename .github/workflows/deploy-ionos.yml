@@ -64,9 +64,15 @@ jobs:
               mv .env.backup .env
             fi
 
+            # Arreter tout container venio existant (ancien ou nouveau)
+            echo "🛑 Arret des anciens containers..."
+            docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+            docker stop venio-app 2>/dev/null || true
+            docker rm venio-app 2>/dev/null || true
+
             echo "🏗️ Rebuild du container..."
             docker compose -f docker-compose.prod.yml build --no-cache
-            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            docker compose -f docker-compose.prod.yml up -d
 
             # Ensure Nginx proxies to Docker container
             if [ -f nginx/venio.pro.conf ]; then
