@@ -22,7 +22,8 @@ router.get('/recipients', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (r
       User.find({ role: 'CLIENT', isActive: true })
         .select('name email companyName').sort({ name: 1 }),
     ])
-    return res.json({ admins, clients })
+    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
+    return res.json({ admins, clients, fromEmail })
   } catch (err) {
     return next(err)
   }

@@ -31,6 +31,7 @@ export default function EmailComposer() {
   const { showToast } = useToast()
 
   const [admins, setAdmins] = useState<Recipient[]>([])
+  const [fromEmail, setFromEmail] = useState<string>('')
   const [loadingRecipients, setLoadingRecipients] = useState(true)
 
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set())
@@ -52,7 +53,7 @@ export default function EmailComposer() {
 
   useEffect(() => {
     apiFetch<{ admins: Recipient[]; clients: Recipient[] }>('/api/admin/email-composer/recipients')
-      .then(d => { setAdmins(d.admins || []) })
+      .then(d => { setAdmins(d.admins || []); setFromEmail((d as any).fromEmail || '') })
       .catch(() => {})
       .finally(() => setLoadingRecipients(false))
   }, [])
@@ -131,7 +132,14 @@ export default function EmailComposer() {
             Retour
           </Link>
           <h1 className="ticket-hero-title" style={{ marginTop: 8 }}>Composer un email</h1>
-          <p className="ticket-hero-subtitle">Envoyez un message à plusieurs personnes en une seule fois</p>
+          <p className="ticket-hero-subtitle">
+            Envoyez un message à plusieurs personnes en une seule fois
+            {fromEmail && (
+              <span style={{ marginLeft: 10, padding: '2px 10px', borderRadius: 20, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)', color: '#38bdf8', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
+                ✉ Depuis : {fromEmail}
+              </span>
+            )}
+          </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {totalSelected > 0 && (
