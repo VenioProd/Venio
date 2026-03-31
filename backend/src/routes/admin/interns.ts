@@ -58,6 +58,87 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/admin/interns/documents — tous les fichiers uploades par les stagiaires
+router.get('/documents', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { internId, type, sort } = req.query
+
+    const reportFilter: Record<string, unknown> = {}
+    if (internId) reportFilter.internId = internId
+
+    // Recuperer tous les rapports qui ont des fichiers
+    const reports = await ActivityReport.find({
+      ...reportFilter,
+      'attachments.0': { $exists: true },
+    })
+      .populate('userId', 'name email')
+      .populate('internId', 'userId poste')
+      .sort({ date: -1 })
+
+    // Aplatir : un item par fichier
+    const documents: any[] = []
+    for (const report of reports) {
+      for (const file of report.attachments) {
+        const ext = file.originalName.split('.').pop()?.toLowerCase() || ''
+        const fileType = getFileType(file.mimetype, ext)
+
+        // Filtre par type
+        if (type && type !== 'all' && fileType !== type) continue
+
+        documents.push({
+          _id: `${report._id}-${file.filename}`,
+          filename: file.filename,
+          originalName: file.originalName,
+          mimetype: file.mimetype,
+          size: file.size,
+          fileType,
+          reportId: report._id,
+          reportDate: report.date,
+          reportStatus: report.status,
+          uploadedAt: report.createdAt,
+          user: report.userId,
+          intern: report.internId,
+        })
+      }
+    }
+
+    // Tri
+    if (sort === 'name') {
+      documents.sort((a, b) => a.originalName.localeCompare(b.originalName))
+    } else if (sort === 'size') {
+      documents.sort((a, b) => b.size - a.size)
+    } else if (sort === 'type') {
+      documents.sort((a, b) => a.fileType.localeCompare(b.fileType))
+    }
+    // Par defaut : tri par date desc (deja fait par le query)
+
+    // Stats par type
+    const allDocs = documents // deja filtre par internId si fourni
+    const stats = {
+      total: allDocs.length,
+      totalSize: allDocs.reduce((s, d) => s + d.size, 0),
+      byType: {} as Record<string, number>,
+    }
+    allDocs.forEach((d) => { stats.byType[d.fileType] = (stats.byType[d.fileType] || 0) + 1 })
+
+    res.json({ documents, stats })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+function getFileType(mimetype: string, ext: string): string {
+  if (mimetype.startsWith('image/')) return 'image'
+  if (mimetype === 'application/pdf' || ext === 'pdf') return 'pdf'
+  if (mimetype.includes('word') || ext === 'doc' || ext === 'docx') return 'document'
+  if (mimetype.includes('sheet') || mimetype.includes('excel') || ext === 'xls' || ext === 'xlsx') return 'tableur'
+  if (mimetype.includes('presentation') || ext === 'pptx' || ext === 'ppt') return 'presentation'
+  if (mimetype.startsWith('video/')) return 'video'
+  if (mimetype.startsWith('audio/')) return 'audio'
+  if (mimetype === 'application/zip' || ext === 'zip') return 'archive'
+  return 'autre'
+}
+
 // GET /api/admin/interns/kpis — KPIs detailles pour tous les stagiaires
 router.get('/kpis', requireAdmin, async (req: Request, res: Response) => {
   try {

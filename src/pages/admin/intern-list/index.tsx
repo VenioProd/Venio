@@ -6,6 +6,7 @@ import { useConfirm } from '../../../hooks/useConfirm'
 import { STATUS_CONFIG, REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage, daysRemaining } from './types'
 import type { Intern, ActivityReport } from './types'
 import InternKpi from '../../../components/admin/InternKpi'
+import InternDocuments from '../../../components/admin/InternDocuments'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -18,8 +19,8 @@ const InternList = () => {
 
   // ── Tabs ──
   const navigate = useNavigate()
-  const initialTab = searchParams.get('tab') as 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'mes-rapports' || (isSuperAdmin ? 'dashboard' : 'mes-rapports')
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'mes-rapports'>(initialTab)
+  const initialTab = searchParams.get('tab') as 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports' || (isSuperAdmin ? 'dashboard' : 'mes-rapports')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports'>(initialTab)
 
   // ── Stagiaires ──
   const [interns, setInterns] = useState<Intern[]>([])
@@ -277,6 +278,7 @@ const InternList = () => {
     { key: 'stagiaires', label: 'Stagiaires', count: interns.length },
     { key: 'rapports', label: 'Tous les rapports', count: reports.length },
     { key: 'kpis', label: 'KPIs', count: null as number | null },
+    { key: 'documents', label: 'Documents', count: null as number | null },
   ]
 
   const effectiveTab = activeTab
@@ -891,6 +893,9 @@ const InternList = () => {
 
       {/* ═══ TAB: KPIs ═══ */}
       {effectiveTab === 'kpis' && isAdmin && <InternKpi />}
+
+      {/* ═══ TAB: Documents ═══ */}
+      {effectiveTab === 'documents' && isAdmin && <InternDocuments />}
 
       {/* Mes rapports supprime — page separee /admin/mes-rapports */}
     </div>
