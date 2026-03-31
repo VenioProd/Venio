@@ -42,6 +42,7 @@ import adminBriefRoutes from './routes/admin/briefs.js'
 import adminToolAccessRoutes from './routes/admin/toolAccess.js'
 import adminAutomationRoutes from './routes/admin/automations.js'
 import adminInternRoutes from './routes/admin/interns.js'
+import adminEmailComposerRoutes from './routes/admin/emailComposer.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import bcrypt from 'bcryptjs'
@@ -160,6 +161,7 @@ app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/admin/tool-access', adminToolAccessRoutes)
 app.use('/api/admin/automations', adminAutomationRoutes)
 app.use('/api/admin/interns', adminInternRoutes)
+app.use('/api/admin/email-composer', adminEmailComposerRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

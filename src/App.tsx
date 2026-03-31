@@ -62,6 +62,7 @@ const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
 const InternList = lazy(() => import('./pages/admin/InternList'))
 const InternDetail = lazy(() => import('./pages/admin/InternDetail'))
 const MyReports = lazy(() => import('./pages/admin/MyReports'))
+const EmailComposer = lazy(() => import('./pages/admin/EmailComposer'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 
 function ProjectsRedirect() {
@@ -360,6 +361,14 @@ function App() {
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <AdminGuide />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/emails"
+          element={
+            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+              <EmailComposer />
             </ProtectedRoute>
           }
         />
