@@ -41,7 +41,7 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
   const priorityLabels: Record<string, { label: string; color: string }> = {
     URGENTE: { label: 'Urgente', color: '#ef4444' },
     HAUTE: { label: 'Haute', color: '#f59e0b' },
-    NORMALE: { label: 'Normale', color: '#6366f1' },
+    NORMALE: { label: 'Normale', color: '#0ea5e9' },
     BASSE: { label: 'Basse', color: '#94a3b8' },
   }
   const prio = priority ? priorityLabels[priority] || null : null
@@ -65,7 +65,7 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
     body,
     ctaUrl: projectUrl,
     ctaLabel: 'Voir la tâche',
-    ctaColor: '#6366f1',
+    ctaColor: '#0ea5e9',
   })
 
   try {
