@@ -64,11 +64,21 @@ jobs:
               mv .env.backup .env
             fi
 
-            # Arreter tout container venio existant (ancien ou nouveau)
+            # Arreter tout container/process utilisant le port 8200
             echo "🛑 Arret des anciens containers..."
             docker compose -f docker-compose.prod.yml down 2>/dev/null || true
             docker stop venio-app 2>/dev/null || true
             docker rm venio-app 2>/dev/null || true
+            # Tuer tout container qui utilise le port 8200
+            for CID in $(docker ps -q 2>/dev/null); do
+              if docker port "$CID" 2>/dev/null | grep -q 8200; then
+                echo "  Arret du container $CID (port 8200)"
+                docker stop "$CID" 2>/dev/null || true
+                docker rm "$CID" 2>/dev/null || true
+              fi
+            done
+            # Si un process non-docker utilise le port
+            fuser -k 8200/tcp 2>/dev/null || true
 
             echo "🏗️ Rebuild du container..."
             docker compose -f docker-compose.prod.yml build --no-cache
