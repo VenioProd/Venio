@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${safeName}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } })
+const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
 // Serve uploaded files (pas d'auth — noms de fichiers non devinables)
 router.get('/reports/files/:filename', (req: Request, res: Response) => {

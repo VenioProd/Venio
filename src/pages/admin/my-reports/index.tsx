@@ -108,16 +108,42 @@ const MyReports = () => {
               <textarea rows={3} placeholder="Tache 1&#10;Tache 2&#10;..." value={reportForm.taches} onChange={(e) => setReportForm({ ...reportForm, taches: e.target.value })} />
             </div>
             <div className="ticket-form-field">
-              <label>Pieces jointes</label>
-              <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" onChange={(e) => { if (e.target.files) setReportFiles([...reportFiles, ...Array.from(e.target.files)]) }} />
+              <label>Pieces jointes <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 400 }}>(max 50 Mo par fichier)</span></label>
+              <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.pptx,.txt,.zip,.mp4,.mov,.mp3" style={{ display: 'none' }}
+                onChange={(e) => { if (e.target.files) setReportFiles([...reportFiles, ...Array.from(e.target.files)]); if (fileRef.current) fileRef.current.value = '' }} />
+              <div
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#0ea5e9' }}
+                onDragLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+                onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; if (e.dataTransfer.files) setReportFiles([...reportFiles, ...Array.from(e.dataTransfer.files)]) }}
+                style={{
+                  border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 10, padding: '20px 16px',
+                  textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.2s, background 0.2s',
+                  background: 'rgba(255,255,255,0.02)',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.4)'; e.currentTarget.style.background = 'rgba(14,165,233,0.04)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 6 }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <div style={{ color: '#0ea5e9', fontSize: 13, fontWeight: 600 }}>Cliquez ou glissez vos fichiers ici</div>
+                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 4 }}>PDF, images, documents, videos, archives</div>
+              </div>
               {reportFiles.length > 0 && (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                  {reportFiles.map((f, i) => (
-                    <span key={i} style={{ padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {f.name}
-                      <button onClick={() => setReportFiles(reportFiles.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}>×</button>
-                    </span>
-                  ))}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                  {reportFiles.map((f, i) => {
+                    const sizeMo = (f.size / (1024 * 1024)).toFixed(1)
+                    return (
+                      <span key={i} style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.15)', color: 'rgba(255,255,255,0.8)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        {f.name}
+                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>{sizeMo} Mo</span>
+                        <button onClick={(e) => { e.stopPropagation(); setReportFiles(reportFiles.filter((_, j) => j !== i)) }}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                      </span>
+                    )
+                  })}
                 </div>
               )}
             </div>
