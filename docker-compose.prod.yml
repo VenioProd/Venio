@@ -1,0 +1,16 @@
+services:
+  venio:
+    build: .
+    container_name: venio-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8200:3000"
+    env_file:
+      - .env
+    volumes:
+      - uploads-data:/app/uploads
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  uploads-data:
