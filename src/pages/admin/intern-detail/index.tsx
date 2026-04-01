@@ -252,7 +252,7 @@ const InternDetail = () => {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour aux stagiaires
+            Retour à l'équipe
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
             <div style={{ width: 52, height: 52, borderRadius: '50%', background: statusCfg.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: statusCfg.color, fontWeight: 700, fontSize: 22 }}>

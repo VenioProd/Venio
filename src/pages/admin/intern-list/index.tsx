@@ -204,6 +204,16 @@ const InternList = () => {
     } catch { /* silent */ }
   }
 
+  const handleTypeChange = async (internId: string, type: 'STAGIAIRE' | 'ALTERNANT') => {
+    try {
+      await apiFetch(`/api/admin/interns/${internId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ type }),
+      })
+      loadInterns()
+    } catch { /* silent */ }
+  }
+
   const handleDeleteIntern = async (internId: string) => {
     const ok = await confirm({ message: 'Supprimer definitivement ce stagiaire et tous ses rapports ?', title: 'Suppression', variant: 'danger' })
     if (!ok) return
@@ -277,7 +287,7 @@ const InternList = () => {
 
   const tabs = [
     { key: 'dashboard', label: 'Tableau de bord', count: dashboard.length },
-    { key: 'stagiaires', label: 'Stagiaires', count: interns.length },
+    { key: 'stagiaires', label: 'Équipe', count: interns.length },
     { key: 'rapports', label: 'Tous les rapports', count: reports.length },
     { key: 'kpis', label: 'KPIs', count: null as number | null },
     { key: 'documents', label: 'Documents', count: null as number | null },
@@ -329,10 +339,10 @@ const InternList = () => {
             </svg>
             Retour au dashboard
           </Link>
-          <h1 className="ticket-hero-title">Gestion des stagiaires</h1>
+          <h1 className="ticket-hero-title">Gestion de l'équipe</h1>
         </div>
         <button className="ticket-new-btn" onClick={() => { resetForm(); setShowForm(true) }}>
-          + Nouveau stagiaire
+          + Nouveau membre
         </button>
       </div>
 
@@ -357,7 +367,7 @@ const InternList = () => {
           {dashboardLoading ? (
             <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
           ) : dashboard.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun stagiaire actif</p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre actif</p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, marginTop: 16 }}>
               {dashboard.map((item: any) => {
@@ -588,7 +598,7 @@ const InternList = () => {
           {/* Liste stagiaires */}
           <div className="ticket-list">
             {filteredInterns.length === 0 && (
-              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun stagiaire</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre</p>
             )}
             {filteredInterns.map((intern) => {
               const expanded = expandedIntern === intern._id
@@ -645,6 +655,17 @@ const InternList = () => {
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', marginBottom: 16 }}>
+                        <div>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Type</span><br />
+                          <select
+                            value={intern.type || 'STAGIAIRE'}
+                            onChange={(e) => handleTypeChange(intern._id, e.target.value as 'STAGIAIRE' | 'ALTERNANT')}
+                            style={{ marginTop: 2, fontSize: 13, padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'inherit', cursor: 'pointer' }}
+                          >
+                            <option value="STAGIAIRE">Stagiaire</option>
+                            <option value="ALTERNANT">Alternant</option>
+                          </select>
+                        </div>
                         <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Email</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.email}</span></div>
                         {intern.userId.phone && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Telephone</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.phone}</span></div>}
                         {intern.ecole && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Ecole</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.ecole}</span></div>}
