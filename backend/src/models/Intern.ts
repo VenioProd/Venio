@@ -11,6 +11,8 @@ export interface IIntern extends Document {
   formation: string
   notes: string
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
+  nextcloudUsername: string
+  nextcloudPassword: string
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
@@ -28,6 +30,8 @@ const internSchema = new Schema<IIntern>(
     formation: { type: String, default: '', trim: true },
     notes: { type: String, default: '' },
     status: { type: String, enum: ['ACTIF', 'TERMINE', 'ANNULE'], default: 'ACTIF' },
+    nextcloudUsername: { type: String, default: '' },
+    nextcloudPassword: { type: String, default: '' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

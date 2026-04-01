@@ -28,6 +28,8 @@ interface InternFull {
   formation: string
   notes: string
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
+  nextcloudUsername?: string
+  nextcloudPassword?: string
   createdBy: { _id: string; name: string } | null
   createdAt: string
   updatedAt: string
@@ -359,6 +361,35 @@ const InternDetail = () => {
             <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(139,92,246,0.06)', borderLeft: '3px solid #8b5cf6' }}>
               <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 600 }}>Notes internes</span>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{intern.notes}</p>
+            </div>
+          )}
+
+          {/* Compte Nextcloud */}
+          {!editing && intern.nextcloudUsername && (
+            <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 8, background: 'rgba(14,165,233,0.06)', borderLeft: '3px solid #0ea5e9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ color: '#0ea5e9', fontSize: 11, fontWeight: 600 }}>Compte Nextcloud</span>
+                <a
+                  href="https://cloud.susanoo.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#0ea5e9', fontSize: 11, textDecoration: 'none', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)' }}
+                >
+                  Ouvrir Nextcloud
+                </a>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>Identifiant</span>
+                  <code style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: 4 }}>{intern.nextcloudUsername}</code>
+                </div>
+                {intern.nextcloudPassword && (
+                  <div>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>Mot de passe initial</span>
+                    <code style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: 4 }}>{intern.nextcloudPassword}</code>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

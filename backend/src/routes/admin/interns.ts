@@ -9,6 +9,7 @@ import Intern from '../../models/Intern.js'
 import ActivityReport from '../../models/ActivityReport.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 
@@ -448,6 +449,17 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       createdBy: user.id,
     })
 
+    // Provisioner un compte Nextcloud pour le stagiaire (si configuré)
+    const ncResult = await provisionNextcloudIntern(name, email.toLowerCase())
+    if (ncResult.success && ncResult.username) {
+      await Intern.findByIdAndUpdate(intern._id, {
+        nextcloudUsername: ncResult.username,
+        nextcloudPassword: ncResult.password,
+      })
+    } else if (!ncResult.success && ncResult.error && !ncResult.error.includes('non configurés')) {
+      console.warn(`[Nextcloud] Provisioning échoué pour ${name}: ${ncResult.error}`)
+    }
+
     const populated = await Intern.findById(intern._id)
       .populate('userId', 'name email phone')
       .populate('tuteur', 'name email')
@@ -503,6 +515,11 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
 
     const intern = await Intern.findById(req.params.id)
     if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
+
+    // Supprimer le compte Nextcloud du stagiaire
+    if ((intern as any).nextcloudUsername) {
+      deleteNextcloudUser((intern as any).nextcloudUsername).catch(() => {})
+    }
 
     // Supprimer les rapports associes et leurs fichiers
     const reports = await ActivityReport.find({ internId: intern._id })
