@@ -246,6 +246,16 @@ const CrmBoard = () => {
     setCollapsedGroups((prev) => ({ ...prev, [statusKey]: !prev[statusKey] }))
   }, [])
 
+  const collapseAll = useCallback(() => {
+    const all: Record<string, boolean> = {}
+    CRM_STATUSES.forEach((s) => { all[s.key] = true })
+    setCollapsedGroups(all)
+  }, [])
+
+  const expandAll = useCallback(() => {
+    setCollapsedGroups({})
+  }, [])
+
   const clearFilters = useCallback(() => {
     setSearch('')
     setFilterStatus('')
@@ -298,6 +308,28 @@ const CrmBoard = () => {
                 </svg>
               </button>
             </div>
+            {viewMode === 'table' && (
+              <>
+                <button
+                  className="portal-button secondary"
+                  type="button"
+                  title="Tout plier"
+                  onClick={collapseAll}
+                  style={{ fontSize: 12, padding: '6px 12px' }}
+                >
+                  Tout plier
+                </button>
+                <button
+                  className="portal-button secondary"
+                  type="button"
+                  title="Tout déplier"
+                  onClick={expandAll}
+                  style={{ fontSize: 12, padding: '6px 12px' }}
+                >
+                  Tout déplier
+                </button>
+              </>
+            )}
             <button
               className="portal-button secondary portal-action-link"
               type="button"
