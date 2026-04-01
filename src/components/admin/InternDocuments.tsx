@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
+import DocPreviewModal from '../DocPreviewModal'
 
 interface DocItem {
   _id: string
@@ -53,6 +54,7 @@ export default function InternDocuments() {
   const [sortBy, setSortBy] = useState('date')
   const [viewMode, setViewMode] = useState<'liste' | 'grille'>('liste')
   const [interns, setInterns] = useState<InternOption[]>([])
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
 
   const loadDocs = useCallback(async () => {
     setLoading(true)
@@ -95,6 +97,7 @@ export default function InternDocuments() {
 
   return (
     <div style={{ marginTop: 16 }}>
+      {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
       {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -183,13 +186,13 @@ export default function InternDocuments() {
                   {fmtDate(dateKey)}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {groupedByDate[dateKey].map((doc) => <DocRow key={doc._id} doc={doc} />)}
+                  {groupedByDate[dateKey].map((doc) => <DocRow key={doc._id} doc={doc} onPreview={setPreview} />)}
                 </div>
               </div>
             ))
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {documents.map((doc) => <DocRow key={doc._id} doc={doc} />)}
+              {documents.map((doc) => <DocRow key={doc._id} doc={doc} onPreview={setPreview} />)}
             </div>
           )}
         </div>
@@ -200,8 +203,8 @@ export default function InternDocuments() {
             const cfg = TYPE_CONFIG[doc.fileType] || TYPE_CONFIG.autre
             const isImg = doc.fileType === 'image'
             return (
-              <a key={doc._id} href={`/api/admin/interns/reports/files/${doc.filename}`} target="_blank" rel="noopener noreferrer"
-                className="portal-card" style={{ textDecoration: 'none', cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s' }}
+              <div key={doc._id} onClick={() => setPreview({ url: `/api/admin/interns/reports/files/${doc.filename}`, name: doc.originalName })}
+                className="portal-card" style={{ cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = cfg.color)}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = '')}
               >
@@ -223,7 +226,7 @@ export default function InternDocuments() {
                     {doc.user?.name} — {fmtDate(doc.reportDate)}
                   </div>
                 </div>
-              </a>
+              </div>
             )
           })}
         </div>
@@ -232,14 +235,14 @@ export default function InternDocuments() {
   )
 }
 
-function DocRow({ doc }: { doc: DocItem }) {
+function DocRow({ doc, onPreview }: { doc: DocItem; onPreview: (p: { url: string; name: string }) => void }) {
   const cfg = TYPE_CONFIG[doc.fileType] || TYPE_CONFIG.autre
   return (
-    <a href={`/api/admin/interns/reports/files/${doc.filename}`} target="_blank" rel="noopener noreferrer"
+    <div onClick={() => onPreview({ url: `/api/admin/interns/reports/files/${doc.filename}`, name: doc.originalName })}
       style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8,
         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
-        textDecoration: 'none', transition: 'background 0.15s, border-color 0.15s', cursor: 'pointer',
+        transition: 'background 0.15s, border-color 0.15s', cursor: 'pointer',
       }}
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = cfg.color + '44' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)' }}
@@ -266,6 +269,6 @@ function DocRow({ doc }: { doc: DocItem }) {
 
       {/* Taille */}
       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, flexShrink: 0, minWidth: 55, textAlign: 'right' }}>{fmtSize(doc.size)}</span>
-    </a>
+    </div>
   )
 }

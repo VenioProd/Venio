@@ -7,6 +7,7 @@ import { REPORT_STATUS_CONFIG, STATUS_CONFIG, formatDate, formatDateTime, format
 import type { ActivityReport } from '../intern-list/types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import DocPreviewModal from '../../../components/DocPreviewModal'
 
 interface InternUser {
   _id: string
@@ -30,6 +31,7 @@ interface InternFull {
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
   nextcloudUsername?: string
   nextcloudPassword?: string
+  conventions?: { filename: string; originalName: string; size: number; uploadedAt: string }[]
   createdBy: { _id: string; name: string } | null
   createdAt: string
   updatedAt: string
@@ -70,6 +72,8 @@ const InternDetail = () => {
   const [expandedReport, setExpandedReport] = useState<string | null>(null)
   const [commentModal, setCommentModal] = useState<{ reportId: string; status: string } | null>(null)
   const [commentText, setCommentText] = useState('')
+  const [conventionUploading, setConventionUploading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<{ url: string; name: string } | null>(null)
 
   const [form, setForm] = useState({
     poste: '', departement: '', dateDebut: '', dateFin: '',
@@ -164,6 +168,39 @@ const InternDetail = () => {
     setCommentText('')
   }
 
+  const handleConventionUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setConventionUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/admin/interns/${id}/convention`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert((err as any).error || 'Erreur upload')
+        return
+      }
+      loadData()
+    } catch { alert('Erreur réseau') } finally {
+      setConventionUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleConventionDelete = async (filename: string, originalName: string) => {
+    const ok = await confirm({ message: `Supprimer "${originalName}" ?`, title: 'Suppression', variant: 'danger' })
+    if (!ok) return
+    try {
+      await apiFetch(`/api/admin/interns/${id}/convention/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+      loadData()
+    } catch { /* silent */ }
+  }
+
   if (loading) return <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>Chargement...</div>
   if (!data) return null
 
@@ -173,6 +210,10 @@ const InternDetail = () => {
   return (
     <div className="portal-container">
       {ConfirmDialog}
+
+      {previewUrl && (
+        <DocPreviewModal url={previewUrl.url} name={previewUrl.name} onClose={() => setPreviewUrl(null)} />
+      )}
 
       {/* Modal commentaire */}
       {commentModal && (
@@ -395,6 +436,66 @@ const InternDetail = () => {
         </div>
       </div>
 
+      {/* Conventions de stage */}
+      <div className="portal-card" style={{ marginBottom: 20 }}>
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h3 style={{ margin: 0, color: '#f59e0b', fontSize: 16 }}>
+              Conventions de stage
+              {(intern.conventions?.length ?? 0) > 0 && (
+                <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{intern.conventions!.length} fichier{intern.conventions!.length > 1 ? 's' : ''}</span>
+              )}
+            </h3>
+            <label style={{
+              display: 'inline-block', padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+              background: conventionUploading ? 'rgba(255,255,255,0.06)' : 'rgba(14,165,233,0.15)',
+              color: conventionUploading ? 'rgba(255,255,255,0.3)' : '#0ea5e9',
+              border: '1px solid rgba(14,165,233,0.3)', cursor: conventionUploading ? 'not-allowed' : 'pointer',
+            }}>
+              {conventionUploading ? 'Envoi...' : '+ Ajouter'}
+              <input type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleConventionUpload} disabled={conventionUploading} />
+            </label>
+          </div>
+
+          {(intern.conventions?.length ?? 0) === 0 ? (
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>Aucune convention déposée</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {intern.conventions!.map((conv) => (
+                <div key={conv.filename} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8, background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.12)' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.originalName}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 1 }}>{formatFileSize(conv.size)} — {formatDate(conv.uploadedAt)}</div>
+                  </div>
+                  <button
+                    onClick={() => setPreviewUrl({ url: `/api/admin/interns/conventions/files/${conv.filename}`, name: conv.originalName })}
+                    style={{ padding: '5px 10px', borderRadius: 5, fontSize: 12, background: 'rgba(14,165,233,0.08)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.2)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    Voir
+                  </button>
+                  <a
+                    href={`/api/admin/interns/conventions/files/${conv.filename}`}
+                    download={conv.originalName}
+                    style={{ padding: '5px 10px', borderRadius: 5, fontSize: 12, background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    Télécharger
+                  </a>
+                  {isSuperAdmin && (
+                    <button onClick={() => handleConventionDelete(conv.filename, conv.originalName)} style={{ padding: '5px 8px', borderRadius: 5, fontSize: 12, background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)', cursor: 'pointer', flexShrink: 0 }}>
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Rapports d'activite */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, color: '#fff', fontSize: 16 }}>Rapports d'activite ({reports.length})</h3>
@@ -481,10 +582,10 @@ const InternDetail = () => {
                   {report.attachments.length > 0 && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                       {report.attachments.map((f, i) => (
-                        <a key={i} href={`/api/admin/interns/reports/files/${f.filename}`} target="_blank" rel="noopener noreferrer"
-                          style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none' }}>
+                        <button key={i} onClick={() => setPreviewUrl({ url: `/api/admin/interns/reports/files/${f.filename}`, name: f.originalName })}
+                          style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, border: 'none', cursor: 'pointer' }}>
                           {f.originalName} <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
-                        </a>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -542,11 +643,11 @@ const InternDetail = () => {
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                           {report.attachments.map((f, i) => (
-                            <a key={i} href={`/api/admin/interns/reports/files/${f.filename}`} target="_blank" rel="noopener noreferrer"
-                              style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button key={i} onClick={() => setPreviewUrl({ url: `/api/admin/interns/reports/files/${f.filename}`, name: f.originalName })}
+                              style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                               {isImage(f.mimetype) ? '~img' : '~doc'} {f.originalName}
                               <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
-                            </a>
+                            </button>
                           ))}
                         </div>
                       </div>

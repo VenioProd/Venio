@@ -295,3 +295,111 @@ export function getClientCloudInfo(clientName: string, clientId: string | null =
 export function isNextcloudEnabled(): boolean {
   return isConfigured()
 }
+
+// ─────────────────────────────────────────────
+// GESTION DES COMPTES STAGIAIRES
+// ─────────────────────────────────────────────
+
+export interface InternNextcloudResult {
+  success: boolean
+  username?: string
+  password?: string
+  error?: string
+}
+
+const getAdminUser = () => process.env.NEXTCLOUD_ADMIN_USER || ''
+const getAdminPass = () => process.env.NEXTCLOUD_ADMIN_PASS || ''
+const getNcUrl = () => (process.env.NEXTCLOUD_URL || '').replace(/\/$/, '')
+
+function adminAuthHeader(): string {
+  return `Basic ${Buffer.from(`${getAdminUser()}:${getAdminPass()}`).toString('base64')}`
+}
+
+/** Génère un username Nextcloud à partir d'un nom : "Jean Dupont" → "jean.dupont" */
+export function generateNextcloudUsername(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .join('.')
+}
+
+/** Génère un mot de passe aléatoire de 12 caractères */
+export function generateNextcloudPassword(): string {
+  const lower = 'abcdefghijklmnopqrstuvwxyz'
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const digits = '0123456789'
+  const specials = '!@#$%'
+  const all = lower + upper + digits + specials
+  let pwd = lower[Math.floor(Math.random() * lower.length)]
+  pwd += upper[Math.floor(Math.random() * upper.length)]
+  pwd += digits[Math.floor(Math.random() * digits.length)]
+  pwd += specials[Math.floor(Math.random() * specials.length)]
+  for (let i = 4; i < 12; i++) pwd += all[Math.floor(Math.random() * all.length)]
+  return pwd.split('').sort(() => Math.random() - 0.5).join('')
+}
+
+async function createNcUser(username: string, password: string, email: string, displayName: string): Promise<{ ok: boolean; error?: string }> {
+  const body = new URLSearchParams({ userid: username, password, email, displayName })
+  try {
+    const res = await fetch(`${getNcUrl()}/ocs/v1.php/cloud/users?format=json`, {
+      method: 'POST',
+      headers: { Authorization: adminAuthHeader(), 'OCS-APIRequest': 'true', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
+    const data = await res.json() as any
+    if (data?.ocs?.meta?.statuscode === 100) return { ok: true }
+    return { ok: false, error: data?.ocs?.meta?.message || 'Erreur Nextcloud' }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+async function createInternFolders(username: string, password: string): Promise<void> {
+  const auth = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
+  await new Promise(r => setTimeout(r, 1500)) // attendre init du home directory
+  for (const folder of ['Documents', 'Livrables', 'Briefs']) {
+    await fetch(`${getNcUrl()}/remote.php/dav/files/${username}/${folder}`, {
+      method: 'MKCOL',
+      headers: { Authorization: auth },
+    }).catch(() => {})
+  }
+}
+
+/**
+ * Crée un compte Nextcloud pour un stagiaire + sa structure de dossiers.
+ * Retourne le username et le mot de passe générés.
+ */
+export async function provisionNextcloudIntern(name: string, email: string): Promise<InternNextcloudResult> {
+  if (!getAdminUser() || !getAdminPass()) {
+    return { success: false, error: 'NEXTCLOUD_ADMIN_USER / NEXTCLOUD_ADMIN_PASS non configurés' }
+  }
+
+  let username = generateNextcloudUsername(name)
+  const password = generateNextcloudPassword()
+
+  let result = await createNcUser(username, password, email, name)
+
+  // Si le username est déjà pris, ajouter un suffixe
+  if (!result.ok && result.error?.toLowerCase().includes('already')) {
+    username = `${username}.${Date.now().toString().slice(-4)}`
+    result = await createNcUser(username, password, email, name)
+  }
+
+  if (!result.ok) return { success: false, error: result.error }
+
+  await createInternFolders(username, password)
+  return { success: true, username, password }
+}
+
+/** Supprime un compte Nextcloud stagiaire */
+export async function deleteNextcloudUser(username: string): Promise<void> {
+  if (!getAdminUser() || !getAdminPass() || !username) return
+  await fetch(`${getNcUrl()}/ocs/v1.php/cloud/users/${encodeURIComponent(username)}?format=json`, {
+    method: 'DELETE',
+    headers: { Authorization: adminAuthHeader(), 'OCS-APIRequest': 'true' },
+  }).catch(() => {})
+}

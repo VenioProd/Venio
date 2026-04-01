@@ -17,6 +17,9 @@ const router = express.Router()
 const uploadsDir = path.resolve('uploads/reports')
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
+const conventionsDir = path.resolve('uploads/conventions')
+if (!fs.existsSync(conventionsDir)) fs.mkdirSync(conventionsDir, { recursive: true })
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
@@ -26,10 +29,27 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
+const conventionStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, conventionsDir),
+  filename: (_req, file, cb) => {
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, `${Date.now()}-${safeName}`)
+  },
+})
+const uploadConvention = multer({ storage: conventionStorage, limits: { fileSize: 20 * 1024 * 1024 } })
+
 // Serve uploaded files (pas d'auth — noms de fichiers non devinables)
 router.get('/reports/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(uploadsDir, req.params.filename as string)
   if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
+  res.sendFile(filePath)
+})
+
+// Serve convention files
+router.get('/conventions/files/:filename', (req: Request, res: Response) => {
+  const filePath = path.resolve(conventionsDir, req.params.filename as string)
+  if (!filePath.startsWith(conventionsDir)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
   res.sendFile(filePath)
 })
@@ -758,6 +778,49 @@ router.delete('/reports/:id', async (req: Request, res: Response) => {
     }
 
     await ActivityReport.findByIdAndDelete(req.params.id)
+    res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// POST /api/admin/interns/:id/convention — ajouter une convention
+router.post('/:id/convention', requireAdmin, uploadConvention.single('file'), async (req: Request, res: Response) => {
+  try {
+    const intern = await Intern.findById(req.params.id)
+    if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
+
+    const file = req.file
+    if (!file) return res.status(400).json({ error: 'Aucun fichier reçu' })
+
+    const newEntry = {
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+      uploadedAt: new Date(),
+    }
+
+    await Intern.findByIdAndUpdate(req.params.id, { $push: { conventions: newEntry } })
+    res.json({ ok: true, ...newEntry })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// DELETE /api/admin/interns/:id/convention/:filename — supprimer une convention spécifique
+router.delete('/:id/convention/:filename', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user
+    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
+
+    const intern = await Intern.findById(req.params.id)
+    if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
+
+    const filename = req.params.filename as string
+    const filePath = path.join(conventionsDir, filename)
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+
+    await Intern.findByIdAndUpdate(req.params.id, { $pull: { conventions: { filename } } })
     res.json({ ok: true })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })

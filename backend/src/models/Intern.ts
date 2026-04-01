@@ -13,6 +13,7 @@ export interface IIntern extends Document {
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
   nextcloudUsername: string
   nextcloudPassword: string
+  conventions: { filename: string; originalName: string; size: number; uploadedAt: Date }[]
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
@@ -32,6 +33,15 @@ const internSchema = new Schema<IIntern>(
     status: { type: String, enum: ['ACTIF', 'TERMINE', 'ANNULE'], default: 'ACTIF' },
     nextcloudUsername: { type: String, default: '' },
     nextcloudPassword: { type: String, default: '' },
+    conventions: {
+      type: [{
+        filename: { type: String, required: true },
+        originalName: { type: String, required: true },
+        size: { type: Number, required: true },
+        uploadedAt: { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

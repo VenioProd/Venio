@@ -7,6 +7,7 @@ import { REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isIma
 import type { ActivityReport } from '../intern-list/types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const MyReports = () => {
   const { user } = useAuth()
@@ -19,6 +20,7 @@ const MyReports = () => {
   const [expandedReport, setExpandedReport] = useState<string | null>(null)
   const [reportForm, setReportForm] = useState({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
   const [reportFiles, setReportFiles] = useState<File[]>([])
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const loadReports = useCallback(async () => {
@@ -70,6 +72,7 @@ const MyReports = () => {
   return (
     <div className="portal-container">
       {ConfirmDialog}
+      {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
 
       <div className="ticket-hero">
         <div className="ticket-hero-content">
@@ -205,11 +208,11 @@ const MyReports = () => {
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                         {report.attachments.map((f, i) => (
-                          <a key={i} href={`/api/admin/interns/reports/files/${f.filename}`} target="_blank" rel="noopener noreferrer"
-                            style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button key={i} onClick={() => setPreview({ url: `/api/admin/interns/reports/files/${f.filename}`, name: f.originalName })}
+                            style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                             {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
                             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
-                          </a>
+                          </button>
                         ))}
                       </div>
                     </div>
