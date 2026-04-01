@@ -226,6 +226,57 @@ export default function InternKpi() {
         )}
       </div>
 
+      {/* Graphique comparatif */}
+      {data.length > 0 && (
+        <div className="portal-card" style={{ marginBottom: 20, padding: '20px 24px' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 16 }}>Vue comparée</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {data.map((d) => {
+              const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
+              const avatarColor = colors[d.intern.name.charCodeAt(0) % colors.length]
+              const valColor = d.kpis.validationRate >= 80 ? '#22c55e' : d.kpis.validationRate >= 50 ? '#f59e0b' : '#ef4444'
+              const regColor = d.kpis.regularite >= 70 ? '#22c55e' : d.kpis.regularite >= 40 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={d.intern._id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: avatarColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: avatarColor, fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
+                      {d.intern.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.intern.name.split(' ')[0]}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {/* Validation */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>Validation</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${d.kpis.validationRate}%`, background: valColor, borderRadius: 3, transition: 'width 0.4s ease' }} />
+                      </div>
+                      <span style={{ color: valColor, fontSize: 11, fontWeight: 700, width: 32, textAlign: 'right' }}>{d.kpis.validationRate}%</span>
+                    </div>
+                    {/* Régularité */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>Régularité</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${d.kpis.regularite}%`, background: regColor, borderRadius: 3, transition: 'width 0.4s ease' }} />
+                      </div>
+                      <span style={{ color: regColor, fontSize: 11, fontWeight: 700, width: 32, textAlign: 'right' }}>{d.kpis.regularite}%</span>
+                    </div>
+                    {/* Progression stage */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>Stage</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${d.kpis.progress}%`, background: avatarColor, borderRadius: 3, opacity: 0.7, transition: 'width 0.4s ease' }} />
+                      </div>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, width: 32, textAlign: 'right' }}>{d.kpis.progress}%</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Tableau KPI par stagiaire */}
       {data.length === 0 ? (
         <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun stagiaire pour ce filtre</p>

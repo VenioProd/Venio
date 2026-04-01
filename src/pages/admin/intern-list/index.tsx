@@ -392,7 +392,12 @@ const InternList = () => {
                           {(di.userId?.name || '?').charAt(0).toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{di.userId?.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{di.userId?.name}</span>
+                            <span style={{ padding: '1px 7px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: di.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: di.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
+                              {di.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+                            </span>
+                          </div>
                           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}{di.departement ? ` — ${di.departement}` : ''}</div>
                         </div>
                         {alertLevel === 'danger' && (
