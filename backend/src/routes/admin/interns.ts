@@ -433,7 +433,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Non autorise' })
     }
 
-    const { name, email, phone, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, password } = req.body
+    const { name, email, phone, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, password, type } = req.body
     if (!name || !email || !poste || !dateDebut || !dateFin) {
       return res.status(400).json({ error: 'Champs requis : nom, email, poste, date debut, date fin' })
     }
@@ -444,7 +444,8 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cet email est deja utilise' })
     }
 
-    // Creer le compte User avec role ADMIN + tag STAGIAIRE
+    // Creer le compte User avec role ADMIN + tag STAGIAIRE ou ALTERNANT
+    const internType: 'STAGIAIRE' | 'ALTERNANT' = type === 'ALTERNANT' ? 'ALTERNANT' : 'STAGIAIRE'
     const passwordHash = await bcrypt.hash(password || 'Stage2026!', 10)
     const newUser = await User.create({
       email: email.toLowerCase(),
@@ -452,12 +453,13 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       role: 'ADMIN',
       name,
       phone: phone || '',
-      tags: ['STAGIAIRE'],
+      tags: [internType],
     })
 
-    // Creer la fiche stagiaire
+    // Creer la fiche stagiaire/alternant
     const intern = await Intern.create({
       userId: newUser._id,
+      type: internType,
       poste,
       departement: departement || '',
       dateDebut: new Date(dateDebut),
@@ -501,8 +503,9 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     const intern = await Intern.findById(req.params.id)
     if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
 
-    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status } = req.body
+    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type } = req.body
 
+    if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) intern.type = type
     if (poste !== undefined) intern.poste = poste
     if (departement !== undefined) intern.departement = departement
     if (dateDebut !== undefined) intern.dateDebut = new Date(dateDebut)

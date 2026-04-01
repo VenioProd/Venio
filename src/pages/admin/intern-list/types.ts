@@ -8,6 +8,7 @@ export interface InternUser {
 export interface Intern {
   _id: string
   userId: InternUser
+  type: 'STAGIAIRE' | 'ALTERNANT'
   poste: string
   departement: string
   dateDebut: string

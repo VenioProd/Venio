@@ -42,6 +42,7 @@ const InternList = () => {
 
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '',
+    type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
     poste: '', departement: '', dateDebut: '', dateFin: '',
     tuteur: '', ecole: '', formation: '', notes: '',
   })
@@ -126,7 +127,7 @@ const InternList = () => {
 
   // ── Intern CRUD ──
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', password: '', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '' })
+    setForm({ name: '', email: '', phone: '', password: '', type: 'STAGIAIRE', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '' })
     setEditingIntern(null)
     setShowForm(false)
   }
@@ -156,6 +157,7 @@ const InternList = () => {
       email: intern.userId.email,
       phone: intern.userId.phone || '',
       password: '',
+      type: intern.type || 'STAGIAIRE',
       poste: intern.poste,
       departement: intern.departement,
       dateDebut: intern.dateDebut.split('T')[0],
@@ -464,8 +466,15 @@ const InternList = () => {
           {showForm && (
             <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
             <div className="ticket-form">
-              <h3 style={{ margin: '0 0 16px', color: '#0ea5e9' }}>{editingIntern ? 'Modifier le stagiaire' : 'Nouveau stagiaire'}</h3>
+              <h3 style={{ margin: '0 0 16px', color: '#0ea5e9' }}>{editingIntern ? 'Modifier' : 'Nouveau'} {form.type === 'ALTERNANT' ? 'alternant' : 'stagiaire'}</h3>
               <div className="ticket-form-row">
+                <div className="ticket-form-field">
+                  <label>Type *</label>
+                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as 'STAGIAIRE' | 'ALTERNANT' })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'inherit', fontSize: 14 }}>
+                    <option value="STAGIAIRE">Stagiaire</option>
+                    <option value="ALTERNANT">Alternant</option>
+                  </select>
+                </div>
                 <div className="ticket-form-field">
                   <label>Nom complet *</label>
                   <input placeholder="Nom complet" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!!editingIntern} />
@@ -612,6 +621,9 @@ const InternList = () => {
                           {days > 0 ? `${days}j restants` : 'Termine'}
                         </span>
                       )}
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: intern.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: intern.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
+                        {intern.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+                      </span>
                       <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: statusCfg.color + '22', color: statusCfg.color }}>
                         {statusCfg.label}
                       </span>

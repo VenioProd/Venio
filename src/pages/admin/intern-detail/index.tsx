@@ -20,6 +20,7 @@ interface InternUser {
 interface InternFull {
   _id: string
   userId: InternUser
+  type?: 'STAGIAIRE' | 'ALTERNANT'
   poste: string
   departement: string
   dateDebut: string
@@ -76,6 +77,7 @@ const InternDetail = () => {
   const [previewUrl, setPreviewUrl] = useState<{ url: string; name: string } | null>(null)
 
   const [form, setForm] = useState({
+    type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
     poste: '', departement: '', dateDebut: '', dateFin: '',
     tuteur: '', ecole: '', formation: '', notes: '', status: '' as string,
   })
@@ -90,6 +92,7 @@ const InternDetail = () => {
         departement: res.intern.departement,
         dateDebut: res.intern.dateDebut.split('T')[0],
         dateFin: res.intern.dateFin.split('T')[0],
+        type: res.intern.type || 'STAGIAIRE',
         tuteur: res.intern.tuteur?._id || '',
         ecole: res.intern.ecole,
         formation: res.intern.formation,
@@ -118,6 +121,7 @@ const InternDetail = () => {
       await apiFetch(`/api/admin/interns/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({
+          type: form.type,
           poste: form.poste,
           departement: form.departement,
           dateDebut: form.dateDebut,
@@ -260,7 +264,10 @@ const InternDetail = () => {
                 {intern.poste}{intern.departement ? ` — ${intern.departement}` : ''}
               </p>
             </div>
-            <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusCfg.color + '22', color: statusCfg.color, marginLeft: 8 }}>
+            <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, background: intern.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: intern.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
+              {intern.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+            </span>
+            <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusCfg.color + '22', color: statusCfg.color }}>
               {statusCfg.label}
             </span>
           </div>
@@ -325,6 +332,13 @@ const InternDetail = () => {
           ) : (
             <div className="ticket-form">
               <div className="ticket-form-row">
+                <div className="ticket-form-field">
+                  <label>Type</label>
+                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as 'STAGIAIRE' | 'ALTERNANT' })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'inherit', fontSize: 14 }}>
+                    <option value="STAGIAIRE">Stagiaire</option>
+                    <option value="ALTERNANT">Alternant</option>
+                  </select>
+                </div>
                 <div className="ticket-form-field">
                   <label>Poste / Mission</label>
                   <input value={form.poste} onChange={(e) => setForm({ ...form, poste: e.target.value })} />

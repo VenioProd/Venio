@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose'
 
 export interface IIntern extends Document {
   userId: mongoose.Types.ObjectId
+  type: 'STAGIAIRE' | 'ALTERNANT'
   poste: string
   departement: string
   dateDebut: Date
@@ -22,6 +23,7 @@ export interface IIntern extends Document {
 const internSchema = new Schema<IIntern>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    type: { type: String, enum: ['STAGIAIRE', 'ALTERNANT'], default: 'STAGIAIRE' },
     poste: { type: String, required: true, trim: true },
     departement: { type: String, default: '', trim: true },
     dateDebut: { type: Date, required: true },
