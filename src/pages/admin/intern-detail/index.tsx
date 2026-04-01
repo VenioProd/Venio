@@ -677,9 +677,11 @@ const InternDetail = () => {
                         Valide par {report.validePar.name}{report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
                       </div>
                     )}
-                    {isSuperAdmin && report.status === 'SOUMIS' && (
+                    {isSuperAdmin && (
                       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => handleValidateReport(report._id, 'VALIDE')}>Valider</button>
+                        {report.status === 'SOUMIS' && (
+                          <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => handleValidateReport(report._id, 'VALIDE')}>Valider</button>
+                        )}
                         <button className="ticket-back-btn" style={{ fontSize: 12, padding: '6px 14px' }}
                           onClick={() => { setCommentModal({ reportId: report._id, status: report.status }); setCommentText(report.commentaireAdmin || '') }}>Commenter</button>
                       </div>
