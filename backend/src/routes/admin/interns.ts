@@ -10,6 +10,7 @@ import ActivityReport from '../../models/ActivityReport.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
+import { sendInternReportEmail } from '../../lib/email/templates/report.js'
 
 const router = express.Router()
 
@@ -667,7 +668,8 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
     })
 
     // Notifier les SUPER_ADMIN qu'un rapport a ete soumis
-    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id')
+    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id email')
+    const emailRecipients: string[] = []
     for (const admin of superAdmins) {
       if (admin._id.toString() === user.id) continue
       createNotification({
@@ -676,6 +678,19 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
         title: `Nouveau rapport d'activite`,
         message: `${user.name} a soumis un rapport pour le ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
         link: '/admin/stagiaires',
+      }).catch(() => {})
+      if (admin.email) emailRecipients.push(admin.email)
+    }
+    if (emailRecipients.length > 0) {
+      sendInternReportEmail({
+        to: emailRecipients,
+        internName: user.name,
+        internType: (intern.type || 'STAGIAIRE') as 'STAGIAIRE' | 'ALTERNANT',
+        reportDate: new Date(reportDate).toLocaleDateString('fr-FR'),
+        poste: intern.poste,
+        contenu,
+        tachesCount: parsedTaches.length,
+        attachmentsCount: attachments.length,
       }).catch(() => {})
     }
 
