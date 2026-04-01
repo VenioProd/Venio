@@ -21,11 +21,13 @@ interface LeadTableProps {
   deleteConfirm: string | null
   activeFilters: number
   isSuperAdmin: boolean
+  allCollapsed: boolean
   onSearchChange: (value: string) => void
   onFilterStatusChange: (value: string) => void
   onFilterPriorityChange: (value: string) => void
   onFilterAssigneeChange: (value: string) => void
   onClearFilters: () => void
+  onToggleAll: () => void
   onToggleSort: (field: string) => void
   onToggleGroup: (statusKey: string) => void
   onUpdateLead: (leadId: string, patch: Record<string, unknown>) => Promise<void>
@@ -58,11 +60,13 @@ const LeadTable: React.FC<LeadTableProps> = ({
   deleteConfirm,
   activeFilters,
   isSuperAdmin,
+  allCollapsed,
   onSearchChange,
   onFilterStatusChange,
   onFilterPriorityChange,
   onFilterAssigneeChange,
   onClearFilters,
+  onToggleAll,
   onToggleSort,
   onToggleGroup,
   onUpdateLead,
@@ -83,11 +87,13 @@ const LeadTable: React.FC<LeadTableProps> = ({
         totalCount={totalLeads}
         activeFilters={activeFilters}
         isSuperAdmin={isSuperAdmin}
+        allCollapsed={allCollapsed}
         onSearchChange={onSearchChange}
         onFilterStatusChange={onFilterStatusChange}
         onFilterPriorityChange={onFilterPriorityChange}
         onFilterAssigneeChange={onFilterAssigneeChange}
         onClearFilters={onClearFilters}
+        onToggleAll={onToggleAll}
       />
 
       {/* Grouped Table */}

@@ -13,11 +13,13 @@ interface LeadFiltersProps {
   totalCount: number
   activeFilters: number
   isSuperAdmin: boolean
+  allCollapsed: boolean
   onSearchChange: (value: string) => void
   onFilterStatusChange: (value: string) => void
   onFilterPriorityChange: (value: string) => void
   onFilterAssigneeChange: (value: string) => void
   onClearFilters: () => void
+  onToggleAll: () => void
 }
 
 const LeadFilters: React.FC<LeadFiltersProps> = ({
@@ -30,11 +32,13 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
   totalCount,
   activeFilters,
   isSuperAdmin,
+  allCollapsed,
   onSearchChange,
   onFilterStatusChange,
   onFilterPriorityChange,
   onFilterAssigneeChange,
   onClearFilters,
+  onToggleAll,
 }) => {
   return (
     <div className="crm-table-toolbar">
@@ -82,9 +86,18 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
           </button>
         )}
       </div>
-      <div className="crm-table-stats">
-        <span>{filteredCount} lead{filteredCount !== 1 ? 's' : ''}</span>
-        {filteredCount !== totalCount && <span className="crm-table-stats-total">/ {totalCount} total</span>}
+      <div className="crm-table-stats" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div>
+          <span>{filteredCount} lead{filteredCount !== 1 ? 's' : ''}</span>
+          {filteredCount !== totalCount && <span className="crm-table-stats-total"> / {totalCount} total</span>}
+        </div>
+        <button
+          type="button"
+          onClick={onToggleAll}
+          style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', transition: 'all 0.2s' }}
+        >
+          {allCollapsed ? 'Tout déplier' : 'Tout plier'}
+        </button>
       </div>
     </div>
   )

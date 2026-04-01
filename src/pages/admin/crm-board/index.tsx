@@ -246,15 +246,20 @@ const CrmBoard = () => {
     setCollapsedGroups((prev) => ({ ...prev, [statusKey]: !prev[statusKey] }))
   }, [])
 
-  const collapseAll = useCallback(() => {
-    const all: Record<string, boolean> = {}
-    CRM_STATUSES.forEach((s) => { all[s.key] = true })
-    setCollapsedGroups(all)
-  }, [])
+  const allCollapsed = useMemo(
+    () => CRM_STATUSES.every((s) => collapsedGroups[s.key]),
+    [collapsedGroups]
+  )
 
-  const expandAll = useCallback(() => {
-    setCollapsedGroups({})
-  }, [])
+  const toggleAllGroups = useCallback(() => {
+    if (allCollapsed) {
+      setCollapsedGroups({})
+    } else {
+      const all: Record<string, boolean> = {}
+      CRM_STATUSES.forEach((s) => { all[s.key] = true })
+      setCollapsedGroups(all)
+    }
+  }, [allCollapsed])
 
   const clearFilters = useCallback(() => {
     setSearch('')
@@ -308,28 +313,6 @@ const CrmBoard = () => {
                 </svg>
               </button>
             </div>
-            {viewMode === 'table' && (
-              <>
-                <button
-                  className="portal-button secondary"
-                  type="button"
-                  title="Tout plier"
-                  onClick={collapseAll}
-                  style={{ fontSize: 12, padding: '6px 12px' }}
-                >
-                  Tout plier
-                </button>
-                <button
-                  className="portal-button secondary"
-                  type="button"
-                  title="Tout déplier"
-                  onClick={expandAll}
-                  style={{ fontSize: 12, padding: '6px 12px' }}
-                >
-                  Tout déplier
-                </button>
-              </>
-            )}
             <button
               className="portal-button secondary portal-action-link"
               type="button"
@@ -367,14 +350,6 @@ const CrmBoard = () => {
                 Automatisations
               </Link>
             )}
-            <Link className="portal-button secondary portal-action-link" to="/admin/comptes-admin" title="Comptes admin">
-              <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </span>
-              <span className="portal-action-label">Comptes admin</span>
-            </Link>
           </div>
         </div>
       </div>
@@ -441,7 +416,9 @@ const CrmBoard = () => {
             onFilterStatusChange={setFilterStatus}
             onFilterPriorityChange={setFilterPriority}
             onFilterAssigneeChange={setFilterAssignee}
+            allCollapsed={allCollapsed}
             onClearFilters={clearFilters}
+            onToggleAll={toggleAllGroups}
             onToggleSort={toggleSort}
             onToggleGroup={toggleGroup}
             onUpdateLead={handleUpdateLead}
