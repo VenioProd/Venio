@@ -86,21 +86,6 @@ const IndicatorRow: React.FC<IndicatorRowProps> = ({
               options={STATUS_OPTIONS}
             />
           </span>
-          <div className="qualiopi-indicator-dates" onClick={(e) => e.stopPropagation()}>
-            <input
-              type="date"
-              className="qualiopi-date-input"
-              value={indicator.startDate?.split('T')[0] || ''}
-              onChange={(e) => onUpdateIndicator(criterionId, indicator._id, { startDate: e.target.value || null })}
-            />
-            <span className="qualiopi-date-arrow">-</span>
-            <input
-              type="date"
-              className="qualiopi-date-input"
-              value={indicator.endDate?.split('T')[0] || ''}
-              onChange={(e) => onUpdateIndicator(criterionId, indicator._id, { endDate: e.target.value || null })}
-            />
-          </div>
         </div>
       </div>
 
