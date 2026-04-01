@@ -174,6 +174,7 @@ const Navbar = () => {
             {t('nav.admin')}
           </Link>
           <div className="mobile-menu-bottom">
+            {showNotifBell && <NotificationBell />}
             {showNotifBell && <ThemeToggle />}
             <LanguageSwitch />
           </div>
