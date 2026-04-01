@@ -85,6 +85,75 @@ export async function sendInternReportEmail({
   }
 }
 
+/**
+ * Envoie un email au stagiaire/alternant quand son rapport est validé.
+ */
+export async function sendReportValidatedEmail({
+  to,
+  internName,
+  internType,
+  reportDate,
+  adminName,
+  commentaire,
+}: {
+  to: string
+  internName: string
+  internType: 'STAGIAIRE' | 'ALTERNANT'
+  reportDate: string
+  adminName: string
+  commentaire?: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'notifications@venio.paris'
+  const appName = process.env.APP_NAME || 'Venio'
+  const typeLabel = internType === 'ALTERNANT' ? 'alternant(e)' : 'stagiaire'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Ton rapport du ${reportDate} a été validé ✓`,
+      text: [
+        `Bonjour ${internName},`,
+        '',
+        `Ton rapport d'activité du ${reportDate} a été validé par ${adminName}.`,
+        commentaire ? `\nCommentaire : ${commentaire}` : '',
+        '',
+        `— ${appName}`,
+      ].filter(Boolean).join('\n'),
+      html: `
+        <div style="font-family: -apple-system, sans-serif; max-width: 520px; margin: 0 auto; color: #1e293b;">
+          <div style="background: #0f172a; padding: 24px; border-radius: 12px 12px 0 0;">
+            <h2 style="margin: 0; color: #0ea5e9; font-size: 18px;">${escapeHtml(appName)}</h2>
+          </div>
+          <div style="background: #ffffff; padding: 28px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+              <span style="font-size: 22px;">✅</span>
+              <h3 style="margin: 0; font-size: 16px; color: #0f172a;">Rapport validé</h3>
+            </div>
+            <p style="margin: 0 0 16px; color: #334155; font-size: 14px; line-height: 1.6;">
+              Bonjour <strong>${escapeHtml(internName)}</strong>,<br>
+              ton rapport d'activité du <strong>${escapeHtml(reportDate)}</strong> a été validé par <strong>${escapeHtml(adminName)}</strong>.
+              <span style="display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${internType === 'ALTERNANT' ? '#f3e8ff' : '#e0f2fe'}; color: ${internType === 'ALTERNANT' ? '#7c3aed' : '#0369a1'};">${typeLabel}</span>
+            </p>
+            ${commentaire ? `
+            <div style="background: #f5f3ff; border-left: 3px solid #8b5cf6; border-radius: 0 6px 6px 0; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; color: #334155; line-height: 1.6;">
+              <span style="font-size: 11px; font-weight: 600; color: #8b5cf6; display: block; margin-bottom: 4px;">Commentaire</span>
+              ${escapeHtml(commentaire).replace(/\n/g, '<br>')}
+            </div>` : ''}
+          </div>
+          <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">— ${escapeHtml(appName)}</p>
+        </div>
+      `,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message }
+  }
+}
+
 interface WeeklyReportStats {
   newLeads: number
   qualified: number

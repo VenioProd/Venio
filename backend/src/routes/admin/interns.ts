@@ -10,7 +10,7 @@ import ActivityReport from '../../models/ActivityReport.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
-import { sendInternReportEmail } from '../../lib/email/templates/report.js'
+import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
 
 const router = express.Router()
 
@@ -731,7 +731,7 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
         if (status === 'VALIDE') {
           report.validePar = user.id
           report.valideAt = new Date()
-          // Notifier l'auteur que son rapport a ete valide
+          // Notifier et emailer l'auteur que son rapport a ete valide
           if (report.userId.toString() !== user.id) {
             createNotification({
               recipient: report.userId,
@@ -740,6 +740,18 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
               message: `${user.name} a valide votre rapport du ${new Date(report.date).toLocaleDateString('fr-FR')}`,
               link: '/admin/mes-rapports',
             }).catch(() => {})
+            const reportAuthor = await User.findById(report.userId).select('email name')
+            if (reportAuthor?.email) {
+              const authorIntern = await Intern.findOne({ userId: report.userId }).select('type')
+              sendReportValidatedEmail({
+                to: reportAuthor.email,
+                internName: reportAuthor.name,
+                internType: (authorIntern?.type || 'STAGIAIRE') as 'STAGIAIRE' | 'ALTERNANT',
+                reportDate: new Date(report.date).toLocaleDateString('fr-FR'),
+                adminName: user.name,
+                commentaire: commentaireAdmin,
+              }).catch(() => {})
+            }
           }
         }
       }
