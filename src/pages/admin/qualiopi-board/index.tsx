@@ -36,7 +36,7 @@ const QualiopiBoard = () => {
       try {
         const adminData = await apiFetch<{ users: { _id: string; name: string; role: string }[] }>('/api/admin/admins')
         const allAdmins = adminData?.users || []
-        setAdmins(allAdmins.filter((a) => a.role === 'SUPER_ADMIN'))
+        setAdmins(allAdmins.filter((a) => a.role === 'SUPER_ADMIN' || a.role === 'RH'))
       } catch {
         setAdmins([])
       }

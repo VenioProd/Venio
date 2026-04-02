@@ -8,7 +8,7 @@ import { sendAdminCredentials } from '../lib/email.js'
 dotenv.config()
 
 const MONGO_URI = process.env.MONGODB_URI
-const TARGET_EMAIL = 'bentv@me.com'
+const TARGET_EMAIL = process.env.TARGET_EMAIL || 'bentv@me.com'
 
 const CHARSET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
 function generatePassword(length: number = 14): string {
