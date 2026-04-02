@@ -14,7 +14,7 @@ router.use(auth)
 router.use(requireAdmin)
 
 // GET /api/admin/email-composer/recipients — liste des destinataires disponibles
-router.get('/recipients', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/recipients', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [admins, clients] = await Promise.all([
       User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] }, isActive: { $ne: false } })
@@ -32,7 +32,7 @@ router.get('/recipients', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (r
 // POST /api/admin/email-composer/send — envoi groupé
 router.post(
   '/send',
-  requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  requireAdmin,
   body('subject').trim().notEmpty().withMessage('L\'objet est requis'),
   body('body').trim().notEmpty().withMessage('Le corps du message est requis'),
   body('recipients').isArray({ min: 1 }).withMessage('Au moins un destinataire est requis'),

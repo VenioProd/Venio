@@ -335,7 +335,7 @@ function App() {
         <Route
           path="/admin/stagiaires"
           element={
-            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+            <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
               <InternList />
             </ProtectedRoute>
           }
@@ -343,7 +343,7 @@ function App() {
         <Route
           path="/admin/stagiaires/:id"
           element={
-            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+            <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
               <InternDetail />
             </ProtectedRoute>
           }
@@ -367,7 +367,7 @@ function App() {
         <Route
           path="/admin/emails"
           element={
-            <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin/login">
+            <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
               <EmailComposer />
             </ProtectedRoute>
           }
