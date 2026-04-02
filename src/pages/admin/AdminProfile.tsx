@@ -14,6 +14,7 @@ const AdminProfile = () => {
   const { user, refreshUser } = useAuth()
   const [form, setForm] = useState({
     name: user?.name || '',
+    email: user?.email || '',
     phone: user?.phone || '',
     companyName: user?.companyName || '',
     website: user?.website || '',
@@ -159,13 +160,10 @@ const AdminProfile = () => {
             <input
               className="portal-input"
               type="email"
-              value={user?.email || ''}
-              disabled
-              style={{ opacity: 0.5 }}
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
             />
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              L'email ne peut pas etre modifie. Contactez un super admin.
-            </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>

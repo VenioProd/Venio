@@ -102,6 +102,7 @@ router.patch(
   '/profile',
   auth,
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Le nom ne peut pas être vide'),
+  body('email').optional().isEmail().withMessage('Email invalide').normalizeEmail(),
   body('phone').optional().trim(),
   body('companyName').optional().trim(),
   body('website').optional().trim(),
@@ -117,8 +118,14 @@ router.patch(
         return res.status(404).json({ error: 'Utilisateur introuvable' })
       }
 
-      const { name, phone, companyName, website } = req.body || {}
+      const { name, email, phone, companyName, website } = req.body || {}
       if (name !== undefined) user.name = name
+      if (email !== undefined) {
+        const newEmail = (email as string).toLowerCase().trim()
+        const existing = await User.exists({ email: newEmail, _id: { $ne: user._id } })
+        if (existing) return res.status(400).json({ error: 'Cet email est déjà utilisé' })
+        user.email = newEmail
+      }
       if (phone !== undefined) user.phone = phone
       if (companyName !== undefined) user.companyName = companyName
       if (website !== undefined) user.website = website
