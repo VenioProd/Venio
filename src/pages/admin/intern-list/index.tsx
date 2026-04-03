@@ -19,8 +19,8 @@ const InternList = () => {
 
   // ── Tabs ──
   const navigate = useNavigate()
-  const initialTab = searchParams.get('tab') as 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports' || (isSuperAdmin ? 'dashboard' : 'mes-rapports')
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports'>(initialTab)
+  const initialTab = searchParams.get('tab') as 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports' | 'parametres' || (isSuperAdmin ? 'dashboard' : 'mes-rapports')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'mes-rapports' | 'parametres'>(initialTab)
 
   // ── Stagiaires ──
   const [interns, setInterns] = useState<Intern[]>([])
