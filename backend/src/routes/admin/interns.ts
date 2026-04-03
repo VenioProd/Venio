@@ -11,6 +11,7 @@ import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
+import { getInternSettings } from '../../models/InternSettings.js'
 
 const router = express.Router()
 
@@ -667,19 +668,26 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
       attachments,
     })
 
-    // Notifier les SUPER_ADMIN qu'un rapport a ete soumis
-    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id email')
+    // Notifier les destinataires configurés (ou SUPER_ADMIN par défaut)
+    const internSettings = await getInternSettings()
+    const recipientIds: string[] = internSettings.reportNotifRecipients.map((id: any) => id.toString())
+    let recipients: { _id: any; email: string }[] = []
+    if (recipientIds.length > 0) {
+      recipients = await User.find({ _id: { $in: recipientIds }, isActive: { $ne: false } }).select('_id email')
+    } else {
+      recipients = await User.find({ role: 'SUPER_ADMIN', isActive: { $ne: false } }).select('_id email')
+    }
     const emailRecipients: string[] = []
-    for (const admin of superAdmins) {
-      if (admin._id.toString() === user.id) continue
+    for (const recipient of recipients) {
+      if (recipient._id.toString() === user.id) continue
       createNotification({
-        recipient: admin._id,
+        recipient: recipient._id,
         type: 'TASK_UPDATED',
         title: `Nouveau rapport d'activite`,
         message: `${user.name} a soumis un rapport pour le ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
         link: '/admin/stagiaires',
       }).catch(() => {})
-      if (admin.email) emailRecipients.push(admin.email)
+      if (recipient.email) emailRecipients.push(recipient.email)
     }
     if (emailRecipients.length > 0) {
       sendInternReportEmail({
@@ -852,6 +860,36 @@ router.delete('/:id/convention/:filename', requireAdmin, async (req: Request, re
 
     await Intern.findByIdAndUpdate(req.params.id, { $pull: { conventions: { filename } } })
     res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// ── Paramètres notifications rapports ──
+
+// GET /api/admin/interns/settings/report-notifs
+router.get('/settings/report-notifs', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const settings = await getInternSettings()
+    const populated = await settings.populate('reportNotifRecipients', 'name email role')
+    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// PATCH /api/admin/interns/settings/report-notifs
+router.patch('/settings/report-notifs', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user
+    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
+    const { recipientIds } = req.body
+    if (!Array.isArray(recipientIds)) return res.status(400).json({ error: 'recipientIds requis' })
+    const settings = await getInternSettings()
+    settings.reportNotifRecipients = recipientIds
+    await settings.save()
+    const populated = await settings.populate('reportNotifRecipients', 'name email role')
+    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }
