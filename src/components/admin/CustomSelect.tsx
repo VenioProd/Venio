@@ -27,12 +27,9 @@ const CustomSelect = ({ options, value, onChange, className }: CustomSelectProps
       const target = e.target as Node
       if (ref.current && !ref.current.contains(target) && (!menuRef.current || !menuRef.current.contains(target))) setOpen(false)
     }
-    const handleScroll = () => { if (open) setOpen(false) }
     document.addEventListener('mousedown', handleClick)
-    window.addEventListener('scroll', handleScroll, true)
     return () => {
       document.removeEventListener('mousedown', handleClick)
-      window.removeEventListener('scroll', handleScroll, true)
     }
   }, [open])
 
