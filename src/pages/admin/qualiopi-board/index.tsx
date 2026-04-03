@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import ReactDOM from 'react-dom'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
 import { apiFetch, getToken } from '../../../lib/api'
@@ -523,8 +524,8 @@ const QualiopiBoard = () => {
       {/* Questionnaires tab */}
       {activeTab === 'questionnaires' && <QualiopiQuestionnaires />}
 
-      {/* Preview modal */}
-      {preview && (
+      {/* Preview modal — portal pour eviter les contextes d'empilement du layout */}
+      {preview && ReactDOM.createPortal(
         <div className="qualiopi-preview-overlay" onClick={closePreview}>
           <div className="qualiopi-preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="qualiopi-preview-header">
@@ -554,7 +555,8 @@ const QualiopiBoard = () => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
