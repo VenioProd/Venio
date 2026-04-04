@@ -54,6 +54,12 @@ router.post(
         return res.status(401).json({ error: 'Identifiants invalides' })
       }
 
+      // Bloquer les clients archivés
+      if (user.role === 'CLIENT' && user.status === 'ARCHIVE') {
+        AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: 'account_archived' } }).catch(() => {})
+        return res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
+      }
+
       // Check 2FA
       if (user.twoFactorEnabled && user.twoFactorSecret) {
         const { totpCode } = req.body
