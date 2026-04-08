@@ -387,6 +387,73 @@ const InternList = () => {
       {/* ═══ TAB: Tableau de bord ═══ */}
       {effectiveTab === 'dashboard' && isAdmin && (
         <>
+          {/* Rappels manuels + logs — toujours visible */}
+          {!dashboardLoading && (
+            <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Rappels de rapport</span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>Automatique tous les jours à 09h00 sur les jours de présence</span>
+                </div>
+                {isSuperAdmin && (
+                  <button
+                    onClick={async () => {
+                      setSendingReminders(true)
+                      setReminderResult(null)
+                      try {
+                        const res = await apiFetch<{ recipientsNotified: string[] }>('/api/admin/interns/send-reminders', { method: 'POST' })
+                        setReminderResult({ sent: res.recipientsNotified?.length || 0 })
+                        loadDashboard()
+                      } catch { /* silent */ } finally { setSendingReminders(false) }
+                    }}
+                    disabled={sendingReminders}
+                    style={{ padding: '7px 16px', borderRadius: 7, background: '#0ea5e9', color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', opacity: sendingReminders ? 0.6 : 1 }}
+                  >
+                    {sendingReminders ? 'Envoi...' : 'Envoyer maintenant'}
+                  </button>
+                )}
+              </div>
+              {reminderResult && (
+                <div style={{ padding: '10px 20px', background: 'rgba(34,197,94,0.08)', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13, color: '#22c55e' }}>
+                  {reminderResult.sent === 0 ? 'Aucun rappel à envoyer (tous les rapports sont à jour)' : `${reminderResult.sent} rappel(s) envoyé(s)`}
+                </div>
+              )}
+              {reminderLogs.length === 0 ? (
+                <div style={{ padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>Aucune activité enregistrée</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      {['Date', 'Statut', 'Rappels envoyés', 'Destinataires'].map((h) => (
+                        <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reminderLogs.map((log: any) => (
+                      <tr key={log._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                          {new Date(log.startedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: log.status === 'SUCCESS' ? 'rgba(34,197,94,0.1)' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.1)', color: log.status === 'SUCCESS' ? '#22c55e' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.4)' : '#ef4444' }}>
+                            {log.status === 'SUCCESS' ? 'Succès' : log.status === 'SKIPPED' ? 'Ignoré' : 'Erreur'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: '#fff', fontWeight: 600 }}>
+                          {log.actionsExecuted?.length || 0}
+                        </td>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 280 }}>
+                          {log.recipientsNotified?.join(', ') || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
           {dashboardLoading ? (
             <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
           ) : dashboard.length === 0 ? (
@@ -451,71 +518,6 @@ const InternList = () => {
                 </tbody>
               </table>
             </div>
-            {/* Rappels manuels + logs */}
-            <div className="portal-card" style={{ marginBottom: 20 }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Rappels de rapport</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>Automatique tous les jours à 09h00 sur les jours de présence</span>
-                </div>
-                {isSuperAdmin && (
-                  <button
-                    onClick={async () => {
-                      setSendingReminders(true)
-                      setReminderResult(null)
-                      try {
-                        const res = await apiFetch<{ recipientsNotified: string[] }>('/api/admin/interns/send-reminders', { method: 'POST' })
-                        setReminderResult({ sent: res.recipientsNotified?.length || 0 })
-                        loadDashboard()
-                      } catch { /* silent */ } finally { setSendingReminders(false) }
-                    }}
-                    disabled={sendingReminders}
-                    style={{ padding: '7px 16px', borderRadius: 7, background: '#0ea5e9', color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', opacity: sendingReminders ? 0.6 : 1 }}
-                  >
-                    {sendingReminders ? 'Envoi...' : 'Envoyer maintenant'}
-                  </button>
-                )}
-              </div>
-              {reminderResult && (
-                <div style={{ padding: '10px 20px', background: 'rgba(34,197,94,0.08)', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13, color: '#22c55e' }}>
-                  {reminderResult.sent === 0 ? 'Aucun rappel à envoyer (tous les rapports sont à jour)' : `${reminderResult.sent} rappel(s) envoyé(s)`}
-                </div>
-              )}
-              {reminderLogs.length === 0 ? (
-                <div style={{ padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>Aucune activité enregistrée</div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                      {['Date', 'Statut', 'Rappels envoyés', 'Destinataires'].map((h) => (
-                        <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reminderLogs.map((log: any) => (
-                      <tr key={log._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                          {new Date(log.startedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td style={{ padding: '10px 16px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: log.status === 'SUCCESS' ? 'rgba(34,197,94,0.1)' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.1)', color: log.status === 'SUCCESS' ? '#22c55e' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.4)' : '#ef4444' }}>
-                            {log.status === 'SUCCESS' ? 'Succès' : log.status === 'SKIPPED' ? 'Ignoré' : 'Erreur'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: '#fff', fontWeight: 600 }}>
-                          {log.actionsExecuted?.length || 0}
-                        </td>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 280 }}>
-                          {log.recipientsNotified?.join(', ') || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
             {/* Cartes détaillées */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
               {dashboard.map((item: any) => {
