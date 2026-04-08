@@ -15,7 +15,7 @@ import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import '../../styles/gestion.css'
 
-type ViewMode = 'table' | 'kanban' | 'gantt' | 'kpi' | 'briefs'
+type ViewMode = 'table' | 'kanban' | 'gantt' | 'kpi' | 'briefs' | 'missions'
 
 interface ProjectOption {
   _id: string
@@ -50,6 +50,13 @@ export default function GestionBoard() {
   const [filterPriority, setFilterPriority] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [missions, setMissions] = useState<{
+    _id: string; title: string; description: string; status: string; dueDate: string | null
+    assignedTo: { _id: string; name: string; email: string }
+    internalProject: { _id: string; name: string; entity: string }
+    createdAt: string
+  }[]>([])
+  const [missionsLoading, setMissionsLoading] = useState(false)
 
   const loadTasks = useCallback(async () => {
     try {
@@ -71,8 +78,15 @@ export default function GestionBoard() {
   }, [])
 
   useEffect(() => {
-    if (viewMode !== 'kpi' && viewMode !== 'briefs') {
+    if (viewMode !== 'kpi' && viewMode !== 'briefs' && viewMode !== 'missions') {
       loadTasks()
+    }
+    if (viewMode === 'missions') {
+      setMissionsLoading(true)
+      apiFetch<{ missions: typeof missions }>('/api/admin/internal-projects/missions')
+        .then(d => setMissions(d.missions || []))
+        .catch(() => {})
+        .finally(() => setMissionsLoading(false))
     }
   }, [loadTasks, viewMode])
 
@@ -134,10 +148,11 @@ export default function GestionBoard() {
     { key: 'gantt', label: 'Gantt', icon: '▬' },
     { key: 'kpi', label: 'KPI', icon: '◉', superOnly: true },
     { key: 'briefs', label: 'Briefs', icon: '✉' },
+    { key: 'missions', label: 'Missions', icon: '◎' },
   ]
   const VIEW_TABS = isSuperAdmin ? ALL_TABS : ALL_TABS.filter((t) => !t.superOnly)
 
-  const showFilters = viewMode !== 'kpi' && viewMode !== 'briefs'
+  const showFilters = viewMode !== 'kpi' && viewMode !== 'briefs' && viewMode !== 'missions'
 
   return (
     <div className="portal-container">
@@ -259,6 +274,55 @@ export default function GestionBoard() {
             projects={projects}
             user={user}
           />
+        )}
+        {viewMode === 'missions' && (
+          <div style={{ padding: '16px 0' }}>
+            {missionsLoading ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+            ) : missions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: 14 }}>Aucune mission pour l'instant</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Projet</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Mission</th>
+                    {isSuperAdmin && <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Assigné à</th>}
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Statut</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Deadline</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {missions.map(m => {
+                    const statusColors: Record<string, string> = { A_FAIRE: '#fde047', EN_COURS: '#38bdf8', TERMINE: '#6ee7b7' }
+                    const statusLabels: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
+                    const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
+                    return (
+                      <tr key={m._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '10px 12px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{m.internalProject?.name || '—'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.internalProject?.entity}</div>
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{m.title}</div>
+                          {m.description && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{m.description}</div>}
+                        </td>
+                        {isSuperAdmin && <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</td>}
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, color: statusColors[m.status] || '#a5b4cf', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            {statusLabels[m.status] || m.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontSize: 12 }}>
+                          {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
       </div>
     </div>

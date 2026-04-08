@@ -5,7 +5,7 @@ import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.j
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
-import { sendInternalProjectAssignedEmail } from '../../lib/email/templates/project.js'
+import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
 router.use(auth)
@@ -73,6 +73,21 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // GET /meta — entities + poles lists
 router.get('/meta', (_req: Request, res: Response) => {
   res.json({ entities: ENTITIES, poles: POLES })
+})
+
+// GET /missions — toutes les missions (SUPER_ADMIN = tout, autres = seulement les leurs)
+router.get('/missions', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filter: Record<string, any> = {}
+    if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = req.user!.id
+
+    const missions = await InternalMission.find(filter)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+      .populate('internalProject', 'name entity')
+      .sort({ createdAt: -1 })
+    return res.json({ missions })
+  } catch (err) { return next(err) }
 })
 
 // GET /:id
@@ -233,11 +248,10 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
   } catch (err) { return next(err) }
 })
 
-// POST /:projectId/missions (admins only)
+// POST /:projectId/missions (SUPER_ADMIN uniquement)
 router.post('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    if (!isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut créer des missions' })
 
     const project = await InternalProject.findById(req.params.projectId)
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })
@@ -256,8 +270,24 @@ router.post('/:projectId/missions', async (req: Request, res: Response, next: Ne
     })
 
     const populated = await InternalMission.findById(mission._id)
-      .populate('assignedTo', 'name email')
+      .populate<{ assignedTo: { name: string; email: string } }>('assignedTo', 'name email')
       .populate('createdBy', 'name')
+
+    // Notifier la personne assignée
+    const assignee = populated?.assignedTo as any
+    if (assignee?.email) {
+      const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+      sendInternalMissionAssignedEmail({
+        to: assignee.email,
+        memberName: assignee.name || assignee.email,
+        missionTitle: mission.title,
+        missionDescription: mission.description || '',
+        projectName: project.name,
+        entity: project.entity,
+        dueDate: mission.dueDate ? mission.dueDate.toISOString() : null,
+        projectUrl: `${baseUrl}/admin/projets-internes/${project._id}`,
+      }).catch(() => {})
+    }
 
     return res.status(201).json({ mission: populated })
   } catch (err) { return next(err) }

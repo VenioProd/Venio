@@ -342,3 +342,72 @@ export async function sendResourcePublishedEmail({
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+/**
+ * Notifie un membre qu'une mission lui a été assignée.
+ */
+export async function sendInternalMissionAssignedEmail({
+  to,
+  memberName,
+  missionTitle,
+  missionDescription,
+  projectName,
+  entity,
+  dueDate,
+  projectUrl,
+}: {
+  to: string
+  memberName: string
+  missionTitle: string
+  missionDescription: string
+  projectName: string
+  entity: string
+  dueDate: string | null
+  projectUrl: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'notifications@venio.paris'
+  const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString('fr-FR') : null
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Nouvelle mission : ${missionTitle}`,
+      text: [
+        `Bonjour ${memberName},`,
+        '',
+        `Une nouvelle mission t'a été assignée dans le projet "${projectName}" (${entity}) :`,
+        '',
+        `Mission : ${missionTitle}`,
+        missionDescription ? missionDescription : '',
+        dueDateStr ? `Deadline : ${dueDateStr}` : '',
+        '',
+        `Voir le projet : ${projectUrl}`,
+        `— L'équipe ${appName}`,
+      ].filter(Boolean).join('\n'),
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+          <div style="margin-bottom:20px">
+            <span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);color:#fde047;letter-spacing:.5px">NOUVELLE MISSION</span>
+            <span style="display:inline-block;margin-left:8px;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.3);color:#c4b5fd">${escapeHtml(entity)}</span>
+          </div>
+          <p style="margin:0 0 8px">Bonjour <strong>${escapeHtml(memberName)}</strong>,</p>
+          <p style="margin:0 0 16px;color:rgba(255,255,255,0.7)">Une mission t'a été assignée dans le projet <strong style="color:#fff">${escapeHtml(projectName)}</strong> :</p>
+          <div style="margin:0 0 20px;padding:16px 20px;background:rgba(255,255,255,0.04);border-left:3px solid #eab308;border-radius:6px">
+            <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">${escapeHtml(missionTitle)}</div>
+            ${missionDescription ? `<div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5">${escapeHtml(missionDescription)}</div>` : ''}
+            ${dueDateStr ? `<div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.4)">Deadline : <strong style="color:#fde047">${escapeHtml(dueDateStr)}</strong></div>` : ''}
+          </div>
+          <a href="${escapeHtml(projectUrl)}" style="display:inline-block;padding:12px 24px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px">Voir le projet →</a>
+          <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3)">— L'équipe ${escapeHtml(appName)}</p>
+        </div>`,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
