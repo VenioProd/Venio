@@ -43,7 +43,7 @@ const AdminEdit = () => {
   const { showToast } = useToast()
   const [admin, setAdmin] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState<{ name: string; role: string; password: string }>({ name: '', role: 'ADMIN', password: '' })
+  const [form, setForm] = useState<{ name: string; title: string; role: string; password: string }>({ name: '', title: '', role: 'ADMIN', password: '' })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
@@ -67,7 +67,7 @@ const AdminEdit = () => {
         const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`)
         const u = data.user
         setAdmin(u)
-        setForm({ name: u.name || '', role: u.role || 'ADMIN', password: '' })
+        setForm({ name: u.name || '', title: (u as any).title || '', role: u.role || 'ADMIN', password: '' })
         // Initialize custom permissions from server
         if (Array.isArray((u as any).customPermissions) && (u as any).customPermissions.length > 0) {
           setCustomMode(true)
@@ -125,7 +125,7 @@ const AdminEdit = () => {
     setError('')
     setLoading(true)
     try {
-      const payload: Record<string, unknown> = { name: form.name, role: form.role }
+      const payload: Record<string, unknown> = { name: form.name, title: form.title, role: form.role }
       if (form.password) {
         payload.password = form.password
       }
@@ -190,7 +190,7 @@ const AdminEdit = () => {
           <div>
             <h1 style={{ marginBottom: '8px' }}>{admin?.name || 'Administrateur'}</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              {admin?.email} · {roleLabels[admin?.role || ''] || admin?.role}
+              {admin?.email} · {(admin as any)?.title || roleLabels[admin?.role || ''] || admin?.role}
               {(admin as any)?.tags?.includes('STAGIAIRE') && (
                 <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
               )}
@@ -250,6 +250,17 @@ const AdminEdit = () => {
               value={form.name}
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
               required
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+              Titre / Fonction <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>(optionnel — ex: PDG, Directeur...)</span>
+            </label>
+            <input
+              className="portal-input"
+              placeholder="Ex : PDG, Directeur commercial..."
+              value={form.title}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title: e.target.value })}
             />
           </div>
           <div>

@@ -185,7 +185,7 @@ const AdminList = () => {
                         color: colors.text,
                       }}
                     >
-                      {roleLabels[admin.role] || admin.role}
+                      {(admin as any).title || roleLabels[admin.role] || admin.role}
                     </span>
                     {(admin as any).tags?.includes('STAGIAIRE') && (
                       <span

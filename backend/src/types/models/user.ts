@@ -17,6 +17,7 @@ export interface IUser extends Document {
   passwordHash: string
   role: UserRole
   name: string
+  title: string
   companyName: string
   serviceType: string
   phone: string

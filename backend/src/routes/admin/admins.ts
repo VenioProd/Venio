@@ -159,9 +159,8 @@ router.patch(
       user.role = role
     }
 
-    if (name !== undefined) {
-      user.name = name
-    }
+    if (name !== undefined) user.name = name
+    if (req.body.title !== undefined) (user as any).title = req.body.title
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10)
     }
