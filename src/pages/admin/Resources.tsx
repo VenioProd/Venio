@@ -102,6 +102,13 @@ export default function Resources() {
     setPreviewUrl(null)
   }
 
+  useEffect(() => {
+    if (!previewUrl) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closePreview() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [previewUrl])
+
   const load = async () => {
     setLoading(true)
     try {

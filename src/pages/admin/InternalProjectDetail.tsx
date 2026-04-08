@@ -26,6 +26,13 @@ const PRIORITY_COLORS: Record<string, string> = {
   URGENTE: '#f87171',
 }
 
+const MISSION_STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  A_FAIRE: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', text: '#fde047' },
+  EN_COURS: { bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.35)', text: '#38bdf8' },
+  TERMINE: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', text: '#6ee7b7' },
+}
+const MISSION_STATUS_LABELS: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
+
 interface Member { _id: string; name: string; email: string; role: string }
 interface Project {
   _id: string
@@ -44,18 +51,36 @@ interface Project {
   updatedAt: string
 }
 
+interface Mission {
+  _id: string
+  title: string
+  description: string
+  assignedTo: { _id: string; name: string; email: string }
+  status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
+  dueDate: string | null
+  createdBy: { name: string }
+  createdAt: string
+}
+
 export default function InternalProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showToast } = useToast()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+  const isAdminRole = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'RH'
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editStatus, setEditStatus] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
+
+  const [missions, setMissions] = useState<Mission[]>([])
+  const [missionsLoading, setMissionsLoading] = useState(true)
+  const [showMissionForm, setShowMissionForm] = useState(false)
+  const [missionForm, setMissionForm] = useState({ title: '', description: '', assignedTo: '', dueDate: '' })
+  const [savingMission, setSavingMission] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -64,6 +89,11 @@ export default function InternalProjectDetail() {
       .then(d => { setProject(d.project); setEditStatus(d.project.status) })
       .catch(() => showToast('Projet introuvable', 'error'))
       .finally(() => setLoading(false))
+
+    apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
+      .then(d => setMissions(d.missions || []))
+      .catch(() => {})
+      .finally(() => setMissionsLoading(false))
   }, [id])
 
   const handleStatusChange = async (newStatus: string) => {
@@ -88,6 +118,48 @@ export default function InternalProjectDetail() {
       await apiFetch(`/api/admin/internal-projects/${project._id}`, { method: 'DELETE' })
       showToast('Projet supprimé', 'success')
       navigate('/admin/projets-internes')
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleCreateMission = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!missionForm.title.trim()) { showToast('Le titre est requis', 'error'); return }
+    if (!missionForm.assignedTo) { showToast('Assigner à quelqu\'un', 'error'); return }
+    setSavingMission(true)
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: missionForm.title.trim(),
+          description: missionForm.description,
+          assignedTo: missionForm.assignedTo,
+          dueDate: missionForm.dueDate || null,
+        }),
+      })
+      setMissions(m => [data.mission, ...m])
+      setShowMissionForm(false)
+      setMissionForm({ title: '', description: '', assignedTo: '', dueDate: '' })
+      showToast('Mission créée', 'success')
+    } catch (err: any) {
+      showToast(err.message || 'Erreur', 'error')
+    } finally { setSavingMission(false) }
+  }
+
+  const handleMissionStatus = async (missionId: string, status: string) => {
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleDeleteMission = async (missionId: string) => {
+    try {
+      await apiFetch(`/api/admin/internal-projects/${id}/missions/${missionId}`, { method: 'DELETE' })
+      setMissions(m => m.filter(x => x._id !== missionId))
+      showToast('Mission supprimée', 'success')
     } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
   }
 
@@ -240,6 +312,95 @@ export default function InternalProjectDetail() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Missions */}
+      <div className="portal-card" style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+            Missions ({missions.length})
+          </h2>
+          {isAdminRole && (
+            <button
+              type="button"
+              onClick={() => setShowMissionForm(f => !f)}
+              style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+            >+</button>
+          )}
+        </div>
+
+        {isAdminRole && showMissionForm && (
+          <form onSubmit={handleCreateMission} style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 8, background: 'rgba(14,165,233,0.04)', border: '1px solid rgba(14,165,233,0.15)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="portal-label">Titre *</label>
+                <input className="portal-input" value={missionForm.title} onChange={e => setMissionForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Créer les maquettes landing page" />
+              </div>
+              <div>
+                <label className="portal-label">Assigner à *</label>
+                <select className="portal-input" value={missionForm.assignedTo} onChange={e => setMissionForm(f => ({ ...f, assignedTo: e.target.value }))}>
+                  <option value="">— Choisir un membre</option>
+                  {project.members.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="portal-label">Deadline</label>
+                <input type="date" className="portal-input" value={missionForm.dueDate} onChange={e => setMissionForm(f => ({ ...f, dueDate: e.target.value }))} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="portal-label">Description</label>
+                <input className="portal-input" value={missionForm.description} onChange={e => setMissionForm(f => ({ ...f, description: e.target.value }))} placeholder="Détails de la mission..." />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button className="portal-button" type="submit" disabled={savingMission} style={{ fontSize: 13 }}>{savingMission ? 'Création...' : 'Créer la mission'}</button>
+              <button className="portal-button secondary" type="button" onClick={() => setShowMissionForm(false)} style={{ fontSize: 13 }}>Annuler</button>
+            </div>
+          </form>
+        )}
+
+        {missionsLoading ? (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Chargement des missions...</p>
+        ) : missions.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aucune mission pour l'instant.</p>
+        ) : (
+          <div>
+            {missions.map(m => {
+              const sc = MISSION_STATUS_COLORS[m.status] || MISSION_STATUS_COLORS.A_FAIRE
+              return (
+                <div key={m._id} style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
+                          {MISSION_STATUS_LABELS[m.status]}
+                        </span>
+                        {isAdminRole && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>}
+                        {m.dueDate && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>· {new Date(m.dueDate).toLocaleDateString('fr-FR')}</span>}
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{m.title}</div>
+                      {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>{m.description}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                      {Object.entries(MISSION_STATUS_LABELS).filter(([v]) => v !== m.status).map(([v, l]) => (
+                        <button key={v} type="button" onClick={() => handleMissionStatus(m._id, v)}
+                          style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 11, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)' }}>
+                          {l}
+                        </button>
+                      ))}
+                      {isAdminRole && (
+                        <button type="button" onClick={() => handleDeleteMission(m._id)}
+                          style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid rgba(248,113,113,0.3)', fontSize: 11, cursor: 'pointer', background: 'transparent', color: '#f87171' }}>
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

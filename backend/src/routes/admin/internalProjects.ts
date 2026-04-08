@@ -4,6 +4,7 @@ import { requireAdmin } from '../../middleware/role.js'
 import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.js'
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
+import InternalMission from '../../models/InternalMission.js'
 import { sendInternalProjectAssignedEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
@@ -207,6 +208,104 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) {
     return next(err)
   }
+})
+
+// ── MISSIONS ──────────────────────────────────────────────────────────────────
+
+// GET /:projectId/missions
+router.get('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const project = await InternalProject.findById(req.params.projectId)
+    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+    const ok = await canAccess(req.user!.id, req.user!.role, project)
+    if (!ok) return res.status(403).json({ error: 'Accès refusé' })
+
+    // Admins see all; stagiaires/members see only their own
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'].includes(req.user!.role)
+    const filter: Record<string, any> = { internalProject: req.params.projectId }
+    if (!isAdmin) filter.assignedTo = req.user!.id
+
+    const missions = await InternalMission.find(filter)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 })
+    return res.json({ missions })
+  } catch (err) { return next(err) }
+})
+
+// POST /:projectId/missions (admins only)
+router.post('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    if (!isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+
+    const project = await InternalProject.findById(req.params.projectId)
+    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+
+    const { title, description, assignedTo, dueDate } = req.body
+    if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
+    if (!assignedTo) return res.status(400).json({ error: 'Assigné à est requis' })
+
+    const mission = await InternalMission.create({
+      title: title.trim(),
+      description: description || '',
+      assignedTo,
+      internalProject: req.params.projectId,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      createdBy: req.user!.id,
+    })
+
+    const populated = await InternalMission.findById(mission._id)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+
+    return res.status(201).json({ mission: populated })
+  } catch (err) { return next(err) }
+})
+
+// PATCH /:projectId/missions/:missionId
+router.patch('/:projectId/missions/:missionId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
+
+    const { title, description, assignedTo, status, dueDate } = req.body
+    if (isAdmin) {
+      if (title !== undefined) mission.title = title.trim()
+      if (description !== undefined) mission.description = description
+      if (assignedTo !== undefined) mission.assignedTo = assignedTo
+      if (dueDate !== undefined) mission.dueDate = dueDate ? new Date(dueDate) : null
+    }
+    if (status !== undefined) mission.status = status
+
+    await mission.save()
+    const populated = await InternalMission.findById(mission._id)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+    return res.json({ mission: populated })
+  } catch (err) { return next(err) }
+})
+
+// DELETE /:projectId/missions/:missionId (admin only)
+router.delete('/:projectId/missions/:missionId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    if (!isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+
+    const mission = await InternalMission.findOneAndDelete({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+    return res.json({ success: true })
+  } catch (err) { return next(err) }
 })
 
 export default router

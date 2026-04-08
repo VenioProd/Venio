@@ -5,6 +5,8 @@ import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import CompanyResource, { RESOURCE_CATEGORIES } from '../../models/CompanyResource.js'
+import User from '../../models/User.js'
+import { sendResourcePublishedEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
 router.use(auth)
@@ -81,6 +83,28 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
     })
 
     const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
+
+    // fire-and-forget notifications to all team members
+    ;(async () => {
+      try {
+        const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+        const resourcesUrl = `${baseUrl}/admin/ressources`
+        const members = await User.find({ role: { $ne: 'CLIENT' } }).select('name email')
+        for (const member of members) {
+          if (member.email) {
+            sendResourcePublishedEmail({
+              to: member.email,
+              memberName: member.name || member.email,
+              resourceName: resource.name,
+              category: resource.category,
+              description: resource.description || '',
+              resourcesUrl,
+            }).catch(() => {})
+          }
+        }
+      } catch { /* silent */ }
+    })()
+
     return res.status(201).json({ resource: populated })
   } catch (err) { return next(err) }
 })

@@ -286,3 +286,59 @@ export async function sendInternalProjectAssignedEmail({
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+export async function sendResourcePublishedEmail({
+  to,
+  memberName,
+  resourceName,
+  category,
+  description,
+  resourcesUrl,
+}: {
+  to: string
+  memberName: string
+  resourceName: string
+  category: string
+  description: string
+  resourcesUrl: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'notifications@venio.paris'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Nouveau document disponible : ${resourceName}`,
+      text: [
+        `Bonjour ${memberName},`,
+        '',
+        `Un nouveau document a été ajouté à l'espace Ressources : "${resourceName}" (${category}).`,
+        description ? `\n${description}\n` : '',
+        `Consulte-le ici : ${resourcesUrl}`,
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+          <div style="margin-bottom:20px">
+            <span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7;letter-spacing:.5px">NOUVEAU DOCUMENT</span>
+            <span style="display:inline-block;margin-left:8px;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.3);color:#38bdf8">${escapeHtml(category)}</span>
+          </div>
+          <p style="margin:0 0 8px">Bonjour <strong>${escapeHtml(memberName)}</strong>,</p>
+          <p style="margin:0 0 20px;color:rgba(255,255,255,0.7)">Un nouveau document a été ajouté à l'espace Ressources :</p>
+          <div style="margin:0 0 20px;padding:16px 20px;background:rgba(255,255,255,0.04);border-left:3px solid #10b981;border-radius:6px">
+            <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">${escapeHtml(resourceName)}</div>
+            ${description ? `<div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5">${escapeHtml(description)}</div>` : ''}
+          </div>
+          <a href="${escapeHtml(resourcesUrl)}" style="display:inline-block;padding:12px 24px;background:#10b981;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">Voir les ressources →</a>
+          <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3)">— L'équipe ${escapeHtml(appName)}</p>
+        </div>`,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
