@@ -100,6 +100,7 @@ router.get('/missions', async (req: Request, res: Response, next: NextFunction) 
 
     const missions = await InternalMission.find(filter)
       .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
       .populate('internalProject', 'name entity')
       .sort({ createdAt: -1 })
@@ -259,6 +260,7 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
 
     const missions = await InternalMission.find(filter)
       .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
       .sort({ createdAt: -1 })
     return res.json({ missions })
@@ -282,6 +284,7 @@ router.post('/:projectId/missions', async (req: Request, res: Response, next: Ne
       title: title.trim(),
       description: description || '',
       assignedTo: assignedToArr,
+      participants: assignedToArr.map((id: string) => ({ user: id, progress: 0, status: 'A_FAIRE' })),
       internalProject: req.params.projectId,
       dueDate: dueDate ? new Date(dueDate) : null,
       createdBy: req.user!.id,
@@ -341,6 +344,38 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
     await mission.save()
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
+      .populate('createdBy', 'name')
+    return res.json({ mission: populated })
+  } catch (err) { return next(err) }
+})
+
+// PATCH /:projectId/missions/:missionId/my-progress — mise à jour individuelle de l'assigné
+router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const mission = await InternalMission.findOne({ _id: req.params.missionId, internalProject: req.params.projectId })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)
+    if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+
+    const { userId, progress, status } = req.body
+    const targetId = (isAdmin && userId) ? userId : req.user!.id
+
+    const idx = mission.participants.findIndex(p => p.user.toString() === targetId)
+    if (idx === -1) {
+      // Créer le participant s'il n'existe pas (missions créées avant la migration)
+      mission.participants.push({ user: new (require('mongoose').Types.ObjectId)(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE' } as any)
+    } else {
+      if (progress !== undefined) mission.participants[idx].progress = Math.min(100, Math.max(0, Number(progress)))
+      if (status !== undefined) mission.participants[idx].status = status
+    }
+
+    await mission.save()
+    const populated = await InternalMission.findById(mission._id)
+      .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
     return res.json({ mission: populated })
   } catch (err) { return next(err) }
@@ -487,6 +522,7 @@ router.post('/:projectId/missions/:missionId/request-review', async (req: Reques
 
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
     return res.json({ mission: populated })
   } catch (err) { return next(err) }
@@ -515,6 +551,7 @@ router.post('/:projectId/missions/:missionId/validate-step', async (req: Request
 
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')
+      .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
     return res.json({ mission: populated })
   } catch (err) { return next(err) }
