@@ -193,7 +193,7 @@ router.patch(
           })
         } else if (req.body.internInfo) {
           // Mettre a jour la fiche existante
-          const { type, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo
+          const { type, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence, inclureEquipe } = req.body.internInfo
           if (type && ['STAGIAIRE', 'ALTERNANT'].includes(type)) existing.type = type
           if (poste !== undefined) existing.poste = poste
           if (departement !== undefined) existing.departement = departement
@@ -203,6 +203,7 @@ router.patch(
           if (ecole !== undefined) existing.ecole = ecole
           if (formation !== undefined) existing.formation = formation
           if (Array.isArray(joursPresence)) existing.joursPresence = joursPresence
+          if (inclureEquipe !== undefined) existing.inclureEquipe = Boolean(inclureEquipe)
           if (existing.status === 'TERMINE' || existing.status === 'ANNULE') existing.status = 'ACTIF'
           await existing.save()
         }
