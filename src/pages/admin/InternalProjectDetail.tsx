@@ -669,18 +669,12 @@ export default function InternalProjectDetail() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      {m.status === 'A_FAIRE' && (
-                        <button type="button" onClick={() => handleMissionStatus(m._id, 'EN_COURS')}
+                      {Object.entries(MISSION_STATUS_LABELS).filter(([v]) => v !== m.status).map(([v, l]) => (
+                        <button key={v} type="button" onClick={() => handleMissionStatus(m._id, v)}
                           style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 11, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)' }}>
-                          → En cours
+                          {l}
                         </button>
-                      )}
-                      {m.status === 'EN_COURS' && (
-                        <button type="button" onClick={() => handleMissionStatus(m._id, 'TERMINE')}
-                          style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid rgba(16,185,129,0.3)', fontSize: 11, cursor: 'pointer', background: 'rgba(16,185,129,0.06)', color: '#6ee7b7' }}>
-                          → Terminée
-                        </button>
-                      )}
+                      ))}
                       {isSuperAdmin && (
                         <button type="button" onClick={() => handleDeleteMission(m._id)}
                           style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid rgba(248,113,113,0.3)', fontSize: 11, cursor: 'pointer', background: 'transparent', color: '#f87171' }}>

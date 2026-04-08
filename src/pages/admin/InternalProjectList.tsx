@@ -512,8 +512,12 @@ export default function InternalProjectList() {
                               <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: statusColor[m.status] || '#a5b4cf', background: statusBg[m.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${statusBorder[m.status] || 'rgba(255,255,255,0.1)'}`, whiteSpace: 'nowrap' }}>
                                 {statusLabel[m.status] || m.status}
                               </span>
-                              {m.status === 'A_FAIRE' && <button type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, 'EN_COURS')} style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>→ En cours</button>}
-                              {m.status === 'EN_COURS' && <button type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, 'TERMINE')} style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16,185,129,0.3)', fontSize: 10, cursor: 'pointer', background: 'rgba(16,185,129,0.06)', color: '#6ee7b7', whiteSpace: 'nowrap' }}>→ Terminée</button>}
+                              {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).filter(v => v !== m.status).map(v => (
+                                <button key={v} type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, v)}
+                                  style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                  {statusLabel[v]}
+                                </button>
+                              ))}
                             </div>
                           </td>
                           <td style={{ padding: '11px 14px', minWidth: 90 }}>
@@ -556,9 +560,9 @@ export default function InternalProjectList() {
                                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 10 }}>Étapes</div>
                                   {totalSteps > 0 ? m.steps.map(step => (
                                     <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '5px 8px', borderRadius: 6, background: step.waitingReview ? 'rgba(234,179,8,0.06)' : 'transparent', border: step.waitingReview ? '1px solid rgba(234,179,8,0.2)' : '1px solid transparent' }}>
-                                      <input type="checkbox" checked={step.done} disabled={!isSuperAdmin}
-                                        onChange={() => isSuperAdmin && handleMissionToggleStep(m._id, m.internalProject?._id, m, step._id)}
-                                        style={{ cursor: isSuperAdmin ? 'pointer' : 'default', width: 13, height: 13, accentColor: '#10b981', flexShrink: 0 }} />
+                                      <input type="checkbox" checked={step.done}
+                                        onChange={() => handleMissionToggleStep(m._id, m.internalProject?._id, m, step._id)}
+                                        style={{ cursor: 'pointer', width: 13, height: 13, accentColor: '#10b981', flexShrink: 0 }} />
                                       <span style={{ fontSize: 12, flex: 1, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.title}</span>
                                       {step.waitingReview && !step.done && (
                                         <>
