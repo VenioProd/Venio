@@ -8,7 +8,7 @@ export interface IInternalMission {
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   progress: number
   dueDate: Date | null
-  steps: { title: string; done: boolean; waitingReview: boolean; _id?: any }[]
+  steps: { title: string; done: boolean; waitingReview: boolean; assignedTo?: mongoose.Types.ObjectId; _id?: any }[]
   files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedBy: mongoose.Types.ObjectId; _id?: any }[]
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
@@ -28,6 +28,7 @@ const schema = new mongoose.Schema<IInternalMission>(
       title: { type: String, required: true },
       done: { type: Boolean, default: false },
       waitingReview: { type: Boolean, default: false },
+      assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     }],
     files: [{
       originalName: { type: String, required: true },

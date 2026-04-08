@@ -36,7 +36,7 @@ interface Mission {
   progress: number
   assignedTo: { _id: string; name: string; email: string }[]
   internalProject: { _id: string; name: string; entity: string }
-  steps: { _id: string; title: string; done: boolean; waitingReview: boolean }[]
+  steps: { _id: string; title: string; done: boolean; waitingReview: boolean; assignedTo?: string }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
   createdAt: string
 }
@@ -93,6 +93,7 @@ export default function InternalProjectList() {
   const [missionsLoading, setMissionsLoading] = useState(false)
   const [selectedMission, setSelectedMission] = useState<string | null>(null)
   const [missionStepInputs, setMissionStepInputs] = useState<Record<string, string>>({})
+  const [stepAssigneeInputs, setStepAssigneeInputs] = useState<Record<string, string>>({})
   const [uploadingMission, setUploadingMission] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [showMissionForm, setShowMissionForm] = useState(false)
@@ -232,14 +233,17 @@ export default function InternalProjectList() {
     } catch { /* silent */ }
   }
 
-  const handleMissionAddStep = async (missionId: string, projectId: string, mission: Mission, title: string) => {
-    const newSteps = [...mission.steps, { title, done: false }]
+  const handleMissionAddStep = async (missionId: string, projectId: string, mission: Mission, title: string, assignedTo?: string) => {
+    const newStep: any = { title, done: false }
+    if (assignedTo) newStep.assignedTo = assignedTo
+    const newSteps = [...mission.steps, newStep]
     try {
       const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
         method: 'PATCH', body: JSON.stringify({ steps: newSteps }),
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
       setMissionStepInputs(s => ({ ...s, [missionId]: '' }))
+      setStepAssigneeInputs(s => ({ ...s, [missionId]: '' }))
     } catch { /* silent */ }
   }
 
@@ -938,34 +942,63 @@ export default function InternalProjectList() {
               {/* Étapes */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 12 }}>Étapes</div>
-                {totalSteps > 0 ? m.steps.map(step => (
-                  <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '8px 10px', borderRadius: 7, background: step.waitingReview ? 'rgba(234,179,8,0.05)' : 'rgba(255,255,255,0.02)', border: step.waitingReview ? '1px solid rgba(234,179,8,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
-                    <input type="checkbox" checked={step.done}
-                      onChange={() => handleMissionToggleStep(m._id, m.internalProject?._id, m, step._id)}
-                      style={{ cursor: 'pointer', width: 15, height: 15, accentColor: '#10b981', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, flex: 1, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.title}</span>
-                    {step.waitingReview && !step.done && (
-                      <>
-                        <span style={{ fontSize: 11, color: '#fde047', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 8, padding: '2px 7px', whiteSpace: 'nowrap' }}>En attente</span>
-                        {isSuperAdmin && (
-                          <button type="button" onClick={async () => {
-                            try {
-                              const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${m.internalProject?._id}/missions/${m._id}/steps/${step._id}/validate-step`, { method: 'POST' })
-                              setMissions(ms => ms.map(x => x._id === m._id ? data.mission : x))
-                            } catch { /* silent */ }
-                          }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', cursor: 'pointer', flexShrink: 0 }}>✓ Valider</button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )) : <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)' }}>Aucune étape définie</p>}
+                {totalSteps > 0 ? m.steps.map(step => {
+                  const stepAssignee = step.assignedTo ? (m.assignedTo || []).find(a => a._id === step.assignedTo) : null
+                  return (
+                    <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '8px 10px', borderRadius: 7, background: step.waitingReview ? 'rgba(234,179,8,0.05)' : 'rgba(255,255,255,0.02)', border: step.waitingReview ? '1px solid rgba(234,179,8,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+                      <input type="checkbox" checked={step.done}
+                        onChange={() => handleMissionToggleStep(m._id, m.internalProject?._id, m, step._id)}
+                        style={{ cursor: 'pointer', width: 15, height: 15, accentColor: '#10b981', flexShrink: 0 }} />
+                      {stepAssignee && (
+                        <div title={stepAssignee.name} style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#38bdf8', flexShrink: 0 }}>
+                          {stepAssignee.name[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span style={{ fontSize: 13, flex: 1, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.title}</span>
+                      {step.waitingReview && !step.done && (
+                        <>
+                          <span style={{ fontSize: 11, color: '#fde047', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 8, padding: '2px 7px', whiteSpace: 'nowrap' }}>En attente</span>
+                          {isSuperAdmin && (
+                            <button type="button" onClick={async () => {
+                              try {
+                                const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${m.internalProject?._id}/missions/${m._id}/steps/${step._id}/validate-step`, { method: 'POST' })
+                                setMissions(ms => ms.map(x => x._id === m._id ? data.mission : x))
+                              } catch { /* silent */ }
+                            }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', cursor: 'pointer', flexShrink: 0 }}>✓ Valider</button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )
+                }) : <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)' }}>Aucune étape définie</p>}
                 {isSuperAdmin && (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                    <input className="portal-input" value={missionStepInputs[m._id] || ''} onChange={e => setMissionStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === 'Enter' && missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim()) }}
-                      placeholder="Nouvelle étape… (Entrée)" style={{ fontSize: 13, padding: '6px 10px', flex: 1 }} />
-                    <button type="button" onClick={() => { if (missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim()) }}
-                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 15, cursor: 'pointer' }}>+</button>
+                  <div style={{ marginTop: 10 }}>
+                    {/* Sélecteur d'assigné pour la nouvelle étape */}
+                    {(m.assignedTo || []).length > 1 && (
+                      <div style={{ display: 'flex', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', alignSelf: 'center' }}>Pour :</span>
+                        <button type="button"
+                          onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: '' }))}
+                          style={{ padding: '3px 8px', borderRadius: 12, border: `1px solid ${!stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.4)' : 'rgba(255,255,255,0.08)'}`, background: !stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.1)' : 'transparent', color: !stepAssigneeInputs[m._id] ? '#a5b4cf' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                          Tous
+                        </button>
+                        {(m.assignedTo || []).map(a => (
+                          <button key={a._id} type="button"
+                            onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: s[m._id] === a._id ? '' : a._id }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 12, border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)'}`, background: stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.1)' : 'transparent', color: stepAssigneeInputs[m._id] === a._id ? '#38bdf8' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.2)' : 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
+                            {a.name.split(' ')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input className="portal-input" value={missionStepInputs[m._id] || ''} onChange={e => setMissionStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter' && missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
+                        placeholder="Nouvelle étape… (Entrée)" style={{ fontSize: 13, padding: '6px 10px', flex: 1 }} />
+                      <button type="button" onClick={() => { if (missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 15, cursor: 'pointer' }}>+</button>
+                    </div>
                   </div>
                 )}
               </div>
