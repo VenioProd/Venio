@@ -27,11 +27,13 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     // Stagiaires/alternants actifs dont le stage est en cours
-    const activeInterns = await Intern.find({
+    const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH']
+    const allActiveInterns = await Intern.find({
       status: 'ACTIF',
       dateDebut: { $lte: ctx.now },
       dateFin: { $gte: ctx.now },
-    }).populate('userId', 'name email')
+    }).populate('userId', 'name email role')
+    const activeInterns = allActiveInterns.filter((i) => !ADMIN_ROLES.includes((i.userId as any)?.role))
 
     const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
     const todayName = dayNames[ctx.now.getDay()]

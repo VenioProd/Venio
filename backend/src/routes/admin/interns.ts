@@ -70,12 +70,14 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
     const filter: Record<string, unknown> = {}
     if (status) filter.status = status
 
+    const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH']
     const interns = await Intern.find(filter)
-      .populate('userId', 'name email phone')
+      .populate('userId', 'name email phone role lastLoginAt')
       .populate('tuteur', 'name email')
       .populate('createdBy', 'name')
       .sort({ dateDebut: -1 })
-    res.json(interns)
+    const filtered = interns.filter((i) => !ADMIN_ROLES.includes((i.userId as any)?.role))
+    res.json(filtered)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -289,10 +291,12 @@ router.get('/stats', requireAdmin, async (_req: Request, res: Response) => {
 // GET /api/admin/interns/dashboard — tableau de bord global
 router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const interns = await Intern.find({ status: 'ACTIF' })
-      .populate('userId', 'name email phone lastLoginAt')
+    const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH']
+    const allInterns = await Intern.find({ status: 'ACTIF' })
+      .populate('userId', 'name email phone role lastLoginAt')
       .populate('tuteur', 'name email')
       .sort({ dateDebut: -1 })
+    const interns = allInterns.filter((i) => !ADMIN_ROLES.includes((i.userId as any)?.role))
 
     const now = new Date()
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
