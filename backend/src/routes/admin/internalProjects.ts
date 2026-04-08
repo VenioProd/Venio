@@ -220,8 +220,8 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
     const ok = await canAccess(req.user!.id, req.user!.role, project)
     if (!ok) return res.status(403).json({ error: 'Accès refusé' })
 
-    // Admins see all; stagiaires/members see only their own
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'].includes(req.user!.role)
+    // Seul le SUPER_ADMIN voit toutes les missions; les autres voient seulement les leurs
+    const isAdmin = req.user!.role === 'SUPER_ADMIN'
     const filter: Record<string, any> = { internalProject: req.params.projectId }
     if (!isAdmin) filter.assignedTo = req.user!.id
 
@@ -293,11 +293,10 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
   } catch (err) { return next(err) }
 })
 
-// DELETE /:projectId/missions/:missionId (admin only)
+// DELETE /:projectId/missions/:missionId (SUPER_ADMIN uniquement)
 router.delete('/:projectId/missions/:missionId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    if (!isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut supprimer une mission' })
 
     const mission = await InternalMission.findOneAndDelete({
       _id: req.params.missionId,

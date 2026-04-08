@@ -377,7 +377,7 @@ export default function InternalProjectDetail() {
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
                           {MISSION_STATUS_LABELS[m.status]}
                         </span>
-                        {isAdminRole && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>}
+                        {isSuperAdmin && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>}
                         {m.dueDate && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>· {new Date(m.dueDate).toLocaleDateString('fr-FR')}</span>}
                       </div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{m.title}</div>
@@ -390,7 +390,7 @@ export default function InternalProjectDetail() {
                           {l}
                         </button>
                       ))}
-                      {isAdminRole && (
+                      {isSuperAdmin && (
                         <button type="button" onClick={() => handleDeleteMission(m._id)}
                           style={{ padding: '3px 9px', borderRadius: 12, border: '1px solid rgba(248,113,113,0.3)', fontSize: 11, cursor: 'pointer', background: 'transparent', color: '#f87171' }}>
                           ✕
