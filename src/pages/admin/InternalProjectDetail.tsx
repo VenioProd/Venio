@@ -57,6 +57,7 @@ interface Mission {
   description: string
   assignedTo: { _id: string; name: string; email: string }
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
+  progress: number
   dueDate: string | null
   steps: { _id: string; title: string; done: boolean; waitingReview: boolean }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
@@ -247,6 +248,15 @@ export default function InternalProjectDetail() {
       showToast('Fichier ajouté', 'success')
     } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
     finally { setUploadingFile(u => ({ ...u, [missionId]: false })) }
+  }
+
+  const handleProgressUpdate = async (missionId: string, progress: number) => {
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}`, {
+        method: 'PATCH', body: JSON.stringify({ progress }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch { /* silent */ }
   }
 
   const handleDeleteFile = async (missionId: string, fileId: string) => {
@@ -546,6 +556,32 @@ export default function InternalProjectDetail() {
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
                       >{m.title}</Link>
                       {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>{m.description}</div>}
+
+                      {/* Progression manuelle */}
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Progression</span>
+                          <input
+                            type="number" min={0} max={100}
+                            defaultValue={m.progress ?? 0}
+                            onBlur={e => {
+                              const v = Math.min(100, Math.max(0, Number(e.target.value)))
+                              e.target.value = String(v)
+                              handleProgressUpdate(m._id, v)
+                            }}
+                            style={{ width: 48, fontSize: 12, fontWeight: 700, padding: '2px 5px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', color: (m.progress ?? 0) === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center', cursor: 'text' }}
+                            title="Cliquer pour modifier (%)"
+                          />
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>%</span>
+                          <span style={{ fontSize: 10, color: (m.progress ?? 0) === 100 ? '#6ee7b7' : 'var(--text-secondary)', marginLeft: 'auto' }}>
+                            {(m.progress ?? 0) === 100 ? '✓ Terminé' : ''}
+                          </span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                          <div style={{ height: '100%', borderRadius: 3, background: (m.progress ?? 0) === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
+                        </div>
+                      </div>
+
                       {/* Steps / étapes */}
                       {(m.steps?.length > 0 || isSuperAdmin) && (
                         <div style={{ marginTop: 10 }}>

@@ -33,6 +33,7 @@ interface Member { _id: string; name: string; email: string; role: string }
 
 interface Mission {
   _id: string; title: string; description: string; status: string; dueDate: string | null
+  progress: number
   assignedTo: { _id: string; name: string; email: string }
   internalProject: { _id: string; name: string; entity: string }
   steps: { _id: string; title: string; done: boolean; waitingReview: boolean }[]
@@ -241,6 +242,15 @@ export default function InternalProjectList() {
       })
       const blob = await res.blob()
       window.open(URL.createObjectURL(blob), '_blank')
+    } catch { /* silent */ }
+  }
+
+  const handleMissionProgressUpdate = async (missionId: string, projectId: string, progress: number) => {
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH', body: JSON.stringify({ progress }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
     } catch { /* silent */ }
   }
 
@@ -520,18 +530,28 @@ export default function InternalProjectList() {
                               ))}
                             </div>
                           </td>
-                          <td style={{ padding: '11px 14px', minWidth: 90 }}>
-                            {totalSteps > 0 ? (
-                              <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                  <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{doneCount}/{totalSteps}</span>
-                                  <span style={{ fontSize: 10, color: pct === 100 ? '#6ee7b7' : 'var(--text-secondary)' }}>{pct}%</span>
-                                </div>
-                                <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                                  <div style={{ height: '100%', borderRadius: 2, background: pct === 100 ? '#10b981' : '#38bdf8', width: `${pct}%`, transition: 'width .3s' }} />
-                                </div>
+                          <td style={{ padding: '11px 14px', minWidth: 120 }} onClick={e => e.stopPropagation()}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                {totalSteps > 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{doneCount}/{totalSteps} étapes</span>}
+                                <input
+                                  type="number" min={0} max={100}
+                                  defaultValue={m.progress ?? 0}
+                                  onBlur={e => {
+                                    const v = Math.min(100, Math.max(0, Number(e.target.value)))
+                                    e.target.value = String(v)
+                                    handleMissionProgressUpdate(m._id, m.internalProject?._id, v)
+                                  }}
+                                  onClick={e => e.stopPropagation()}
+                                  style={{ width: 44, fontSize: 11, fontWeight: 700, padding: '2px 4px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: (m.progress ?? 0) === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center', cursor: 'text', marginLeft: 'auto' }}
+                                  title="Cliquer pour modifier la progression (%)"
+                                />
+                                <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
                               </div>
-                            ) : <span style={{ fontSize: 12, color: 'rgba(165,180,207,0.4)' }}>—</span>}
+                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: (m.progress ?? 0) === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
+                              </div>
+                            </div>
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             {(m.files?.length ?? 0) > 0 ? (

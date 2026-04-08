@@ -6,6 +6,7 @@ export interface IInternalMission {
   assignedTo: mongoose.Types.ObjectId
   internalProject: mongoose.Types.ObjectId
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
+  progress: number
   dueDate: Date | null
   steps: { title: string; done: boolean; waitingReview: boolean; _id?: any }[]
   files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedBy: mongoose.Types.ObjectId; _id?: any }[]
@@ -21,6 +22,7 @@ const schema = new mongoose.Schema<IInternalMission>(
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     internalProject: { type: mongoose.Schema.Types.ObjectId, ref: 'InternalProject', required: true },
     status: { type: String, enum: ['A_FAIRE', 'EN_COURS', 'TERMINE'], default: 'A_FAIRE' },
+    progress: { type: Number, default: 0, min: 0, max: 100 },
     dueDate: { type: Date, default: null },
     steps: [{
       title: { type: String, required: true },
