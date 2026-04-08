@@ -72,6 +72,8 @@ export default function InternalProjectDetail() {
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const isAdminRole = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'RH'
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'missions'>('overview')
+
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -370,45 +372,112 @@ export default function InternalProjectDetail() {
         </div>
       </div>
 
-      {/* Poles */}
-      {project.poles.length > 0 && (
-        <div className="portal-card" style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>Pôles</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {project.poles.map(pole => (
-              <span key={pole} style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }}>
-                {pole}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Tab bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+        <button
+          onClick={() => setActiveTab('overview')}
+          style={{
+            padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            border: `1px solid ${activeTab === 'overview' ? 'rgba(14,165,233,0.45)' : 'rgba(255,255,255,0.1)'}`,
+            background: activeTab === 'overview' ? 'rgba(14,165,233,0.1)' : 'transparent',
+            color: activeTab === 'overview' ? '#38bdf8' : 'var(--text-secondary)',
+            transition: 'all .15s',
+          }}
+        >Vue d'ensemble</button>
 
-      {/* Members */}
-      <div className="portal-card" style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
-          Membres ({project.members.length})
-        </h2>
-        {project.members.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aucun membre assigné directement (accessible via pôle)</p>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            {project.members.map(m => (
-              <div key={m._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>
-                  {(m.name || '?').charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.email}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => setActiveTab('missions')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            border: `1.5px solid ${activeTab === 'missions' ? 'rgba(234,179,8,0.6)' : 'rgba(234,179,8,0.28)'}`,
+            background: activeTab === 'missions' ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.04)',
+            color: activeTab === 'missions' ? '#fde047' : 'rgba(253,224,71,0.55)',
+            boxShadow: activeTab === 'missions' ? '0 0 10px rgba(234,179,8,0.12)' : 'none',
+            transition: 'all .15s',
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+          </svg>
+          Missions internes
+          {missions.length > 0 && (
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: activeTab === 'missions' ? 'rgba(234,179,8,0.25)' : 'rgba(234,179,8,0.12)', color: activeTab === 'missions' ? '#fde047' : 'rgba(253,224,71,0.6)' }}>
+              {missions.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Missions */}
+      {/* ─── TAB: VUE D'ENSEMBLE ─── */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Poles */}
+          {project.poles.length > 0 && (
+            <div className="portal-card" style={{ marginTop: 16 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>Pôles</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {project.poles.map(pole => (
+                  <span key={pole} style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }}>
+                    {pole}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Members */}
+          <div className="portal-card" style={{ marginTop: 16 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+              Membres ({project.members.length})
+            </h2>
+            {project.members.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aucun membre assigné directement (accessible via pôle)</p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {project.members.map(m => (
+                  <div key={m._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>
+                      {(m.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.email}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          {project.tags.length > 0 && (
+            <div className="portal-card" style={{ marginTop: 16 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--text-primary)' }}>Tags</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {project.tags.map(tag => (
+                  <span key={tag} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 12, background: 'rgba(100,116,180,0.12)', border: '1px solid rgba(100,116,180,0.25)', color: '#a5b4cf' }}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shortcut to missions */}
+          {missions.length > 0 && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <button type="button" onClick={() => setActiveTab('missions')}
+                style={{ fontSize: 12, color: 'rgba(253,224,71,0.7)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                Voir les {missions.length} mission{missions.length > 1 ? 's' : ''} de ce projet →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ─── TAB: MISSIONS ─── */}
+      {activeTab === 'missions' && (
       <div className="portal-card" style={{ marginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
@@ -625,19 +694,6 @@ export default function InternalProjectDetail() {
           </div>
         )}
       </div>
-
-      {/* Tags */}
-      {project.tags.length > 0 && (
-        <div className="portal-card" style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--text-primary)' }}>Tags</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {project.tags.map(tag => (
-              <span key={tag} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 12, background: 'rgba(100,116,180,0.12)', border: '1px solid rgba(100,116,180,0.25)', color: '#a5b4cf' }}>
-                #{tag}
-              </span>
-            ))}
-          </div>
-        </div>
       )}
 
       <ConfirmModal
