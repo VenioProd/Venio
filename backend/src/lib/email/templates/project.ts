@@ -215,3 +215,74 @@ export async function sendDeliverableNotificationEmail({ to, name, projectName, 
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+/**
+ * Notifie un membre (admin/stagiaire) qu'il a été ajouté à un projet interne.
+ */
+export async function sendInternalProjectAssignedEmail({
+  to,
+  memberName,
+  projectName,
+  entity,
+  poles,
+  description,
+  projectUrl,
+}: {
+  to: string
+  memberName: string
+  projectName: string
+  entity: string
+  poles: string[]
+  description: string
+  projectUrl: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'notifications@venio.paris'
+  const polesText = poles.length > 0 ? poles.join(', ') : '—'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Nouveau projet interne : ${projectName}`,
+      text: [
+        `Bonjour ${memberName},`,
+        '',
+        `Tu as été ajouté(e) au projet interne "${projectName}" (${entity}).`,
+        description ? `\n${description}\n` : '',
+        `Pôles concernés : ${polesText}`,
+        '',
+        `Des tâches te seront assignées prochainement. Consulte régulièrement ton espace pour suivre les missions et retours.`,
+        '',
+        `Voir le projet : ${projectUrl}`,
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+          <div style="margin-bottom:20px">
+            <span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3);color:#38bdf8;letter-spacing:.5px">PROJET INTERNE</span>
+            <span style="display:inline-block;margin-left:8px;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#c4b5fd">${escapeHtml(entity)}</span>
+          </div>
+          <p style="margin:0 0 8px">Bonjour <strong>${escapeHtml(memberName)}</strong>,</p>
+          <p style="margin:0 0 20px;color:rgba(255,255,255,0.7)">Tu as été ajouté(e) au projet interne :</p>
+          <div style="margin:0 0 20px;padding:16px 20px;background:rgba(255,255,255,0.04);border-left:3px solid #0ea5e9;border-radius:6px">
+            <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">${escapeHtml(projectName)}</div>
+            ${description ? `<div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5">${escapeHtml(description)}</div>` : ''}
+            ${poles.length > 0 ? `<div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.4)">Pôles : <strong style="color:#c4b5fd">${escapeHtml(polesText)}</strong></div>` : ''}
+          </div>
+          <p style="margin:0 0 20px;color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6">
+            Des tâches te seront assignées prochainement.<br>
+            <strong style="color:#fff">Consulte régulièrement ton espace</strong> pour suivre les missions, retours et mises à jour du projet.
+          </p>
+          <a href="${escapeHtml(projectUrl)}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">Voir le projet →</a>
+          <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3)">— L'équipe ${escapeHtml(appName)}</p>
+        </div>`,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}

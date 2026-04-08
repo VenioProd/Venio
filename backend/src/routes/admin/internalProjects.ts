@@ -4,6 +4,7 @@ import { requireAdmin } from '../../middleware/role.js'
 import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.js'
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
+import { sendInternalProjectAssignedEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
 router.use(auth)
@@ -113,6 +114,24 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const populated = await InternalProject.findById(project._id)
       .populate('members', 'name email role')
       .populate('createdBy', 'name')
+
+    // Notifier chaque membre par email
+    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+    const projectUrl = `${baseUrl}/admin/projets-internes/${project._id}`
+    const membersList = (populated?.members || []) as any[]
+    for (const member of membersList) {
+      if (member.email) {
+        sendInternalProjectAssignedEmail({
+          to: member.email,
+          memberName: member.name || member.email,
+          projectName: project.name,
+          entity: project.entity,
+          poles: project.poles,
+          description: project.description,
+          projectUrl,
+        }).catch(() => {}) // fire and forget, ne bloque pas la réponse
+      }
+    }
 
     return res.status(201).json({ project: populated })
   } catch (err) {
