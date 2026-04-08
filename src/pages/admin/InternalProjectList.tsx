@@ -705,9 +705,9 @@ export default function InternalProjectList() {
         const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
         return (
           <>
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, backdropFilter: 'blur(2px)' }}
+            <div style={{ position: 'fixed', top: 90, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, backdropFilter: 'blur(2px)' }}
               onClick={() => setSelectedMission(null)} />
-            <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 500, background: '#141824', borderLeft: '1px solid rgba(255,255,255,0.08)', zIndex: 1001, overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 32px rgba(0,0,0,0.5)' }}>
+            <div style={{ position: 'fixed', top: 90, right: 0, bottom: 0, width: 500, background: '#141824', borderLeft: '1px solid rgba(255,255,255,0.08)', zIndex: 1002, overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 32px rgba(0,0,0,0.5)' }}>
 
               {/* Header */}
               <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
