@@ -18,7 +18,7 @@ export interface Intern {
   ecole: string
   formation: string
   notes: string
-  joursParSemaine: number
+  joursPresence: string[]
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
   createdAt: string
   updatedAt: string

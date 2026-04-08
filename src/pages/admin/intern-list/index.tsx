@@ -44,7 +44,7 @@ const InternList = () => {
     name: '', email: '', phone: '', password: '',
     type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
     poste: '', departement: '', dateDebut: '', dateFin: '',
-    tuteur: '', ecole: '', formation: '', notes: '', joursParSemaine: 5,
+    tuteur: '', ecole: '', formation: '', notes: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[],
   })
 
   // ── Rapports ──
@@ -140,7 +140,7 @@ const InternList = () => {
 
   // ── Intern CRUD ──
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', password: '', type: 'STAGIAIRE', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '', joursParSemaine: 5 })
+    setForm({ name: '', email: '', phone: '', password: '', type: 'STAGIAIRE', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] })
     setEditingIntern(null)
     setShowForm(false)
   }
@@ -179,7 +179,7 @@ const InternList = () => {
       ecole: intern.ecole,
       formation: intern.formation,
       notes: intern.notes,
-      joursParSemaine: intern.joursParSemaine ?? 5,
+      joursPresence: intern.joursPresence?.length ? intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
     })
     setShowForm(true)
   }
@@ -199,7 +199,7 @@ const InternList = () => {
           ecole: form.ecole,
           formation: form.formation,
           notes: form.notes,
-          joursParSemaine: form.joursParSemaine,
+          joursPresence: form.joursPresence,
         }),
       })
       resetForm()
@@ -385,7 +385,67 @@ const InternList = () => {
           ) : dashboard.length === 0 ? (
             <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre actif</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, marginTop: 16 }}>
+            <>
+            {/* Tableau récap activité */}
+            <div className="portal-card" style={{ marginTop: 16, marginBottom: 20, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Dernières connexions</span>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {['Stagiaire', 'Poste', 'Jours présence', 'Dernière connexion', 'Dernier rapport'].map((h) => (
+                      <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboard.map((item: any) => {
+                    const { intern: di, stats: ds } = item
+                    const loginAt = (di.userId as any)?.lastLoginAt
+                    const daysSinceLogin = loginAt ? Math.floor((Date.now() - new Date(loginAt).getTime()) / 86400000) : null
+                    const loginColor = daysSinceLogin === null ? 'rgba(255,255,255,0.3)' : daysSinceLogin === 0 ? '#22c55e' : daysSinceLogin <= 1 ? '#0ea5e9' : daysSinceLogin <= 3 ? '#f59e0b' : '#ef4444'
+                    const reportColor = ds.daysSinceLastReport === null ? 'rgba(255,255,255,0.3)' : ds.daysSinceLastReport <= 1 ? '#22c55e' : ds.daysSinceLastReport <= 3 ? '#f59e0b' : '#ef4444'
+                    const jours = (di.joursPresence as string[] | undefined) || []
+                    const joursAbrev: Record<string, string> = { lundi: 'Lu', mardi: 'Ma', mercredi: 'Me', jeudi: 'Je', vendredi: 'Ve', samedi: 'Sa', dimanche: 'Di' }
+                    return (
+                      <tr key={di._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }} onClick={() => navigate(`/admin/stagiaires/${di._id}`)}>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ color: '#fff', fontWeight: 500, fontSize: 13 }}>{(di.userId as any)?.name}</span>
+                          <span style={{ display: 'inline-block', marginLeft: 7, padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 600, background: di.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: di.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
+                            {di.type === 'ALTERNANT' ? 'Alt' : 'St'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}</td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j) => (
+                              <span key={j} style={{ fontSize: 10, fontWeight: 600, padding: '2px 4px', borderRadius: 3, background: jours.includes(j) ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', color: jours.includes(j) ? '#0ea5e9' : 'rgba(255,255,255,0.2)' }}>
+                                {joursAbrev[j]}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: loginColor }}>
+                            {loginAt ? (daysSinceLogin === 0 ? "Aujourd'hui" : daysSinceLogin === 1 ? 'Hier' : `il y a ${daysSinceLogin}j`) : 'Jamais'}
+                          </span>
+                          {loginAt && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{new Date(loginAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
+                        </td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: reportColor }}>
+                            {ds.lastActivity ? (ds.daysSinceLastReport === 0 ? "Aujourd'hui" : ds.daysSinceLastReport === 1 ? 'Hier' : `il y a ${ds.daysSinceLastReport}j`) : 'Aucun rapport'}
+                          </span>
+                          {ds.lastActivity && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{formatDate(ds.lastActivity)}</div>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {/* Cartes détaillées */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
               {dashboard.map((item: any) => {
                 const { intern: di, stats: ds } = item
                 const alertLevel = ds.daysSinceLastReport === null ? 'none' : ds.daysSinceLastReport > 3 ? 'danger' : ds.daysSinceLastReport > 1 ? 'warning' : 'ok'
@@ -466,6 +526,7 @@ const InternList = () => {
                 )
               })}
             </div>
+            </>
           )}
         </>
       )}
@@ -607,8 +668,21 @@ const InternList = () => {
                 <textarea placeholder="Notes internes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
               <div className="ticket-form-field">
-                <label>Jours de presence par semaine</label>
-                <input type="number" min={1} max={7} value={form.joursParSemaine} onChange={(e) => setForm({ ...form, joursParSemaine: Number(e.target.value) })} />
+                <label>Jours de présence</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                  {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
+                    const checked = form.joursPresence.includes(jour)
+                    return (
+                      <label key={jour} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', padding: '4px 10px', borderRadius: 6, background: checked ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${checked ? '#0ea5e9' : 'rgba(255,255,255,0.1)'}`, fontSize: 13, color: checked ? '#0ea5e9' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}>
+                        <input type="checkbox" checked={checked} style={{ display: 'none' }} onChange={() => {
+                          const next = checked ? form.joursPresence.filter((j) => j !== jour) : [...form.joursPresence, jour]
+                          setForm({ ...form, joursPresence: next })
+                        }} />
+                        {jour.charAt(0).toUpperCase() + jour.slice(1)}
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button className="ticket-new-btn" disabled={submitting} onClick={editingIntern ? handleUpdateIntern : handleCreateIntern}>

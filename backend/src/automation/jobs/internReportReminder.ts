@@ -33,9 +33,16 @@ const definition: AutomationDefinition = {
       dateFin: { $gte: ctx.now },
     }).populate('userId', 'name email')
 
+    const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+    const todayName = dayNames[ctx.now.getDay()]
+
     for (const intern of activeInterns) {
       const user = intern.userId as any
       if (!user?.email) continue
+
+      // Ne pas envoyer si aujourd'hui n'est pas un jour de travail de ce stagiaire
+      const joursPresence: string[] = (intern.joursPresence as any) || ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+      if (!joursPresence.includes(todayName)) continue
 
       // Dernier rapport soumis
       const lastReport = await ActivityReport.findOne({ internId: intern._id })

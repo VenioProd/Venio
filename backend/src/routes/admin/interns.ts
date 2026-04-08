@@ -290,7 +290,7 @@ router.get('/stats', requireAdmin, async (_req: Request, res: Response) => {
 router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
   try {
     const interns = await Intern.find({ status: 'ACTIF' })
-      .populate('userId', 'name email phone')
+      .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
       .sort({ dateDebut: -1 })
 
@@ -320,6 +320,7 @@ router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
           intern: {
             _id: intern._id,
             userId: intern.userId,
+            type: intern.type,
             poste: intern.poste,
             departement: intern.departement,
             dateDebut: intern.dateDebut,
@@ -328,6 +329,7 @@ router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
             ecole: intern.ecole,
             formation: intern.formation,
             status: intern.status,
+            joursPresence: intern.joursPresence,
           },
           stats: {
             totalReports,
@@ -505,7 +507,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     const intern = await Intern.findById(req.params.id)
     if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
 
-    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursParSemaine } = req.body
+    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursPresence } = req.body
 
     if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) intern.type = type
     if (poste !== undefined) intern.poste = poste
@@ -517,7 +519,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     if (formation !== undefined) intern.formation = formation
     if (notes !== undefined) intern.notes = notes
     if (status !== undefined) intern.status = status
-    if (joursParSemaine !== undefined) intern.joursParSemaine = Number(joursParSemaine)
+    if (Array.isArray(joursPresence)) intern.joursPresence = joursPresence
 
     await intern.save()
 
