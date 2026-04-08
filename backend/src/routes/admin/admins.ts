@@ -177,7 +177,7 @@ router.patch(
         // Creer la fiche Intern si elle n'existe pas
         const existing = await Intern.findOne({ userId: user._id })
         if (!existing) {
-          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation } = req.body.internInfo || {}
+          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo || {}
           await Intern.create({
             userId: user._id,
             poste: poste || user.role || 'Stagiaire',
@@ -187,11 +187,12 @@ router.patch(
             tuteur: tuteur || null,
             ecole: ecole || '',
             formation: formation || '',
+            joursPresence: Array.isArray(joursPresence) ? joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
             createdBy: req.user!.id,
           })
         } else if (req.body.internInfo) {
           // Mettre a jour la fiche existante
-          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation } = req.body.internInfo
+          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo
           if (poste !== undefined) existing.poste = poste
           if (departement !== undefined) existing.departement = departement
           if (dateDebut !== undefined) existing.dateDebut = new Date(dateDebut)
@@ -199,6 +200,7 @@ router.patch(
           if (tuteur !== undefined) existing.tuteur = tuteur || null
           if (ecole !== undefined) existing.ecole = ecole
           if (formation !== undefined) existing.formation = formation
+          if (Array.isArray(joursPresence)) existing.joursPresence = joursPresence
           if (existing.status === 'TERMINE' || existing.status === 'ANNULE') existing.status = 'ACTIF'
           await existing.save()
         }
