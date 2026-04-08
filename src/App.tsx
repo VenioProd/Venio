@@ -66,6 +66,7 @@ const EmailComposer = lazy(() => import('./pages/admin/EmailComposer'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
+const Resources = lazy(() => import('./pages/admin/Resources'))
 
 function ProjectsRedirect() {
   const { id } = useParams()
@@ -363,6 +364,14 @@ function App() {
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <InternalProjectDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/ressources"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <Resources />
             </ProtectedRoute>
           }
         />
