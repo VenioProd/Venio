@@ -91,6 +91,7 @@ const AdminDashboard = () => {
   const [expandedOverdue, setExpandedOverdue] = useState<string | null>(null)
   const [expandedProject, setExpandedProject] = useState<string | null>(null)
   const [myInternalProjects, setMyInternalProjects] = useState<{ _id: string; name: string; entity: string; status: string; poles: string[] }[]>([])
+  const [myMissions, setMyMissions] = useState<{ _id: string; title: string; description: string; status: string; dueDate: string | null; internalProject: { _id: string; name: string; entity: string } }[]>([])
 
   const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
@@ -148,6 +149,9 @@ const AdminDashboard = () => {
         )
         setMyInternalProjects(mine)
       })
+      .catch(() => {})
+    apiFetch<{ missions: typeof myMissions }>('/api/admin/internal-projects/missions')
+      .then(d => setMyMissions(d.missions || []))
       .catch(() => {})
   }, [isSuperAdmin, user])
 
@@ -547,6 +551,41 @@ const AdminDashboard = () => {
                     )
                   })}
                 </div>
+            </div>
+          )}
+
+          {/* My Missions */}
+          {myMissions.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h2 className="dash-section-title">Mes missions</h2>
+              <div className="dash-task-list">
+                {myMissions.filter(m => m.status !== 'TERMINE').slice(0, 5).map(m => {
+                  const mColors: Record<string, string> = { A_FAIRE: '#fde047', EN_COURS: '#38bdf8', TERMINE: '#6ee7b7' }
+                  const mLabels: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
+                  const isOverdue = m.dueDate && new Date(m.dueDate) < new Date()
+                  return (
+                    <a key={m._id} href="/admin/gestion?view=missions" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}
+                      className="dash-task-item">
+                      <span className="dash-task-priority" style={{ background: mColors[m.status] || '#a5b4cf' }} />
+                      <div className="dash-task-info">
+                        <span className="dash-task-title">{m.title}</span>
+                        <span className="dash-task-project">{m.internalProject?.name} — {m.internalProject?.entity}</span>
+                      </div>
+                      <span className="admin-badge" style={{ color: mColors[m.status], borderColor: 'rgba(255,255,255,0.1)' }}>{mLabels[m.status]}</span>
+                      {m.dueDate && (
+                        <span className={`dash-task-due ${isOverdue ? 'overdue' : ''}`}>
+                          {new Date(m.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        </span>
+                      )}
+                    </a>
+                  )
+                })}
+              </div>
+              <div style={{ marginTop: 8, textAlign: 'right' }}>
+                <a href="/admin/gestion?view=missions" style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
+                  Voir toutes ({myMissions.length}) →
+                </a>
+              </div>
             </div>
           )}
 
