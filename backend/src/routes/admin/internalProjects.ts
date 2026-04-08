@@ -147,6 +147,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
 
+    // Garder trace des membres avant modification pour détecter les nouveaux
+    const previousMemberIds = project.members.map((m) => m.toString())
+
     if (name !== undefined) project.name = name.trim()
     if (description !== undefined) project.description = description
     if (entity !== undefined) project.entity = entity
@@ -163,6 +166,26 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const populated = await InternalProject.findById(project._id)
       .populate('members', 'name email role')
       .populate('createdBy', 'name')
+
+    // Notifier les nouveaux membres ajoutés
+    if (Array.isArray(members)) {
+      const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+      const projectUrl = `${baseUrl}/admin/projets-internes/${project._id}`
+      const newMembersList = (populated?.members || []) as any[]
+      for (const member of newMembersList) {
+        if (!previousMemberIds.includes(member._id.toString()) && member.email) {
+          sendInternalProjectAssignedEmail({
+            to: member.email,
+            memberName: member.name || member.email,
+            projectName: project.name,
+            entity: project.entity,
+            poles: project.poles,
+            description: project.description,
+            projectUrl,
+          }).catch(() => {})
+        }
+      }
+    }
 
     return res.json({ project: populated })
   } catch (err) {
