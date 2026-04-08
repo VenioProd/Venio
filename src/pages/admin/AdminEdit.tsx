@@ -54,7 +54,7 @@ const AdminEdit = () => {
   // Stagiaire
   const [isStagiaire, setIsStagiaire] = useState(false)
   const [internForm, setInternForm] = useState({
-    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[], inclureEquipe: true,
+    type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[], inclureEquipe: true,
   })
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
@@ -89,6 +89,7 @@ const AdminEdit = () => {
                 tuteur: intern.tuteur?._id || '',
                 ecole: intern.ecole || '',
                 formation: intern.formation || '',
+                type: intern.type || 'STAGIAIRE',
                 joursPresence: intern.joursPresence?.length ? intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
                 inclureEquipe: intern.inclureEquipe !== false,
               })
@@ -143,6 +144,7 @@ const AdminEdit = () => {
             tuteur: internForm.tuteur || undefined,
             ecole: internForm.ecole || undefined,
             formation: internForm.formation || undefined,
+            type: internForm.type,
             joursPresence: internForm.joursPresence,
             inclureEquipe: internForm.inclureEquipe,
           }
@@ -307,13 +309,21 @@ const AdminEdit = () => {
           {/* Section Stagiaire */}
           {isSuperAdmin && (
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)', marginBottom: 12 }}>
-                <input type="checkbox" checked={isStagiaire} onChange={(e) => setIsStagiaire(e.target.checked)} />
-                <span style={{ fontWeight: 600 }}>Marquer comme stagiaire</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)' }}>
+                  <input type="checkbox" checked={isStagiaire} onChange={(e) => setIsStagiaire(e.target.checked)} />
+                  <span style={{ fontWeight: 600 }}>Membre de l'équipe (stage / alternance)</span>
+                </label>
                 {isStagiaire && (
-                  <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['STAGIAIRE', 'ALTERNANT'] as const).map((t) => (
+                      <span key={t} onClick={() => setInternForm({ ...internForm, type: t })} style={{ cursor: 'pointer', padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: internForm.type === t ? (t === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)') : 'rgba(255,255,255,0.05)', border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#a855f7' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`, color: internForm.type === t ? (t === 'ALTERNANT' ? '#a855f7' : '#0ea5e9') : 'rgba(255,255,255,0.4)', userSelect: 'none' }}>
+                        {t === 'STAGIAIRE' ? 'Stagiaire' : 'Alternant'}
+                      </span>
+                    ))}
+                  </div>
                 )}
-              </label>
+              </div>
               {isStagiaire && (
                 <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 16, border: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

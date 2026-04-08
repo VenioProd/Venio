@@ -177,9 +177,10 @@ router.patch(
         // Creer la fiche Intern si elle n'existe pas
         const existing = await Intern.findOne({ userId: user._id })
         if (!existing) {
-          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo || {}
+          const { type, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo || {}
           await Intern.create({
             userId: user._id,
+            type: type && ['STAGIAIRE', 'ALTERNANT'].includes(type) ? type : 'STAGIAIRE',
             poste: poste || user.role || 'Stagiaire',
             departement: departement || '',
             dateDebut: dateDebut ? new Date(dateDebut) : new Date(),
@@ -192,7 +193,8 @@ router.patch(
           })
         } else if (req.body.internInfo) {
           // Mettre a jour la fiche existante
-          const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo
+          const { type, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, joursPresence } = req.body.internInfo
+          if (type && ['STAGIAIRE', 'ALTERNANT'].includes(type)) existing.type = type
           if (poste !== undefined) existing.poste = poste
           if (departement !== undefined) existing.departement = departement
           if (dateDebut !== undefined) existing.dateDebut = new Date(dateDebut)
