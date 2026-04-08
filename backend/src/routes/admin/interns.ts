@@ -900,18 +900,33 @@ router.patch('/settings/report-notifs', requireAdmin, async (req: Request, res: 
   }
 })
 
-// POST /api/admin/interns/send-reminders — déclencher manuellement les rappels
+// POST /api/admin/interns/send-reminders — déclencher manuellement les rappels (bypass idempotency)
 router.post('/send-reminders', requireAdmin, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
-    const { runAutomation, buildContext } = await import('../../automation/engine.js')
+    const { buildContext } = await import('../../automation/engine.js')
     const { getAutomation } = await import('../../automation/registry.js')
+    const { createExecutionLog } = await import('../../automation/models/AutomationLog.js')
     const definition = getAutomation('intern.report_reminder')
     if (!definition) return res.status(404).json({ error: 'Automation introuvable' })
-    const ctx = buildContext()
-    const result = await runAutomation(definition, ctx)
-    res.json({ success: true, actionsExecuted: result.result?.actionsExecuted ?? [], recipientsNotified: result.result?.recipientsNotified ?? [] })
+    // Use a unique key with timestamp to bypass the daily idempotency lock
+    const ctx = { ...buildContext(), dateKey: `manual:${Date.now()}` }
+    const startedAt = new Date()
+    const result = await definition.execute(ctx)
+    await createExecutionLog({
+      automationKey: definition.key,
+      executionType: 'cron',
+      triggerSource: 'manual_trigger',
+      idempotencyKey: ctx.dateKey,
+      status: 'SUCCESS',
+      startedAt,
+      finishedAt: new Date(),
+      durationMs: Date.now() - startedAt.getTime(),
+      actionsExecuted: result.actionsExecuted,
+      recipientsNotified: result.recipientsNotified,
+    })
+    res.json({ success: true, actionsExecuted: result.actionsExecuted, recipientsNotified: result.recipientsNotified })
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' })
   }

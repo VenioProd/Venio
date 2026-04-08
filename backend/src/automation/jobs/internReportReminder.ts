@@ -27,11 +27,15 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     // Stagiaires/alternants actifs dont le stage est en cours
+    // End of today (23:59:59) to avoid filtering interns whose dateFin is today at 00:00
+    const endOfToday = new Date(ctx.now)
+    endOfToday.setHours(23, 59, 59, 999)
+
     const activeInterns = await Intern.find({
       status: 'ACTIF',
       inclureEquipe: { $ne: false },
       dateDebut: { $lte: ctx.now },
-      dateFin: { $gte: ctx.now },
+      dateFin: { $gte: endOfToday },
     }).populate('userId', 'name email')
 
     const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
