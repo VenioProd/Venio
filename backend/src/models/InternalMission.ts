@@ -9,6 +9,7 @@ export interface IInternalMission {
   progress: number
   dueDate: Date | null
   steps: { title: string; done: boolean; waitingReview: boolean; assignedTo?: mongoose.Types.ObjectId; _id?: any }[]
+  deliverables: { title: string; description: string; done: boolean; assignedTo?: mongoose.Types.ObjectId; _id?: any }[]
   files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedBy: mongoose.Types.ObjectId; _id?: any }[]
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
@@ -28,6 +29,12 @@ const schema = new mongoose.Schema<IInternalMission>(
       title: { type: String, required: true },
       done: { type: Boolean, default: false },
       waitingReview: { type: Boolean, default: false },
+      assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    }],
+    deliverables: [{
+      title: { type: String, required: true },
+      description: { type: String, default: '' },
+      done: { type: Boolean, default: false },
       assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     }],
     files: [{

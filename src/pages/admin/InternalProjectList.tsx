@@ -37,6 +37,7 @@ interface Mission {
   assignedTo: { _id: string; name: string; email: string }[]
   internalProject: { _id: string; name: string; entity: string }
   steps: { _id: string; title: string; done: boolean; waitingReview: boolean; assignedTo?: string }[]
+  deliverables: { _id: string; title: string; description: string; done: boolean; assignedTo?: string }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
   createdAt: string
 }
@@ -94,6 +95,8 @@ export default function InternalProjectList() {
   const [selectedMission, setSelectedMission] = useState<string | null>(null)
   const [missionStepInputs, setMissionStepInputs] = useState<Record<string, string>>({})
   const [stepAssigneeInputs, setStepAssigneeInputs] = useState<Record<string, string>>({})
+  const [deliverableInputs, setDeliverableInputs] = useState<Record<string, { title: string; description: string; assignedTo: string }>>({})
+
   const [uploadingMission, setUploadingMission] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [showMissionForm, setShowMissionForm] = useState(false)
@@ -276,6 +279,41 @@ export default function InternalProjectList() {
       })
       const blob = await res.blob()
       window.open(URL.createObjectURL(blob), '_blank')
+    } catch { /* silent */ }
+  }
+
+  const handleDeliverableAdd = async (missionId: string, projectId: string, mission: Mission) => {
+    const input = deliverableInputs[missionId]
+    if (!input?.title?.trim()) return
+    const newDeliverable: any = { title: input.title.trim(), description: input.description || '', done: false }
+    if (input.assignedTo) newDeliverable.assignedTo = input.assignedTo
+    const newDeliverables = [...(mission.deliverables || []), newDeliverable]
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH', body: JSON.stringify({ deliverables: newDeliverables }),
+      })
+      setMissions(ms => ms.map(x => x._id === missionId ? data.mission : x))
+      setDeliverableInputs(s => ({ ...s, [missionId]: { title: '', description: '', assignedTo: '' } }))
+    } catch { /* silent */ }
+  }
+
+  const handleDeliverableToggle = async (missionId: string, projectId: string, mission: Mission, delivId: string) => {
+    const newDeliverables = (mission.deliverables || []).map(d => d._id === delivId ? { ...d, done: !d.done } : d)
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH', body: JSON.stringify({ deliverables: newDeliverables }),
+      })
+      setMissions(ms => ms.map(x => x._id === missionId ? data.mission : x))
+    } catch { /* silent */ }
+  }
+
+  const handleDeliverableDelete = async (missionId: string, projectId: string, mission: Mission, delivId: string) => {
+    const newDeliverables = (mission.deliverables || []).filter(d => d._id !== delivId)
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH', body: JSON.stringify({ deliverables: newDeliverables }),
+      })
+      setMissions(ms => ms.map(x => x._id === missionId ? data.mission : x))
     } catch { /* silent */ }
   }
 
@@ -999,6 +1037,83 @@ export default function InternalProjectList() {
                       <button type="button" onClick={() => { if (missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
                         style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 15, cursor: 'pointer' }}>+</button>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Livrables attendus */}
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Livrables attendus
+                  {(m.deliverables || []).length > 0 && (
+                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd' }}>
+                      {(m.deliverables || []).filter(d => d.done).length}/{(m.deliverables || []).length}
+                    </span>
+                  )}
+                </div>
+                {(m.deliverables || []).length === 0
+                  ? <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', marginBottom: 10 }}>Aucun livrable défini</p>
+                  : <div style={{ marginBottom: 10 }}>
+                      {(m.deliverables || []).map(d => {
+                        const delivAssignee = d.assignedTo ? (m.assignedTo || []).find(a => a._id === d.assignedTo) : null
+                        return (
+                          <div key={d._id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8, padding: '10px 12px', borderRadius: 8, background: d.done ? 'rgba(139,92,246,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${d.done ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.06)'}` }}>
+                            <input type="checkbox" checked={d.done}
+                              onChange={() => handleDeliverableToggle(m._id, m.internalProject?._id, m, d._id)}
+                              style={{ cursor: 'pointer', width: 15, height: 15, accentColor: '#8b5cf6', flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {delivAssignee && (
+                                  <div title={delivAssignee.name} style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#c4b5fd', flexShrink: 0 }}>
+                                    {delivAssignee.name[0]?.toUpperCase()}
+                                  </div>
+                                )}
+                                <span style={{ fontSize: 13, color: d.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: d.done ? 'line-through' : 'none', fontWeight: 500 }}>{d.title}</span>
+                              </div>
+                              {d.description && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0', lineHeight: 1.4 }}>{d.description}</p>}
+                            </div>
+                            {isSuperAdmin && (
+                              <button type="button" onClick={() => handleDeliverableDelete(m._id, m.internalProject?._id, m, d._id)}
+                                style={{ fontSize: 11, padding: '2px 6px', borderRadius: 5, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.05)', color: '#f87171', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                }
+                {isSuperAdmin && (
+                  <div style={{ marginTop: 6 }}>
+                    {(m.assignedTo || []).length > 1 && (
+                      <div style={{ display: 'flex', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', alignSelf: 'center' }}>Pour :</span>
+                        <button type="button"
+                          onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: '' } }))}
+                          style={{ padding: '3px 8px', borderRadius: 12, border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`, background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.1)' : 'transparent', color: !deliverableInputs[m._id]?.assignedTo ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                          Tous
+                        </button>
+                        {(m.assignedTo || []).map(a => (
+                          <button key={a._id} type="button"
+                            onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: s[m._id]?.assignedTo === a._id ? '' : a._id } }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 12, border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`, background: deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.1)' : 'transparent', color: deliverableInputs[m._id]?.assignedTo === a._id ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
+                            {a.name.split(' ')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input className="portal-input"
+                        value={deliverableInputs[m._id]?.title || ''}
+                        onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { description: '', assignedTo: '' }), title: e.target.value } }))}
+                        onKeyDown={e => { if (e.key === 'Enter') handleDeliverableAdd(m._id, m.internalProject?._id, m) }}
+                        placeholder="Livrable attendu… (Entrée)" style={{ fontSize: 13, padding: '6px 10px', flex: 1 }} />
+                      <button type="button" onClick={() => handleDeliverableAdd(m._id, m.internalProject?._id, m)}
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.08)', color: '#c4b5fd', fontSize: 15, cursor: 'pointer' }}>+</button>
+                    </div>
+                    <input className="portal-input"
+                      value={deliverableInputs[m._id]?.description || ''}
+                      onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', assignedTo: '' }), description: e.target.value } }))}
+                      placeholder="Description (optionnel)" style={{ fontSize: 12, padding: '5px 10px', width: '100%', marginTop: 5 }} />
                   </div>
                 )}
               </div>

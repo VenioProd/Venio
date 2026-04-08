@@ -326,12 +326,13 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
     const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
-    const { title, description, assignedTo, status, dueDate, steps, progress } = req.body
+    const { title, description, assignedTo, status, dueDate, steps, progress, deliverables } = req.body
     if (isAdmin) {
       if (title !== undefined) mission.title = title.trim()
       if (description !== undefined) mission.description = description
       if (assignedTo !== undefined) mission.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
       if (dueDate !== undefined) mission.dueDate = dueDate ? new Date(dueDate) : null
+      if (deliverables !== undefined) mission.deliverables = deliverables
     }
     if (status !== undefined) mission.status = status
     if (steps !== undefined) mission.steps = steps
