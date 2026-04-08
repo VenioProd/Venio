@@ -13,6 +13,7 @@ import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextclo
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
 import { getInternSettings } from '../../models/InternSettings.js'
 import { getRecentLogs } from '../../automation/models/AutomationLog.js'
+import { countWorkingDaysSince } from '../../lib/workingDays.js'
 
 const router = express.Router()
 
@@ -197,8 +198,11 @@ router.get('/kpis', requireAdmin, async (req: Request, res: Response) => {
         // Derniere activite
         const lastReport = allReports[0] || null
         const lastActivity = lastReport?.date || null
+        const joursP = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+          ? intern.joursPresence as string[]
+          : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
         const daysSinceLastReport = lastActivity
-          ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+          ? countWorkingDaysSince(new Date(lastActivity), now, joursP)
           : null
 
         // Progression du stage

@@ -4,6 +4,7 @@ import type { AutomationDefinition, AutomationContext, AutomationResult } from '
 import Intern from '../../models/Intern.js'
 import ActivityReport from '../../models/ActivityReport.js'
 import { sendInternReportReminderEmail } from '../../lib/email/templates/report.js'
+import { countWorkingDaysSince } from '../../lib/workingDays.js'
 
 const definition: AutomationDefinition = {
   key: 'intern.report_reminder',
@@ -56,19 +57,20 @@ const definition: AutomationDefinition = {
         .lean()
 
       const lastDate = lastReport ? new Date(lastReport.date) : null
-      const daysSince = lastDate
-        ? Math.floor((ctx.now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+      // Compter les jours travaillés depuis le dernier rapport (pas les jours calendaires)
+      const workingDaysSince = lastDate
+        ? countWorkingDaysSince(lastDate, ctx.now, joursPresence)
         : null
 
-      // Envoyer si pas de rapport du tout, ou dernier rapport >= 3 jours
-      if (daysSince === null || daysSince >= 3) {
+      // Envoyer si pas de rapport du tout, ou >= 3 jours travaillés sans rapport
+      if (workingDaysSince === null || workingDaysSince >= 3) {
         const loginUrl = `${process.env.APP_URL || 'https://venio.paris'}/espace-client/login`
         const result = await sendInternReportReminderEmail({
           to: user.email,
           internName: user.name,
           internType: intern.type,
           poste: intern.poste,
-          daysSinceLastReport: daysSince ?? 0,
+          daysSinceLastReport: workingDaysSince ?? 0,
           loginUrl,
         })
         if (result.sent) {
