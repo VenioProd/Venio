@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import { fetchAllTasks } from '../../services/gestion'
@@ -42,7 +42,9 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
 export default function GestionBoard() {
   const { user } = useAuth()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [searchParams] = useSearchParams()
+  const initialView = (searchParams.get('view') as ViewMode) || 'table'
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView)
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')

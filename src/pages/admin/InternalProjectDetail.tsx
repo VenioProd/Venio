@@ -367,7 +367,7 @@ export default function InternalProjectDetail() {
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aucune mission pour l'instant.</p>
         ) : (
           <div>
-            {missions.map(m => {
+            {missions.map((m) => {
               const sc = MISSION_STATUS_COLORS[m.status] || MISSION_STATUS_COLORS.A_FAIRE
               return (
                 <div key={m._id} style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', marginBottom: 8 }}>
@@ -380,7 +380,10 @@ export default function InternalProjectDetail() {
                         {isSuperAdmin && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>}
                         {m.dueDate && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>· {new Date(m.dueDate).toLocaleDateString('fr-FR')}</span>}
                       </div>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{m.title}</div>
+                      <Link to="/admin/gestion?view=missions" style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', textDecoration: 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#0ea5e9')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      >{m.title}</Link>
                       {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>{m.description}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -401,6 +404,11 @@ export default function InternalProjectDetail() {
                 </div>
               )
             })}
+            <div style={{ marginTop: 10, textAlign: 'right' }}>
+              <Link to="/admin/gestion?view=missions" style={{ fontSize: 12, color: '#0ea5e9', textDecoration: 'none' }}>
+                Voir toutes les missions dans Gestion →
+              </Link>
+            </div>
           </div>
         )}
       </div>
