@@ -29,6 +29,7 @@ interface InternFull {
   ecole: string
   formation: string
   notes: string
+  joursPresence: string[]
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
   nextcloudUsername?: string
   nextcloudPassword?: string
@@ -79,7 +80,7 @@ const InternDetail = () => {
   const [form, setForm] = useState({
     type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
     poste: '', departement: '', dateDebut: '', dateFin: '',
-    tuteur: '', ecole: '', formation: '', notes: '', status: '' as string,
+    tuteur: '', ecole: '', formation: '', notes: '', status: '' as string, joursPresence: [] as string[],
   })
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
@@ -97,6 +98,7 @@ const InternDetail = () => {
         ecole: res.intern.ecole,
         formation: res.intern.formation,
         notes: res.intern.notes,
+        joursPresence: res.intern.joursPresence?.length ? res.intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
         status: res.intern.status,
       })
     } catch {
@@ -130,6 +132,7 @@ const InternDetail = () => {
           ecole: form.ecole,
           formation: form.formation,
           notes: form.notes,
+          joursPresence: form.joursPresence,
           status: form.status,
         }),
       })
@@ -325,6 +328,7 @@ const InternDetail = () => {
               <InfoField label="Tuteur" value={intern.tuteur?.name || '—'} />
               <InfoField label="Ecole" value={intern.ecole || '—'} />
               <InfoField label="Formation" value={intern.formation || '—'} />
+              <InfoField label="Jours de présence" value={intern.joursPresence?.length ? intern.joursPresence.map((j) => j.charAt(0).toUpperCase() + j.slice(1)).join(', ') : '—'} />
               <InfoField label="Statut" value={statusCfg.label} color={statusCfg.color} />
               <InfoField label="Cree par" value={intern.createdBy?.name || '—'} />
               <InfoField label="Jours restants" value={stats.daysRemaining > 0 ? `${stats.daysRemaining} jours` : 'Termine'} color={stats.daysRemaining <= 7 ? '#ef4444' : stats.daysRemaining <= 30 ? '#f59e0b' : undefined} />
@@ -388,6 +392,22 @@ const InternDetail = () => {
               <div className="ticket-form-field">
                 <label>Notes internes</label>
                 <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <div className="ticket-form-field">
+                <label>Jours de présence</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                  {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
+                    const checked = form.joursPresence.includes(jour)
+                    return (
+                      <label key={jour} onClick={() => {
+                        const next = checked ? form.joursPresence.filter((j) => j !== jour) : [...form.joursPresence, jour]
+                        setForm({ ...form, joursPresence: next })
+                      }} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '5px 12px', borderRadius: 6, background: checked ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${checked ? '#0ea5e9' : 'rgba(255,255,255,0.1)'}`, fontSize: 13, color: checked ? '#0ea5e9' : 'rgba(255,255,255,0.5)', transition: 'all 0.15s', userSelect: 'none' }}>
+                        {jour.charAt(0).toUpperCase() + jour.slice(1)}
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}
