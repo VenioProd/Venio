@@ -265,10 +265,10 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
   } catch (err) { return next(err) }
 })
 
-// POST /:projectId/missions (SUPER_ADMIN uniquement)
+// POST /:projectId/missions (SUPER_ADMIN + ADMIN)
 router.post('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut créer des missions' })
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)) return res.status(403).json({ error: 'Accès refusé' })
 
     const project = await InternalProject.findById(req.params.projectId)
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })

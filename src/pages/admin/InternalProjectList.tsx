@@ -95,6 +95,9 @@ export default function InternalProjectList() {
   const [missionStepInputs, setMissionStepInputs] = useState<Record<string, string>>({})
   const [uploadingMission, setUploadingMission] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [showMissionForm, setShowMissionForm] = useState(false)
+  const [missionForm, setMissionForm] = useState({ projectId: '', title: '', description: '', assignedTo: '', dueDate: '' })
+  const [savingMission, setSavingMission] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -182,6 +185,33 @@ export default function InternalProjectList() {
       .catch(() => {})
       .finally(() => setMissionsLoading(false))
   }, [viewTab])
+
+  const handleCreateMission = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!missionForm.projectId) { showToast('Sélectionne un projet', 'error'); return }
+    if (!missionForm.title.trim()) { showToast('Le titre est requis', 'error'); return }
+    if (!missionForm.assignedTo) { showToast('Assigne la mission à quelqu\'un', 'error'); return }
+    setSavingMission(true)
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${missionForm.projectId}/missions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: missionForm.title.trim(),
+          description: missionForm.description,
+          assignedTo: missionForm.assignedTo,
+          dueDate: missionForm.dueDate || null,
+        }),
+      })
+      setMissions(ms => [data.mission, ...ms])
+      setShowMissionForm(false)
+      setMissionForm({ projectId: '', title: '', description: '', assignedTo: '', dueDate: '' })
+      showToast('Mission créée', 'success')
+    } catch (err: any) {
+      showToast(err.message || 'Erreur', 'error')
+    } finally {
+      setSavingMission(false)
+    }
+  }
 
   const handleMissionStatusUpdate = async (missionId: string, projectId: string, status: string) => {
     try {
@@ -324,6 +354,16 @@ export default function InternalProjectList() {
             </svg>
             Missions internes
           </button>
+
+          {viewTab === 'missions' && (
+            <button
+              onClick={() => setShowMissionForm(true)}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', transition: 'all .15s' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Créer une mission
+            </button>
+          )}
         </div>
 
         {/* Filters — only on projects tab */}
@@ -462,6 +502,45 @@ export default function InternalProjectList() {
       {/* ─── MISSIONS TAB ─── */}
       {viewTab === 'missions' && (
         <div style={{ marginTop: 20 }}>
+
+          {/* Récap par assigné — super admin only */}
+          {isSuperAdmin && missions.length > 0 && (() => {
+            const byAssignee = new Map<string, { name: string; total: number; done: number; avgProgress: number; missions: Mission[] }>()
+            missions.forEach(m => {
+              const id = m.assignedTo?._id
+              if (!id) return
+              if (!byAssignee.has(id)) byAssignee.set(id, { name: m.assignedTo.name, total: 0, done: 0, avgProgress: 0, missions: [] })
+              const entry = byAssignee.get(id)!
+              entry.total++
+              if (m.status === 'TERMINE') entry.done++
+              entry.missions.push(m)
+            })
+            byAssignee.forEach(entry => {
+              entry.avgProgress = Math.round(entry.missions.reduce((sum, m) => sum + (m.progress ?? 0), 0) / entry.missions.length)
+            })
+            return (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                {Array.from(byAssignee.entries()).map(([id, entry]) => (
+                  <div key={id} style={{ flex: '1 1 160px', minWidth: 160, padding: '14px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(165,180,207,0.12)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
+                        {entry.name[0]?.toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{entry.done}/{entry.total} terminées</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: entry.avgProgress === 100 ? '#6ee7b7' : '#38bdf8' }}>{entry.avgProgress}%</span>
+                    </div>
+                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
+                      <div style={{ height: '100%', borderRadius: 2, background: entry.avgProgress === 100 ? '#10b981' : '#38bdf8', width: `${entry.avgProgress}%`, transition: 'width .3s' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
           {missionsLoading ? (
             <div className="portal-card"><p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p></div>
           ) : missions.length === 0 ? (
@@ -691,6 +770,54 @@ export default function InternalProjectList() {
           </div>
         )}
       </div>}
+
+      {/* ─── MODAL CRÉATION MISSION ─── */}
+      {showMissionForm && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1001, backdropFilter: 'blur(3px)' }}
+            onClick={() => setShowMissionForm(false)} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 480, maxWidth: '90vw', background: '#141824', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)', zIndex: 1002, padding: '28px 28px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Créer une mission</h3>
+              <button onClick={() => setShowMissionForm(false)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+            <form onSubmit={handleCreateMission} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label className="portal-label">Projet *</label>
+                <select className="portal-input" value={missionForm.projectId} onChange={e => setMissionForm(f => ({ ...f, projectId: e.target.value }))} required style={{ width: '100%' }}>
+                  <option value="">— Choisir un projet —</option>
+                  {projects.map(p => <option key={p._id} value={p._id}>{p.entity} · {p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="portal-label">Titre *</label>
+                <input className="portal-input" value={missionForm.title} onChange={e => setMissionForm(f => ({ ...f, title: e.target.value }))} placeholder="Titre de la mission" required style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label className="portal-label">Description</label>
+                <textarea className="portal-input" value={missionForm.description} onChange={e => setMissionForm(f => ({ ...f, description: e.target.value }))} placeholder="Détails, contexte…" rows={3} style={{ width: '100%', resize: 'vertical' }} />
+              </div>
+              <div>
+                <label className="portal-label">Assigner à *</label>
+                <select className="portal-input" value={missionForm.assignedTo} onChange={e => setMissionForm(f => ({ ...f, assignedTo: e.target.value }))} required style={{ width: '100%' }}>
+                  <option value="">— Choisir un membre —</option>
+                  {admins.map(a => <option key={a._id} value={a._id}>{a.name} ({a.role})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="portal-label">Deadline (optionnel)</label>
+                <input type="date" className="portal-input" value={missionForm.dueDate} onChange={e => setMissionForm(f => ({ ...f, dueDate: e.target.value }))} style={{ width: '100%' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                <button className="portal-button" type="submit" disabled={savingMission} style={{ flex: 1 }}>
+                  {savingMission ? 'Création...' : 'Créer la mission'}
+                </button>
+                <button className="portal-button secondary" type="button" onClick={() => setShowMissionForm(false)}>Annuler</button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
 
       {/* ─── MISSION DETAIL DRAWER ─── */}
       {selectedMission && (() => {
