@@ -90,6 +90,7 @@ const AdminDashboard = () => {
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
   const [expandedOverdue, setExpandedOverdue] = useState<string | null>(null)
   const [expandedProject, setExpandedProject] = useState<string | null>(null)
+  const [myInternalProjects, setMyInternalProjects] = useState<{ _id: string; name: string; entity: string; status: string; poles: string[] }[]>([])
 
   const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
@@ -138,7 +139,17 @@ const AdminDashboard = () => {
       }
     }
     load()
-  }, [isSuperAdmin])
+    // Load internal projects assigned to current user (fire-and-forget, doesn't block dashboard)
+    apiFetch<{ projects: { _id: string; name: string; entity: string; status: string; poles: string[]; members: { _id: string }[] }[] }>('/api/admin/internal-projects')
+      .then(d => {
+        const userId = (user as any)?._id || (user as any)?.id || ''
+        const mine = (d.projects || []).filter(p =>
+          p.members?.some(m => m._id === userId || m === userId)
+        )
+        setMyInternalProjects(mine)
+      })
+      .catch(() => {})
+  }, [isSuperAdmin, user])
 
   const projectStats = useMemo(() => {
     const active = allProjects.filter((p) => !p.isArchived)
@@ -536,6 +547,37 @@ const AdminDashboard = () => {
                     )
                   })}
                 </div>
+            </div>
+          )}
+
+          {/* My Internal Projects */}
+          {myInternalProjects.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h2 className="dash-section-title">Mes projets internes</h2>
+              <div className="dash-task-list">
+                {myInternalProjects.slice(0, 5).map(p => (
+                  <Link
+                    key={p._id}
+                    to={`/admin/projets-internes/${p._id}`}
+                    className="dash-task-item"
+                    style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}
+                  >
+                    <span className="dash-task-priority" style={{ background: p.status === 'EN_COURS' ? '#10b981' : p.status === 'EN_ATTENTE' ? '#eab308' : '#64748b' }} />
+                    <div className="dash-task-info">
+                      <span className="dash-task-title">{p.name}</span>
+                      <span className="dash-task-project">{p.entity}{p.poles.length > 0 ? ` — ${p.poles.join(', ')}` : ''}</span>
+                    </div>
+                    <span className="admin-badge">{p.status === 'EN_COURS' ? 'En cours' : p.status === 'EN_ATTENTE' ? 'En attente' : p.status === 'TERMINE' ? 'Terminé' : 'Archivé'}</span>
+                  </Link>
+                ))}
+              </div>
+              {myInternalProjects.length > 5 && (
+                <div style={{ marginTop: 8, textAlign: 'right' }}>
+                  <Link to="/admin/projets-internes" style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
+                    Voir tous ({myInternalProjects.length}) →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

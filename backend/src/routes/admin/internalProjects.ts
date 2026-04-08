@@ -19,7 +19,8 @@ async function canAccess(userId: string, userRole: string, project: any): Promis
     // Intern: check if their role pole matches OR directly assigned
     const user = await User.findById(userId).select('tags')
     if (!user?.tags?.includes('STAGIAIRE')) return true // Regular admin
-    const memberIds = project.members.map((m: any) => m.toString())
+    // members may be populated objects or ObjectIds — extract the string id safely
+    const memberIds = project.members.map((m: any) => (m._id ?? m).toString())
     if (memberIds.includes(userId)) return true
     // Check pole match
     if (intern.departement && project.poles.includes(intern.departement)) return true
