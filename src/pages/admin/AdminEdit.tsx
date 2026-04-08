@@ -54,7 +54,7 @@ const AdminEdit = () => {
   // Stagiaire
   const [isStagiaire, setIsStagiaire] = useState(false)
   const [internForm, setInternForm] = useState({
-    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '',
+    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[],
   })
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
@@ -89,6 +89,7 @@ const AdminEdit = () => {
                 tuteur: intern.tuteur?._id || '',
                 ecole: intern.ecole || '',
                 formation: intern.formation || '',
+                joursPresence: intern.joursPresence?.length ? intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
               })
             }
           } catch { /* silent */ }
@@ -141,6 +142,7 @@ const AdminEdit = () => {
             tuteur: internForm.tuteur || undefined,
             ecole: internForm.ecole || undefined,
             formation: internForm.formation || undefined,
+            joursPresence: internForm.joursPresence,
           }
         }
       }
@@ -343,6 +345,22 @@ const AdminEdit = () => {
                     <div style={{ gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Formation</label>
                       <input className="portal-input" placeholder="Formation" value={internForm.formation} onChange={(e) => setInternForm({ ...internForm, formation: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>Jours de présence</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
+                          const checked = internForm.joursPresence.includes(jour)
+                          return (
+                            <span key={jour} onClick={() => {
+                              const next = checked ? internForm.joursPresence.filter((j) => j !== jour) : [...internForm.joursPresence, jour]
+                              setInternForm({ ...internForm, joursPresence: next })
+                            }} style={{ cursor: 'pointer', padding: '5px 12px', borderRadius: 6, background: checked ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${checked ? '#0ea5e9' : 'rgba(255,255,255,0.1)'}`, fontSize: 13, color: checked ? '#0ea5e9' : 'rgba(255,255,255,0.5)', userSelect: 'none', transition: 'all 0.15s' }}>
+                              {jour.charAt(0).toUpperCase() + jour.slice(1)}
+                            </span>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
