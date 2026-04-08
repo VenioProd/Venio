@@ -411,3 +411,70 @@ export async function sendInternalMissionAssignedEmail({
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+/**
+ * Notifie le SUPER_ADMIN qu'une étape attend sa vérification.
+ */
+export async function sendStepReviewRequestEmail({
+  to,
+  adminName,
+  memberName,
+  missionTitle,
+  stepTitle,
+  projectName,
+  projectUrl,
+}: {
+  to: string
+  adminName: string
+  memberName: string
+  missionTitle: string
+  stepTitle: string
+  projectName: string
+  projectUrl: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'notifications@venio.paris'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[${appName}] Vérification demandée : ${stepTitle}`,
+      text: [
+        `Bonjour ${adminName},`,
+        '',
+        `${memberName} a terminé une étape et demande votre vérification :`,
+        '',
+        `Mission : ${missionTitle}`,
+        `Étape : ${stepTitle}`,
+        `Projet : ${projectName}`,
+        '',
+        `Voir le projet : ${projectUrl}`,
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+          <div style="margin-bottom:20px">
+            <span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);color:#fde047;letter-spacing:.5px">VÉRIFICATION DEMANDÉE</span>
+          </div>
+          <p style="margin:0 0 8px">Bonjour <strong>${escapeHtml(adminName)}</strong>,</p>
+          <p style="margin:0 0 16px;color:rgba(255,255,255,0.7)"><strong style="color:#fff">${escapeHtml(memberName)}</strong> a terminé une étape et demande votre vérification :</p>
+          <div style="margin:0 0 20px;padding:16px 20px;background:rgba(255,255,255,0.04);border-left:3px solid #eab308;border-radius:6px">
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:4px">Mission</div>
+            <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:12px">${escapeHtml(missionTitle)}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:4px">Étape à vérifier</div>
+            <div style="font-size:14px;font-weight:600;color:#fde047">${escapeHtml(stepTitle)}</div>
+            <div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.4)">Projet : ${escapeHtml(projectName)}</div>
+          </div>
+          <a href="${escapeHtml(projectUrl)}" style="display:inline-block;padding:12px 24px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px">Voir et valider →</a>
+          <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3)">— L'équipe ${escapeHtml(appName)}</p>
+        </div>`,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}

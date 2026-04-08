@@ -1,15 +1,32 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.js'
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
-import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail } from '../../lib/email/templates/project.js'
+import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sendStepReviewRequestEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
+
+// Upload dir for mission files
+const missionUploadsDir = path.resolve('uploads/mission-files')
+if (!fs.existsSync(missionUploadsDir)) fs.mkdirSync(missionUploadsDir, { recursive: true })
+
+const missionStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, missionUploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const ext = path.extname(file.originalname)
+    cb(null, `${unique}${ext}`)
+  },
+})
+const missionUpload = multer({ storage: missionStorage, limits: { fileSize: 50 * 1024 * 1024 } }) // 50MB
 
 // Resolve whether the current user can see a project (admin always yes, intern only if member by pole or direct)
 async function canAccess(userId: string, userRole: string, project: any): Promise<boolean> {
@@ -335,6 +352,166 @@ router.delete('/:projectId/missions/:missionId', async (req: Request, res: Respo
     })
     if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
     return res.json({ success: true })
+  } catch (err) { return next(err) }
+})
+
+// ── MISSION FILES ─────────────────────────────────────────────────────────────
+
+// POST /:projectId/missions/:missionId/files — upload a file
+router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
+
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) {
+      fs.unlinkSync(req.file.path)
+      return res.status(404).json({ error: 'Mission introuvable' })
+    }
+
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    if (!isAdmin && !isAssigned) {
+      fs.unlinkSync(req.file.path)
+      return res.status(403).json({ error: 'Accès refusé' })
+    }
+
+    mission.files.push({
+      originalName: req.file.originalname,
+      storagePath: req.file.path,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      uploadedBy: req.user!.id as any,
+    })
+    await mission.save()
+    return res.status(201).json({ files: mission.files })
+  } catch (err) { return next(err) }
+})
+
+// GET /:projectId/missions/:missionId/files/:fileId — download/view a file
+router.get('/:projectId/missions/:missionId/files/:fileId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const file = mission.files.find(f => f._id?.toString() === req.params.fileId)
+    if (!file) return res.status(404).json({ error: 'Fichier introuvable' })
+
+    const filePath = path.resolve(file.storagePath)
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
+
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`)
+    res.setHeader('Content-Type', file.mimeType)
+    return res.sendFile(filePath)
+  } catch (err) { return next(err) }
+})
+
+// DELETE /:projectId/missions/:missionId/files/:fileId
+router.delete('/:projectId/missions/:missionId/files/:fileId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
+
+    const fileIdx = mission.files.findIndex(f => f._id?.toString() === req.params.fileId)
+    if (fileIdx === -1) return res.status(404).json({ error: 'Fichier introuvable' })
+
+    const file = mission.files[fileIdx]
+    if (fs.existsSync(file.storagePath)) fs.unlinkSync(file.storagePath)
+    mission.files.splice(fileIdx, 1)
+    await mission.save()
+    return res.json({ success: true })
+  } catch (err) { return next(err) }
+})
+
+// ── STEP REVIEW ───────────────────────────────────────────────────────────────
+
+// POST /:projectId/missions/:missionId/request-review — member requests step verification
+router.post('/:projectId/missions/:missionId/request-review', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { stepId } = req.body
+    if (!stepId) return res.status(400).json({ error: 'stepId requis' })
+
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+    if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+
+    const step = mission.steps.find(s => s._id?.toString() === stepId)
+    if (!step) return res.status(404).json({ error: 'Étape introuvable' })
+
+    step.waitingReview = true
+    await mission.save()
+
+    // Notify all SUPER_ADMINs
+    const project = await InternalProject.findById(req.params.projectId)
+    const requester = await User.findById(req.user!.id).select('name')
+    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('name email')
+    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+    const projectUrl = `${baseUrl}/admin/projets-internes/${req.params.projectId}`
+
+    for (const admin of superAdmins) {
+      if (admin.email) {
+        sendStepReviewRequestEmail({
+          to: admin.email,
+          adminName: admin.name || admin.email,
+          memberName: requester?.name || req.user!.id,
+          missionTitle: mission.title,
+          stepTitle: step.title,
+          projectName: project?.name || '—',
+          projectUrl,
+        }).catch(() => {})
+      }
+    }
+
+    const populated = await InternalMission.findById(mission._id)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+    return res.json({ mission: populated })
+  } catch (err) { return next(err) }
+})
+
+// POST /:projectId/missions/:missionId/validate-step — SUPER_ADMIN validates a step
+router.post('/:projectId/missions/:missionId/validate-step', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut valider une étape' })
+
+    const { stepId } = req.body
+    if (!stepId) return res.status(400).json({ error: 'stepId requis' })
+
+    const mission = await InternalMission.findOne({
+      _id: req.params.missionId,
+      internalProject: req.params.projectId,
+    })
+    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+
+    const step = mission.steps.find(s => s._id?.toString() === stepId)
+    if (!step) return res.status(404).json({ error: 'Étape introuvable' })
+
+    step.done = true
+    step.waitingReview = false
+    await mission.save()
+
+    const populated = await InternalMission.findById(mission._id)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+    return res.json({ mission: populated })
   } catch (err) { return next(err) }
 })
 

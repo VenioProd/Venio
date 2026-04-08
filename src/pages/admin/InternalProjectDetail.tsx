@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../../lib/api'
+import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -58,7 +58,8 @@ interface Mission {
   assignedTo: { _id: string; name: string; email: string }
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   dueDate: string | null
-  steps: { _id: string; title: string; done: boolean }[]
+  steps: { _id: string; title: string; done: boolean; waitingReview: boolean }[]
+  files: { _id: string; originalName: string; mimeType: string; size: number }[]
   createdBy: { name: string }
   createdAt: string
 }
@@ -83,6 +84,8 @@ export default function InternalProjectDetail() {
   const [missionForm, setMissionForm] = useState({ title: '', description: '', assignedTo: '', dueDate: '' })
   const [savingMission, setSavingMission] = useState(false)
   const [stepInputs, setStepInputs] = useState<Record<string, string>>({})
+  const [fileInputs, setFileInputs] = useState<Record<string, File | null>>({})
+  const [uploadingFile, setUploadingFile] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!id) return
@@ -197,6 +200,58 @@ export default function InternalProjectDetail() {
         body: JSON.stringify({ steps: newSteps }),
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleRequestReview = async (missionId: string, stepId: string) => {
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}/request-review`, {
+        method: 'POST',
+        body: JSON.stringify({ stepId }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+      showToast('Vérification demandée au Super Admin', 'success')
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleValidateStep = async (missionId: string, stepId: string) => {
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}/validate-step`, {
+        method: 'POST',
+        body: JSON.stringify({ stepId }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+      showToast('Étape validée', 'success')
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleUploadFile = async (missionId: string, file: File) => {
+    setUploadingFile(u => ({ ...u, [missionId]: true }))
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const token = getToken() || ''
+      const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data.error || 'Erreur upload')
+      // Reload missions to get updated files
+      const updated = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
+      setMissions(updated.missions || [])
+      setFileInputs(f => ({ ...f, [missionId]: null }))
+      showToast('Fichier ajouté', 'success')
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    finally { setUploadingFile(u => ({ ...u, [missionId]: false })) }
+  }
+
+  const handleDeleteFile = async (missionId: string, fileId: string) => {
+    try {
+      await apiFetch(`/api/admin/internal-projects/${id}/missions/${missionId}/files/${fileId}`, { method: 'DELETE' })
+      setMissions(m => m.map(x => x._id === missionId ? { ...x, files: x.files.filter(f => f._id !== fileId) } : x))
+      showToast('Fichier supprimé', 'success')
     } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
   }
 
@@ -435,20 +490,42 @@ export default function InternalProjectDetail() {
                                 {m.steps.filter(s => s.done).length}/{m.steps.length} étapes complétées
                               </div>
                               {m.steps.map(step => (
-                                <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '4px 0' }}>
                                   <input
                                     type="checkbox"
                                     checked={step.done}
-                                    onChange={() => handleToggleStep(m._id, m, step._id)}
-                                    style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981' }}
+                                    disabled={step.waitingReview}
+                                    onChange={() => !step.waitingReview && handleToggleStep(m._id, m, step._id)}
+                                    style={{ cursor: step.waitingReview ? 'default' : 'pointer', width: 14, height: 14, accentColor: '#10b981', flexShrink: 0 }}
                                   />
-                                  <span style={{ fontSize: 12, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none', flex: 1 }}>
+                                  <span style={{ fontSize: 12, color: step.done ? 'var(--text-secondary)' : step.waitingReview ? '#fde047' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none', flex: 1 }}>
                                     {step.title}
+                                    {step.waitingReview && !step.done && (
+                                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: '#fde047', background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 8, padding: '1px 6px' }}>
+                                        En attente de vérification
+                                      </span>
+                                    )}
                                   </span>
-                                  {isSuperAdmin && (
-                                    <button type="button" onClick={() => handleDeleteStep(m._id, m, step._id)}
-                                      style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', fontSize: 12, padding: '0 2px' }}>✕</button>
-                                  )}
+                                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                    {/* Request review button — assigned member, step not done and not already waiting */}
+                                    {!step.done && !step.waitingReview && !isSuperAdmin && (
+                                      <button type="button" onClick={() => handleRequestReview(m._id, step._id)}
+                                        style={{ padding: '2px 8px', borderRadius: 8, border: '1px solid rgba(234,179,8,0.3)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: '#fde047', whiteSpace: 'nowrap' }}>
+                                        Demander vérification
+                                      </button>
+                                    )}
+                                    {/* Validate button — SUPER_ADMIN only, when waiting review */}
+                                    {step.waitingReview && !step.done && isSuperAdmin && (
+                                      <button type="button" onClick={() => handleValidateStep(m._id, step._id)}
+                                        style={{ padding: '2px 8px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.3)', fontSize: 10, cursor: 'pointer', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                                        ✓ Valider
+                                      </button>
+                                    )}
+                                    {isSuperAdmin && (
+                                      <button type="button" onClick={() => handleDeleteStep(m._id, m, step._id)}
+                                        style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', fontSize: 12, padding: '0 2px' }}>✕</button>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -480,6 +557,47 @@ export default function InternalProjectDetail() {
                           )}
                         </div>
                       )}
+                      {/* Files section */}
+                      <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                          Fichiers ({m.files?.length || 0})
+                        </div>
+                        {m.files?.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+                            {m.files.map(f => (
+                              <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                                <span style={{ fontSize: 14 }}>
+                                  {f.mimeType.includes('pdf') ? '📄' : f.mimeType.startsWith('image/') ? '🖼️' : f.mimeType.includes('word') || f.mimeType.includes('document') ? '📝' : '📁'}
+                                </span>
+                                <button type="button"
+                                  onClick={async () => {
+                                    const token = getToken() || ''
+                                    const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`, { headers: { Authorization: `Bearer ${token}` } })
+                                    const blob = await resp.blob()
+                                    const url = URL.createObjectURL(blob)
+                                    window.open(url, '_blank')
+                                    setTimeout(() => URL.revokeObjectURL(url), 5000)
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#0ea5e9', cursor: 'pointer', fontSize: 12, padding: 0, textAlign: 'left' }}>
+                                  {f.originalName}
+                                </button>
+                                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                                  {(f.size / 1024).toFixed(0)} Ko
+                                </span>
+                                <button type="button" onClick={() => handleDeleteFile(m._id, f._id)}
+                                  style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.4)', cursor: 'pointer', fontSize: 11, padding: '0 2px', marginLeft: 'auto' }}>✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* File upload */}
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#38bdf8', opacity: uploadingFile[m._id] ? 0.5 : 1 }}>
+                          <input type="file" style={{ display: 'none' }}
+                            disabled={uploadingFile[m._id]}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadFile(m._id, f); e.target.value = '' }} />
+                          {uploadingFile[m._id] ? '⏳ Upload...' : '+ Ajouter un fichier'}
+                        </label>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                       {Object.entries(MISSION_STATUS_LABELS).filter(([v]) => v !== m.status).map(([v, l]) => (

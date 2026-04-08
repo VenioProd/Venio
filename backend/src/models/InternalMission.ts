@@ -7,7 +7,8 @@ export interface IInternalMission {
   internalProject: mongoose.Types.ObjectId
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   dueDate: Date | null
-  steps: { title: string; done: boolean; _id?: any }[]
+  steps: { title: string; done: boolean; waitingReview: boolean; _id?: any }[]
+  files: { originalName: string; storagePath: string; mimeType: string; size: number; uploadedBy: mongoose.Types.ObjectId; _id?: any }[]
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
@@ -24,6 +25,14 @@ const schema = new mongoose.Schema<IInternalMission>(
     steps: [{
       title: { type: String, required: true },
       done: { type: Boolean, default: false },
+      waitingReview: { type: Boolean, default: false },
+    }],
+    files: [{
+      originalName: { type: String, required: true },
+      storagePath: { type: String, required: true },
+      mimeType: { type: String, required: true },
+      size: { type: Number, default: 0 },
+      uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
