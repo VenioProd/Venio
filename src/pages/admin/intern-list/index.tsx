@@ -102,12 +102,12 @@ const InternList = () => {
   const loadDashboard = useCallback(async () => {
     setDashboardLoading(true)
     try {
-      const [data, logsData] = await Promise.all([
+      const [data, logsResult] = await Promise.allSettled([
         apiFetch<any[]>('/api/admin/interns/dashboard'),
         apiFetch<{ logs: any[] }>('/api/admin/interns/reminder-logs'),
       ])
-      setDashboard(data)
-      setReminderLogs(logsData.logs || [])
+      if (data.status === 'fulfilled') setDashboard(data.value)
+      if (logsResult.status === 'fulfilled') setReminderLogs(logsResult.value.logs || [])
     } catch { /* silent */ } finally { setDashboardLoading(false) }
   }, [])
 

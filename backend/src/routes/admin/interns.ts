@@ -12,6 +12,7 @@ import { createNotification } from '../../lib/notifications.js'
 import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
 import { getInternSettings } from '../../models/InternSettings.js'
+import { getRecentLogs } from '../../automation/models/AutomationLog.js'
 
 const router = express.Router()
 
@@ -919,7 +920,6 @@ router.post('/send-reminders', requireAdmin, async (req: Request, res: Response)
 // GET /api/admin/interns/reminder-logs — logs des rappels envoyés
 router.get('/reminder-logs', requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const { getRecentLogs } = await import('../../automation/models/AutomationLog.js')
     const logs = await getRecentLogs('intern.report_reminder', 30)
     res.json({ logs })
   } catch {
