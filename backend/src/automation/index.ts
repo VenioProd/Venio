@@ -63,6 +63,9 @@ import { register as registerInfraAutoBackup } from './jobs/infraAutoBackup.js'
 import { register as registerInfraMongoHealthCheck } from './jobs/infraMongoHealthCheck.js'
 import { register as registerNextcloudArchiveCompleted } from './jobs/nextcloudArchiveCompleted.js'
 
+// Interns
+import { register as registerInternReportReminder } from './jobs/internReportReminder.js'
+
 import { startAutomationScheduler, stopAutomationScheduler } from './scheduler.js'
 import { getAllAutomations } from './registry.js'
 
@@ -133,6 +136,9 @@ export function initAutomationEngine(): void {
   registerInfraAutoBackup()
   registerInfraMongoHealthCheck()
   registerNextcloudArchiveCompleted()
+
+  // ── Interns ───────────────────────────────────────────────
+  registerInternReportReminder()
 
   const registered = getAllAutomations()
   console.log(`[AUTOMATION] ${registered.length} automation(s) registered:`)

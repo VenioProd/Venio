@@ -505,7 +505,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     const intern = await Intern.findById(req.params.id)
     if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
 
-    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type } = req.body
+    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursParSemaine } = req.body
 
     if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) intern.type = type
     if (poste !== undefined) intern.poste = poste
@@ -517,6 +517,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     if (formation !== undefined) intern.formation = formation
     if (notes !== undefined) intern.notes = notes
     if (status !== undefined) intern.status = status
+    if (joursParSemaine !== undefined) intern.joursParSemaine = Number(joursParSemaine)
 
     await intern.save()
 

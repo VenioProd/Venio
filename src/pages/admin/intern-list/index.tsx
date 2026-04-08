@@ -44,7 +44,7 @@ const InternList = () => {
     name: '', email: '', phone: '', password: '',
     type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
     poste: '', departement: '', dateDebut: '', dateFin: '',
-    tuteur: '', ecole: '', formation: '', notes: '',
+    tuteur: '', ecole: '', formation: '', notes: '', joursParSemaine: 5,
   })
 
   // ── Rapports ──
@@ -140,7 +140,7 @@ const InternList = () => {
 
   // ── Intern CRUD ──
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', password: '', type: 'STAGIAIRE', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '' })
+    setForm({ name: '', email: '', phone: '', password: '', type: 'STAGIAIRE', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', notes: '', joursParSemaine: 5 })
     setEditingIntern(null)
     setShowForm(false)
   }
@@ -179,6 +179,7 @@ const InternList = () => {
       ecole: intern.ecole,
       formation: intern.formation,
       notes: intern.notes,
+      joursParSemaine: intern.joursParSemaine ?? 5,
     })
     setShowForm(true)
   }
@@ -198,6 +199,7 @@ const InternList = () => {
           ecole: form.ecole,
           formation: form.formation,
           notes: form.notes,
+          joursParSemaine: form.joursParSemaine,
         }),
       })
       resetForm()
@@ -603,6 +605,10 @@ const InternList = () => {
               <div className="ticket-form-field">
                 <label>Notes internes</label>
                 <textarea placeholder="Notes internes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <div className="ticket-form-field">
+                <label>Jours de presence par semaine</label>
+                <input type="number" min={1} max={7} value={form.joursParSemaine} onChange={(e) => setForm({ ...form, joursParSemaine: Number(e.target.value) })} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button className="ticket-new-btn" disabled={submitting} onClick={editingIntern ? handleUpdateIntern : handleCreateIntern}>
