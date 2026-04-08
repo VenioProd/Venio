@@ -217,3 +217,49 @@ export async function sendWeeklyReportEmail({ to, stats }: { to: string; stats: 
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+/**
+ * Envoie un rappel par email au stagiaire/alternant pour soumettre son rapport.
+ */
+export async function sendInternReportReminderEmail({
+  to,
+  internName,
+  internType,
+  poste,
+  daysSinceLastReport,
+  loginUrl,
+}: {
+  to: string
+  internName: string
+  internType: 'STAGIAIRE' | 'ALTERNANT'
+  poste: string
+  daysSinceLastReport: number
+  loginUrl: string
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const appName = process.env.APP_NAME || 'Venio'
+  const typeLabel = internType === 'ALTERNANT' ? 'alternant(e)' : 'stagiaire'
+  const delay = daysSinceLastReport === 0 ? "aujourd'hui" : `il y a ${daysSinceLastReport} jour${daysSinceLastReport > 1 ? 's' : ''}`
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || `notifications@venio.paris`,
+      to,
+      subject: `[${appName}] Rappel — rapport d'activité en attente`,
+      text: `Bonjour ${internName},\n\nNous n'avons pas encore reçu ton rapport d'activité (dernier rapport : ${delay}).\nMerci de le soumettre dès que possible depuis ton espace : ${loginUrl}\n\n— L'équipe ${appName}`,
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
+          <p style="margin:0 0 16px">Bonjour <strong>${escapeHtml(internName)}</strong> <span style="display:inline-block;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${internType === 'ALTERNANT' ? '#f3e8ff' : '#e0f2fe'};color:${internType === 'ALTERNANT' ? '#7c3aed' : '#0369a1'}">${typeLabel}</span>,</p>
+          <p style="margin:0 0 16px;color:rgba(255,255,255,0.7)">Ton rapport d'activité pour le poste <strong>${escapeHtml(poste)}</strong> n'a pas encore été soumis (dernier rapport : <strong>${escapeHtml(delay)}</strong>).</p>
+          <p style="margin:0 0 24px;color:rgba(255,255,255,0.7)">Merci de le soumettre dès que possible.</p>
+          <a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">Soumettre mon rapport</a>
+          <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3)">— L'équipe ${escapeHtml(appName)}</p>
+        </div>`,
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}
