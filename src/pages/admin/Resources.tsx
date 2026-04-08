@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../lib/api'
+import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -69,6 +69,39 @@ export default function Resources() {
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
+  // Preview
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewMime, setPreviewMime] = useState('')
+  const [previewName, setPreviewName] = useState('')
+
+  const openFile = async (r: Resource, inline: boolean) => {
+    const token = getToken() || ''
+    try {
+      const resp = await fetch(`/api/admin/resources/${r._id}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!resp.ok) { showToast('Impossible d\'ouvrir le fichier', 'error'); return }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      if (inline) {
+        setPreviewUrl(url)
+        setPreviewMime(r.mimeType)
+        setPreviewName(r.name)
+      } else {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = r.originalName
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(url), 5000)
+      }
+    } catch { showToast('Erreur réseau', 'error') }
+  }
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl(null)
+  }
+
   const load = async () => {
     setLoading(true)
     try {
@@ -94,7 +127,7 @@ export default function Resources() {
     formData.append('category', form.category)
 
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token') || ''
+      const token = getToken() || ''
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('POST', '/api/admin/resources')
@@ -299,15 +332,24 @@ export default function Resources() {
                       Ajouté par {r.uploadedBy?.name || '—'} · {new Date(r.createdAt).toLocaleDateString('fr-FR')}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <a
-                        href={`/api/admin/resources/${r._id}/download`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {(r.mimeType.startsWith('image/') || r.mimeType.includes('pdf')) && (
+                        <button
+                          className="admin-card-btn admin-card-btn--edit"
+                          type="button"
+                          onClick={() => openFile(r, true)}
+                          style={{ fontSize: 12 }}
+                        >
+                          Aperçu
+                        </button>
+                      )}
+                      <button
                         className="admin-card-btn admin-card-btn--edit"
-                        style={{ textDecoration: 'none', fontSize: 12 }}
+                        type="button"
+                        onClick={() => openFile(r, false)}
+                        style={{ fontSize: 12 }}
                       >
-                        Ouvrir
-                      </a>
+                        Télécharger
+                      </button>
                       {isSuperAdmin && (
                         <button
                           className="admin-card-btn admin-card-btn--delete"
@@ -326,6 +368,34 @@ export default function Resources() {
           </div>
         )}
       </div>
+
+      {/* Preview modal */}
+      {previewUrl && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
+          onClick={closePreview}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'rgba(0,0,0,0.5)', flexShrink: 0 }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#fff' }}>{previewName}</span>
+            <button
+              type="button"
+              onClick={closePreview}
+              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+            >✕</button>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={e => e.stopPropagation()}>
+            {previewMime.startsWith('image/') ? (
+              <img src={previewUrl} alt={previewName} style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 4, objectFit: 'contain' }} />
+            ) : (
+              <iframe
+                src={previewUrl}
+                title={previewName}
+                style={{ width: '100%', height: '80vh', border: 'none', borderRadius: 4, background: '#fff' }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={deleteTarget !== null}
