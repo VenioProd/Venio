@@ -34,7 +34,7 @@ interface Member { _id: string; name: string; email: string; role: string }
 interface Mission {
   _id: string; title: string; description: string; status: string; dueDate: string | null
   progress: number
-  assignedTo: { _id: string; name: string; email: string }
+  assignedTo: { _id: string; name: string; email: string }[]
   internalProject: { _id: string; name: string; entity: string }
   steps: { _id: string; title: string; done: boolean; waitingReview: boolean }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
@@ -96,7 +96,7 @@ export default function InternalProjectList() {
   const [uploadingMission, setUploadingMission] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [showMissionForm, setShowMissionForm] = useState(false)
-  const [missionForm, setMissionForm] = useState({ projectId: '', title: '', description: '', assignedTo: '', dueDate: '' })
+  const [missionForm, setMissionForm] = useState({ projectId: '', title: '', description: '', assignedTo: [] as string[], dueDate: '' })
   const [savingMission, setSavingMission] = useState(false)
 
   const load = useCallback(async () => {
@@ -190,7 +190,7 @@ export default function InternalProjectList() {
     e.preventDefault()
     if (!missionForm.projectId) { showToast('Sélectionne un projet', 'error'); return }
     if (!missionForm.title.trim()) { showToast('Le titre est requis', 'error'); return }
-    if (!missionForm.assignedTo) { showToast('Assigne la mission à quelqu\'un', 'error'); return }
+    if (missionForm.assignedTo.length === 0) { showToast('Assigne la mission à au moins une personne', 'error'); return }
     setSavingMission(true)
     try {
       const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${missionForm.projectId}/missions`, {
@@ -204,7 +204,7 @@ export default function InternalProjectList() {
       })
       setMissions(ms => [data.mission, ...ms])
       setShowMissionForm(false)
-      setMissionForm({ projectId: '', title: '', description: '', assignedTo: '', dueDate: '' })
+      setMissionForm({ projectId: '', title: '', description: '', assignedTo: [], dueDate: '' })
       showToast('Mission créée', 'success')
     } catch (err: any) {
       showToast(err.message || 'Erreur', 'error')
@@ -507,13 +507,13 @@ export default function InternalProjectList() {
           {isSuperAdmin && missions.length > 0 && (() => {
             const byAssignee = new Map<string, { name: string; total: number; done: number; avgProgress: number; missions: Mission[] }>()
             missions.forEach(m => {
-              const id = m.assignedTo?._id
-              if (!id) return
-              if (!byAssignee.has(id)) byAssignee.set(id, { name: m.assignedTo.name, total: 0, done: 0, avgProgress: 0, missions: [] })
-              const entry = byAssignee.get(id)!
-              entry.total++
-              if (m.status === 'TERMINE') entry.done++
-              entry.missions.push(m)
+              (m.assignedTo || []).forEach(a => {
+                if (!byAssignee.has(a._id)) byAssignee.set(a._id, { name: a.name, total: 0, done: 0, avgProgress: 0, missions: [] })
+                const entry = byAssignee.get(a._id)!
+                entry.total++
+                if (m.status === 'TERMINE') entry.done++
+                entry.missions.push(m)
+              })
             })
             byAssignee.forEach(entry => {
               entry.avgProgress = Math.round(entry.missions.reduce((sum, m) => sum + (m.progress ?? 0), 0) / entry.missions.length)
@@ -587,11 +587,15 @@ export default function InternalProjectList() {
                           </td>
                           {isSuperAdmin && (
                             <td style={{ padding: '11px 14px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.15)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
-                                  {m.assignedTo?.name?.[0]?.toUpperCase()}
-                                </div>
-                                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                {(m.assignedTo || []).map(a => (
+                                  <div key={a._id} title={a.name} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.15)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
+                                      {a.name?.[0]?.toUpperCase()}
+                                    </div>
+                                    {(m.assignedTo || []).length === 1 && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.name}</span>}
+                                  </div>
+                                ))}
                               </div>
                             </td>
                           )}
@@ -798,11 +802,24 @@ export default function InternalProjectList() {
                 <textarea className="portal-input" value={missionForm.description} onChange={e => setMissionForm(f => ({ ...f, description: e.target.value }))} placeholder="Détails, contexte…" rows={3} style={{ width: '100%', resize: 'vertical' }} />
               </div>
               <div>
-                <label className="portal-label">Assigner à *</label>
-                <select className="portal-input" value={missionForm.assignedTo} onChange={e => setMissionForm(f => ({ ...f, assignedTo: e.target.value }))} required style={{ width: '100%' }}>
-                  <option value="">— Choisir un membre —</option>
-                  {admins.map(a => <option key={a._id} value={a._id}>{a.name} ({a.role})</option>)}
-                </select>
+                <label className="portal-label">Assigner à * <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: 11 }}>(plusieurs possibles)</span></label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                  {admins.map(a => {
+                    const selected = missionForm.assignedTo.includes(a._id)
+                    return (
+                      <button key={a._id} type="button"
+                        onClick={() => setMissionForm(f => ({ ...f, assignedTo: selected ? f.assignedTo.filter(id => id !== a._id) : [...f.assignedTo, a._id] }))}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 20, border: `1px solid ${selected ? 'rgba(16,185,129,0.5)' : 'rgba(255,255,255,0.1)'}`, background: selected ? 'rgba(16,185,129,0.12)' : 'transparent', color: selected ? '#6ee7b7' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all .15s' }}>
+                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: selected ? 'rgba(16,185,129,0.2)' : 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
+                        {a.name}
+                        {selected && <span style={{ fontSize: 10 }}>✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+                {missionForm.assignedTo.length > 0 && (
+                  <div style={{ fontSize: 11, color: '#6ee7b7', marginTop: 5 }}>{missionForm.assignedTo.length} personne{missionForm.assignedTo.length > 1 ? 's' : ''} sélectionnée{missionForm.assignedTo.length > 1 ? 's' : ''}</div>
+                )}
               </div>
               <div>
                 <label className="portal-label">Deadline (optionnel)</label>
@@ -853,17 +870,21 @@ export default function InternalProjectList() {
 
               {/* Meta */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: 20 }}>
-                {m.assignedTo && (
+                {(m.assignedTo || []).length > 0 && (
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 6 }}>Assigné à</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(165,180,207,0.12)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#a5b4cf' }}>
-                        {m.assignedTo.name[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.assignedTo.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.assignedTo.email}</div>
-                      </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(m.assignedTo || []).map(a => (
+                        <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(165,180,207,0.12)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#a5b4cf' }}>
+                            {a.name[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{a.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.email}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

@@ -96,7 +96,7 @@ router.get('/meta', (_req: Request, res: Response) => {
 router.get('/missions', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filter: Record<string, any> = {}
-    if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = req.user!.id
+    if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = { $in: [req.user!.id] }
 
     const missions = await InternalMission.find(filter)
       .populate('assignedTo', 'name email')
@@ -255,7 +255,7 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
     // Seul le SUPER_ADMIN voit toutes les missions; les autres voient seulement les leurs
     const isAdmin = req.user!.role === 'SUPER_ADMIN'
     const filter: Record<string, any> = { internalProject: req.params.projectId }
-    if (!isAdmin) filter.assignedTo = req.user!.id
+    if (!isAdmin) filter.assignedTo = { $in: [req.user!.id] }
 
     const missions = await InternalMission.find(filter)
       .populate('assignedTo', 'name email')
@@ -275,35 +275,38 @@ router.post('/:projectId/missions', async (req: Request, res: Response, next: Ne
 
     const { title, description, assignedTo, dueDate } = req.body
     if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
-    if (!assignedTo) return res.status(400).json({ error: 'Assigné à est requis' })
+    const assignedToArr: string[] = Array.isArray(assignedTo) ? assignedTo : (assignedTo ? [assignedTo] : [])
+    if (assignedToArr.length === 0) return res.status(400).json({ error: 'Assigne la mission à au moins une personne' })
 
     const mission = await InternalMission.create({
       title: title.trim(),
       description: description || '',
-      assignedTo,
+      assignedTo: assignedToArr,
       internalProject: req.params.projectId,
       dueDate: dueDate ? new Date(dueDate) : null,
       createdBy: req.user!.id,
     })
 
     const populated = await InternalMission.findById(mission._id)
-      .populate<{ assignedTo: { name: string; email: string } }>('assignedTo', 'name email')
+      .populate<{ assignedTo: { name: string; email: string }[] }>('assignedTo', 'name email')
       .populate('createdBy', 'name')
 
-    // Notifier la personne assignée
-    const assignee = populated?.assignedTo as any
-    if (assignee?.email) {
-      const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
-      sendInternalMissionAssignedEmail({
-        to: assignee.email,
-        memberName: assignee.name || assignee.email,
-        missionTitle: mission.title,
-        missionDescription: mission.description || '',
-        projectName: project.name,
-        entity: project.entity,
-        dueDate: mission.dueDate ? mission.dueDate.toISOString() : null,
-        projectUrl: `${baseUrl}/admin/projets-internes/${project._id}`,
-      }).catch(() => {})
+    // Notifier chaque personne assignée
+    const assignees = (populated?.assignedTo as any[]) || []
+    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+    for (const assignee of assignees) {
+      if (assignee?.email) {
+        sendInternalMissionAssignedEmail({
+          to: assignee.email,
+          memberName: assignee.name || assignee.email,
+          missionTitle: mission.title,
+          missionDescription: mission.description || '',
+          projectName: project.name,
+          entity: project.entity,
+          dueDate: mission.dueDate ? mission.dueDate.toISOString() : null,
+          projectUrl: `${baseUrl}/admin/projets-internes/${project._id}`,
+        }).catch(() => {})
+      }
     }
 
     return res.status(201).json({ mission: populated })
@@ -320,14 +323,14 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
     if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
     const { title, description, assignedTo, status, dueDate, steps, progress } = req.body
     if (isAdmin) {
       if (title !== undefined) mission.title = title.trim()
       if (description !== undefined) mission.description = description
-      if (assignedTo !== undefined) mission.assignedTo = assignedTo
+      if (assignedTo !== undefined) mission.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
       if (dueDate !== undefined) mission.dueDate = dueDate ? new Date(dueDate) : null
     }
     if (status !== undefined) mission.status = status
@@ -373,7 +376,7 @@ router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'
     }
 
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     if (!isAdmin && !isAssigned) {
       fs.unlinkSync(req.file.path)
       return res.status(403).json({ error: 'Accès refusé' })
@@ -422,7 +425,7 @@ router.delete('/:projectId/missions/:missionId/files/:fileId', async (req: Reque
     if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
     const fileIdx = mission.files.findIndex(f => f._id?.toString() === req.params.fileId)
@@ -450,7 +453,7 @@ router.post('/:projectId/missions/:missionId/request-review', async (req: Reques
     })
     if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const isAssigned = mission.assignedTo.toString() === req.user!.id
+    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
     if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
 

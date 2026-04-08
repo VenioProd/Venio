@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 export interface IInternalMission {
   title: string
   description: string
-  assignedTo: mongoose.Types.ObjectId
+  assignedTo: mongoose.Types.ObjectId[]
   internalProject: mongoose.Types.ObjectId
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   progress: number
@@ -19,7 +19,7 @@ const schema = new mongoose.Schema<IInternalMission>(
   {
     title: { type: String, required: true },
     description: { type: String, default: '' },
-    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    assignedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     internalProject: { type: mongoose.Schema.Types.ObjectId, ref: 'InternalProject', required: true },
     status: { type: String, enum: ['A_FAIRE', 'EN_COURS', 'TERMINE'], default: 'A_FAIRE' },
     progress: { type: Number, default: 0, min: 0, max: 100 },
