@@ -54,7 +54,7 @@ const AdminEdit = () => {
   // Stagiaire
   const [isStagiaire, setIsStagiaire] = useState(false)
   const [internForm, setInternForm] = useState({
-    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[],
+    poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[], inclureEquipe: true,
   })
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
@@ -90,6 +90,7 @@ const AdminEdit = () => {
                 ecole: intern.ecole || '',
                 formation: intern.formation || '',
                 joursPresence: intern.joursPresence?.length ? intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+                inclureEquipe: intern.inclureEquipe !== false,
               })
             }
           } catch { /* silent */ }
@@ -143,6 +144,7 @@ const AdminEdit = () => {
             ecole: internForm.ecole || undefined,
             formation: internForm.formation || undefined,
             joursPresence: internForm.joursPresence,
+            inclureEquipe: internForm.inclureEquipe,
           }
         }
       }
@@ -361,6 +363,16 @@ const AdminEdit = () => {
                           )
                         })}
                       </div>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label onClick={() => setInternForm({ ...internForm, inclureEquipe: !internForm.inclureEquipe })} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+                        <div style={{ width: 36, height: 20, borderRadius: 10, background: internForm.inclureEquipe ? '#0ea5e9' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', top: 2, left: internForm.inclureEquipe ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                        </div>
+                        <span style={{ fontSize: 13, color: internForm.inclureEquipe ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+                          Inclure dans la gestion équipe
+                        </span>
+                      </label>
                     </div>
                   </div>
                 </div>

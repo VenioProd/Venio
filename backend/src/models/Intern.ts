@@ -12,6 +12,7 @@ export interface IIntern extends Document {
   formation: string
   notes: string
   joursPresence: string[]
+  inclureEquipe: boolean
   status: 'ACTIF' | 'TERMINE' | 'ANNULE'
   nextcloudUsername: string
   nextcloudPassword: string
@@ -34,6 +35,7 @@ const internSchema = new Schema<IIntern>(
     formation: { type: String, default: '', trim: true },
     notes: { type: String, default: '' },
     joursPresence: { type: [String], default: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] },
+    inclureEquipe: { type: Boolean, default: true },
     status: { type: String, enum: ['ACTIF', 'TERMINE', 'ANNULE'], default: 'ACTIF' },
     nextcloudUsername: { type: String, default: '' },
     nextcloudPassword: { type: String, default: '' },

@@ -70,7 +70,7 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
     const filter: Record<string, unknown> = {}
     if (status) filter.status = status
 
-    const interns = await Intern.find(filter)
+    const interns = await Intern.find({ ...filter, inclureEquipe: { $ne: false } })
       .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
       .populate('createdBy', 'name')
@@ -289,7 +289,7 @@ router.get('/stats', requireAdmin, async (_req: Request, res: Response) => {
 // GET /api/admin/interns/dashboard — tableau de bord global
 router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const interns = await Intern.find({ status: 'ACTIF' })
+    const interns = await Intern.find({ status: 'ACTIF', inclureEquipe: { $ne: false } })
       .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
       .sort({ dateDebut: -1 })
@@ -520,6 +520,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     if (notes !== undefined) intern.notes = notes
     if (status !== undefined) intern.status = status
     if (Array.isArray(joursPresence)) intern.joursPresence = joursPresence
+    if (req.body.inclureEquipe !== undefined) intern.inclureEquipe = Boolean(req.body.inclureEquipe)
 
     await intern.save()
 

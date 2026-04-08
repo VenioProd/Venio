@@ -29,6 +29,7 @@ const definition: AutomationDefinition = {
     // Stagiaires/alternants actifs dont le stage est en cours
     const activeInterns = await Intern.find({
       status: 'ACTIF',
+      inclureEquipe: { $ne: false },
       dateDebut: { $lte: ctx.now },
       dateFin: { $gte: ctx.now },
     }).populate('userId', 'name email')
