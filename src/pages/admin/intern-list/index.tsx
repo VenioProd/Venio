@@ -693,6 +693,7 @@ const InternList = () => {
                         </div>
                         <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Email</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.email}</span></div>
                         {intern.userId.phone && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Telephone</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.userId.phone}</span></div>}
+                        <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Derniere connexion</span><br /><span style={{ color: intern.userId.lastLoginAt ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 13 }}>{intern.userId.lastLoginAt ? new Date(intern.userId.lastLoginAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Jamais connecte'}</span></div>
                         {intern.ecole && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Ecole</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.ecole}</span></div>}
                         {intern.formation && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Formation</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.formation}</span></div>}
                         {intern.tuteur && <div><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Tuteur</span><br /><span style={{ color: '#fff', fontSize: 13 }}>{intern.tuteur.name}</span></div>}

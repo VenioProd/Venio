@@ -3,6 +3,7 @@ export interface InternUser {
   name: string
   email: string
   phone?: string
+  lastLoginAt?: string | null
 }
 
 export interface Intern {

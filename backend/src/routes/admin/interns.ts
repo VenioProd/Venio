@@ -485,7 +485,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
     }
 
     const populated = await Intern.findById(intern._id)
-      .populate('userId', 'name email phone')
+      .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
 
     res.status(201).json(populated)
@@ -522,7 +522,7 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     await intern.save()
 
     const populated = await Intern.findById(intern._id)
-      .populate('userId', 'name email phone')
+      .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
 
     res.json(populated)
