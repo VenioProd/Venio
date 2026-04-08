@@ -707,7 +707,7 @@ export default function InternalProjectList() {
           <>
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, backdropFilter: 'blur(2px)' }}
               onClick={() => setSelectedMission(null)} />
-            <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 500, background: 'var(--bg-card, #1a1f2e)', borderLeft: '1px solid rgba(255,255,255,0.08)', zIndex: 1001, overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 32px rgba(0,0,0,0.4)' }}>
+            <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 500, background: '#141824', borderLeft: '1px solid rgba(255,255,255,0.08)', zIndex: 1001, overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 32px rgba(0,0,0,0.5)' }}>
 
               {/* Header */}
               <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -788,7 +788,7 @@ export default function InternalProjectList() {
               </div>
 
               {/* Étapes */}
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', flex: 1 }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 12 }}>Étapes</div>
                 {totalSteps > 0 ? m.steps.map(step => (
                   <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '8px 10px', borderRadius: 7, background: step.waitingReview ? 'rgba(234,179,8,0.05)' : 'rgba(255,255,255,0.02)', border: step.waitingReview ? '1px solid rgba(234,179,8,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
