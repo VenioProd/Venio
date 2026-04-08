@@ -372,6 +372,12 @@ router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request,
       if (status !== undefined) mission.participants[idx].status = status
     }
 
+    // Auto-calculate global progress as average of all participants
+    if (mission.participants.length > 0) {
+      const total = mission.participants.reduce((sum, p) => sum + (p.progress ?? 0), 0)
+      mission.progress = Math.round(total / mission.participants.length)
+    }
+
     await mission.save()
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')

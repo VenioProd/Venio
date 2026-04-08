@@ -198,7 +198,8 @@ export default function InternalProjectList() {
       const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}/my-progress`, {
         method: 'PATCH', body: JSON.stringify({ userId, progress, status }),
       })
-      setMissions(ms => ms.map(x => x._id === missionId ? data.mission : x))
+      // Preserve internalProject (not populated by this route)
+      setMissions(ms => ms.map(x => x._id === missionId ? { ...data.mission, internalProject: x.internalProject } : x))
     } catch { /* silent */ }
   }
 
@@ -633,7 +634,7 @@ export default function InternalProjectList() {
                     const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
                     const doneCount = m.steps?.filter(s => s.done).length ?? 0
                     const totalSteps = m.steps?.length ?? 0
-                    const pct = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0
+                    const reviewCount = (m.steps || []).filter(s => s.waitingReview && !s.done).length
                     const isSelected = selectedMission === m._id
                     return (
                       <>
@@ -646,7 +647,10 @@ export default function InternalProjectList() {
                             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{m.internalProject?.entity}</div>
                           </td>
                           <td style={{ padding: '11px 14px', maxWidth: 220 }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{m.title}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{m.title}</span>
+                              {reviewCount > 0 && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 6, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', color: '#fde047', whiteSpace: 'nowrap' }}>🔍 {reviewCount}</span>}
+                            </div>
                             {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{m.description}</div>}
                           </td>
                           {isSuperAdmin && (
