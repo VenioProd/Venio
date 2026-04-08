@@ -899,4 +899,32 @@ router.patch('/settings/report-notifs', requireAdmin, async (req: Request, res: 
   }
 })
 
+// POST /api/admin/interns/send-reminders — déclencher manuellement les rappels
+router.post('/send-reminders', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user
+    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
+    const { runAutomation, buildContext } = await import('../../automation/engine.js')
+    const { getAutomation } = await import('../../automation/registry.js')
+    const definition = getAutomation('intern.report_reminder')
+    if (!definition) return res.status(404).json({ error: 'Automation introuvable' })
+    const ctx = buildContext()
+    const result = await runAutomation(definition, ctx)
+    res.json({ success: true, actionsExecuted: result.result?.actionsExecuted ?? [], recipientsNotified: result.result?.recipientsNotified ?? [] })
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// GET /api/admin/interns/reminder-logs — logs des rappels envoyés
+router.get('/reminder-logs', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const { getRecentLogs } = await import('../../automation/models/AutomationLog.js')
+    const logs = await getRecentLogs('intern.report_reminder', 30)
+    res.json({ logs })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
 export default router
