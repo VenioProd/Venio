@@ -210,6 +210,12 @@ const AdminDashboard = () => {
               <span className="portal-action-label">Gestion</span>
             </Link>
             )}
+            <Link className="portal-button portal-action-link" to="/admin/projets-internes" title="Projets internes">
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+              </span>
+              <span className="portal-action-label">Projets internes</span>
+            </Link>
             {user?.role === 'SUPER_ADMIN' && (
             <Link className="portal-button portal-action-link" to="/admin/tickets" title="Tickets">
               <span className="portal-action-icon" aria-hidden>

@@ -64,6 +64,8 @@ const InternDetail = lazy(() => import('./pages/admin/InternDetail'))
 const MyReports = lazy(() => import('./pages/admin/MyReports'))
 const EmailComposer = lazy(() => import('./pages/admin/EmailComposer'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
+const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
+const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 
 function ProjectsRedirect() {
   const { id } = useParams()
@@ -345,6 +347,22 @@ function App() {
           element={
             <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
               <InternDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/projets-internes"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <InternalProjectList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/projets-internes/:id"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <InternalProjectDetail />
             </ProtectedRoute>
           }
         />
