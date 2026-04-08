@@ -55,14 +55,18 @@ jobs:
               mv .env.backup .env
             fi
 
-            # Arreter le container venio existant
-            echo "🛑 Arret de l'ancien container..."
+            # Builder la nouvelle image PENDANT que l'ancien container tourne
+            echo "🏗️ Build de la nouvelle image (l'ancien container reste en ligne)..."
+            if ! docker compose -f docker-compose.prod.yml build --no-cache; then
+              echo "❌ Build échoué — l'ancien container reste en ligne"
+              exit 1
+            fi
+
+            # Swap rapide : down + up (quelques secondes de coupure max)
+            echo "🔄 Swap du container..."
             docker compose -f docker-compose.prod.yml down 2>/dev/null || true
             docker stop venio-app 2>/dev/null || true
             docker rm venio-app 2>/dev/null || true
-
-            echo "🏗️ Rebuild du container..."
-            docker compose -f docker-compose.prod.yml build --no-cache
             docker compose -f docker-compose.prod.yml up -d
 
             echo "✅ Déploiement terminé"
@@ -70,7 +74,7 @@ jobs:
 
       - name: ✅ Vérifier le site
         run: |
-          sleep 15
+          sleep 20
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.paris)
           if [ "$STATUS" = "200" ]; then
             echo "✅ Site en ligne sur https://venio.paris (HTTP $STATUS)"
