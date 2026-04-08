@@ -248,14 +248,6 @@ export default function InternalProjectList() {
                 <label className="portal-label">Tags (virgule)</label>
                 <input className="portal-input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, refonte, v2..." />
               </div>
-              <div>
-                <label className="portal-label">Date de début</label>
-                <input type="date" className="portal-input" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
-              </div>
-              <div>
-                <label className="portal-label">Date de fin prévue</label>
-                <input type="date" className="portal-input" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
-              </div>
               {/* Poles */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="portal-label">Pôles concernés</label>
