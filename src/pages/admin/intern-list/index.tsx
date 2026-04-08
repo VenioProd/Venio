@@ -61,7 +61,7 @@ const InternList = () => {
   const [dashboardLoading, setDashboardLoading] = useState(false)
   const [reminderLogs, setReminderLogs] = useState<any[]>([])
   const [sendingReminders, setSendingReminders] = useState(false)
-  const [reminderResult, setReminderResult] = useState<{ sent: number } | null>(null)
+  const [reminderResult, setReminderResult] = useState<{ sent: number; details?: any } | null>(null)
 
   // ── Admins pour tuteur ──
   const [admins, setAdmins] = useState<{ _id: string; name: string; role: string }[]>([])
@@ -401,8 +401,8 @@ const InternList = () => {
                       setSendingReminders(true)
                       setReminderResult(null)
                       try {
-                        const res = await apiFetch<{ recipientsNotified: string[] }>('/api/admin/interns/send-reminders', { method: 'POST' })
-                        setReminderResult({ sent: res.recipientsNotified?.length || 0 })
+                        const res = await apiFetch<{ recipientsNotified: string[]; details?: any }>('/api/admin/interns/send-reminders', { method: 'POST' })
+                        setReminderResult({ sent: res.recipientsNotified?.length || 0, details: res.details })
                         loadDashboard()
                       } catch { /* silent */ } finally { setSendingReminders(false) }
                     }}
@@ -414,8 +414,16 @@ const InternList = () => {
                 )}
               </div>
               {reminderResult && (
-                <div style={{ padding: '10px 20px', background: 'rgba(34,197,94,0.08)', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13, color: '#22c55e' }}>
-                  {reminderResult.sent === 0 ? 'Aucun rappel à envoyer (tous les rapports sont à jour)' : `${reminderResult.sent} rappel(s) envoyé(s)`}
+                <div style={{ padding: '10px 20px', background: reminderResult.sent > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(255,200,0,0.08)', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
+                  <span style={{ color: reminderResult.sent > 0 ? '#22c55e' : '#fbbf24', fontWeight: 600 }}>
+                    {reminderResult.sent === 0 ? 'Aucun rappel envoyé' : `${reminderResult.sent} rappel(s) envoyé(s)`}
+                  </span>
+                  {reminderResult.details && (
+                    <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 10, fontSize: 11 }}>
+                      {reminderResult.details.totalInterns} stagiaire(s) actif(s) · jour: {reminderResult.details.today}
+                      {reminderResult.details.errors?.length > 0 && ` · erreurs: ${reminderResult.details.errors.join(', ')}`}
+                    </span>
+                  )}
                 </div>
               )}
               {reminderLogs.length === 0 ? (

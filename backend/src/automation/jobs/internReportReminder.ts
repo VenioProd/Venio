@@ -25,17 +25,12 @@ const definition: AutomationDefinition = {
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []
+    const errors: string[] = []
 
-    // Stagiaires/alternants actifs dont le stage est en cours
-    // End of today (23:59:59) to avoid filtering interns whose dateFin is today at 00:00
-    const endOfToday = new Date(ctx.now)
-    endOfToday.setHours(23, 59, 59, 999)
-
+    // Le statut ACTIF est la source de vérité
     const activeInterns = await Intern.find({
       status: 'ACTIF',
       inclureEquipe: { $ne: false },
-      dateDebut: { $lte: ctx.now },
-      dateFin: { $gte: endOfToday },
     }).populate('userId', 'name email')
 
     const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
@@ -43,10 +38,15 @@ const definition: AutomationDefinition = {
 
     for (const intern of activeInterns) {
       const user = intern.userId as any
-      if (!user?.email) continue
+      if (!user?.email) {
+        errors.push(`intern:${intern._id}:no_email`)
+        continue
+      }
 
-      // Ne pas envoyer si aujourd'hui n'est pas un jour de travail de ce stagiaire
-      const joursPresence: string[] = (intern.joursPresence as any) || ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+      // Défaut = tous les jours de semaine si le champ est vide
+      const joursPresence: string[] = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+        ? intern.joursPresence as string[]
+        : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
       if (!joursPresence.includes(todayName)) continue
 
       // Dernier rapport soumis
@@ -74,6 +74,8 @@ const definition: AutomationDefinition = {
         if (result.sent) {
           actionsExecuted.push(`reminder_sent:${user.email}`)
           recipientsNotified.push(user.email)
+        } else {
+          errors.push(`smtp_error:${user.email}:${result.error || 'unknown'}`)
         }
       }
     }
@@ -81,7 +83,12 @@ const definition: AutomationDefinition = {
     return {
       actionsExecuted,
       recipientsNotified,
-      details: { summary: `${actionsExecuted.length} rappel(s) envoyé(s)` },
+      details: {
+        summary: `${actionsExecuted.length} rappel(s) envoyé(s)`,
+        today: todayName,
+        totalInterns: activeInterns.length,
+        errors,
+      },
     }
   },
 }

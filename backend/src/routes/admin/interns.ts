@@ -926,7 +926,12 @@ router.post('/send-reminders', requireAdmin, async (req: Request, res: Response)
       actionsExecuted: result.actionsExecuted,
       recipientsNotified: result.recipientsNotified,
     })
-    res.json({ success: true, actionsExecuted: result.actionsExecuted, recipientsNotified: result.recipientsNotified })
+    res.json({
+      success: true,
+      actionsExecuted: result.actionsExecuted,
+      recipientsNotified: result.recipientsNotified,
+      details: result.details,
+    })
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' })
   }
