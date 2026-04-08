@@ -473,11 +473,11 @@ export default function InternalProjectList() {
             </div>
           ) : (
             <div className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     {(['Projet', 'Mission', ...(isSuperAdmin ? ['Assigné à'] : []), 'Statut', 'Progression', 'Fichiers', 'Deadline', '']).map((h, i) => (
-                      <th key={i} style={{ textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '.6px' }}>{h}</th>
+                      <th key={i} style={{ textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -500,31 +500,31 @@ export default function InternalProjectList() {
                           onClick={() => setExpandedMission(isExpanded ? null : m._id)}
                         >
                           <td style={{ padding: '11px 14px' }}>
-                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{m.internalProject?.name || '—'}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>{m.internalProject?.entity}</div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>{m.internalProject?.name || '—'}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{m.internalProject?.entity}</div>
                           </td>
                           <td style={{ padding: '11px 14px', maxWidth: 220 }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{m.title}</div>
-                            {m.description && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{m.description}</div>}
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{m.title}</div>
+                            {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{m.description}</div>}
                           </td>
                           {isSuperAdmin && (
                             <td style={{ padding: '11px 14px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.15)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
+                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.15)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
                                   {m.assignedTo?.name?.[0]?.toUpperCase()}
                                 </div>
-                                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>
+                                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</span>
                               </div>
                             </td>
                           )}
                           <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: statusColor[m.status] || '#a5b4cf', background: statusBg[m.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${statusBorder[m.status] || 'rgba(255,255,255,0.1)'}`, whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: statusColor[m.status] || '#a5b4cf', background: statusBg[m.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${statusBorder[m.status] || 'rgba(255,255,255,0.1)'}`, whiteSpace: 'nowrap' }}>
                                 {statusLabel[m.status] || m.status}
                               </span>
                               {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).filter(v => v !== m.status).map(v => (
                                 <button key={v} type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, v)}
-                                  style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                  style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                                   {statusLabel[v]}
                                 </button>
                               ))}
@@ -533,7 +533,7 @@ export default function InternalProjectList() {
                           <td style={{ padding: '11px 14px', minWidth: 120 }} onClick={e => e.stopPropagation()}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                {totalSteps > 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{doneCount}/{totalSteps} étapes</span>}
+                                {totalSteps > 0 && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneCount}/{totalSteps} étapes</span>}
                                 <input
                                   type="number" min={0} max={100}
                                   defaultValue={m.progress ?? 0}
@@ -543,31 +543,43 @@ export default function InternalProjectList() {
                                     handleMissionProgressUpdate(m._id, m.internalProject?._id, v)
                                   }}
                                   onClick={e => e.stopPropagation()}
-                                  style={{ width: 44, fontSize: 11, fontWeight: 700, padding: '2px 4px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: (m.progress ?? 0) === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center', cursor: 'text', marginLeft: 'auto' }}
+                                  style={{ width: 44, fontSize: 13, fontWeight: 700, padding: '2px 4px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: (m.progress ?? 0) === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center', cursor: 'text', marginLeft: 'auto' }}
                                   title="Cliquer pour modifier la progression (%)"
                                 />
-                                <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
+                                <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
                               </div>
                               <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
                                 <div style={{ height: '100%', borderRadius: 2, background: (m.progress ?? 0) === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '11px 14px' }}>
-                            {(m.files?.length ?? 0) > 0 ? (
-                              <span style={{ fontSize: 11, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                {m.files.length}
-                              </span>
-                            ) : <span style={{ fontSize: 12, color: 'rgba(165,180,207,0.4)' }}>—</span>}
+                          <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {(m.files?.length ?? 0) > 0 && (
+                                <span style={{ fontSize: 13, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                  {m.files.length}
+                                </span>
+                              )}
+                              <input type="file" ref={el => { fileInputRefs.current[`col_${m._id}`] = el }} style={{ display: 'none' }}
+                                onChange={async e => { const file = e.target.files?.[0]; if (file) await handleMissionFileUpload(m._id, m.internalProject?._id, file); e.target.value = '' }} />
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); fileInputRefs.current[`col_${m._id}`]?.click() }}
+                                disabled={uploadingMission === m._id}
+                                title="Joindre un fichier"
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(165,180,207,0.2)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                {uploadingMission === m._id ? '...' : '+ Fichier'}
+                              </button>
+                            </div>
                           </td>
                           <td style={{ padding: '11px 14px' }}>
-                            <span style={{ fontSize: 12, color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontWeight: isOverdue ? 600 : 400 }}>
+                            <span style={{ fontSize: 13, color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontWeight: isOverdue ? 600 : 400 }}>
                               {isOverdue && '⚠ '}{m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
                             </span>
                           </td>
                           <td style={{ padding: '11px 8px', textAlign: 'center' }}>
-                            <span style={{ fontSize: 10, color: 'var(--text-secondary)', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
                           </td>
                         </tr>
 
@@ -577,7 +589,7 @@ export default function InternalProjectList() {
                               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                                 {/* Étapes */}
                                 <div>
-                                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 10 }}>Étapes</div>
+                                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 10 }}>Étapes</div>
                                   {totalSteps > 0 ? m.steps.map(step => (
                                     <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '5px 8px', borderRadius: 6, background: step.waitingReview ? 'rgba(234,179,8,0.06)' : 'transparent', border: step.waitingReview ? '1px solid rgba(234,179,8,0.2)' : '1px solid transparent' }}>
                                       <input type="checkbox" checked={step.done}
@@ -611,7 +623,7 @@ export default function InternalProjectList() {
                                 </div>
                                 {/* Fichiers + Deadline */}
                                 <div>
-                                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 10 }}>Fichiers</div>
+                                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 10 }}>Fichiers</div>
                                   {(m.files?.length ?? 0) === 0 ? <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.4)', marginBottom: 10 }}>Aucun fichier joint</p> : (
                                     <div style={{ marginBottom: 10 }}>
                                       {m.files.map(f => (
@@ -636,7 +648,7 @@ export default function InternalProjectList() {
                                   </div>
                                   {isSuperAdmin && (
                                     <div style={{ marginTop: 14 }}>
-                                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 6 }}>Deadline</div>
+                                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-secondary)', marginBottom: 6 }}>Deadline</div>
                                       <input type="date" defaultValue={m.dueDate ? m.dueDate.substring(0, 10) : ''}
                                         onBlur={e => handleMissionDateUpdate(m._id, m.internalProject?._id, e.target.value)}
                                         onClick={e => e.stopPropagation()}
