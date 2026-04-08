@@ -312,8 +312,11 @@ router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
         ])
 
         const lastActivity = lastReport?.date || null
+        const joursP2 = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+          ? intern.joursPresence as string[]
+          : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
         const daysSinceLastReport = lastActivity
-          ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+          ? countWorkingDaysSince(new Date(lastActivity), now, joursP2)
           : null
 
         const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
