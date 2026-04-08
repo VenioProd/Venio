@@ -247,10 +247,10 @@ export default function InternalProjectList() {
 
   const handleMissionProgressUpdate = async (missionId: string, projectId: string, progress: number) => {
     try {
-      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+      await apiFetch(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
         method: 'PATCH', body: JSON.stringify({ progress }),
       })
-      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+      setMissions(ms => ms.map(x => x._id === missionId ? { ...x, progress } : x))
     } catch { /* silent */ }
   }
 
