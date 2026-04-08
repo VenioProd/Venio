@@ -91,7 +91,7 @@ const AdminDashboard = () => {
   const [expandedOverdue, setExpandedOverdue] = useState<string | null>(null)
   const [expandedProject, setExpandedProject] = useState<string | null>(null)
   const [myInternalProjects, setMyInternalProjects] = useState<{ _id: string; name: string; entity: string; status: string; poles: string[] }[]>([])
-  const [myMissions, setMyMissions] = useState<{ _id: string; title: string; description: string; status: string; dueDate: string | null; internalProject: { _id: string; name: string; entity: string } }[]>([])
+  const [myMissions, setMyMissions] = useState<{ _id: string; title: string; description: string; status: string; dueDate: string | null; steps: { _id: string; title: string; done: boolean }[]; internalProject: { _id: string; name: string; entity: string } }[]>([])
 
   const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
@@ -575,6 +575,11 @@ const AdminDashboard = () => {
                       {m.dueDate && (
                         <span className={`dash-task-due ${isOverdue ? 'overdue' : ''}`}>
                           {new Date(m.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        </span>
+                      )}
+                      {m.steps?.length > 0 && (
+                        <span style={{ fontSize: 10, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {m.steps.filter(s => s.done).length}/{m.steps.length} étapes
                         </span>
                       )}
                     </a>

@@ -58,6 +58,7 @@ interface Mission {
   assignedTo: { _id: string; name: string; email: string }
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   dueDate: string | null
+  steps: { _id: string; title: string; done: boolean }[]
   createdBy: { name: string }
   createdAt: string
 }
@@ -81,6 +82,7 @@ export default function InternalProjectDetail() {
   const [showMissionForm, setShowMissionForm] = useState(false)
   const [missionForm, setMissionForm] = useState({ title: '', description: '', assignedTo: '', dueDate: '' })
   const [savingMission, setSavingMission] = useState(false)
+  const [stepInputs, setStepInputs] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!id) return
@@ -160,6 +162,41 @@ export default function InternalProjectDetail() {
       await apiFetch(`/api/admin/internal-projects/${id}/missions/${missionId}`, { method: 'DELETE' })
       setMissions(m => m.filter(x => x._id !== missionId))
       showToast('Mission supprimée', 'success')
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleToggleStep = async (missionId: string, mission: Mission, stepId: string) => {
+    const newSteps = mission.steps.map(s =>
+      s._id === stepId ? { ...s, done: !s.done } : s
+    )
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ steps: newSteps }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleAddStep = async (missionId: string, mission: Mission, title: string) => {
+    const newSteps = [...mission.steps, { title, done: false }]
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ steps: newSteps }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+  }
+
+  const handleDeleteStep = async (missionId: string, mission: Mission, stepId: string) => {
+    const newSteps = mission.steps.filter(s => s._id !== stepId)
+    try {
+      const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${id}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ steps: newSteps }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
     } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
   }
 
@@ -385,6 +422,64 @@ export default function InternalProjectDetail() {
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
                       >{m.title}</Link>
                       {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>{m.description}</div>}
+                      {/* Steps / étapes */}
+                      {(m.steps?.length > 0 || isSuperAdmin) && (
+                        <div style={{ marginTop: 10 }}>
+                          {m.steps?.length > 0 && (
+                            <div style={{ marginBottom: 4 }}>
+                              {/* Progress bar */}
+                              <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginBottom: 8 }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: '#10b981', width: `${Math.round((m.steps.filter(s => s.done).length / m.steps.length) * 100)}%`, transition: 'width .3s' }} />
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                                {m.steps.filter(s => s.done).length}/{m.steps.length} étapes complétées
+                              </div>
+                              {m.steps.map(step => (
+                                <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={step.done}
+                                    onChange={() => handleToggleStep(m._id, m, step._id)}
+                                    style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981' }}
+                                  />
+                                  <span style={{ fontSize: 12, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none', flex: 1 }}>
+                                    {step.title}
+                                  </span>
+                                  {isSuperAdmin && (
+                                    <button type="button" onClick={() => handleDeleteStep(m._id, m, step._id)}
+                                      style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', fontSize: 12, padding: '0 2px' }}>✕</button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {isSuperAdmin && (
+                            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                              <input
+                                className="portal-input"
+                                value={stepInputs[m._id] || ''}
+                                onChange={e => setStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter' && stepInputs[m._id]?.trim()) {
+                                    handleAddStep(m._id, m, stepInputs[m._id].trim())
+                                    setStepInputs(s => ({ ...s, [m._id]: '' }))
+                                  }
+                                }}
+                                placeholder="Ajouter une étape… (Entrée)"
+                                style={{ fontSize: 12, padding: '4px 8px', flex: 1 }}
+                              />
+                              <button type="button"
+                                onClick={() => {
+                                  if (stepInputs[m._id]?.trim()) {
+                                    handleAddStep(m._id, m, stepInputs[m._id].trim())
+                                    setStepInputs(s => ({ ...s, [m._id]: '' }))
+                                  }
+                                }}
+                                style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 12, cursor: 'pointer' }}>+</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                       {Object.entries(MISSION_STATUS_LABELS).filter(([v]) => v !== m.status).map(([v, l]) => (

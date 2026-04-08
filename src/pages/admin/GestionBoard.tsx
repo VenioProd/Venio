@@ -56,9 +56,12 @@ export default function GestionBoard() {
     _id: string; title: string; description: string; status: string; dueDate: string | null
     assignedTo: { _id: string; name: string; email: string }
     internalProject: { _id: string; name: string; entity: string }
+    steps: { _id: string; title: string; done: boolean }[]
     createdAt: string
   }[]>([])
   const [missionsLoading, setMissionsLoading] = useState(false)
+  const [expandedMission, setExpandedMission] = useState<string | null>(null)
+  const [missionStepInputs, setMissionStepInputs] = useState<Record<string, string>>({})
 
   const loadTasks = useCallback(async () => {
     try {
@@ -144,6 +147,39 @@ export default function GestionBoard() {
     return task.project as string
   }
 
+  const handleMissionStatusUpdate = async (missionId: string, projectId: string, status: string) => {
+    try {
+      const data = await apiFetch<{ mission: { status: string } }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? { ...x, status: data.mission.status } : x))
+    } catch { /* silent */ }
+  }
+
+  const handleMissionToggleStep = async (missionId: string, projectId: string, mission: typeof missions[0], stepId: string) => {
+    const newSteps = mission.steps.map(s => s._id === stepId ? { ...s, done: !s.done } : s)
+    try {
+      const data = await apiFetch<{ mission: typeof missions[0] }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ steps: newSteps }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+    } catch { /* silent */ }
+  }
+
+  const handleMissionAddStep = async (missionId: string, projectId: string, mission: typeof missions[0], title: string) => {
+    const newSteps = [...mission.steps, { title, done: false }]
+    try {
+      const data = await apiFetch<{ mission: typeof missions[0] }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ steps: newSteps }),
+      })
+      setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
+      setMissionStepInputs(s => ({ ...s, [missionId]: '' }))
+    } catch { /* silent */ }
+  }
+
   const ALL_TABS: { key: ViewMode; label: string; icon: string; superOnly?: boolean }[] = [
     { key: 'table', label: 'Tableau', icon: '☰' },
     { key: 'kanban', label: 'Kanban', icon: '▦' },
@@ -177,8 +213,8 @@ export default function GestionBoard() {
             />
           )}
 
-          <div className="gestion-view-toggle">
-            {VIEW_TABS.map((tab) => (
+          <div className="gestion-view-toggle" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {VIEW_TABS.filter(t => t.key !== 'missions').map((tab) => (
               <button
                 key={tab.key}
                 className={`gestion-view-btn ${viewMode === tab.key ? 'active' : ''}`}
@@ -189,6 +225,21 @@ export default function GestionBoard() {
                 <span className="gestion-view-label">{tab.label}</span>
               </button>
             ))}
+            {/* Missions tab — séparé visuellement */}
+            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.12)', margin: '0 6px', flexShrink: 0 }} />
+            <button
+              className={`gestion-view-btn ${viewMode === 'missions' ? 'active' : ''}`}
+              onClick={() => setViewMode('missions')}
+              title="Missions internes"
+              style={{
+                borderColor: viewMode === 'missions' ? 'rgba(234,179,8,0.6)' : 'rgba(234,179,8,0.25)',
+                color: viewMode === 'missions' ? '#fde047' : 'rgba(253,224,71,0.6)',
+                background: viewMode === 'missions' ? 'rgba(234,179,8,0.15)' : 'transparent',
+              }}
+            >
+              <span className="gestion-view-icon">◎</span>
+              <span className="gestion-view-label">Missions internes</span>
+            </button>
           </div>
         </div>
 
@@ -291,6 +342,7 @@ export default function GestionBoard() {
                     <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Mission</th>
                     {isSuperAdmin && <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Assigné à</th>}
                     <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Statut</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Étapes</th>
                     <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px' }}>Deadline</th>
                   </tr>
                 </thead>
@@ -300,25 +352,84 @@ export default function GestionBoard() {
                     const statusLabels: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
                     const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
                     return (
-                      <tr key={m._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{m.internalProject?.name || '—'}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.internalProject?.entity}</div>
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{m.title}</div>
-                          {m.description && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{m.description}</div>}
-                        </td>
-                        {isSuperAdmin && <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</td>}
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, color: statusColors[m.status] || '#a5b4cf', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            {statusLabels[m.status] || m.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontSize: 12 }}>
-                          {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={m._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }} onClick={() => setExpandedMission(expandedMission === m._id ? null : m._id)}>
+                          <td style={{ padding: '10px 12px' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{m.internalProject?.name || '—'}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.internalProject?.entity}</div>
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{m.title}</div>
+                          </td>
+                          {isSuperAdmin && <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{m.assignedTo?.name}</td>}
+                          <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, color: statusColors[m.status] || '#a5b4cf', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>
+                                {statusLabels[m.status] || m.status}
+                              </span>
+                              {m.status !== 'TERMINE' && (
+                                <button type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, m.status === 'A_FAIRE' ? 'EN_COURS' : 'TERMINE')}
+                                  style={{ padding: '2px 7px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                  → {m.status === 'A_FAIRE' ? 'En cours' : 'Terminée'}
+                                </button>
+                              )}
+                              {m.status === 'TERMINE' && (
+                                <button type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, 'EN_COURS')}
+                                  style={{ padding: '2px 7px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                  ↩ Rouvrir
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>{m.steps?.length > 0 ? `${m.steps.filter(s => s.done).length}/${m.steps.length}` : '—'}</td>
+                          <td style={{ padding: '10px 12px', color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontSize: 12 }}>
+                            {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
+                          </td>
+                        </tr>
+                        {expandedMission === m._id && (
+                          <tr key={`${m._id}-expanded`}>
+                            <td colSpan={isSuperAdmin ? 6 : 5} style={{ padding: '0 12px 12px' }}>
+                              <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                {m.description && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.4 }}>{m.description}</p>}
+                                {m.steps?.length > 0 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginBottom: 8 }}>
+                                      <div style={{ height: '100%', borderRadius: 2, background: '#10b981', width: `${Math.round((m.steps.filter(s => s.done).length / m.steps.length) * 100)}%`, transition: 'width .3s' }} />
+                                    </div>
+                                    {m.steps.map(step => (
+                                      <div key={step._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <input type="checkbox" checked={step.done}
+                                          onChange={() => handleMissionToggleStep(m._id, m.internalProject?._id, m, step._id)}
+                                          style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981' }} />
+                                        <span style={{ fontSize: 12, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>
+                                          {step.title}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {isSuperAdmin && (
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <input className="portal-input"
+                                      value={missionStepInputs[m._id] || ''}
+                                      onChange={e => setMissionStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && missionStepInputs[m._id]?.trim()) {
+                                          handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim())
+                                        }
+                                      }}
+                                      placeholder="Ajouter une étape… (Entrée)"
+                                      style={{ fontSize: 12, padding: '4px 8px', maxWidth: 300 }} />
+                                    <button type="button"
+                                      onClick={() => { if (missionStepInputs[m._id]?.trim()) handleMissionAddStep(m._id, m.internalProject?._id, m, missionStepInputs[m._id].trim()) }}
+                                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 12, cursor: 'pointer' }}>+</button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     )
                   })}
                 </tbody>
