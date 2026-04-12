@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
+import { useI18n } from '../context/I18nContext'
 
 interface SEOProps {
   title?: string
@@ -19,10 +20,12 @@ const SEO = ({
   noindex = false
 }: SEOProps) => {
   const location = useLocation()
+  const { locale, t } = useI18n()
   const siteUrl = 'https://venio.paris'
   const currentUrl = `${siteUrl}${location.pathname}`
-  const fullTitle = title ? `${title} | Venio` : 'Venio - Stratégie. Création. Sans compromis.'
-  const fullDescription = description || 'Venio construit des systèmes qui durent. Architecture sur mesure, identités cohérentes et stratégies actionnables pour entreprises premium.'
+  const fullTitle = title ? `${title} | Venio` : t('seo.defaultTitle')
+  const fullDescription = description || t('seo.defaultDescription')
+  const ogLocale = locale === 'en' ? 'en_US' : 'fr_FR'
 
   return (
     <Helmet>
@@ -40,7 +43,7 @@ const SEO = ({
       <meta property="og:image" content={`${siteUrl}${image}`} />
       <meta property="og:url" content={currentUrl} />
       <meta property="og:site_name" content="Venio" />
-      <meta property="og:locale" content="fr_FR" />
+      <meta property="og:locale" content={ogLocale} />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />

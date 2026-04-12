@@ -30,6 +30,7 @@ export interface User {
   status?: string
   healthStatus?: string
   tags?: string[]
+  locale?: 'fr' | 'en'
   createdAt?: string
   updatedAt?: string
 }

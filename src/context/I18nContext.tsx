@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import locales from '../i18n'
+import { apiFetch, getToken } from '../lib/api'
 
-type Locale = 'fr' | 'en'
+export type Locale = 'fr' | 'en'
 
 const STORAGE_KEY = 'venio-lang'
 
@@ -26,12 +27,24 @@ const I18nContext = createContext<I18nContextValue | null>(null)
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getInitialLocale)
 
+  // Keep <html lang> in sync with locale
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
     try {
       localStorage.setItem(STORAGE_KEY, newLocale)
     } catch {
       // localStorage may not be available
+    }
+    // Persist to backend if authenticated (fire-and-forget)
+    if (getToken()) {
+      apiFetch('/api/auth/locale', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale: newLocale }),
+      }).catch(() => {})
     }
   }, [])
 
