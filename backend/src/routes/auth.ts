@@ -315,4 +315,27 @@ router.post(
   }
 )
 
+// PATCH /api/auth/locale
+router.patch(
+  '/locale',
+  auth,
+  body('locale').isIn(['fr', 'en']).withMessage('Locale must be "fr" or "en"'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg })
+      }
+
+      const userId = (req as any).user?.id
+      if (!userId) return res.status(401).json({ error: 'Non authentifie' })
+
+      await User.findByIdAndUpdate(userId, { locale: req.body.locale })
+      return res.json({ ok: true })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
 export default router

@@ -15,6 +15,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const permissions = resolveUserPermissions(data.user)
       const normalizedUser = { ...data.user, permissions } as User
       setUser(normalizedUser)
+      // Sync locale preference from backend if set
+      if (normalizedUser.locale) {
+        try { localStorage.setItem('venio-lang', normalizedUser.locale) } catch {}
+      }
       return normalizedUser
     } catch (err) {
       setUser(null)
