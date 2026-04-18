@@ -29,6 +29,33 @@ const PRIORITY_COLORS: Record<string, string> = {
   URGENTE: '#f87171',
 }
 
+const ARROW_WEEKLY_GOALS = [
+  'Valider le cas d’usage prioritaire avec 5 retours utilisateurs',
+  'Stabiliser le workflow MVP de bout en bout',
+  'Transformer les apprentissages en décisions produit',
+]
+
+const ARROW_DECISION_LOG = [
+  {
+    date: 'Cette semaine',
+    title: 'Premier workflow Arrow',
+    decision: 'Concentrer le suivi sur un scénario utilisateur principal avant d’élargir.',
+    owner: 'Produit',
+  },
+  {
+    date: 'À trancher',
+    title: 'Critère MVP',
+    decision: 'Définir le seuil minimum pour considérer le prototype testable.',
+    owner: 'Équipe',
+  },
+  {
+    date: 'À revoir',
+    title: 'Cible prioritaire',
+    decision: 'Réévaluer après les premiers tests et objections récurrentes.',
+    owner: 'Direction',
+  },
+]
+
 interface Member { _id: string; name: string; email: string; role: string }
 
 interface Mission {
@@ -36,7 +63,7 @@ interface Mission {
   progress: number
   assignedTo: { _id: string; name: string; email: string }[]
   internalProject: { _id: string; name: string; entity: string }
-  participants: { _id: string; user: { _id: string; name: string; email: string }; progress: number; status: string }[]
+  participants: { _id: string; user: { _id: string; name: string; email: string }; progress: number; status: string; blocked: boolean; blockedReason: string }[]
   steps: { _id: string; title: string; description: string; done: boolean; waitingReview: boolean; assignedTo?: string }[]
   deliverables: { _id: string; title: string; description: string; done: boolean; assignedTo?: string }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
@@ -77,7 +104,7 @@ export default function InternalProjectList() {
   const navigate = useNavigate()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
-  const [viewTab, setViewTab] = useState<'projects' | 'missions'>('projects')
+  const [viewTab, setViewTab] = useState<'arrow' | 'projects' | 'missions'>('arrow')
 
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -185,7 +212,7 @@ export default function InternalProjectList() {
   }
 
   useEffect(() => {
-    if (viewTab !== 'missions') return
+    if (viewTab !== 'missions' && viewTab !== 'arrow') return
     setMissionsLoading(true)
     apiFetch<{ missions: Mission[] }>('/api/admin/internal-projects/missions')
       .then(d => setMissions(d.missions || []))
@@ -363,6 +390,31 @@ export default function InternalProjectList() {
     (filterEntity === 'all' || p.entity === filterEntity)
   )
 
+  const arrowProjects = projects.filter(p => p.entity === 'Arrow')
+  const arrowMissions = missions.filter(m => m.internalProject?.entity === 'Arrow')
+  const arrowActiveProjects = arrowProjects.filter(p => p.status !== 'TERMINE' && p.status !== 'ARCHIVE')
+  const arrowBlockedMissions = arrowMissions.filter(m => (m.participants || []).some(p => p.blocked))
+  const arrowCompletedMissions = arrowMissions.filter(m => m.status === 'TERMINE')
+  const arrowAverageProgress = arrowMissions.length > 0
+    ? Math.round(arrowMissions.reduce((sum, mission) => sum + (mission.progress ?? 0), 0) / arrowMissions.length)
+    : 0
+  const arrowUpcomingMissions = [...arrowMissions]
+    .filter(m => m.status !== 'TERMINE')
+    .sort((a, b) => {
+      const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER
+      const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER
+      return aDate - bDate
+    })
+    .slice(0, 4)
+  const arrowMissionsByStatus = [
+    { value: 'A_FAIRE', label: 'À faire', color: '#fde047' },
+    { value: 'EN_COURS', label: 'En cours', color: '#38bdf8' },
+    { value: 'TERMINE', label: 'Terminé', color: '#6ee7b7' },
+  ].map(status => ({
+    ...status,
+    missions: arrowMissions.filter(m => m.status === status.value),
+  }))
+
   return (
     <div className="portal-container">
       <div className="portal-card">
@@ -391,6 +443,23 @@ export default function InternalProjectList() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+          <button
+            onClick={() => setViewTab('arrow')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              border: `1px solid ${viewTab === 'arrow' ? 'rgba(139,92,246,0.55)' : 'rgba(139,92,246,0.24)'}`,
+              background: viewTab === 'arrow' ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.04)',
+              color: viewTab === 'arrow' ? '#c4b5fd' : 'rgba(196,181,253,0.62)',
+              transition: 'all .15s',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+            Pilotage Arrow
+          </button>
+
           <button
             onClick={() => setViewTab('projects')}
             style={{
@@ -427,6 +496,16 @@ export default function InternalProjectList() {
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Créer une mission
+            </button>
+          )}
+
+          {viewTab === 'arrow' && (
+            <button
+              onClick={() => { setEditTarget(null); setForm({ ...emptyForm, entity: 'Arrow', poles: ['Direction', 'Dev'] }); setShowForm(true) }}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(139,92,246,0.38)', background: 'rgba(139,92,246,0.1)', color: '#c4b5fd', transition: 'all .15s' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Projet Arrow
             </button>
           )}
         </div>
@@ -561,6 +640,186 @@ export default function InternalProjectList() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ─── ARROW PILOTAGE TAB ─── */}
+      {viewTab === 'arrow' && (
+        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div className="portal-card" style={{ border: '1px solid rgba(139,92,246,0.18)', background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(14,165,233,0.04))' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div style={{ maxWidth: 680 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: '#c4b5fd' }}>Pilotage interne</span>
+                <h2 style={{ margin: '6px 0 8px', fontSize: 22, color: 'var(--text-primary)' }}>Arrow</h2>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+                  Suivre le cap, les avancées, les blocages et les apprentissages Arrow depuis les projets internes Venio.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  className="portal-button secondary"
+                  type="button"
+                  onClick={() => { setFilterEntity('Arrow'); setViewTab('projects') }}
+                >
+                  Voir les projets Arrow
+                </button>
+                <button
+                  className="portal-button"
+                  type="button"
+                  onClick={() => setShowMissionForm(true)}
+                >
+                  Créer une mission
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(140px, 1fr))', gap: 12 }}>
+            {[
+              { label: 'Projets actifs', value: arrowActiveProjects.length, color: '#c4b5fd' },
+              { label: 'Missions Arrow', value: arrowMissions.length, color: '#38bdf8' },
+              { label: 'Terminées', value: arrowCompletedMissions.length, color: '#6ee7b7' },
+              { label: 'Bloquées', value: arrowBlockedMissions.length, color: arrowBlockedMissions.length > 0 ? '#f87171' : '#a5b4cf' },
+            ].map(card => (
+              <div key={card.label} className="portal-card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{card.label}</div>
+                <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.color }}>{card.value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 18 }}>
+            <div className="portal-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Objectif de la semaine</h3>
+                  <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Ce qui doit guider les décisions et les tâches Arrow.</p>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8' }}>{arrowAverageProgress}% moyen</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {ARROW_WEEKLY_GOALS.map((goal, index) => (
+                  <div key={goal} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 8, background: index === 0 ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${index === 0 ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.06)'}` }}>
+                    <span style={{ width: 22, height: 22, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: index === 0 ? 'rgba(139,92,246,0.14)' : 'rgba(165,180,207,0.08)', color: index === 0 ? '#c4b5fd' : '#a5b4cf', fontSize: 12, fontWeight: 700 }}>{index + 1}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{goal}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="portal-card">
+              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Scorecard</h3>
+              {[
+                { label: 'Workflow principal cadré', state: arrowProjects.length > 0 },
+                { label: 'Missions de validation créées', state: arrowMissions.length > 0 },
+                { label: 'Blocages visibles', state: arrowBlockedMissions.length === 0 },
+                { label: 'Premiers livrables suivis', state: arrowMissions.some(m => (m.deliverables || []).length > 0) },
+              ].map(item => (
+                <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, color: item.state ? '#6ee7b7' : '#fbbf24', background: item.state ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)', border: `1px solid ${item.state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}` }}>
+                    {item.state ? 'OK' : 'À cadrer'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="portal-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Avancement opérationnel</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Lecture rapide des missions Arrow par statut.</p>
+              </div>
+              {missionsLoading && <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Chargement...</span>}
+            </div>
+            {arrowMissions.length === 0 ? (
+              <div style={{ padding: '26px 0', textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 12px' }}>Aucune mission Arrow pour l’instant.</p>
+                <button className="portal-button" type="button" onClick={() => setShowMissionForm(true)}>Créer la première mission</button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 12 }}>
+                {arrowMissionsByStatus.map(column => (
+                  <div key={column.value} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', padding: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: column.color }}>{column.label}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{column.missions.length}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {column.missions.slice(0, 4).map(m => (
+                        <button key={m._id} type="button" onClick={() => setSelectedMission(m._id)} style={{ width: '100%', textAlign: 'left', padding: '10px 11px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer' }}>
+                          <span style={{ display: 'block', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 5 }}>{m.title}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                              <span style={{ display: 'block', height: '100%', width: `${m.progress ?? 0}%`, background: column.color }} />
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.progress ?? 0}%</span>
+                          </span>
+                        </button>
+                      ))}
+                      {column.missions.length === 0 && <span style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', padding: '8px 0' }}>Vide</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+            <div className="portal-card">
+              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Prochaines actions</h3>
+              {arrowUpcomingMissions.length === 0 ? (
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Aucune action datée à suivre.</p>
+              ) : arrowUpcomingMissions.map(m => {
+                const isOverdue = m.dueDate && new Date(m.dueDate) < new Date()
+                return (
+                  <button key={m._id} type="button" onClick={() => setSelectedMission(m._id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 0', border: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{m.title}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{m.internalProject?.name}</span>
+                    </span>
+                    <span style={{ fontSize: 12, color: isOverdue ? '#f87171' : '#a5b4cf', whiteSpace: 'nowrap' }}>
+                      {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : 'Sans date'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="portal-card">
+              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Journal des décisions</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {ARROW_DECISION_LOG.map(item => (
+                  <div key={item.title} style={{ padding: '11px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd' }}>{item.title}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.date}</span>
+                    </div>
+                    <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{item.decision}</p>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Responsable : {item.owner}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="portal-card">
+            <h3 style={{ margin: '0 0 10px', fontSize: 16, color: 'var(--text-primary)' }}>Cadre de suivi</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>
+              {[
+                { title: 'Lundi', text: 'Priorités, responsables, livrable attendu.' },
+                { title: 'Mercredi', text: 'Blocages, arbitrages, ajustements.' },
+                { title: 'Vendredi', text: 'Résultats, apprentissages, décisions.' },
+                { title: 'Règle', text: 'Chaque semaine livre un résultat ou un apprentissage validé.' },
+              ].map(item => (
+                <div key={item.title} style={{ padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', marginBottom: 5 }}>{item.title}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{item.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
