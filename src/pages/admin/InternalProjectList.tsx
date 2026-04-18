@@ -29,32 +29,40 @@ const PRIORITY_COLORS: Record<string, string> = {
   URGENTE: '#f87171',
 }
 
-const ARROW_WEEKLY_GOALS = [
-  'Valider le cas d’usage prioritaire avec 5 retours utilisateurs',
-  'Stabiliser le workflow MVP de bout en bout',
-  'Transformer les apprentissages en décisions produit',
-]
+const DEFAULT_ARROW_PILOTAGE = {
+  goals: [
+    'Valider le cas d’usage prioritaire avec 5 retours utilisateurs',
+    'Stabiliser le workflow MVP de bout en bout',
+    'Transformer les apprentissages en décisions produit',
+  ],
+  scorecard: [
+    'Workflow principal cadré',
+    'Missions de validation créées',
+    'Blocages visibles',
+    'Premiers livrables suivis',
+  ],
+  decisions: [
+    'Cette semaine | Premier workflow Arrow | Concentrer le suivi sur un scénario utilisateur principal avant d’élargir. | Produit',
+    'À trancher | Critère MVP | Définir le seuil minimum pour considérer le prototype testable. | Équipe',
+    'À revoir | Cible prioritaire | Réévaluer après les premiers tests et objections récurrentes. | Direction',
+  ],
+  cadence: [
+    'Lundi | Priorités, responsables, livrable attendu.',
+    'Mercredi | Blocages, arbitrages, ajustements.',
+    'Vendredi | Résultats, apprentissages, décisions.',
+    'Règle | Chaque semaine livre un résultat ou un apprentissage validé.',
+  ],
+}
 
-const ARROW_DECISION_LOG = [
-  {
-    date: 'Cette semaine',
-    title: 'Premier workflow Arrow',
-    decision: 'Concentrer le suivi sur un scénario utilisateur principal avant d’élargir.',
-    owner: 'Produit',
-  },
-  {
-    date: 'À trancher',
-    title: 'Critère MVP',
-    decision: 'Définir le seuil minimum pour considérer le prototype testable.',
-    owner: 'Équipe',
-  },
-  {
-    date: 'À revoir',
-    title: 'Cible prioritaire',
-    decision: 'Réévaluer après les premiers tests et objections récurrentes.',
-    owner: 'Direction',
-  },
-]
+type ArrowPilotage = typeof DEFAULT_ARROW_PILOTAGE
+type ArrowPilotageSection = keyof typeof DEFAULT_ARROW_PILOTAGE
+
+const ARROW_SECTION_LABELS: Record<ArrowPilotageSection, string> = {
+  goals: 'Objectif de la semaine',
+  scorecard: 'Scorecard',
+  decisions: 'Journal des décisions',
+  cadence: 'Cadre de suivi',
+}
 
 interface Member { _id: string; name: string; email: string; role: string }
 
@@ -132,6 +140,58 @@ export default function InternalProjectList() {
   const [showMissionForm, setShowMissionForm] = useState(false)
   const [missionForm, setMissionForm] = useState({ projectId: '', title: '', description: '', assignedTo: [] as string[], dueDate: '' })
   const [savingMission, setSavingMission] = useState(false)
+  const [arrowPilotage, setArrowPilotage] = useState<ArrowPilotage>(DEFAULT_ARROW_PILOTAGE)
+  const [editingArrowSection, setEditingArrowSection] = useState<ArrowPilotageSection | null>(null)
+  const [arrowSectionDraft, setArrowSectionDraft] = useState('')
+  const [savingArrowPilotage, setSavingArrowPilotage] = useState(false)
+
+  const loadArrowPilotage = useCallback(async () => {
+    try {
+      const data = await apiFetch<Partial<ArrowPilotage>>('/api/admin/arrow-pilotage')
+      setArrowPilotage({
+        goals: data.goals?.length ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
+        scorecard: data.scorecard?.length ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
+        decisions: data.decisions?.length ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
+        cadence: data.cadence?.length ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
+      })
+    } catch {
+      showToast('Pilotage Arrow indisponible pour le moment', 'error')
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    loadArrowPilotage()
+  }, [loadArrowPilotage])
+
+  const openArrowSectionEditor = (section: ArrowPilotageSection) => {
+    setEditingArrowSection(section)
+    setArrowSectionDraft(arrowPilotage[section].join('\n'))
+  }
+
+  const saveArrowSection = async () => {
+    if (!editingArrowSection) return
+    const lines = arrowSectionDraft.split('\n').map(line => line.trim()).filter(Boolean)
+    setSavingArrowPilotage(true)
+    try {
+      const data = await apiFetch<Partial<ArrowPilotage>>('/api/admin/arrow-pilotage', {
+        method: 'PATCH',
+        body: JSON.stringify({ section: editingArrowSection, values: lines }),
+      })
+      setArrowPilotage({
+        goals: data.goals?.length ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
+        scorecard: data.scorecard?.length ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
+        decisions: data.decisions?.length ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
+        cadence: data.cadence?.length ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
+      })
+      setEditingArrowSection(null)
+      setArrowSectionDraft('')
+      showToast('Section Arrow mise à jour', 'success')
+    } catch {
+      showToast('Impossible d’enregistrer la section Arrow', 'error')
+    } finally {
+      setSavingArrowPilotage(false)
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -414,6 +474,20 @@ export default function InternalProjectList() {
     ...status,
     missions: arrowMissions.filter(m => m.status === status.value),
   }))
+  const arrowScorecardStates = [
+    arrowProjects.length > 0,
+    arrowMissions.length > 0,
+    arrowBlockedMissions.length === 0,
+    arrowMissions.some(m => (m.deliverables || []).length > 0),
+  ]
+  const arrowDecisions = arrowPilotage.decisions.map(line => {
+    const [date = '', title = '', decision = '', owner = ''] = line.split('|').map(part => part.trim())
+    return { date, title, decision, owner }
+  })
+  const arrowCadence = arrowPilotage.cadence.map(line => {
+    const [title = '', text = ''] = line.split('|').map(part => part.trim())
+    return { title, text }
+  })
 
   return (
     <div className="portal-container">
@@ -681,10 +755,21 @@ export default function InternalProjectList() {
               { label: 'Terminées', value: arrowCompletedMissions.length, color: '#6ee7b7' },
               { label: 'Bloquées', value: arrowBlockedMissions.length, color: arrowBlockedMissions.length > 0 ? '#f87171' : '#a5b4cf' },
             ].map(card => (
-              <div key={card.label} className="portal-card" style={{ padding: 16 }}>
+              <button
+                key={card.label}
+                type="button"
+                className="portal-card"
+                onClick={() => {
+                  if (card.label === 'Projets actifs') { setFilterEntity('Arrow'); setFilterStatus('EN_COURS'); setViewTab('projects'); return }
+                  if (card.label === 'Terminées') { setFilterEntity('Arrow'); setFilterStatus('TERMINE'); setViewTab('projects'); return }
+                  setViewTab('missions')
+                }}
+                style={{ padding: 16, textAlign: 'left', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
+              >
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{card.label}</div>
                 <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.color }}>{card.value}</div>
-              </div>
+                <div style={{ fontSize: 11, color: 'rgba(165,180,207,0.45)', marginTop: 8 }}>Cliquer pour ouvrir</div>
+              </button>
             ))}
           </div>
 
@@ -695,33 +780,33 @@ export default function InternalProjectList() {
                   <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Objectif de la semaine</h3>
                   <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Ce qui doit guider les décisions et les tâches Arrow.</p>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8' }}>{arrowAverageProgress}% moyen</span>
+                <button type="button" onClick={() => openArrowSectionEditor('goals')} style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', background: 'rgba(56,189,248,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier · {arrowAverageProgress}% moyen</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ARROW_WEEKLY_GOALS.map((goal, index) => (
-                  <div key={goal} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 8, background: index === 0 ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${index === 0 ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.06)'}` }}>
+                {arrowPilotage.goals.map((goal, index) => (
+                  <button key={`${goal}-${index}`} type="button" onClick={() => openArrowSectionEditor('goals')} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 8, background: index === 0 ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${index === 0 ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', textAlign: 'left' }}>
                     <span style={{ width: 22, height: 22, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: index === 0 ? 'rgba(139,92,246,0.14)' : 'rgba(165,180,207,0.08)', color: index === 0 ? '#c4b5fd' : '#a5b4cf', fontSize: 12, fontWeight: 700 }}>{index + 1}</span>
                     <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{goal}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
 
             <div className="portal-card">
-              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Scorecard</h3>
-              {[
-                { label: 'Workflow principal cadré', state: arrowProjects.length > 0 },
-                { label: 'Missions de validation créées', state: arrowMissions.length > 0 },
-                { label: 'Blocages visibles', state: arrowBlockedMissions.length === 0 },
-                { label: 'Premiers livrables suivis', state: arrowMissions.some(m => (m.deliverables || []).length > 0) },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, color: item.state ? '#6ee7b7' : '#fbbf24', background: item.state ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)', border: `1px solid ${item.state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}` }}>
-                    {item.state ? 'OK' : 'À cadrer'}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Scorecard</h3>
+                <button type="button" onClick={() => openArrowSectionEditor('scorecard')} style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', border: '1px solid rgba(196,181,253,0.25)', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
+              </div>
+              {arrowPilotage.scorecard.map((label, index) => {
+                const state = arrowScorecardStates[index] ?? false
+                return (
+                <div key={`${label}-${index}`} onClick={() => index === 0 ? setViewTab('projects') : index === 1 ? setViewTab('missions') : openArrowSectionEditor('scorecard')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, color: state ? '#6ee7b7' : '#fbbf24', background: state ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)', border: `1px solid ${state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}` }}>
+                    {state ? 'OK' : 'À cadrer'}
                   </span>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 
@@ -788,35 +873,36 @@ export default function InternalProjectList() {
             </div>
 
             <div className="portal-card">
-              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Journal des décisions</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Journal des décisions</h3>
+                <button type="button" onClick={() => openArrowSectionEditor('decisions')} style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', border: '1px solid rgba(196,181,253,0.25)', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ARROW_DECISION_LOG.map(item => (
-                  <div key={item.title} style={{ padding: '11px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {arrowDecisions.map((item, index) => (
+                  <button key={`${item.title}-${index}`} type="button" onClick={() => openArrowSectionEditor('decisions')} style={{ padding: '11px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd' }}>{item.title}</span>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.date}</span>
                     </div>
                     <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{item.decision}</p>
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Responsable : {item.owner}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
           <div className="portal-card">
-            <h3 style={{ margin: '0 0 10px', fontSize: 16, color: 'var(--text-primary)' }}>Cadre de suivi</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Cadre de suivi</h3>
+              <button type="button" onClick={() => openArrowSectionEditor('cadence')} style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', background: 'rgba(56,189,248,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>
-              {[
-                { title: 'Lundi', text: 'Priorités, responsables, livrable attendu.' },
-                { title: 'Mercredi', text: 'Blocages, arbitrages, ajustements.' },
-                { title: 'Vendredi', text: 'Résultats, apprentissages, décisions.' },
-                { title: 'Règle', text: 'Chaque semaine livre un résultat ou un apprentissage validé.' },
-              ].map(item => (
-                <div key={item.title} style={{ padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              {arrowCadence.map((item, index) => (
+                <button key={`${item.title}-${index}`} type="button" onClick={() => openArrowSectionEditor('cadence')} style={{ padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', textAlign: 'left' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', marginBottom: 5 }}>{item.title}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{item.text}</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -1159,6 +1245,47 @@ export default function InternalProjectList() {
                 <button className="portal-button secondary" type="button" onClick={() => setShowMissionForm(false)}>Annuler</button>
               </div>
             </form>
+          </div>
+        </>
+      )}
+
+      {/* ─── MODAL ÉDITION PILOTAGE ARROW ─── */}
+      {editingArrowSection && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1001, backdropFilter: 'blur(3px)' }}
+            onClick={() => setEditingArrowSection(null)} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 640, maxWidth: '92vw', background: '#141824', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)', zIndex: 1002, padding: '26px 28px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Modifier · {ARROW_SECTION_LABELS[editingArrowSection]}</h3>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  Une ligne par élément. Décisions : date | titre | décision | responsable. Cadre : titre | contenu.
+                </p>
+              </div>
+              <button onClick={() => setEditingArrowSection(null)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 14 }}>X</button>
+            </div>
+            <textarea
+              className="portal-input"
+              value={arrowSectionDraft}
+              onChange={e => setArrowSectionDraft(e.target.value)}
+              rows={editingArrowSection === 'goals' ? 7 : 10}
+              style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', fontSize: 13, lineHeight: 1.55 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 14, alignItems: 'center' }}>
+              <button
+                className="portal-button secondary"
+                type="button"
+                onClick={() => setArrowSectionDraft(DEFAULT_ARROW_PILOTAGE[editingArrowSection].join('\n'))}
+              >
+                Restaurer le modèle
+              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="portal-button secondary" type="button" onClick={() => setEditingArrowSection(null)}>Annuler</button>
+                <button className="portal-button" type="button" onClick={saveArrowSection} disabled={savingArrowPilotage}>
+                  {savingArrowPilotage ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
           </div>
         </>
       )}
