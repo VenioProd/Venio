@@ -227,13 +227,15 @@ const InternList = () => {
   }
 
   const handleTypeChange = async (internId: string, type: 'STAGIAIRE' | 'ALTERNANT') => {
+    setInterns(prev => prev.map(i => i._id === internId ? { ...i, type } : i))
     try {
       await apiFetch(`/api/admin/interns/${internId}`, {
         method: 'PATCH',
         body: JSON.stringify({ type }),
       })
-      loadInterns()
-    } catch { /* silent */ }
+    } catch {
+      loadInterns() // revert on error
+    }
   }
 
   const handleDeleteIntern = async (internId: string) => {
