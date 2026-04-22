@@ -9,7 +9,7 @@ import User from '../../models/User.js'
 import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
 import { triggerAutomations } from '../../automation/trigger.js'
-import { sendAdminCredentials } from '../../lib/email.js'
+import { sendAdminCredentials, sendPasswordResetEmail } from '../../lib/email.js'
 import { resetTokens } from '../auth.js'
 
 const router = express.Router()
@@ -289,7 +289,7 @@ router.post('/:userId/send-credentials', requirePermission(PERMISSIONS.MANAGE_AD
   }
 })
 
-// POST /api/admin/admins/:userId/reset-link — generate a password reset link (no email sent)
+// POST /api/admin/admins/:userId/reset-link — generate a password reset link and send it by email
 router.post('/:userId/reset-link', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') {
@@ -311,7 +311,42 @@ router.post('/:userId/reset-link', requirePermission(PERMISSIONS.MANAGE_ADMINS),
     const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
     const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
 
-    return res.json({ resetUrl })
+    const emailResult = await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl })
+
+    return res.json({ resetUrl, emailSent: emailResult.sent })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/admins/:userId/resend-credentials — generate new temp password and send credentials by email
+router.post('/:userId/resend-credentials', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Seul le Super Admin peut renvoyer les identifiants' })
+    }
+
+    const user = await User.findById(req.params.userId)
+    if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      return res.status(404).json({ error: 'Administrateur introuvable' })
+    }
+
+    const tempPassword = crypto.randomBytes(6).toString('hex') // 12 chars hex
+    user.passwordHash = await bcrypt.hash(tempPassword, 10)
+    user.passwordChangedAt = new Date()
+    await user.save()
+
+    const result = await sendAdminCredentials({
+      to: user.email,
+      name: user.name,
+      email: user.email,
+      password: tempPassword,
+    })
+    if (!result.sent) {
+      return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
+    }
+
+    return res.json({ success: true })
   } catch (err) {
     return next(err)
   }

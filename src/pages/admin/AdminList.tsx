@@ -35,6 +35,7 @@ const AdminList = () => {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [impersonating, setImpersonating] = useState<string | null>(null)
   const [resetting, setResetting] = useState<string | null>(null)
+  const [resendingCredentials, setResendingCredentials] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -78,13 +79,25 @@ const AdminList = () => {
   const handleResetLink = async (adminId: string) => {
     setResetting(adminId)
     try {
-      const data = await apiFetch<{ resetUrl: string }>(`/api/admin/admins/${adminId}/reset-link`, { method: 'POST' })
+      const data = await apiFetch<{ resetUrl: string; emailSent: boolean }>(`/api/admin/admins/${adminId}/reset-link`, { method: 'POST' })
       await navigator.clipboard.writeText(data.resetUrl)
-      showToast('Lien de reinitialisation copie dans le presse-papiers', 'success')
+      showToast(data.emailSent ? 'Email envoye + lien copie dans le presse-papiers' : 'Lien copie (email non envoye, verifier SMTP)', 'success')
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
       setResetting(null)
+    }
+  }
+
+  const handleResendCredentials = async (adminId: string) => {
+    setResendingCredentials(adminId)
+    try {
+      await apiFetch(`/api/admin/admins/${adminId}/resend-credentials`, { method: 'POST' })
+      showToast('Nouveaux identifiants envoyes par email', 'success')
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Erreur', 'error')
+    } finally {
+      setResendingCredentials(null)
     }
   }
 
@@ -219,7 +232,16 @@ const AdminList = () => {
                           disabled={resetting === admin._id}
                           style={{ flex: '1 1 100%' }}
                         >
-                          {resetting === admin._id ? 'Generation...' : 'Copier lien reinitialisation'}
+                          {resetting === admin._id ? 'Envoi...' : 'Envoyer lien reinitialisation'}
+                        </button>
+                        <button
+                          className="admin-card-btn admin-card-btn--edit"
+                          type="button"
+                          onClick={() => handleResendCredentials(admin._id)}
+                          disabled={resendingCredentials === admin._id}
+                          style={{ flex: '1 1 100%' }}
+                        >
+                          {resendingCredentials === admin._id ? 'Envoi...' : 'Renvoyer les identifiants'}
                         </button>
                       </>
                     )}
