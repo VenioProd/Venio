@@ -596,7 +596,6 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
     ;(user as any).passwordChangedAt = new Date()
     await user.save()
 
-    const loginUrl = `${process.env.CORS_ORIGIN || 'http://localhost:5501'}/admin/login`
     const result = await sendAdminCredentials({
       to: user.email,
       name: user.name,
