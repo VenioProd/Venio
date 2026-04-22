@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
@@ -11,6 +12,7 @@ import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
+import { sendAdminCredentials } from '../../lib/email.js'
 import { getInternSettings } from '../../models/InternSettings.js'
 import { getRecentLogs } from '../../automation/models/AutomationLog.js'
 import { countWorkingDaysSince } from '../../lib/workingDays.js'
@@ -570,6 +572,43 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
     await Intern.findByIdAndDelete(req.params.id)
 
     res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+})
+
+// POST /api/admin/interns/:id/resend-credentials — génère un nouveau mdp et envoie les identifiants par email
+router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const reqUser = (req as any).user
+    if (reqUser.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Seuls les super admins peuvent renvoyer les identifiants' })
+    }
+
+    const intern = await Intern.findById(req.params.id).populate('userId', 'name email')
+    if (!intern || !intern.userId) return res.status(404).json({ error: 'Stagiaire introuvable' })
+
+    const user = await User.findById((intern.userId as any)._id)
+    if (!user) return res.status(404).json({ error: 'Compte utilisateur introuvable' })
+
+    const tempPassword = crypto.randomBytes(6).toString('hex')
+    user.passwordHash = await bcrypt.hash(tempPassword, 10)
+    ;(user as any).passwordChangedAt = new Date()
+    await user.save()
+
+    const loginUrl = `${process.env.CORS_ORIGIN || 'http://localhost:5501'}/admin/login`
+    const result = await sendAdminCredentials({
+      to: user.email,
+      name: user.name,
+      email: user.email,
+      password: tempPassword,
+    })
+
+    if (!result.sent) {
+      return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
+    }
+
+    return res.json({ success: true })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }

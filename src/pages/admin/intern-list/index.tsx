@@ -245,6 +245,19 @@ const InternList = () => {
     } catch { /* silent */ }
   }
 
+  const [resendingCredentials, setResendingCredentials] = useState<string | null>(null)
+  const handleResendCredentials = async (internId: string) => {
+    setResendingCredentials(internId)
+    try {
+      await apiFetch(`/api/admin/interns/${internId}/resend-credentials`, { method: 'POST' })
+      alert('Nouveaux identifiants envoyes par email')
+    } catch (err: unknown) {
+      alert((err as Error).message || 'Erreur lors de l\'envoi')
+    } finally {
+      setResendingCredentials(null)
+    }
+  }
+
   // ── Report CRUD ──
   const handleCreateReport = async () => {
     if (!reportForm.contenu) return
@@ -876,7 +889,17 @@ const InternList = () => {
                           <button className="ticket-back-btn" style={{ color: '#22c55e' }} onClick={() => handleStatusChange(intern._id, 'ACTIF')}>Reactiver</button>
                         )}
                         {isSuperAdmin && (
-                          <button className="ticket-back-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteIntern(intern._id)}>Supprimer</button>
+                          <>
+                            <button
+                              className="ticket-back-btn"
+                              style={{ color: '#0ea5e9' }}
+                              onClick={() => handleResendCredentials(intern._id)}
+                              disabled={resendingCredentials === intern._id}
+                            >
+                              {resendingCredentials === intern._id ? 'Envoi...' : 'Renvoyer identifiants'}
+                            </button>
+                            <button className="ticket-back-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteIntern(intern._id)}>Supprimer</button>
+                          </>
                         )}
                       </div>
                     </div>
