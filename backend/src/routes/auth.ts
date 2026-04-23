@@ -28,7 +28,7 @@ function signToken(user: { _id: unknown; role: string; email: string; name: stri
 // POST /api/auth/login
 router.post(
   '/login',
-  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('email').isEmail().withMessage('Email invalide'),
   body('password').notEmpty().withMessage('Mot de passe requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -108,7 +108,7 @@ router.patch(
   '/profile',
   auth,
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Le nom ne peut pas être vide'),
-  body('email').optional().isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('email').optional().isEmail().withMessage('Email invalide'),
   body('phone').optional().trim(),
   body('companyName').optional().trim(),
   body('website').optional().trim(),
@@ -187,7 +187,7 @@ router.post(
 // POST /api/auth/bootstrap-admin
 router.post(
   '/bootstrap-admin',
-  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('email').isEmail().withMessage('Email invalide'),
   body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -223,7 +223,7 @@ router.post(
 // POST /api/auth/forgot-password
 router.post(
   '/forgot-password',
-  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('email').isEmail().withMessage('Email invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
