@@ -519,7 +519,12 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
 
     const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursPresence } = req.body
 
-    if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) intern.type = type
+    if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) {
+      intern.type = type
+      await User.findByIdAndUpdate(intern.userId, {
+        $set: { tags: [type] },
+      })
+    }
     if (poste !== undefined) intern.poste = poste
     if (departement !== undefined) intern.departement = departement
     if (dateDebut !== undefined) intern.dateDebut = new Date(dateDebut)
