@@ -39,7 +39,7 @@ router.get(
 router.post(
   '/',
   requirePermission(PERMISSIONS.MANAGE_ADMINS),
-  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('email').isEmail().withMessage('Email invalide'),
   body('password').isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
