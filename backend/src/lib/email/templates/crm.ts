@@ -288,3 +288,51 @@ export async function sendProposalReminderEmail({ to, assigneeName, lead, daysIn
     return { sent: false, error: (err as Error).message || String(err) }
   }
 }
+
+export async function sendArrowSchoolAssignmentEmail({
+  to, assigneeName, school,
+}: {
+  to: string
+  assigneeName: string
+  school: { name: string; city?: string; contactName?: string; contactEmail?: string; status?: string }
+}): Promise<EmailResult> {
+  const transporter = getTransporter()
+  if (!transporter) return { sent: false, error: 'SMTP non configuré' }
+
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@venio.paris'
+  const appName = process.env.APP_NAME || 'Venio'
+  const url = (process.env.CORS_ORIGIN || 'http://localhost:5501') + '/admin/crm'
+
+  try {
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject: `[Arrow] École assignée : ${school.name}`,
+      text: [
+        `Bonjour ${assigneeName},`,
+        `Une école vous a été assignée dans la prospection Arrow.`,
+        `École : ${school.name}${school.city ? ` (${school.city})` : ''}`,
+        `Contact : ${school.contactName || 'Non renseigné'}`,
+        `Email : ${school.contactEmail || 'Non renseigné'}`,
+        `Statut : ${school.status || 'À prospecter'}`,
+        `Voir dans le CRM : ${url}`,
+        `— L'équipe ${appName}`,
+      ].join('\n'),
+      html: [
+        `<p>Bonjour <strong>${escapeHtml(assigneeName)}</strong>,</p>`,
+        `<p>Une école vous a été assignée dans la prospection <strong>Arrow</strong>.</p>`,
+        '<table style="border-collapse:collapse;margin:16px 0;">',
+        `<tr><td style="padding:4px 14px 4px 0;color:#666;">École</td><td><strong>${escapeHtml(school.name)}${school.city ? ` (${escapeHtml(school.city)})` : ''}</strong></td></tr>`,
+        `<tr><td style="padding:4px 14px 4px 0;color:#666;">Contact</td><td>${escapeHtml(school.contactName || 'Non renseigné')}</td></tr>`,
+        `<tr><td style="padding:4px 14px 4px 0;color:#666;">Email</td><td>${school.contactEmail ? `<a href="mailto:${escapeHtml(school.contactEmail)}">${escapeHtml(school.contactEmail)}</a>` : 'Non renseigné'}</td></tr>`,
+        `<tr><td style="padding:4px 14px 4px 0;color:#666;">Statut</td><td>${escapeHtml(school.status || 'À prospecter')}</td></tr>`,
+        '</table>',
+        `<p><a href="${escapeHtml(url)}" style="display:inline-block;padding:10px 20px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:6px;">Voir dans le CRM Arrow</a></p>`,
+        `<p>— L'équipe ${escapeHtml(appName)}</p>`,
+      ].join(''),
+    })
+    return { sent: true }
+  } catch (err) {
+    return { sent: false, error: (err as Error).message || String(err) }
+  }
+}

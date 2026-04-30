@@ -6,6 +6,7 @@ import ArrowSchool from '../../models/ArrowSchool.js'
 import Lead from '../../models/Lead.js'
 import User from '../../models/User.js'
 import { ADMIN_ROLES } from '../../lib/permissions.js'
+import { sendArrowSchoolAssignmentEmail } from '../../lib/email.js'
 
 const router = express.Router()
 router.use(auth)
@@ -120,6 +121,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     if (!school) return res.status(404).json({ error: 'École introuvable' })
 
     const payload = normalizePayload(req.body)
+    const prevAssignedTo = String((school as any).assignedTo || '')
 
     if (payload.status && payload.status !== (school as any).status) {
       payload.statusChangedAt = new Date()
@@ -131,6 +133,25 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const populated = await ArrowSchool.findById(school._id)
       .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email')
+
+    // Envoyer un email si le commercial assigné a changé
+    const newAssignedTo = payload.assignedTo
+    if (newAssignedTo && String(newAssignedTo) !== prevAssignedTo) {
+      const assignee = await User.findById(newAssignedTo).select('name email')
+      if (assignee && (assignee as any).email) {
+        sendArrowSchoolAssignmentEmail({
+          to: (assignee as any).email,
+          assigneeName: (assignee as any).name || 'Commercial',
+          school: {
+            name: (school as any).name,
+            city: (school as any).city || '',
+            contactName: (school as any).contactName || '',
+            contactEmail: (school as any).contactEmail || '',
+            status: (school as any).status,
+          },
+        }).catch(() => {})
+      }
+    }
 
     return res.json({ school: populated })
   } catch (err) {
