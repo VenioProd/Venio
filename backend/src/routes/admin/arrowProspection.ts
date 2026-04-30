@@ -94,6 +94,24 @@ router.post(
         .populate('assignedTo', 'name email')
         .populate('createdBy', 'name email')
 
+      // Email si un commercial est assigné à la création (et ce n'est pas le créateur lui-même)
+      if (payload.assignedTo && String(payload.assignedTo) !== String(req.user!.id)) {
+        const assignee = await User.findById(payload.assignedTo).select('name email')
+        if (assignee && (assignee as any).email) {
+          sendArrowSchoolAssignmentEmail({
+            to: (assignee as any).email,
+            assigneeName: (assignee as any).name || 'Commercial',
+            school: {
+              name: (school as any).name,
+              city: (school as any).city || '',
+              contactName: (school as any).contactName || '',
+              contactEmail: (school as any).contactEmail || '',
+              status: (school as any).status,
+            },
+          }).catch(() => {})
+        }
+      }
+
       return res.status(201).json({ school: populated })
     } catch (err) {
       return next(err)
