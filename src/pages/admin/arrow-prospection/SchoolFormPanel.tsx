@@ -33,17 +33,18 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
       {/* Overlay */}
       <div
         onClick={onCancel}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100 }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1100 }}
       />
 
       {/* Panneau latéral */}
       <div style={{
-        position: 'fixed', top: 65, right: 0, bottom: 0, width: 500, maxWidth: '100vw',
+        position: 'fixed', top: 65, right: 0, bottom: 0,
+        width: 'min(500px, 100vw)',
         background: '#13151f',
         borderLeft: '1px solid rgba(255,255,255,0.08)',
         borderTop: '1px solid rgba(255,255,255,0.08)',
         zIndex: 1101, display: 'flex', flexDirection: 'column',
-        boxShadow: '-12px 0 48px rgba(0,0,0,0.7)',
+        boxShadow: '-12px 0 48px rgba(0,0,0,0.8)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
