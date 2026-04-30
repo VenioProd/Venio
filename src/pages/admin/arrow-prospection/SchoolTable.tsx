@@ -15,14 +15,6 @@ export default function SchoolTable({ schools, onEdit, onDelete, onSelect, onPat
   const [editingStatus, setEditingStatus] = useState<string | null>(null)
   const [editingTemp, setEditingTemp] = useState<string | null>(null)
 
-  if (schools.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '56px 0', fontSize: 14 }}>
-        Aucune école dans cette vue.
-      </div>
-    )
-  }
-
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -34,6 +26,13 @@ export default function SchoolTable({ schools, onEdit, onDelete, onSelect, onPat
           </tr>
         </thead>
         <tbody>
+          {schools.length === 0 && (
+            <tr>
+              <td colSpan={8} style={{ padding: '48px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+                Aucune école enregistrée · <span style={{ color: 'var(--primary)' }}>Cliquez sur "+ Ajouter une école" pour commencer</span>
+              </td>
+            </tr>
+          )}
           {schools.map(school => {
             const status = STATUS_MAP[school.status]
             const temp = TEMPERATURE_MAP[school.temperature]
