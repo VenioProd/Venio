@@ -127,6 +127,13 @@ export default function ArrowProspection() {
     }
   }
 
+  const handlePatch = async (id: string, patch: Record<string, unknown>) => {
+    try {
+      await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+      await load()
+    } catch {}
+  }
+
   const handleStatusChange = async (school: ArrowSchool, newStatus: string) => {
     try {
       await apiFetch(`/api/admin/arrow-prospection/${school._id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) })
@@ -207,6 +214,7 @@ export default function ArrowProspection() {
             onEdit={openEdit}
             onDelete={id => setDeleteConfirm(id)}
             onSelect={setSelected}
+            onPatch={handlePatch}
             canManage={canManage}
           />
         </div>
