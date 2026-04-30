@@ -1,12 +1,15 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
 import { ARROW_STATUSES, ARROW_SCHOOL_TYPES, ARROW_TEMPERATURES, ARROW_SOURCES, STATUS_MAP, TEMPERATURE_MAP } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }
 
+export type ModalSection = 'ecole' | 'contact' | 'prospection'
+
 interface Props {
   school: ArrowSchool
   admins: AdminUser[]
+  focusSection?: ModalSection
   onClose: () => void
   onSave: (id: string, data: Partial<ArrowSchoolFormData>) => Promise<void>
   canManage: boolean
@@ -16,16 +19,27 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{children}</div>
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 24 }}>
+const Section = React.forwardRef<HTMLDivElement, { title: string; children: React.ReactNode }>(
+  ({ title, children }, ref) => (
+    <div ref={ref} style={{ marginBottom: 24, scrollMarginTop: 12 }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid rgba(14,165,233,0.2)' }}>{title}</div>
       {children}
     </div>
   )
-}
+)
 
-export default function SchoolDetailModal({ school, admins, onClose, onSave, canManage }: Props) {
+export default function SchoolDetailModal({ school, admins, focusSection, onClose, onSave, canManage }: Props) {
+  const ecoleRef = useRef<HTMLDivElement>(null)
+  const contactRef = useRef<HTMLDivElement>(null)
+  const prospectionRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const map = { ecole: ecoleRef, contact: contactRef, prospection: prospectionRef }
+    const ref = focusSection ? map[focusSection] : null
+    if (ref?.current) {
+      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+    }
+  }, [focusSection])
   const status = STATUS_MAP[school.status]
   const temp = TEMPERATURE_MAP[school.temperature]
 
@@ -85,7 +99,7 @@ export default function SchoolDetailModal({ school, admins, onClose, onSave, can
         {/* Corps scrollable */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
 
-          <Section title="École">
+          <Section title="École" ref={ecoleRef}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <Label>Type</Label>
@@ -112,7 +126,7 @@ export default function SchoolDetailModal({ school, admins, onClose, onSave, can
             </div>
           </Section>
 
-          <Section title="Contact référent">
+          <Section title="Contact référent" ref={contactRef}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <Label>Nom</Label>
@@ -133,7 +147,7 @@ export default function SchoolDetailModal({ school, admins, onClose, onSave, can
             </div>
           </Section>
 
-          <Section title="Prospection">
+          <Section title="Prospection" ref={prospectionRef}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <Label>Statut</Label>

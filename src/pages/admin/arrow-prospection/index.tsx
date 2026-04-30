@@ -33,6 +33,7 @@ export default function ArrowProspection() {
   const [editing, setEditing] = useState<ArrowSchool | null>(null)
   const [form, setForm] = useState<ArrowSchoolFormData>({ ...EMPTY_FORM })
   const [selected, setSelected] = useState<ArrowSchool | null>(null)
+  const [focusSection, setFocusSection] = useState<'ecole' | 'contact' | 'prospection' | undefined>()
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -214,7 +215,7 @@ export default function ArrowProspection() {
             admins={admins}
             onEdit={openEdit}
             onDelete={id => setDeleteConfirm(id)}
-            onSelect={setSelected}
+            onSelect={(s, section) => { setSelected(s); setFocusSection(section) }}
             onPatch={handlePatch}
             canManage={canManage}
           />
@@ -284,7 +285,8 @@ export default function ArrowProspection() {
         <SchoolDetailModal
           school={selected}
           admins={admins}
-          onClose={() => setSelected(null)}
+          focusSection={focusSection}
+          onClose={() => { setSelected(null); setFocusSection(undefined) }}
           onSave={async (id, data) => {
             await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
             await load()

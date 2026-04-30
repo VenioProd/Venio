@@ -6,12 +6,14 @@ import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEM
 
 interface AdminUser { _id: string; name: string; email: string }
 
+export type ModalSection = 'ecole' | 'contact' | 'prospection'
+
 interface Props {
   schools: ArrowSchool[]
   admins: AdminUser[]
   onEdit: (school: ArrowSchool) => void
   onDelete: (id: string) => void
-  onSelect: (school: ArrowSchool) => void
+  onSelect: (school: ArrowSchool, section?: ModalSection) => void
   onPatch: (id: string, patch: Record<string, unknown>) => void
   canManage: boolean
 }
@@ -135,33 +137,33 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                     const totalRelances = (school.relances ?? []).filter(r => r.date).length
 
                     return (
-                      <tr key={school._id} className="crm-table-row" onClick={() => onSelect(school)}>
+                      <tr key={school._id} className="crm-table-row">
 
                         {/* École */}
-                        <td className="crm-td crm-td-company">
+                        <td className="crm-td crm-td-company" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'ecole')}>
                           <span className="crm-row-color-indicator" style={{ background: group.color }} />
                           <strong>{school.name}</strong>
                         </td>
 
                         {/* Type · Ville */}
-                        <td className="crm-td">
+                        <td className="crm-td" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'ecole')}>
                           <span className="crm-table-badge">{SCHOOL_TYPE_MAP[school.schoolType]?.label || school.schoolType}</span>
                           {school.city && <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontSize: 12 }}>{school.city}</span>}
                         </td>
 
                         {/* Contact */}
-                        <td className="crm-td">
+                        <td className="crm-td" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'contact')}>
                           {school.contactName
                             ? <>{school.contactName}{school.contactRole && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {school.contactRole}</span>}</>
                             : '—'}
                         </td>
 
                         {/* Email */}
-                        <td className="crm-td crm-td-email" onClick={e => e.stopPropagation()}>
+                        <td className="crm-td crm-td-email" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'contact')}>
                           {school.contactEmail
-                            ? <a href={`mailto:${school.contactEmail}`} className="crm-email-link">{school.contactEmail}</a>
+                            ? <a href={`mailto:${school.contactEmail}`} className="crm-email-link" onClick={e => e.stopPropagation()}>{school.contactEmail}</a>
                             : school.emailGeneral
-                              ? <a href={`mailto:${school.emailGeneral}`} className="crm-email-link" style={{ opacity: 0.6 }}>{school.emailGeneral}</a>
+                              ? <a href={`mailto:${school.emailGeneral}`} className="crm-email-link" style={{ opacity: 0.6 }} onClick={e => e.stopPropagation()}>{school.emailGeneral}</a>
                               : '—'}
                         </td>
 
@@ -194,7 +196,7 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                         </td>
 
                         {/* Prochain contact */}
-                        <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`}>
+                        <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`} style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'prospection')}>
                           {school.nextActionAt ? new Date(school.nextActionAt).toLocaleDateString('fr-FR') : '—'}
                           {isOverdue && <span className="crm-overdue-tag">En retard</span>}
                         </td>

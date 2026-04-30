@@ -58,6 +58,7 @@ const CrmBoard = () => {
   const [editingSchool, setEditingSchool] = useState<ArrowSchool | null>(null)
   const [schoolForm, setSchoolForm] = useState<ArrowSchoolFormData>({ ...EMPTY_SCHOOL_FORM })
   const [selectedSchool, setSelectedSchool] = useState<ArrowSchool | null>(null)
+  const [schoolFocusSection, setSchoolFocusSection] = useState<'ecole' | 'contact' | 'prospection' | undefined>()
   const [schoolSaving, setSchoolSaving] = useState(false)
 
   const loadArrow = useCallback(async () => {
@@ -509,7 +510,7 @@ const CrmBoard = () => {
               admins={admins}
               onEdit={openSchoolEdit}
               onDelete={handleSchoolDelete}
-              onSelect={setSelectedSchool}
+              onSelect={(s, section) => { setSelectedSchool(s); setSchoolFocusSection(section) }}
               onPatch={handleSchoolPatch}
               canManage={canManageCrm}
             />
@@ -585,7 +586,8 @@ const CrmBoard = () => {
         <SchoolDetailModal
           school={selectedSchool}
           admins={admins}
-          onClose={() => setSelectedSchool(null)}
+          focusSection={schoolFocusSection}
+          onClose={() => { setSelectedSchool(null); setSchoolFocusSection(undefined) }}
           onSave={async (id, data) => {
             await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
             await loadArrow()
