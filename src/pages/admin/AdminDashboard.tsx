@@ -209,14 +209,6 @@ const AdminDashboard = () => {
                 <span className="portal-action-label">CRM</span>
               </Link>
             )}
-            {canViewCrm && (
-              <Link className="portal-button portal-action-link" to="/admin/arrow-prospection" title="Arrow — Prospection écoles">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
-                </span>
-                <span className="portal-action-label">Prospection</span>
-              </Link>
-            )}
             {(user?.role === 'SUPER_ADMIN' || user?.role === 'RH') && (
               <Link className="portal-button portal-action-link" to="/admin/qualiopi" title="Qualiopi">
                 <span className="portal-action-icon" aria-hidden>
