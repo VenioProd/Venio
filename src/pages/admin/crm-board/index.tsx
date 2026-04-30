@@ -109,6 +109,18 @@ const CrmBoard = () => {
     } catch {}
   }
 
+  const handleTransferToArrow = async (leadId: string) => {
+    if (!window.confirm('Transférer ce lead vers Arrow Écoles ? Il sera retiré du CRM.')) return
+    try {
+      await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${leadId}`, { method: 'POST' })
+      await load()
+      setSection('arrow')
+      await loadArrow()
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors du transfert')
+    }
+  }
+
   const adminsById = useMemo(() => {
     const map: Record<string, AdminUser> = {}
     admins.forEach((admin) => {
@@ -535,6 +547,7 @@ const CrmBoard = () => {
             onDeleteLead={handleDeleteLead}
             onSetDeleteConfirm={setDeleteConfirm}
             onExpandLead={setExpandedLead}
+            onTransferToArrow={handleTransferToArrow}
           />
         )}
       </div>

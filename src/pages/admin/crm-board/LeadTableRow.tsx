@@ -16,6 +16,7 @@ interface LeadTableRowProps {
   onDeleteLead: (leadId: string) => Promise<void>
   onSetDeleteConfirm: (id: string | null) => void
   onExpandLead: (lead: Lead) => void
+  onTransferToArrow?: (leadId: string) => void
 }
 
 const LeadTableRow: React.FC<LeadTableRowProps> = ({
@@ -31,6 +32,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   onDeleteLead,
   onSetDeleteConfirm,
   onExpandLead,
+  onTransferToArrow,
 }) => {
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
@@ -133,6 +135,17 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               onChange={(v) => onUpdateLead(lead._id, { status: v })}
               options={CRM_STATUSES.map((s) => ({ value: s.key, label: `\u2192 ${s.label}` }))}
             />
+            {/* Transfer to Arrow button */}
+            {onTransferToArrow && (
+              <button
+                className="crm-btn-notes"
+                onClick={() => onTransferToArrow(lead._id)}
+                title="Transf\u00e9rer vers Arrow \u00c9coles"
+                style={{ color: '#0ea5e9' }}
+              >
+                \ud83c\udfaf
+              </button>
+            )}
             {/* Notes button */}
             <button
               className="crm-btn-notes"

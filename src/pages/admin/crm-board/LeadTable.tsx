@@ -35,6 +35,7 @@ interface LeadTableProps {
   onDeleteLead: (leadId: string) => Promise<void>
   onSetDeleteConfirm: (id: string | null) => void
   onExpandLead: (lead: Lead) => void
+  onTransferToArrow?: (leadId: string) => void
 }
 
 const SortIcon = ({ field, sortField, sortDir }: { field: string; sortField: string; sortDir: string }) => {
@@ -74,6 +75,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   onDeleteLead,
   onSetDeleteConfirm,
   onExpandLead,
+  onTransferToArrow,
 }) => {
   return (
     <div className="crm-table-container">
@@ -165,6 +167,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
                         onDeleteLead={onDeleteLead}
                         onSetDeleteConfirm={onSetDeleteConfirm}
                         onExpandLead={onExpandLead}
+                        onTransferToArrow={onTransferToArrow}
                       />
                     ))}
                 </React.Fragment>

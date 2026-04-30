@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import ArrowSchool from '../../models/ArrowSchool.js'
+import Lead from '../../models/Lead.js'
 import User from '../../models/User.js'
 import { ADMIN_ROLES } from '../../lib/permissions.js'
 
@@ -159,6 +160,47 @@ router.patch('/:id/archive', async (req: Request, res: Response, next: NextFunct
     )
     if (!school) return res.status(404).json({ error: 'École introuvable' })
     return res.json({ school })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/arrow-prospection/transfer-lead/:leadId
+// Convertit un lead CRM en école Arrow et supprime le lead
+router.post('/transfer-lead/:leadId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lead = await Lead.findById(req.params.leadId)
+    if (!lead) return res.status(404).json({ error: 'Lead introuvable' })
+
+    const school = await ArrowSchool.create({
+      name: (lead as any).company || 'École sans nom',
+      schoolType: 'AUTRE',
+      city: '',
+      region: '',
+      emailGeneral: '',
+      contactName: (lead as any).contactName || '',
+      contactRole: '',
+      contactEmail: (lead as any).contactEmail || '',
+      contactPhone: (lead as any).contactPhone || '',
+      status: 'A_PROSPECTER',
+      temperature: (lead as any).leadTemperature === 'TRES_CHAUD' ? 'TRES_CHAUD'
+        : (lead as any).leadTemperature === 'CHAUD' ? 'CHAUD'
+        : (lead as any).leadTemperature === 'TIEDE' ? 'TIEDE' : 'FROID',
+      source: (lead as any).source || '',
+      notes: (lead as any).notes || '',
+      nextActionAt: (lead as any).nextActionAt || null,
+      lastContactAt: (lead as any).lastContactAt || null,
+      assignedTo: (lead as any).assignedTo || null,
+      createdBy: req.user!.id,
+    })
+
+    await lead.deleteOne()
+
+    const populated = await ArrowSchool.findById(school._id)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+
+    return res.status(201).json({ school: populated })
   } catch (err) {
     return next(err)
   }
