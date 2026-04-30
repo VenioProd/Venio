@@ -33,6 +33,7 @@ export default function SchoolTable({ schools, onEdit, onDelete, onSelect, canMa
             <th style={{ padding: '8px 12px', textAlign: 'left' }}>Temp.</th>
             <th style={{ padding: '8px 12px', textAlign: 'left' }}>Commercial</th>
             <th style={{ padding: '8px 12px', textAlign: 'left' }}>Prochain contact</th>
+            <th style={{ padding: '8px 12px', textAlign: 'left' }}>Relances</th>
             <th style={{ padding: '8px 12px', textAlign: 'left' }}></th>
           </tr>
         </thead>
@@ -85,6 +86,28 @@ export default function SchoolTable({ schools, onEdit, onDelete, onSelect, canMa
                       </span>
                     : <span style={{ color: 'var(--text-muted)' }}>—</span>
                   }
+                </td>
+                <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => {
+                      const r = school.relances?.[i]
+                      const hasDate = r?.date
+                      const isDone = r?.done
+                      const isLate = hasDate && !isDone && new Date(r!.date!) < new Date()
+                      return (
+                        <span key={i} title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} non planifiée`}
+                          style={{
+                            width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700, border: '1.5px solid',
+                            borderColor: isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'var(--border)',
+                            background: isDone ? '#22c55e22' : isLate ? '#ef444422' : hasDate ? '#f59e0b22' : 'transparent',
+                            color: isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'var(--text-muted)',
+                          }}>
+                          {isDone ? '✓' : i + 1}
+                        </span>
+                      )
+                    })}
+                  </div>
                 </td>
                 <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
                   {canManage && (

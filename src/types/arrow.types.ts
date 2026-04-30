@@ -17,6 +17,12 @@ export interface ArrowSchoolAssignee {
   email: string
 }
 
+export interface ArrowRelance {
+  date: string | null
+  done: boolean
+  note: string
+}
+
 export interface ArrowSchool {
   _id: string
   name: string
@@ -38,6 +44,7 @@ export interface ArrowSchool {
   statusChangedAt: string | null
   assignedTo: ArrowSchoolAssignee | null
   createdBy: ArrowSchoolAssignee | null
+  relances: ArrowRelance[]
   isArchived: boolean
   createdAt: string
   updatedAt: string
@@ -61,4 +68,5 @@ export interface ArrowSchoolFormData {
   nextActionAt: string
   lastContactAt: string
   assignedTo: string
+  relances: ArrowRelance[]
 }

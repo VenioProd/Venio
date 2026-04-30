@@ -73,6 +73,35 @@ export default function SchoolDetailModal({ school, onClose, onEdit, canManage }
           <Row label="Dernier contact" value={school.lastContactAt ? new Date(school.lastContactAt).toLocaleDateString('fr-FR') : null} />
         </section>
 
+        {school.relances?.length > 0 && (
+          <section style={{ marginBottom: 20 }}>
+            <h3 style={{ fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Relances</h3>
+            {[0, 1, 2].map(i => {
+              const r = school.relances[i]
+              if (!r?.date) return null
+              const isLate = !r.done && new Date(r.date) < new Date()
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{
+                    width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 700, border: '1.5px solid',
+                    borderColor: r.done ? '#22c55e' : isLate ? '#ef4444' : '#f59e0b',
+                    color: r.done ? '#22c55e' : isLate ? '#ef4444' : '#f59e0b',
+                    flexShrink: 0,
+                  }}>
+                    {r.done ? '✓' : i + 1}
+                  </span>
+                  <span style={{ fontSize: 13, minWidth: 90 }}>{new Date(r.date).toLocaleDateString('fr-FR')}</span>
+                  <span style={{ fontSize: 12, color: r.done ? '#22c55e' : isLate ? '#ef4444' : '#f59e0b' }}>
+                    {r.done ? 'Faite' : isLate ? 'En retard' : 'Planifiée'}
+                  </span>
+                  {r.note && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>— {r.note}</span>}
+                </div>
+              )
+            })}
+          </section>
+        )}
+
         {school.notes && (
           <section>
             <h3 style={{ fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Notes</h3>

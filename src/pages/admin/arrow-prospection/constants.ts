@@ -33,6 +33,8 @@ export const STATUS_MAP = Object.fromEntries(ARROW_STATUSES.map((s) => [s.key, s
 export const TEMPERATURE_MAP = Object.fromEntries(ARROW_TEMPERATURES.map((t) => [t.key, t]))
 export const SCHOOL_TYPE_MAP = Object.fromEntries(ARROW_SCHOOL_TYPES.map((t) => [t.key, t]))
 
+export const EMPTY_RELANCE = { date: null, done: false, note: '' }
+
 export const EMPTY_FORM: ArrowSchoolFormData = {
   name: '',
   schoolType: 'AUTRE',
@@ -51,4 +53,5 @@ export const EMPTY_FORM: ArrowSchoolFormData = {
   nextActionAt: '',
   lastContactAt: '',
   assignedTo: '',
+  relances: [],
 }

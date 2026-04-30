@@ -35,6 +35,16 @@ const arrowSchoolSchema = new mongoose.Schema(
     statusChangedAt: { type: Date, default: null },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    relances: {
+      type: [
+        {
+          date: { type: Date, default: null },
+          done: { type: Boolean, default: false },
+          note: { type: String, default: '' },
+        },
+      ],
+      default: [],
+    },
     isArchived: { type: Boolean, default: false },
   },
   { timestamps: true }

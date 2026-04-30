@@ -84,6 +84,7 @@ export default function ArrowProspection() {
       nextActionAt: school.nextActionAt ? school.nextActionAt.slice(0, 10) : '',
       lastContactAt: school.lastContactAt ? school.lastContactAt.slice(0, 10) : '',
       assignedTo: school.assignedTo?._id || '',
+      relances: school.relances ?? [],
     })
     setShowForm(true)
     setSelected(null)

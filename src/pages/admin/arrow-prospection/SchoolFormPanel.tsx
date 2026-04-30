@@ -1,6 +1,6 @@
 import React from 'react'
-import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
-import { ARROW_STATUSES, ARROW_SCHOOL_TYPES, ARROW_TEMPERATURES, ARROW_SOURCES } from './constants'
+import type { ArrowRelance, ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
+import { ARROW_STATUSES, ARROW_SCHOOL_TYPES, ARROW_TEMPERATURES, ARROW_SOURCES, EMPTY_RELANCE } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }
 
@@ -95,6 +95,48 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
               </div>
             </div>
             <textarea className="portal-input" placeholder="Notes..." value={form.notes} onChange={f('notes')} rows={3} style={{ resize: 'vertical' }} />
+          </div>
+        </fieldset>
+
+        {/* Relances */}
+        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' }}>
+          <legend style={{ fontSize: 13, color: 'var(--text-muted)', padding: '0 6px' }}>Relances (max 3)</legend>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[0, 1, 2].map(i => {
+              const r: ArrowRelance = form.relances[i] ?? { ...EMPTY_RELANCE }
+              const update = (patch: Partial<ArrowRelance>) => {
+                const next = [0, 1, 2].map(j => form.relances[j] ?? { ...EMPTY_RELANCE })
+                next[i] = { ...next[i], ...patch }
+                setForm(prev => ({ ...prev, relances: next }))
+              }
+              return (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 20 }}>R{i + 1}</span>
+                  <input
+                    className="portal-input"
+                    type="date"
+                    value={r.date ? r.date.slice(0, 10) : ''}
+                    onChange={e => update({ date: e.target.value || null })}
+                    style={{ flex: '0 0 140px' }}
+                  />
+                  <input
+                    className="portal-input"
+                    placeholder="Note (optionnel)"
+                    value={r.note}
+                    onChange={e => update({ note: e.target.value })}
+                    style={{ flex: 1 }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <input
+                      type="checkbox"
+                      checked={r.done}
+                      onChange={e => update({ done: e.target.checked })}
+                    />
+                    Faite
+                  </label>
+                </div>
+              )
+            })}
           </div>
         </fieldset>
 

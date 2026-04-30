@@ -36,6 +36,13 @@ function normalizePayload(body: Record<string, any> = {}) {
   if (body.nextActionAt !== undefined) p.nextActionAt = body.nextActionAt ? new Date(body.nextActionAt) : null
   if (body.lastContactAt !== undefined) p.lastContactAt = body.lastContactAt ? new Date(body.lastContactAt) : null
   if (body.assignedTo !== undefined) p.assignedTo = body.assignedTo || null
+  if (body.relances !== undefined && Array.isArray(body.relances)) {
+    p.relances = body.relances.slice(0, 3).map((r: any) => ({
+      date: r.date ? new Date(r.date) : null,
+      done: Boolean(r.done),
+      note: String(r.note || ''),
+    }))
+  }
   return p
 }
 
