@@ -155,7 +155,7 @@ export default function ArrowProspection() {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container crm-page-container">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
