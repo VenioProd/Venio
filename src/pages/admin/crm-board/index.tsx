@@ -584,8 +584,12 @@ const CrmBoard = () => {
       {selectedSchool && (
         <SchoolDetailModal
           school={selectedSchool}
+          admins={admins}
           onClose={() => setSelectedSchool(null)}
-          onEdit={() => openSchoolEdit(selectedSchool)}
+          onSave={async (id, data) => {
+            await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+            await loadArrow()
+          }}
           canManage={canManageCrm}
         />
       )}

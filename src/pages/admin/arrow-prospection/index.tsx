@@ -283,8 +283,12 @@ export default function ArrowProspection() {
       {selected && (
         <SchoolDetailModal
           school={selected}
+          admins={admins}
           onClose={() => setSelected(null)}
-          onEdit={() => openEdit(selected)}
+          onSave={async (id, data) => {
+            await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+            await load()
+          }}
           canManage={canManage}
         />
       )}
