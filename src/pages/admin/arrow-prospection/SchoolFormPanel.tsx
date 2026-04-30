@@ -33,18 +33,19 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
       {/* Overlay */}
       <div
         onClick={onCancel}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000 }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100 }}
       />
 
       {/* Panneau latéral */}
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 500,
-        background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
-        zIndex: 1001, display: 'flex', flexDirection: 'column',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.4)',
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 500, maxWidth: '100vw',
+        background: '#13151f',
+        borderLeft: '1px solid rgba(255,255,255,0.08)',
+        zIndex: 1101, display: 'flex', flexDirection: 'column',
+        boxShadow: '-12px 0 48px rgba(0,0,0,0.7)',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
             {editing ? 'Modifier l\'école' : 'Ajouter une école'}
           </h2>
@@ -136,7 +137,7 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
                   setForm(prev => ({ ...prev, relances: next }))
                 }
                 return (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--bg-secondary)', borderRadius: 8, padding: '10px 12px' }}>
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '10px 12px' }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', minWidth: 22 }}>R{i + 1}</span>
                     <input
                       className="portal-input"
@@ -165,7 +166,7 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
         </form>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexShrink: 0 }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 10, flexShrink: 0, background: '#13151f' }}>
           <button className="portal-button" type="submit" form="school-form" disabled={loading} style={{ flex: 1 }}
             onClick={onSubmit as any}>
             {loading ? 'Enregistrement...' : editing ? 'Modifier' : 'Ajouter'}
