@@ -2799,6 +2799,11 @@ a.portal-button {
   opacity: 0.75;
 }
 
+.crm-row-selected {
+  background: rgba(14, 165, 233, 0.07) !important;
+  outline: 1px solid rgba(14, 165, 233, 0.25);
+}
+
 /* Card states */
 .crm-card-cold {
   opacity: 0.6;

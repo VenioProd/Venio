@@ -17,6 +17,8 @@ interface LeadTableRowProps {
   onSetDeleteConfirm: (id: string | null) => void
   onExpandLead: (lead: Lead) => void
   onTransferToArrow?: (leadId: string) => void
+  isSelected?: boolean
+  onToggleSelect?: () => void
 }
 
 const LeadTableRow: React.FC<LeadTableRowProps> = ({
@@ -33,6 +35,8 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   onSetDeleteConfirm,
   onExpandLead,
   onTransferToArrow,
+  isSelected,
+  onToggleSelect,
 }) => {
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
@@ -43,8 +47,13 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
 
   return (
     <tr
-      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''}`}
+      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''}`}
     >
+      {onToggleSelect && (
+        <td className="crm-td" style={{ padding: '0 8px', width: 36 }} onClick={e => e.stopPropagation()}>
+          <input type="checkbox" checked={!!isSelected} onChange={onToggleSelect} style={{ cursor: 'pointer', width: 15, height: 15 }} />
+        </td>
+      )}
       <td className="crm-td crm-td-company">
         <span className="crm-row-color-indicator" style={{ background: groupColor }} />
         {lead.company}

@@ -567,6 +567,15 @@ const CrmBoard = () => {
             onSetDeleteConfirm={setDeleteConfirm}
             onExpandLead={setExpandedLead}
             onTransferToArrow={handleTransferToArrow}
+            onTransferSelectionToArrow={async (ids) => {
+              if (!window.confirm(`Transférer ${ids.length} lead${ids.length > 1 ? 's' : ''} vers Arrow Écoles ?`)) return
+              for (const id of ids) {
+                await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${id}`, { method: 'POST' }).catch(() => {})
+              }
+              await load()
+              setSection('arrow')
+              await loadArrow()
+            }}
           />
         )}
       </div>
