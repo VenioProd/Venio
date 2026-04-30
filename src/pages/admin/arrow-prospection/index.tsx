@@ -257,19 +257,16 @@ export default function ArrowProspection() {
 
       {/* Panneau formulaire */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={() => setShowForm(false)}>
-          <div onClick={e => e.stopPropagation()}>
-            <SchoolFormPanel
-              form={form}
-              setForm={setForm}
-              onSubmit={handleSubmit}
-              onCancel={() => { setShowForm(false); setEditing(null) }}
-              loading={saving}
-              editing={editing}
-              admins={admins}
-            />
-          </div>
+        <div>
+          <SchoolFormPanel
+            form={form}
+            setForm={setForm}
+            onSubmit={handleSubmit}
+            onCancel={() => { setShowForm(false); setEditing(null) }}
+            loading={saving}
+            editing={editing}
+            admins={admins}
+          />
         </div>
       )}
 
