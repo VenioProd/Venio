@@ -143,7 +143,9 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
                 title="Transf\u00e9rer vers Arrow \u00c9coles"
                 style={{ color: '#0ea5e9' }}
               >
-                \ud83c\udfaf
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
               </button>
             )}
             {/* Notes button */}

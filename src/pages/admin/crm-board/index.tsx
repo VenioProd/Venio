@@ -121,6 +121,20 @@ const CrmBoard = () => {
     }
   }
 
+  const handleTransferAllToArrow = async () => {
+    if (!window.confirm(`Transférer les ${totalLeads} leads vers Arrow Écoles ? Ils seront tous retirés du CRM.`)) return
+    try {
+      for (const lead of filteredLeads) {
+        await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${lead._id}`, { method: 'POST' })
+      }
+      await load()
+      setSection('arrow')
+      await loadArrow()
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors du transfert')
+    }
+  }
+
   const adminsById = useMemo(() => {
     const map: Record<string, AdminUser> = {}
     admins.forEach((admin) => {
@@ -425,9 +439,14 @@ const CrmBoard = () => {
               <span className="portal-action-label">Exporter CSV</span>
             </button>
             {section === 'leads' && canManageCrm && (
-              <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
-                {showForm ? 'Masquer le formulaire' : '+ Nouveau lead'}
-              </button>
+              <>
+                <button className="portal-button secondary" onClick={handleTransferAllToArrow} title="Transférer tous les leads vers Arrow Écoles">
+                  Tout transférer → Arrow
+                </button>
+                <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
+                  {showForm ? 'Masquer le formulaire' : '+ Nouveau lead'}
+                </button>
+              </>
             )}
             {section === 'arrow' && canManageCrm && (
               <button className="portal-button" onClick={() => { setEditingSchool(null); setSchoolForm({ ...EMPTY_SCHOOL_FORM, assignedTo: user?._id || '' }); setShowSchoolForm(true) }}>
