@@ -20,6 +20,11 @@ import {
   PRIORITY_MAP,
   EMPTY_FORM,
 } from './constants'
+import SchoolTable from '../arrow-prospection/SchoolTable'
+import SchoolFormPanel from '../arrow-prospection/SchoolFormPanel'
+import SchoolDetailModal from '../arrow-prospection/SchoolDetailModal'
+import { EMPTY_FORM as EMPTY_SCHOOL_FORM } from '../arrow-prospection/constants'
+import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
 
 const CrmBoard = () => {
   const { user } = useAuth()
@@ -44,6 +49,65 @@ const CrmBoard = () => {
   const [form, setForm] = useState<LeadFormData>({ ...EMPTY_FORM })
 
   const [expandedLead, setExpandedLead] = useState<Lead | null>(null)
+
+  // ── Arrow Prospection ──
+  const [section, setSection] = useState<'leads' | 'arrow'>('leads')
+  const [schools, setSchools] = useState<ArrowSchool[]>([])
+  const [arrowLoading, setArrowLoading] = useState(false)
+  const [showSchoolForm, setShowSchoolForm] = useState(false)
+  const [editingSchool, setEditingSchool] = useState<ArrowSchool | null>(null)
+  const [schoolForm, setSchoolForm] = useState<ArrowSchoolFormData>({ ...EMPTY_SCHOOL_FORM })
+  const [selectedSchool, setSelectedSchool] = useState<ArrowSchool | null>(null)
+  const [schoolSaving, setSchoolSaving] = useState(false)
+
+  const loadArrow = useCallback(async () => {
+    setArrowLoading(true)
+    try {
+      const data = await apiFetch<{ schools: ArrowSchool[] }>('/api/admin/arrow-prospection')
+      setSchools(data.schools)
+    } catch {}
+    finally { setArrowLoading(false) }
+  }, [])
+
+  useEffect(() => { if (section === 'arrow') loadArrow() }, [section, loadArrow])
+
+  const handleSchoolPatch = async (id: string, patch: Record<string, unknown>) => {
+    try {
+      await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+      await loadArrow()
+    } catch {}
+  }
+
+  const handleSchoolSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSchoolSaving(true)
+    try {
+      const payload = { ...schoolForm, studentCount: schoolForm.studentCount ? Number(schoolForm.studentCount) : null, nextActionAt: schoolForm.nextActionAt || null, lastContactAt: schoolForm.lastContactAt || null, assignedTo: schoolForm.assignedTo || null }
+      if (editingSchool) {
+        await apiFetch(`/api/admin/arrow-prospection/${editingSchool._id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+      } else {
+        await apiFetch('/api/admin/arrow-prospection', { method: 'POST', body: JSON.stringify(payload) })
+      }
+      setShowSchoolForm(false)
+      setEditingSchool(null)
+      await loadArrow()
+    } catch {}
+    finally { setSchoolSaving(false) }
+  }
+
+  const openSchoolEdit = (school: ArrowSchool) => {
+    setEditingSchool(school)
+    setSchoolForm({ name: school.name, schoolType: school.schoolType, city: school.city, region: school.region, studentCount: school.studentCount !== null ? String(school.studentCount) : '', emailGeneral: school.emailGeneral, contactName: school.contactName, contactRole: school.contactRole, contactEmail: school.contactEmail, contactPhone: school.contactPhone, status: school.status, temperature: school.temperature, source: school.source, notes: school.notes, nextActionAt: school.nextActionAt ? school.nextActionAt.slice(0, 10) : '', lastContactAt: school.lastContactAt ? school.lastContactAt.slice(0, 10) : '', assignedTo: school.assignedTo?._id || '', relances: school.relances ?? [] })
+    setShowSchoolForm(true)
+    setSelectedSchool(null)
+  }
+
+  const handleSchoolDelete = async (id: string) => {
+    try {
+      await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'DELETE' })
+      await loadArrow()
+    } catch {}
+  }
 
   const adminsById = useMemo(() => {
     const map: Record<string, AdminUser> = {}
@@ -283,8 +347,20 @@ const CrmBoard = () => {
           <div>
             <h1>CRM & Prospection</h1>
             <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-              Pipeline commercial avec attribution, relances et automatisations
+              {section === 'leads' ? 'Pipeline commercial avec attribution, relances et automatisations' : 'Prospection des établissements scolaires pour Arrow'}
             </p>
+            {/* Onglets */}
+            <div style={{ display: 'flex', gap: 4, marginTop: 16 }}>
+              {([['leads', 'Leads & Clients'], ['arrow', '🎯 Arrow — Écoles']] as const).map(([key, label]) => (
+                <button key={key} onClick={() => setSection(key)}
+                  style={{ padding: '6px 16px', borderRadius: 8, border: '1px solid', cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                    borderColor: section === key ? 'var(--primary)' : 'var(--border)',
+                    background: section === key ? 'var(--primary)' : 'transparent',
+                    color: section === key ? '#fff' : 'var(--text-muted)' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="admin-actions portal-actions-reveal" style={{ gap: 8 }}>
             {/* View toggle */}
@@ -336,9 +412,14 @@ const CrmBoard = () => {
               </span>
               <span className="portal-action-label">Exporter CSV</span>
             </button>
-            {canManageCrm && (
+            {section === 'leads' && canManageCrm && (
               <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
                 {showForm ? 'Masquer le formulaire' : '+ Nouveau lead'}
+              </button>
+            )}
+            {section === 'arrow' && canManageCrm && (
+              <button className="portal-button" onClick={() => { setEditingSchool(null); setSchoolForm({ ...EMPTY_SCHOOL_FORM, assignedTo: user?._id || '' }); setShowSchoolForm(true) }}>
+                + Ajouter une école
               </button>
             )}
             {canManageCrm && (
@@ -361,7 +442,7 @@ const CrmBoard = () => {
       )}
 
       {/* Lead creation form (collapsible) */}
-      {showForm && canManageCrm && (
+      {section === 'leads' && showForm && canManageCrm && (
         <LeadFormPanel
           form={form}
           admins={admins}
@@ -372,9 +453,37 @@ const CrmBoard = () => {
         />
       )}
 
+      {/* Arrow school form panel */}
+      {section === 'arrow' && showSchoolForm && (
+        <SchoolFormPanel
+          form={schoolForm}
+          setForm={setSchoolForm}
+          onSubmit={handleSchoolSubmit}
+          onCancel={() => { setShowSchoolForm(false); setEditingSchool(null) }}
+          loading={schoolSaving}
+          editing={editingSchool}
+          admins={admins}
+        />
+      )}
+
       {/* Main content area */}
-      <div className="portal-card" style={{ marginTop: 24, padding: viewMode === 'table' ? 0 : undefined, overflow: 'visible' }}>
-        {loading ? (
+      <div className="portal-card" style={{ marginTop: 24, padding: section === 'arrow' || viewMode === 'table' ? 0 : undefined, overflow: 'visible' }}>
+        {/* ── Section Arrow ── */}
+        {section === 'arrow' ? (
+          arrowLoading ? (
+            <div className="admin-loading" style={{ padding: 32 }}>Chargement...</div>
+          ) : (
+            <SchoolTable
+              schools={schools}
+              admins={admins}
+              onEdit={openSchoolEdit}
+              onDelete={handleSchoolDelete}
+              onSelect={setSelectedSchool}
+              onPatch={handleSchoolPatch}
+              canManage={canManageCrm}
+            />
+          )
+        ) : loading ? (
           <div className="admin-loading" style={{ padding: 32 }}>Chargement du pipeline...</div>
         ) : viewMode === 'kanban' ? (
           <div className="crm-board">
@@ -429,6 +538,16 @@ const CrmBoard = () => {
           />
         )}
       </div>
+
+      {/* Modal détail école Arrow */}
+      {selectedSchool && (
+        <SchoolDetailModal
+          school={selectedSchool}
+          onClose={() => setSelectedSchool(null)}
+          onEdit={() => openSchoolEdit(selectedSchool)}
+          canManage={canManageCrm}
+        />
+      )}
 
       {/* Modal for interaction notes */}
       {expandedLead && (
