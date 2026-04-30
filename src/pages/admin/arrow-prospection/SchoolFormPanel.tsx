@@ -38,9 +38,10 @@ export default function SchoolFormPanel({ form, setForm, onSubmit, onCancel, loa
 
       {/* Panneau latéral */}
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 500, maxWidth: '100vw',
+        position: 'fixed', top: 65, right: 0, bottom: 0, width: 500, maxWidth: '100vw',
         background: '#13151f',
         borderLeft: '1px solid rgba(255,255,255,0.08)',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
         zIndex: 1101, display: 'flex', flexDirection: 'column',
         boxShadow: '-12px 0 48px rgba(0,0,0,0.7)',
       }}>
