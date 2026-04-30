@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
-import { ARROW_STATUSES, ARROW_SCHOOL_TYPES, ARROW_TEMPERATURES, ARROW_SOURCES, STATUS_MAP, TEMPERATURE_MAP } from './constants'
+import { ARROW_SCHOOL_TYPES, STATUS_MAP, TEMPERATURE_MAP } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }
 
@@ -31,10 +31,9 @@ const Section = React.forwardRef<HTMLDivElement, { title: string; children: Reac
 export default function SchoolDetailModal({ school, admins, focusSection, onClose, onSave, canManage }: Props) {
   const ecoleRef = useRef<HTMLDivElement>(null)
   const contactRef = useRef<HTMLDivElement>(null)
-  const prospectionRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const map = { ecole: ecoleRef, contact: contactRef, prospection: prospectionRef }
+    const map: Record<string, React.RefObject<HTMLDivElement>> = { ecole: ecoleRef, contact: contactRef }
     const ref = focusSection ? map[focusSection] : null
     if (ref?.current) {
       setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
@@ -147,48 +146,6 @@ export default function SchoolDetailModal({ school, admins, focusSection, onClos
             </div>
           </Section>
 
-          <Section title="Prospection" ref={prospectionRef}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <Label>Statut</Label>
-                <select className="portal-input" value={form.status} onChange={f('status')} disabled={!canManage}>
-                  {ARROW_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label>Température</Label>
-                <select className="portal-input" value={form.temperature} onChange={f('temperature')} disabled={!canManage}>
-                  {ARROW_TEMPERATURES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label>Source</Label>
-                <select className="portal-input" value={form.source} onChange={f('source')} disabled={!canManage}>
-                  <option value="">—</option>
-                  {ARROW_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label>Commercial assigné</Label>
-                <select className="portal-input" value={form.assignedTo} onChange={f('assignedTo')} disabled={!canManage}>
-                  <option value="">Non assigné</option>
-                  {admins.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label>Prochain contact</Label>
-                <input className="portal-input" type="date" value={form.nextActionAt} onChange={f('nextActionAt')} readOnly={!canManage} />
-              </div>
-              <div>
-                <Label>Dernier contact</Label>
-                <input className="portal-input" type="date" value={form.lastContactAt} onChange={f('lastContactAt')} readOnly={!canManage} />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <Label>Notes</Label>
-                <textarea className="portal-input" value={form.notes} onChange={f('notes')} rows={3} style={{ resize: 'vertical' }} readOnly={!canManage} />
-              </div>
-            </div>
-          </Section>
 
           {/* Relances en lecture */}
           {(school.relances ?? []).some(r => r.date) && (
