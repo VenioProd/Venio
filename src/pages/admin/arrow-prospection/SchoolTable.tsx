@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
+import CustomSelect from '../../../components/admin/CustomSelect'
 import type { ArrowRelance, ArrowSchool } from '../../../types/arrow.types'
 import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES, EMPTY_RELANCE } from './constants'
 
+interface AdminUser { _id: string; name: string; email: string }
+
 interface Props {
   schools: ArrowSchool[]
+  admins: AdminUser[]
   onEdit: (school: ArrowSchool) => void
   onDelete: (id: string) => void
   onSelect: (school: ArrowSchool) => void
@@ -63,218 +67,211 @@ function RelancePopover({ relance, index, onSave, onClose }: {
   )
 }
 
-export default function SchoolTable({ schools, onEdit, onDelete, onSelect, onPatch, canManage }: Props) {
-  const [editingStatus, setEditingStatus] = useState<string | null>(null)
-  const [editingTemp, setEditingTemp] = useState<string | null>(null)
+export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelect, onPatch, canManage }: Props) {
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number } | null>(null)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  const toggleGroup = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+
+  // Grouper par statut
+  const grouped = ARROW_STATUSES.map(s => ({
+    ...s,
+    schools: schools.filter(sc => sc.status === s.key),
+  })).filter(g => g.schools.length > 0 || schools.length === 0)
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            {['École', 'Statut', 'Température', 'Contact & Email', 'Commercial', 'Prochain contact', 'Relances', ''].map(h => (
-              <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {schools.length === 0 && (
+    <div className="crm-table-container">
+      <div className="crm-table-scroll">
+        <table className="crm-table">
+          <thead>
             <tr>
-              <td colSpan={8} style={{ padding: '48px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
-                Aucune école enregistrée · <span style={{ color: 'var(--primary)' }}>Cliquez sur "+ Ajouter une école" pour commencer</span>
-              </td>
+              <th className="crm-th">École</th>
+              <th className="crm-th">Type · Ville</th>
+              <th className="crm-th">Contact</th>
+              <th className="crm-th">Email</th>
+              <th className="crm-th">Température</th>
+              <th className="crm-th">Commercial</th>
+              <th className="crm-th">Prochain contact</th>
+              <th className="crm-th">Relances</th>
+              {canManage && <th className="crm-th"></th>}
             </tr>
-          )}
-          {schools.map(school => {
-            const status = STATUS_MAP[school.status]
-            const temp = TEMPERATURE_MAP[school.temperature]
-            const schoolType = SCHOOL_TYPE_MAP[school.schoolType]
-            const isOverdue = school.nextActionAt && new Date(school.nextActionAt) < new Date() && !['SIGNE', 'NON_INTERESSE'].includes(school.status)
-            const doneRelances = (school.relances ?? []).filter(r => r.done).length
-            const totalRelances = (school.relances ?? []).filter(r => r.date).length
-
-            return (
-              <tr key={school._id}
-                style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                {/* École */}
-                <td style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => onSelect(school)}>
-                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{school.name}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                    {schoolType?.label || school.schoolType}
-                    {school.city ? ` · ${school.city}` : ''}
-                  </div>
-                </td>
-
-                {/* Statut — inline edit */}
-                <td style={{ padding: '12px 14px' }}>
-                  {canManage && editingStatus === school._id ? (
-                    <select
-                      autoFocus
-                      value={school.status}
-                      onChange={e => { onPatch(school._id, { status: e.target.value }); setEditingStatus(null) }}
-                      onBlur={() => setEditingStatus(null)}
-                      style={{ fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', padding: '4px 6px', cursor: 'pointer' }}
-                    >
-                      {ARROW_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                    </select>
-                  ) : (
-                    <span
-                      onClick={() => canManage && setEditingStatus(school._id)}
-                      title={canManage ? 'Cliquer pour modifier' : undefined}
-                      style={{
-                        background: `${status?.color}20`, color: status?.color,
-                        padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                        whiteSpace: 'nowrap', cursor: canManage ? 'pointer' : 'default',
-                        border: `1px solid ${status?.color}40`,
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                      }}
-                    >
-                      {status?.label || school.status}
-                      {canManage && <span style={{ opacity: 0.5, fontSize: 10 }}>▼</span>}
-                    </span>
-                  )}
-                </td>
-
-                {/* Température — inline edit */}
-                <td style={{ padding: '12px 14px' }}>
-                  {canManage && editingTemp === school._id ? (
-                    <select
-                      autoFocus
-                      value={school.temperature}
-                      onChange={e => { onPatch(school._id, { temperature: e.target.value }); setEditingTemp(null) }}
-                      onBlur={() => setEditingTemp(null)}
-                      style={{ fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', padding: '4px 6px', cursor: 'pointer' }}
-                    >
-                      {ARROW_TEMPERATURES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-                    </select>
-                  ) : (
-                    <span
-                      onClick={() => canManage && setEditingTemp(school._id)}
-                      title={canManage ? 'Cliquer pour modifier' : undefined}
-                      style={{ color: temp?.color, fontSize: 13, cursor: canManage ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                    >
-                      {temp?.label || school.temperature}
-                      {canManage && <span style={{ opacity: 0.4, fontSize: 10 }}>▼</span>}
-                    </span>
-                  )}
-                </td>
-
-                {/* Contact & Email */}
-                <td style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => onSelect(school)}>
-                  {school.contactName ? (
-                    <>
-                      <div style={{ fontSize: 13 }}>{school.contactName}
-                        {school.contactRole && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {school.contactRole}</span>}
-                      </div>
-                      {school.contactEmail && (
-                        <a href={`mailto:${school.contactEmail}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--primary)', fontSize: 12 }}>
-                          {school.contactEmail}
-                        </a>
-                      )}
-                    </>
-                  ) : school.emailGeneral ? (
-                    <a href={`mailto:${school.emailGeneral}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                      {school.emailGeneral}
-                    </a>
-                  ) : (
-                    <span style={{ color: 'var(--text-muted)' }}>—</span>
-                  )}
-                </td>
-
-                {/* Commercial */}
-                <td style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => onSelect(school)}>
-                  {school.assignedTo ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                        {school.assignedTo.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span style={{ fontSize: 13 }}>{school.assignedTo.name}</span>
-                    </div>
-                  ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                </td>
-
-                {/* Prochain contact */}
-                <td style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => onSelect(school)}>
-                  {school.nextActionAt ? (
-                    <span style={{ fontSize: 13, color: isOverdue ? '#ef4444' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {isOverdue && '⚠️ '}
-                      {new Date(school.nextActionAt).toLocaleDateString('fr-FR')}
-                    </span>
-                  ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                </td>
-
-                {/* Relances */}
-                <td style={{ padding: '12px 14px', position: 'relative' }}>
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                    {[0, 1, 2].map(i => {
-                      const r = school.relances?.[i]
-                      const isDone = r?.done
-                      const isLate = r?.date && !isDone && new Date(r.date) < new Date()
-                      const hasDate = r?.date
-                      const color = isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'rgba(255,255,255,0.2)'
-                      const isOpen = relancePopover?.schoolId === school._id && relancePopover?.index === i
-                      return (
-                        <div key={i} style={{ position: 'relative' }}>
-                          <span
-                            onClick={e => { e.stopPropagation(); if (canManage) setRelancePopover(isOpen ? null : { schoolId: school._id, index: i }) }}
-                            title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} — cliquer pour planifier`}
-                            style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', cursor: canManage ? 'pointer' : 'default', flexShrink: 0, transition: 'transform 0.1s', transform: isOpen ? 'scale(1.2)' : 'scale(1)' }}>
-                            {isDone ? '✓' : i + 1}
-                          </span>
-                          {isOpen && canManage && (
-                            <RelancePopover
-                              relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
-                              index={i}
-                              onSave={updated => {
-                                const next = [0, 1, 2].map(j => school.relances?.[j] ?? { ...EMPTY_RELANCE })
-                                next[i] = updated
-                                onPatch(school._id, { relances: next })
-                              }}
-                              onClose={() => setRelancePopover(null)}
-                            />
-                          )}
-                        </div>
-                      )
-                    })}
-                    {totalRelances > 0 && (
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>{doneRelances}/{totalRelances}</span>
-                    )}
-                  </div>
-                </td>
-
-                {/* Actions */}
-                <td style={{ padding: '12px 14px' }}>
-                  {canManage && (
-                    <div style={{ display: 'flex', gap: 6, opacity: 0, transition: 'opacity 0.15s' }}
-                      ref={el => {
-                        if (el) {
-                          const row = el.closest('tr')
-                          if (row) {
-                            row.addEventListener('mouseenter', () => { el.style.opacity = '1' })
-                            row.addEventListener('mouseleave', () => { el.style.opacity = '0' })
-                          }
-                        }
-                      }}>
-                      <button onClick={e => { e.stopPropagation(); onEdit(school) }}
-                        style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>
-                        Modifier
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); onDelete(school._id) }}
-                        style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #ef444440', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>
-                        Suppr.
-                      </button>
-                    </div>
-                  )}
+          </thead>
+          <tbody>
+            {schools.length === 0 && (
+              <tr>
+                <td colSpan={canManage ? 9 : 8} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+                  Aucune école enregistrée · <span style={{ color: 'var(--primary)' }}>Cliquez sur "+ Ajouter une école" pour commencer</span>
                 </td>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            )}
+            {grouped.map(group => {
+              const isCollapsed = collapsed[group.key]
+              if (group.schools.length === 0) return null
+              return (
+                <React.Fragment key={group.key}>
+                  {/* Header de groupe */}
+                  <tr className="crm-group-row" onClick={() => toggleGroup(group.key)}>
+                    <td colSpan={canManage ? 9 : 8}>
+                      <div className="crm-group-header" style={{ '--group-color': group.color } as React.CSSProperties}>
+                        <span className={`crm-group-chevron ${isCollapsed ? '' : 'open'}`}>▶</span>
+                        <span className="crm-group-color-bar" style={{ background: group.color }} />
+                        <span className="crm-group-label">{group.label}</span>
+                        <span className="crm-group-count">{group.schools.length} école{group.schools.length !== 1 ? 's' : ''}</span>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Lignes */}
+                  {!isCollapsed && group.schools.map(school => {
+                    const isOverdue = school.nextActionAt && new Date(school.nextActionAt) < new Date() && !['SIGNE', 'NON_INTERESSE'].includes(school.status)
+                    const doneRelances = (school.relances ?? []).filter(r => r.done).length
+                    const totalRelances = (school.relances ?? []).filter(r => r.date).length
+
+                    return (
+                      <tr key={school._id} className="crm-table-row" onClick={() => onSelect(school)}>
+
+                        {/* École */}
+                        <td className="crm-td crm-td-company">
+                          <span className="crm-row-color-indicator" style={{ background: group.color }} />
+                          <strong>{school.name}</strong>
+                        </td>
+
+                        {/* Type · Ville */}
+                        <td className="crm-td">
+                          <span className="crm-table-badge">{SCHOOL_TYPE_MAP[school.schoolType]?.label || school.schoolType}</span>
+                          {school.city && <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontSize: 12 }}>{school.city}</span>}
+                        </td>
+
+                        {/* Contact */}
+                        <td className="crm-td">
+                          {school.contactName
+                            ? <>{school.contactName}{school.contactRole && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {school.contactRole}</span>}</>
+                            : '—'}
+                        </td>
+
+                        {/* Email */}
+                        <td className="crm-td crm-td-email" onClick={e => e.stopPropagation()}>
+                          {school.contactEmail
+                            ? <a href={`mailto:${school.contactEmail}`} className="crm-email-link">{school.contactEmail}</a>
+                            : school.emailGeneral
+                              ? <a href={`mailto:${school.emailGeneral}`} className="crm-email-link" style={{ opacity: 0.6 }}>{school.emailGeneral}</a>
+                              : '—'}
+                        </td>
+
+                        {/* Température inline */}
+                        <td className="crm-td crm-td-temperature" onClick={e => e.stopPropagation()}>
+                          {canManage ? (
+                            <CustomSelect
+                              className="crm-inline-select"
+                              value={school.temperature}
+                              onChange={v => onPatch(school._id, { temperature: v })}
+                              options={ARROW_TEMPERATURES.map(t => ({ value: t.key, label: t.label }))}
+                            />
+                          ) : (
+                            <span style={{ color: TEMPERATURE_MAP[school.temperature]?.color }}>{TEMPERATURE_MAP[school.temperature]?.label}</span>
+                          )}
+                        </td>
+
+                        {/* Commercial inline */}
+                        <td className="crm-td" onClick={e => e.stopPropagation()}>
+                          {canManage ? (
+                            <CustomSelect
+                              className="crm-inline-select crm-inline-assignee"
+                              value={school.assignedTo?._id || ''}
+                              onChange={v => onPatch(school._id, { assignedTo: v || null })}
+                              options={[{ value: '', label: 'Non assigné' }, ...admins.map(a => ({ value: a._id, label: a.name }))]}
+                            />
+                          ) : (
+                            <span>{school.assignedTo?.name || '—'}</span>
+                          )}
+                        </td>
+
+                        {/* Prochain contact */}
+                        <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`}>
+                          {school.nextActionAt ? new Date(school.nextActionAt).toLocaleDateString('fr-FR') : '—'}
+                          {isOverdue && <span className="crm-overdue-tag">En retard</span>}
+                        </td>
+
+                        {/* Relances */}
+                        <td className="crm-td" onClick={e => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                            {[0, 1, 2].map(i => {
+                              const r = school.relances?.[i]
+                              const isDone = r?.done
+                              const isLate = r?.date && !isDone && new Date(r.date) < new Date()
+                              const hasDate = r?.date
+                              const color = isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'rgba(255,255,255,0.2)'
+                              const isOpen = relancePopover?.schoolId === school._id && relancePopover?.index === i
+                              return (
+                                <div key={i} style={{ position: 'relative' }}>
+                                  <span
+                                    onClick={() => canManage && setRelancePopover(isOpen ? null : { schoolId: school._id, index: i })}
+                                    title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} — cliquer pour planifier`}
+                                    style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', cursor: canManage ? 'pointer' : 'default', flexShrink: 0 }}>
+                                    {isDone ? '✓' : i + 1}
+                                  </span>
+                                  {isOpen && canManage && (
+                                    <RelancePopover
+                                      relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
+                                      index={i}
+                                      onSave={updated => {
+                                        const next = [0, 1, 2].map(j => school.relances?.[j] ?? { ...EMPTY_RELANCE })
+                                        next[i] = updated
+                                        onPatch(school._id, { relances: next })
+                                      }}
+                                      onClose={() => setRelancePopover(null)}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            })}
+                            {totalRelances > 0 && (
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>{doneRelances}/{totalRelances}</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        {canManage && (
+                          <td className="crm-td crm-td-actions" onClick={e => e.stopPropagation()}>
+                            <div className="crm-row-actions">
+                              <CustomSelect
+                                className="crm-inline-select crm-inline-status"
+                                value={school.status}
+                                onChange={v => onPatch(school._id, { status: v })}
+                                options={ARROW_STATUSES.map(s => ({ value: s.key, label: `→ ${s.label}` }))}
+                              />
+                              <button className="crm-btn-notes" onClick={() => onEdit(school)} title="Modifier">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                              {deleteConfirm === school._id ? (
+                                <div className="crm-delete-confirm">
+                                  <button className="crm-btn-confirm-delete" onClick={() => { onDelete(school._id); setDeleteConfirm(null) }}>Oui</button>
+                                  <button className="crm-btn-cancel-delete" onClick={() => setDeleteConfirm(null)}>Non</button>
+                                </div>
+                              ) : (
+                                <button className="crm-btn-delete" onClick={() => setDeleteConfirm(school._id)} title="Supprimer">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </React.Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

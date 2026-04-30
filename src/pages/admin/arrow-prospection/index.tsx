@@ -211,6 +211,7 @@ export default function ArrowProspection() {
         <div className="admin-panel" style={{ padding: 0, overflow: 'hidden' }}>
           <SchoolTable
             schools={filtered}
+            admins={admins}
             onEdit={openEdit}
             onDelete={id => setDeleteConfirm(id)}
             onSelect={setSelected}
