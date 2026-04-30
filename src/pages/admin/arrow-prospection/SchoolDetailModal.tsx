@@ -25,9 +25,9 @@ export default function SchoolDetailModal({ school, onClose, onEdit, canManage }
   const schoolType = SCHOOL_TYPE_MAP[school.schoolType]
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
       onClick={onClose}>
-      <div style={{ background: 'var(--bg-card)', borderRadius: 12, maxWidth: 600, width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: 28 }}
+      <div style={{ background: '#13151f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, maxWidth: 600, width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: 28 }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>

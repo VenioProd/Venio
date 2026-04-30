@@ -2549,6 +2549,18 @@ a.portal-button {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+.crm-inline-status .custom-select-trigger {
+  max-width: 130px;
+  overflow: hidden;
+}
+
+.crm-inline-status .custom-select-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
 /* Actions column */
 .crm-td-actions {
   white-space: nowrap;

@@ -240,7 +240,7 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                                 className="crm-inline-select crm-inline-status"
                                 value={school.status}
                                 onChange={v => onPatch(school._id, { status: v })}
-                                options={ARROW_STATUSES.map(s => ({ value: s.key, label: `→ ${s.label}` }))}
+                                options={ARROW_STATUSES.map(s => ({ value: s.key, label: s.label }))}
                               />
                               <button className="crm-btn-notes" onClick={() => onEdit(school)} title="Modifier">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
