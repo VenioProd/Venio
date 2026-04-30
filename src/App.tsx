@@ -78,6 +78,7 @@ function ProjectsRedirect() {
 function App() {
   const location = useLocation()
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
+  const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -420,7 +421,7 @@ function App() {
         />
       </Routes>
       </Suspense>
-      {!isPublicQuestionnaire && <Footer />}
+      {!isPublicQuestionnaire && !isPortal && <Footer />}
       <CookieConsent />
       <ToastContainer />
       <Suspense fallback={null}>
