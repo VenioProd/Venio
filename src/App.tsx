@@ -67,6 +67,7 @@ const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
+const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 
 function ProjectsRedirect() {
   const { id } = useParams()
@@ -372,6 +373,14 @@ function App() {
           element={
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <Resources />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/arrow-prospection"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <ArrowProspection />
             </ProtectedRoute>
           }
         />
