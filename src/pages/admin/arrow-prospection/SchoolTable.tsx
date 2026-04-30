@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import ReactDOM from 'react-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import type { ArrowRelance, ArrowSchool } from '../../../types/arrow.types'
 import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES, EMPTY_RELANCE } from './constants'
@@ -16,14 +17,18 @@ interface Props {
 }
 
 // Popover relance inline
-function RelancePopover({ relance, index, onSave, onClose }: {
+function RelancePopover({ relance, index, onSave, onClose, anchorEl }: {
   relance: ArrowRelance
   index: number
   onSave: (r: ArrowRelance) => void
   onClose: () => void
+  anchorEl: HTMLElement | null
 }) {
   const [r, setR] = useState<ArrowRelance>({ ...relance })
   const ref = useRef<HTMLDivElement>(null)
+  const rect = anchorEl?.getBoundingClientRect()
+  const top = rect ? rect.bottom + 6 : 0
+  const left = rect ? Math.min(rect.left, window.innerWidth - 276) : 0
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
@@ -31,9 +36,9 @@ function RelancePopover({ relance, index, onSave, onClose }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  return (
+  return ReactDOM.createPortal(
     <div ref={ref} style={{
-      position: 'absolute', top: '110%', left: 0, zIndex: 2000,
+      position: 'fixed', top, left, zIndex: 2000,
       background: '#13151f', border: '1px solid rgba(255,255,255,0.12)',
       borderRadius: 10, padding: 14, width: 260,
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
@@ -63,13 +68,14 @@ function RelancePopover({ relance, index, onSave, onClose }: {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
 export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelect, onPatch, canManage }: Props) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number } | null>(null)
+  const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number; anchor: HTMLElement } | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggleGroup = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -206,7 +212,7 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                               return (
                                 <div key={i} style={{ position: 'relative' }}>
                                   <span
-                                    onClick={() => canManage && setRelancePopover(isOpen ? null : { schoolId: school._id, index: i })}
+                                    onClick={e => { if (canManage) setRelancePopover(isOpen ? null : { schoolId: school._id, index: i, anchor: e.currentTarget as HTMLElement }) }}
                                     title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} — cliquer pour planifier`}
                                     style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', cursor: canManage ? 'pointer' : 'default', flexShrink: 0 }}>
                                     {isDone ? '✓' : i + 1}
@@ -215,6 +221,7 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                                     <RelancePopover
                                       relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
                                       index={i}
+                                      anchorEl={relancePopover?.anchor ?? null}
                                       onSave={updated => {
                                         const next = [0, 1, 2].map(j => school.relances?.[j] ?? { ...EMPTY_RELANCE })
                                         next[i] = updated
