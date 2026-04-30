@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import type { ArrowSchool } from '../../../types/arrow.types'
-import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES } from './constants'
+import React, { useEffect, useRef, useState } from 'react'
+import type { ArrowRelance, ArrowSchool } from '../../../types/arrow.types'
+import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES, EMPTY_RELANCE } from './constants'
 
 interface Props {
   schools: ArrowSchool[]
@@ -11,9 +11,62 @@ interface Props {
   canManage: boolean
 }
 
+// Popover relance inline
+function RelancePopover({ relance, index, onSave, onClose }: {
+  relance: ArrowRelance
+  index: number
+  onSave: (r: ArrowRelance) => void
+  onClose: () => void
+}) {
+  const [r, setR] = useState<ArrowRelance>({ ...relance })
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: '110%', left: 0, zIndex: 2000,
+      background: '#13151f', border: '1px solid rgba(255,255,255,0.12)',
+      borderRadius: 10, padding: 14, width: 260,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Relance {index + 1}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <input className="portal-input" type="date" value={r.date ? r.date.slice(0, 10) : ''}
+          onChange={e => setR(prev => ({ ...prev, date: e.target.value || null }))} />
+        <input className="portal-input" placeholder="Note (optionnel)" value={r.note}
+          onChange={e => setR(prev => ({ ...prev, note: e.target.value }))} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', color: r.done ? '#22c55e' : 'var(--text-secondary)' }}>
+          <input type="checkbox" checked={r.done} onChange={e => setR(prev => ({ ...prev, done: e.target.checked }))} />
+          Marquée comme faite
+        </label>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button className="portal-button" style={{ flex: 1, fontSize: 12, padding: '6px 0' }}
+            onClick={() => { onSave(r); onClose() }}>
+            Enregistrer
+          </button>
+          {r.date && (
+            <button onClick={() => { onSave({ date: null, done: false, note: '' }); onClose() }}
+              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ef444440', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>
+              Effacer
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SchoolTable({ schools, onEdit, onDelete, onSelect, onPatch, canManage }: Props) {
   const [editingStatus, setEditingStatus] = useState<string | null>(null)
   const [editingTemp, setEditingTemp] = useState<string | null>(null)
+  const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number } | null>(null)
 
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -155,20 +208,36 @@ export default function SchoolTable({ schools, onEdit, onDelete, onSelect, onPat
                 </td>
 
                 {/* Relances */}
-                <td style={{ padding: '12px 14px' }}>
+                <td style={{ padding: '12px 14px', position: 'relative' }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                     {[0, 1, 2].map(i => {
                       const r = school.relances?.[i]
                       const isDone = r?.done
                       const isLate = r?.date && !isDone && new Date(r.date) < new Date()
                       const hasDate = r?.date
-                      const color = isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'var(--border)'
+                      const color = isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'rgba(255,255,255,0.2)'
+                      const isOpen = relancePopover?.schoolId === school._id && relancePopover?.index === i
                       return (
-                        <span key={i}
-                          title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} non planifiée`}
-                          style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', flexShrink: 0 }}>
-                          {isDone ? '✓' : i + 1}
-                        </span>
+                        <div key={i} style={{ position: 'relative' }}>
+                          <span
+                            onClick={e => { e.stopPropagation(); if (canManage) setRelancePopover(isOpen ? null : { schoolId: school._id, index: i }) }}
+                            title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} — cliquer pour planifier`}
+                            style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', cursor: canManage ? 'pointer' : 'default', flexShrink: 0, transition: 'transform 0.1s', transform: isOpen ? 'scale(1.2)' : 'scale(1)' }}>
+                            {isDone ? '✓' : i + 1}
+                          </span>
+                          {isOpen && canManage && (
+                            <RelancePopover
+                              relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
+                              index={i}
+                              onSave={updated => {
+                                const next = [0, 1, 2].map(j => school.relances?.[j] ?? { ...EMPTY_RELANCE })
+                                next[i] = updated
+                                onPatch(school._id, { relances: next })
+                              }}
+                              onClose={() => setRelancePopover(null)}
+                            />
+                          )}
+                        </div>
                       )
                     })}
                     {totalRelances > 0 && (
