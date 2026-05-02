@@ -4,6 +4,7 @@ import { requirePermission } from '../../../middleware/role.js'
 import Task from '../../../models/Task.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { requirePermissionOrAssignee, upload } from './middleware.js'
+import { syncUploadToNextcloud } from '../../../lib/nextcloud.js'
 
 const router = express.Router({ mergeParams: true })
 
@@ -31,6 +32,8 @@ router.post('/:projectId/tasks/:taskId/attachments', requirePermissionOrAssignee
 
     await task.save()
     await task.populate('attachments.uploadedBy', 'name email')
+
+    syncUploadToNextcloud(file, 'taches', String(req.params.taskId))
 
     return res.status(201).json({ attachments: task.attachments })
   } catch (err) {

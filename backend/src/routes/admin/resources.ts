@@ -6,6 +6,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import CompanyResource, { RESOURCE_CATEGORIES } from '../../models/CompanyResource.js'
 import User from '../../models/User.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { sendResourcePublishedEmail } from '../../lib/email/templates/project.js'
 
 const router = express.Router()
@@ -82,6 +83,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
       uploadedBy: req.user!.id,
     })
 
+    syncUploadToNextcloud(req.file, 'ressources')
     const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
 
     // fire-and-forget notifications to all team members

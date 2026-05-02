@@ -8,6 +8,7 @@ import InternalTicket from '../../models/InternalTicket.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { sendTicketReplyEmail } from '../../lib/email.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 router.use(auth)
@@ -194,6 +195,8 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
       authorName: user.name,
       attachments,
     })
+
+    files.forEach(f => syncUploadToNextcloud(f, 'tickets', ticket._id.toString()))
 
     const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id')
     const CATEGORY_LABELS: Record<string, string> = { QUESTION: 'Question', DEMANDE: 'Demande', PROBLEME: 'Probleme' }

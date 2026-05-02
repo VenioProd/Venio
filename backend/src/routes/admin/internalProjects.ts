@@ -9,6 +9,7 @@ import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
 import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sendStepReviewRequestEmail } from '../../lib/email/templates/project.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 router.use(auth)
@@ -360,16 +361,18 @@ router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request,
     const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)
     if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
 
-    const { userId, progress, status } = req.body
+    const { userId, progress, status, blocked, blockedReason } = req.body
     const targetId = (isAdmin && userId) ? userId : req.user!.id
 
     const idx = mission.participants.findIndex(p => p.user.toString() === targetId)
     if (idx === -1) {
       // Créer le participant s'il n'existe pas (missions créées avant la migration)
-      mission.participants.push({ user: new (require('mongoose').Types.ObjectId)(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE' } as any)
+      mission.participants.push({ user: new (require('mongoose').Types.ObjectId)(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE', blocked: blocked ?? false, blockedReason: blockedReason ?? '' } as any)
     } else {
       if (progress !== undefined) mission.participants[idx].progress = Math.min(100, Math.max(0, Number(progress)))
       if (status !== undefined) mission.participants[idx].status = status
+      if (blocked !== undefined) mission.participants[idx].blocked = blocked
+      if (blockedReason !== undefined) mission.participants[idx].blockedReason = blockedReason
     }
 
     // Auto-calculate global progress as average of all participants
@@ -432,6 +435,7 @@ router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'
       uploadedBy: req.user!.id as any,
     })
     await mission.save()
+    syncUploadToNextcloud(req.file, 'projets-internes', String(req.params.projectId))
     return res.status(201).json({ files: mission.files })
   } catch (err) { return next(err) }
 })

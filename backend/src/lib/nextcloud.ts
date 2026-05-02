@@ -403,3 +403,92 @@ export async function deleteNextcloudUser(username: string): Promise<void> {
     headers: { Authorization: adminAuthHeader(), 'OCS-APIRequest': 'true' },
   }).catch(() => {})
 }
+
+// ─── Upload de fichiers vers Nextcloud ───────────────────────────────────────
+
+export type UploadType =
+  | 'taches'
+  | 'projets'
+  | 'tickets'
+  | 'facturation'
+  | 'ressources'
+  | 'qualiopi'
+  | 'projets-internes'
+  | 'stagiaires'
+
+const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
+  'taches':           'Tâches',
+  'projets':          'Projets',
+  'tickets':          'Tickets',
+  'facturation':      'Facturation',
+  'ressources':       'Ressources',
+  'qualiopi':         'Qualiopi',
+  'projets-internes': 'Projets-Internes',
+  'stagiaires':       'Stagiaires',
+}
+
+/**
+ * Upload un fichier local vers Nextcloud via WebDAV PUT.
+ * Crée les dossiers parents si besoin.
+ */
+export async function uploadFileToNextcloud(
+  localPath: string,
+  destPath: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!isConfigured()) return { success: false, error: 'Nextcloud non configuré' }
+
+  const fs = await import('fs')
+  if (!fs.existsSync(localPath)) return { success: false, error: 'Fichier local introuvable' }
+
+  // Créer les dossiers parents
+  const parts = destPath.split('/')
+  for (let i = 2; i < parts.length; i++) {
+    await createFolder(parts.slice(0, i).join('/'))
+  }
+
+  const fileBuffer = fs.readFileSync(localPath)
+  const url = buildWebDavUrl(destPath)
+
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: buildAuthHeader(),
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(fileBuffer.length),
+      },
+      body: fileBuffer,
+    })
+    if (res.status === 201 || res.status === 204 || res.status === 200) {
+      return { success: true }
+    }
+    return { success: false, error: `HTTP ${res.status}` }
+  } catch (err) {
+    return { success: false, error: (err as Error).message }
+  }
+}
+
+/**
+ * Synchronise un fichier uploadé vers Nextcloud. Fire-and-forget.
+ * @param file   Fichier Multer (après sauvegarde locale)
+ * @param type   Catégorie (taches, projets, tickets…)
+ * @param id     ID optionnel (taskId, projectId…) pour sous-dossier
+ */
+export function syncUploadToNextcloud(
+  file: { path: string; originalname: string },
+  type: UploadType,
+  id?: string,
+): void {
+  if (!isConfigured()) return
+
+  const baseUploadPath = '/Venio/Uploads'
+  const folder = UPLOAD_FOLDER_LABELS[type]
+  const subPath = id ? `${baseUploadPath}/${folder}/${id}` : `${baseUploadPath}/${folder}`
+  const destPath = `${subPath}/${sanitizeFolderName(file.originalname) || 'fichier'}`
+
+  uploadFileToNextcloud(file.path, destPath).then(result => {
+    if (!result.success) {
+      console.warn(`[Nextcloud] Upload échoué (${type}/${id}): ${result.error}`)
+    }
+  }).catch(() => {})
+}

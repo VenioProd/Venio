@@ -19,6 +19,7 @@ import { createNotification } from '../../lib/notifications.js'
 import { generateProjectRecapPdf } from '../../lib/pdfProjectRecap.js'
 import ProjectSection from '../../models/ProjectSection.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 
@@ -418,6 +419,7 @@ router.post('/:id/documents', requirePermission(PERMISSIONS.EDIT_PROJECTS), uplo
     })
 
     await logActivity({ project: project._id, action: 'DOCUMENT_UPLOADED', actor: req.user!.id, summary: `Document uploadé : ${file.originalname}`, metadata: { type, filename: file.originalname } })
+    syncUploadToNextcloud({ path: absolutePath, originalname: file.originalname }, 'projets', project._id.toString())
 
     // Notify client about new deliverable/document
     const docClient = await User.findById(project.client)

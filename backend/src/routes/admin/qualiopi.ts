@@ -6,6 +6,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission, requireAnyPermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import QualiopiCriterion from '../../models/QualiopiCriterion.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 router.use(auth)
@@ -188,6 +189,7 @@ router.post('/criteria/:criterionId/indicators/:indicatorId/files', requirePermi
       uploadedAt: new Date(),
     })
     await criterion.save()
+    syncUploadToNextcloud(req.file, 'qualiopi', String(criterionId))
     res.json(criterion)
   } catch (err) { next(err) }
 })
