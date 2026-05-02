@@ -102,7 +102,7 @@ function buildWebDavUrl(path: string): string {
     .split('/')
     .map((segment) => encodeURIComponent(segment))
     .join('/')
-  return `${url}/remote.php/dav/files/${user}/${encodedPath}`
+  return `${url}/remote.php/webdav/${encodedPath}`
 }
 
 /**
