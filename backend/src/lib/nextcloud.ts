@@ -415,6 +415,8 @@ export type UploadType =
   | 'qualiopi'
   | 'projets-internes'
   | 'stagiaires'
+  | 'rapports'
+  | 'conventions'
 
 const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
   'taches':           'Tâches',
@@ -425,6 +427,8 @@ const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
   'qualiopi':         'Qualiopi',
   'projets-internes': 'Projets-Internes',
   'stagiaires':       'Stagiaires',
+  'rapports':         'Rapports',
+  'conventions':      'Conventions',
 }
 
 /**

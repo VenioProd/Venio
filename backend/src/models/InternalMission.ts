@@ -4,7 +4,7 @@ export interface IInternalMission {
   title: string
   description: string
   assignedTo: mongoose.Types.ObjectId[]
-  participants: { user: mongoose.Types.ObjectId; progress: number; status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'; _id?: any }[]
+  participants: { user: mongoose.Types.ObjectId; progress: number; status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'; blocked: boolean; blockedReason: string; _id?: any }[]
   internalProject: mongoose.Types.ObjectId
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   progress: number
@@ -26,6 +26,8 @@ const schema = new mongoose.Schema<IInternalMission>(
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       progress: { type: Number, default: 0, min: 0, max: 100 },
       status: { type: String, enum: ['A_FAIRE', 'EN_COURS', 'TERMINE'], default: 'A_FAIRE' },
+      blocked: { type: Boolean, default: false },
+      blockedReason: { type: String, default: '' },
     }],
     internalProject: { type: mongoose.Schema.Types.ObjectId, ref: 'InternalProject', required: true },
     status: { type: String, enum: ['A_FAIRE', 'EN_COURS', 'TERMINE'], default: 'A_FAIRE' },

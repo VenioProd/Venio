@@ -10,7 +10,7 @@ import Intern from '../../models/Intern.js'
 import ActivityReport from '../../models/ActivityReport.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
-import { provisionNextcloudIntern, deleteNextcloudUser } from '../../lib/nextcloud.js'
+import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
 import { sendAdminCredentials } from '../../lib/email.js'
 import { getInternSettings } from '../../models/InternSettings.js'
@@ -757,6 +757,8 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
       }).catch(() => {})
     }
 
+    files.forEach(f => syncUploadToNextcloud(f, 'rapports', intern._id.toString()))
+
     res.status(201).json(report)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -894,6 +896,7 @@ router.post('/:id/convention', requireAdmin, uploadConvention.single('file'), as
     }
 
     await Intern.findByIdAndUpdate(req.params.id, { $push: { conventions: newEntry } })
+    syncUploadToNextcloud(file, 'conventions', String(req.params.id))
     res.json({ ok: true, ...newEntry })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
