@@ -1,6 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './APropos.css'
@@ -8,7 +10,7 @@ import './APropos.css'
 const APropos = () => {
   return (
     <>
-      <SEO 
+      <SEO
         title="À Propos"
         description="Venio existe parce que le marché est saturé de mensonges. Consultants qui valident tout, développeurs qui copient-collent, créatifs qui suivent les tendances. Venio refuse ce modèle. Lucidité, efficacité, refus du mensonge."
         keywords="à propos Venio, agence digitale Paris, équipe Venio, expertise technique, vision"
@@ -20,6 +22,8 @@ const APropos = () => {
           <h1>À PROPOS</h1>
           <p className="apropos-subtitle">Pourquoi Venio existe</p>
         </section>
+
+        <NeonDivider />
 
         <section className="apropos-content">
           <div className="apropos-section">
@@ -110,10 +114,15 @@ const APropos = () => {
             </p>
           </div>
 
+          <NeonDivider variant="soft" />
+
           <div className="apropos-cta">
             <h2>Si vous êtes arrivé jusqu&apos;ici</h2>
             <p>C&apos;est que vous comprenez. Parlons.</p>
-            <Link to="/contact" className="cta-btn">Prendre contact</Link>
+            <Link to="/contact" className="cta-btn">
+              <NeonCorners />
+              <span className="cta-btn-label">Prendre contact</span>
+            </Link>
           </div>
         </section>
       </div>
@@ -122,4 +131,3 @@ const APropos = () => {
 }
 
 export default APropos
-

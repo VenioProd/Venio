@@ -1,5 +1,6 @@
 import React from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
 import PoleCard from '../components/PoleCard'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
@@ -41,6 +42,8 @@ const PolesPage = () => {
           <h1>NOS PÔLES</h1>
           <p className="poles-subtitle">Trois spécialisations. Pas de généralisme.</p>
         </section>
+
+        <NeonDivider />
 
         <section className="poles-content">
           <div className="poles-intro">

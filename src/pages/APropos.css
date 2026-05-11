@@ -333,6 +333,11 @@
   backdrop-filter: blur(10px);
 }
 
+.cta-btn-label {
+  position: relative;
+  z-index: 2;
+}
+
 .cta-btn::before {
   content: '';
   position: absolute;

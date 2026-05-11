@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './Realisations.css'
@@ -167,6 +168,8 @@ const Realisations = () => {
             </p>
           </div>
         </section>
+
+        <NeonDivider />
 
         <section className="realisations-content">
           <div className="filters">

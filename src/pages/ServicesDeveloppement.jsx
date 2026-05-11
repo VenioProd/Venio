@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import MathCaptcha from '../components/MathCaptcha'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './ServicesPage.css'
@@ -41,6 +43,8 @@ const ServicesDeveloppement = () => {
             que ça fonctionne.
           </p>
         </section>
+
+        <NeonDivider />
 
         <section className="services-content">
           <div className="services-section">
@@ -132,6 +136,8 @@ const ServicesDeveloppement = () => {
             </p>
           </div>
 
+          <NeonDivider variant="soft" />
+
           <div className="services-cta">
             <h2>Parlons de votre projet</h2>
             <form className="contact-form" onSubmit={handleSubmit}>
@@ -170,12 +176,13 @@ const ServicesDeveloppement = () => {
                 </div>
               </div>
               <MathCaptcha onVerify={setCaptchaVerified} />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="form-submit"
                 disabled={!captchaVerified}
               >
-                Envoyer
+                <NeonCorners />
+                <span className="form-submit-label">Envoyer</span>
               </button>
             </form>
           </div>

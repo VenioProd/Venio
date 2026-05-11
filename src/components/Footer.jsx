@@ -33,7 +33,7 @@ const Footer = () => {
       </div>
       
       <div className="footer-bottom">
-        <p>© 2025 Venio — Lucidité, efficacité, refus du mensonge</p>
+        <p>© {new Date().getFullYear()} Venio — Lucidité, efficacité, refus du mensonge</p>
         <div className="footer-legal">
           <Link to="/legal">Mentions légales</Link>
           <span> | </span>

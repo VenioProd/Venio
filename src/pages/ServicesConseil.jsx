@@ -1,5 +1,7 @@
 import React from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './ServicesPage.css'
@@ -22,6 +24,8 @@ const ServicesConseil = () => {
             C&apos;est vos décisions.
           </p>
         </section>
+
+        <NeonDivider />
 
         <section className="services-content">
           <div className="services-section">
@@ -117,16 +121,19 @@ const ServicesConseil = () => {
             </p>
           </div>
 
+          <NeonDivider variant="soft" />
+
           <div className="services-cta calendly">
             <h2>Premier échange (30min)</h2>
             <p>On discute de votre projet. Sans filtre.</p>
-            <a 
-              href="https://calendly.com" 
-              target="_blank" 
+            <a
+              href="https://calendly.com"
+              target="_blank"
               rel="noopener noreferrer"
               className="calendly-btn"
             >
-              Réserver un créneau →
+              <NeonCorners />
+              <span className="calendly-btn-label">Réserver un créneau →</span>
             </a>
           </div>
         </section>

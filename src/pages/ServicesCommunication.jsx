@@ -1,5 +1,7 @@
 import React from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './ServicesPage.css'
@@ -22,6 +24,8 @@ const ServicesCommunication = () => {
             ce n&apos;est pas avoir une marque.
           </p>
         </section>
+
+        <NeonDivider />
 
         <section className="services-content">
           <div className="services-section">
@@ -107,6 +111,8 @@ const ServicesCommunication = () => {
             </p>
           </div>
 
+          <NeonDivider variant="soft" />
+
           <div className="services-cta">
             <h2>Parlons de votre projet</h2>
             <form className="contact-form">
@@ -117,7 +123,10 @@ const ServicesCommunication = () => {
               <input type="email" placeholder="Email" required />
               <input type="text" placeholder="Entreprise" />
               <textarea placeholder="Décrivez votre projet" rows="6" required></textarea>
-              <button type="submit" className="form-submit">Envoyer</button>
+              <button type="submit" className="form-submit">
+                <NeonCorners />
+                <span className="form-submit-label">Envoyer</span>
+              </button>
             </form>
           </div>
         </section>

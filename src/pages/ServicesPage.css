@@ -629,6 +629,12 @@
   backdrop-filter: blur(10px);
 }
 
+.form-submit-label,
+.calendly-btn-label {
+  position: relative;
+  z-index: 2;
+}
+
 .form-submit::before {
   content: '';
   position: absolute;
