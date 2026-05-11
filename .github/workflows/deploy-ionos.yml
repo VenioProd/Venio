@@ -43,20 +43,20 @@ jobs:
       - name: ✅ Vérifier le build
         run: npm run deploy:check
 
-      - name: 📥 Re-checkout avant déploiement (sécurité)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🔎 Vérifier le contexte git
+      - name: 🔎 Vérifier le contexte git et les artefacts
         run: |
           if [ ! -d .git ]; then
             echo "::error::.git directory missing before deploy"
             exit 1
           fi
+          if [ ! -d dist ]; then
+            echo "::error::dist directory missing before deploy"
+            exit 1
+          fi
           git rev-parse --is-inside-work-tree
           git fetch --prune --unshallow || true
           git log --oneline -n 1
+          ls -la dist | head
 
       - name: 🚀 Déployer sur Ionos via SFTP
         uses: milanmk/actions-file-deployer@master
