@@ -18,3 +18,37 @@
   animation: scaleIn 0.6s ease-out forwards;
 }
 
+/* Utilitaire : trait néon sous un titre ou un élément */
+.neon-underline {
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.neon-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 48px;
+  height: 1px;
+  background: var(--primary);
+  box-shadow:
+    0 0 6px rgba(14, 165, 233, 0.8),
+    0 0 14px rgba(14, 165, 233, 0.5),
+    0 0 24px rgba(14, 165, 233, 0.3);
+  pointer-events: none;
+}
+
+.neon-underline-centered::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.neon-underline-wide::after {
+  width: 72px;
+}
+
+.neon-underline-thin::after {
+  width: 32px;
+}
+

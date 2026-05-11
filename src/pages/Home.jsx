@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import Hero from '../components/Hero'
 import Manifeste from '../components/Manifeste'
 import ServicesCore from '../components/ServicesCore'
-import Citation from '../components/Citation'
 import CTAFinal from '../components/CTAFinal'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import ParallaxDecorations from '../components/ParallaxDecorations'
+import NeonDivider from '../components/NeonDivider'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './Home.css'
@@ -14,22 +14,23 @@ import './Home.css'
 const Home = () => {
   return (
     <>
-      <SEO 
+      <SEO
         title="Accueil"
-        description="La plupart des stratégies échouent. Ce n'est pas un hasard. Venio construit ce qui doit exister. Code propriétaire, architectures sur mesure, audit sans filtre. Pas de templates, pas de mensonges."
+        description="Venio construit ce qui doit exister. Conseil stratégique, développement sur mesure, communication et branding. Pas de templates, pas de slides."
         keywords="agence digitale, développement web, communication, branding, stratégie digitale, Paris"
       />
       <StructuredData type="home" />
       <GradientMeshBackground />
       <ParallaxDecorations />
       <Hero />
+      <NeonDivider />
       <Manifeste />
+      <NeonDivider variant="soft" />
       <ServicesCore />
-      <Citation />
+      <NeonDivider />
       <CTAFinal />
     </>
   )
 }
 
 export default Home
-
