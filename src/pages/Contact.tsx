@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import emailjs from '@emailjs/browser'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import MathCaptcha from '../components/MathCaptcha'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './Contact.css'
@@ -97,6 +99,8 @@ const Contact = () => {
           <p className="contact-subtitle">Avant de nous contacter</p>
         </section>
 
+        <NeonDivider />
+
         <section className="contact-content">
           <div className="contact-qualification">
             <p>
@@ -191,7 +195,10 @@ const Contact = () => {
                   className="form-submit"
                   disabled={!captchaVerified || isSubmitting}
                 >
-                  {isSubmitting ? 'Envoi...' : 'Envoyer'}
+                  <NeonCorners />
+                  <span className="form-submit-label">
+                    {isSubmitting ? 'Envoi...' : 'Envoyer'}
+                  </span>
                 </button>
               </form>
             </div>

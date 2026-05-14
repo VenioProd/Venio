@@ -1,6 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import GradientMeshBackground from '../components/GradientMeshBackground'
+import NeonDivider from '../components/NeonDivider'
+import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import './ServicesPage.css'
@@ -24,6 +26,8 @@ const ServicesDeveloppement = () => {
             que ça fonctionne.
           </p>
         </section>
+
+        <NeonDivider />
 
         <section className="services-content">
           <div className="services-section">
@@ -115,13 +119,16 @@ const ServicesDeveloppement = () => {
             </p>
           </div>
 
+          <NeonDivider variant="soft" />
+
           <div className="services-cta">
             <h2>Parlons de votre projet</h2>
             <p className="section-intro">
-              Vous avez un projet de developpement ? Parlons-en.
+              Vous avez un projet de développement ? Parlons-en.
             </p>
             <Link to="/contact" className="form-submit" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
-              Nous contacter
+              <NeonCorners />
+              <span className="form-submit-label">Nous contacter</span>
             </Link>
           </div>
         </section>

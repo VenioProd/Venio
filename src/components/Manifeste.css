@@ -12,18 +12,20 @@
 }
 
 .manifeste-text {
-  font-size: 28px;
-  line-height: 1.6;
+  font-size: clamp(32px, 4.5vw, 56px);
+  line-height: 1.2;
   color: var(--primary);
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   font-weight: 900;
+  letter-spacing: 0.5px;
 }
 
 .manifeste-tagline {
-  font-size: 20px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 @media (max-width: 768px) {
@@ -32,11 +34,11 @@
   }
   
   .manifeste-text {
-    font-size: 22px;
+    font-size: 32px;
   }
-  
+
   .manifeste-tagline {
-    font-size: 18px;
+    font-size: 15px;
   }
 }
 
