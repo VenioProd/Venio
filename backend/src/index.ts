@@ -179,7 +179,7 @@ app.use('/api/projects', clientMessageRoutes)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const publicDir = path.join(__dirname, '..', 'public')
-app.use(express.static(publicDir))
+app.use(express.static(publicDir, { redirect: false }))
 app.get('{*path}', (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, 'index.html'))
 })
