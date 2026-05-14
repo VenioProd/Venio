@@ -280,12 +280,11 @@ export default function InternalProjectList() {
       .finally(() => setMissionsLoading(false))
   }, [viewTab])
 
-  const handleParticipantUpdate = async (missionId: string, projectId: string, userId: string, progress?: number, status?: string) => {
+  const handleParticipantUpdate = async (missionId: string, projectId: string, userId: string, fields: { progress?: number; status?: string; blocked?: boolean; blockedReason?: string }) => {
     try {
       const data = await apiFetch<{ mission: Mission }>(`/api/admin/internal-projects/${projectId}/missions/${missionId}/my-progress`, {
-        method: 'PATCH', body: JSON.stringify({ userId, progress, status }),
+        method: 'PATCH', body: JSON.stringify({ userId, ...fields }),
       })
-      // Preserve internalProject (not populated by this route)
       setMissions(ms => ms.map(x => x._id === missionId ? { ...data.mission, internalProject: x.internalProject } : x))
     } catch { /* silent */ }
   }
@@ -915,13 +914,15 @@ export default function InternalProjectList() {
 
           {/* Récap par assigné — super admin only */}
           {isSuperAdmin && missions.length > 0 && (() => {
-            const byAssignee = new Map<string, { name: string; total: number; done: number; avgProgress: number; missions: Mission[] }>()
+            const byAssignee = new Map<string, { name: string; total: number; done: number; avgProgress: number; blockedCount: number; missions: Mission[] }>()
             missions.forEach(m => {
               (m.assignedTo || []).forEach(a => {
-                if (!byAssignee.has(a._id)) byAssignee.set(a._id, { name: a.name, total: 0, done: 0, avgProgress: 0, missions: [] })
+                if (!byAssignee.has(a._id)) byAssignee.set(a._id, { name: a.name, total: 0, done: 0, avgProgress: 0, blockedCount: 0, missions: [] })
                 const entry = byAssignee.get(a._id)!
                 entry.total++
                 if (m.status === 'TERMINE') entry.done++
+                const participant = (m.participants || []).find(p => p.user?._id === a._id)
+                if (participant?.blocked) entry.blockedCount++
                 entry.missions.push(m)
               })
             })
@@ -931,12 +932,13 @@ export default function InternalProjectList() {
             return (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
                 {Array.from(byAssignee.entries()).map(([id, entry]) => (
-                  <div key={id} style={{ flex: '1 1 160px', minWidth: 160, padding: '14px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div key={id} style={{ flex: '1 1 160px', minWidth: 160, padding: '14px 16px', borderRadius: 10, background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.04)' : 'rgba(255,255,255,0.03)', border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(165,180,207,0.12)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)', border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.35)' : 'rgba(165,180,207,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: entry.blockedCount > 0 ? '#f87171' : '#a5b4cf', flexShrink: 0 }}>
                         {entry.name[0]?.toUpperCase()}
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{entry.name}</span>
+                      {entry.blockedCount > 0 && <span style={{ fontSize: 10, color: '#f87171', flexShrink: 0 }}>🚫</span>}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{entry.done}/{entry.total} terminées</span>
@@ -1370,52 +1372,130 @@ export default function InternalProjectList() {
               </Section>
 
               {/* ── PROGRESSION INDIVIDUELLE ── */}
-              {(m.participants || []).length > 0 && (
-                <Section icon="👥" title="Avancement par membre">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {(m.participants || []).map(p => {
-                      const canEdit = isSuperAdmin || p.user?._id === user?._id
-                      return (
-                        <div key={p._id} style={{ padding: '12px 14px', borderRadius: 10, background: p.user?._id === user?._id ? 'rgba(14,165,233,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.user?._id === user?._id ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.05)'}` }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(165,180,207,0.12)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
-                              {p.user?.name?.[0]?.toUpperCase()}
+              {(m.participants || []).length > 0 && (() => {
+                const avgProgress = Math.round((m.participants || []).reduce((s, p) => s + (p.progress ?? 0), 0) / m.participants.length)
+                const blockedCount = (m.participants || []).filter(p => p.blocked).length
+                return (
+                  <Section icon="👥" title="Avancement par membre"
+                    badge={blockedCount > 0 ? <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>🚫 {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}</span> : undefined}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {(m.participants || []).map(p => {
+                        const canEdit = isSuperAdmin || p.user?._id === user?._id
+                        // Étapes assignées à cette personne
+                        const mySteps = (m.steps || []).filter(s => s.assignedTo === p.user?._id)
+                        const myStepsDone = mySteps.filter(s => s.done).length
+                        // Étapes communes (non assignées)
+                        const commonSteps = (m.steps || []).filter(s => !s.assignedTo)
+                        const commonDone = commonSteps.filter(s => s.done).length
+                        // Livrables assignés à cette personne
+                        const myDelivs = (m.deliverables || []).filter(d => d.assignedTo === p.user?._id)
+                        const myDelivsDone = myDelivs.filter(d => d.done).length
+                        // Contribution inégale : 30+ points sous la moyenne
+                        const isBehind = m.participants.length > 1 && (avgProgress - (p.progress ?? 0)) >= 30
+                        // Couleur avatar selon état
+                        const avatarBg = p.blocked ? 'rgba(248,113,113,0.15)' : p.status === 'TERMINE' ? 'rgba(16,185,129,0.15)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.15)' : 'rgba(165,180,207,0.12)'
+                        const avatarBorder = p.blocked ? 'rgba(248,113,113,0.4)' : p.status === 'TERMINE' ? 'rgba(16,185,129,0.4)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.3)' : 'rgba(165,180,207,0.2)'
+                        const avatarColor = p.blocked ? '#f87171' : p.status === 'TERMINE' ? '#6ee7b7' : p.user?._id === user?._id ? '#38bdf8' : '#a5b4cf'
+                        const cardBorder = p.blocked ? 'rgba(248,113,113,0.25)' : isBehind ? 'rgba(251,191,36,0.2)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.05)'
+                        const cardBg = p.blocked ? 'rgba(248,113,113,0.04)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.05)' : 'rgba(255,255,255,0.02)'
+                        const barColor = p.blocked ? '#f87171' : p.progress === 100 ? '#10b981' : p.user?._id === user?._id ? '#38bdf8' : '#a5b4cf'
+
+                        return (
+                          <div key={p._id} style={{ borderRadius: 10, background: cardBg, border: `1px solid ${cardBorder}`, overflow: 'hidden' }}>
+                            <div style={{ padding: '12px 14px' }}>
+                              {/* Ligne 1 : avatar + nom + badges */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, border: `1.5px solid ${avatarBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: avatarColor, flexShrink: 0 }}>
+                                  {p.blocked ? '🚫' : p.user?.name?.[0]?.toUpperCase()}
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{p.user?.name}</span>
+                                {p.user?._id === user?._id && <span style={{ fontSize: 10, color: '#38bdf8', background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: 8, padding: '1px 6px' }}>Moi</span>}
+                                {p.blocked && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontWeight: 600 }}>🚫 Bloqué</span>}
+                                {!p.blocked && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, color: SC[p.status] || '#a5b4cf', background: SBg[p.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${SBo[p.status] || 'rgba(255,255,255,0.1)'}` }}>{SL[p.status] || p.status}</span>}
+                                {isBehind && !p.blocked && <span title="Contribution en retard sur le groupe" style={{ fontSize: 11, padding: '2px 6px', borderRadius: 8, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24' }}>⚠ En retard</span>}
+                              </div>
+
+                              {/* Barre de progression + % */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', borderRadius: 3, background: barColor, width: `${p.progress ?? 0}%`, transition: 'width .3s' }} />
+                                </div>
+                                {canEdit ? (
+                                  <input type="number" min={0} max={100} defaultValue={p.progress ?? 0} key={`${p._id}-${p.progress}`}
+                                    onBlur={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); e.target.value = String(v); handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, { progress: v }) }}
+                                    style={{ width: 44, fontSize: 13, fontWeight: 700, padding: '2px 4px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center' }} />
+                                ) : (
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 28, textAlign: 'right' }}>{p.progress ?? 0}</span>
+                                )}
+                                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>%</span>
+                              </div>
+
+                              {/* Étapes + livrables calculés */}
+                              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: canEdit ? 8 : 0 }}>
+                                {mySteps.length > 0 && (
+                                  <span style={{ fontSize: 11, color: myStepsDone === mySteps.length ? '#6ee7b7' : 'var(--text-secondary)', background: myStepsDone === mySteps.length ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '2px 7px', border: `1px solid ${myStepsDone === mySteps.length ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)'}` }}>
+                                    ✅ {myStepsDone}/{mySteps.length} étapes perso
+                                  </span>
+                                )}
+                                {commonSteps.length > 0 && (
+                                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '2px 7px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    {commonDone}/{commonSteps.length} communes
+                                  </span>
+                                )}
+                                {myDelivs.length > 0 && (
+                                  <span style={{ fontSize: 11, color: myDelivsDone === myDelivs.length ? '#c4b5fd' : 'var(--text-secondary)', background: myDelivsDone === myDelivs.length ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '2px 7px', border: `1px solid ${myDelivsDone === myDelivs.length ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.06)'}` }}>
+                                    📦 {myDelivsDone}/{myDelivs.length} livrables
+                                  </span>
+                                )}
+                                {mySteps.length === 0 && commonSteps.length === 0 && myDelivs.length === 0 && (m.steps || []).length === 0 && (
+                                  <span style={{ fontSize: 11, color: 'rgba(165,180,207,0.35)', fontStyle: 'italic' }}>Aucune étape définie</span>
+                                )}
+                              </div>
+
+                              {/* Boutons statut */}
+                              {canEdit && (
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                  {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).map(v => (
+                                    <button key={v} type="button" onClick={() => handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, { status: v })}
+                                      style={{ padding: '3px 9px', borderRadius: 12, border: `1px solid ${p.status === v ? SBo[v] : 'rgba(255,255,255,0.08)'}`, background: p.status === v ? SBg[v] : 'transparent', color: p.status === v ? SC[v] : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', fontWeight: p.status === v ? 600 : 400, transition: 'all .15s' }}>
+                                      {SL[v]}
+                                    </button>
+                                  ))}
+                                  {/* Bouton Bloqué */}
+                                  <button type="button" onClick={() => handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, { blocked: !p.blocked, blockedReason: p.blocked ? '' : p.blockedReason })}
+                                    style={{ padding: '3px 9px', borderRadius: 12, border: `1px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.2)'}`, background: p.blocked ? 'rgba(248,113,113,0.12)' : 'transparent', color: p.blocked ? '#f87171' : 'rgba(248,113,113,0.5)', fontSize: 11, cursor: 'pointer', fontWeight: p.blocked ? 600 : 400, marginLeft: 'auto', transition: 'all .15s' }}>
+                                    {p.blocked ? '🚫 Débloqué' : '🚫 Signaler blocage'}
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{p.user?.name}</span>
-                            {p.user?._id === user?._id && <span style={{ fontSize: 10, color: '#38bdf8', background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: 8, padding: '1px 6px' }}>Moi</span>}
-                            {/* Statut individuel */}
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, color: SC[p.status] || '#a5b4cf', background: SBg[p.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${SBo[p.status] || 'rgba(255,255,255,0.1)'}` }}>{SL[p.status] || p.status}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', borderRadius: 3, background: p.progress === 100 ? '#10b981' : '#38bdf8', width: `${p.progress ?? 0}%`, transition: 'width .3s' }} />
-                            </div>
-                            {canEdit ? (
-                              <input type="number" min={0} max={100} defaultValue={p.progress ?? 0} key={`${p._id}-${p.progress}`}
-                                onBlur={e => { const v = Math.min(100,Math.max(0,Number(e.target.value))); e.target.value=String(v); handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, v, undefined) }}
-                                style={{ width: 44, fontSize: 13, fontWeight: 700, padding: '2px 4px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: p.progress===100?'#6ee7b7':'#38bdf8', textAlign: 'center' }} />
-                            ) : (
-                              <span style={{ fontSize: 13, fontWeight: 700, color: p.progress===100?'#6ee7b7':'#38bdf8', minWidth: 28, textAlign: 'right' }}>{p.progress ?? 0}</span>
+
+                            {/* Raison du blocage */}
+                            {p.blocked && (
+                              <div style={{ padding: '8px 14px 12px', borderTop: '1px solid rgba(248,113,113,0.15)', background: 'rgba(248,113,113,0.03)' }}>
+                                {canEdit ? (
+                                  <textarea
+                                    defaultValue={p.blockedReason || ''}
+                                    key={`blocked-${p._id}-${p.blockedReason}`}
+                                    onBlur={e => handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, { blockedReason: e.target.value })}
+                                    placeholder="Décris le blocage pour que l'équipe puisse aider…"
+                                    rows={2}
+                                    style={{ width: '100%', fontSize: 12, padding: '6px 9px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', resize: 'vertical', lineHeight: 1.5, boxSizing: 'border-box' }}
+                                  />
+                                ) : p.blockedReason ? (
+                                  <p style={{ fontSize: 12, color: '#f87171', margin: 0, lineHeight: 1.5 }}>"{p.blockedReason}"</p>
+                                ) : (
+                                  <p style={{ fontSize: 12, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}>Aucune raison précisée</p>
+                                )}
+                              </div>
                             )}
-                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>%</span>
                           </div>
-                          {/* Changement statut individuel */}
-                          {canEdit && (
-                            <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
-                              {(['A_FAIRE','EN_COURS','TERMINE'] as const).map(v => (
-                                <button key={v} type="button" onClick={() => handleParticipantUpdate(m._id, m.internalProject?._id, p.user?._id, undefined, v)}
-                                  style={{ padding: '3px 9px', borderRadius: 12, border: `1px solid ${p.status === v ? SBo[v] : 'rgba(255,255,255,0.08)'}`, background: p.status === v ? SBg[v] : 'transparent', color: p.status === v ? SC[v] : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', fontWeight: p.status === v ? 600 : 400, transition: 'all .15s' }}>
-                                  {SL[v]}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Section>
-              )}
+                        )
+                      })}
+                    </div>
+                  </Section>
+                )
+              })()}
 
               {/* ── ÉTAPES ── */}
               <Section icon="✅" title="Étapes"

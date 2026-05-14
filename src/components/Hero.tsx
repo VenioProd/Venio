@@ -17,7 +17,7 @@ const Hero = () => {
         <p className="hero-description">
           Pas ce qui rassure.
         </p>
-        <Link to="/services" className="hero-cta">
+        <Link to="/realisations" className="hero-cta">
           <NeonCorners />
           <span className="hero-cta-label">Voir notre travail</span>
         </Link>
