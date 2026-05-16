@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../lib/permissions'
@@ -72,16 +73,16 @@ const MORE_GROUPS: NavGroup[] = [
 function isItemVisible(item: NavItem, user: ReturnType<typeof useAuth>['user']): boolean {
   const permOk = !item.perm || hasPermission(user, item.perm)
   const rolesOk = !item.roles || (user ? item.roles.includes(user.role) : false)
-  // Si une permission OU un rôle est spécifié, il faut satisfaire AU MOINS l'un.
   if (item.perm && item.roles) return permOk || rolesOk
   return permOk && rolesOk
 }
 
 /**
  * Top navigation bar persistante de l'espace admin Venio.
- * Affichage horizontal sticky avec liens principaux, mega-menu "Plus" et
- * menu utilisateur. Sur mobile (<900px) le bouton "Plus" devient un burger
- * exposant tous les liens (principaux + secondaires).
+ * Les pop-overs (mega-menu, user menu, drawer mobile) sont rendus via
+ * React Portal dans document.body pour s'extraire de tout stacking
+ * context parent et garantir qu'ils s'affichent toujours au-dessus
+ * de tout le reste de l'UI.
  */
 const AdminNav = () => {
   const { user, logout } = useAuth()
@@ -90,7 +91,8 @@ const AdminNav = () => {
   const [userOpen, setUserOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const moreRef = useRef<HTMLDivElement | null>(null)
+  const moreBtnRef = useRef<HTMLButtonElement | null>(null)
+  const userBtnRef = useRef<HTMLButtonElement | null>(null)
 
   // Ferme les menus à la navigation
   useEffect(() => {
@@ -99,7 +101,7 @@ const AdminNav = () => {
     setDrawerOpen(false)
   }, [location.pathname])
 
-  // Ferme le mega-menu via Escape
+  // Escape ferme tout
   useEffect(() => {
     if (!moreOpen && !userOpen && !drawerOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -125,139 +127,84 @@ const AdminNav = () => {
 
   const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
 
-  return (
-    <header className="admin-nav">
-      <div className="admin-nav-inner">
-        <div
-          className="admin-nav-brand"
-          onClick={() => navigate('/admin')}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && navigate('/admin')}
-        >
-          <span className="admin-nav-logo">V</span>
-          <span className="admin-nav-brand-text">Venio Admin</span>
-        </div>
+  // ---- Pop-overs rendus en portail (hors stacking context) ----
 
-        <nav className="admin-nav-links" aria-label="Navigation principale">
-          {visibleMain.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-
-          {visibleGroups.length > 0 && (
-            <div className="admin-nav-more" ref={moreRef}>
-              <button
-                type="button"
-                className={`admin-nav-link admin-nav-more-btn${moreOpen ? ' is-open' : ''}`}
-                onClick={() => setMoreOpen((v) => !v)}
-                aria-haspopup="menu"
-                aria-expanded={moreOpen}
-              >
-                Plus <span className="admin-nav-caret" aria-hidden>▾</span>
-              </button>
-              {moreOpen && (
-                <>
-                  <div
-                    className="admin-nav-menu-overlay"
-                    onClick={() => setMoreOpen(false)}
-                    aria-hidden
-                  />
-                  <div className="admin-nav-megamenu" role="menu">
-                    {visibleGroups.map((g) => (
-                      <div key={g.label} className="admin-nav-megamenu-col">
-                        <div className="admin-nav-megamenu-title">{g.label}</div>
-                        <ul className="admin-nav-megamenu-list">
-                          {g.items.map((item) => (
-                            <li key={item.to}>
-                              <NavLink
-                                to={item.to}
-                                end={item.end}
-                                className={({ isActive }) =>
-                                  `admin-nav-megamenu-item${isActive ? ' active' : ''}`
-                                }
-                              >
-                                {item.label}
-                              </NavLink>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </nav>
-
-        {/* Burger (mobile uniquement, via CSS) */}
-        <button
-          type="button"
-          className="admin-nav-burger"
-          onClick={() => setDrawerOpen((v) => !v)}
-          aria-label="Ouvrir le menu de navigation"
-          aria-expanded={drawerOpen}
-        >
-          <span aria-hidden>☰</span>
-        </button>
-
-        <div className="admin-nav-user">
-          <button
-            type="button"
-            className="admin-nav-user-btn"
-            onClick={() => setUserOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={userOpen}
-          >
-            <span className="admin-nav-avatar">{initial}</span>
-            <span className="admin-nav-user-label">
-              {user?.name || user?.email || 'Utilisateur'}
-            </span>
-            <span className="admin-nav-caret" aria-hidden>▾</span>
-          </button>
-          {userOpen && (
-            <>
-              <div className="admin-nav-menu-overlay" onClick={() => setUserOpen(false)} />
-              <div className="admin-nav-menu" role="menu">
-                <div className="admin-nav-menu-header">
-                  <div className="admin-nav-menu-name">{user?.name || 'Utilisateur'}</div>
-                  <div className="admin-nav-menu-email">{user?.email}</div>
-                  <div className="admin-nav-menu-role">{user?.role}</div>
-                </div>
-                <button
-                  type="button"
-                  className="admin-nav-menu-item"
-                  onClick={() => {
-                    setUserOpen(false)
-                    navigate('/admin/profil')
-                  }}
-                  role="menuitem"
-                >
-                  Mon profil
-                </button>
-                <button
-                  type="button"
-                  className="admin-nav-menu-item danger"
-                  onClick={handleLogout}
-                  role="menuitem"
-                >
-                  Se déconnecter
-                </button>
+  const moreMenuPortal = moreOpen
+    ? createPortal(
+        <>
+          <div
+            className="admin-nav-portal-overlay"
+            onClick={() => setMoreOpen(false)}
+            aria-hidden
+          />
+          <div className="admin-nav-megamenu admin-nav-megamenu--portal" role="menu">
+            {visibleGroups.map((g) => (
+              <div key={g.label} className="admin-nav-megamenu-col">
+                <div className="admin-nav-megamenu-title">{g.label}</div>
+                <ul className="admin-nav-megamenu-list">
+                  {g.items.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        end={item.end}
+                        className={({ isActive }) =>
+                          `admin-nav-megamenu-item${isActive ? ' active' : ''}`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </>
-          )}
-        </div>
-      </div>
+            ))}
+          </div>
+        </>,
+        document.body
+      )
+    : null
 
-      {/* Drawer mobile */}
-      {drawerOpen && (
+  const userMenuPortal = userOpen
+    ? createPortal(
+        <>
+          <div
+            className="admin-nav-portal-overlay"
+            onClick={() => setUserOpen(false)}
+            aria-hidden
+          />
+          <div className="admin-nav-menu admin-nav-menu--portal" role="menu">
+            <div className="admin-nav-menu-header">
+              <div className="admin-nav-menu-name">{user?.name || 'Utilisateur'}</div>
+              <div className="admin-nav-menu-email">{user?.email}</div>
+              <div className="admin-nav-menu-role">{user?.role}</div>
+            </div>
+            <button
+              type="button"
+              className="admin-nav-menu-item"
+              onClick={() => {
+                setUserOpen(false)
+                navigate('/admin/profil')
+              }}
+              role="menuitem"
+            >
+              Mon profil
+            </button>
+            <button
+              type="button"
+              className="admin-nav-menu-item danger"
+              onClick={handleLogout}
+              role="menuitem"
+            >
+              Se déconnecter
+            </button>
+          </div>
+        </>,
+        document.body
+      )
+    : null
+
+  const drawerPortal = drawerOpen
+    ? createPortal(
         <>
           <div
             className="admin-nav-drawer-overlay"
@@ -277,24 +224,27 @@ const AdminNav = () => {
               </button>
             </div>
             <div className="admin-nav-drawer-body">
-              <ul className="admin-nav-drawer-list">
-                {visibleMain.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) =>
-                        `admin-nav-drawer-item${isActive ? ' active' : ''}`
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
+              <div className="admin-nav-drawer-section">
+                <div className="admin-nav-drawer-section-title">Principal</div>
+                <ul className="admin-nav-drawer-list">
+                  {visibleMain.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        end={item.end}
+                        className={({ isActive }) =>
+                          `admin-nav-drawer-item${isActive ? ' active' : ''}`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               {visibleGroups.map((g) => (
-                <div key={g.label} className="admin-nav-drawer-group">
-                  <div className="admin-nav-drawer-group-title">{g.label}</div>
+                <div key={g.label} className="admin-nav-drawer-section">
+                  <div className="admin-nav-drawer-section-title">{g.label}</div>
                   <ul className="admin-nav-drawer-list">
                     {g.items.map((item) => (
                       <li key={item.to}>
@@ -314,9 +264,85 @@ const AdminNav = () => {
               ))}
             </div>
           </aside>
-        </>
-      )}
-    </header>
+        </>,
+        document.body
+      )
+    : null
+
+  return (
+    <>
+      <header className="admin-nav">
+        <div className="admin-nav-inner">
+          <div
+            className="admin-nav-brand"
+            onClick={() => navigate('/admin')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate('/admin')}
+          >
+            <span className="admin-nav-logo">V</span>
+            <span className="admin-nav-brand-text">Venio Admin</span>
+          </div>
+
+          <nav className="admin-nav-links" aria-label="Navigation principale">
+            {visibleMain.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+
+            {visibleGroups.length > 0 && (
+              <button
+                ref={moreBtnRef}
+                type="button"
+                className={`admin-nav-link admin-nav-more-btn${moreOpen ? ' is-open' : ''}`}
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+              >
+                Plus <span className="admin-nav-caret" aria-hidden>▾</span>
+              </button>
+            )}
+          </nav>
+
+          <button
+            type="button"
+            className="admin-nav-burger"
+            onClick={() => setDrawerOpen((v) => !v)}
+            aria-label="Ouvrir le menu de navigation"
+            aria-expanded={drawerOpen}
+          >
+            <span aria-hidden>☰</span>
+          </button>
+
+          <div className="admin-nav-user">
+            <button
+              ref={userBtnRef}
+              type="button"
+              className="admin-nav-user-btn"
+              onClick={() => setUserOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={userOpen}
+            >
+              <span className="admin-nav-avatar">{initial}</span>
+              <span className="admin-nav-user-label">
+                {user?.name || user?.email || 'Utilisateur'}
+              </span>
+              <span className="admin-nav-caret" aria-hidden>▾</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {moreMenuPortal}
+      {userMenuPortal}
+      {drawerPortal}
+    </>
   )
 }
 
