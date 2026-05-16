@@ -209,6 +209,14 @@ const AdminDashboard = () => {
                 <span className="portal-action-label">CRM</span>
               </Link>
             )}
+            {hasPermission(user as User, PERMISSIONS.VIEW_ACCOUNTING) && (
+              <Link className="portal-button portal-action-link" to="/admin/comptabilite" title="Comptabilité">
+                <span className="portal-action-icon" aria-hidden>
+                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><path d="M3 3h18v18H3z" /><path d="M3 9h18" /><path d="M9 21V9" /><path d="M15 14h3" /><path d="M15 18h3" /></svg>
+                </span>
+                <span className="portal-action-label">Comptabilité</span>
+              </Link>
+            )}
             {(user?.role === 'SUPER_ADMIN' || user?.role === 'RH') && (
               <Link className="portal-button portal-action-link" to="/admin/qualiopi" title="Qualiopi">
                 <span className="portal-action-icon" aria-hidden>
@@ -701,6 +709,10 @@ const AdminDashboard = () => {
                 <Link to="/admin/crm" className="admin-widget">
                   <div className="admin-widget-label">Leads CRM</div>
                   <div className="admin-widget-value">{crmLeadCount}</div>
+                </Link>
+                <Link to="/admin/comptabilite" className="admin-widget">
+                  <div className="admin-widget-label">Comptabilité</div>
+                  <div className="admin-widget-value" style={{ fontSize: '20px' }}>Tableau de bord</div>
                 </Link>
                 <div className="admin-widget">
                   <div className="admin-widget-label">Taches totales</div>
