@@ -4,23 +4,40 @@
     radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.03), transparent 50%),
     #0a0c12;
   color: rgba(255, 255, 255, 0.92);
+  /* Empêche les éléments fixed/absolute des pages enfants de dépasser */
+  position: relative;
+  isolation: isolate;
 }
 
 .admin-shell-main {
   max-width: 1400px;
   margin: 0 auto;
   padding: 16px clamp(16px, 3vw, 32px) 60px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Réinitialiser le portal-container des pages enfants
-   (elles n'ont plus besoin de leur propre background) */
+/* Neutralisation complète du portal-container hérité de ClientPortal.css
+   qui force padding: 120px et width: 90% — incompatible avec le shell admin
+   qui gère déjà ses propres marges et largeur. */
 .admin-shell .portal-container {
-  padding: 0;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: auto !important;
 }
 
 .admin-shell .portal-container::before,
 .admin-shell .portal-container::after {
-  display: none;
+  display: none !important;
+}
+
+/* Idem pour les .accounting-shell internes — pas de min-height ni padding global
+   qui décale verticalement le contenu */
+.admin-shell .accounting-shell {
+  padding: 0 !important;
+  min-height: auto;
 }
 
 /* ---- En-tête de page (titre + actions rapides) ---- */

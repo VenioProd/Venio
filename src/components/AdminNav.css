@@ -6,7 +6,7 @@
 .admin-nav {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 9999;
   background: rgba(10, 12, 18, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -128,7 +128,7 @@
   right: 0;
   min-width: 540px;
   max-width: min(720px, 90vw);
-  z-index: 201;
+  z-index: 10001;
   background: rgba(15, 17, 24, 0.98);
   border: 1px solid rgba(14, 165, 233, 0.25);
   border-radius: 14px;
@@ -243,7 +243,7 @@
 .admin-nav-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 10000;
   background: transparent;
 }
 
@@ -252,7 +252,7 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 240px;
-  z-index: 201;
+  z-index: 10001;
   background: rgba(15, 17, 24, 0.98);
   border: 1px solid rgba(14, 165, 233, 0.25);
   border-radius: 12px;
@@ -337,7 +337,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  z-index: 300;
+  z-index: 10002;
   backdrop-filter: blur(2px);
 }
 
@@ -347,7 +347,7 @@
   right: 0;
   width: min(320px, 88vw);
   height: 100vh;
-  z-index: 301;
+  z-index: 10003;
   background: rgba(12, 14, 22, 0.98);
   border-left: 1px solid rgba(14, 165, 233, 0.25);
   box-shadow: -12px 0 32px rgba(0, 0, 0, 0.5);
