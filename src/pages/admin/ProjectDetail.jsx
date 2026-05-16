@@ -13,6 +13,7 @@ import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
+import BillingAccountingPanel from '../../components/BillingAccountingPanel'
 
 const BILLING_STATUS_LABELS = { DRAFT: 'Brouillon', ISSUED: 'Émis', SENT: 'Envoyé', ACCEPTED: 'Accepté', PAID: 'Payé', CANCELLED: 'Annulé' }
 
@@ -1133,6 +1134,7 @@ const AdminProjectDetail = () => {
                             </button>
                           )}
                         </div>
+                        <BillingAccountingPanel billingDoc={doc} />
                       </li>
                     ))}
                   </ul>
