@@ -26,6 +26,9 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'BILLING_TO_ENTRY', 'PAYMENT_TO_ENTRY',
         'EXTERNAL_SOURCE_CREATE', 'EXTERNAL_SOURCE_UPDATE',
         'EXTERNAL_SOURCE_DELETE', 'EXTERNAL_SOURCE_ROTATE',
+        // ── API Agent ──
+        'AGENT_TOKEN_CREATE', 'AGENT_TOKEN_UPDATE', 'AGENT_TOKEN_REVOKE',
+        'AGENT_AUTH_FAIL', 'AGENT_API_MUTATION',
       ],
     },
     ip: { type: String, default: '' },

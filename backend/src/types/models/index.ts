@@ -87,3 +87,8 @@ export type {
   IRuleMapping,
   IClassificationRule,
 } from './accounting.js'
+
+export type {
+  IAgentToken,
+  IAgentIdempotencyKey,
+} from './agent.js'
