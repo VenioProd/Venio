@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import '../AdminPortal.css'
@@ -28,34 +28,29 @@ export default function AccountingLayout({ title, subtitle, actions, children })
   const { user } = useAuth()
 
   return (
-    <div className="portal-container">
-      <div className="accounting-shell">
-        <div className="accounting-header">
-          <div>
-            <Link to="/admin" className="accounting-back-link">
-              ← Retour au tableau de bord
-            </Link>
-            <h1>{title || 'Comptabilité'}</h1>
-            {subtitle && <div className="subtitle">{subtitle}</div>}
-          </div>
-          {actions && <div className="accounting-toolbar-right">{actions}</div>}
+    <div className="accounting-shell">
+      <div className="admin-page-header">
+        <div>
+          <h1 style={{ margin: 0 }}>{title || 'Comptabilité'}</h1>
+          {subtitle && <p className="admin-page-subtitle">{subtitle}</p>}
         </div>
-
-        <nav className="accounting-subnav" aria-label="Navigation comptabilité">
-          {NAV_ITEMS.filter((item) => !item.perm || hasPermission(user, item.perm)).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `accounting-subnav-link${isActive ? ' active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {children}
+        {actions && <div className="accounting-toolbar-right">{actions}</div>}
       </div>
+
+      <nav className="accounting-subnav" aria-label="Navigation comptabilité">
+        {NAV_ITEMS.filter((item) => !item.perm || hasPermission(user, item.perm)).map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) => `accounting-subnav-link${isActive ? ' active' : ''}`}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {children}
     </div>
   )
 }

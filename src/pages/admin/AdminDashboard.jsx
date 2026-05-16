@@ -7,7 +7,7 @@ import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
 const AdminDashboard = () => {
-  const { logout, user } = useAuth()
+  const { user } = useAuth()
   const [clientCount, setClientCount] = useState(0)
   const [projectCount, setProjectCount] = useState(0)
   const [allClients, setAllClients] = useState([])
@@ -15,12 +15,9 @@ const AdminDashboard = () => {
   const [adminCount, setAdminCount] = useState(0)
   const [crmLeadCount, setCrmLeadCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
   const canViewProjects = hasPermission(user, PERMISSIONS.VIEW_PROJECTS)
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
-  const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
-  const canViewAccounting = hasPermission(user, PERMISSIONS.VIEW_ACCOUNTING)
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
@@ -84,60 +81,33 @@ const AdminDashboard = () => {
     }
   }, [allClients, allProjects])
 
+  // Actions rapides contextuelles (les liens de nav top sont dans AdminNav)
+  const quickActions = [
+    canEditProjects && { to: '/admin/projets/nouveau', label: '✚ Nouveau projet', secondary: true },
+    canManageClients && { to: '/admin/comptes-clients/nouveau', label: '✚ Nouveau client', secondary: true },
+  ].filter(Boolean)
+
   return (
     <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-header">
-          <h1>Tableau de bord Admin</h1>
-          <div className="admin-actions portal-actions-reveal">
-            {canManageClients && (
-              <Link className="portal-button portal-action-link" to="/admin/comptes-clients" title="Comptes clients">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                </span>
-                <span className="portal-action-label">Comptes clients</span>
-              </Link>
-            )}
-            {canManageAdmins && (
-              <Link className="portal-button portal-action-link" to="/admin/comptes-admin" title="Comptes admin">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                </span>
-                <span className="portal-action-label">Comptes admin</span>
-              </Link>
-            )}
-            {canEditProjects && (
-              <Link className="portal-button secondary portal-action-link" to="/admin/projets/nouveau" title="Nouveau projet">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                </span>
-                <span className="portal-action-label">Nouveau projet</span>
-              </Link>
-            )}
-            {canViewCrm && (
-              <Link className="portal-button portal-action-link" to="/admin/crm" title="CRM & Prospection">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
-                </span>
-                <span className="portal-action-label">CRM & Prospection</span>
-              </Link>
-            )}
-            {canViewAccounting && (
-              <Link className="portal-button portal-action-link" to="/admin/comptabilite" title="Comptabilité">
-                <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h18v18H3z" /><path d="M3 9h18" /><path d="M9 21V9" /><path d="M15 14h3" /><path d="M15 18h3" /></svg>
-                </span>
-                <span className="portal-action-label">Comptabilité</span>
-              </Link>
-            )}
-            <button className="portal-button secondary portal-action-link" onClick={logout} type="button" title="Se déconnecter">
-              <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-              </span>
-              <span className="portal-action-label">Se déconnecter</span>
-            </button>
-          </div>
+      <div className="admin-page-header">
+        <div>
+          <h1>Tableau de bord</h1>
+          <p className="admin-page-subtitle">Bienvenue {user?.name || ''}</p>
         </div>
+        {quickActions.length > 0 && (
+          <div className="admin-quick-actions">
+            {quickActions.map((a) => (
+              <Link
+                key={a.to}
+                to={a.to}
+                className={`portal-button${a.secondary ? ' secondary' : ''}`}
+                style={{ padding: '8px 14px', fontSize: '0.88rem' }}
+              >
+                {a.label}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="admin-stats-grid" style={{ marginTop: 24 }}>

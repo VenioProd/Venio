@@ -8,11 +8,16 @@
 }
 
 .portal-card {
-  background: #050505;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(20, 22, 28, 0.5);
   border-radius: 16px;
   padding: 24px;
   color: #ffffff;
+}
+
+/* Pages admin : portal-card sans border, juste un fond plus discret */
+.admin-shell .portal-card {
+  background: transparent;
+  padding: 0;
 }
 
 .portal-grid {
