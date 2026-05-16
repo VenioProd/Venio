@@ -4,17 +4,16 @@
     radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.03), transparent 50%),
     #0a0c12;
   color: rgba(255, 255, 255, 0.92);
-  /* Empêche les éléments fixed/absolute des pages enfants de dépasser */
-  position: relative;
-  isolation: isolate;
+  /* PAS de "isolation: isolate" / "position: relative" ici :
+     ces propriétés créent un stacking context qui contraint le mega-menu
+     de la nav. Avec une nav sticky qui a un z-index élevé, on n'a pas
+     besoin de stacking context parent. */
 }
 
 .admin-shell-main {
   max-width: 1400px;
   margin: 0 auto;
   padding: 16px clamp(16px, 3vw, 32px) 60px;
-  position: relative;
-  z-index: 1;
 }
 
 /* Neutralisation complète du portal-container hérité de ClientPortal.css
@@ -33,8 +32,7 @@
   display: none !important;
 }
 
-/* Idem pour les .accounting-shell internes — pas de min-height ni padding global
-   qui décale verticalement le contenu */
+/* Idem pour les .accounting-shell internes */
 .admin-shell .accounting-shell {
   padding: 0 !important;
   min-height: auto;
