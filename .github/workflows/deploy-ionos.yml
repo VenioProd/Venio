@@ -1,14 +1,11 @@
-name: 🚀 Déploiement automatique sur Ionos
+name: 🚀 Déploiement Ionos (master — DÉCLENCHEMENT MANUEL UNIQUEMENT)
+
+# IMPORTANT — La branche master est legacy. Le déploiement automatique est
+# désactivé pour éviter d'écraser la prod (qui tourne désormais sur main).
+# Pour déployer cette branche : "Run workflow" depuis l'interface GitHub.
 
 on:
-  push:
-    branches:
-      - master  # Déploie automatiquement quand vous poussez sur master
-    paths-ignore:
-      - 'README.md'
-      - 'DEPLOY_IONOS.md'
-      - '.gitignore'
-  workflow_dispatch:  # Permet de déclencher manuellement depuis GitHub
+  workflow_dispatch:  # Déclenchement manuel uniquement
 
 jobs:
   deploy:
