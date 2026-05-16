@@ -15,10 +15,12 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "date-fns": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^2.0.5",
-    "react-router-dom": "^7.9.6"
+    "react-router-dom": "^7.9.6",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

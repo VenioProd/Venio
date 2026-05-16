@@ -6,7 +6,17 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "seed:demo": "node src/scripts/seedDemoData.js"
+    "seed:demo": "node src/scripts/seedDemoData.js",
+    "accounting:migrate-billing": "node src/scripts/migrateExistingBilling.js",
+    "accounting:migrate-billing:dry": "node src/scripts/migrateExistingBilling.js --dry-run",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000,
+    "transform": {},
+    "setupFilesAfterEnv": ["./tests/setup.js"]
   },
   "keywords": [],
   "author": "",
@@ -24,6 +34,9 @@
     "pdfkit": "^0.15.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.1.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }
