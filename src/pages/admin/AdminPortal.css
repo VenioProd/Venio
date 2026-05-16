@@ -221,11 +221,11 @@
 }
 
 .admin-stat-card {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(59, 130, 246, 0.03) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.12);
   border-radius: 16px;
   padding: 24px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
@@ -803,30 +803,18 @@ a.portal-button {
   text-align: center;
 }
 
-/* Card Hover Effects */
+/* Card Hover Effects (désactivés dans le admin-shell pour un design plus sobre) */
 .portal-card {
   transition: all 0.3s ease;
   position: relative;
 }
 
-.portal-card::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #0ea5e9, #3b82f6, #22d3ee, #0ea5e9);
-  background-size: 300% 300%;
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  animation: gradient-rotate 4s ease infinite;
-}
-
-.portal-card:hover::before {
-  opacity: 0.5;
+/* L'effet de bordure animée n'est appliqué QUE hors admin-shell
+   (ie pages publiques / espace client). Dans l'admin moderne, on
+   préfère un design plat sans encadrements gimmicks. */
+.admin-shell .portal-card::before,
+.admin-shell .portal-card:hover::before {
+  display: none;
 }
 
 @keyframes gradient-rotate {
