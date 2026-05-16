@@ -3,9 +3,9 @@ import './Breadcrumb.css'
 
 /**
  * Auto-generated breadcrumb based on URL pathname (parses `/admin/...` segments).
- * Wraps the same look-and-feel as the original source breadcrumb. Coexists with
- * the props-based `Breadcrumb` already shipped on the target — we avoid clobbering
- * the existing API by exposing a dedicated component for the admin shell.
+ * Mapping centralisé des slugs vers leur libellé français. Les segments inconnus
+ * sont auto-capitalisés. Les identifiants (Mongo ObjectId ou numériques) sont
+ * remplacés par "Détail" sans lien.
  */
 
 interface SegmentMapping {
@@ -17,7 +17,6 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   admin: { label: 'Admin', to: '/admin' },
   'comptes-clients': { label: 'Clients', to: '/admin/comptes-clients' },
   'comptes-admin': { label: 'Admins', to: '/admin/comptes-admin' },
-  projets: { label: 'Projets', to: null },
   crm: { label: 'CRM', to: '/admin/crm' },
   comptabilite: { label: 'Comptabilité', to: '/admin/comptabilite' },
   ecritures: { label: 'Écritures', to: '/admin/comptabilite/ecritures' },
@@ -25,15 +24,31 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   balance: { label: 'Balance', to: '/admin/comptabilite/balance' },
   bilan: { label: 'Bilan', to: '/admin/comptabilite/bilan' },
   resultat: { label: 'Compte de résultat', to: '/admin/comptabilite/resultat' },
-  lettrage: { label: 'Lettrage', to: '/admin/comptabilite/lettrage' },
   tva: { label: 'TVA', to: '/admin/comptabilite/tva' },
   fec: { label: 'FEC', to: '/admin/comptabilite/fec' },
+  lettrage: { label: 'Lettrage', to: '/admin/comptabilite/lettrage' },
   'plan-comptable': { label: 'Plan comptable', to: '/admin/comptabilite/plan-comptable' },
   journaux: { label: 'Journaux', to: '/admin/comptabilite/journaux' },
-  parametres: { label: 'Paramètres', to: '/admin/comptabilite/parametres' },
-  audit: { label: 'Audit', to: '/admin/comptabilite/audit' },
+  parametres: { label: 'Paramètres', to: null },
   'sources-externes': { label: 'Sources externes', to: '/admin/comptabilite/sources-externes' },
   'file-attente': { label: "File d'attente", to: '/admin/comptabilite/file-attente' },
+  audit: { label: 'Audit', to: null },
+  projets: { label: 'Projets', to: null },
+  gestion: { label: 'Gestion', to: '/admin/gestion' },
+  qualiopi: { label: 'Qualiopi', to: '/admin/qualiopi' },
+  tickets: { label: 'Tickets', to: '/admin/tickets' },
+  stagiaires: { label: 'Équipe', to: '/admin/stagiaires' },
+  'projets-internes': { label: 'Projets internes', to: '/admin/projets-internes' },
+  ressources: { label: 'Ressources', to: '/admin/ressources' },
+  'acces-outils': { label: 'Accès outils', to: '/admin/acces-outils' },
+  'mes-rapports': { label: 'Mes rapports', to: '/admin/mes-rapports' },
+  'arrow-prospection': { label: 'Arrow prospection', to: '/admin/arrow-prospection' },
+  analytics: { label: 'Analytics', to: '/admin/analytics' },
+  calendrier: { label: 'Calendrier', to: '/admin/calendrier' },
+  templates: { label: 'Templates', to: '/admin/templates' },
+  emails: { label: 'Emails', to: '/admin/emails' },
+  guide: { label: 'Guide', to: '/admin/guide' },
+  profil: { label: 'Profil', to: '/admin/profil' },
   nouveau: { label: 'Nouveau', to: null },
   nouvelle: { label: 'Nouvelle', to: null },
 }
@@ -60,6 +75,9 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
   const segments = location.pathname.split('/').filter(Boolean)
 
   if (segments.length === 0 || segments[0] !== 'admin') return null
+
+  // Sur la racine /admin, pas de fil d'Ariane (la nav suffit).
+  if (segments.length === 1 && extra.length === 0) return null
 
   const crumbs: BreadcrumbItem[] = []
   let path = ''

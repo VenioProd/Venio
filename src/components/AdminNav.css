@@ -60,6 +60,10 @@
   gap: 4px;
   flex: 1;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+.admin-nav-links::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-nav-link {
@@ -72,6 +76,10 @@
   white-space: nowrap;
   transition: color 0.15s ease, background 0.15s ease;
   position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .admin-nav-link:hover {
@@ -95,6 +103,92 @@
   border-radius: 2px;
 }
 
+/* ---- Bouton "Plus" ---- */
+.admin-nav-more {
+  position: relative;
+  display: inline-flex;
+}
+
+.admin-nav-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-nav-more-btn.is-open {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+/* ---- Mega-menu ---- */
+.admin-nav-megamenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 540px;
+  max-width: min(720px, 90vw);
+  z-index: 201;
+  background: rgba(15, 17, 24, 0.98);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px 22px;
+}
+
+.admin-nav-megamenu-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-nav-megamenu-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: rgba(34, 211, 238, 0.85);
+  font-weight: 700;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
+}
+
+.admin-nav-megamenu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-nav-megamenu-item {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.admin-nav-megamenu-item:hover {
+  color: #ffffff;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.admin-nav-megamenu-item.active {
+  color: #ffffff;
+  background: rgba(14, 165, 233, 0.16);
+}
+
 /* ---- Menu utilisateur ---- */
 .admin-nav-user {
   position: relative;
@@ -112,6 +206,7 @@
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   font-size: 0.85rem;
+  font-family: inherit;
   transition: background 0.15s ease;
 }
 
@@ -133,7 +228,7 @@
 }
 
 .admin-nav-user-label {
-  max-width: 120px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -141,14 +236,15 @@
 
 .admin-nav-caret {
   font-size: 0.7rem;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* ---- Menu déroulant ---- */
+/* ---- Menu déroulant utilisateur ---- */
 .admin-nav-menu-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
+  background: transparent;
 }
 
 .admin-nav-menu {
@@ -169,6 +265,7 @@
 .admin-nav-menu-header {
   padding: 12px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
 }
 
 .admin-nav-menu-name {
@@ -181,6 +278,7 @@
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.55);
   margin-top: 2px;
+  word-break: break-all;
 }
 
 .admin-nav-menu-role {
@@ -202,6 +300,7 @@
   font-size: 0.88rem;
   cursor: pointer;
   border-radius: 8px;
+  font-family: inherit;
   transition: background 0.15s ease;
 }
 
@@ -217,6 +316,118 @@
   background: rgba(248, 113, 113, 0.1);
 }
 
+/* ---- Burger (mobile) ---- */
+.admin-nav-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ---- Drawer mobile ---- */
+.admin-nav-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 300;
+  backdrop-filter: blur(2px);
+}
+
+.admin-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(320px, 88vw);
+  height: 100vh;
+  z-index: 301;
+  background: rgba(12, 14, 22, 0.98);
+  border-left: 1px solid rgba(14, 165, 233, 0.25);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-nav-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-nav-drawer-title {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.admin-nav-drawer-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin-nav-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 24px;
+}
+
+.admin-nav-drawer-group {
+  margin-top: 18px;
+}
+
+.admin-nav-drawer-group-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: rgba(34, 211, 238, 0.85);
+  padding: 6px 10px;
+  margin-bottom: 4px;
+}
+
+.admin-nav-drawer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-nav-drawer-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.admin-nav-drawer-item:hover {
+  color: #fff;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.admin-nav-drawer-item.active {
+  color: #fff;
+  background: rgba(14, 165, 233, 0.18);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .admin-nav-brand-text {
@@ -225,18 +436,22 @@
   .admin-nav-user-label {
     display: none;
   }
-  .admin-nav-link {
-    padding: 8px 10px;
-    font-size: 0.85rem;
+  /* Cache la liste de liens : tout passe dans le drawer */
+  .admin-nav-links {
+    display: none;
+  }
+  .admin-nav-burger {
+    display: inline-flex;
+    margin-left: auto;
+  }
+  /* Espace le user button du burger */
+  .admin-nav-user {
+    margin-left: 8px;
   }
 }
 
 @media (max-width: 600px) {
   .admin-nav-inner {
     gap: 12px;
-  }
-  .admin-nav-link {
-    padding: 8px 8px;
-    font-size: 0.8rem;
   }
 }
