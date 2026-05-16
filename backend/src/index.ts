@@ -47,6 +47,8 @@ import adminInternalProjectRoutes from './routes/admin/internalProjects.js'
 import adminArrowPilotageRoutes from './routes/admin/arrowPilotage.js'
 import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminResourceRoutes from './routes/admin/resources.js'
+import adminAccountingRoutes from './routes/admin/accounting/index.js'
+import externalRoutes from './routes/external.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import bcrypt from 'bcryptjs'
@@ -57,6 +59,7 @@ import LeadActivity from './models/LeadActivity.js'
 import ClientActivity from './models/ClientActivity.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
+import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
 
 dotenv.config()
 
@@ -117,6 +120,12 @@ app.use(rateLimit({
   message: { error: 'Trop de requêtes, veuillez réessayer dans un instant.' },
 }))
 
+// Routes des sources externes (Arrow, ecom-bcg, etc.).
+// IMPORTANT : ce router est monté AVANT express.json() car la vérification
+// HMAC nécessite le raw body en bytes. Le router gère son propre body parsing
+// via express.raw() puis parse manuellement le JSON.
+app.use('/api/external', externalRoutes)
+
 app.use(express.json({ limit: '2mb' }))
 app.use(morgan(isProd ? 'combined' : 'dev'))
 
@@ -170,6 +179,7 @@ app.use('/api/admin/internal-projects', adminInternalProjectRoutes)
 app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
 app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
+app.use('/api/admin/accounting', adminAccountingRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
@@ -311,6 +321,8 @@ mongoose
       startScheduler()
       // Start new automation engine
       initAutomationEngine()
+      // Verrouillage automatique des écritures comptables VALIDATED expirées
+      startAutoLockScheduler()
     })
   })
   .catch((err: unknown) => {

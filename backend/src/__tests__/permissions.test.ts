@@ -27,6 +27,14 @@ describe('permissions module', () => {
         'VIEW_TICKETS',
         'CREATE_TICKETS',
         'MANAGE_TICKETS',
+        // Comptabilité
+        'VIEW_ACCOUNTING',
+        'MANAGE_ACCOUNTING',
+        'LOCK_ACCOUNTING',
+        'VIEW_VAT',
+        'MANAGE_VAT',
+        'EXPORT_FEC',
+        'MANAGE_EXTERNAL_SOURCES',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })
@@ -145,21 +153,35 @@ describe('permissions module', () => {
       expect(perms.length).toBe(Object.values(PERMISSIONS).length)
     })
 
-    it('should return an array for ADMIN', () => {
+    it('should return a comprehensive permission array for ADMIN', () => {
       const perms = getPermissionsForRole('ADMIN')
       expect(Array.isArray(perms)).toBe(true)
-      expect(perms.length).toBe(12) // all except MANAGE_ADMINS, VIEW_QUALIOPI, MANAGE_QUALIOPI, MANAGE_TICKETS
+      // ADMIN n'a pas MANAGE_ADMINS, VIEW_QUALIOPI, MANAGE_QUALIOPI, MANAGE_TICKETS,
+      // LOCK_ACCOUNTING ni MANAGE_EXTERNAL_SOURCES.
       expect(perms).not.toContain(PERMISSIONS.MANAGE_ADMINS)
+      expect(perms).not.toContain(PERMISSIONS.LOCK_ACCOUNTING)
+      expect(perms).not.toContain(PERMISSIONS.MANAGE_EXTERNAL_SOURCES)
+      // Mais possède les permissions compta classiques
+      expect(perms).toContain(PERMISSIONS.VIEW_ACCOUNTING)
+      expect(perms).toContain(PERMISSIONS.MANAGE_ACCOUNTING)
+      expect(perms).toContain(PERMISSIONS.VIEW_VAT)
+      expect(perms).toContain(PERMISSIONS.MANAGE_VAT)
+      expect(perms).toContain(PERMISSIONS.EXPORT_FEC)
     })
 
-    it('should return 5 permissions for VIEWER', () => {
+    it('should return permissions for VIEWER including read-only accounting', () => {
       const perms = getPermissionsForRole('VIEWER')
-      expect(perms.length).toBe(5)
       expect(perms).toContain(PERMISSIONS.VIEW_PROJECTS)
       expect(perms).toContain(PERMISSIONS.VIEW_CONTENT)
       expect(perms).toContain(PERMISSIONS.VIEW_BILLING)
       expect(perms).toContain(PERMISSIONS.VIEW_TICKETS)
       expect(perms).toContain(PERMISSIONS.CREATE_TICKETS)
+      expect(perms).toContain(PERMISSIONS.VIEW_ACCOUNTING)
+      expect(perms).toContain(PERMISSIONS.VIEW_VAT)
+      // VIEWER ne doit JAMAIS pouvoir modifier
+      expect(perms).not.toContain(PERMISSIONS.MANAGE_ACCOUNTING)
+      expect(perms).not.toContain(PERMISSIONS.MANAGE_VAT)
+      expect(perms).not.toContain(PERMISSIONS.EXPORT_FEC)
     })
 
     it('should return an empty array for CLIENT', () => {

@@ -6,10 +6,17 @@ import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import BillingDocument from '../../models/BillingDocument.js'
+import AccountingEntry from '../../models/AccountingEntry.js'
+import AccountingLine from '../../models/AccountingLine.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { generateBillingPdf } from '../../lib/pdfBilling.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import { sendInvoiceEmail } from '../../lib/email.js'
+import {
+  createSaleEntryFromBilling,
+  buildBillingIdempotencyKey,
+} from '../../lib/accounting/billingToEntry.js'
+import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 
 const router = express.Router()
 
@@ -179,6 +186,8 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_BILLING), async (req: 
       return res.status(404).json({ error: 'Billing document not found' })
     }
 
+    const previousStatus = doc.status
+
     if (body.status !== undefined) {
       doc.status = body.status
     }
@@ -204,7 +213,36 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_BILLING), async (req: 
       doc.total = doc.subtotal + doc.taxTotal
     }
     await doc.save()
-    return res.json({ document: doc.toObject() })
+
+    // Hook comptable : si la facture passe à PAID, générer l'écriture de banque
+    let paymentEntry: unknown = null
+    if (
+      doc.type === 'INVOICE' &&
+      previousStatus !== 'PAID' &&
+      doc.status === 'PAID'
+    ) {
+      // S'assurer que paidAt est défini
+      if (!doc.paidAt) {
+        doc.paidAt = new Date()
+        await doc.save()
+      }
+      try {
+        const r = await createPaymentEntryFromBilling(doc, { userId: req.user!.id })
+        paymentEntry = r.entry
+      } catch (err) {
+        // Si la compta n'est pas configurée, on n'échoue pas la mise à jour
+        // de la facture : on retourne un avertissement.
+        return res.json({
+          document: doc.toObject(),
+          accounting: { warning: `Écriture de paiement non générée : ${(err as Error).message}` },
+        })
+      }
+    }
+
+    return res.json({
+      document: doc.toObject(),
+      accounting: paymentEntry ? { paymentEntry } : undefined,
+    })
   } catch (err) {
     return next(err)
   }
@@ -263,18 +301,107 @@ router.post('/:id/generate-pdf', requirePermission(PERMISSIONS.MANAGE_BILLING), 
     const storagePath = path.join('uploads', 'billing', doc.project.toString(), filename)
     await generateBillingPdf(doc, client, project, storagePath)
 
+    const wasDraft = doc.status === 'DRAFT'
     await BillingDocument.findByIdAndUpdate(doc._id, {
       pdfStoragePath: storagePath,
-      status: doc.status === 'DRAFT' ? 'ISSUED' : doc.status,
+      status: wasDraft ? 'ISSUED' : doc.status,
       issuedAt: doc.issuedAt || new Date(),
     })
 
     const updated = await BillingDocument.findById(doc._id).lean()
-    return res.json({ document: updated })
+
+    // Hook comptable : générer l'écriture de vente si c'est une facture émise
+    let saleEntry: unknown = null
+    let accountingWarning: string | null = null
+    if (updated && updated.type === 'INVOICE' && (wasDraft || updated.status !== 'DRAFT')) {
+      try {
+        const r = await createSaleEntryFromBilling(updated as any, { userId: req.user!.id })
+        saleEntry = r.entry
+      } catch (err) {
+        accountingWarning = `Écriture de vente non générée : ${(err as Error).message}`
+      }
+    }
+
+    return res.json({
+      document: updated,
+      accounting: saleEntry
+        ? { saleEntry }
+        : accountingWarning
+          ? { warning: accountingWarning }
+          : undefined,
+    })
   } catch (err) {
     return next(err)
   }
 })
+
+// GET /:id/accounting-entries : liste les écritures comptables liées à une facture
+router.get('/:id/accounting-entries', requirePermission(PERMISSIONS.VIEW_BILLING), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const doc = await BillingDocument.findById(req.params.id).lean()
+    if (!doc) {
+      return res.status(404).json({ error: 'Billing document not found' })
+    }
+    const saleKey = buildBillingIdempotencyKey(doc._id, 'sale')
+    const paymentKey = buildBillingIdempotencyKey(doc._id, 'payment')
+    const entries = await AccountingEntry.find({
+      idempotencyKey: { $in: [saleKey, paymentKey] },
+    })
+      .sort({ date: 1 })
+      .lean()
+    // Joindre les lignes pour chaque écriture
+    const result: Array<Record<string, unknown>> = []
+    for (const e of entries) {
+      const lines = await AccountingLine.find({ entry: e._id }).sort({ sortIndex: 1 }).lean()
+      result.push({ ...e, lines })
+    }
+    return res.json({ entries: result })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /:id/generate-accounting : déclenche manuellement la génération
+// d'écritures (sale + optionnellement payment si la facture est PAID).
+// Idempotent grâce à billing:sale:<id> / billing:payment:<id>.
+router.post(
+  '/:id/generate-accounting',
+  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const doc = await BillingDocument.findById(req.params.id).lean()
+      if (!doc) {
+        return res.status(404).json({ error: 'Billing document not found' })
+      }
+      if (doc.type !== 'INVOICE') {
+        return res.status(400).json({ error: 'Only invoices can generate accounting entries' })
+      }
+      const result: {
+        sale: { entry: unknown; alreadyExisted: boolean } | null
+        payment: { entry: unknown; alreadyExisted: boolean } | null
+        paymentError?: string
+      } = { sale: null, payment: null }
+      try {
+        const r = await createSaleEntryFromBilling(doc as any, { userId: req.user!.id })
+        result.sale = { entry: r.entry, alreadyExisted: r.alreadyExisted || false }
+      } catch (err) {
+        const status = (err as { status?: number }).status
+        return res.status(status || 500).json({ error: (err as Error).message })
+      }
+      if (doc.status === 'PAID') {
+        try {
+          const r = await createPaymentEntryFromBilling(doc as any, { userId: req.user!.id })
+          result.payment = { entry: r.entry, alreadyExisted: r.alreadyExisted || false }
+        } catch (err) {
+          result.paymentError = (err as Error).message
+        }
+      }
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // Serve PDF
 router.get('/:id/pdf', requirePermission(PERMISSIONS.VIEW_BILLING), async (req: Request, res: Response, next: NextFunction) => {

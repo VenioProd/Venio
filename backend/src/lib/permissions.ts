@@ -19,6 +19,14 @@ export const PERMISSIONS: Record<string, Permission> = {
   VIEW_TICKETS: 'view_tickets',
   CREATE_TICKETS: 'create_tickets',
   MANAGE_TICKETS: 'manage_tickets',
+  // ── Comptabilité ──
+  VIEW_ACCOUNTING: 'view_accounting',
+  MANAGE_ACCOUNTING: 'manage_accounting',
+  LOCK_ACCOUNTING: 'lock_accounting',
+  VIEW_VAT: 'view_vat',
+  MANAGE_VAT: 'manage_vat',
+  EXPORT_FEC: 'export_fec',
+  MANAGE_EXTERNAL_SOURCES: 'manage_external_sources',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
@@ -36,6 +44,11 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.MANAGE_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.MANAGE_VAT,
+    PERMISSIONS.EXPORT_FEC,
   ]),
   RH: new Set([
     PERMISSIONS.VIEW_PROJECTS,
@@ -51,6 +64,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_BILLING,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
   ]),
   CLIENT: new Set<Permission>(),
 }
