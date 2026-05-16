@@ -69,6 +69,27 @@ const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDe
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 
+// Lazy-loaded: Comptabilité (sous-section admin)
+const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
+const AccountingSettings = lazy(() => import('./pages/admin/accounting/Settings'))
+const ChartOfAccounts = lazy(() => import('./pages/admin/accounting/ChartOfAccounts'))
+const AccountingJournals = lazy(() => import('./pages/admin/accounting/Journals'))
+const AccountingEntries = lazy(() => import('./pages/admin/accounting/Entries'))
+const AccountingEntryForm = lazy(() => import('./pages/admin/accounting/EntryForm'))
+const AccountingEntryDetail = lazy(() => import('./pages/admin/accounting/EntryDetail'))
+const GeneralLedger = lazy(() => import('./pages/admin/accounting/GeneralLedger'))
+const TrialBalance = lazy(() => import('./pages/admin/accounting/TrialBalance'))
+const BalanceSheet = lazy(() => import('./pages/admin/accounting/BalanceSheet'))
+const IncomeStatement = lazy(() => import('./pages/admin/accounting/IncomeStatement'))
+const VatDeclarations = lazy(() => import('./pages/admin/accounting/VatDeclarations'))
+const VatDeclarationDetail = lazy(() => import('./pages/admin/accounting/VatDeclarationDetail'))
+const FecExport = lazy(() => import('./pages/admin/accounting/FecExport'))
+const Lettrage = lazy(() => import('./pages/admin/accounting/Lettrage'))
+const ExternalSources = lazy(() => import('./pages/admin/accounting/ExternalSources'))
+const ExternalSourceDetail = lazy(() => import('./pages/admin/accounting/ExternalSourceDetail'))
+const DraftQueue = lazy(() => import('./pages/admin/accounting/DraftQueue'))
+const AccountingAuditLog = lazy(() => import('./pages/admin/accounting/AccountingAuditLog'))
+
 function ProjectsRedirect() {
   const { id } = useParams()
   const location = useLocation()
@@ -415,6 +436,198 @@ function App() {
             <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
               <RequirePermission permission={PERMISSIONS.MANAGE_CRM} redirectTo="/admin/crm">
                 <CrmSettings />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Comptabilité */}
+        <Route
+          path="/admin/comptabilite"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <AccountingDashboard />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/parametres"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
+                <AccountingSettings />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/plan-comptable"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <ChartOfAccounts />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/journaux"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <AccountingJournals />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/ecritures"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <AccountingEntries />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/ecritures/nouvelle"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
+                <AccountingEntryForm />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/ecritures/:id"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <AccountingEntryDetail />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/grand-livre"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <GeneralLedger />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/balance"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <TrialBalance />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/bilan"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <BalanceSheet />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/resultat"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <IncomeStatement />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/tva"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
+                <VatDeclarations />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/tva/:id"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
+                <VatDeclarationDetail />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/fec"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.EXPORT_FEC} redirectTo="/admin">
+                <FecExport />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/lettrage"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
+                <Lettrage />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/sources-externes"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
+                <ExternalSources />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/sources-externes/:id"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
+                <ExternalSourceDetail />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/file-attente"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
+                <DraftQueue />
+              </RequirePermission>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/comptabilite/audit"
+          element={
+            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                <AccountingAuditLog />
               </RequirePermission>
             </ProtectedRoute>
           }

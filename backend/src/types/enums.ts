@@ -45,6 +45,18 @@ export type AuditAction =
   | 'TOOL_ACCESS_VIEWED' | 'TOOL_ACCESS_CREATED' | 'TOOL_ACCESS_UPDATED' | 'TOOL_ACCESS_DELETED'
   | 'BRUTE_FORCE_DETECTED' | 'SUSPICIOUS_LOGIN'
   | 'PERMISSION_CHANGED' | 'ACCOUNT_LOCKED' | 'ACCOUNT_UNLOCKED'
+  // ── Comptabilité ──
+  | 'ACCOUNTING_ENTRY_CREATE' | 'ACCOUNTING_ENTRY_UPDATE'
+  | 'ACCOUNTING_ENTRY_VALIDATE' | 'ACCOUNTING_ENTRY_LOCK'
+  | 'ACCOUNTING_ENTRY_DELETE' | 'ACCOUNTING_ENTRY_RESTORE'
+  | 'FISCAL_YEAR_CLOSE' | 'FISCAL_YEAR_REOPEN'
+  | 'VAT_DECLARATION_CREATE' | 'VAT_DECLARATION_SUBMIT' | 'VAT_DECLARATION_DELETE'
+  | 'FEC_EXPORT'
+  | 'LETTRAGE_APPLY' | 'LETTRAGE_REMOVE'
+  | 'CHART_OF_ACCOUNTS_SEED' | 'CHART_OF_ACCOUNTS_DEACTIVATE'
+  | 'BILLING_TO_ENTRY' | 'PAYMENT_TO_ENTRY'
+  | 'EXTERNAL_SOURCE_CREATE' | 'EXTERNAL_SOURCE_UPDATE'
+  | 'EXTERNAL_SOURCE_DELETE' | 'EXTERNAL_SOURCE_ROTATE'
 
 // ─── Client Note ───
 export type NoteVisibility = 'INTERNE'
@@ -56,6 +68,25 @@ export type Permission =
   | 'view_billing' | 'manage_billing' | 'manage_tasks'
   | 'view_qualiopi' | 'manage_qualiopi'
   | 'view_tickets' | 'create_tickets' | 'manage_tickets'
+  // ── Comptabilité ──
+  | 'view_accounting' | 'manage_accounting' | 'lock_accounting'
+  | 'view_vat' | 'manage_vat' | 'export_fec'
+  | 'manage_external_sources'
+
+// ─── Accounting ───
+export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'
+export type JournalType = 'VENTE' | 'ACHAT' | 'BANQUE' | 'CAISSE' | 'OD' | 'AN'
+export type FiscalRegime = 'REEL_NORMAL' | 'REEL_SIMPLIFIE' | 'MICRO'
+export type VatPeriodicity = 'MENSUEL' | 'TRIMESTRIEL' | 'ANNUEL'
+export type VatRateCode = 'NORMAL' | 'INTERMEDIAIRE' | 'REDUIT' | 'SUPER_REDUIT' | 'EXONERE'
+export type FiscalYearStatus = 'OUVERT' | 'CLOTURE'
+export type AccountingEntryStatus = 'DRAFT' | 'VALIDATED' | 'LOCKED'
+export type AccountingEntrySource = 'MANUAL' | 'BILLING' | 'PAYMENT' | 'EXTERNAL' | 'AN' | 'SYSTEM'
+export type VatDeclarationType = 'CA3' | 'CA12'
+export type VatDeclarationStatus = 'DRAFT' | 'SUBMITTED'
+export type ExternalSourceStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED'
+export type ExternalTransactionStatus =
+  | 'RECEIVED' | 'CLASSIFIED' | 'POSTED' | 'REJECTED' | 'DUPLICATE' | 'AWAITING_REVIEW'
 
 // ─── CRM Settings ───
 export type EscalationAction = 'NOTIFY_MANAGER' | 'REASSIGN' | 'BOTH'

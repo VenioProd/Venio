@@ -65,3 +65,25 @@ export type {
   IMessage,
   INotification,
 } from './common.js'
+
+export type {
+  IAddress,
+  IIban,
+  ICompanySettings,
+  IFiscalYear,
+  IAuxiliaryRef,
+  IChartOfAccount,
+  IJournal,
+  IVatRate,
+  ISourceRef,
+  IAccountingEntry,
+  IAccountingLine,
+  IVatLine,
+  IVatRateBreakdown,
+  IVatDeclaration,
+  IExternalSource,
+  IExternalTransaction,
+  IRuleConditions,
+  IRuleMapping,
+  IClassificationRule,
+} from './accounting.js'
