@@ -2,12 +2,11 @@ import mongoose from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 
 /**
- * Helpers de test pour démarrer une instance Mongo in-memory partagée par
- * une suite vitest. À utiliser pour les tests d'intégration des routes agent.
+ * Helpers de test pour démarrer une instance Mongo en mémoire pour un
+ * fichier de tests. Les fichiers étant sérialisés via fileParallelism:false,
+ * une seule instance vit à la fois — pas de saturation.
  *
  * Pattern d'usage :
- *
- *   import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
  *
  *   beforeAll(setupMongo)
  *   afterAll(teardownMongo)
