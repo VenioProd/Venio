@@ -5,6 +5,7 @@ import Footer from './components/Footer'
 import ToastContainer from './components/ToastContainer'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminShell from './components/AdminShell'
+import ClientShell from './components/ClientShell'
 import { ToastProvider } from './context/ToastContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -122,7 +123,7 @@ function App() {
     <ThemeProvider>
     <NotificationProvider>
     <ToastProvider>
-      {!isPublicQuestionnaire && !isAdminArea && <Navbar />}
+      {!isPublicQuestionnaire && !isPortal && <Navbar />}
       <Suspense fallback={null}>
       <Routes>
         {/* Site vitrine */}
@@ -147,34 +148,15 @@ function App() {
           path="/espace-client"
           element={
             <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
-              <ClientDashboard />
+              <ClientShell />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/espace-client/guide"
-          element={
-            <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
-              <ClientGuide />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/espace-client/profil"
-          element={
-            <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
-              <ClientProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/espace-client/projets/:id"
-          element={
-            <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
-              <ClientProjectDetail />
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route index element={<ClientDashboard />} />
+          <Route path="guide" element={<ClientGuide />} />
+          <Route path="profil" element={<ClientProfile />} />
+          <Route path="projets/:id" element={<ClientProjectDetail />} />
+        </Route>
 
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />

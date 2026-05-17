@@ -1,0 +1,89 @@
+.client-shell {
+  min-height: 100vh;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(14, 165, 233, 0.08), transparent 34%),
+    radial-gradient(circle at 85% 72%, rgba(16, 185, 129, 0.05), transparent 36%),
+    #05070d;
+}
+
+.client-shell-body {
+  min-height: 100vh;
+  margin-left: 224px;
+  display: flex;
+  flex-direction: column;
+}
+
+.client-shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 clamp(16px, 3vw, 32px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 7, 13, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.client-shell-kicker {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.client-shell-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+.client-shell-main {
+  flex: 1;
+  padding: 28px clamp(16px, 3vw, 36px) 64px;
+}
+
+.client-shell .portal-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 !important;
+  min-height: auto;
+}
+
+.client-shell .client-dashboard {
+  max-width: none;
+}
+
+.client-shell .client-project-detail {
+  max-width: 1320px;
+}
+
+.client-shell .portal-container::before,
+.client-shell .portal-container::after {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .client-shell-body {
+    margin-left: 0;
+  }
+
+  .client-shell-burger {
+    display: inline-flex;
+  }
+
+  .client-shell-main {
+    padding: 20px 16px 48px;
+  }
+}

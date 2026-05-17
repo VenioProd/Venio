@@ -1,4 +1,4 @@
-nav {
+.navbar {
   position: fixed;
   top: 0;
   width: 100%;
@@ -17,7 +17,7 @@ nav {
   overflow: visible;
 }
 
-nav::after {
+.navbar::after {
   content: '';
   position: absolute;
   bottom: -50px;
@@ -760,7 +760,7 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 }
 
 @media (max-width: 768px) {
-  nav {
+  .navbar {
     padding: 15px 20px;
   }
   
@@ -786,7 +786,7 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
    NAVBAR — LIGHT MODE OVERRIDES
    ═══════════════════════════════════════════════════════ */
 
-[data-theme="light"] nav {
+[data-theme="light"] .navbar {
   background: rgba(255, 255, 255, 0.9);
   border-bottom-color: rgba(14, 165, 233, 0.25);
 }
@@ -903,4 +903,3 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 [data-theme="light"] .mobile-dropdown-menu {
   border-left-color: #bae6fd;
 }
-

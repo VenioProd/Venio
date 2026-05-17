@@ -25,7 +25,7 @@ const statusClass: Record<string, string> = {
 }
 
 const ClientDashboard = () => {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
@@ -80,62 +80,6 @@ const ClientDashboard = () => {
 
   return (
     <div className="portal-container client-dashboard">
-      <header className="client-dashboard-header">
-        <div className="client-dashboard-header-inner">
-          <div className="client-dashboard-brand">
-            <span className="client-dashboard-brand-icon">◉</span>
-            <span className="client-dashboard-brand-text">Espace client</span>
-          </div>
-          <div className="client-dashboard-user portal-actions-reveal">
-            <span className="client-dashboard-user-name">{user?.name}</span>
-            <Link
-              to="/espace-client/profil"
-              className="portal-button client-dashboard-logout portal-action-link"
-              title="Mon profil"
-              style={{ textDecoration: 'none' }}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </span>
-              <span className="portal-action-label">Mon profil</span>
-            </Link>
-            <Link
-              to="/espace-client/guide"
-              className="portal-button client-dashboard-logout portal-action-link"
-              title="Guide d'utilisation"
-              style={{ textDecoration: 'none' }}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </span>
-              <span className="portal-action-label">Aide</span>
-            </Link>
-            <button
-              className="portal-button client-dashboard-logout portal-action-link"
-              onClick={logout}
-              type="button"
-              title="Déconnexion"
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </span>
-              <span className="portal-action-label">Déconnexion</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
       <section className="client-dashboard-hero">
         <div className="client-dashboard-hero-content">
           <h1 className="client-dashboard-title">
