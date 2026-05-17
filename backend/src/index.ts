@@ -2,6 +2,7 @@ import './types/express.js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { createServer } from 'http'
 import express, { type Request, type Response, type NextFunction } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -51,8 +52,10 @@ import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
+import adminMessagingRoutes from './routes/admin/messaging.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
+import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
 import Project from './models/Project.js'
@@ -69,6 +72,7 @@ const app = express()
 const port = process.env.PORT || 3000
 const mongoUri = process.env.MONGODB_URI
 const isProd = process.env.NODE_ENV === 'production'
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5001'
 
 if (!mongoUri) {
   throw new Error('MONGODB_URI is required')
@@ -108,7 +112,7 @@ app.use(compression())
 // CORS
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5001',
+    origin: corsOrigin,
     credentials: true,
   })
 )
@@ -187,6 +191,7 @@ app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
 app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
+app.use('/api/admin/messaging', adminMessagingRoutes)
 
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
@@ -327,7 +332,9 @@ mongoose
     }
   })
   .then(() => {
-    app.listen(port, () => {
+    const server = createServer(app)
+    initInternalMessagingSocket(server, corsOrigin)
+    server.listen(port, () => {
       console.log(`API running on http://localhost:${port}`)
       // Start CRM automation scheduler (legacy)
       startScheduler()

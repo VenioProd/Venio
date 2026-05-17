@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
@@ -12,6 +12,7 @@ import {
   listExternalSources,
   createExternalSource,
   rotateExternalSourceKey,
+  deleteExternalSource,
 } from '../../../services/accounting'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
@@ -19,9 +20,10 @@ import type {
   ICompanySettings,
   IFiscalYear,
   IExternalSource,
+  ExternalSourceStatus,
 } from '../../../types/accounting'
 
-const ARROW_SLUG = 'arrow-corp'
+const SLUG_REGEX = /^[a-z0-9][a-z0-9-]+$/
 
 interface GeneratedCredentials {
   apiKey: string
@@ -71,11 +73,11 @@ const AccountingSettings = () => {
   })
 
   // Intégrations externes
-  const [arrowLoading, setArrowLoading] = useState(false)
   const [credentials, setCredentials] = useState<GeneratedCredentials | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
-
-  const arrowSource = externalSources.find((s) => s.slug === ARROW_SLUG) || null
+  const [createOpen, setCreateOpen] = useState(false)
+  const [revokeTarget, setRevokeTarget] = useState<IExternalSource | null>(null)
+  const [rotatingId, setRotatingId] = useState<string | null>(null)
 
   async function reload() {
     setLoading(true)
@@ -117,18 +119,14 @@ const AccountingSettings = () => {
     }
   }
 
-  async function handleGenerateArrow() {
-    if (arrowSource) return
-    setArrowLoading(true)
-    setError('')
-    setSuccess('')
+  async function handleCreateIntegration(payload: {
+    slug: string
+    name: string
+    description?: string
+    autoValidateAll: boolean
+  }): Promise<string | null> {
     try {
-      const result = await createExternalSource({
-        slug: ARROW_SLUG,
-        name: 'Arrow Corp',
-        description: 'Intégration Arrow (pousser les écritures comptables)',
-        autoValidateAll: false,
-      })
+      const result = await createExternalSource(payload)
       setCredentials({
         apiKey: result.apiKey,
         webhookSecret: result.webhookSecret,
@@ -137,32 +135,32 @@ const AccountingSettings = () => {
         warning: result.warning,
         context: 'created',
       })
+      setCreateOpen(false)
+      setSuccess(`Intégration « ${result.source.name} » créée.`)
       await reloadExternalSources()
+      return null
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la création')
-    } finally {
-      setArrowLoading(false)
+      return err instanceof Error ? err.message : 'Erreur lors de la création'
     }
   }
 
-  async function handleRotateArrow() {
-    if (!arrowSource) return
+  async function handleRotate(source: IExternalSource) {
     if (
       !confirm(
-        "Régénérer les clés invalidera l'ancienne immédiatement. Arrow ne pourra plus pousser tant que les nouvelles clés ne sont pas déployées. Continuer ?"
+        `Régénérer les clés invalidera l'ancienne immédiatement. « ${source.name} » ne pourra plus pousser tant que les nouvelles clés ne sont pas déployées. Continuer ?`
       )
     )
       return
-    setArrowLoading(true)
+    setRotatingId(source._id)
     setError('')
     setSuccess('')
     try {
-      const result = await rotateExternalSourceKey(arrowSource._id)
+      const result = await rotateExternalSourceKey(source._id)
       setCredentials({
         apiKey: result.apiKey,
         webhookSecret: result.webhookSecret,
-        sourceSlug: arrowSource.slug,
-        sourceName: arrowSource.name,
+        sourceSlug: source.slug,
+        sourceName: source.name,
         warning: result.warning,
         context: 'rotated',
       })
@@ -170,7 +168,19 @@ const AccountingSettings = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la rotation')
     } finally {
-      setArrowLoading(false)
+      setRotatingId(null)
+    }
+  }
+
+  async function handleRevoke(source: IExternalSource): Promise<string | null> {
+    try {
+      await deleteExternalSource(source._id)
+      setRevokeTarget(null)
+      setSuccess(`Intégration « ${source.name} » révoquée.`)
+      await reloadExternalSources()
+      return null
+    } catch (err) {
+      return err instanceof Error ? err.message : 'Erreur lors de la révocation'
     }
   }
 
@@ -606,13 +616,30 @@ const AccountingSettings = () => {
         )}
       </section>
 
-      {renderIntegrationsSection({
-        canManage,
-        arrowSource,
-        arrowLoading,
-        onGenerate: handleGenerateArrow,
-        onRotate: handleRotateArrow,
-      })}
+      <IntegrationsSection
+        canManage={canManage}
+        sources={externalSources}
+        rotatingId={rotatingId}
+        onOpenCreate={() => setCreateOpen(true)}
+        onRotate={handleRotate}
+        onRequestRevoke={setRevokeTarget}
+      />
+
+      {createOpen && (
+        <CreateIntegrationModal
+          existingSlugs={externalSources.map((s) => s.slug)}
+          onCancel={() => setCreateOpen(false)}
+          onSubmit={handleCreateIntegration}
+        />
+      )}
+
+      {revokeTarget && (
+        <RevokeIntegrationModal
+          source={revokeTarget}
+          onCancel={() => setRevokeTarget(null)}
+          onConfirm={handleRevoke}
+        />
+      )}
 
       {credentials && (
         <CredentialsModal
@@ -630,22 +657,41 @@ const AccountingSettings = () => {
 
 interface IntegrationsSectionProps {
   canManage: boolean
-  arrowSource: IExternalSource | null
-  arrowLoading: boolean
-  onGenerate: () => void
-  onRotate: () => void
+  sources: IExternalSource[]
+  rotatingId: string | null
+  onOpenCreate: () => void
+  onRotate: (source: IExternalSource) => void
+  onRequestRevoke: (source: IExternalSource) => void
 }
 
-function renderIntegrationsSection(props: IntegrationsSectionProps) {
-  const { canManage, arrowSource, arrowLoading, onGenerate, onRotate } = props
+function IntegrationsSection(props: IntegrationsSectionProps) {
+  const { canManage, sources, rotatingId, onOpenCreate, onRotate, onRequestRevoke } = props
 
   return (
     <section className="accounting-card">
-      <h2>Intégrations externes (Arrow, e-commerce, …)</h2>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Intégrations externes</h2>
+        <button
+          type="button"
+          className="portal-button"
+          onClick={onOpenCreate}
+          disabled={!canManage}
+        >
+          + Nouvelle intégration
+        </button>
+      </div>
 
       <div
         style={{
-          marginTop: 8,
+          marginTop: 14,
           padding: '14px 16px',
           background:
             'linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(192,132,252,0.10) 100%)',
@@ -657,14 +703,14 @@ function renderIntegrationsSection(props: IntegrationsSectionProps) {
         }}
       >
         <p style={{ margin: 0 }}>
-          Les sites tiers (ex&nbsp;: Arrow) peuvent pousser leurs écritures comptables directement
-          dans Venio via une API sécurisée. Chaque source dispose&nbsp;:
+          Tout service tiers (Stripe, Shopify, Arrow, votre propre back-office…) peut pousser ses
+          écritures comptables dans Venio via une API sécurisée. Chaque intégration dispose&nbsp;:
         </p>
         <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
           <div>
             <span style={{ color: '#7dd3fc', fontWeight: 600 }}>🔑 Clé API (X-Api-Key)</span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
-              Identifie le site qui parle. Comme un mot de passe d'application.
+              Identifie le service qui parle. Comme un mot de passe d'application.
             </div>
           </div>
           <div>
@@ -673,8 +719,8 @@ function renderIntegrationsSection(props: IntegrationsSectionProps) {
             </span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
               Signature cryptographique sur chaque requête. Empêche les attaques
-              «&nbsp;man-in-the-middle&nbsp;» (modification du contenu en transit) et garantit que
-              c'est bien Arrow qui envoie, même si la clé API était compromise.
+              «&nbsp;man-in-the-middle&nbsp;» (modification du contenu en transit) et garantit
+              l'authenticité de l'émetteur, même si la clé API était compromise.
             </div>
           </div>
         </div>
@@ -699,170 +745,228 @@ function renderIntegrationsSection(props: IntegrationsSectionProps) {
         </p>
       </div>
 
-      {/* Carte Arrow Corp */}
-      <div
-        style={{
-          marginTop: 18,
-          padding: '16px 18px',
-          background: 'rgba(15,15,20,0.55)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 10,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: '1rem',
-                color: 'rgba(255,255,255,0.92)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                flexWrap: 'wrap',
-              }}
-            >
-              Arrow Corp
-              {arrowSource ? (
-                <span
-                  className="accounting-badge validated"
-                  style={{ fontSize: '0.7rem' }}
-                  title={`Statut: ${arrowSource.status}`}
-                >
-                  Active
-                </span>
-              ) : (
-                <span
-                  className="accounting-badge"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'rgba(255,255,255,0.65)',
-                    fontSize: '0.7rem',
-                  }}
-                >
-                  Non configurée
-                </span>
-              )}
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                fontSize: '0.82rem',
-                color: 'rgba(255,255,255,0.55)',
-              }}
-            >
-              Slug&nbsp;: <code>{ARROW_SLUG}</code>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {!arrowSource ? (
-              <button
-                type="button"
-                className="portal-button"
-                onClick={onGenerate}
-                disabled={!canManage || arrowLoading}
-              >
-                {arrowLoading ? '⏳ Génération…' : '⚡ Générer la source Arrow'}
-              </button>
-            ) : (
-              <>
-                <Link
-                  to={`/admin/comptabilite/sources-externes/${arrowSource._id}`}
-                  className="portal-button secondary"
-                  style={{ textDecoration: 'none' }}
-                >
-                  ⚙️ Configuration détaillée
-                </Link>
-                <button
-                  type="button"
-                  className="portal-button secondary"
-                  onClick={onRotate}
-                  disabled={!canManage || arrowLoading}
-                  title="Génère une nouvelle paire clé / secret et invalide l'ancienne"
-                >
-                  {arrowLoading ? '⏳ Rotation…' : '🔄 Régénérer les clés'}
-                </button>
-              </>
-            )}
+      {sources.length === 0 ? (
+        <div className="accounting-empty" style={{ marginTop: 18 }}>
+          <div style={{ fontSize: '2rem', opacity: 0.45 }}>🔌</div>
+          Aucune intégration configurée.
+          <div className="hint">
+            Cliquez sur «&nbsp;+ Nouvelle intégration&nbsp;» pour commencer.
           </div>
         </div>
+      ) : (
+        <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
+          {sources.map((source) => (
+            <IntegrationCard
+              key={source._id}
+              source={source}
+              canManage={canManage}
+              rotating={rotatingId === source._id}
+              onRotate={() => onRotate(source)}
+              onRequestRevoke={() => onRequestRevoke(source)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
 
-        {arrowSource && (
+interface IntegrationCardProps {
+  source: IExternalSource
+  canManage: boolean
+  rotating: boolean
+  onRotate: () => void
+  onRequestRevoke: () => void
+}
+
+function IntegrationCard({
+  source,
+  canManage,
+  rotating,
+  onRotate,
+  onRequestRevoke,
+}: IntegrationCardProps) {
+  return (
+    <div
+      style={{
+        padding: '16px 18px',
+        background: 'rgba(15,15,20,0.55)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 10,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ minWidth: 0, flex: '1 1 240px' }}>
           <div
             style={{
-              marginTop: 14,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              fontWeight: 600,
+              fontSize: '1rem',
+              color: 'rgba(255,255,255,0.92)',
+              display: 'flex',
+              alignItems: 'center',
               gap: 10,
-              fontSize: '0.82rem',
+              flexWrap: 'wrap',
             }}
           >
-            <StatCell
-              label="Préfixe clé"
-              value={arrowSource.apiKeyPrefix ? `${arrowSource.apiKeyPrefix}…` : '—'}
-              mono
-            />
-            <StatCell
-              label="Dernier ping"
-              value={
-                arrowSource.lastSeenAt
-                  ? new Date(arrowSource.lastSeenAt).toLocaleString('fr-FR')
-                  : 'Jamais'
-              }
-            />
-            <StatCell label="Ingérées" value={String(arrowSource.totalIngested ?? 0)} />
-            <StatCell label="Rejetées" value={String(arrowSource.totalRejected ?? 0)} />
-            <StatCell label="Doublons" value={String(arrowSource.totalDuplicates ?? 0)} />
+            {source.name}
+            <StatusBadge status={source.status} />
           </div>
-        )}
-
-        {arrowSource?.lastError && (
           <div
             style={{
-              marginTop: 12,
-              padding: '8px 12px',
-              background: 'rgba(220,38,38,0.12)',
-              border: '1px solid rgba(220,38,38,0.35)',
-              borderRadius: 8,
-              fontSize: '0.78rem',
+              marginTop: 4,
+              fontSize: '0.82rem',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            Slug&nbsp;:{' '}
+            <code
+              style={{
+                fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+                background: 'rgba(15,15,20,0.6)',
+                padding: '1px 6px',
+                borderRadius: 4,
+              }}
+            >
+              {source.slug}
+            </code>
+          </div>
+          {source.description && (
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: '0.82rem',
+                color: 'rgba(255,255,255,0.65)',
+              }}
+            >
+              {source.description}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Link
+            to={`/admin/comptabilite/sources-externes/${source._id}`}
+            className="portal-button secondary"
+            style={{ textDecoration: 'none' }}
+          >
+            ⚙️ Configuration détaillée
+          </Link>
+          <button
+            type="button"
+            className="portal-button secondary"
+            onClick={onRotate}
+            disabled={!canManage || rotating}
+            title="Génère une nouvelle paire clé / secret et invalide l'ancienne"
+          >
+            {rotating ? '⏳ Rotation…' : '🔄 Régénérer les clés'}
+          </button>
+          <button
+            type="button"
+            className="portal-button"
+            onClick={onRequestRevoke}
+            disabled={!canManage}
+            style={{
+              background: 'rgba(220,38,38,0.18)',
+              border: '1px solid rgba(220,38,38,0.45)',
               color: '#fecaca',
             }}
+            title="Supprime définitivement l'intégration"
           >
-            ⚠ Dernière erreur&nbsp;: {arrowSource.lastError}
-            {arrowSource.lastErrorAt && (
-              <span style={{ opacity: 0.7, marginLeft: 6 }}>
-                ({new Date(arrowSource.lastErrorAt).toLocaleString('fr-FR')})
-              </span>
-            )}
-          </div>
-        )}
+            🗑️ Révoquer
+          </button>
+        </div>
       </div>
 
       <div
         style={{
           marginTop: 14,
-          display: 'flex',
-          justifyContent: 'flex-end',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: 10,
+          fontSize: '0.82rem',
         }}
       >
-        <Link
-          to="/admin/comptabilite/sources-externes"
-          className="portal-button secondary"
-          style={{ textDecoration: 'none' }}
-        >
-          Gérer toutes les sources externes →
-        </Link>
+        <StatCell
+          label="Préfixe clé"
+          value={source.apiKeyPrefix ? `${source.apiKeyPrefix}…` : '—'}
+          mono
+        />
+        <StatCell
+          label="Dernier ping"
+          value={source.lastSeenAt ? formatRelative(source.lastSeenAt) : 'Jamais'}
+          title={source.lastSeenAt ? new Date(source.lastSeenAt).toLocaleString('fr-FR') : undefined}
+        />
+        <StatCell label="Ingérées" value={String(source.totalIngested ?? 0)} />
+        <StatCell label="Rejetées" value={String(source.totalRejected ?? 0)} />
+        <StatCell label="Doublons" value={String(source.totalDuplicates ?? 0)} />
       </div>
-    </section>
+
+      {source.lastError && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: '8px 12px',
+            background: 'rgba(220,38,38,0.12)',
+            border: '1px solid rgba(220,38,38,0.35)',
+            borderRadius: 8,
+            fontSize: '0.78rem',
+            color: '#fecaca',
+          }}
+        >
+          ⚠️ Dernière erreur&nbsp;: {source.lastError}
+          {source.lastErrorAt && (
+            <span style={{ opacity: 0.7, marginLeft: 6 }}>
+              ({new Date(source.lastErrorAt).toLocaleString('fr-FR')})
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: ExternalSourceStatus }) {
+  const map: Record<
+    ExternalSourceStatus,
+    { className: string; label: string; style?: React.CSSProperties }
+  > = {
+    ACTIVE: { className: 'accounting-badge validated', label: 'Active' },
+    PAUSED: {
+      className: 'accounting-badge',
+      label: 'En pause',
+      style: {
+        background: 'rgba(251,146,60,0.15)',
+        color: '#fdba74',
+        border: '1px solid rgba(251,146,60,0.4)',
+      },
+    },
+    DISABLED: {
+      className: 'accounting-badge',
+      label: 'Désactivée',
+      style: {
+        background: 'rgba(255,255,255,0.06)',
+        color: 'rgba(255,255,255,0.55)',
+        border: '1px solid rgba(255,255,255,0.12)',
+      },
+    },
+  }
+  const entry = map[status] || map.DISABLED
+  return (
+    <span
+      className={entry.className}
+      style={{ fontSize: '0.7rem', ...entry.style }}
+      title={`Statut: ${status}`}
+    >
+      {entry.label}
+    </span>
   )
 }
 
@@ -870,13 +974,16 @@ function StatCell({
   label,
   value,
   mono,
+  title,
 }: {
   label: string
   value: string
   mono?: boolean
+  title?: string
 }) {
   return (
     <div
+      title={title}
       style={{
         padding: '8px 10px',
         background: 'rgba(255,255,255,0.03)',
@@ -908,6 +1015,330 @@ function StatCell({
   )
 }
 
+function formatRelative(iso: string): string {
+  const date = new Date(iso)
+  const diffMs = Date.now() - date.getTime()
+  if (Number.isNaN(diffMs)) return iso
+  const sec = Math.floor(diffMs / 1000)
+  if (sec < 60) return "à l'instant"
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `il y a ${min} min`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `il y a ${hr} h`
+  const day = Math.floor(hr / 24)
+  if (day < 30) return `il y a ${day} j`
+  return date.toLocaleDateString('fr-FR')
+}
+
+// ---- Modal de création ----
+
+interface CreateIntegrationModalProps {
+  existingSlugs: string[]
+  onCancel: () => void
+  onSubmit: (payload: {
+    slug: string
+    name: string
+    description?: string
+    autoValidateAll: boolean
+  }) => Promise<string | null>
+}
+
+function CreateIntegrationModal({
+  existingSlugs,
+  onCancel,
+  onSubmit,
+}: CreateIntegrationModalProps) {
+  const [slug, setSlug] = useState('')
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [autoValidateAll, setAutoValidateAll] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const existingSet = useMemo(() => new Set(existingSlugs), [existingSlugs])
+
+  const slugValid = SLUG_REGEX.test(slug)
+  const slugTaken = existingSet.has(slug)
+  const slugProblem = slug.length > 0 && !slugValid
+  const canSubmit = slugValid && !slugTaken && name.trim().length > 0 && !submitting
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!canSubmit) return
+    setFormError('')
+    setSubmitting(true)
+    const err = await onSubmit({
+      slug,
+      name: name.trim(),
+      description: description.trim() || undefined,
+      autoValidateAll,
+    })
+    if (err) {
+      setFormError(err)
+      setSubmitting(false)
+    }
+    // Si succès, le parent ferme la modal — pas besoin de reset.
+  }
+
+  return (
+    <ModalShell title="Nouvelle intégration externe" onClose={onCancel}>
+      <form onSubmit={handleSubmit}>
+        <div className="accounting-form-field" style={{ marginBottom: 14 }}>
+          <label>
+            Slug <span style={{ color: '#f87171' }}>*</span>
+          </label>
+          <input
+            className="portal-input"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value.toLowerCase())}
+            placeholder="stripe, shopify, ecom-bcg…"
+            autoFocus
+            required
+          />
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: '0.78rem',
+              color: slugProblem || slugTaken ? '#fca5a5' : 'rgba(255,255,255,0.5)',
+            }}
+          >
+            {slugTaken
+              ? '⚠️ Ce slug est déjà utilisé par une autre intégration.'
+              : slugProblem
+                ? '⚠️ Minuscules, chiffres et tirets uniquement (≥ 2 caractères, doit commencer par lettre ou chiffre).'
+                : 'Identifiant unique en minuscules. Ex : stripe, shopify, ecom-bcg.'}
+          </div>
+        </div>
+
+        <div className="accounting-form-field" style={{ marginBottom: 14 }}>
+          <label>
+            Nom affiché <span style={{ color: '#f87171' }}>*</span>
+          </label>
+          <input
+            className="portal-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Stripe, Shopify Store EU…"
+            required
+          />
+        </div>
+
+        <div className="accounting-form-field" style={{ marginBottom: 14 }}>
+          <label>Description (optionnel)</label>
+          <textarea
+            className="portal-input"
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Pousse les charges Stripe (frais, remboursements)…"
+          />
+        </div>
+
+        <label
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+            padding: '10px 12px',
+            background: 'rgba(251,191,36,0.08)',
+            border: '1px solid rgba(251,191,36,0.30)',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            color: 'rgba(255,255,255,0.82)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={autoValidateAll}
+            onChange={(e) => setAutoValidateAll(e.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>
+            <strong style={{ color: '#fde68a' }}>Auto-validation</strong>
+            <div
+              style={{
+                marginTop: 2,
+                fontSize: '0.78rem',
+                color: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              Si coché, les écritures sont créées directement en <code>VALIDATED</code>. À
+              n'activer que pour les sources de confiance maximale.
+            </div>
+          </span>
+        </label>
+
+        {formError && (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '10px 12px',
+              background: 'rgba(220,38,38,0.15)',
+              border: '1px solid rgba(220,38,38,0.40)',
+              borderRadius: 8,
+              color: '#fecaca',
+              fontSize: '0.85rem',
+            }}
+          >
+            {formError}
+          </div>
+        )}
+
+        <div
+          style={{
+            marginTop: 22,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            className="portal-button secondary"
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            Annuler
+          </button>
+          <button type="submit" className="portal-button" disabled={!canSubmit}>
+            {submitting ? '⏳ Création…' : "Créer l'intégration"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  )
+}
+
+// ---- Modal de révocation ----
+
+interface RevokeIntegrationModalProps {
+  source: IExternalSource
+  onCancel: () => void
+  onConfirm: (source: IExternalSource) => Promise<string | null>
+}
+
+function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIntegrationModalProps) {
+  const [confirmation, setConfirmation] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const canSubmit = confirmation === source.slug && !submitting
+
+  async function handleConfirm() {
+    if (!canSubmit) return
+    setFormError('')
+    setSubmitting(true)
+    const err = await onConfirm(source)
+    if (err) {
+      setFormError(err)
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <ModalShell title="Révoquer cette intégration ?" onClose={onCancel}>
+      <div
+        style={{
+          padding: '12px 14px',
+          background: 'rgba(220,38,38,0.10)',
+          border: '1px solid rgba(220,38,38,0.40)',
+          borderRadius: 10,
+          color: '#fecaca',
+          fontSize: '0.88rem',
+          lineHeight: 1.55,
+        }}
+      >
+        ⚠️ Cette action est <strong>irréversible</strong>. L'intégration{' '}
+        <code
+          style={{
+            background: 'rgba(15,15,20,0.6)',
+            padding: '1px 6px',
+            borderRadius: 4,
+          }}
+        >
+          {source.slug}
+        </code>{' '}
+        sera supprimée et sa clé API immédiatement invalidée. Les écritures déjà reçues sont
+        conservées.
+      </div>
+
+      <div className="accounting-form-field" style={{ marginTop: 18 }}>
+        <label>
+          Pour confirmer, tapez le slug{' '}
+          <code
+            style={{
+              background: 'rgba(15,15,20,0.6)',
+              padding: '1px 6px',
+              borderRadius: 4,
+              fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            }}
+          >
+            {source.slug}
+          </code>{' '}
+          ci-dessous :
+        </label>
+        <input
+          className="portal-input"
+          value={confirmation}
+          onChange={(e) => setConfirmation(e.target.value)}
+          placeholder={source.slug}
+          autoFocus
+        />
+      </div>
+
+      {formError && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: '10px 12px',
+            background: 'rgba(220,38,38,0.15)',
+            border: '1px solid rgba(220,38,38,0.40)',
+            borderRadius: 8,
+            color: '#fecaca',
+            fontSize: '0.85rem',
+          }}
+        >
+          {formError}
+        </div>
+      )}
+
+      <div
+        style={{
+          marginTop: 22,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 8,
+        }}
+      >
+        <button
+          type="button"
+          className="portal-button secondary"
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          className="portal-button"
+          onClick={handleConfirm}
+          disabled={!canSubmit}
+          style={{
+            background: canSubmit ? 'rgba(220,38,38,0.85)' : 'rgba(220,38,38,0.35)',
+            border: '1px solid rgba(220,38,38,0.55)',
+            color: '#fff',
+          }}
+        >
+          {submitting ? '⏳ Révocation…' : 'Révoquer définitivement'}
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
+// ---- Modal Credentials ----
+
 interface CredentialsModalProps {
   credentials: GeneratedCredentials
   copiedField: string | null
@@ -926,155 +1357,137 @@ function CredentialsModal({ credentials, copiedField, onCopy, onClose }: Credent
 
   const title =
     credentials.context === 'rotated'
-      ? '🔄 Nouvelles clés générées'
-      : '🎉 Source créée avec succès !'
+      ? `🔄 Nouvelles clés pour ${credentials.sourceName}`
+      : `🎉 Intégration ${credentials.sourceName} créée`
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(6px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: 16,
-      }}
-      // Pas de fermeture au clic extérieur — l'utilisateur doit confirmer avoir noté
-    >
+    <ModalShell title={title} onClose={onClose} closeOnBackdrop={false} wide>
       <div
-        className="accounting-card"
         style={{
-          maxWidth: 600,
-          width: '100%',
-          maxHeight: '92vh',
-          overflow: 'auto',
+          fontSize: '0.85rem',
+          color: 'rgba(255,255,255,0.65)',
+          marginTop: -4,
+          marginBottom: 14,
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>{title}</h2>
-        <div
+        Slug&nbsp;:{' '}
+        <code
           style={{
-            fontSize: '0.85rem',
-            color: 'rgba(255,255,255,0.65)',
-            marginTop: -4,
-            marginBottom: 14,
+            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            background: 'rgba(15,15,20,0.6)',
+            padding: '1px 6px',
+            borderRadius: 4,
           }}
         >
-          Source&nbsp;: <strong>{credentials.sourceName}</strong>{' '}
-          <code style={{ opacity: 0.7 }}>({credentials.sourceSlug})</code>
-        </div>
+          {credentials.sourceSlug}
+        </code>
+      </div>
 
-        <div
-          style={{
-            padding: '12px 14px',
-            background: 'rgba(251,191,36,0.10)',
-            border: '1px solid rgba(251,191,36,0.40)',
-            borderRadius: 10,
-            color: '#fde68a',
-            fontSize: '0.88rem',
-            lineHeight: 1.5,
-          }}
-        >
-          ⚠️ Ces valeurs ne s'afficheront <strong>PLUS JAMAIS</strong>.
-          <br />
-          Stocke-les immédiatement dans un gestionnaire de secrets sécurisé.
-          {credentials.warning && (
-            <div style={{ marginTop: 8, fontSize: '0.82rem', opacity: 0.85 }}>
-              {credentials.warning}
-            </div>
-          )}
-        </div>
-
-        <SecretField
-          label="VENIO_API_KEY"
-          value={credentials.apiKey}
-          color="#7dd3fc"
-          borderColor="rgba(14,165,233,0.35)"
-          fieldKey="apiKey"
-          copiedField={copiedField}
-          onCopy={onCopy}
-        />
-
-        <SecretField
-          label="VENIO_HMAC_SECRET"
-          value={credentials.webhookSecret}
-          color="#c084fc"
-          borderColor="rgba(192,132,252,0.35)"
-          fieldKey="webhookSecret"
-          copiedField={copiedField}
-          onCopy={onCopy}
-        />
-
-        <SecretField
-          label="URL d'ingestion"
-          value={ingestUrl}
-          color="#86efac"
-          borderColor="rgba(134,239,172,0.35)"
-          fieldKey="ingestUrl"
-          copiedField={copiedField}
-          onCopy={onCopy}
-        />
-
-        <div style={{ marginTop: 22 }}>
-          <div
-            style={{
-              fontSize: '0.78rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'rgba(255,255,255,0.55)',
-              marginBottom: 6,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>Variables à coller dans Arrow .env</span>
-            <button
-              type="button"
-              className="portal-button secondary"
-              style={{ fontSize: '0.72rem', padding: '4px 10px' }}
-              onClick={() => onCopy(envBlock, 'envBlock')}
-            >
-              {copiedField === 'envBlock' ? '✓ Copié' : '📋 Tout copier'}
-            </button>
+      <div
+        style={{
+          padding: '12px 14px',
+          background: 'rgba(251,191,36,0.10)',
+          border: '1px solid rgba(251,191,36,0.40)',
+          borderRadius: 10,
+          color: '#fde68a',
+          fontSize: '0.88rem',
+          lineHeight: 1.5,
+        }}
+      >
+        ⚠️ Ces valeurs ne s'afficheront <strong>PLUS JAMAIS</strong>.
+        <br />
+        Stocke-les immédiatement dans un gestionnaire de secrets sécurisé.
+        {credentials.warning && (
+          <div style={{ marginTop: 8, fontSize: '0.82rem', opacity: 0.85 }}>
+            {credentials.warning}
           </div>
-          <pre
-            style={{
-              margin: 0,
-              padding: '14px 16px',
-              background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              borderRadius: 10,
-              fontFamily: "'SF Mono', Menlo, Consolas, monospace",
-              fontSize: '0.82rem',
-              color: 'rgba(255,255,255,0.88)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              userSelect: 'all',
-            }}
-          >
-            {envBlock}
-          </pre>
-        </div>
+        )}
+      </div>
 
+      <SecretField
+        label="VENIO_API_KEY"
+        value={credentials.apiKey}
+        color="#7dd3fc"
+        borderColor="rgba(14,165,233,0.35)"
+        fieldKey="apiKey"
+        copiedField={copiedField}
+        onCopy={onCopy}
+      />
+
+      <SecretField
+        label="VENIO_HMAC_SECRET"
+        value={credentials.webhookSecret}
+        color="#c084fc"
+        borderColor="rgba(192,132,252,0.35)"
+        fieldKey="webhookSecret"
+        copiedField={copiedField}
+        onCopy={onCopy}
+      />
+
+      <SecretField
+        label="VENIO_INGEST_URL"
+        value={ingestUrl}
+        color="#86efac"
+        borderColor="rgba(134,239,172,0.35)"
+        fieldKey="ingestUrl"
+        copiedField={copiedField}
+        onCopy={onCopy}
+      />
+
+      <div style={{ marginTop: 22 }}>
         <div
           style={{
-            marginTop: 22,
+            fontSize: '0.78rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'rgba(255,255,255,0.55)',
+            marginBottom: 6,
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
-          <button type="button" className="portal-button" onClick={onClose}>
-            ✅ J'ai bien noté les credentials → Fermer
+          <span>Variables à coller dans le .env du service</span>
+          <button
+            type="button"
+            className="portal-button secondary"
+            style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+            onClick={() => onCopy(envBlock, 'envBlock')}
+          >
+            {copiedField === 'envBlock' ? '✓ Copié' : '📋 Tout copier'}
           </button>
         </div>
+        <pre
+          style={{
+            margin: 0,
+            padding: '14px 16px',
+            background: 'rgba(15,15,20,0.85)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 10,
+            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            fontSize: '0.82rem',
+            color: 'rgba(255,255,255,0.88)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            userSelect: 'all',
+          }}
+        >
+          {envBlock}
+        </pre>
       </div>
-    </div>
+
+      <div
+        style={{
+          marginTop: 22,
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <button type="button" className="portal-button" onClick={onClose}>
+          ✅ J'ai bien noté les credentials → Fermer
+        </button>
+      </div>
+    </ModalShell>
   )
 }
 
@@ -1143,6 +1556,59 @@ function SecretField({
         >
           {copiedField === fieldKey ? '✓ Copié' : '📋 Copier'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ---- Modal shell générique ----
+
+interface ModalShellProps {
+  title: string
+  onClose: () => void
+  closeOnBackdrop?: boolean
+  wide?: boolean
+  children: React.ReactNode
+}
+
+function ModalShell({
+  title,
+  onClose,
+  closeOnBackdrop = true,
+  wide = false,
+  children,
+}: ModalShellProps) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={() => {
+        if (closeOnBackdrop) onClose()
+      }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: 16,
+      }}
+    >
+      <div
+        className="accounting-card"
+        style={{
+          maxWidth: wide ? 600 : 520,
+          width: '100%',
+          maxHeight: '92vh',
+          overflow: 'auto',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>{title}</h2>
+        {children}
       </div>
     </div>
   )

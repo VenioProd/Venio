@@ -92,3 +92,11 @@ export type {
   IAgentToken,
   IAgentIdempotencyKey,
 } from './agent.js'
+
+export type {
+  IInternalConversation,
+  IInternalConversationMember,
+  IInternalMessageAttachment,
+  IInternalMessageReaction,
+  IInternalMessage,
+} from './messaging.js'

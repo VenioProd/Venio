@@ -98,6 +98,7 @@ const AdminDashboard = () => {
   const canViewProjects = hasPermission(user, PERMISSIONS.VIEW_PROJECTS)
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
   const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
+  const canViewMessaging = hasPermission(user, PERMISSIONS.VIEW_MESSAGING)
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
@@ -188,6 +189,11 @@ const AdminDashboard = () => {
             {canManageClients && (
               <Link className="portal-button" to="/admin/comptes-clients/nouveau">
                 ✚ Nouveau client
+              </Link>
+            )}
+            {canViewMessaging && (
+              <Link className="portal-button" to="/admin/messages">
+                Messages
               </Link>
             )}
           </div>
