@@ -64,6 +64,7 @@ const MORE_GROUPS: NavGroup[] = [
     label: 'Admin',
     items: [
       { to: '/admin/comptes-admin', label: 'Comptes admin', perm: PERMISSIONS.MANAGE_ADMINS },
+      { to: '/admin/agents', label: 'Agents API', perm: PERMISSIONS.MANAGE_ADMINS },
       { to: '/admin/guide', label: 'Guide' },
     ],
   },

@@ -1,0 +1,304 @@
+import express, { type Request, type Response, type NextFunction } from 'express'
+import { body, param, validationResult } from 'express-validator'
+import auth from '../../middleware/auth.js'
+import { requireAdmin } from '../../middleware/role.js'
+import AgentToken from '../../models/AgentToken.js'
+import {
+  AGENT_SCOPES,
+  findUnknownScopes,
+  ADMIN_WILDCARD_SCOPE,
+} from '../../lib/agent/scopes.js'
+import { generateAgentToken } from '../../lib/agent/tokens.js'
+import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
+
+/**
+ * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
+ *
+ * Auth : JWT admin (middleware auth + requireAdmin). Aucun rôle granulaire
+ * supplémentaire — tout admin peut gérer les tokens. Le createdBy garde
+ * trace de l'admin émetteur.
+ *
+ * Endpoints :
+ *   GET    /api/admin/agent-tokens             → liste (sans secrets)
+ *   GET    /api/admin/agent-tokens/scopes      → catalogue des scopes
+ *   POST   /api/admin/agent-tokens             → crée un token, renvoie le
+ *                                                secret en clair UNE SEULE FOIS
+ *   GET    /api/admin/agent-tokens/:id         → détail
+ *   PATCH  /api/admin/agent-tokens/:id         → renomme, change scopes /
+ *                                                rateLimit / expiresAt / notes
+ *   POST   /api/admin/agent-tokens/:id/revoke  → status=REVOKED
+ *
+ * Pas de suppression dure : la révocation suffit (immutable pour audit log).
+ */
+const router = express.Router()
+
+router.use(auth)
+router.use(requireAdmin)
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET /scopes — catalogue figé (utilisé par l'UI pour le multi-select)
+// ──────────────────────────────────────────────────────────────────────────
+
+router.get('/scopes', (_req: Request, res: Response) => {
+  res.json({ scopes: AGENT_SCOPES, adminWildcard: ADMIN_WILDCARD_SCOPE })
+})
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET / — liste
+// ──────────────────────────────────────────────────────────────────────────
+
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filter: Record<string, unknown> = {}
+    const status = req.query.status
+    if (status === 'ACTIVE' || status === 'REVOKED') {
+      filter.status = status
+    }
+    const tokens = await AgentToken.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('createdBy', 'email name')
+      .populate('revokedBy', 'email name')
+      .lean()
+    res.json({ tokens })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ──────────────────────────────────────────────────────────────────────────
+// POST / — crée un nouveau token
+//   renvoie { token: {...}, plainSecret: "vno_pat_..." } UNE SEULE FOIS
+// ──────────────────────────────────────────────────────────────────────────
+
+router.post(
+  '/',
+  body('name').isString().trim().isLength({ min: 1, max: 120 }).withMessage('Nom requis (max 120 chars)'),
+  body('scopes').isArray({ min: 1 }).withMessage('Au moins un scope est requis'),
+  body('rateLimitPerMin').optional().isInt({ min: 1, max: 10000 }).withMessage('rateLimitPerMin entre 1 et 10000'),
+  body('expiresAt').optional({ nullable: true }).isISO8601().withMessage('expiresAt doit être au format ISO 8601'),
+  body('notes').optional().isString().isLength({ max: 1000 }).withMessage('notes max 1000 chars'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
+
+      const { name, scopes, rateLimitPerMin, expiresAt, notes } = req.body || {}
+
+      // Valider les scopes contre le catalogue
+      const unknown = findUnknownScopes(scopes)
+      if (unknown.length > 0) {
+        return res.status(400).json({
+          error: `Scope(s) inconnu(s) : ${unknown.join(', ')}`,
+          unknownScopes: unknown,
+        })
+      }
+
+      // Générer le secret côté serveur
+      const generated = await generateAgentToken()
+
+      const token = await AgentToken.create({
+        name: String(name).trim(),
+        prefix: generated.prefix,
+        tokenHash: generated.hash,
+        scopes,
+        rateLimitPerMin: rateLimitPerMin || 120,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        notes: notes || '',
+        createdBy: req.user!.id,
+      })
+
+      void recordAudit({
+        action: 'AGENT_TOKEN_CREATE',
+        actor: buildActorFromReq(req),
+        entityType: 'AgentToken',
+        entityId: String(token._id),
+        entityRef: token.prefix,
+        summary: `Création du token agent "${token.name}"`,
+        after: { name: token.name, scopes: token.scopes, prefix: token.prefix },
+      })
+
+      // Renvoyer le token sans le hash mais AVEC le plainSecret (une seule fois)
+      const tokenSafe = await AgentToken.findById(token._id)
+        .populate('createdBy', 'email name')
+        .lean()
+
+      return res.status(201).json({
+        token: tokenSafe,
+        plainSecret: generated.plain,
+        warning: 'Ce secret ne sera plus jamais affiché. Copiez-le maintenant.',
+      })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET /:id — détail
+// ──────────────────────────────────────────────────────────────────────────
+
+router.get(
+  '/:id',
+  param('id').isMongoId().withMessage('ID invalide'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'ID invalide' })
+      }
+      const token = await AgentToken.findById(req.params.id)
+        .populate('createdBy', 'email name')
+        .populate('revokedBy', 'email name')
+        .lean()
+      if (!token) {
+        return res.status(404).json({ error: 'Token introuvable' })
+      }
+      return res.json({ token })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// ──────────────────────────────────────────────────────────────────────────
+// PATCH /:id — modifie (name, scopes, rateLimit, expiresAt, notes)
+// ──────────────────────────────────────────────────────────────────────────
+
+router.patch(
+  '/:id',
+  param('id').isMongoId().withMessage('ID invalide'),
+  body('name').optional().isString().trim().isLength({ min: 1, max: 120 }),
+  body('scopes').optional().isArray({ min: 1 }),
+  body('rateLimitPerMin').optional().isInt({ min: 1, max: 10000 }),
+  body('expiresAt').optional({ nullable: true }).custom((v) => v === null || !Number.isNaN(Date.parse(v))).withMessage('Date invalide'),
+  body('notes').optional().isString().isLength({ max: 1000 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
+
+      const token = await AgentToken.findById(req.params.id)
+      if (!token) {
+        return res.status(404).json({ error: 'Token introuvable' })
+      }
+      if (token.status !== 'ACTIVE') {
+        return res.status(409).json({ error: 'Token révoqué — non modifiable' })
+      }
+
+      const before = {
+        name: token.name,
+        scopes: [...token.scopes],
+        rateLimitPerMin: token.rateLimitPerMin,
+        expiresAt: token.expiresAt,
+        notes: token.notes,
+      }
+
+      if (typeof req.body.name === 'string') {
+        token.name = req.body.name.trim()
+      }
+      if (Array.isArray(req.body.scopes)) {
+        const unknown = findUnknownScopes(req.body.scopes)
+        if (unknown.length > 0) {
+          return res.status(400).json({
+            error: `Scope(s) inconnu(s) : ${unknown.join(', ')}`,
+            unknownScopes: unknown,
+          })
+        }
+        token.scopes = req.body.scopes
+      }
+      if (typeof req.body.rateLimitPerMin === 'number') {
+        token.rateLimitPerMin = req.body.rateLimitPerMin
+      }
+      if (req.body.expiresAt !== undefined) {
+        token.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : null
+      }
+      if (typeof req.body.notes === 'string') {
+        token.notes = req.body.notes
+      }
+
+      await token.save()
+
+      void recordAudit({
+        action: 'AGENT_TOKEN_UPDATE',
+        actor: buildActorFromReq(req),
+        entityType: 'AgentToken',
+        entityId: String(token._id),
+        entityRef: token.prefix,
+        summary: `Modification du token agent "${token.name}"`,
+        before,
+        after: {
+          name: token.name,
+          scopes: token.scopes,
+          rateLimitPerMin: token.rateLimitPerMin,
+          expiresAt: token.expiresAt,
+          notes: token.notes,
+        },
+      })
+
+      const safe = await AgentToken.findById(token._id)
+        .populate('createdBy', 'email name')
+        .lean()
+      return res.json({ token: safe })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// ──────────────────────────────────────────────────────────────────────────
+// POST /:id/revoke — révoque (status=REVOKED, idempotent)
+// ──────────────────────────────────────────────────────────────────────────
+
+router.post(
+  '/:id/revoke',
+  param('id').isMongoId().withMessage('ID invalide'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'ID invalide' })
+      }
+      const token = await AgentToken.findById(req.params.id)
+      if (!token) {
+        return res.status(404).json({ error: 'Token introuvable' })
+      }
+      if (token.status === 'REVOKED') {
+        // Idempotent : déjà révoqué
+        const safe = await AgentToken.findById(token._id)
+          .populate('createdBy', 'email name')
+          .populate('revokedBy', 'email name')
+          .lean()
+        return res.json({ token: safe, alreadyRevoked: true })
+      }
+
+      token.status = 'REVOKED'
+      token.revokedAt = new Date()
+      token.revokedBy = req.user!.id as unknown as typeof token.revokedBy
+      await token.save()
+
+      void recordAudit({
+        action: 'AGENT_TOKEN_REVOKE',
+        actor: buildActorFromReq(req),
+        entityType: 'AgentToken',
+        entityId: String(token._id),
+        entityRef: token.prefix,
+        summary: `Révocation du token agent "${token.name}"`,
+        after: { revokedAt: token.revokedAt },
+      })
+
+      const safe = await AgentToken.findById(token._id)
+        .populate('createdBy', 'email name')
+        .populate('revokedBy', 'email name')
+        .lean()
+      return res.json({ token: safe })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+export default router

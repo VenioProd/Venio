@@ -48,6 +48,7 @@ import adminArrowPilotageRoutes from './routes/admin/arrowPilotage.js'
 import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
+import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
@@ -181,6 +182,9 @@ app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
 app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
+
+// Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
+app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
 
 // API agent (Bearer + scopes) — utilisée par Kuro et autres intégrations externes.
 // Distincte de l'API admin (JWT) et de l'API d'ingestion comptable HMAC.
