@@ -58,6 +58,7 @@ const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
 const TicketList = lazy(() => import('./pages/admin/TicketList'))
 const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
 const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
+const Messaging = lazy(() => import('./pages/admin/Messaging'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
 const InternList = lazy(() => import('./pages/admin/InternList'))
@@ -323,6 +324,14 @@ function App() {
             element={
               <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
                 <GestionBoard />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="messages"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_MESSAGING} redirectTo="/admin">
+                <Messaging />
               </RequirePermission>
             }
           />

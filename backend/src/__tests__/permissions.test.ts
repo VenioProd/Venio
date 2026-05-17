@@ -15,6 +15,9 @@ describe('permissions module', () => {
         'MANAGE_CLIENTS',
         'VIEW_CRM',
         'MANAGE_CRM',
+        'VIEW_MESSAGING',
+        'SEND_MESSAGES',
+        'MANAGE_CHANNELS',
         'VIEW_PROJECTS',
         'EDIT_PROJECTS',
         'VIEW_CONTENT',
@@ -70,6 +73,9 @@ describe('permissions module', () => {
       expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CLIENTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_CRM)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CRM)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.VIEW_MESSAGING)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.SEND_MESSAGES)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CHANNELS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_PROJECTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.EDIT_PROJECTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_CONTENT)).toBe(true)
@@ -83,6 +89,9 @@ describe('permissions module', () => {
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_PROJECTS)).toBe(true)
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_CONTENT)).toBe(true)
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_BILLING)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.VIEW_MESSAGING)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.SEND_MESSAGES)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.MANAGE_CHANNELS)).toBe(false)
 
       // VIEWER should NOT have any manage/edit permissions
       expect(hasPermission('VIEWER', PERMISSIONS.MANAGE_ADMINS)).toBe(false)
@@ -167,6 +176,9 @@ describe('permissions module', () => {
       expect(perms).toContain(PERMISSIONS.VIEW_VAT)
       expect(perms).toContain(PERMISSIONS.MANAGE_VAT)
       expect(perms).toContain(PERMISSIONS.EXPORT_FEC)
+      expect(perms).toContain(PERMISSIONS.VIEW_MESSAGING)
+      expect(perms).toContain(PERMISSIONS.SEND_MESSAGES)
+      expect(perms).toContain(PERMISSIONS.MANAGE_CHANNELS)
     })
 
     it('should return permissions for VIEWER including read-only accounting', () => {
@@ -178,10 +190,13 @@ describe('permissions module', () => {
       expect(perms).toContain(PERMISSIONS.CREATE_TICKETS)
       expect(perms).toContain(PERMISSIONS.VIEW_ACCOUNTING)
       expect(perms).toContain(PERMISSIONS.VIEW_VAT)
+      expect(perms).toContain(PERMISSIONS.VIEW_MESSAGING)
+      expect(perms).toContain(PERMISSIONS.SEND_MESSAGES)
       // VIEWER ne doit JAMAIS pouvoir modifier
       expect(perms).not.toContain(PERMISSIONS.MANAGE_ACCOUNTING)
       expect(perms).not.toContain(PERMISSIONS.MANAGE_VAT)
       expect(perms).not.toContain(PERMISSIONS.EXPORT_FEC)
+      expect(perms).not.toContain(PERMISSIONS.MANAGE_CHANNELS)
     })
 
     it('should return an empty array for CLIENT', () => {

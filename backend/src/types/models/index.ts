@@ -87,3 +87,11 @@ export type {
   IRuleMapping,
   IClassificationRule,
 } from './accounting.js'
+
+export type {
+  IInternalConversation,
+  IInternalConversationMember,
+  IInternalMessageAttachment,
+  IInternalMessageReaction,
+  IInternalMessage,
+} from './messaging.js'

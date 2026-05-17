@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => {
           target: apiProxyTarget,
           changeOrigin: true,
         },
+        '/socket.io': {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
     build: {
@@ -33,6 +38,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
+      exclude: ['**/node_modules/**', '**/.git/**', '**/.claude/**'],
     },
   }
 })

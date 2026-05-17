@@ -54,8 +54,11 @@ describe('getPermissionsForRole', () => {
     expect(perms).toContain('view_projects')
     expect(perms).toContain('view_content')
     expect(perms).toContain('view_billing')
+    expect(perms).toContain('view_messaging')
+    expect(perms).toContain('send_messages')
     expect(perms).not.toContain('manage_admins')
     expect(perms).not.toContain('edit_projects')
+    expect(perms).not.toContain('manage_channels')
   })
 
   it('returns an empty array for CLIENT', () => {
@@ -73,6 +76,12 @@ describe('hasPermission', () => {
   it('returns true when SUPER_ADMIN has manage_admins', () => {
     const user = makeUser('SUPER_ADMIN')
     expect(hasPermission(user, PERMISSIONS.MANAGE_ADMINS)).toBe(true)
+  })
+
+  it('returns true when an internal user can send messages', () => {
+    const user = makeUser('ADMIN')
+    expect(hasPermission(user, PERMISSIONS.VIEW_MESSAGING)).toBe(true)
+    expect(hasPermission(user, PERMISSIONS.SEND_MESSAGES)).toBe(true)
   })
 
   it('returns false when VIEWER does not have manage_admins', () => {
