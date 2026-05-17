@@ -19,8 +19,9 @@ export async function createTestApp(): Promise<Express> {
   // à la Mongo en mémoire au moment du import.
   const { default: agentRoutes } = await import('../../routes/agent/index.js')
   const app = express()
-  app.use(express.json())
-  app.use('/api/v1/agent', agentRoutes)
+  // Limite identique à celle de prod (cf. index.ts) pour accepter les
+  // uploads base64 jusqu'à ~5 Mo.
+  app.use('/api/v1/agent', express.json({ limit: '8mb' }), agentRoutes)
   return app
 }
 

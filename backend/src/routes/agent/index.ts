@@ -12,6 +12,8 @@ import crmRoutes from './crm.js'
 import projectsRoutes from './projects.js'
 import templatesRoutes from './templates.js'
 import briefsRoutes from './briefs.js'
+import billingRoutes from './billing.js'
+import documentsRoutes from './documents.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -168,6 +170,8 @@ router.use('/', crmRoutes)
 router.use('/', projectsRoutes)
 router.use('/', templatesRoutes)
 router.use('/', briefsRoutes)
+router.use('/', billingRoutes)
+router.use('/', documentsRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.

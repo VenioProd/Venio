@@ -128,6 +128,11 @@ app.use(rateLimit({
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
 
+// API agent : limite body plus haute (8mb) pour permettre l'upload de documents
+// en base64 (jusqu'à ~5 Mo bruts ≈ 6.7 Mo encodés). Doit être monté AVANT
+// le express.json global sinon le parser global rejette à 2mb d'abord.
+app.use('/api/v1/agent', express.json({ limit: '8mb' }), agentRoutes)
+
 app.use(express.json({ limit: '2mb' }))
 app.use(morgan(isProd ? 'combined' : 'dev'))
 
@@ -184,11 +189,9 @@ app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
 
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
+// NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
+// express.json global, pour autoriser un body plus volumineux (upload base64).
 app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
-
-// API agent (Bearer + scopes) — utilisée par Kuro et autres intégrations externes.
-// Distincte de l'API admin (JWT) et de l'API d'ingestion comptable HMAC.
-app.use('/api/v1/agent', agentRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
