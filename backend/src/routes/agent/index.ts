@@ -26,6 +26,10 @@ import qualiopiRoutes from './qualiopi.js'
 import internsRoutes from './interns.js'
 import arrowRoutes from './arrow.js'
 import analyticsRoutes from './analytics.js'
+import auditRoutes from './audit.js'
+import automationsRoutes from './automations.js'
+import backupRoutes from './backup.js'
+import usersRoutes from './users.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -196,6 +200,10 @@ router.use('/', qualiopiRoutes)
 router.use('/', internsRoutes)
 router.use('/', arrowRoutes)
 router.use('/', analyticsRoutes)
+router.use('/', auditRoutes)
+router.use('/', automationsRoutes)
+router.use('/', backupRoutes)
+router.use('/', usersRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.

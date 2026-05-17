@@ -224,7 +224,8 @@ router.patch(
       if (!c) return respondError(res, 404, 'NOT_FOUND', 'Critère introuvable')
       const before = c.toObject()
       if (typeof req.body.title === 'string') c.title = req.body.title
-      if (typeof req.body.description === 'string') c.description = req.body.description
+      // Le modèle utilise `objective` (et non description) pour le texte d'intro
+      if (typeof req.body.objective === 'string') c.objective = req.body.objective
       // Le modèle a des sous-éléments structurés (indicators) qu'on autorise
       // à modifier en bloc. La validation des sous-champs est laissée à mongoose.
       if (Array.isArray(req.body.indicators)) c.indicators = req.body.indicators as typeof c.indicators
