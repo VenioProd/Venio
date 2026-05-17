@@ -4,7 +4,7 @@ import ConversationHeader from '../../components/admin/messaging/ConversationHea
 import ConversationSidebar from '../../components/admin/messaging/ConversationSidebar'
 import MessageComposer from '../../components/admin/messaging/MessageComposer'
 import MessageList from '../../components/admin/messaging/MessageList'
-import { MessagingProvider, useMessaging } from '../../context/MessagingContext'
+import { useMessaging } from '../../context/MessagingContext'
 import { createChannel, fetchMessagingUsers, openDirectConversation, searchMessages } from '../../services/messaging'
 import type { MessagingSearchResult, MessagingUser } from '../../types/messaging.types'
 import './Messaging.css'
@@ -126,9 +126,5 @@ function MessagingSurface() {
 }
 
 export default function Messaging() {
-  return (
-    <MessagingProvider>
-      <MessagingSurface />
-    </MessagingProvider>
-  )
+  return <MessagingSurface />
 }

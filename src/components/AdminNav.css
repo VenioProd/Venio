@@ -103,6 +103,26 @@
   border-radius: 2px;
 }
 
+/* ---- Badge unread (Messages) ---- */
+.admin-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.35);
+}
+
+
 /* ---- Bouton "Plus" ---- */
 .admin-nav-more {
   position: relative;

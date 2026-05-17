@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useMessaging } from '../context/MessagingContext'
 import { hasPermission, PERMISSIONS } from '../lib/permissions'
 import './AdminNav.css'
 
@@ -26,6 +27,7 @@ interface NavGroup {
 
 const MAIN_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Tableau de bord', end: true },
+  { to: '/admin/messages', label: 'Messages', perm: PERMISSIONS.VIEW_MESSAGING },
   { to: '/admin/comptes-clients', label: 'Clients', perm: PERMISSIONS.MANAGE_CLIENTS },
   { to: '/admin/crm', label: 'CRM', perm: PERMISSIONS.VIEW_CRM },
   { to: '/admin/gestion', label: 'Projets', perm: PERMISSIONS.VIEW_PROJECTS },
@@ -120,6 +122,27 @@ const AdminNav = () => {
   const visibleGroups: NavGroup[] = MORE_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => isItemVisible(i, user)) }))
     .filter((g) => g.items.length > 0)
+
+  const { conversations } = useMessaging()
+  const unreadTotal = useMemo(
+    () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
+    [conversations]
+  )
+
+  const renderItemLabel = (item: NavItem) => {
+    if (item.to !== '/admin/messages' || unreadTotal === 0) return item.label
+    return (
+      <>
+        {item.label}
+        <span
+          className="admin-nav-badge"
+          aria-label={`${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
+        >
+          {unreadTotal > 99 ? '99+' : unreadTotal}
+        </span>
+      </>
+    )
+  }
 
   const handleLogout = () => {
     logout()
@@ -237,7 +260,7 @@ const AdminNav = () => {
                           `admin-nav-drawer-item${isActive ? ' active' : ''}`
                         }
                       >
-                        {item.label}
+                        {renderItemLabel(item)}
                       </NavLink>
                     </li>
                   ))}
@@ -293,7 +316,7 @@ const AdminNav = () => {
                 end={item.end}
                 className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}
               >
-                {item.label}
+                {renderItemLabel(item)}
               </NavLink>
             ))}
 
