@@ -14,6 +14,11 @@ import templatesRoutes from './templates.js'
 import briefsRoutes from './briefs.js'
 import billingRoutes from './billing.js'
 import documentsRoutes from './documents.js'
+import tasksRoutes from './tasks.js'
+import ticketsRoutes from './tickets.js'
+import messagesRoutes from './messages.js'
+import notificationsRoutes from './notifications.js'
+import calendarRoutes from './calendar.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -172,6 +177,11 @@ router.use('/', templatesRoutes)
 router.use('/', briefsRoutes)
 router.use('/', billingRoutes)
 router.use('/', documentsRoutes)
+router.use('/', tasksRoutes)
+router.use('/', ticketsRoutes)
+router.use('/', messagesRoutes)
+router.use('/', notificationsRoutes)
+router.use('/', calendarRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.
