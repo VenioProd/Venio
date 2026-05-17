@@ -9,6 +9,9 @@ import {
 } from './_middleware/errors.js'
 import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
 import crmRoutes from './crm.js'
+import projectsRoutes from './projects.js'
+import templatesRoutes from './templates.js'
+import briefsRoutes from './briefs.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -162,6 +165,9 @@ router.get('/whoami', requireScope('read:users'), (req: Request, res: Response) 
 
 // ── Sous-routeurs par module métier ─────────────────────────────────────────
 router.use('/', crmRoutes)
+router.use('/', projectsRoutes)
+router.use('/', templatesRoutes)
+router.use('/', briefsRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.
