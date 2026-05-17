@@ -26,6 +26,7 @@ interface NavGroup {
 
 const MAIN_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Tableau de bord', end: true },
+  { to: '/admin/messages', label: 'Messages', perm: PERMISSIONS.VIEW_MESSAGING },
   { to: '/admin/comptes-clients', label: 'Clients', perm: PERMISSIONS.MANAGE_CLIENTS },
   { to: '/admin/crm', label: 'CRM', perm: PERMISSIONS.VIEW_CRM },
   { to: '/admin/gestion', label: 'Projets', perm: PERMISSIONS.VIEW_PROJECTS },
