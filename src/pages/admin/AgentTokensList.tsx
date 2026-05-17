@@ -174,6 +174,20 @@ const AgentTokensList: React.FC = () => {
     )
   }
 
+  const allScopesSelected = useMemo(() => {
+    if (!scopesCatalog || scopesCatalog.scopes.length === 0) return false
+    return scopesCatalog.scopes.every((s) => form.scopes.includes(s))
+  }, [scopesCatalog, form.scopes])
+
+  const toggleAllScopes = () => {
+    if (!scopesCatalog) return
+    setForm((prev) =>
+      allScopesSelected
+        ? { ...prev, scopes: [] }
+        : { ...prev, scopes: [...scopesCatalog.scopes] }
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
@@ -483,11 +497,38 @@ const AgentTokensList: React.FC = () => {
                 </label>
 
                 <div>
-                  <div style={{ marginBottom: 8 }}>
-                    Scopes <span style={{ color: '#f87171' }}>*</span>{' '}
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                      ({form.scopes.length} sélectionné{form.scopes.length > 1 ? 's' : ''})
-                    </span>
+                  <div
+                    style={{
+                      marginBottom: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      Scopes <span style={{ color: '#f87171' }}>*</span>{' '}
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        ({form.scopes.length} sélectionné{form.scopes.length > 1 ? 's' : ''})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleAllScopes}
+                      disabled={!scopesCatalog}
+                      style={{
+                        background: 'rgba(99, 102, 241, 0.12)',
+                        border: '1px solid rgba(99, 102, 241, 0.35)',
+                        color: '#a5b4fc',
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {allScopesSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+                    </button>
                   </div>
                   <div
                     style={{
