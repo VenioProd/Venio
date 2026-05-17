@@ -25,6 +25,15 @@ export async function createTestApp(): Promise<Express> {
   return app
 }
 
+/**
+ * Retourne directement le router agent (pour les tests d'introspection
+ * comme la synchronisation OpenAPI ↔ router).
+ */
+export async function getAgentRouter(): Promise<express.Router> {
+  const { default: agentRoutes } = await import('../../routes/agent/index.js')
+  return agentRoutes
+}
+
 export interface SeededToken {
   id: string
   plainSecret: string

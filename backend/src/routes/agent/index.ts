@@ -8,6 +8,7 @@ import {
   agentErrorHandler,
 } from './_middleware/errors.js'
 import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
+import { buildOpenApiSpec, extractRoutes } from '../../lib/agent/openapi.js'
 import crmRoutes from './crm.js'
 import projectsRoutes from './projects.js'
 import templatesRoutes from './templates.js'
@@ -56,91 +57,15 @@ router.use(requestIdMiddleware)
 
 /**
  * GET /api/v1/agent/openapi.json
- * Spécification OpenAPI 3 statique de l'API agent. Pas d'auth — la spec
- * est publique pour faciliter l'intégration. Sera remplie au fil des lots.
+ * Spec OpenAPI 3.1 générée dynamiquement par introspection du routeur.
+ * Publique (pas d'auth). Cache la spec après le 1er calcul.
  */
+let cachedSpec: Record<string, unknown> | null = null
 router.get('/openapi.json', (_req: Request, res: Response) => {
-  res.json({
-    openapi: '3.1.0',
-    info: {
-      title: 'Venio Agent API',
-      version: '1.0.0-draft',
-      description:
-        "API REST de pilotage de Venio par des agents externes (Kuro, intégrations). " +
-        "Auth : Bearer vno_pat_* avec scopes. Voir docs/api-agent.md.",
-    },
-    servers: [{ url: '/api/v1/agent' }],
-    components: {
-      securitySchemes: {
-        BearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'vno_pat',
-        },
-      },
-      schemas: {
-        Error: {
-          type: 'object',
-          required: ['error', 'code'],
-          properties: {
-            error: { type: 'string' },
-            code: { type: 'string' },
-            requestId: { type: 'string' },
-            details: { type: 'object', additionalProperties: true },
-          },
-        },
-        Paginated: {
-          type: 'object',
-          required: ['items', 'page', 'pageSize', 'total'],
-          properties: {
-            items: { type: 'array', items: {} },
-            page: { type: 'integer', minimum: 1 },
-            pageSize: { type: 'integer', minimum: 1 },
-            total: { type: 'integer', minimum: 0 },
-          },
-        },
-      },
-    },
-    security: [{ BearerAuth: [] }],
-    'x-agent-scopes': AGENT_SCOPES,
-    paths: {
-      '/ping': {
-        get: {
-          summary: 'Vérifie l\'authentification et renvoie l\'identité du token courant',
-          security: [{ BearerAuth: [] }],
-          responses: {
-            '200': {
-              description: 'OK',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      ok: { type: 'boolean' },
-                      token: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string' },
-                          name: { type: 'string' },
-                          prefix: { type: 'string' },
-                          scopes: { type: 'array', items: { type: 'string' } },
-                        },
-                      },
-                      serverTime: { type: 'string', format: 'date-time' },
-                    },
-                  },
-                },
-              },
-            },
-            '401': {
-              description: 'Token invalide',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-            },
-          },
-        },
-      },
-    },
-  })
+  if (!cachedSpec) {
+    cachedSpec = buildOpenApiSpec(extractRoutes(router))
+  }
+  res.json(cachedSpec)
 })
 
 // ── Pipeline authentifié ────────────────────────────────────────────────────
