@@ -1,28 +1,37 @@
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import AdminNav from './AdminNav'
+import { Menu } from 'lucide-react'
+import AdminSidebar from './AdminSidebar'
 import AutoBreadcrumb from './AutoBreadcrumb'
 import { MessagingProvider } from '../context/MessagingContext'
 import './AdminShell.css'
 
-/**
- * Wrapper appliqué à toutes les pages /admin/* (sauf /admin/login).
- * Fournit la top nav persistante + le breadcrumb + un container fluide
- * sur lequel les pages se posent.
- *
- * MessagingProvider est monté ici (et plus uniquement dans la page Messaging)
- * pour que la nav puisse afficher le badge unread depuis n'importe quelle
- * route admin. Tous les rôles admin (SUPER_ADMIN/ADMIN/RH/VIEWER) ont la
- * permission VIEW_MESSAGING, donc le fetch initial réussit toujours.
- */
 const AdminShell = () => {
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+
   return (
     <MessagingProvider>
       <div className="admin-shell">
-        <AdminNav />
-        <AutoBreadcrumb />
-        <main className="admin-shell-main">
-          <Outlet />
-        </main>
+        <AdminSidebar
+          drawerOpen={mobileDrawerOpen}
+          onDrawerClose={() => setMobileDrawerOpen(false)}
+        />
+        <div className="admin-shell-body">
+          <div className="admin-shell-topbar">
+            <button
+              type="button"
+              className="admin-shell-burger"
+              onClick={() => setMobileDrawerOpen(true)}
+              aria-label="Ouvrir le menu de navigation"
+            >
+              <Menu size={20} />
+            </button>
+            <AutoBreadcrumb />
+          </div>
+          <main className="admin-shell-main">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </MessagingProvider>
   )

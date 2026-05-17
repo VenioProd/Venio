@@ -20,6 +20,7 @@
     "@emailjs/browser": "^4.4.1",
     "gantt-task-react": "^0.3.9",
     "jspdf": "^4.2.0",
+    "lucide-react": "^1.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^2.0.5",

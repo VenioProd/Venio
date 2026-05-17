@@ -1,0 +1,391 @@
+/* ============================================================
+   AdminSidebar — navigation latérale de l'espace admin Venio
+   Collapsible : 200px élargie / 56px réduite
+   ============================================================ */
+
+/* ---- Sidebar desktop ---- */
+.admin-sidebar {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 12, 18, 0.98);
+  border-right: 1px solid rgba(14, 165, 233, 0.15);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.admin-sidebar.collapsed {
+  width: 56px;
+}
+
+/* ---- Brand ---- */
+.admin-sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.admin-sb-brand:hover .admin-sb-logo {
+  box-shadow: 0 0 18px rgba(14, 165, 233, 0.55);
+}
+
+.admin-sb-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%);
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 0.95rem;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.35);
+  transition: box-shadow 0.15s;
+}
+
+.admin-sb-brand-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.2px;
+}
+
+/* ---- Scroll zone ---- */
+.admin-sb-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 8px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+.admin-sb-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.admin-sb-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+
+/* ---- Section ---- */
+.admin-sb-section {
+  margin-bottom: 2px;
+}
+
+.admin-sb-section-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(34, 211, 238, 0.6);
+  font-weight: 700;
+  padding: 10px 8px 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.15s, height 0.25s, padding 0.25s;
+  height: 28px;
+}
+
+.admin-sidebar.collapsed .admin-sb-section-label {
+  opacity: 0;
+  height: 1px;
+  padding: 0;
+  margin: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1px;
+}
+
+/* ---- Nav item ---- */
+.admin-sb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.58);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.15s, background 0.15s;
+  position: relative;
+}
+
+.admin-sb-item:hover {
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(14, 165, 233, 0.07);
+}
+
+.admin-sb-item.active {
+  color: #ffffff;
+  background: rgba(14, 165, 233, 0.13);
+}
+
+.admin-sb-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(180deg, #0ea5e9, #22d3ee);
+}
+
+.admin-sb-icon {
+  flex-shrink: 0;
+}
+
+/* ---- Badge non-lu (Messages) ---- */
+.admin-sb-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: #0ea5e9;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.admin-sidebar.collapsed .admin-sb-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  font-size: 0.58rem;
+  padding: 0 3px;
+}
+
+/* ---- Labels (masqués quand collapsed, le overflow: hidden de la sidebar suffit) ---- */
+.admin-sb-label {
+  transition: opacity 0.15s;
+}
+
+.admin-sidebar.collapsed .admin-sb-label {
+  opacity: 0;
+}
+
+/* ---- User block ---- */
+.admin-sb-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-sb-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fff;
+}
+
+.admin-sb-user-info {
+  overflow: hidden;
+  transition: opacity 0.15s;
+}
+
+.admin-sidebar.collapsed .admin-sb-user-info {
+  opacity: 0;
+}
+
+.admin-sb-user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sb-user-role {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(34, 211, 238, 0.7);
+  margin-top: 1px;
+}
+
+/* ---- Footer (profil + déconnexion) ---- */
+.admin-sb-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.admin-sb-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.15s, background 0.15s;
+}
+
+.admin-sb-footer-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-sb-footer-btn.danger {
+  color: rgba(252, 165, 165, 0.7);
+}
+
+.admin-sb-footer-btn.danger:hover {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ---- Bouton collapse ---- */
+.admin-sb-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.15s;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.admin-sb-collapse-btn:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ---- Drawer mobile ---- */
+.admin-sb-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10002;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.admin-sb-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(280px, 88vw);
+  height: 100vh;
+  z-index: 10003;
+  background: rgba(12, 14, 22, 0.99);
+  border-right: 1px solid rgba(14, 165, 233, 0.2);
+  box-shadow: 12px 0 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sb-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-sb-drawer-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.admin-sb-drawer-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-sb-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+/* Dans le drawer, les labels sont toujours visibles */
+.admin-sb-drawer-body .admin-sb-label {
+  opacity: 1;
+}
+
+.admin-sb-drawer-body .admin-sb-section-label {
+  opacity: 1;
+  height: auto;
+  padding: 10px 8px 3px;
+}
+
+.admin-sb-drawer-footer {
+  padding: 8px 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- Responsive : masquer sidebar sur mobile ---- */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    display: none;
+  }
+}

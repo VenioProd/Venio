@@ -1,7 +1,8 @@
 .breadcrumb {
-  padding: 14px clamp(16px, 3vw, 32px) 0;
-  max-width: 1400px;
-  margin: 0 auto;
+  /* La topbar de AdminShell gère le padding — le breadcrumb s'y intègre */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .breadcrumb-list {
@@ -9,10 +10,11 @@
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  overflow: hidden;
 }
 
 .breadcrumb-item {
