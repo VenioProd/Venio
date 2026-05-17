@@ -110,11 +110,13 @@ function isItemVisible(item: NavItem, user: ReturnType<typeof useAuth>['user']):
 }
 
 export interface AdminSidebarProps {
+  collapsed: boolean
+  onCollapseToggle: () => void
   drawerOpen?: boolean
   onDrawerClose?: () => void
 }
 
-const AdminSidebar = ({ drawerOpen = false, onDrawerClose }: AdminSidebarProps) => {
+const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawerClose }: AdminSidebarProps) => {
   const { user, logout } = useAuth()
   const { conversations } = useMessaging()
   const navigate = useNavigate()
@@ -124,10 +126,6 @@ const AdminSidebar = ({ drawerOpen = false, onDrawerClose }: AdminSidebarProps) 
     () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
     [conversations]
   )
-
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(LS_KEY) === 'true' } catch { return false }
-  })
 
   // Ferme le drawer mobile à la navigation
   useEffect(() => {
@@ -142,12 +140,6 @@ const AdminSidebar = ({ drawerOpen = false, onDrawerClose }: AdminSidebarProps) 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [drawerOpen, onDrawerClose])
-
-  const handleCollapseToggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    try { localStorage.setItem(LS_KEY, String(next)) } catch {}
-  }
 
   const handleLogout = () => {
     logout()
@@ -244,7 +236,7 @@ const AdminSidebar = ({ drawerOpen = false, onDrawerClose }: AdminSidebarProps) 
         <button
           type="button"
           className="admin-sb-collapse-btn"
-          onClick={handleCollapseToggle}
+          onClick={onCollapseToggle}
           aria-label={collapsed ? 'Étendre la navigation' : 'Réduire la navigation'}
         >
           {collapsed ? <ChevronRight size={15} aria-hidden /> : <ChevronLeft size={15} aria-hidden />}

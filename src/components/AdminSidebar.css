@@ -3,16 +3,20 @@
    Collapsible : 200px élargie / 56px réduite
    ============================================================ */
 
-/* ---- Sidebar desktop ---- */
+/* ---- Sidebar desktop — position: fixed pour rester en place quel que soit le scroll ---- */
 .admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 200px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: rgba(10, 12, 18, 0.98);
   border-right: 1px solid rgba(14, 165, 233, 0.15);
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  flex-shrink: 0;
+  z-index: 200;
 }
 
 .admin-sidebar.collapsed {

@@ -6,13 +6,26 @@ import AutoBreadcrumb from './AutoBreadcrumb'
 import { MessagingProvider } from '../context/MessagingContext'
 import './AdminShell.css'
 
+const LS_KEY = 'venio-admin-sidebar-collapsed'
+
 const AdminShell = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(LS_KEY) === 'true' } catch { return false }
+  })
+
+  const handleCollapseToggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try { localStorage.setItem(LS_KEY, String(next)) } catch {}
+  }
 
   return (
     <MessagingProvider>
-      <div className="admin-shell">
+      <div className="admin-shell" data-collapsed={collapsed ? 'true' : 'false'}>
         <AdminSidebar
+          collapsed={collapsed}
+          onCollapseToggle={handleCollapseToggle}
           drawerOpen={mobileDrawerOpen}
           onDrawerClose={() => setMobileDrawerOpen(false)}
         />
