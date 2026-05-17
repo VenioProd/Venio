@@ -96,6 +96,7 @@ const AdminDashboard = () => {
   const canViewProjects = hasPermission(user, PERMISSIONS.VIEW_PROJECTS)
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
   const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
+  const canViewMessaging = hasPermission(user, PERMISSIONS.VIEW_MESSAGING)
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
@@ -216,6 +217,14 @@ const AdminDashboard = () => {
                 <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
               </span>
               <span className="portal-action-label">Tickets</span>
+            </Link>
+            )}
+            {canViewMessaging && (
+            <Link className="portal-button portal-action-link" to="/admin/messages" title="Messagerie interne">
+              <span className="portal-action-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M8 10h8M8 14h5" /></svg>
+              </span>
+              <span className="portal-action-label">Messages</span>
             </Link>
             )}
             <Link className="portal-button portal-action-link" to="/admin/acces-outils" title="Acces outils">

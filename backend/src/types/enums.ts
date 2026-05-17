@@ -36,7 +36,7 @@ export type ActivityAction =
   | 'ITEM_CREATED' | 'ITEM_DELETED' | 'UPDATE_POSTED' | 'BILLING_CREATED'
 
 // ─── Notification ───
-export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY'
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY' | 'INTERNAL_MESSAGE'
 
 // ─── Audit ───
 export type AuditAction =
@@ -52,6 +52,7 @@ export type NoteVisibility = 'INTERNE'
 // ─── Permission ───
 export type Permission =
   | 'manage_admins' | 'manage_clients' | 'view_crm' | 'manage_crm'
+  | 'view_messaging' | 'send_messages' | 'manage_channels'
   | 'view_projects' | 'edit_projects' | 'view_content' | 'edit_content'
   | 'view_billing' | 'manage_billing' | 'manage_tasks'
   | 'view_qualiopi' | 'manage_qualiopi'
@@ -72,3 +73,8 @@ export type BriefStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'VALIDE' | 'LIV
 export type TicketCategory = 'QUESTION' | 'DEMANDE' | 'PROBLEME'
 export type TicketPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type TicketStatus = 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
+
+// ─── Internal Messaging ───
+export type InternalConversationType = 'CHANNEL' | 'DM' | 'GROUP'
+export type InternalConversationVisibility = 'PUBLIC' | 'PRIVATE'
+export type InternalConversationRole = 'OWNER' | 'MEMBER'

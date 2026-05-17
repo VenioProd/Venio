@@ -15,6 +15,9 @@ describe('permissions module', () => {
         'MANAGE_CLIENTS',
         'VIEW_CRM',
         'MANAGE_CRM',
+        'VIEW_MESSAGING',
+        'SEND_MESSAGES',
+        'MANAGE_CHANNELS',
         'VIEW_PROJECTS',
         'EDIT_PROJECTS',
         'VIEW_CONTENT',
@@ -62,6 +65,9 @@ describe('permissions module', () => {
       expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CLIENTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_CRM)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CRM)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.VIEW_MESSAGING)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.SEND_MESSAGES)).toBe(true)
+      expect(hasPermission('ADMIN', PERMISSIONS.MANAGE_CHANNELS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_PROJECTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.EDIT_PROJECTS)).toBe(true)
       expect(hasPermission('ADMIN', PERMISSIONS.VIEW_CONTENT)).toBe(true)
@@ -75,6 +81,9 @@ describe('permissions module', () => {
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_PROJECTS)).toBe(true)
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_CONTENT)).toBe(true)
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_BILLING)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.VIEW_MESSAGING)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.SEND_MESSAGES)).toBe(true)
+      expect(hasPermission('VIEWER', PERMISSIONS.MANAGE_CHANNELS)).toBe(false)
 
       // VIEWER should NOT have any manage/edit permissions
       expect(hasPermission('VIEWER', PERMISSIONS.MANAGE_ADMINS)).toBe(false)
@@ -148,18 +157,20 @@ describe('permissions module', () => {
     it('should return an array for ADMIN', () => {
       const perms = getPermissionsForRole('ADMIN')
       expect(Array.isArray(perms)).toBe(true)
-      expect(perms.length).toBe(12) // all except MANAGE_ADMINS, VIEW_QUALIOPI, MANAGE_QUALIOPI, MANAGE_TICKETS
+      expect(perms.length).toBe(15) // all except MANAGE_ADMINS, VIEW_QUALIOPI, MANAGE_QUALIOPI, MANAGE_TICKETS
       expect(perms).not.toContain(PERMISSIONS.MANAGE_ADMINS)
     })
 
-    it('should return 5 permissions for VIEWER', () => {
+    it('should return 7 permissions for VIEWER', () => {
       const perms = getPermissionsForRole('VIEWER')
-      expect(perms.length).toBe(5)
+      expect(perms.length).toBe(7)
       expect(perms).toContain(PERMISSIONS.VIEW_PROJECTS)
       expect(perms).toContain(PERMISSIONS.VIEW_CONTENT)
       expect(perms).toContain(PERMISSIONS.VIEW_BILLING)
       expect(perms).toContain(PERMISSIONS.VIEW_TICKETS)
       expect(perms).toContain(PERMISSIONS.CREATE_TICKETS)
+      expect(perms).toContain(PERMISSIONS.VIEW_MESSAGING)
+      expect(perms).toContain(PERMISSIONS.SEND_MESSAGES)
     })
 
     it('should return an empty array for CLIENT', () => {

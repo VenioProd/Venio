@@ -65,3 +65,11 @@ export type {
   IMessage,
   INotification,
 } from './common.js'
+
+export type {
+  IInternalConversation,
+  IInternalConversationMember,
+  IInternalMessageAttachment,
+  IInternalMessageReaction,
+  IInternalMessage,
+} from './messaging.js'
