@@ -57,6 +57,12 @@ export type AuditAction =
   | 'BILLING_TO_ENTRY' | 'PAYMENT_TO_ENTRY'
   | 'EXTERNAL_SOURCE_CREATE' | 'EXTERNAL_SOURCE_UPDATE'
   | 'EXTERNAL_SOURCE_DELETE' | 'EXTERNAL_SOURCE_ROTATE'
+  // ── API Agent (Bearer + scopes) ──
+  | 'AGENT_TOKEN_CREATE' | 'AGENT_TOKEN_UPDATE' | 'AGENT_TOKEN_REVOKE'
+  | 'AGENT_AUTH_FAIL' | 'AGENT_API_MUTATION'
+
+// ─── Agent (API Bearer + scopes) ───
+export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'
 
 // ─── Client Note ───
 export type NoteVisibility = 'INTERNE'

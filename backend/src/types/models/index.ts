@@ -89,6 +89,11 @@ export type {
 } from './accounting.js'
 
 export type {
+  IAgentToken,
+  IAgentIdempotencyKey,
+} from './agent.js'
+
+export type {
   IInternalConversation,
   IInternalConversationMember,
   IInternalMessageAttachment,

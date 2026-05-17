@@ -49,7 +49,9 @@ import adminArrowPilotageRoutes from './routes/admin/arrowPilotage.js'
 import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
+import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
 import externalRoutes from './routes/external.js'
+import agentRoutes from './routes/agent/index.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
@@ -130,6 +132,11 @@ app.use(rateLimit({
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
 
+// API agent : limite body plus haute (8mb) pour permettre l'upload de documents
+// en base64 (jusqu'à ~5 Mo bruts ≈ 6.7 Mo encodés). Doit être monté AVANT
+// le express.json global sinon le parser global rejette à 2mb d'abord.
+app.use('/api/v1/agent', express.json({ limit: '8mb' }), agentRoutes)
+
 app.use(express.json({ limit: '2mb' }))
 app.use(morgan(isProd ? 'combined' : 'dev'))
 
@@ -185,6 +192,11 @@ app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
+
+// Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
+// NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
+// express.json global, pour autoriser un body plus volumineux (upload base64).
+app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

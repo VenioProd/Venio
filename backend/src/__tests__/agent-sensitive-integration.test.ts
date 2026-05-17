@@ -1,0 +1,235 @@
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import request from 'supertest'
+import type { Express } from 'express'
+import bcrypt from 'bcryptjs'
+import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
+import {
+  createTestApp,
+  createAgentTokenInDb,
+  authHeaders,
+  uniqueIdempotencyKey,
+} from './helpers/agentTestApp.js'
+import User from '../models/User.js'
+import AuditLog from '../models/AuditLog.js'
+
+let app: Express
+
+beforeAll(async () => {
+  await setupMongo()
+  app = await createTestApp()
+})
+
+afterAll(async () => {
+  await teardownMongo()
+})
+
+beforeEach(async () => {
+  await clearDb()
+  await User.create({
+    email: 'admin@v.test',
+    passwordHash: await bcrypt.hash('x', 10),
+    name: 'Admin',
+    role: 'SUPER_ADMIN',
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────
+// Audit (RO)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('Agent Audit / read-only', () => {
+  it('lists audit log filtered by action + agentTokenId', async () => {
+    // Génère un audit log en créant un client via API (mutation auditée)
+    const { plainSecret, id: tokenId } = await createAgentTokenInDb(['read:audit', 'write:crm'])
+    await request(app)
+      .post('/api/v1/agent/clients')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ email: 'audit@v.test', name: 'Audit User' })
+    await new Promise((r) => setTimeout(r, 100)) // finish hook async
+
+    const all = await request(app)
+      .get('/api/v1/agent/audit/log')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(all.status).toBe(200)
+    expect(all.body.total).toBeGreaterThanOrEqual(1)
+
+    const filtered = await request(app)
+      .get(`/api/v1/agent/audit/log?action=AGENT_API_MUTATION&agentTokenId=${tokenId}`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(filtered.body.total).toBeGreaterThanOrEqual(1)
+    expect(filtered.body.items[0].action).toBe('AGENT_API_MUTATION')
+  })
+
+  it('returns 403 without read:audit', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:crm'])
+    const res = await request(app)
+      .get('/api/v1/agent/audit/log')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(403)
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────
+// Users (admin) + 2FA
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('Agent Users / admin CRUD', () => {
+  it('lists only admin users (CLIENT not included)', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:users'])
+    await User.create({
+      email: 'someclient@v.test',
+      passwordHash: await bcrypt.hash('x', 10),
+      name: 'Client',
+      role: 'CLIENT',
+    })
+    const res = await request(app)
+      .get('/api/v1/agent/users')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(res.body.total).toBe(1) // seul SUPER_ADMIN
+    expect(res.body.items[0].role).toBe('SUPER_ADMIN')
+  })
+
+  it('creates admin without exposing passwordHash or twoFactorSecret', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const res = await request(app)
+      .post('/api/v1/agent/users')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ email: 'NEW@v.test', name: 'New Admin', role: 'ADMIN', password: 'verylongpwd' })
+    expect(res.status).toBe(201)
+    expect(res.body.email).toBe('new@v.test')
+    expect(res.body.role).toBe('ADMIN')
+    expect(res.body.passwordHash).toBeUndefined()
+    expect(res.body.twoFactorSecret).toBeUndefined()
+  })
+
+  it('refuses to delete the last SUPER_ADMIN', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const sa = await User.findOne({ role: 'SUPER_ADMIN' })
+    const res = await request(app)
+      .delete(`/api/v1/agent/users/${sa!._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    expect(res.status).toBe(409)
+    expect(res.body.code).toBe('LAST_SUPER_ADMIN')
+  })
+
+  it('refuses to modify a CLIENT user via /users (use /crm/clients)', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const cli = await User.create({
+      email: 'c@v.test',
+      passwordHash: await bcrypt.hash('x', 10),
+      name: 'C',
+      role: 'CLIENT',
+    })
+    const res = await request(app)
+      .patch(`/api/v1/agent/users/${cli._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ name: 'X' })
+    expect(res.status).toBe(422)
+    expect(res.body.code).toBe('NOT_ADMIN')
+  })
+})
+
+describe('Agent Users / 2FA', () => {
+  it('reads 2FA status', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:2fa'])
+    const u = await User.findOne({ role: 'SUPER_ADMIN' })
+    const res = await request(app)
+      .get(`/api/v1/agent/users/${u!._id}/2fa`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(res.body.twoFactorEnabled).toBe(false)
+    expect(res.body.userId).toBe(String(u!._id))
+  })
+
+  it('disables 2FA (and records the event in AuditLog)', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['manage:2fa'])
+    const u = await User.findOne({ role: 'SUPER_ADMIN' })
+    u!.twoFactorEnabled = true
+    u!.twoFactorSecret = 'TOTPSECRET'
+    await u!.save()
+
+    const res = await request(app)
+      .post(`/api/v1/agent/users/${u!._id}/2fa/disable`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    expect(res.status).toBe(200)
+    expect(res.body.twoFactorEnabled).toBe(false)
+    expect(res.body.wasEnabled).toBe(true)
+
+    const after = await User.findById(u!._id).lean()
+    expect(after?.twoFactorEnabled).toBe(false)
+    expect(after?.twoFactorSecret).toBeNull()
+
+    // Audit log avec marker sensitive
+    await new Promise((r) => setTimeout(r, 100))
+    const logs = await AuditLog.find({ action: 'AGENT_API_MUTATION' }).lean()
+    const last = logs[logs.length - 1]!
+    expect((last.metadata as Record<string, unknown>).sensitive).toBe('2FA_DISABLE_BY_AGENT')
+  })
+
+  it('refuses without manage:2fa scope', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:2fa'])
+    const u = await User.findOne({ role: 'SUPER_ADMIN' })
+    const res = await request(app)
+      .post(`/api/v1/agent/users/${u!._id}/2fa/disable`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    expect(res.status).toBe(403)
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────
+// Backup (smoke seulement — pas de mongodump dans les tests)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('Agent Backup', () => {
+  it('GET /backup returns a list (peut-être vide)', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:backup'])
+    const res = await request(app)
+      .get('/api/v1/agent/backup')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.items)).toBe(true)
+  })
+
+  it('GET /backup refused without read:backup', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:crm'])
+    const res = await request(app)
+      .get('/api/v1/agent/backup')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(403)
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────
+// Automations (registry peut être vide en test ; on teste les routes
+// publiques + 404 sur key inconnue)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('Agent Automations', () => {
+  it('lists registry (may be empty in isolated tests)', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:automations'])
+    const res = await request(app)
+      .get('/api/v1/agent/automations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.items)).toBe(true)
+    // Le registry est partagé entre tests — on ne valide pas un count précis
+  })
+
+  it('returns 404 on unknown automation key', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:automations'])
+    const res = await request(app)
+      .get('/api/v1/agent/automations/not-an-automation-key')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(404)
+  })
+
+  it('trigger refused without trigger:automations scope', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:automations', 'write:automations'])
+    const res = await request(app)
+      .post('/api/v1/agent/automations/any.key/trigger')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({})
+    expect(res.status).toBe(403)
+  })
+})

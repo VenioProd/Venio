@@ -70,6 +70,7 @@ const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
+const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -236,6 +237,16 @@ function App() {
             element={
               <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
                 <AdminEdit />
+              </RequirePermission>
+            }
+          />
+
+          {/* Agents API (tokens PAT pour Kuro et intégrations externes) */}
+          <Route
+            path="agents"
+            element={
+              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                <AgentTokensList />
               </RequirePermission>
             }
           />
