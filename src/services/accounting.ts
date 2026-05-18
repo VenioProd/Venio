@@ -1,4 +1,4 @@
-import { apiFetch } from '../lib/api'
+import { apiFetch, apiDownload } from '../lib/api'
 import type {
   IAccountingDashboard,
   IAccountingEntry,
@@ -380,19 +380,11 @@ export async function downloadReportCsv(
     ...params,
     format: 'csv',
   })}`
-  const token = localStorage.getItem('auth_token')
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(data.error || 'Erreur export CSV')
-  }
-  const blob = await res.blob()
+  const { blob, filename } = await apiDownload(url)
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
-  a.download = `${reportName}-${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = filename ?? `${reportName}-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -482,21 +474,11 @@ export interface DownloadFecParams {
 
 export async function downloadFec(params: DownloadFecParams = {}): Promise<void> {
   const url = `/api/admin/accounting/fec/export${buildQueryString(params)}`
-  const token = localStorage.getItem('auth_token')
-  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(data.error || 'Erreur export FEC')
-  }
-  const blob = await res.blob()
-  const filename =
-    res.headers
-      .get('Content-Disposition')
-      ?.match(/filename="?([^"]+)"?/)?.[1] || `FEC-${new Date().toISOString().slice(0, 10)}.txt`
+  const { blob, filename } = await apiDownload(url)
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
-  a.download = filename
+  a.download = filename ?? `FEC-${new Date().toISOString().slice(0, 10)}.txt`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

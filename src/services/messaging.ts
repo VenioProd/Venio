@@ -1,4 +1,4 @@
-import { apiFetch, getToken } from '../lib/api'
+import { apiFetch, apiUpload } from '../lib/api'
 import type { InternalConversation, InternalMessage, MessagingSearchResult, MessagingUser } from '../types/messaging.types'
 
 export async function fetchMessagingUsers(): Promise<MessagingUser[]> {
@@ -42,18 +42,14 @@ export async function sendMessage(conversationId: string, content: string, paren
 }
 
 export async function uploadMessageAttachments(conversationId: string, content: string, files: File[]) {
-  const token = getToken()
   const form = new FormData()
   form.append('content', content)
   files.forEach((file) => form.append('files', file))
-  const response = await fetch(`/api/admin/messaging/conversations/${conversationId}/attachments`, {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: form,
-  })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data?.error || 'Envoi impossible')
-  return data.message as InternalMessage
+  const data = await apiUpload<{ message: InternalMessage }>(
+    `/api/admin/messaging/conversations/${conversationId}/attachments`,
+    form
+  )
+  return data.message
 }
 
 export async function markConversationRead(conversationId: string) {
