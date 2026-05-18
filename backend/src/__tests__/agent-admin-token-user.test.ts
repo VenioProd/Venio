@@ -57,6 +57,25 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     expect(agentUsers).toHaveLength(0)
   })
 
+  it('PATCH renomme aussi le User AGENT lié', async () => {
+    const jwtTok = await loginAsSuperAdmin()
+    const created = await request(app)
+      .post('/api/admin/agent-tokens')
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({ name: 'Old name', scopes: ['read:crm'] })
+    const tokenId = created.body.token._id
+    const userId = (await AgentToken.findById(tokenId).lean())!.userId
+
+    const patchRes = await request(app)
+      .patch(`/api/admin/agent-tokens/${tokenId}`)
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({ name: 'New name' })
+    expect(patchRes.status).toBe(200)
+
+    const user = await User.findById(userId).lean()
+    expect(user!.name).toBe('New name')
+  })
+
   it('POST /agent-tokens crée un User AGENT lié et l\'ajoute à #general', async () => {
     const jwtTok = await loginAsSuperAdmin()
 

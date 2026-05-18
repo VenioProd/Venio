@@ -256,6 +256,14 @@ router.patch(
 
       await token.save()
 
+      // Propage le rename au User AGENT lié, s'il y a eu un changement de nom.
+      if (typeof req.body.name === 'string' && token.userId) {
+        await User.updateOne(
+          { _id: token.userId },
+          { $set: { name: token.name } }
+        ).catch((err) => console.warn('[agent-token-patch] user rename failed:', (err as Error).message))
+      }
+
       void recordAudit({
         action: 'AGENT_TOKEN_UPDATE',
         actor: buildActorFromReq(req),
