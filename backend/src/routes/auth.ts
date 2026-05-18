@@ -112,6 +112,7 @@ router.patch(
   body('phone').optional().trim(),
   body('companyName').optional().trim(),
   body('website').optional().trim(),
+  body('colorTheme').optional({ nullable: true }).isIn(['sky', 'violet', 'emerald', 'amber', 'rose', 'coral', 'yellow', null]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -124,7 +125,7 @@ router.patch(
         return res.status(404).json({ error: 'Utilisateur introuvable' })
       }
 
-      const { name, email, phone, companyName, website } = req.body || {}
+      const { name, email, phone, companyName, website, colorTheme } = req.body || {}
       if (name !== undefined) user.name = name
       if (email !== undefined) {
         const newEmail = (email as string).toLowerCase().trim()
@@ -135,6 +136,7 @@ router.patch(
       if (phone !== undefined) user.phone = phone
       if (companyName !== undefined) user.companyName = companyName
       if (website !== undefined) user.website = website
+      if (colorTheme !== undefined) user.colorTheme = colorTheme
 
       await user.save()
 

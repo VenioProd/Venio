@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
+import { ColorThemePicker } from '../../components/ColorThemePicker'
+import ThemeToggle from '../../components/ThemeToggle'
 import './ClientPortal.css'
 
 const ClientProfile = () => {
@@ -183,6 +185,19 @@ const ClientProfile = () => {
 
       <div style={{ marginBottom: '24px' }}>
         <NotificationPreferencesPanel />
+      </div>
+
+      <div className="portal-card" style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Apparence</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <p style={{ margin: '0 0 10px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Mode d'affichage
+            </p>
+            <ThemeToggle />
+          </div>
+          <ColorThemePicker />
+        </div>
       </div>
 
       <div className="portal-card">

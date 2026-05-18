@@ -59,6 +59,7 @@ const userSchema = new mongoose.Schema<IUser>(
     lastLoginIp: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     locale: { type: String, enum: ['fr', 'en'], default: null },
+    colorTheme: { type: String, enum: ['sky', 'violet', 'emerald', 'amber', 'rose', 'coral', 'yellow'], default: null },
   },
   { timestamps: true }
 )

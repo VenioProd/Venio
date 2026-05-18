@@ -39,6 +39,7 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   locale: 'fr' | 'en' | null
+  colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow' | null
   createdAt: Date
   updatedAt: Date
 }

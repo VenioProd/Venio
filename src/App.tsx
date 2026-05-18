@@ -8,12 +8,23 @@ import AdminShell from './components/AdminShell'
 import ClientShell from './components/ClientShell'
 import { ToastProvider } from './context/ToastContext'
 import { NotificationProvider } from './context/NotificationContext'
-import { ThemeProvider } from './context/ThemeContext'
+import { ThemeProvider, useTheme } from './context/ThemeContext'
+import type { ColorAccent } from './context/ThemeContext'
 import { I18nProvider } from './context/I18nContext'
+import { useAuth } from './context/AuthContext'
 import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
 import CookieConsent from './components/CookieConsent'
 import './App.css'
+
+function ThemeSync() {
+  const { user } = useAuth()
+  const { setColorAccent } = useTheme()
+  useEffect(() => {
+    if (user?.colorTheme) setColorAccent(user.colorTheme as ColorAccent)
+  }, [user?.colorTheme])
+  return null
+}
 
 // Lazy-loaded: Site vitrine
 const Home = lazy(() => import('./pages/Home'))
@@ -121,6 +132,7 @@ function App() {
   return (
     <I18nProvider>
     <ThemeProvider>
+    <ThemeSync />
     <NotificationProvider>
     <ToastProvider>
       {!isPublicQuestionnaire && !isPortal && <Navbar />}
