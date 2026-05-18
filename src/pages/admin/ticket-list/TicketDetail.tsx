@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, formatDate, formatFileSize, isImage } from './types'
 import type { Ticket, TicketFile } from './types'
+import UserAvatar from '../../../components/UserAvatar'
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -116,7 +117,11 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
       {isExpanded && (
         <div className="ticket-card-body">
           <div className="ticket-meta">
-            <span>Par <strong>{ticket.authorName}</strong></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Par</span>
+              <UserAvatar name={ticket.authorName} avatarUrl={ticket.authorAvatarUrl} size={24} />
+              <strong>{ticket.authorName}</strong>
+            </div>
             <span>{formatDate(ticket.createdAt)}</span>
             {ticket.archivedAt && <span style={{ color: '#64748b' }}>Archive le {formatDate(ticket.archivedAt)}</span>}
           </div>
@@ -128,7 +133,10 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
               {ticket.replies.map((reply) => (
                 <div key={reply._id} className="ticket-reply">
                   <div className="ticket-reply-header">
-                    <strong>{reply.authorName}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <UserAvatar name={reply.authorName} avatarUrl={reply.authorAvatarUrl} size={22} />
+                      <strong>{reply.authorName}</strong>
+                    </div>
                     <span>{formatDate(reply.createdAt)}</span>
                   </div>
                   <p>{reply.message}</p>

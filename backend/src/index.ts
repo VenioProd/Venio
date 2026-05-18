@@ -52,6 +52,7 @@ import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
+import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
@@ -154,6 +155,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Trop de tentatives, veuillez réessayer dans une minute.' },
 })
+app.use('/api/avatars', avatarRoutes)
 app.use('/api/auth', authLimiter, authRoutes)
 
 app.use('/api/projects', projectRoutes)

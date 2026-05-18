@@ -42,6 +42,7 @@ export interface User {
   tags?: string[]
   locale?: 'fr' | 'en'
   colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow'
+  avatarUrl?: string
   createdAt?: string
   updatedAt?: string
 }

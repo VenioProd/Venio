@@ -41,6 +41,7 @@ export interface IUser extends Document {
   locale: 'fr' | 'en' | null
   colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow' | null
   agentTokenId?: Types.ObjectId | null
+  avatarUrl: string
   createdAt: Date
   updatedAt: Date
 }

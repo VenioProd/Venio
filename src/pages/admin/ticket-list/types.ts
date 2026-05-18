@@ -8,6 +8,7 @@ export interface TicketFile {
 export interface TicketReply {
   _id: string
   authorName: string
+  authorAvatarUrl?: string
   message: string
   attachments?: TicketFile[]
   createdAt: string
@@ -21,6 +22,7 @@ export interface Ticket {
   priority: 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
   status: 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
   authorName: string
+  authorAvatarUrl?: string
   attachments?: TicketFile[]
   replies: TicketReply[]
   isArchived?: boolean

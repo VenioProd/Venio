@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import UserAvatar from './UserAvatar'
 import '../styles/project-chat.css'
 
 interface MessageSender {
   _id: string
   name: string
   role: string
+  avatarUrl?: string
 }
 
 interface ChatMessage {
@@ -149,7 +151,7 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
               className={`project-chat-message ${isOwnMessage(msg) ? 'own' : ''}`}
             >
               {!isOwnMessage(msg) && (
-                <div className="project-chat-avatar">{getInitials(msg.sender.name)}</div>
+                <UserAvatar name={msg.sender.name} avatarUrl={msg.sender.avatarUrl} className="project-chat-avatar" size={32} />
               )}
               <div className="project-chat-bubble">
                 <div className="project-chat-sender">
@@ -162,7 +164,7 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
                 <div className="project-chat-time">{formatTime(msg.createdAt)}</div>
               </div>
               {isOwnMessage(msg) && (
-                <div className="project-chat-avatar own">{getInitials(msg.sender.name)}</div>
+                <UserAvatar name={msg.sender.name} avatarUrl={msg.sender.avatarUrl} className="project-chat-avatar own" size={32} />
               )}
             </div>
           ))

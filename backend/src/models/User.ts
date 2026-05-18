@@ -66,6 +66,7 @@ const userSchema = new mongoose.Schema<IUser>(
       default: null,
       index: true,
     },
+    avatarUrl: { type: String, default: '' },
   },
   { timestamps: true }
 )

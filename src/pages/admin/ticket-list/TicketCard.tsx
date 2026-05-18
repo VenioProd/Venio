@@ -2,6 +2,7 @@ import React from 'react'
 import { CATEGORY_CONFIG, STATUS_CONFIG, formatDate, formatFileSize, isImage } from './types'
 import type { Ticket, TicketFile } from './types'
 import { apiFetch } from '../../../lib/api'
+import UserAvatar from '../../../components/UserAvatar'
 
 interface TicketCardProps {
   ticket: Ticket
@@ -82,7 +83,10 @@ const TicketCard: React.FC<TicketCardProps> = ({
               {ticket.replies.map((reply) => (
                 <div key={reply._id} className="ticket-reply">
                   <div className="ticket-reply-header">
-                    <strong>{reply.authorName}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <UserAvatar name={reply.authorName} avatarUrl={reply.authorAvatarUrl} size={24} />
+                      <strong>{reply.authorName}</strong>
+                    </div>
                     <span>{formatDate(reply.createdAt)}</span>
                   </div>
                   <p>{reply.message}</p>
