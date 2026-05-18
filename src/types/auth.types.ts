@@ -41,6 +41,7 @@ export interface User {
   healthStatus?: string
   tags?: string[]
   locale?: 'fr' | 'en'
+  avatarUrl?: string
   createdAt?: string
   updatedAt?: string
 }
