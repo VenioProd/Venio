@@ -3,7 +3,7 @@
   top: 0;
   width: 100%;
   z-index: 1000;
-  padding: 20px 40px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 40px 14px;
   background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(15px);
   border: none;

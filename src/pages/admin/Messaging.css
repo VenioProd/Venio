@@ -23,7 +23,7 @@
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: 18px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 44px - env(safe-area-inset-top, 0px));
   margin: 0 auto;
   padding: 18px clamp(8px, 1.5vw, 24px);
   max-width: 1600px;
@@ -1575,8 +1575,8 @@
     grid-template-columns: 1fr;
     gap: 0;
     padding: 0;
-    height: calc(100vh - 44px); /* compense topbar admin uniquement */
-    height: calc(100dvh - 44px);
+    height: calc(100vh - 44px - env(safe-area-inset-top, 0px));
+    height: calc(100dvh - 44px - env(safe-area-inset-top, 0px));
     border-radius: 0;
     overflow: hidden;
   }

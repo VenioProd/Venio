@@ -9,6 +9,7 @@
   background: rgba(7, 10, 18, 0.98);
   border-right: 1px solid rgba(14, 165, 233, 0.16);
   box-shadow: 10px 0 32px rgba(0, 0, 0, 0.28);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .client-sb-brand {
@@ -196,6 +197,7 @@
   background: rgba(7, 10, 18, 0.99);
   border-right: 1px solid rgba(14, 165, 233, 0.22);
   box-shadow: 16px 0 34px rgba(0, 0, 0, 0.42);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .client-sb-drawer-header {
