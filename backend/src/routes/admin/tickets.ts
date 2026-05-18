@@ -176,12 +176,15 @@ router.get('/:id', async (req: Request, res: Response) => {
     const avatarMap: Record<string, string> = {}
     authors.forEach((u) => { avatarMap[u._id.toString()] = u.avatarUrl || '' })
 
-    const ticketObj = ticket.toObject() as Record<string, unknown>
+    const ticketObj = ticket.toObject() as unknown as Record<string, unknown>
     ticketObj.authorAvatarUrl = avatarMap[ticket.authorId.toString()] || ''
-    ticketObj.replies = ticket.replies.map((r) => ({
-      ...r.toObject(),
-      authorAvatarUrl: avatarMap[r.authorId.toString()] || '',
-    }))
+    ticketObj.replies = ticket.replies.map((r) => {
+      const reply = r as unknown as { toObject?: () => Record<string, unknown> }
+      return {
+        ...(typeof reply.toObject === 'function' ? reply.toObject() : r),
+        authorAvatarUrl: avatarMap[r.authorId.toString()] || '',
+      }
+    })
     res.json(ticketObj)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })

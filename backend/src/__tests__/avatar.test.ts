@@ -111,7 +111,7 @@ describe('avatar multer — fileFilter', () => {
 
   it('rejette image/gif', () => {
     const filter = makeFileFilter()
-    let err: Error | null = null
+    let err: unknown = null
     filter({}, { mimetype: 'image/gif' }, (e) => { err = e })
     expect(err).toBeInstanceOf(Error)
     expect((err as Error).message).toContain('non autorisé')
@@ -119,7 +119,7 @@ describe('avatar multer — fileFilter', () => {
 
   it('rejette application/pdf', () => {
     const filter = makeFileFilter()
-    let err: Error | null = null
+    let err: unknown = null
     filter({}, { mimetype: 'application/pdf' }, (e) => { err = e })
     expect(err).toBeInstanceOf(Error)
   })

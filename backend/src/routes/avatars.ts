@@ -13,6 +13,10 @@ const router = express.Router()
 
 router.get('/:filename', (req: Request, res: Response) => {
   const { filename } = req.params
+  if (typeof filename !== 'string') {
+    return res.status(400).json({ error: 'Invalid filename' })
+  }
+
   const filePath = path.resolve(avatarsDir, filename)
 
   if (!filePath.startsWith(avatarsDir + path.sep)) {
