@@ -5,6 +5,7 @@ import Project from '../../models/Project.js'
 import Message from '../../models/Message.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import { shouldNotify } from '../../lib/notificationPreferences.js'
 import { getTransporter, escapeHtml, getAdminBaseUrl } from '../../lib/email/transport.js'
 import { emailLayout } from '../../lib/email/layout.js'
 
@@ -110,7 +111,14 @@ router.post(
         }).catch(() => {})
       }
 
-      const emailList = recipientDocs.map((r) => r.email).filter(Boolean)
+      // Respecter les préférences email de chaque destinataire
+      const emailAllowed = await Promise.all(
+        recipientDocs.map((r) => shouldNotify(String(r._id), 'TASK_UPDATED', 'email'))
+      )
+      const emailList = recipientDocs
+        .filter((_, idx) => emailAllowed[idx])
+        .map((r) => r.email)
+        .filter(Boolean)
       if (emailList.length > 0) {
         const transporter = getTransporter()
         if (transporter) {

@@ -5,6 +5,7 @@ import InternalMessage from '../models/InternalMessage.js'
 import Notification from '../models/Notification.js'
 import User from '../models/User.js'
 import { sendPushToUser } from '../lib/webPush.js'
+import { shouldNotify } from '../lib/notificationPreferences.js'
 import { isAdminRole } from '../lib/permissions.js'
 import type { JwtPayload } from '../types/express.js'
 import type { IInternalMessageAttachment } from '../types/models/index.js'
@@ -252,17 +253,28 @@ async function notifyMessageRecipients(user: JwtPayload, conversationId: string,
   const preview = content.length > 140 ? `${content.slice(0, 137)}...` : content
   const link = `/admin/messages?conversation=${conversationId}&message=${messageId}`
 
-  await Notification.insertMany(Array.from(recipients).map((recipient) => ({
-    recipient,
-    type: 'INTERNAL_MESSAGE',
-    title,
-    message: preview,
-    link,
-    metadata: { conversationId, messageId },
-  })), { ordered: false })
+  // Filtrage des destinataires selon les préférences in-app et push
+  const recipientList = Array.from(recipients)
+  const [inAppAllowed, pushAllowed] = await Promise.all([
+    Promise.all(recipientList.map((id) => shouldNotify(id, 'INTERNAL_MESSAGE', 'inApp'))),
+    Promise.all(recipientList.map((id) => shouldNotify(id, 'INTERNAL_MESSAGE', 'push'))),
+  ])
 
-  // Push web pour chaque destinataire (background, ne bloque pas)
-  for (const recipient of recipients) {
+  const inAppRecipients = recipientList.filter((_, idx) => inAppAllowed[idx])
+  if (inAppRecipients.length > 0) {
+    await Notification.insertMany(inAppRecipients.map((recipient) => ({
+      recipient,
+      type: 'INTERNAL_MESSAGE',
+      title,
+      message: preview,
+      link,
+      metadata: { conversationId, messageId },
+    })), { ordered: false })
+  }
+
+  // Push web pour chaque destinataire autorisé (background, ne bloque pas)
+  recipientList.forEach((recipient, idx) => {
+    if (!pushAllowed[idx]) return
     sendPushToUser(recipient, {
       title,
       body: preview,
@@ -270,7 +282,7 @@ async function notifyMessageRecipients(user: JwtPayload, conversationId: string,
       tag: `conversation:${conversationId}`,
       data: { conversationId, messageId, type: 'INTERNAL_MESSAGE' },
     }).catch(() => {})
-  }
+  })
 }
 
 export async function createMessage(user: JwtPayload, conversationId: string, input: {

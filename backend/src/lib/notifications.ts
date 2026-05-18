@@ -2,6 +2,7 @@ import type { Types } from 'mongoose'
 import type { NotificationType } from '../types/enums.js'
 import Notification from '../models/Notification.js'
 import { sendPushToUser } from './webPush.js'
+import { shouldNotify } from './notificationPreferences.js'
 
 interface CreateNotificationParams {
   recipient: Types.ObjectId | string
@@ -14,23 +15,34 @@ interface CreateNotificationParams {
 
 export async function createNotification({ recipient, type, title, message, link, metadata }: CreateNotificationParams) {
   if (!recipient) return null
-  const notification = await Notification.create({
-    recipient,
-    type,
-    title,
-    message: message || '',
-    link: link || '',
-    metadata: metadata || {},
-  })
 
-  // Envoi du push web en arrière-plan (n'attend pas, n'échoue jamais l'appelant)
   const recipientId = String(recipient)
-  sendPushToUser(recipientId, {
-    title,
-    body: message || '',
-    link: link || '/',
-    tag: type,
-    data: { notificationId: String(notification._id), type, ...(metadata || {}) },
+
+  // Préférences in-app : si désactivé, on ne crée pas de notification du tout
+  const inAppAllowed = await shouldNotify(recipientId, type, 'inApp')
+  let notification = null
+  if (inAppAllowed) {
+    notification = await Notification.create({
+      recipient,
+      type,
+      title,
+      message: message || '',
+      link: link || '',
+      metadata: metadata || {},
+    })
+  }
+
+  // Push : envoyé indépendamment de la notif in-app (l'utilisateur peut vouloir
+  // l'un sans l'autre). En arrière-plan, n'échoue jamais l'appelant.
+  shouldNotify(recipientId, type, 'push').then((allowed) => {
+    if (!allowed) return
+    return sendPushToUser(recipientId, {
+      title,
+      body: message || '',
+      link: link || '/',
+      tag: type,
+      data: { notificationId: notification ? String(notification._id) : null, type, ...(metadata || {}) },
+    })
   }).catch((err) => {
     console.warn('[notifications] push fail', { recipientId, err: err?.message })
   })

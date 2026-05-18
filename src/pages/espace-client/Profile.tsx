@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
+import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
 import './ClientPortal.css'
 
 const ClientProfile = () => {
@@ -178,6 +179,10 @@ const ClientProfile = () => {
 
       <div style={{ marginBottom: '24px' }}>
         <NotificationSettings />
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+        <NotificationPreferencesPanel />
       </div>
 
       <div className="portal-card">
