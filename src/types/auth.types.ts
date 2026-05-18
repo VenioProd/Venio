@@ -41,6 +41,7 @@ export interface User {
   healthStatus?: string
   tags?: string[]
   locale?: 'fr' | 'en'
+  colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow'
   createdAt?: string
   updatedAt?: string
 }

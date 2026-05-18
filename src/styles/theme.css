@@ -2,6 +2,10 @@
    Theme Variables — Dark / Light
    ═══════════════════════════════════════════ */
 
+:root {
+  --primary-fg: #fff;
+}
+
 [data-theme="dark"] {
   --bg-primary: #000000;
   --bg-secondary: transparent;
@@ -40,4 +44,74 @@
   --primary-glow-strong: rgba(14, 165, 233, 0.6);
   --primary-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
   --primary-shadow-strong: 0 0 40px rgba(14, 165, 233, 0.3);
+}
+
+/* ═══════════════════════════════════════════
+   Color Accent Overrides
+   ═══════════════════════════════════════════ */
+
+[data-accent="violet"] {
+  --primary: #8b5cf6;
+  --primary-light: #a78bfa;
+  --primary-dark: #7c3aed;
+  --primary-glow: rgba(139, 92, 246, 0.8);
+  --primary-glow-strong: rgba(139, 92, 246, 1);
+  --primary-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(139, 92, 246, 0.8);
+  --primary-fg: #fff;
+}
+
+[data-accent="emerald"] {
+  --primary: #10b981;
+  --primary-light: #34d399;
+  --primary-dark: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.8);
+  --primary-glow-strong: rgba(16, 185, 129, 1);
+  --primary-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(16, 185, 129, 0.8);
+  --primary-fg: #fff;
+}
+
+[data-accent="amber"] {
+  --primary: #f59e0b;
+  --primary-light: #fbbf24;
+  --primary-dark: #d97706;
+  --primary-glow: rgba(245, 158, 11, 0.8);
+  --primary-glow-strong: rgba(245, 158, 11, 1);
+  --primary-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(245, 158, 11, 0.8);
+  --primary-fg: #fff;
+}
+
+[data-accent="rose"] {
+  --primary: #ec4899;
+  --primary-light: #f472b6;
+  --primary-dark: #db2777;
+  --primary-glow: rgba(236, 72, 153, 0.8);
+  --primary-glow-strong: rgba(236, 72, 153, 1);
+  --primary-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(236, 72, 153, 0.8);
+  --primary-fg: #fff;
+}
+
+[data-accent="coral"] {
+  --primary: #f97316;
+  --primary-light: #fb923c;
+  --primary-dark: #ea580c;
+  --primary-glow: rgba(249, 115, 22, 0.8);
+  --primary-glow-strong: rgba(249, 115, 22, 1);
+  --primary-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(249, 115, 22, 0.8);
+  --primary-fg: #fff;
+}
+
+[data-accent="yellow"] {
+  --primary: #f9f041;
+  --primary-light: #fef9c3;
+  --primary-dark: #ca8a04;
+  --primary-glow: rgba(249, 240, 65, 0.8);
+  --primary-glow-strong: rgba(249, 240, 65, 1);
+  --primary-shadow: 0 0 20px rgba(249, 240, 65, 0.6);
+  --primary-shadow-strong: 0 0 40px rgba(249, 240, 65, 0.8);
+  --primary-fg: #111;
 }
