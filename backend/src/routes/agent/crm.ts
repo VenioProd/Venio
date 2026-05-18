@@ -58,6 +58,38 @@ function emitValidationError(req: Request, res: Response): boolean {
   return false
 }
 
+const CLIENT_AGENT_FIELDS = [
+  '_id',
+  'email',
+  'role',
+  'name',
+  'companyName',
+  'serviceType',
+  'phone',
+  'website',
+  'address',
+  'tags',
+  'source',
+  'ownerAdminId',
+  'status',
+  'onboardingStatus',
+  'healthStatus',
+  'lastContactAt',
+  'archivedAt',
+  'isActive',
+  'createdAt',
+  'updatedAt',
+].join(' ')
+
+function sanitizeClientForAgent(client: unknown): Record<string, unknown> {
+  const source = client as Record<string, unknown>
+  const safe: Record<string, unknown> = {}
+  for (const key of CLIENT_AGENT_FIELDS.split(' ')) {
+    if (source[key] !== undefined) safe[key] = source[key]
+  }
+  return safe
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CLIENTS  (User.role === 'CLIENT')
 // ═══════════════════════════════════════════════════════════════════════════
@@ -88,8 +120,8 @@ router.get('/clients', requireScope('read:crm'), async (req: Request, res: Respo
 
     const [items, total] = await Promise.all([
       User.find(filter)
-        .select('-passwordHash')
-        .populate('ownerAdminId', 'name email role')
+        .select(CLIENT_AGENT_FIELDS)
+        .populate('ownerAdminId', 'name role')
         .sort(sort)
         .skip(pag.skip)
         .limit(pag.limit)
@@ -111,8 +143,8 @@ router.get(
     if (emitValidationError(req, res)) return
     try {
       const client = await User.findOne({ _id: req.params.id, role: 'CLIENT' })
-        .select('-passwordHash')
-        .populate('ownerAdminId', 'name email role')
+        .select(CLIENT_AGENT_FIELDS)
+        .populate('ownerAdminId', 'name role')
         .lean()
       if (!client) {
         return respondError(res, 404, 'NOT_FOUND', 'Client introuvable')
@@ -150,7 +182,7 @@ router.post(
         phone: req.body.phone ? String(req.body.phone).trim() : '',
         status: req.body.status || 'PROSPECT',
       })
-      const safe = await User.findById(client._id).select('-passwordHash').lean()
+      const safe = await User.findById(client._id).select(CLIENT_AGENT_FIELDS).lean()
       res.locals.audit = {
         entityType: 'User',
         entityId: String(client._id),
@@ -176,7 +208,7 @@ router.patch(
       if (!client) {
         return respondError(res, 404, 'NOT_FOUND', 'Client introuvable')
       }
-      const before = client.toObject()
+      const before = sanitizeClientForAgent(client.toObject())
 
       const allowed = ['name', 'companyName', 'phone', 'status', 'healthStatus', 'serviceType', 'siret', 'tags']
       for (const k of allowed) {
@@ -192,7 +224,7 @@ router.patch(
         }
       }
       await client.save()
-      const safe = await User.findById(client._id).select('-passwordHash').lean()
+      const safe = await User.findById(client._id).select(CLIENT_AGENT_FIELDS).lean()
       res.locals.audit = {
         entityType: 'User',
         entityId: String(client._id),

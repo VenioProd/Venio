@@ -132,10 +132,11 @@ router.delete(
 
 const TOOL_CATEGORIES = ['IA', 'DESIGN', 'DEV', 'MARKETING', 'COMMUNICATION', 'GESTION', 'AUTRE'] as const
 
-/** Masque le mot de passe pour les retours en lecture. */
-function maskPassword<T extends { password?: unknown }>(obj: T): T {
+/** Supprime le mot de passe des retours API agent. */
+function sanitizeToolAccess<T extends { password?: unknown }>(obj: T): Omit<T, 'password'> {
   if (obj && typeof obj === 'object') {
-    return { ...obj, password: '***' } as T
+    const { password: _password, ...safe } = obj
+    return safe
   }
   return obj
 }
@@ -156,7 +157,7 @@ router.get(
         ToolAccess.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
         ToolAccess.countDocuments(filter),
       ])
-      res.json(paginatedResponse(items.map(maskPassword), pag, total))
+      res.json(paginatedResponse(items.map(sanitizeToolAccess), pag, total))
     } catch (err) {
       next(err)
     }
@@ -195,7 +196,7 @@ router.post(
         summary: `Création accès outil "${t.name}"`,
         after: { _id: t._id, name: t.name, category: t.category }, // pas de password
       }
-      res.status(201).json(maskPassword(t.toObject()))
+      res.status(201).json(sanitizeToolAccess(t.toObject()))
     } catch (err) {
       next(err)
     }
@@ -234,7 +235,7 @@ router.patch(
         before,
         after: { ...t.toObject(), password: undefined },
       }
-      res.json(maskPassword(t.toObject()))
+      res.json(sanitizeToolAccess(t.toObject()))
     } catch (err) {
       next(err)
     }
