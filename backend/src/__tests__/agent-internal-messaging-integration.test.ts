@@ -397,6 +397,19 @@ describe('Agent × Messagerie interne', () => {
     expect(res.status).toBe(400)
   })
 
+  // ── Task 25: Token legacy non-backfillé → 500 AGENT_USER_MISSING ─────────
+  it('Token sans userId (legacy / non backfillé) → 500 AGENT_USER_MISSING', async () => {
+    // createAgentTokenInDb crée un token MAIS pas de User AGENT — pile le cas legacy.
+    const { plainSecret } = await createAgentTokenInDb(['read:internal-messaging'])
+
+    const res = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+
+    expect(res.status).toBe(500)
+    expect(res.body.code).toBe('AGENT_USER_MISSING')
+  })
+
   // ── Task 24: GET /messages/:id/attachments/:idx/download ──────────────────
   it('GET /attachments/:idx/download renvoie le fichier', async () => {
     const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
