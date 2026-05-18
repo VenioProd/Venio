@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
@@ -41,7 +41,7 @@ async function loginAsSuperAdmin(): Promise<string> {
 }
 
 describe('AgentToken ↔ User AGENT lifecycle', () => {
-  it('supprime le User AGENT si la création du Token échoue', async () => {
+  it('supprime le User AGENT si la création du Token échoue (scope inconnu)', async () => {
     const jwtTok = await loginAsSuperAdmin()
 
     // Provoque une erreur en envoyant un scope inconnu, qui passe les validators
@@ -55,6 +55,25 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     // Pas de user orphelin avec role AGENT
     const agentUsers = await User.find({ role: 'AGENT' }).lean()
     expect(agentUsers).toHaveLength(0)
+  })
+
+  it('supprime le User AGENT si AgentToken.create lève une exception', async () => {
+    const jwtTok = await loginAsSuperAdmin()
+
+    const spy = vi.spyOn(AgentToken, 'create').mockRejectedValueOnce(new Error('forced DB error'))
+    try {
+      const res = await request(app)
+        .post('/api/admin/agent-tokens')
+        .set('Authorization', `Bearer ${jwtTok}`)
+        .send({ name: 'WillFail', scopes: ['read:crm'] })
+
+      expect(res.status).toBeGreaterThanOrEqual(500)
+
+      const agentUsers = await User.find({ role: 'AGENT' }).lean()
+      expect(agentUsers).toHaveLength(0)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('PATCH renomme aussi le User AGENT lié', async () => {

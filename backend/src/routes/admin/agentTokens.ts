@@ -115,17 +115,25 @@ router.post(
         isActive: true,
       })
 
-      const token = await AgentToken.create({
-        name: String(name).trim(),
-        prefix: generated.prefix,
-        tokenHash: generated.hash,
-        userId: agentUser._id,
-        scopes,
-        rateLimitPerMin: rateLimitPerMin || 120,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        notes: notes || '',
-        createdBy: req.user!.id,
-      })
+      let token
+      try {
+        token = await AgentToken.create({
+          name: String(name).trim(),
+          prefix: generated.prefix,
+          tokenHash: generated.hash,
+          userId: agentUser._id,
+          scopes,
+          rateLimitPerMin: rateLimitPerMin || 120,
+          expiresAt: expiresAt ? new Date(expiresAt) : null,
+          notes: notes || '',
+          createdBy: req.user!.id,
+        })
+      } catch (err) {
+        await User.deleteOne({ _id: agentUser._id }).catch((e) =>
+          console.warn('[agent-token-create] rollback failed:', (e as Error).message)
+        )
+        return next(err)
+      }
 
       // Patch le User pour relier l'agentTokenId (résout le chicken-and-egg)
       agentUser.agentTokenId = token._id as mongoose.Types.ObjectId
