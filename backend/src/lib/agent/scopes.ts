@@ -57,6 +57,9 @@ export const AGENT_SCOPES = [
   // Users (admin)
   'read:users', 'write:users',
 
+  // Dev workspace (suivi développement type Linear)
+  'read:dev', 'write:dev',
+
   // Super-scope
   ADMIN_WILDCARD_SCOPE,
 ] as const

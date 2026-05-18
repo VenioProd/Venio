@@ -30,6 +30,9 @@ export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_VAT: 'manage_vat',
   EXPORT_FEC: 'export_fec',
   MANAGE_EXTERNAL_SOURCES: 'manage_external_sources',
+  // ── Dev workspace ──
+  VIEW_DEV: 'view_dev',
+  MANAGE_DEV: 'manage_dev',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
@@ -55,6 +58,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_VAT,
     PERMISSIONS.MANAGE_VAT,
     PERMISSIONS.EXPORT_FEC,
+    PERMISSIONS.VIEW_DEV,
+    PERMISSIONS.MANAGE_DEV,
   ]),
   RH: new Set([
     PERMISSIONS.VIEW_PROJECTS,
@@ -76,6 +81,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.CREATE_TICKETS,
     PERMISSIONS.VIEW_ACCOUNTING,
     PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.VIEW_DEV,
   ]),
   CLIENT: new Set<Permission>(),
   // Agents (API Bearer tokens) n'héritent d'aucune permission par rôle ;

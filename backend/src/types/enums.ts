@@ -79,6 +79,8 @@ export type Permission =
   | 'view_accounting' | 'manage_accounting' | 'lock_accounting'
   | 'view_vat' | 'manage_vat' | 'export_fec'
   | 'manage_external_sources'
+  // ── Dev workspace (suivi développement, type Linear) ──
+  | 'view_dev' | 'manage_dev'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'

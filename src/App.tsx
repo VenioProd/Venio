@@ -83,6 +83,7 @@ const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDe
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
+const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -323,6 +324,14 @@ function App() {
             }
           />
           <Route path="tickets" element={<TicketList />} />
+          <Route
+            path="dev"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                <DevWorkspace />
+              </RequirePermission>
+            }
+          />
           <Route path="acces-outils" element={<ToolAccessList />} />
           <Route
             path="gestion"

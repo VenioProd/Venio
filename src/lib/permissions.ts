@@ -29,6 +29,8 @@ export const PERMISSIONS = {
   VIEW_TICKETS: 'view_tickets',
   CREATE_TICKETS: 'create_tickets',
   MANAGE_TICKETS: 'manage_tickets',
+  VIEW_DEV: 'view_dev',
+  MANAGE_DEV: 'manage_dev',
 } as const
 
 const ROLE_PERMISSIONS: Record<string, Set<string>> = {
@@ -54,6 +56,8 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_DEV,
+    PERMISSIONS.MANAGE_DEV,
   ]),
   RH: new Set([
     PERMISSIONS.VIEW_PROJECTS,
@@ -75,6 +79,7 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_DEV,
   ]),
   CLIENT: new Set([]),
 }
