@@ -78,10 +78,23 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_VAT,
   ]),
   CLIENT: new Set<Permission>(),
+  // Agents (API Bearer tokens) n'héritent d'aucune permission par rôle ;
+  // leurs accès sont contrôlés par les scopes de l'AgentToken.
+  AGENT: new Set<Permission>(),
 }
 
 export function isAdminRole(role: UserRole): role is AdminRole {
   return (ADMIN_ROLES as string[]).includes(role)
+}
+
+/**
+ * Un user "interne" est soit un admin humain (SUPER_ADMIN, ADMIN, RH, VIEWER),
+ * soit un agent système (AGENT). Utilisé par la messagerie interne pour
+ * autoriser à la fois les humains internes et les agents externes à
+ * envoyer/lire des messages. N'octroie AUCUNE permission admin par lui-même.
+ */
+export function isInternalRole(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'AGENT'
 }
 
 export function hasPermission(role: UserRole, permission: Permission): boolean {

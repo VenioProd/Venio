@@ -19,6 +19,7 @@ export interface IAgentToken extends Document {
   name: string
   prefix: string
   tokenHash: string
+  userId: Types.ObjectId
   scopes: string[]
   rateLimitPerMin: number
   status: AgentTokenStatus

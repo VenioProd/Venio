@@ -28,6 +28,7 @@ declare global {
     interface Request {
       user?: JwtPayload
       agentToken?: AgentTokenAttached
+      agentUser?: JwtPayload
       requestId?: string
     }
   }

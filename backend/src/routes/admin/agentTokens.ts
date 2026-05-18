@@ -1,8 +1,12 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import { body, param, validationResult } from 'express-validator'
+import mongoose from 'mongoose'
+import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireSuperAdmin } from '../../middleware/role.js'
 import AgentToken from '../../models/AgentToken.js'
+import User from '../../models/User.js'
 import {
   AGENT_SCOPES,
   findUnknownScopes,
@@ -10,13 +14,14 @@ import {
 } from '../../lib/agent/scopes.js'
 import { generateAgentToken } from '../../lib/agent/tokens.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
+import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
  *
- * Auth : JWT admin (middleware auth + requireAdmin). Aucun rôle granulaire
- * supplémentaire — tout admin peut gérer les tokens. Le createdBy garde
- * trace de l'admin émetteur.
+ * Auth : JWT SUPER_ADMIN uniquement (middleware auth + requireSuperAdmin).
+ * Les ADMIN/RH/VIEWER reçoivent 403. Le createdBy garde trace de l'admin
+ * émetteur.
  *
  * Endpoints :
  *   GET    /api/admin/agent-tokens             → liste (sans secrets)
@@ -33,7 +38,7 @@ import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 const router = express.Router()
 
 router.use(auth)
-router.use(requireAdmin)
+router.use(requireSuperAdmin)
 
 // ──────────────────────────────────────────────────────────────────────────
 // GET /scopes — catalogue figé (utilisé par l'UI pour le multi-select)
@@ -98,16 +103,53 @@ router.post(
       // Générer le secret côté serveur
       const generated = await generateAgentToken()
 
-      const token = await AgentToken.create({
+      // Génère un email unique non-routable pour le User AGENT
+      const agentEmail = `agent-${new mongoose.Types.ObjectId().toString()}@venio.internal`
+
+      // Création du User AGENT en premier (pas d'agentTokenId encore — chicken-and-egg)
+      const agentUser = await User.create({
+        email: agentEmail,
+        passwordHash: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
         name: String(name).trim(),
-        prefix: generated.prefix,
-        tokenHash: generated.hash,
-        scopes,
-        rateLimitPerMin: rateLimitPerMin || 120,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        notes: notes || '',
-        createdBy: req.user!.id,
+        role: 'AGENT',
+        isActive: true,
       })
+
+      let token
+      try {
+        token = await AgentToken.create({
+          name: String(name).trim(),
+          prefix: generated.prefix,
+          tokenHash: generated.hash,
+          userId: agentUser._id,
+          scopes,
+          rateLimitPerMin: rateLimitPerMin || 120,
+          expiresAt: expiresAt ? new Date(expiresAt) : null,
+          notes: notes || '',
+          createdBy: req.user!.id,
+        })
+      } catch (err) {
+        await User.deleteOne({ _id: agentUser._id }).catch((e) =>
+          console.warn('[agent-token-create] rollback failed:', (e as Error).message)
+        )
+        return next(err)
+      }
+
+      // Patch le User pour relier l'agentTokenId (résout le chicken-and-egg)
+      agentUser.agentTokenId = token._id as mongoose.Types.ObjectId
+      await agentUser.save()
+
+      // Ajoute l'agent au channel #general
+      try {
+        await ensureGeneralChannel({
+          id: String(agentUser._id),
+          name: agentUser.name,
+          email: agentUser.email,
+          role: 'AGENT',
+        })
+      } catch (err) {
+        console.warn('[agent-token-create] ensureGeneralChannel failed:', (err as Error).message)
+      }
 
       void recordAudit({
         action: 'AGENT_TOKEN_CREATE',
@@ -222,6 +264,14 @@ router.patch(
 
       await token.save()
 
+      // Propage le rename au User AGENT lié, s'il y a eu un changement de nom.
+      if (typeof req.body.name === 'string' && token.userId) {
+        await User.updateOne(
+          { _id: token.userId },
+          { $set: { name: token.name } }
+        ).catch((err) => console.warn('[agent-token-patch] user rename failed:', (err as Error).message))
+      }
+
       void recordAudit({
         action: 'AGENT_TOKEN_UPDATE',
         actor: buildActorFromReq(req),
@@ -279,6 +329,14 @@ router.post(
       token.revokedAt = new Date()
       token.revokedBy = req.user!.id as unknown as typeof token.revokedBy
       await token.save()
+
+      // Désactive le User AGENT lié et marque son nom.
+      if (token.userId) {
+        await User.updateOne(
+          { _id: token.userId },
+          { $set: { isActive: false, name: `[Révoqué] ${token.name}` } }
+        ).catch((err) => console.warn('[agent-token-revoke] user deactivate failed:', (err as Error).message))
+      }
 
       void recordAudit({
         action: 'AGENT_TOKEN_REVOKE',

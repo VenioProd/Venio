@@ -1,0 +1,436 @@
+import express, { type Request, type Response, type NextFunction } from 'express'
+import mongoose from 'mongoose'
+import fs from 'fs/promises'
+import { createReadStream } from 'fs'
+import path from 'path'
+import crypto from 'crypto'
+import { body, param, query, validationResult } from 'express-validator'
+import User from '../../models/User.js'
+import InternalMessage from '../../models/InternalMessage.js'
+import {
+  createConversation,
+  createMessage,
+  listConversations,
+  listMessages,
+  markConversationRead,
+  searchMessages,
+  softDeleteMessage,
+  toggleReaction,
+  updateMessage,
+} from '../../services/internalMessaging.js'
+import { requireScope } from './_middleware/auth.js'
+import { respondError, AgentApiError } from './_middleware/errors.js'
+import { loadAgentUserPayload } from './_middleware/asUser.js'
+
+/**
+ * Routes agent pour la messagerie interne (InternalConversation /
+ * InternalMessage). Parité fonctionnelle vs admin/messaging.ts.
+ *
+ * Scopes :
+ *   - GET → read:internal-messaging
+ *   - POST/PATCH/DELETE → write:internal-messaging
+ *
+ * Auth : Bearer agent token (cf. index.ts). Identité du sender résolue via
+ * loadAgentUserPayload (User AGENT lié au token).
+ *
+ * ACL conversation : identique aux humains — PUBLIC channels + memberships.
+ *
+ * Attachments : base64 dans body JSON, cap 5 Mo/fichier, max 5/message,
+ * storage `uploads/agent/internal-messaging/<conversationId>/`.
+ */
+
+const router = express.Router()
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const RAW_LIMIT_MB = 5
+const RAW_LIMIT_BYTES = RAW_LIMIT_MB * 1024 * 1024
+
+function isValidObjectId(id: unknown): boolean {
+  return typeof id === 'string' && mongoose.isValidObjectId(id)
+}
+
+function emit(req: Request, res: Response): boolean {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    respondError(res, 400, 'VALIDATION_ERROR', errors.array()[0].msg, { errors: errors.array() })
+    return true
+  }
+  return false
+}
+
+function uploadsRoot(): string {
+  return path.resolve(process.cwd(), 'uploads')
+}
+
+function safeFilename(originalName: string): string {
+  return originalName
+    .replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .slice(-100)
+}
+
+// ── Routes ────────────────────────────────────────────────────────────────
+
+router.get('/conversations', requireScope('read:internal-messaging'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await loadAgentUserPayload(req)
+    const conversations = await listConversations(user)
+    res.json({ conversations })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post(
+  '/conversations',
+  requireScope('write:internal-messaging'),
+  body('type').isIn(['CHANNEL', 'DM', 'GROUP']).withMessage('type CHANNEL/DM/GROUP requis'),
+  body('name').optional().isString().trim(),
+  body('visibility').optional().isIn(['PUBLIC', 'PRIVATE']),
+  body('participantIds').optional().isArray(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversation = await createConversation(user, {
+        type: req.body.type,
+        name: req.body.name,
+        visibility: req.body.visibility,
+        participantIds: req.body.participantIds,
+      })
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(conversation._id),
+        summary: `Création conversation ${conversation.type} "${conversation.name || conversation.slug || ''}"`,
+        after: { type: conversation.type, name: conversation.name, slug: conversation.slug },
+      }
+      res.status(201).json({ conversation })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/direct',
+  requireScope('write:internal-messaging'),
+  body('participantId').custom((v) => isValidObjectId(v)).withMessage('participantId (ObjectId) requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversation = await createConversation(user, {
+        type: 'DM',
+        participantIds: [String(req.body.participantId)],
+      })
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(conversation._id),
+        summary: `DM agent → ${req.body.participantId}`,
+        after: { type: 'DM' },
+      }
+      res.status(201).json({ conversation })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get(
+  '/conversations/:conversationId/messages',
+  requireScope('read:internal-messaging'),
+  param('conversationId').isMongoId(),
+  query('before').optional().isISO8601(),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const messages = await listMessages(user, String(req.params.conversationId), {
+        before: req.query.before ? String(req.query.before) : undefined,
+        limit: req.query.limit ? Number(req.query.limit) : undefined,
+      })
+      res.json({ messages })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/conversations/:conversationId/messages',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  body('content').isString().trim().isLength({ min: 1, max: 4000 }),
+  body('parentMessage').optional({ nullable: true }).custom((v) => v === null || isValidObjectId(v)),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await createMessage(user, String(req.params.conversationId), {
+        content: req.body.content,
+        parentMessage: req.body.parentMessage || null,
+      })
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(message._id),
+        summary: `Message dans conv ${req.params.conversationId} (${String(req.body.content).slice(0, 60)}…)`,
+        after: { id: String(message._id) },
+      }
+      res.status(201).json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/conversations/:conversationId/read',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      await markConversationRead(user, String(req.params.conversationId))
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(req.params.conversationId),
+        summary: `Marqué lu`,
+      }
+      res.json({ success: true })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get(
+  '/search',
+  requireScope('read:internal-messaging'),
+  query('q').isString().trim().isLength({ min: 2 }).withMessage('q (min 2 chars) requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const results = await searchMessages(user, String(req.query.q))
+      res.json({ results })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.patch(
+  '/messages/:messageId',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  body('content').isString().trim().isLength({ min: 1, max: 4000 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await updateMessage(user, String(req.params.messageId), req.body.content)
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Édition message`,
+        after: { editedAt: message.editedAt },
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.delete(
+  '/messages/:messageId',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await softDeleteMessage(user, String(req.params.messageId))
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Suppression message`,
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/messages/:messageId/reactions',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  body('emoji').isString().trim().isLength({ min: 1, max: 16 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await toggleReaction(user, String(req.params.messageId), req.body.emoji)
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Toggle réaction ${req.body.emoji}`,
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.find({
+      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
+      isActive: true,
+    })
+      .select('name email role')
+      .sort({ name: 1 })
+      .lean()
+    res.json({ users })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ── Task 23: POST /conversations/:conversationId/attachments ──────────────────
+
+router.post(
+  '/conversations/:conversationId/attachments',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  body('content').optional().isString().trim().isLength({ max: 4000 }),
+  body('files').isArray({ min: 1, max: 5 }).withMessage('files : 1 à 5 fichiers'),
+  body('files.*.filename').isString().trim().isLength({ min: 1, max: 200 }),
+  body('files.*.mimeType').isString().trim().isLength({ min: 3, max: 100 }),
+  body('files.*.contentBase64').isString().isLength({ min: 1 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversationId = String(req.params.conversationId)
+      const files = req.body.files as Array<{ filename: string; mimeType: string; contentBase64: string }>
+
+      const attachments: Array<{ originalName: string; storagePath: string; mimeType: string; size: number }> = []
+      const relDir = path.join('uploads', 'agent', 'internal-messaging', conversationId)
+      const absDir = path.resolve(process.cwd(), relDir)
+      await fs.mkdir(absDir, { recursive: true })
+
+      const writtenPaths: string[] = []
+      const cleanup = async () => {
+        await Promise.all(
+          writtenPaths.map((p) =>
+            fs.unlink(p).catch((e) => console.warn('[attachments] cleanup failed:', p, (e as Error).message))
+          )
+        )
+      }
+
+      try {
+        for (const file of files) {
+          const buffer = Buffer.from(file.contentBase64, 'base64')
+          if (buffer.length === 0) {
+            await cleanup()
+            return respondError(res, 400, 'INVALID_BASE64', `contentBase64 vide pour ${file.filename}`)
+          }
+          if (buffer.length > RAW_LIMIT_BYTES) {
+            await cleanup()
+            return respondError(
+              res,
+              413,
+              'FILE_TOO_LARGE',
+              `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+            )
+          }
+          const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
+          const relPath = path.join(relDir, stored)
+          const absPath = path.resolve(process.cwd(), relPath)
+          if (!absPath.startsWith(uploadsRoot())) {
+            await cleanup()
+            return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
+          }
+          await fs.writeFile(absPath, buffer)
+          writtenPaths.push(absPath)
+          attachments.push({
+            originalName: safeFilename(file.filename),
+            storagePath: relPath,
+            mimeType: file.mimeType,
+            size: buffer.length,
+          })
+        }
+
+        const message = await createMessage(user, conversationId, {
+          content: String(req.body.content || 'Pièce jointe').trim() || 'Pièce jointe',
+          attachments,
+        })
+
+        res.locals.audit = {
+          entityType: 'InternalMessage',
+          entityId: String(message._id),
+          summary: `Message + ${attachments.length} attachment(s) dans conv ${conversationId}`,
+          after: { attachments: attachments.map((a) => a.originalName) },
+        }
+        res.status(201).json({ message })
+      } catch (err) {
+        await cleanup()
+        next(err)
+      }
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ── Task 24: GET /messages/:messageId/attachments/:index/download ─────────────
+
+router.get(
+  '/messages/:messageId/attachments/:index/download',
+  requireScope('read:internal-messaging'),
+  param('messageId').isMongoId(),
+  param('index').isInt({ min: 0, max: 4 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await InternalMessage.findById(req.params.messageId)
+      const index = Number(req.params.index)
+      const attachment = message?.attachments[index]
+      if (!message || !attachment) {
+        return respondError(res, 404, 'NOT_FOUND', 'Fichier non trouvé')
+      }
+      // Vérifie l'ACL via le service (lancera 404 si non accessible)
+      await listMessages(user, message.conversation.toString(), { limit: 1 })
+
+      const safeRoot = path.resolve(process.cwd(), 'uploads', 'agent', 'internal-messaging')
+      const safeRootLegacy = path.resolve(process.cwd(), 'uploads', 'internal-messaging') // côté admin
+      const filePath = path.resolve(process.cwd(), attachment.storagePath)
+      if (!filePath.startsWith(safeRoot) && !filePath.startsWith(safeRootLegacy)) {
+        return respondError(res, 403, 'ACCESS_DENIED', 'Accès refusé')
+      }
+      res.setHeader('Content-Type', attachment.mimeType)
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName.replace(/"/g, '_')}"`)
+      const stream = createReadStream(filePath)
+      stream.on('error', (streamErr) => {
+        if (!res.headersSent) {
+          next(streamErr)
+        } else {
+          res.destroy(streamErr)
+        }
+      })
+      stream.pipe(res)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+export default router

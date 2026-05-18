@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['CLIENT', 'SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'], required: true },
+    role: { type: String, enum: ['CLIENT', 'SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'], required: true },
     name: { type: String, required: true },
     title: { type: String, default: '' },
     companyName: { type: String, default: '' },
@@ -60,6 +60,12 @@ const userSchema = new mongoose.Schema<IUser>(
     isActive: { type: Boolean, default: true },
     locale: { type: String, enum: ['fr', 'en'], default: null },
     colorTheme: { type: String, enum: ['sky', 'violet', 'emerald', 'amber', 'rose', 'coral', 'yellow'], default: null },
+    agentTokenId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AgentToken',
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 )

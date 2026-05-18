@@ -6,7 +6,7 @@ import Notification from '../models/Notification.js'
 import User from '../models/User.js'
 import { sendPushToUser } from '../lib/webPush.js'
 import { shouldNotify } from '../lib/notificationPreferences.js'
-import { isAdminRole } from '../lib/permissions.js'
+import { isInternalRole } from '../lib/permissions.js'
 import type { JwtPayload } from '../types/express.js'
 import type { IInternalMessageAttachment } from '../types/models/index.js'
 
@@ -34,7 +34,7 @@ export function extractMentionIds(content: string): string[] {
 }
 
 export function assertInternalUser(user: JwtPayload): void {
-  if (!isAdminRole(user.role)) {
+  if (!isInternalRole(user.role)) {
     const err = new Error('Forbidden')
     ;(err as Error & { status?: number }).status = 403
     throw err
@@ -167,7 +167,7 @@ export async function createConversation(user: JwtPayload, input: {
 
   const activeInternalUsers = await User.find({
     _id: { $in: participantIds },
-    role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] },
+    role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
     isActive: true,
   }).select('_id name')
   if (activeInternalUsers.length !== participantIds.length) {

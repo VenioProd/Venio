@@ -40,6 +40,7 @@ export interface IUser extends Document {
   isActive: boolean
   locale: 'fr' | 'en' | null
   colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow' | null
+  agentTokenId?: Types.ObjectId | null
   createdAt: Date
   updatedAt: Date
 }
