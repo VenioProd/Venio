@@ -226,6 +226,72 @@ router.get(
   }
 )
 
+router.patch(
+  '/messages/:messageId',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  body('content').isString().trim().isLength({ min: 1, max: 4000 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await updateMessage(user, String(req.params.messageId), req.body.content)
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Édition message`,
+        after: { editedAt: message.editedAt },
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.delete(
+  '/messages/:messageId',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await softDeleteMessage(user, String(req.params.messageId))
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Suppression message`,
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/messages/:messageId/reactions',
+  requireScope('write:internal-messaging'),
+  param('messageId').isMongoId(),
+  body('emoji').isString().trim().isLength({ min: 1, max: 16 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await toggleReaction(user, String(req.params.messageId), req.body.emoji)
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(req.params.messageId),
+        summary: `Toggle réaction ${req.body.emoji}`,
+      }
+      res.json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
 router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({

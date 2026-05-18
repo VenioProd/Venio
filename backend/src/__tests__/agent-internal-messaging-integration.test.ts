@@ -238,4 +238,97 @@ describe('Agent × Messagerie interne', () => {
     expect(res.status).toBe(200)
     expect(res.body.results.length).toBeGreaterThan(0)
   })
+
+  // ── Task 22: PATCH / DELETE + reactions ───────────────────────────────────
+  it('PATCH message : agent peut éditer SES messages', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Gina')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    const send = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'Avant édition' })
+
+    const patch = await request(app)
+      .patch(`/api/v1/agent/messaging/messages/${send.body.message._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'Après édition' })
+    expect(patch.status).toBe(200)
+    expect(patch.body.message.content).toBe('Après édition')
+    expect(patch.body.message.editedAt).toBeTruthy()
+  })
+
+  it('PATCH message d\'un autre user → 404', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Hugo')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    const humanMsg = await InternalMessage.create({
+      conversation: dm.body.conversation._id,
+      sender: human._id,
+      content: 'message humain',
+    })
+
+    const patch = await request(app)
+      .patch(`/api/v1/agent/messaging/messages/${humanMsg._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'tentative' })
+    expect(patch.status).toBe(404)
+  })
+
+  it('DELETE message : soft delete sur SON message', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Ida')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    const send = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'Sera supprimé' })
+
+    const del = await request(app)
+      .delete(`/api/v1/agent/messaging/messages/${send.body.message._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    expect(del.status).toBe(200)
+    expect(del.body.message.deletedAt).toBeTruthy()
+    expect(del.body.message.content).toBe('Message supprimé')
+  })
+
+  it('POST /messages/:id/reactions toggle on/off', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Jane')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    const send = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'react me' })
+
+    const on = await request(app)
+      .post(`/api/v1/agent/messaging/messages/${send.body.message._id}/reactions`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ emoji: '👍' })
+    expect(on.status).toBe(200)
+    expect(on.body.message.reactions).toHaveLength(1)
+
+    const off = await request(app)
+      .post(`/api/v1/agent/messaging/messages/${send.body.message._id}/reactions`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ emoji: '👍' })
+    expect(off.status).toBe(200)
+    expect(off.body.message.reactions).toHaveLength(0)
+  })
 })
