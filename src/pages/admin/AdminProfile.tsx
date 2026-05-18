@@ -7,6 +7,7 @@ import NotificationPreferencesPanel from '../../components/NotificationPreferenc
 import { ColorThemePicker } from '../../components/ColorThemePicker'
 import ThemeToggle from '../../components/ThemeToggle'
 import UserAvatar from '../../components/UserAvatar'
+import AvatarCropModal from '../../components/AvatarCropModal'
 import '../espace-client/ClientPortal.css'
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -37,6 +38,7 @@ const AdminProfile = () => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState('')
+  const [cropFile, setCropFile] = useState<File | null>(null)
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,23 +91,32 @@ const AdminProfile = () => {
     }
   }
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setAvatarError('')
     const allowed = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowed.includes(file.type)) {
       setAvatarError('Format non supporté. Utilisez JPEG, PNG ou WebP.')
+      e.target.value = ''
       return
     }
     if (file.size > 2 * 1024 * 1024) {
       setAvatarError("L'image dépasse 2 Mo.")
+      e.target.value = ''
       return
     }
+    setCropFile(file)
+    e.target.value = ''
+  }
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropFile(null)
     setAvatarUploading(true)
+    setAvatarError('')
     try {
       const formData = new FormData()
-      formData.append('avatar', file)
+      formData.append('avatar', blob, 'avatar.jpg')
       const token = getToken()
       const res = await fetch('/api/auth/avatar', {
         method: 'POST',
@@ -123,9 +134,10 @@ const AdminProfile = () => {
       setAvatarError((err as Error).message || "Erreur lors de l'upload")
     } finally {
       setAvatarUploading(false)
-      e.target.value = ''
     }
   }
+
+  const handleCropCancel = () => setCropFile(null)
 
   const handleAvatarDelete = async () => {
     setAvatarError('')
@@ -420,6 +432,13 @@ const AdminProfile = () => {
           </button>
         </form>
       </div>
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   )
 }
