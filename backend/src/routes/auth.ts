@@ -20,7 +20,12 @@ export const resetTokens = new Map<string, { userId: string; expiresAt: number }
 const avatarStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, avatarsDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+    }
+    const ext = MIME_TO_EXT[file.mimetype] ?? '.jpg'
     cb(null, req.user!.id + ext)
   },
 })
@@ -364,7 +369,16 @@ router.patch(
 )
 
 // POST /api/auth/avatar — upload photo de profil
-router.post('/avatar', auth, avatarUpload.single('avatar'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/avatar', auth, (req: Request, res: Response, next: NextFunction) => {
+  avatarUpload.single('avatar')(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError) {
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux (max 2 Mo)' : err.message
+      return res.status(400).json({ error: msg })
+    }
+    if (err instanceof Error) return res.status(400).json({ error: err.message })
+    next()
+  })
+}, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier reçu' })
@@ -380,7 +394,9 @@ router.post('/avatar', auth, avatarUpload.single('avatar'), async (req: Request,
     if (user.avatarUrl && user.avatarUrl !== newUrl) {
       const oldFilename = path.basename(user.avatarUrl)
       const oldPath = path.join(avatarsDir, oldFilename)
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
+      if (oldPath.startsWith(avatarsDir + path.sep)) {
+        await fs.promises.unlink(oldPath).catch((e: NodeJS.ErrnoException) => { if (e.code !== 'ENOENT') throw e })
+      }
     }
 
     user.avatarUrl = newUrl
@@ -401,7 +417,9 @@ router.delete('/avatar', auth, async (req: Request, res: Response, next: NextFun
     if (user.avatarUrl) {
       const filename = path.basename(user.avatarUrl)
       const filePath = path.join(avatarsDir, filename)
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      if (filePath.startsWith(avatarsDir + path.sep)) {
+        await fs.promises.unlink(filePath).catch((e: NodeJS.ErrnoException) => { if (e.code !== 'ENOENT') throw e })
+      }
       user.avatarUrl = ''
       await user.save()
     }
