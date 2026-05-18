@@ -117,11 +117,11 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
       {isExpanded && (
         <div className="ticket-card-body">
           <div className="ticket-meta">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Par
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Par</span>
               <UserAvatar name={ticket.authorName} avatarUrl={ticket.authorAvatarUrl} size={24} />
               <strong>{ticket.authorName}</strong>
-            </span>
+            </div>
             <span>{formatDate(ticket.createdAt)}</span>
             {ticket.archivedAt && <span style={{ color: '#64748b' }}>Archive le {formatDate(ticket.archivedAt)}</span>}
           </div>
