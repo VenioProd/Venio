@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import UserAvatar from './UserAvatar'
 import './ClientSidebar.css'
 
 interface ClientNavItem {
@@ -36,8 +37,6 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
-
   useEffect(() => {
     onDrawerClose?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,7 +91,7 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
   const footer = (
     <>
       <div className="client-sb-user">
-        <div className="client-sb-avatar">{initial}</div>
+        <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="client-sb-avatar" size={32} />
         <div className="client-sb-user-info">
           <div className="client-sb-user-name">{user?.name || user?.email || 'Client'}</div>
           {user?.companyName && <div className="client-sb-user-role">{user.companyName}</div>}

@@ -34,6 +34,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
+import UserAvatar from './UserAvatar'
 import './AdminSidebar.css'
 
 const LS_KEY = 'venio-admin-sidebar-collapsed'
@@ -146,8 +147,6 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
     navigate('/admin/login')
   }
 
-  const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
-
   const visibleSections = NAV_SECTIONS
     .map((s) => ({ ...s, items: s.items.filter((i) => isItemVisible(i, user)) }))
     .filter((s) => s.items.length > 0)
@@ -205,7 +204,7 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
         </nav>
 
         <div className="admin-sb-user">
-          <div className="admin-sb-avatar">{initial}</div>
+          <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
           <div className="admin-sb-user-info">
             <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
             <div className="admin-sb-user-role">{user?.role}</div>
@@ -269,7 +268,7 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
               </nav>
               <div className="admin-sb-drawer-footer">
                 <div className="admin-sb-user">
-                  <div className="admin-sb-avatar">{initial}</div>
+                  <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
                   <div className="admin-sb-user-info">
                     <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
                     <div className="admin-sb-user-role">{user?.role}</div>
