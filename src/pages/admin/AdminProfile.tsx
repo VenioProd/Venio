@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiFetch } from '../../lib/api'
+import { apiFetch, getToken } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
+import UserAvatar from '../../components/UserAvatar'
 import '../espace-client/ClientPortal.css'
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -32,6 +33,8 @@ const AdminProfile = () => {
   const [error, setError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,6 +84,59 @@ const AdminProfile = () => {
       setPasswordError((err as Error).message || 'Erreur lors du changement de mot de passe')
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarError('')
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      setAvatarError('Format non supporté. Utilisez JPEG, PNG ou WebP.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError("L'image dépasse 2 Mo.")
+      return
+    }
+    setAvatarUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const token = getToken()
+      const res = await fetch('/api/auth/avatar', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erreur lors de l'upload")
+      }
+      await refreshUser()
+      setSuccess('Photo de profil mise à jour')
+      setTimeout(() => setSuccess(''), 4000)
+    } catch (err: unknown) {
+      setAvatarError((err as Error).message || "Erreur lors de l'upload")
+    } finally {
+      setAvatarUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleAvatarDelete = async () => {
+    setAvatarError('')
+    setAvatarUploading(true)
+    try {
+      await apiFetch('/api/auth/avatar', { method: 'DELETE' })
+      await refreshUser()
+      setSuccess('Photo de profil supprimée')
+      setTimeout(() => setSuccess(''), 4000)
+    } catch (err: unknown) {
+      setAvatarError((err as Error).message || 'Erreur lors de la suppression')
+    } finally {
+      setAvatarUploading(false)
     }
   }
 
@@ -139,6 +195,68 @@ const AdminProfile = () => {
           {success}
         </div>
       )}
+
+      <div className="portal-card" style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Photo de profil</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <UserAvatar
+            name={user?.name || user?.email || '?'}
+            avatarUrl={user?.avatarUrl}
+            size={80}
+            className="admin-sb-avatar"
+            style={{ fontSize: '2rem', fontWeight: 700 }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label
+              htmlFor="avatar-upload"
+              style={{
+                display: 'inline-block',
+                padding: '8px 16px',
+                background: 'var(--primary)',
+                color: '#fff',
+                borderRadius: '8px',
+                cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                opacity: avatarUploading ? 0.6 : 1,
+              }}
+            >
+              {avatarUploading ? 'Upload...' : 'Modifier la photo'}
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+              disabled={avatarUploading}
+            />
+            {user?.avatarUrl && (
+              <button
+                type="button"
+                onClick={handleAvatarDelete}
+                disabled={avatarUploading}
+                style={{
+                  background: 'none',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  color: '#ef4444',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                Supprimer la photo
+              </button>
+            )}
+            {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>
+              JPEG, PNG ou WebP · 2 Mo max
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="portal-card" style={{ marginBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Informations generales</h2>
