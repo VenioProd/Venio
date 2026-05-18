@@ -9,6 +9,8 @@
     "start": "node dist/index.js",
     "seed:demo": "tsx src/scripts/seedDemoData.ts",
     "seed:client-projects": "tsx src/scripts/seedClientProjects.ts",
+    "cleanup:demo": "tsx src/scripts/cleanupDemoData.ts",
+    "cleanup:demo:dry": "tsx src/scripts/cleanupDemoData.ts --dry-run",
     "accounting:migrate-billing": "tsx src/scripts/migrateExistingBilling.ts",
     "accounting:migrate-billing:dry": "tsx src/scripts/migrateExistingBilling.ts --dry-run",
     "test": "vitest run",

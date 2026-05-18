@@ -9,5 +9,11 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 30_000,
     testTimeout: 15_000,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/uploads/**',
+      '**/.git/**',
+    ],
   },
 })

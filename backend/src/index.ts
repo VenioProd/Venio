@@ -57,15 +57,13 @@ import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
+import adminHealthRoutes from './routes/admin/health.js'
+import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
-import Project from './models/Project.js'
-import Lead from './models/Lead.js'
-import LeadActivity from './models/LeadActivity.js'
-import ClientActivity from './models/ClientActivity.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
@@ -199,6 +197,8 @@ app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
+app.use('/api/admin/health', adminHealthRoutes)
+app.use('/api/admin/activity-center', adminActivityCenterRoutes)
 
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
@@ -268,78 +268,6 @@ mongoose
       console.log(`🔒 Removed plainPassword from ${migrated.modifiedCount} user(s)`)
     }
 
-    // Cleanup fictional/test data
-    const testAdminEmails = [
-      'hugo@venio.paris',
-      'ines@venio.paris',
-      'maxime@venio.paris',
-    ]
-    // Demo client emails from seed scripts
-    const testClientPatterns = [
-      /@demo\.local$/,
-      /@venio-fictif\.local$/,
-    ]
-    const testClientExact = [
-      'demo@venio.com',
-      't.bernard@agencelumiere.com',
-      'c.roux@ecosolutions.eu',
-      'marie.dupont@techvision.fr',
-      'julie@startupflow.io',
-      'p.lefebvre@maisonverte.fr',
-      'sophie@digitalfirst.co',
-      'lucas@studionord.fr',
-      'n.simon@datadrive.io',
-      'emma@artetcie.com',
-      'a.girard@scaleuplab.com',
-    ]
-
-    // Find all test users
-    const testAdmins = await User.find({ email: { $in: testAdminEmails } })
-    const testClients = await User.find({
-      $or: [
-        { email: { $in: testClientExact } },
-        { email: { $regex: '@demo\\.local$' } },
-        { email: { $regex: '@venio-fictif\\.local$' } },
-      ],
-    })
-    const allTestUsers = [...testAdmins, ...testClients]
-    const allTestUserIds = allTestUsers.map((u) => u._id)
-
-    if (allTestUserIds.length > 0) {
-      // Delete projects belonging to test clients
-      const deletedProjects = await Project.deleteMany({ client: { $in: allTestUserIds } })
-      // Delete client activities
-      await ClientActivity.deleteMany({ clientId: { $in: allTestUserIds } })
-      // Delete the test users
-      const deletedUsers = await User.deleteMany({ _id: { $in: allTestUserIds } })
-      console.log(`🧹 Cleaned up ${deletedUsers.deletedCount} test account(s), ${deletedProjects.deletedCount} project(s)`)
-    }
-
-    // Delete demo leads (from seedDemoData)
-    const demoLeadCompanies = [
-      'TechVision SAS', 'Agence Lumière', 'Startup Flow', 'Maison Verte',
-      'Digital First', 'Studio Nord', 'Eco Solutions', 'DataDrive',
-      'Art & Cie', 'Scale Up Lab',
-    ]
-    const demoLeads = await Lead.find({ company: { $in: demoLeadCompanies } })
-    if (demoLeads.length > 0) {
-      const leadIds = demoLeads.map((l) => l._id)
-      await LeadActivity.deleteMany({ leadId: { $in: leadIds } })
-      const deletedLeads = await Lead.deleteMany({ _id: { $in: leadIds } })
-      console.log(`🧹 Cleaned up ${deletedLeads.deletedCount} demo lead(s)`)
-    }
-
-    // Delete any remaining fictional projects (from seedClientProjects)
-    const fictionalProjects = await Project.deleteMany({
-      $or: [
-        { internalNotes: { $regex: /fictif/i } },
-        { internalNotes: { $regex: /seed/i } },
-        { projectNumber: { $regex: /^PROJ-DEMO-/ } },
-      ],
-    })
-    if (fictionalProjects.deletedCount > 0) {
-      console.log(`🧹 Cleaned up ${fictionalProjects.deletedCount} fictional project(s)`)
-    }
   })
   .then(() => {
     const server = createServer(app)

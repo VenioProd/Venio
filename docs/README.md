@@ -1,16 +1,20 @@
-# Venio - Site Web
+# Venio — Plateforme métier
 
-Site web de Venio développé avec React, Vite et React Router.
+Venio est une plateforme métier complète : site public, espace client, back-office admin, API backend, messagerie temps réel et API agent. Développée avec React 18 + Vite 5 (frontend) et Express 5 + MongoDB (backend).
 
 ## 📚 Documentation (dossier `docs/`)
 
-| Dossier | Contenu |
+| Dossier / Fichier | Contenu |
 |--------|--------|
 | [admin/](./admin/) | Design et contenu de l’interface admin |
-| [deploiement/](./deploiement/) | Guides déploiement IONOS, config, debug |
+| [accounting/](./accounting/) | API d’ingestion comptable (Arrow/HMAC), FEC, TVA |
+| [architecture/](./architecture/) | Conventions d’API, contrats frontend/backend |
+| [deploiement/](./deploiement/) | Guides déploiement VPS/IONOS, config, debug |
 | [design/](./design/) | Arrière-plans, gradients, changements visuels |
-| [optimisation/](./optimisation/) | Performance GPU, SEO, résumés d’optimisations |
+| [operations/](./operations/) | Runbook — exploitation, incidents, cleanup |
+| [optimisation/](./optimisation/) | Performance GPU, SEO, bundles, résumés |
 | [projet/](./projet/) | Système de contenu projet, tests, README projet |
+| [api-agent.md](./api-agent.md) | API agent Bearer — scopes, idempotency, endpoints |
 
 ## 📋 Démarrage rapide
 
@@ -26,7 +30,7 @@ npm run dev    # Lancer le serveur (localhost:5501)
 ```bash
 git add .
 git commit -m "Description des modifications"
-git push origin master
+git push origin main
 # Le site se déploie automatiquement en 2-5 minutes !
 ```
 
@@ -387,7 +391,7 @@ Ce fichier est **essentiel** pour que votre site fonctionne correctement avec Re
    ```bash
    git add .
    git commit -m "Description des modifications"
-   git push origin master
+   git push origin main
    ```
 4. **Déploiement automatique** : Vercel/Netlify déploiera automatiquement vos changements (généralement en 1-2 minutes)
 
@@ -468,7 +472,7 @@ npm run deploy:check      # Vérifie que le build est prêt pour déploiement
    ```bash
    git add .
    git commit -m "Description des modifications"
-   git push origin master
+   git push origin main
    ```
 
 ### Support et ressources
@@ -476,4 +480,36 @@ npm run deploy:check      # Vérifie que le build est prêt pour déploiement
 - **Documentation Vite** : https://vitejs.dev/
 - **Documentation React Router** : https://reactrouter.com/
 - **Support IONOS** : Disponible dans votre espace client ou par téléphone
+
+## 🧪 Commandes utiles — tests
+
+| Commande | Scope |
+|---|---|
+| `npm run test` ou `npm run test:frontend` | Tests frontend uniquement (Vitest, racine) |
+| `npm run test:backend` | Tests backend uniquement (`npm --prefix backend test`) |
+| `npm run test:all` | Frontend puis backend en séquence |
+| `cd backend && npm test` | Tests backend directement depuis le dossier backend |
+
+> Note : `npm test` à la racine lance UNIQUEMENT les tests frontend. Pour tout tester, utiliser `npm run test:all`.
+
+## 🔧 Commandes backend utiles
+
+```bash
+cd backend
+
+# Démarrage
+npm run dev                            # tsx --watch, port 3000
+
+# Démo
+npm run seed:demo                      # Données de démo
+npm run cleanup:demo:dry               # Dry-run nettoyage démo (ALLOW_DEMO_CLEANUP=true requis)
+ALLOW_DEMO_CLEANUP=true npm run cleanup:demo:dry   # Dry-run
+ALLOW_DEMO_CLEANUP=true npm run cleanup:demo        # Nettoyage effectif
+
+# Migrations
+npm run accounting:migrate-billing:dry  # Dry-run migration billing
+npm run accounting:migrate-billing      # Migration billing
+```
+
+⚠️ Le cleanup démo n'est **plus** exécuté au boot serveur. Voir [docs/operations/RUNBOOK.md](./operations/RUNBOOK.md).
 

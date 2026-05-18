@@ -65,12 +65,14 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/stats
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get('/stats', async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user
+    const authorFilter = user.role !== 'SUPER_ADMIN' ? { authorId: user.id } : {}
     const [open, inProgress, total] = await Promise.all([
-      InternalTicket.countDocuments({ status: 'OUVERT', isArchived: { $ne: true } }),
-      InternalTicket.countDocuments({ status: 'EN_COURS', isArchived: { $ne: true } }),
-      InternalTicket.countDocuments({ isArchived: { $ne: true } }),
+      InternalTicket.countDocuments({ status: 'OUVERT', isArchived: { $ne: true }, ...authorFilter }),
+      InternalTicket.countDocuments({ status: 'EN_COURS', isArchived: { $ne: true }, ...authorFilter }),
+      InternalTicket.countDocuments({ isArchived: { $ne: true }, ...authorFilter }),
     ])
     res.json({ open, inProgress, total })
   } catch {
@@ -79,9 +81,14 @@ router.get('/stats', async (_req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/archived — archived tickets
-router.get('/archived', async (_req: Request, res: Response) => {
+router.get('/archived', async (req: Request, res: Response) => {
   try {
-    const tickets = await InternalTicket.find({ isArchived: true }).sort({ archivedAt: -1 })
+    const user = (req as any).user
+    const filter: Record<string, unknown> = { isArchived: true }
+    if (user.role !== 'SUPER_ADMIN') {
+      filter.authorId = user.id
+    }
+    const tickets = await InternalTicket.find(filter).sort({ archivedAt: -1 })
     res.json(tickets)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -103,7 +110,12 @@ router.get('/kpi', async (req: Request, res: Response) => {
       since = new Date(0)
     }
 
-    const allTickets = await InternalTicket.find({ createdAt: { $gte: since } })
+    const user = (req as any).user
+    const baseFilter: Record<string, unknown> = { createdAt: { $gte: since } }
+    if (user.role !== 'SUPER_ADMIN') {
+      baseFilter.authorId = user.id
+    }
+    const allTickets = await InternalTicket.find(baseFilter)
 
     const totalCreated = allTickets.length
     const archived = allTickets.filter((t) => t.isArchived).length
@@ -167,8 +179,15 @@ router.get('/kpi', async (req: Request, res: Response) => {
 // GET /api/admin/tickets/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user
     const ticket = await InternalTicket.findById(req.params.id)
     if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
+
+    // Non-SUPER_ADMIN ne peut accéder qu'à ses propres tickets
+    // (retourne 403 et non 404 pour éviter l'info leak)
+    if (user.role !== 'SUPER_ADMIN' && ticket.authorId.toString() !== user.id) {
+      return res.status(403).json({ error: 'Accès refusé' })
+    }
 
     const replyAuthorIds = ticket.replies.map((r) => r.authorId.toString())
     const allAuthorIds = [...new Set([ticket.authorId.toString(), ...replyAuthorIds])]

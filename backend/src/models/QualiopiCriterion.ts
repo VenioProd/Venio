@@ -41,6 +41,4 @@ const qualiopiCriterionSchema = new mongoose.Schema<IQualiopiCriterion>(
   { timestamps: true }
 )
 
-qualiopiCriterionSchema.index({ number: 1 })
-
 export default mongoose.model<IQualiopiCriterion>('QualiopiCriterion', qualiopiCriterionSchema)

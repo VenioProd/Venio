@@ -62,7 +62,6 @@ const sourceSchema = new mongoose.Schema<IExternalSource>(
   { timestamps: true }
 )
 
-sourceSchema.index({ slug: 1 }, { unique: true })
 sourceSchema.index({ status: 1 })
 
 export default mongoose.model<IExternalSource>('ExternalSource', sourceSchema)

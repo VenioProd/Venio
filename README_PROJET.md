@@ -1,216 +1,85 @@
-# Venio - Plateforme de Gestion de Projets Clients
+# Venio — Plateforme métier (site public + back-office)
 
-## 📋 Description
+## Architecture
 
-Venio est une plateforme complète de gestion de projets permettant aux agences et freelances de gérer leurs projets clients avec un espace dédié pour chaque client.
+- Site public (React 18 + Vite 5 + React Router 7) — port dev 5501
+- Espace client + back-office admin (même app frontend)
+- API backend Express 5 + MongoDB (Mongoose) — port dev 3000
+- Messagerie interne temps réel (Socket.IO)
+- API agent (Bearer tokens) avec idempotency
+- Modules: CRM, projets, comptabilité, Qualiopi, tickets, ressources, automatisations
+- Intégrations: nodemailer, web-push, Nextcloud sync, jsPDF (lazy)
 
-## ✨ Fonctionnalités principales
+## Stack
 
-### 🔐 Authentification
-- Système de connexion sécurisé
-- Rôles : ADMIN et CLIENT
-- Protection des routes par authentification
+| Couche | Technos |
+|---|---|
+| Frontend | React 18, Vite 5, TypeScript, React Router 7, Recharts, Socket.IO client, jsPDF (lazy) |
+| Backend | Node, Express 5, Mongoose, JWT, bcryptjs, Multer, Helmet, express-rate-limit, Socket.IO, nodemailer, web-push, otpauth (2FA), pdfkit, qrcode |
+| Tests | Vitest (frontend + backend séparés), supertest, mongodb-memory-server |
 
-### 👥 Gestion des comptes clients
-- Création de comptes clients par l'admin
-- Liste et détails des clients
-- Association de projets aux clients
-
-### 📁 Gestion des projets
-- Création et modification de projets
-- Statuts : En cours, En attente, Terminé
-- Organisation par sections et éléments
-
-### 📦 Système de contenu enrichi
-- **Sections** : Organisez le contenu en parties logiques
-- **Éléments** : 10 types différents (Livrable, Devis, Facture, etc.)
-- **Contrôle de visibilité** : L'admin décide ce que le client voit
-- **Upload de fichiers** : Joignez des fichiers à chaque élément
-- **Téléchargement contrôlé** : Autorisez ou non le téléchargement
-
-### 📢 Communication
-- Mises à jour de projet
-- Historique chronologique
-- Notifications visuelles
-
-### 📄 Documents
-- Upload de documents
-- Téléchargement sécurisé
-- Types : Devis, Facture, Fichier projet
-
-## 🛠️ Technologies
-
-### Backend
-- **Node.js** + **Express**
-- **MongoDB** avec Mongoose
-- **JWT** pour l'authentification
-- **Multer** pour l'upload de fichiers
-- **bcrypt** pour le hashage des mots de passe
-
-### Frontend
-- **React** + **Vite**
-- **React Router** pour la navigation
-- **CSS** moderne avec animations
-
-## 📂 Structure du projet
-
-```
-Venio/
-├── backend/
-│   ├── src/
-│   │   ├── models/          # Modèles MongoDB
-│   │   ├── routes/          # Routes API
-│   │   │   ├── admin/       # Routes admin
-│   │   │   └── client/      # Routes client
-│   │   ├── middleware/      # Middlewares (auth, roles)
-│   │   └── index.js         # Point d'entrée
-│   ├── uploads/             # Fichiers uploadés
-│   └── package.json
-├── src/
-│   ├── components/          # Composants React
-│   ├── context/             # Contextes (Auth)
-│   ├── lib/                 # Utilitaires (API)
-│   ├── pages/
-│   │   ├── admin/           # Pages admin
-│   │   └── espace-client/   # Pages client
-│   └── main.jsx
-└── package.json
-```
-
-## 🚀 Installation
+## Démarrage rapide
 
 ### Prérequis
-- Node.js 18+
-- MongoDB
-- npm ou yarn
+- Node 20+ (recommandé)
+- Une instance MongoDB locale ou distante (URI dans `.env`)
+
+### Frontend
+```bash
+npm install
+npm run dev   # http://localhost:5501
+```
 
 ### Backend
-
 ```bash
 cd backend
 npm install
-cp .env.example .env
-# Configurer les variables d'environnement
-npm run dev
+cp .env.example .env  # à ajuster
+npm run dev   # http://localhost:3000
 ```
 
-### Frontend
+Le frontend proxy `/api/*` et `/socket.io/*` vers `VITE_API_PROXY_TARGET` (défaut http://localhost:3000).
 
-```bash
-npm install
-npm run dev
-```
+## Scripts
 
-## 🔧 Configuration
+### Frontend (racine)
+| Script | Effet |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Build prod (`dist/`) + .htaccess + sitemap |
+| `npm run build:ionos` | Build + génération .htaccess explicite |
+| `npm run test` / `npm run test:frontend` | Tests frontend uniquement |
+| `npm run test:backend` | `npm --prefix backend test` |
+| `npm run test:all` | Frontend puis backend |
+| `npm run typecheck` | TS strict |
 
-### Variables d'environnement (.env)
+### Backend (`cd backend`)
+| Script | Effet |
+|---|---|
+| `npm run dev` | tsx --watch |
+| `npm run build` | Compile TypeScript |
+| `npm start` | `node dist/index.js` |
+| `npm test` | Vitest backend |
+| `npm run seed:demo` / `seed:client-projects` | Données de démo |
+| `npm run cleanup:demo:dry` / `cleanup:demo` | Nettoyage démo (garde `ALLOW_DEMO_CLEANUP=true`) |
+| `npm run accounting:migrate-billing` | Migration billing |
 
-```env
-# Backend
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/venio
-JWT_SECRET=votre_secret_jwt
-CORS_ORIGIN=http://localhost:5501
-```
+## Permissions
 
-## 👤 Utilisation
+Source de vérité = liste canonique de 26 permissions, dupliquée intentionnellement entre `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`. Un test `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive.
 
-### Première connexion
+Toutes les routes admin sensibles sont protégées par `<RequirePermission>` côté frontend ET filtrées côté backend (cf. tickets).
 
-1. Démarrer le backend et le frontend
-2. Créer un compte admin via bootstrap :
-   ```bash
-   POST /api/auth/bootstrap-admin
-   {
-     "email": "admin@example.com",
-     "password": "votre_mot_de_passe",
-     "name": "Admin"
-   }
-   ```
-3. Se connecter sur `/admin/login`
+## Documentation détaillée
 
-### Créer un client
+- [docs/README.md](docs/README.md) — index général
+- [docs/api-agent.md](docs/api-agent.md) — API agent (Bearer + scopes + idempotency)
+- [docs/architecture/API_CONTRACTS.md](docs/architecture/API_CONTRACTS.md) — conventions d'API
+- [docs/operations/RUNBOOK.md](docs/operations/RUNBOOK.md) — exploitation
+- [docs/deploiement/](docs/deploiement/) — déploiement VPS / IONOS
+- [docs/optimisation/](docs/optimisation/) — bundles, perf, SEO
+- [docs/accounting/](docs/accounting/), [docs/admin/](docs/admin/), [docs/projet/](docs/projet/) — modules
 
-1. Aller dans "Comptes clients"
-2. Cliquer sur "Nouveau compte"
-3. Remplir le formulaire
-4. Le client peut se connecter sur `/espace-client/login`
+## Licence
 
-### Créer un projet
-
-1. Sélectionner un client
-2. Cliquer sur "Ajouter un projet"
-3. Remplir les informations
-4. Organiser le contenu avec sections et éléments
-
-## 📚 Documentation
-
-- **[DESIGN_IMPROVEMENTS.md](./DESIGN_IMPROVEMENTS.md)** - Améliorations du design
-- **[PROJET_CONTENT_SYSTEM.md](./PROJET_CONTENT_SYSTEM.md)** - Système de contenu
-- **[GUIDE_ADMIN_CONTENU.md](./GUIDE_ADMIN_CONTENU.md)** - Guide d'utilisation admin
-- **[TEST_CONTENT_SYSTEM.md](./TEST_CONTENT_SYSTEM.md)** - Plan de tests
-- **[RESUME_AMELIORATIONS.md](./RESUME_AMELIORATIONS.md)** - Résumé des améliorations
-
-## 🎨 Design
-
-### Palette de couleurs
-- Background : `#0f0f0f`, `#1a1a1a`
-- Texte : `#ffffff`, `rgba(255, 255, 255, 0.6)`
-- Statut En cours : `#60a5fa` (Bleu)
-- Statut En attente : `#fbbf24` (Jaune)
-- Statut Terminé : `#4ade80` (Vert)
-
-### Composants
-- Cartes avec gradients
-- Badges colorés
-- Animations fluides
-- Design responsive
-
-## 🔒 Sécurité
-
-- Authentification JWT
-- Hashage des mots de passe avec bcrypt
-- Protection des routes par rôle
-- Validation des données
-- Isolation des clients
-
-## 🧪 Tests
-
-Voir [TEST_CONTENT_SYSTEM.md](./TEST_CONTENT_SYSTEM.md) pour le plan de tests complet.
-
-## 📈 Évolutions futures
-
-- [ ] Notifications en temps réel
-- [ ] Prévisualisation des fichiers
-- [ ] Système de commentaires
-- [ ] Gestion de versions
-- [ ] Statistiques et analytics
-- [ ] Export de rapports
-- [ ] API publique
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📝 Licence
-
-Ce projet est sous licence privée.
-
-## 👨‍💻 Auteur
-
-Venio Team
-
-## 🙏 Remerciements
-
-- React et Vite pour le frontend
-- Express et MongoDB pour le backend
-- La communauté open source
-
----
-
-**Version** : 2.0.0  
-**Dernière mise à jour** : 2 février 2026
+Propriétaire — usage interne Venio.

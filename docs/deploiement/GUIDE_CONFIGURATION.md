@@ -224,6 +224,52 @@ Pour réactiver, faites la même chose et cliquez sur **"Enable workflow"**.
 
 ---
 
+---
+
+## 🧹 Nettoyage des données de démo
+
+> **Sécurité :** le serveur ne supprime **plus aucune donnée au démarrage**. Le cleanup des comptes/leads/projets de démo est désormais un script manuel.
+
+### Pourquoi ce changement ?
+
+L'ancien code exécutait automatiquement des suppressions lors de chaque démarrage du serveur (connexion MongoDB). Cela représentait un risque majeur en production si des comptes réels correspondaient aux patterns ciblés.
+
+### Script disponible
+
+Le script `backend/src/scripts/cleanupDemoData.ts` supprime :
+- Les comptes admins de test (`hugo@venio.paris`, `ines@venio.paris`, `maxime@venio.paris`)
+- Les comptes clients fictifs (emails `@demo.local`, `@venio-fictif.local`, et 11 emails exact-match)
+- Les projets associés à ces comptes
+- Les leads de démo (10 sociétés fictives : TechVision SAS, Agence Lumière, etc.)
+- Les projets fictifs (internalNotes contenant "fictif" ou "seed", ou numéro `PROJ-DEMO-…`)
+
+### Utilisation
+
+**1. Toujours commencer par un dry-run :**
+
+```bash
+# Depuis le dossier backend/
+ALLOW_DEMO_CLEANUP=true npm run cleanup:demo:dry
+```
+
+Cette commande liste tout ce qui *serait* supprimé, sans rien modifier.
+
+**2. Exécuter la suppression réelle :**
+
+```bash
+ALLOW_DEMO_CLEANUP=true npm run cleanup:demo
+```
+
+### Variable d'environnement requise
+
+| Variable | Valeur | Rôle |
+|---|---|---|
+| `ALLOW_DEMO_CLEANUP` | `true` | Garde de sécurité obligatoire. Sans elle, le script s'arrête immédiatement. |
+
+> ⚠️ **AVERTISSEMENT** : Ne jamais lancer `npm run cleanup:demo` en production sans avoir effectué un backup de la base de données au préalable. La suppression est irréversible.
+
+---
+
 ## 📞 Besoin d'aide ?
 
 - **Documentation GitHub Actions** : https://docs.github.com/en/actions
