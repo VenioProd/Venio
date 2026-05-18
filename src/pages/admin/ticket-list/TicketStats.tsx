@@ -1,5 +1,4 @@
 import React from 'react'
-import { jsPDF } from 'jspdf'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { KpiData } from './types'
 
@@ -10,8 +9,9 @@ interface TicketStatsProps {
 }
 
 const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod }) => {
-  const exportKpiPdf = () => {
+  const exportKpiPdf = async () => {
     if (!kpi) return
+    const { jsPDF } = await import('jspdf')
     const periodLabels: Record<string, string> = { week: 'Cette semaine', month: 'Ce mois', all: 'Historique complet' }
     const doc = new jsPDF()
     const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })

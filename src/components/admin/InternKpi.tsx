@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { jsPDF } from 'jspdf'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
 
@@ -77,7 +76,8 @@ export default function InternKpi() {
   }
 
   // ── Export PDF ──
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF()
     const now = new Date().toLocaleDateString('fr-FR')
     let y = 20

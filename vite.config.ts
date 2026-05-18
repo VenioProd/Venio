@@ -28,8 +28,14 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom'],
+          manualChunks(id) {
+            if (id.includes('node_modules/react-router-dom')) return 'vendor-router'
+            if (id.includes('node_modules/react-dom')) return 'vendor-react'
+            if (id.includes('node_modules/react/')) return 'vendor-react'
+            if (id.includes('node_modules/recharts')) return 'vendor-charts'
+            if (id.includes('node_modules/jspdf')) return 'vendor-pdf'
+            if (id.includes('node_modules/html2canvas')) return 'vendor-canvas'
+            if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
           },
         },
       },
