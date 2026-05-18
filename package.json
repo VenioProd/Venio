@@ -14,6 +14,9 @@
     "deploy:ionos": "npm run build:ionos && npm run deploy:check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:frontend": "vitest run",
+    "test:backend": "npm --prefix backend test",
+    "test:all": "npm run test:frontend && npm run test:backend",
     "test:watch": "vitest"
   },
   "dependencies": {
