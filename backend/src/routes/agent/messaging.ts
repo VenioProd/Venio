@@ -361,7 +361,7 @@ router.post(
           await fs.writeFile(absPath, buffer)
           writtenPaths.push(absPath)
           attachments.push({
-            originalName: file.filename,
+            originalName: safeFilename(file.filename),
             storagePath: relPath,
             mimeType: file.mimeType,
             size: buffer.length,
