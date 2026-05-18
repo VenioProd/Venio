@@ -43,9 +43,7 @@ const router = express.Router()
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RAW_LIMIT_MB = 5
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RAW_LIMIT_BYTES = RAW_LIMIT_MB * 1024 * 1024
 
 function isValidObjectId(id: unknown): boolean {
@@ -61,12 +59,10 @@ function emit(req: Request, res: Response): boolean {
   return false
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function uploadsRoot(): string {
   return path.resolve(process.cwd(), 'uploads')
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function safeFilename(originalName: string): string {
   return originalName
     .replace(/[^A-Za-z0-9._-]/g, '_')
@@ -306,5 +302,74 @@ router.get('/users', requireScope('read:internal-messaging'), async (_req: Reque
     next(err)
   }
 })
+
+// ── Task 23: POST /conversations/:conversationId/attachments ──────────────────
+
+router.post(
+  '/conversations/:conversationId/attachments',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  body('content').optional().isString().trim().isLength({ max: 4000 }),
+  body('files').isArray({ min: 1, max: 5 }).withMessage('files : 1 à 5 fichiers'),
+  body('files.*.filename').isString().trim().isLength({ min: 1, max: 200 }),
+  body('files.*.mimeType').isString().trim().isLength({ min: 3, max: 100 }),
+  body('files.*.contentBase64').isString().isLength({ min: 1 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversationId = String(req.params.conversationId)
+      const files = req.body.files as Array<{ filename: string; mimeType: string; contentBase64: string }>
+
+      const attachments: Array<{ originalName: string; storagePath: string; mimeType: string; size: number }> = []
+      const relDir = path.join('uploads', 'agent', 'internal-messaging', conversationId)
+      const absDir = path.resolve(process.cwd(), relDir)
+      await fs.mkdir(absDir, { recursive: true })
+
+      for (const file of files) {
+        const buffer = Buffer.from(file.contentBase64, 'base64')
+        if (buffer.length === 0) {
+          return respondError(res, 400, 'INVALID_BASE64', `contentBase64 vide pour ${file.filename}`)
+        }
+        if (buffer.length > RAW_LIMIT_BYTES) {
+          return respondError(
+            res,
+            413,
+            'FILE_TOO_LARGE',
+            `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+          )
+        }
+        const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
+        const relPath = path.join(relDir, stored)
+        const absPath = path.resolve(process.cwd(), relPath)
+        if (!absPath.startsWith(uploadsRoot())) {
+          return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
+        }
+        await fs.writeFile(absPath, buffer)
+        attachments.push({
+          originalName: file.filename,
+          storagePath: relPath,
+          mimeType: file.mimeType,
+          size: buffer.length,
+        })
+      }
+
+      const message = await createMessage(user, conversationId, {
+        content: String(req.body.content || 'Pièce jointe').trim() || 'Pièce jointe',
+        attachments,
+      })
+
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(message._id),
+        summary: `Message + ${attachments.length} attachment(s) dans conv ${conversationId}`,
+        after: { attachments: attachments.map((a) => a.originalName) },
+      }
+      res.status(201).json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 export default router

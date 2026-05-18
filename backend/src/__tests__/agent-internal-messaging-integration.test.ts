@@ -331,4 +331,70 @@ describe('Agent × Messagerie interne', () => {
     expect(off.status).toBe(200)
     expect(off.body.message.reactions).toHaveLength(0)
   })
+
+  // ── Task 23: POST /conversations/:id/attachments ───────────────────────────
+  it('POST /attachments accepte un fichier base64 < 5 Mo', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Ken')
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+
+    const tinyPdfBase64 = Buffer.from('%PDF-1.4 tiny').toString('base64')
+
+    const res = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/attachments`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({
+        content: 'voici le doc',
+        files: [{ filename: 'tiny.pdf', mimeType: 'application/pdf', contentBase64: tinyPdfBase64 }],
+      })
+    expect(res.status).toBe(201)
+    expect(res.body.message.attachments).toHaveLength(1)
+    expect(res.body.message.attachments[0].originalName).toBe('tiny.pdf')
+    expect(res.body.message.attachments[0].mimeType).toBe('application/pdf')
+  })
+
+  it('POST /attachments refuse > 5 Mo avec 413', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Lily')
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+
+    const big = Buffer.alloc(6 * 1024 * 1024).toString('base64') // 6 Mo brut
+
+    const res = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/attachments`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({
+        content: 'gros',
+        files: [{ filename: 'big.bin', mimeType: 'application/octet-stream', contentBase64: big }],
+      })
+    expect(res.status).toBe(413)
+    expect(res.body.code).toBe('FILE_TOO_LARGE')
+  })
+
+  it('POST /attachments refuse > 5 fichiers', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Max')
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+
+    const tiny = Buffer.from('x').toString('base64')
+    const files = Array.from({ length: 6 }, (_, i) => ({
+      filename: `f${i}.txt`, mimeType: 'text/plain', contentBase64: tiny,
+    }))
+
+    const res = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/attachments`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'beaucoup', files })
+    expect(res.status).toBe(400)
+  })
+
 })
