@@ -59,6 +59,7 @@ const userSchema = new mongoose.Schema<IUser>(
     lastLoginIp: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     locale: { type: String, enum: ['fr', 'en'], default: null },
+    avatarUrl: { type: String, default: '' },
   },
   { timestamps: true }
 )

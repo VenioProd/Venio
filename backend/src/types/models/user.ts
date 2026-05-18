@@ -39,6 +39,7 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   locale: 'fr' | 'en' | null
+  avatarUrl: string
   createdAt: Date
   updatedAt: Date
 }
