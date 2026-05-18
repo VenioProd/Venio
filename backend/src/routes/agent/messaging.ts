@@ -48,12 +48,10 @@ const RAW_LIMIT_MB = 5
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RAW_LIMIT_BYTES = RAW_LIMIT_MB * 1024 * 1024
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isValidObjectId(id: unknown): boolean {
   return typeof id === 'string' && mongoose.isValidObjectId(id)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -77,6 +75,71 @@ function safeFilename(originalName: string): string {
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────
+
+router.get('/conversations', requireScope('read:internal-messaging'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await loadAgentUserPayload(req)
+    const conversations = await listConversations(user)
+    res.json({ conversations })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post(
+  '/conversations',
+  requireScope('write:internal-messaging'),
+  body('type').isIn(['CHANNEL', 'DM', 'GROUP']).withMessage('type CHANNEL/DM/GROUP requis'),
+  body('name').optional().isString().trim(),
+  body('visibility').optional().isIn(['PUBLIC', 'PRIVATE']),
+  body('participantIds').optional().isArray(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversation = await createConversation(user, {
+        type: req.body.type,
+        name: req.body.name,
+        visibility: req.body.visibility,
+        participantIds: req.body.participantIds,
+      })
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(conversation._id),
+        summary: `Création conversation ${conversation.type} "${conversation.name || conversation.slug || ''}"`,
+        after: { type: conversation.type, name: conversation.name, slug: conversation.slug },
+      }
+      res.status(201).json({ conversation })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/direct',
+  requireScope('write:internal-messaging'),
+  body('participantId').custom((v) => isValidObjectId(v)).withMessage('participantId (ObjectId) requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversation = await createConversation(user, {
+        type: 'DM',
+        participantIds: [String(req.body.participantId)],
+      })
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(conversation._id),
+        summary: `DM agent → ${req.body.participantId}`,
+        after: { type: 'DM' },
+      }
+      res.status(201).json({ conversation })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
   try {

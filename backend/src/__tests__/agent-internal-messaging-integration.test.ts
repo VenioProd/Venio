@@ -86,4 +86,57 @@ describe('Agent × Messagerie interne', () => {
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('INSUFFICIENT_SCOPE')
   })
+
+  // ── Task 19: GET /conversations + POST /conversations + POST /direct ──────
+  it('GET /messaging/conversations retourne #general pour un nouveau token', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging'])
+    const res = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.conversations)).toBe(true)
+    const slugs = res.body.conversations.map((c: { slug: string | null }) => c.slug)
+    expect(slugs).toContain('general')
+  })
+
+  it('POST /messaging/conversations crée un channel privé et l\'agent est OWNER', async () => {
+    const { plainSecret, agentUser } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Bob')
+
+    const res = await request(app)
+      .post('/api/v1/agent/messaging/conversations')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({
+        type: 'CHANNEL',
+        name: 'Agents Channel',
+        visibility: 'PRIVATE',
+        participantIds: [String(human._id)],
+      })
+    expect(res.status).toBe(201)
+    expect(res.body.conversation.name).toBe('Agents Channel')
+
+    const members = await InternalConversationMember.find({ conversation: res.body.conversation._id }).lean()
+    expect(members).toHaveLength(2)
+    const owner = members.find((m) => m.user.toString() === String(agentUser._id))
+    expect(owner?.role).toBe('OWNER')
+  })
+
+  it('POST /messaging/direct crée un DM idempotent (memberKey)', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Carol')
+
+    const r1 = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    expect(r1.status).toBe(201)
+    const convId1 = r1.body.conversation._id
+
+    const r2 = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    expect(r2.status).toBe(201)
+    expect(r2.body.conversation._id).toBe(convId1)
+  })
 })
