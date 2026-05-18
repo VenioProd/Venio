@@ -52,6 +52,7 @@ import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
+import adminDevRoutes from './routes/admin/dev/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
@@ -203,6 +204,9 @@ app.use('/api/admin/activity-center', adminActivityCenterRoutes)
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
 // express.json global, pour autoriser un body plus volumineux (upload base64).
 app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
+
+// Dev workspace (suivi développement type Linear, séparé de Projets clients).
+app.use('/api/admin/dev', adminDevRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

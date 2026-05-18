@@ -23,6 +23,7 @@ import {
   LifeBuoy,
   Shield,
   FolderGit2,
+  GitBranch,
   Crosshair,
   ShieldCheck,
   Bot,
@@ -85,6 +86,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/tickets', label: 'Tickets', icon: LifeBuoy, roles: ['SUPER_ADMIN'] },
       { to: '/admin/audit', label: 'Audit', icon: Shield, perm: PERMISSIONS.MANAGE_ADMINS, roles: ['SUPER_ADMIN'] },
       { to: '/admin/projets-internes', label: 'Projets internes', icon: FolderGit2 },
+      { to: '/admin/dev', label: 'Dev workspace', icon: GitBranch, perm: PERMISSIONS.VIEW_DEV },
     ],
   },
   {

@@ -38,6 +38,9 @@ describe('permissions module', () => {
         'MANAGE_VAT',
         'EXPORT_FEC',
         'MANAGE_EXTERNAL_SOURCES',
+        // Dev workspace
+        'VIEW_DEV',
+        'MANAGE_DEV',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })

@@ -1,0 +1,207 @@
+import { apiFetch } from '../lib/api'
+
+export type DevProjectStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
+export type DevIssueStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CANCELLED'
+export type DevIssuePriority = 'NO_PRIORITY' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+export type DevIssueType = 'FEATURE' | 'BUG' | 'CHORE' | 'TASK'
+
+export interface UserRef {
+  _id: string
+  name?: string
+  email?: string
+  avatarUrl?: string
+}
+
+export interface DevProject {
+  _id: string
+  key: string
+  name: string
+  description: string
+  color: string
+  status: DevProjectStatus
+  lead: UserRef | null
+  members: UserRef[]
+  createdBy: UserRef | null
+  openIssues?: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevIssue {
+  _id: string
+  project: { _id: string; key: string; name: string; color?: string } | string
+  number: number
+  identifier: string
+  title: string
+  description: string
+  type: DevIssueType
+  status: DevIssueStatus
+  priority: DevIssuePriority
+  assignee: UserRef | null
+  reporter: UserRef | null
+  labels: string[]
+  dueDate: string | null
+  startedAt: string | null
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevIssueComment {
+  _id: string
+  issue: string
+  project: string
+  author: UserRef
+  body: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevStats {
+  total: number
+  open: number
+  completedRecent: number
+  totalProjects: number
+  byStatus: Record<DevIssueStatus, number>
+  byPriority: Record<DevIssuePriority, number>
+}
+
+export interface IssueFilters {
+  project?: string
+  status?: DevIssueStatus | 'open' | 'all'
+  priority?: DevIssuePriority | 'all'
+  type?: DevIssueType | 'all'
+  assignee?: string | 'me' | 'unassigned' | 'all'
+  q?: string
+  label?: string
+}
+
+function qs(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== '' && v !== 'all') search.set(k, v)
+  }
+  const str = search.toString()
+  return str ? `?${str}` : ''
+}
+
+// Projects
+export function listDevProjects(status?: DevProjectStatus | 'all'): Promise<{ projects: DevProject[] }> {
+  return apiFetch(`/api/admin/dev/projects${qs({ status })}`)
+}
+
+export function createDevProject(data: {
+  key: string
+  name: string
+  description?: string
+  color?: string
+  lead?: string | null
+  members?: string[]
+}): Promise<DevProject> {
+  return apiFetch('/api/admin/dev/projects', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateDevProject(id: string, data: Partial<DevProject>): Promise<DevProject> {
+  return apiFetch(`/api/admin/dev/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteDevProject(id: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/admin/dev/projects/${id}`, { method: 'DELETE' })
+}
+
+// Issues
+export function listDevIssues(filters: IssueFilters = {}): Promise<{ issues: DevIssue[] }> {
+  return apiFetch(`/api/admin/dev/issues${qs(filters as Record<string, string | undefined>)}`)
+}
+
+export function getDevIssue(id: string): Promise<{ issue: DevIssue; comments: DevIssueComment[] }> {
+  return apiFetch(`/api/admin/dev/issues/${id}`)
+}
+
+export function createDevIssue(data: {
+  project: string
+  title: string
+  description?: string
+  type?: DevIssueType
+  status?: DevIssueStatus
+  priority?: DevIssuePriority
+  assignee?: string | null
+  labels?: string[]
+  dueDate?: string | null
+}): Promise<DevIssue> {
+  return apiFetch('/api/admin/dev/issues', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateDevIssue(id: string, data: Partial<DevIssue> & { assignee?: string | null }): Promise<DevIssue> {
+  return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteDevIssue(id: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'DELETE' })
+}
+
+export function addDevIssueComment(id: string, body: string): Promise<DevIssueComment> {
+  return apiFetch(`/api/admin/dev/issues/${id}/comments`, { method: 'POST', body: JSON.stringify({ body }) })
+}
+
+export function deleteDevIssueComment(issueId: string, commentId: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/admin/dev/issues/${issueId}/comments/${commentId}`, { method: 'DELETE' })
+}
+
+// Stats
+export function fetchDevStats(project?: string): Promise<DevStats> {
+  return apiFetch(`/api/admin/dev/stats${qs({ project })}`)
+}
+
+// UI helpers
+export const STATUS_LABEL: Record<DevIssueStatus, string> = {
+  BACKLOG: 'Backlog',
+  TODO: 'À faire',
+  IN_PROGRESS: 'En cours',
+  IN_REVIEW: 'En revue',
+  DONE: 'Terminé',
+  CANCELLED: 'Annulé',
+}
+
+export const STATUS_COLOR: Record<DevIssueStatus, string> = {
+  BACKLOG: '#94a3b8',
+  TODO: '#cbd5e1',
+  IN_PROGRESS: '#facc15',
+  IN_REVIEW: '#a78bfa',
+  DONE: '#10b981',
+  CANCELLED: '#475569',
+}
+
+export const STATUS_ORDER: DevIssueStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED']
+
+export const PRIORITY_LABEL: Record<DevIssuePriority, string> = {
+  NO_PRIORITY: 'Aucune',
+  LOW: 'Basse',
+  MEDIUM: 'Moyenne',
+  HIGH: 'Haute',
+  URGENT: 'Urgent',
+}
+
+export const PRIORITY_COLOR: Record<DevIssuePriority, string> = {
+  NO_PRIORITY: '#64748b',
+  LOW: '#3b82f6',
+  MEDIUM: '#06b6d4',
+  HIGH: '#f97316',
+  URGENT: '#ef4444',
+}
+
+export const PRIORITY_ORDER: DevIssuePriority[] = ['URGENT', 'HIGH', 'MEDIUM', 'LOW', 'NO_PRIORITY']
+
+export const TYPE_LABEL: Record<DevIssueType, string> = {
+  FEATURE: 'Feature',
+  BUG: 'Bug',
+  CHORE: 'Chore',
+  TASK: 'Task',
+}
+
+export const TYPE_COLOR: Record<DevIssueType, string> = {
+  FEATURE: '#22c55e',
+  BUG: '#ef4444',
+  CHORE: '#a3a3a3',
+  TASK: '#7c5cff',
+}
