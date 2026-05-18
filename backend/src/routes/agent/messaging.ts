@@ -76,6 +76,21 @@ function safeFilename(originalName: string): string {
     .slice(-100)
 }
 
-// ── Routes (ajoutées dans les tâches suivantes) ────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────
+
+router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.find({
+      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
+      isActive: true,
+    })
+      .select('name email role')
+      .sort({ name: 1 })
+      .lean()
+    res.json({ users })
+  } catch (err) {
+    next(err)
+  }
+})
 
 export default router

@@ -60,7 +60,30 @@ async function createInternalHuman(role: 'SUPER_ADMIN' | 'ADMIN' = 'ADMIN', name
 }
 
 describe('Agent × Messagerie interne', () => {
-  it('placeholder pour structure — sera remplacé', () => {
-    expect(true).toBe(true)
+  // ── Task 18: GET /messaging/users ─────────────────────────────────────────
+  it('GET /messaging/users liste les users internes (humains + agents)', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging'])
+    await createInternalHuman('ADMIN', 'Alice')
+    await createInternalHuman('SUPER_ADMIN', 'Bob')
+
+    const res = await request(app)
+      .get('/api/v1/agent/messaging/users')
+      .set('Authorization', `Bearer ${plainSecret}`)
+
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.users)).toBe(true)
+    const names = res.body.users.map((u: { name: string }) => u.name)
+    expect(names).toContain('Alice')
+    expect(names).toContain('Bob')
+    expect(names).toContain('Test Agent') // l'agent lui-même
+  })
+
+  it('GET /messaging/users sans scope read renvoie 403', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:crm'])
+    const res = await request(app)
+      .get('/api/v1/agent/messaging/users')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('INSUFFICIENT_SCOPE')
   })
 })
