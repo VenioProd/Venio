@@ -78,6 +78,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_VAT,
   ]),
   CLIENT: new Set<Permission>(),
+  // Agents (API Bearer tokens) n'héritent d'aucune permission par rôle ;
+  // leurs accès sont contrôlés par les scopes de l'AgentToken.
+  AGENT: new Set<Permission>(),
 }
 
 export function isAdminRole(role: UserRole): role is AdminRole {
