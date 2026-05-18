@@ -29,6 +29,7 @@ export const AGENT_SCOPES = [
   'read:tasks', 'write:tasks',
   'read:tickets', 'write:tickets',
   'read:messages', 'write:messages',
+  'read:internal-messaging', 'write:internal-messaging',
   'read:notifications', 'write:notifications',
   'read:calendar', 'write:calendar',
 
