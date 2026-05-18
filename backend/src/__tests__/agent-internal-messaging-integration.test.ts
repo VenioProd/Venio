@@ -397,4 +397,28 @@ describe('Agent × Messagerie interne', () => {
     expect(res.status).toBe(400)
   })
 
+  // ── Task 24: GET /messages/:id/attachments/:idx/download ──────────────────
+  it('GET /attachments/:idx/download renvoie le fichier', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Nina')
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+
+    const payload = Buffer.from('hello downloadable').toString('base64')
+    const send = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/attachments`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'fichier', files: [{ filename: 'note.txt', mimeType: 'text/plain', contentBase64: payload }] })
+    expect(send.status).toBe(201)
+    const messageId = send.body.message._id
+
+    const dl = await request(app)
+      .get(`/api/v1/agent/messaging/messages/${messageId}/attachments/0/download`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(dl.status).toBe(200)
+    expect(dl.headers['content-disposition']).toContain('note.txt')
+    expect(dl.text).toBe('hello downloadable')
+  })
 })

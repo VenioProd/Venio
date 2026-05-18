@@ -372,4 +372,39 @@ router.post(
   }
 )
 
+// ── Task 24: GET /messages/:messageId/attachments/:index/download ─────────────
+
+router.get(
+  '/messages/:messageId/attachments/:index/download',
+  requireScope('read:internal-messaging'),
+  param('messageId').isMongoId(),
+  param('index').isInt({ min: 0, max: 4 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await InternalMessage.findById(req.params.messageId)
+      const index = Number(req.params.index)
+      const attachment = message?.attachments[index]
+      if (!message || !attachment) {
+        return respondError(res, 404, 'NOT_FOUND', 'Fichier non trouvé')
+      }
+      // Vérifie l'ACL via le service (lancera 404 si non accessible)
+      await listMessages(user, message.conversation.toString(), { limit: 1 })
+
+      const safeRoot = path.resolve(process.cwd(), 'uploads', 'agent', 'internal-messaging')
+      const safeRootLegacy = path.resolve(process.cwd(), 'uploads', 'internal-messaging') // côté admin
+      const filePath = path.resolve(process.cwd(), attachment.storagePath)
+      if (!filePath.startsWith(safeRoot) && !filePath.startsWith(safeRootLegacy)) {
+        return respondError(res, 403, 'ACCESS_DENIED', 'Accès refusé')
+      }
+      res.setHeader('Content-Type', attachment.mimeType)
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName.replace(/"/g, '_')}"`)
+      createReadStream(filePath).pipe(res)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
 export default router
