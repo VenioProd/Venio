@@ -87,6 +87,16 @@ export function isAdminRole(role: UserRole): role is AdminRole {
   return (ADMIN_ROLES as string[]).includes(role)
 }
 
+/**
+ * Un user "interne" est soit un admin humain (SUPER_ADMIN, ADMIN, RH, VIEWER),
+ * soit un agent système (AGENT). Utilisé par la messagerie interne pour
+ * autoriser à la fois les humains internes et les agents externes à
+ * envoyer/lire des messages. N'octroie AUCUNE permission admin par lui-même.
+ */
+export function isInternalRole(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'AGENT'
+}
+
 export function hasPermission(role: UserRole, permission: Permission): boolean {
   const rolePermissions = ROLE_PERMISSIONS[role]
   if (!rolePermissions) return false
