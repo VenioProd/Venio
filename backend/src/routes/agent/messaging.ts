@@ -141,6 +141,54 @@ router.post(
   }
 )
 
+router.get(
+  '/conversations/:conversationId/messages',
+  requireScope('read:internal-messaging'),
+  param('conversationId').isMongoId(),
+  query('before').optional().isISO8601(),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const messages = await listMessages(user, String(req.params.conversationId), {
+        before: req.query.before ? String(req.query.before) : undefined,
+        limit: req.query.limit ? Number(req.query.limit) : undefined,
+      })
+      res.json({ messages })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/conversations/:conversationId/messages',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  body('content').isString().trim().isLength({ min: 1, max: 4000 }),
+  body('parentMessage').optional({ nullable: true }).custom((v) => v === null || isValidObjectId(v)),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const message = await createMessage(user, String(req.params.conversationId), {
+        content: req.body.content,
+        parentMessage: req.body.parentMessage || null,
+      })
+      res.locals.audit = {
+        entityType: 'InternalMessage',
+        entityId: String(message._id),
+        summary: `Message dans conv ${req.params.conversationId} (${String(req.body.content).slice(0, 60)}…)`,
+        after: { id: String(message._id) },
+      }
+      res.status(201).json({ message })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
 router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({

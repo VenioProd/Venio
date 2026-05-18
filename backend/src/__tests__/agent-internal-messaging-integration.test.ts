@@ -139,4 +139,50 @@ describe('Agent × Messagerie interne', () => {
     expect(r2.status).toBe(201)
     expect(r2.body.conversation._id).toBe(convId1)
   })
+
+  // ── Task 20: GET messages + POST message texte ────────────────────────────
+  it('Envoi puis lecture d\'un message texte dans une conv', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Dana')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    expect(dm.status).toBe(201)
+    const convId = dm.body.conversation._id
+
+    const send = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${convId}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'Hello world' })
+    expect(send.status).toBe(201)
+    expect(send.body.message.content).toBe('Hello world')
+
+    const list = await request(app)
+      .get(`/api/v1/agent/messaging/conversations/${convId}/messages`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(list.status).toBe(200)
+    expect(list.body.messages).toHaveLength(1)
+    expect(list.body.messages[0].content).toBe('Hello world')
+  })
+
+  it('Channel privé non-membre → 404', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging'])
+    const stranger = await createInternalHuman('ADMIN', 'Stranger')
+
+    const channel = await InternalConversation.create({
+      type: 'CHANNEL',
+      name: 'secret',
+      slug: 'secret',
+      visibility: 'PRIVATE',
+      createdBy: stranger._id,
+    })
+    await InternalConversationMember.create({ conversation: channel._id, user: stranger._id, role: 'OWNER' })
+
+    const res = await request(app)
+      .get(`/api/v1/agent/messaging/conversations/${channel._id}/messages`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(404)
+  })
 })
