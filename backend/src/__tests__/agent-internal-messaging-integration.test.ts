@@ -13,6 +13,7 @@ import User from '../models/User.js'
 import AgentToken from '../models/AgentToken.js'
 import InternalConversation from '../models/InternalConversation.js'
 import InternalConversationMember from '../models/InternalConversationMember.js'
+import InternalMessage from '../models/InternalMessage.js'
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
@@ -184,5 +185,57 @@ describe('Agent × Messagerie interne', () => {
       .get(`/api/v1/agent/messaging/conversations/${channel._id}/messages`)
       .set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(404)
+  })
+
+  // ── Task 21: POST /read + GET /search ─────────────────────────────────────
+  it('POST /read remet le unreadCount à 0', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Eve')
+
+    const dm = await InternalConversation.create({ type: 'DM', visibility: 'PRIVATE', memberKey: 'x', createdBy: human._id })
+    await InternalConversationMember.create({ conversation: dm._id, user: human._id, role: 'OWNER' })
+
+    const agentUser = await User.findOne({ role: 'AGENT' })
+    await InternalConversationMember.create({ conversation: dm._id, user: agentUser!._id, role: 'MEMBER' })
+
+    await InternalMessage.create({ conversation: dm._id, sender: human._id, content: 'Coucou agent', mentions: [] })
+
+    const before = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    const dmBefore = before.body.conversations.find((c: { _id: string }) => c._id === String(dm._id))
+    expect(dmBefore?.unreadCount).toBe(1)
+
+    const read = await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm._id}/read`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({})
+    expect(read.status).toBe(200)
+
+    const after = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    const dmAfter = after.body.conversations.find((c: { _id: string }) => c._id === String(dm._id))
+    expect(dmAfter?.unreadCount).toBe(0)
+  })
+
+  it('GET /search trouve un message par contenu', async () => {
+    const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
+    const human = await createInternalHuman('ADMIN', 'Frank')
+
+    const dm = await request(app)
+      .post('/api/v1/agent/messaging/direct')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ participantId: String(human._id) })
+    await request(app)
+      .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'mot-clef-trouvable' })
+
+    const res = await request(app)
+      .get('/api/v1/agent/messaging/search?q=mot-clef')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(res.status).toBe(200)
+    expect(res.body.results.length).toBeGreaterThan(0)
   })
 })

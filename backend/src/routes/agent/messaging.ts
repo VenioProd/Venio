@@ -189,6 +189,43 @@ router.post(
   }
 )
 
+router.post(
+  '/conversations/:conversationId/read',
+  requireScope('write:internal-messaging'),
+  param('conversationId').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      await markConversationRead(user, String(req.params.conversationId))
+      res.locals.audit = {
+        entityType: 'InternalConversation',
+        entityId: String(req.params.conversationId),
+        summary: `Marqué lu`,
+      }
+      res.json({ success: true })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get(
+  '/search',
+  requireScope('read:internal-messaging'),
+  query('q').isString().trim().isLength({ min: 2 }).withMessage('q (min 2 chars) requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const user = await loadAgentUserPayload(req)
+      const results = await searchMessages(user, String(req.query.q))
+      res.json({ results })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
 router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({
