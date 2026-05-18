@@ -4,7 +4,7 @@ import InternalConversationMember from '../models/InternalConversationMember.js'
 import InternalMessage from '../models/InternalMessage.js'
 import Notification from '../models/Notification.js'
 import User from '../models/User.js'
-import { isAdminRole } from '../lib/permissions.js'
+import { isInternalRole } from '../lib/permissions.js'
 import type { JwtPayload } from '../types/express.js'
 import type { IInternalMessageAttachment } from '../types/models/index.js'
 
@@ -32,7 +32,7 @@ export function extractMentionIds(content: string): string[] {
 }
 
 export function assertInternalUser(user: JwtPayload): void {
-  if (!isAdminRole(user.role)) {
+  if (!isInternalRole(user.role)) {
     const err = new Error('Forbidden')
     ;(err as Error & { status?: number }).status = 403
     throw err
