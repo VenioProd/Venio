@@ -2,6 +2,9 @@ import express, { Request, Response, NextFunction } from 'express'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
 import { body, validationResult } from 'express-validator'
 import { TOTP } from 'otpauth'
 import User from '../models/User.js'
@@ -9,9 +12,31 @@ import AuditLog from '../models/AuditLog.js'
 import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
+import { avatarsDir } from './avatars.js'
 
 // In-memory store for reset tokens (simple approach, clears on restart)
 export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, avatarsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+    cb(null, req.user!.id + ext)
+  },
+})
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Type de fichier non autorisé. Utilisez JPEG, PNG ou WebP.'))
+    }
+  },
+})
 
 const router = express.Router()
 
@@ -337,5 +362,54 @@ router.patch(
     }
   }
 )
+
+// POST /api/auth/avatar — upload photo de profil
+router.post('/avatar', auth, avatarUpload.single('avatar'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier reçu' })
+    }
+
+    const user = await User.findById(req.user!.id)
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
+
+    const ext = path.extname(req.file.filename)
+    const newUrl = `/api/avatars/${req.user!.id}${ext}`
+
+    // Supprimer l'ancien fichier si l'extension a changé
+    if (user.avatarUrl && user.avatarUrl !== newUrl) {
+      const oldFilename = path.basename(user.avatarUrl)
+      const oldPath = path.join(avatarsDir, oldFilename)
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
+    }
+
+    user.avatarUrl = newUrl
+    await user.save()
+
+    return res.json({ avatarUrl: newUrl })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /api/auth/avatar — supprimer photo de profil
+router.delete('/avatar', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.user!.id)
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
+
+    if (user.avatarUrl) {
+      const filename = path.basename(user.avatarUrl)
+      const filePath = path.join(avatarsDir, filename)
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      user.avatarUrl = ''
+      await user.save()
+    }
+
+    return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
 
 export default router

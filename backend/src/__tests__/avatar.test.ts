@@ -71,3 +71,56 @@ describe('avatar route — sécurité path-traversal', () => {
     expect(isPathSafe('../avatarsFoo/secret.txt', testDir)).toBe(false)
   })
 })
+
+describe('avatar multer — fileFilter', () => {
+  function makeFileFilter() {
+    return (
+      _req: unknown,
+      file: { mimetype: string },
+      cb: (err: Error | null, accept?: boolean) => void
+    ) => {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp']
+      if (allowed.includes(file.mimetype)) {
+        cb(null, true)
+      } else {
+        cb(new Error('Type de fichier non autorisé. Utilisez JPEG, PNG ou WebP.'))
+      }
+    }
+  }
+
+  it('accepte image/jpeg', () => {
+    const filter = makeFileFilter()
+    let result: boolean | undefined
+    filter({}, { mimetype: 'image/jpeg' }, (_err, accept) => { result = accept })
+    expect(result).toBe(true)
+  })
+
+  it('accepte image/png', () => {
+    const filter = makeFileFilter()
+    let result: boolean | undefined
+    filter({}, { mimetype: 'image/png' }, (_err, accept) => { result = accept })
+    expect(result).toBe(true)
+  })
+
+  it('accepte image/webp', () => {
+    const filter = makeFileFilter()
+    let result: boolean | undefined
+    filter({}, { mimetype: 'image/webp' }, (_err, accept) => { result = accept })
+    expect(result).toBe(true)
+  })
+
+  it('rejette image/gif', () => {
+    const filter = makeFileFilter()
+    let err: Error | null = null
+    filter({}, { mimetype: 'image/gif' }, (e) => { err = e })
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toContain('non autorisé')
+  })
+
+  it('rejette application/pdf', () => {
+    const filter = makeFileFilter()
+    let err: Error | null = null
+    filter({}, { mimetype: 'application/pdf' }, (e) => { err = e })
+    expect(err).toBeInstanceOf(Error)
+  })
+})
