@@ -8,6 +8,9 @@ import User from '../models/User.js'
 import AgentToken from '../models/AgentToken.js'
 import jwt from 'jsonwebtoken'
 
+// Garantit que le middleware auth peut vérifier les tokens JWT dans les tests
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
+
 let app: Express
 
 beforeAll(async () => {
@@ -38,6 +41,22 @@ async function loginAsSuperAdmin(): Promise<string> {
 }
 
 describe('AgentToken ↔ User AGENT lifecycle', () => {
+  it('supprime le User AGENT si la création du Token échoue', async () => {
+    const jwtTok = await loginAsSuperAdmin()
+
+    // Provoque une erreur en envoyant un scope inconnu, qui passe les validators
+    // mais déclenche findUnknownScopes côté handler.
+    const res = await request(app)
+      .post('/api/admin/agent-tokens')
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({ name: 'Bad', scopes: ['scope:inexistant'] })
+
+    expect(res.status).toBe(400)
+    // Pas de user orphelin avec role AGENT
+    const agentUsers = await User.find({ role: 'AGENT' }).lean()
+    expect(agentUsers).toHaveLength(0)
+  })
+
   it('POST /agent-tokens crée un User AGENT lié et l\'ajoute à #general', async () => {
     const jwtTok = await loginAsSuperAdmin()
 
