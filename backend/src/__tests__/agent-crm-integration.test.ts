@@ -75,6 +75,42 @@ describe('Agent CRM / clients', () => {
     expect(filteredRes.body.items[0].companyName).toBe('ACME')
   })
 
+  it('does not expose auth/security fields on client reads', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:crm'])
+    const pwd = await bcrypt.hash('x', 10)
+    const client = await User.create({
+      email: 'safe-client@test.com',
+      passwordHash: pwd,
+      name: 'Safe Client',
+      companyName: 'SafeCo',
+      role: 'CLIENT',
+      twoFactorSecret: 'TOTPSECRET',
+      lastLoginIp: '203.0.113.10',
+      passwordChangedAt: new Date(),
+    })
+    await User.collection.updateOne({ _id: client._id }, { $set: { plainPassword: 'legacy-secret' } })
+
+    const list = await request(app)
+      .get('/api/v1/agent/clients')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(list.status).toBe(200)
+    expect(list.body.items[0].passwordHash).toBeUndefined()
+    expect(list.body.items[0].twoFactorSecret).toBeUndefined()
+    expect(list.body.items[0].lastLoginIp).toBeUndefined()
+    expect(list.body.items[0].passwordChangedAt).toBeUndefined()
+    expect(list.body.items[0].plainPassword).toBeUndefined()
+
+    const detail = await request(app)
+      .get(`/api/v1/agent/clients/${client._id}`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(detail.status).toBe(200)
+    expect(detail.body.passwordHash).toBeUndefined()
+    expect(detail.body.twoFactorSecret).toBeUndefined()
+    expect(detail.body.lastLoginIp).toBeUndefined()
+    expect(detail.body.passwordChangedAt).toBeUndefined()
+    expect(detail.body.plainPassword).toBeUndefined()
+  })
+
   it('creates a client and returns 201 without passwordHash', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:crm'])
     const res = await request(app)

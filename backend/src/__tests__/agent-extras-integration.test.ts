@@ -43,7 +43,7 @@ beforeEach(async () => {
 })
 
 // ───────────────────────────────────────────────────────────────────────────
-// ToolAccess (password masked)
+// ToolAccess (password sanitized)
 // ───────────────────────────────────────────────────────────────────────────
 
 describe('Agent ToolAccess / password masking', () => {
@@ -54,12 +54,12 @@ describe('Agent ToolAccess / password masking', () => {
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
       .send({ name: 'Tool X', login: 'u', password: 'secret-pwd', category: 'DEV' })
     expect(res.status).toBe(201)
-    expect(res.body.password).toBe('***')
+    expect(res.body.password).toBeUndefined()
 
     const list = await request(app)
       .get('/api/v1/agent/tool-access')
       .set('Authorization', `Bearer ${plainSecret}`)
-    expect(list.body.items[0].password).toBe('***')
+    expect(list.body.items[0].password).toBeUndefined()
   })
 
   it('rotation : PATCH password sets lastRotatedAt', async () => {

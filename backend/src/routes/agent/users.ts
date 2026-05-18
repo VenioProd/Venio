@@ -42,6 +42,32 @@ function emit(req: Request, res: Response): boolean {
   return false
 }
 
+const ADMIN_AGENT_FIELDS = [
+  '_id',
+  'email',
+  'role',
+  'name',
+  'title',
+  'phone',
+  'isActive',
+  'twoFactorEnabled',
+  'customPermissions',
+  'locale',
+  'colorTheme',
+  'avatarUrl',
+  'createdAt',
+  'updatedAt',
+].join(' ')
+
+function sanitizeAdminForAgent(user: unknown): Record<string, unknown> {
+  const source = user as Record<string, unknown>
+  const safe: Record<string, unknown> = {}
+  for (const key of ADMIN_AGENT_FIELDS.split(' ')) {
+    if (source[key] !== undefined) safe[key] = source[key]
+  }
+  return safe
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Users (admins seulement — clients = /crm/clients)
 // ───────────────────────────────────────────────────────────────────────────
@@ -59,7 +85,7 @@ router.get('/users', requireScope('read:users'), async (req: Request, res: Respo
     }
     const [items, total] = await Promise.all([
       User.find(filter)
-        .select('-passwordHash -twoFactorSecret')
+        .select(ADMIN_AGENT_FIELDS)
         .sort({ createdAt: -1 })
         .skip(pag.skip)
         .limit(pag.limit)
@@ -80,7 +106,7 @@ router.get(
     if (emit(req, res)) return
     try {
       const user = await User.findById(req.params.id)
-        .select('-passwordHash -twoFactorSecret')
+        .select(ADMIN_AGENT_FIELDS)
         .lean()
       if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
       res.json(user)
@@ -122,7 +148,7 @@ router.post(
             ? req.body.customPermissions.map(String)
             : null,
       })
-      const safe = await User.findById(user._id).select('-passwordHash -twoFactorSecret').lean()
+      const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
       res.locals.audit = {
         entityType: 'User',
         entityId: String(user._id),
@@ -149,7 +175,7 @@ router.patch(
       if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
         return respondError(res, 422, 'NOT_ADMIN', 'Cet endpoint ne gère que les comptes admin (CLIENT → /crm/clients)')
       }
-      const before = { ...user.toObject(), passwordHash: undefined, twoFactorSecret: undefined }
+      const before = sanitizeAdminForAgent(user.toObject())
 
       const stringFields = ['name', 'title', 'phone']
       for (const f of stringFields) {
@@ -171,7 +197,7 @@ router.patch(
         user.passwordChangedAt = new Date()
       }
       await user.save()
-      const safe = await User.findById(user._id).select('-passwordHash -twoFactorSecret').lean()
+      const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
       res.locals.audit = {
         entityType: 'User',
         entityId: String(user._id),
@@ -206,7 +232,7 @@ router.delete(
           return respondError(res, 409, 'LAST_SUPER_ADMIN', 'Impossible de supprimer le dernier SUPER_ADMIN')
         }
       }
-      const before = { ...user.toObject(), passwordHash: undefined, twoFactorSecret: undefined }
+      const before = sanitizeAdminForAgent(user.toObject())
       await User.deleteOne({ _id: user._id })
       res.locals.audit = {
         entityType: 'User',

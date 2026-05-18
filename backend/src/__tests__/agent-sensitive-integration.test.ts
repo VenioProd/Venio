@@ -90,6 +90,33 @@ describe('Agent Users / admin CRUD', () => {
     expect(res.body.items[0].role).toBe('SUPER_ADMIN')
   })
 
+  it('does not expose auth/security metadata on admin user reads', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:users'])
+    const admin = await User.findOne({ role: 'SUPER_ADMIN' })
+    admin!.twoFactorSecret = 'TOTPSECRET'
+    admin!.lastLoginIp = '203.0.113.20'
+    admin!.passwordChangedAt = new Date()
+    await admin!.save()
+
+    const list = await request(app)
+      .get('/api/v1/agent/users')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(list.status).toBe(200)
+    expect(list.body.items[0].passwordHash).toBeUndefined()
+    expect(list.body.items[0].twoFactorSecret).toBeUndefined()
+    expect(list.body.items[0].lastLoginIp).toBeUndefined()
+    expect(list.body.items[0].passwordChangedAt).toBeUndefined()
+
+    const detail = await request(app)
+      .get(`/api/v1/agent/users/${admin!._id}`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(detail.status).toBe(200)
+    expect(detail.body.passwordHash).toBeUndefined()
+    expect(detail.body.twoFactorSecret).toBeUndefined()
+    expect(detail.body.lastLoginIp).toBeUndefined()
+    expect(detail.body.passwordChangedAt).toBeUndefined()
+  })
+
   it('creates admin without exposing passwordHash or twoFactorSecret', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:users'])
     const res = await request(app)
