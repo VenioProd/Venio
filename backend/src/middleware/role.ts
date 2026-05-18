@@ -21,6 +21,14 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   next()
 }
 
+export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+    res.status(403).json({ error: 'Forbidden' })
+    return
+  }
+  next()
+}
+
 export function requirePermission(permission: Permission) {
   return function permissionMiddleware(req: Request, res: Response, next: NextFunction): void {
     if (!req.user) {

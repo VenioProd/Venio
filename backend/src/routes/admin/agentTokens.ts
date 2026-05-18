@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireSuperAdmin } from '../../middleware/role.js'
 import AgentToken from '../../models/AgentToken.js'
 import User from '../../models/User.js'
 import {
@@ -19,9 +19,9 @@ import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
  *
- * Auth : JWT admin (middleware auth + requireAdmin). Aucun rôle granulaire
- * supplémentaire — tout admin peut gérer les tokens. Le createdBy garde
- * trace de l'admin émetteur.
+ * Auth : JWT SUPER_ADMIN uniquement (middleware auth + requireSuperAdmin).
+ * Les ADMIN/RH/VIEWER reçoivent 403. Le createdBy garde trace de l'admin
+ * émetteur.
  *
  * Endpoints :
  *   GET    /api/admin/agent-tokens             → liste (sans secrets)
@@ -38,7 +38,7 @@ import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 const router = express.Router()
 
 router.use(auth)
-router.use(requireAdmin)
+router.use(requireSuperAdmin)
 
 // ──────────────────────────────────────────────────────────────────────────
 // GET /scopes — catalogue figé (utilisé par l'UI pour le multi-select)
