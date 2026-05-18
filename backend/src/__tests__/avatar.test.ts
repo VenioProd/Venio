@@ -49,7 +49,7 @@ describe('User model — avatarUrl field', () => {
 
 function isPathSafe(filename: string, dir: string): boolean {
   const resolved = path.resolve(dir, filename)
-  return resolved.startsWith(dir)
+  return resolved.startsWith(dir + path.sep)
 }
 
 describe('avatar route — sécurité path-traversal', () => {
@@ -65,5 +65,9 @@ describe('avatar route — sécurité path-traversal', () => {
 
   it('rejette un chemin absolu', () => {
     expect(isPathSafe('/etc/passwd', testDir)).toBe(false)
+  })
+
+  it('rejette un répertoire sibling (avatarsFoo)', () => {
+    expect(isPathSafe('../avatarsFoo/secret.txt', testDir)).toBe(false)
   })
 })
