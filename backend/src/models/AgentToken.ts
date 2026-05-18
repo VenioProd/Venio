@@ -29,6 +29,13 @@ const agentTokenSchema = new mongoose.Schema<IAgentToken>(
     name: { type: String, required: true, trim: true, maxlength: 120 },
     prefix: { type: String, required: true, index: true },
     tokenHash: { type: String, required: true, select: false },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false, // required côté code seulement — laisse possible la migration des tokens existants
+      default: null,
+      index: true,
+    },
     scopes: {
       type: [String],
       default: [],
