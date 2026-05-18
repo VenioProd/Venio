@@ -26,6 +26,17 @@ export async function createTestApp(): Promise<Express> {
 }
 
 /**
+ * Crée une instance Express minimale pour tester les routes admin.
+ * Monte /api/admin/agent-tokens avec auth JWT + requireAdmin.
+ */
+export async function createAdminTestApp(): Promise<Express> {
+  const { default: adminAgentTokenRoutes } = await import('../../routes/admin/agentTokens.js')
+  const app = express()
+  app.use('/api/admin/agent-tokens', express.json(), adminAgentTokenRoutes)
+  return app
+}
+
+/**
  * Retourne directement le router agent (pour les tests d'introspection
  * comme la synchronisation OpenAPI ↔ router).
  */

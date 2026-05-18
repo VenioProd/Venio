@@ -90,6 +90,25 @@ vi.mock('../lib/audit/auditHelpers.js', () => ({
   shallowDiff: vi.fn(() => []),
 }))
 
+// Stub User.create pour la création du User AGENT (nouvelle feature)
+vi.mock('../models/User.js', () => {
+  const create = vi.fn(async (data: Record<string, unknown>) => {
+    const id = `usr_${Math.random().toString(36).slice(2, 10)}`
+    return {
+      _id: id,
+      ...data,
+      agentTokenId: null,
+      save: vi.fn(async function () {}),
+    }
+  })
+  return { default: { create } }
+})
+
+// Stub ensureGeneralChannel pour éviter une connexion Mongo réelle
+vi.mock('../services/internalMessaging.js', () => ({
+  ensureGeneralChannel: vi.fn(async () => {}),
+}))
+
 // Stub d'auth : injecte un req.user admin
 vi.mock('../middleware/auth.js', () => ({
   default: (req: Request, _res: Response, next: NextFunction) => {

@@ -1,8 +1,12 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import { body, param, validationResult } from 'express-validator'
+import mongoose from 'mongoose'
+import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import AgentToken from '../../models/AgentToken.js'
+import User from '../../models/User.js'
 import {
   AGENT_SCOPES,
   findUnknownScopes,
@@ -10,6 +14,7 @@ import {
 } from '../../lib/agent/scopes.js'
 import { generateAgentToken } from '../../lib/agent/tokens.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
+import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
@@ -98,16 +103,45 @@ router.post(
       // Générer le secret côté serveur
       const generated = await generateAgentToken()
 
+      // Génère un email unique non-routable pour le User AGENT
+      const agentEmail = `agent-${new mongoose.Types.ObjectId().toString()}@venio.internal`
+
+      // Création du User AGENT en premier (pas d'agentTokenId encore — chicken-and-egg)
+      const agentUser = await User.create({
+        email: agentEmail,
+        passwordHash: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+        name: String(name).trim(),
+        role: 'AGENT',
+        isActive: true,
+      })
+
       const token = await AgentToken.create({
         name: String(name).trim(),
         prefix: generated.prefix,
         tokenHash: generated.hash,
+        userId: agentUser._id,
         scopes,
         rateLimitPerMin: rateLimitPerMin || 120,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         notes: notes || '',
         createdBy: req.user!.id,
       })
+
+      // Patch le User pour relier l'agentTokenId (résout le chicken-and-egg)
+      agentUser.agentTokenId = token._id as mongoose.Types.ObjectId
+      await agentUser.save()
+
+      // Ajoute l'agent au channel #general
+      try {
+        await ensureGeneralChannel({
+          id: String(agentUser._id),
+          name: agentUser.name,
+          email: agentUser.email,
+          role: 'AGENT',
+        })
+      } catch (err) {
+        console.warn('[agent-token-create] ensureGeneralChannel failed:', (err as Error).message)
+      }
 
       void recordAudit({
         action: 'AGENT_TOKEN_CREATE',
