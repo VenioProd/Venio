@@ -761,7 +761,7 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 
 @media (max-width: 768px) {
   .navbar {
-    padding: 15px 20px;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 20px 12px;
   }
   
   .logo {
