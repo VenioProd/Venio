@@ -98,7 +98,7 @@ async function main(): Promise<void> {
       console.log(`  🧹 Supprimé : ${deletedUsers.deletedCount} compte(s), ${deletedProjects.deletedCount} projet(s) associé(s)`)
     } else {
       // Dry-run : afficher les projets qui seraient supprimés
-      const projectsToDelete = await Project.find({ client: { $in: allTestUserIds } }).select('projectNumber title')
+      const projectsToDelete = await Project.find({ client: { $in: allTestUserIds } }).select('projectNumber name')
       if (projectsToDelete.length > 0) {
         console.log(`  → ${projectsToDelete.length} projet(s) associé(s) à supprimer :`)
         for (const p of projectsToDelete) {
@@ -151,7 +151,7 @@ async function main(): Promise<void> {
       console.log('  ✓ Aucun projet fictif trouvé')
     }
   } else {
-    const fictionalProjects = await Project.find(fictionalFilter).select('projectNumber title')
+    const fictionalProjects = await Project.find(fictionalFilter).select('projectNumber name')
     if (fictionalProjects.length === 0) {
       console.log('  ✓ Aucun projet fictif trouvé')
     } else {
