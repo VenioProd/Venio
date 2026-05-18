@@ -125,6 +125,7 @@ vi.mock('../middleware/auth.js', () => ({
 vi.mock('../middleware/role.js', () => ({
   default: () => (_req: Request, _res: Response, next: NextFunction) => next(),
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
+  requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
   requireAnyPermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
