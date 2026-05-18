@@ -410,6 +410,27 @@ describe('Agent × Messagerie interne', () => {
     expect(res.body.code).toBe('AGENT_USER_MISSING')
   })
 
+  // ── Task 26: Token révoqué → 401 INVALID_TOKEN ────────────────────────────
+  it('Token révoqué → 401 INVALID_TOKEN', async () => {
+    const { plainSecret, token } = await createAgentTokenWithUser(['read:internal-messaging'])
+
+    // Pré-vérif : actuellement marche
+    const ok = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(ok.status).toBe(200)
+
+    // Révoque + désactive le user
+    await AgentToken.updateOne({ _id: token!._id }, { $set: { status: 'REVOKED' } })
+    await User.updateOne({ agentTokenId: token!._id }, { $set: { isActive: false } })
+
+    const after = await request(app)
+      .get('/api/v1/agent/messaging/conversations')
+      .set('Authorization', `Bearer ${plainSecret}`)
+    expect(after.status).toBe(401)
+    expect(after.body.code).toBe('INVALID_TOKEN')
+  })
+
   // ── Task 24: GET /messages/:id/attachments/:idx/download ──────────────────
   it('GET /attachments/:idx/download renvoie le fichier', async () => {
     const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
