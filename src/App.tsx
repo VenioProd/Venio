@@ -322,8 +322,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="tickets" element={<TicketList />} />
-          <Route path="acces-outils" element={<ToolAccessList />} />
+          <Route
+            path="tickets"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_TICKETS} redirectTo="/admin">
+                <TicketList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="acces-outils"
+            element={
+              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                <ToolAccessList />
+              </RequirePermission>
+            }
+          />
           <Route
             path="gestion"
             element={
@@ -356,11 +370,48 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="projets-internes" element={<InternalProjectList />} />
-          <Route path="projets-internes/:id" element={<InternalProjectDetail />} />
-          <Route path="ressources" element={<Resources />} />
-          <Route path="arrow-prospection" element={<ArrowProspection />} />
-          <Route path="mes-rapports" element={<MyReports />} />
+          <Route
+            path="projets-internes"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                <InternalProjectList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="projets-internes/:id"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                <InternalProjectDetail />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="ressources"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_CONTENT} redirectTo="/admin">
+                <Resources />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="arrow-prospection"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
+                <ArrowProspection />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="mes-rapports"
+            element={
+              // TODO: permission dédiée si besoin
+              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                <MyReports />
+              </RequirePermission>
+            }
+          />
+          {/* Intentionnellement non protégé: accessible à tout admin authentifié (ProtectedRoute parent suffit) */}
           <Route path="guide" element={<AdminGuide />} />
           <Route
             path="emails"
