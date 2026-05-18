@@ -1,0 +1,81 @@
+import express, { type Request, type Response, type NextFunction } from 'express'
+import mongoose from 'mongoose'
+import fs from 'fs/promises'
+import { createReadStream } from 'fs'
+import path from 'path'
+import crypto from 'crypto'
+import { body, param, query, validationResult } from 'express-validator'
+import User from '../../models/User.js'
+import InternalMessage from '../../models/InternalMessage.js'
+import {
+  createConversation,
+  createMessage,
+  listConversations,
+  listMessages,
+  markConversationRead,
+  searchMessages,
+  softDeleteMessage,
+  toggleReaction,
+  updateMessage,
+} from '../../services/internalMessaging.js'
+import { requireScope } from './_middleware/auth.js'
+import { respondError, AgentApiError } from './_middleware/errors.js'
+import { loadAgentUserPayload } from './_middleware/asUser.js'
+
+/**
+ * Routes agent pour la messagerie interne (InternalConversation /
+ * InternalMessage). Parité fonctionnelle vs admin/messaging.ts.
+ *
+ * Scopes :
+ *   - GET → read:internal-messaging
+ *   - POST/PATCH/DELETE → write:internal-messaging
+ *
+ * Auth : Bearer agent token (cf. index.ts). Identité du sender résolue via
+ * loadAgentUserPayload (User AGENT lié au token).
+ *
+ * ACL conversation : identique aux humains — PUBLIC channels + memberships.
+ *
+ * Attachments : base64 dans body JSON, cap 5 Mo/fichier, max 5/message,
+ * storage `uploads/agent/internal-messaging/<conversationId>/`.
+ */
+
+const router = express.Router()
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const RAW_LIMIT_MB = 5
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const RAW_LIMIT_BYTES = RAW_LIMIT_MB * 1024 * 1024
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function isValidObjectId(id: unknown): boolean {
+  return typeof id === 'string' && mongoose.isValidObjectId(id)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function emit(req: Request, res: Response): boolean {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    respondError(res, 400, 'VALIDATION_ERROR', errors.array()[0].msg, { errors: errors.array() })
+    return true
+  }
+  return false
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function uploadsRoot(): string {
+  return path.resolve(process.cwd(), 'uploads')
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function safeFilename(originalName: string): string {
+  return originalName
+    .replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .slice(-100)
+}
+
+// ── Routes (ajoutées dans les tâches suivantes) ────────────────────────────
+
+export default router
