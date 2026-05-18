@@ -30,7 +30,7 @@ router.get('/:projectId/messages', async (req: Request, res: Response, next: Nex
     const messages = await Message.find({ project: projectId })
       .sort({ createdAt: 1 })
       .limit(100)
-      .populate('sender', 'name role')
+      .populate('sender', 'name role avatarUrl')
 
     return res.json({ messages })
   } catch (err) {
@@ -73,7 +73,7 @@ router.post(
         { $addToSet: { readBy: req.user!.id } }
       )
 
-      const populated = await message.populate('sender', 'name role')
+      const populated = await message.populate('sender', 'name role avatarUrl')
 
       // Notifier les admins en charge du projet
       const populatedProject = await Project.findById(projectId).populate('assignedTo', '_id email name').populate('client', 'name')
