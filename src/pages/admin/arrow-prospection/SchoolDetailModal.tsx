@@ -22,7 +22,7 @@ function Label({ children }: { children: React.ReactNode }) {
 const Section = React.forwardRef<HTMLDivElement, { title: string; children: React.ReactNode }>(
   ({ title, children }, ref) => (
     <div ref={ref} style={{ marginBottom: 24, scrollMarginTop: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid rgba(14,165,233,0.2)' }}>{title}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid rgba(var(--primary-rgb), 0.2)' }}>{title}</div>
       {children}
     </div>
   )

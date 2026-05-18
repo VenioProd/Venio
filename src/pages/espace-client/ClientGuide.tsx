@@ -181,7 +181,7 @@ const ClientGuide: React.FC = () => {
               key={section.id}
               style={{
                 background: 'var(--bg-card)',
-                border: `1px solid ${isOpen ? 'rgba(14, 165, 233, 0.35)' : 'var(--border-color)'}`,
+                border: `1px solid ${isOpen ? 'rgba(var(--primary-rgb), 0.35)' : 'var(--border-color)'}`,
                 borderRadius: 14,
                 overflow: 'hidden',
                 transition: 'border-color 0.2s ease'
@@ -256,8 +256,8 @@ const ClientGuide: React.FC = () => {
       <div style={{
         textAlign: 'center',
         padding: '32px 24px',
-        background: 'rgba(14, 165, 233, 0.06)',
-        border: '1px solid rgba(14, 165, 233, 0.15)',
+        background: 'rgba(var(--primary-rgb), 0.06)',
+        border: '1px solid rgba(var(--primary-rgb), 0.15)',
         borderRadius: 16,
         marginBottom: 48
       }}>

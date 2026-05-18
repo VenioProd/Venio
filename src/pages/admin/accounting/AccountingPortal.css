@@ -18,7 +18,7 @@
   flex-wrap: wrap;
   gap: 4px;
   padding: 4px 0;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.1);
 }
 
 .accounting-subnav-link {
@@ -35,15 +35,15 @@
 
 .accounting-subnav-link:hover {
   color: rgba(255, 255, 255, 0.95);
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.25);
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.25);
 }
 
 .accounting-subnav-link.active {
   color: #ffffff;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(59, 130, 246, 0.18) 100%);
-  border-color: rgba(14, 165, 233, 0.5);
-  box-shadow: 0 0 16px rgba(14, 165, 233, 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.25) 0%, rgba(59, 130, 246, 0.18) 100%);
+  border-color: rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 0 16px rgba(var(--primary-rgb), 0.2);
 }
 
 /* ---- Cartes / panneaux ---- */
@@ -69,7 +69,7 @@
   display: inline-block;
   width: 3px;
   height: 18px;
-  background: linear-gradient(180deg, #0ea5e9 0%, #3b82f6 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
   border-radius: 2px;
 }
 
@@ -103,8 +103,8 @@
 .accounting-table thead th {
   text-align: left;
   padding: 12px 14px;
-  background: linear-gradient(90deg, rgba(14, 165, 233, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
-  border-bottom: 1px solid rgba(14, 165, 233, 0.3);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.3);
   color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
   font-size: 0.8rem;
@@ -119,7 +119,7 @@
 }
 
 .accounting-table tbody tr:hover {
-  background: rgba(14, 165, 233, 0.04);
+  background: rgba(var(--primary-rgb), 0.04);
 }
 
 .accounting-table .num,
@@ -132,7 +132,7 @@
 .accounting-table .code {
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.85rem;
-  color: rgba(34, 211, 238, 0.9);
+  color: rgba(var(--primary-light-rgb), 0.9);
 }
 
 /* ---- Badges statut ---- */
@@ -219,7 +219,7 @@
 .accounting-lines-table select {
   width: 100%;
   background: rgba(15, 15, 20, 0.7);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.92);
   padding: 8px 10px;
@@ -229,8 +229,8 @@
 .accounting-lines-table input:focus,
 .accounting-lines-table select:focus {
   outline: none;
-  border-color: rgba(14, 165, 233, 0.55);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+  border-color: rgba(var(--primary-rgb), 0.55);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .accounting-totals {
@@ -307,9 +307,9 @@
 }
 
 .accounting-message.info {
-  background: rgba(14, 165, 233, 0.08);
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  color: var(--primary-light);
 }
 
 /* ---- KPI mini ---- */
@@ -323,8 +323,8 @@
 .accounting-kpi {
   padding: 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
-  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
 }
 
 .accounting-kpi .label {
@@ -352,16 +352,16 @@
   padding: 4px 10px;
   font-size: 0.78rem;
   border-radius: 6px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  background: rgba(14, 165, 233, 0.06);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.06);
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .accounting-row-actions button:hover {
-  background: rgba(14, 165, 233, 0.15);
-  border-color: rgba(14, 165, 233, 0.5);
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .accounting-row-actions button.danger {

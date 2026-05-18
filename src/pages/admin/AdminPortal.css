@@ -14,7 +14,7 @@
 }
 
 .portal-container *::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.4);
+  background: rgba(var(--primary-rgb), 0.4);
 }
 
 /* ── Custom Select Dropdown ── */
@@ -29,7 +29,7 @@
   gap: 8px;
   padding: 10px 16px;
   background: #01040e;
-  border: 1px solid rgba(14, 165, 233, 0.35);
+  border: 1px solid rgba(var(--primary-rgb), 0.35);
   border-radius: 8px;
   color: #e0e7ff;
   font-size: 14px;
@@ -41,7 +41,7 @@
 
 .custom-select-trigger:hover {
   background: #030a1a;
-  border-color: rgba(14, 165, 233, 0.6);
+  border-color: rgba(var(--primary-rgb), 0.6);
 }
 
 .custom-select-trigger svg {
@@ -51,11 +51,11 @@
 
 .custom-select-menu {
   background: #01040e;
-  border: 1px solid rgba(14, 165, 233, 0.35);
+  border: 1px solid rgba(var(--primary-rgb), 0.35);
   border-radius: 10px;
   padding: 4px;
   z-index: 9999;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(var(--primary-rgb), 0.2);
   animation: selectFadeIn 0.15s ease;
 }
 
@@ -80,13 +80,13 @@
 }
 
 .custom-select-option:hover {
-  background: rgba(14, 165, 233, 0.18);
+  background: rgba(var(--primary-rgb), 0.18);
   color: #fff;
 }
 
 .custom-select-option.active {
-  background: rgba(14, 165, 233, 0.25);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.25);
+  color: var(--primary-light);
   font-weight: 600;
 }
 
@@ -115,9 +115,9 @@
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(14, 165, 233, 0.08), transparent 40%),
+    radial-gradient(circle at 20% 30%, rgba(var(--primary-rgb), 0.08), transparent 40%),
     radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.06), transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.04), transparent 50%);
+    radial-gradient(circle at 50% 50%, rgba(var(--primary-light-rgb), 0.04), transparent 50%);
   pointer-events: none;
   z-index: 0;
   animation: float-background 20s ease-in-out infinite;
@@ -131,10 +131,10 @@
   right: 0;
   bottom: 0;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.4) 1px, transparent 1px),
+    radial-gradient(circle at 15% 15%, rgba(var(--primary-rgb), 0.4) 1px, transparent 1px),
     radial-gradient(circle at 85% 25%, rgba(59, 130, 246, 0.3) 1px, transparent 1px),
-    radial-gradient(circle at 45% 65%, rgba(34, 211, 238, 0.3) 1px, transparent 1px),
-    radial-gradient(circle at 75% 85%, rgba(14, 165, 233, 0.3) 1px, transparent 1px),
+    radial-gradient(circle at 45% 65%, rgba(var(--primary-light-rgb), 0.3) 1px, transparent 1px),
+    radial-gradient(circle at 75% 85%, rgba(var(--primary-rgb), 0.3) 1px, transparent 1px),
     radial-gradient(circle at 25% 75%, rgba(59, 130, 246, 0.4) 1px, transparent 1px);
   background-size: 100% 100%;
   pointer-events: none;
@@ -187,7 +187,7 @@
   left: -20px;
   right: -20px;
   bottom: -20px;
-  background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 60%),
+  background: radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.15), transparent 60%),
               radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent 60%);
   pointer-events: none;
   z-index: -1;
@@ -199,11 +199,11 @@
   font-size: 32px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #22d3ee 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 30px rgba(14, 165, 233, 0.3);
+  text-shadow: 0 0 30px rgba(var(--primary-rgb), 0.3);
 }
 
 .admin-actions {
@@ -244,8 +244,8 @@
 
 .admin-actions .portal-action-link:hover {
   transform: translateY(-2px);
-  border-color: rgba(14, 165, 233, 0.4);
-  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15), 0 0 0 1px rgba(14, 165, 233, 0.1);
+  border-color: rgba(var(--primary-rgb), 0.4);
+  box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.15), 0 0 0 1px rgba(var(--primary-rgb), 0.1);
   color: #fff;
 }
 
@@ -278,15 +278,15 @@
 
 /* Couleurs par type de bouton */
 .admin-actions .portal-action-link[title="Comptes clients"] {
-  border-color: rgba(14, 165, 233, 0.2);
-  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  background: rgba(var(--primary-rgb), 0.08);
 }
 .admin-actions .portal-action-link[title="Comptes clients"]::before {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), transparent);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), transparent);
 }
 .admin-actions .portal-action-link[title="Comptes clients"]:hover {
-  border-color: rgba(14, 165, 233, 0.5);
-  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.2), 0 0 0 1px rgba(14, 165, 233, 0.15);
+  border-color: rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.2), 0 0 0 1px rgba(var(--primary-rgb), 0.15);
 }
 
 .admin-actions .portal-action-link[title="Comptes admin"] {
@@ -302,15 +302,15 @@
 }
 
 .admin-actions .portal-action-link[title="Nouveau projet"] {
-  border-color: rgba(34, 211, 238, 0.2);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(var(--primary-light-rgb), 0.2);
+  background: rgba(var(--primary-light-rgb), 0.08);
 }
 .admin-actions .portal-action-link[title="Nouveau projet"]::before {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12), transparent);
+  background: linear-gradient(135deg, rgba(var(--primary-light-rgb), 0.12), transparent);
 }
 .admin-actions .portal-action-link[title="Nouveau projet"]:hover {
-  border-color: rgba(34, 211, 238, 0.5);
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.2), 0 0 0 1px rgba(34, 211, 238, 0.15);
+  border-color: rgba(var(--primary-light-rgb), 0.5);
+  box-shadow: 0 4px 20px rgba(var(--primary-light-rgb), 0.2), 0 0 0 1px rgba(var(--primary-light-rgb), 0.15);
 }
 
 .admin-actions .portal-action-link[title="CRM"] {
@@ -367,19 +367,19 @@
 .admin-actions .portal-action-link[title="Nouveau compte"],
 .admin-actions .portal-action-link[title="Nouvel administrateur"],
 .admin-actions .portal-action-link[title="Ajouter un projet"] {
-  border-color: rgba(34, 211, 238, 0.2);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(var(--primary-light-rgb), 0.2);
+  background: rgba(var(--primary-light-rgb), 0.08);
 }
 .admin-actions .portal-action-link[title="Nouveau compte"]::before,
 .admin-actions .portal-action-link[title="Nouvel administrateur"]::before,
 .admin-actions .portal-action-link[title="Ajouter un projet"]::before {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12), transparent);
+  background: linear-gradient(135deg, rgba(var(--primary-light-rgb), 0.12), transparent);
 }
 .admin-actions .portal-action-link[title="Nouveau compte"]:hover,
 .admin-actions .portal-action-link[title="Nouvel administrateur"]:hover,
 .admin-actions .portal-action-link[title="Ajouter un projet"]:hover {
-  border-color: rgba(34, 211, 238, 0.5);
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.2), 0 0 0 1px rgba(34, 211, 238, 0.15);
+  border-color: rgba(var(--primary-light-rgb), 0.5);
+  box-shadow: 0 4px 20px rgba(var(--primary-light-rgb), 0.2), 0 0 0 1px rgba(var(--primary-light-rgb), 0.15);
 }
 
 /* Automatisations */
@@ -466,9 +466,9 @@
 .admin-widget:nth-child(2)::before { background: linear-gradient(90deg, transparent, #8b5cf6, transparent); }
 .admin-widget:nth-child(2):hover { border-color: #8b5cf6; box-shadow: 0 8px 28px rgba(139, 92, 246, 0.15); }
 
-.admin-widget:nth-child(3) .admin-widget-value { color: #0ea5e9; text-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
-.admin-widget:nth-child(3)::before { background: linear-gradient(90deg, transparent, #0ea5e9, transparent); }
-.admin-widget:nth-child(3):hover { border-color: #0ea5e9; box-shadow: 0 8px 28px rgba(14, 165, 233, 0.15); }
+.admin-widget:nth-child(3) .admin-widget-value { color: var(--primary); text-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4); }
+.admin-widget:nth-child(3)::before { background: linear-gradient(90deg, transparent, var(--primary), transparent); }
+.admin-widget:nth-child(3):hover { border-color: var(--primary); box-shadow: 0 8px 28px rgba(var(--primary-rgb), 0.15); }
 
 .admin-widget:nth-child(4) .admin-widget-value { color: #f59e0b; text-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
 .admin-widget:nth-child(4)::before { background: linear-gradient(90deg, transparent, #f59e0b, transparent); }
@@ -499,7 +499,7 @@
 .admin-table th,
 .admin-table td {
   padding: 12px 10px;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.15);
   text-align: left;
   vertical-align: top;
 }
@@ -508,7 +508,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -610,15 +610,15 @@
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), transparent 60%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), transparent 60%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .admin-list-item:hover {
   transform: translateY(-3px);
-  border-color: rgba(14, 165, 233, 0.25);
-  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.1), 0 0 0 1px rgba(14, 165, 233, 0.06);
+  border-color: rgba(var(--primary-rgb), 0.25);
+  box-shadow: 0 8px 28px rgba(var(--primary-rgb), 0.1), 0 0 0 1px rgba(var(--primary-rgb), 0.06);
 }
 
 .admin-list-item:hover::before {
@@ -666,10 +666,10 @@
 
 .admin-list-item-actions .portal-button:hover {
   transform: translateY(-1px);
-  background: rgba(14, 165, 233, 0.12);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: #7dd3fc;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.4);
+  color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.15);
 }
 
 /* ── Client Cards Grid ── */
@@ -698,15 +698,15 @@
   position: absolute;
   inset: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), transparent 60%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), transparent 60%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .client-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(14, 165, 233, 0.3);
-  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.12), 0 0 0 1px rgba(14, 165, 233, 0.08);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb), 0.12), 0 0 0 1px rgba(var(--primary-rgb), 0.08);
 }
 
 .client-card:hover::before {
@@ -724,14 +724,14 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(59, 130, 246, 0.15));
-  border: 1px solid rgba(14, 165, 233, 0.25);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2), rgba(59, 130, 246, 0.15));
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 700;
-  color: #7dd3fc;
+  color: var(--primary-light);
 }
 
 .client-card-health {
@@ -791,9 +791,9 @@
 }
 
 .client-card-status--prospect {
-  background: rgba(14, 165, 233, 0.12);
-  border-color: rgba(14, 165, 233, 0.3);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--primary-light);
 }
 
 .client-card-status--en_pause {
@@ -879,8 +879,8 @@
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
-  background: rgba(34, 211, 238, 0.12);
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: rgba(var(--primary-light-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-light-rgb), 0.3);
   color: #67e8f9;
 }
 
@@ -924,9 +924,9 @@
 }
 
 .admin-card-btn--edit:hover {
-  background: rgba(14, 165, 233, 0.12);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.4);
+  color: var(--primary-light);
 }
 
 .admin-card-btn--delete:hover:not(:disabled) {
@@ -1029,7 +1029,7 @@
   left: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, #0ea5e9 0%, #3b82f6 50%, #22d3ee 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
   border-radius: 16px 0 0 16px;
 }
 
@@ -1037,7 +1037,7 @@
   margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
-  background: linear-gradient(135deg, #0ea5e9 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1073,8 +1073,8 @@
 
 .admin-button.secondary:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: #0ea5e9;
+  border-color: rgba(var(--primary-rgb), 0.4);
+  color: var(--primary);
 }
 
 .portal-button {
@@ -1118,9 +1118,9 @@
   text-align: center;
   padding: 48px 24px;
   color: var(--text-muted);
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(59, 130, 246, 0.03) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(59, 130, 246, 0.03) 100%);
   border-radius: 12px;
-  border: 1px dashed rgba(14, 165, 233, 0.3);
+  border: 1px dashed rgba(var(--primary-rgb), 0.3);
 }
 
 .admin-empty-state-icon {
@@ -1175,7 +1175,7 @@
 }
 
 .cloud-folder-card:hover {
-  border-color: rgba(14, 165, 233, 0.4);
+  border-color: rgba(var(--primary-rgb), 0.4);
   background: transparent;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -1197,7 +1197,7 @@
   top: 10px;
   right: 10px;
   opacity: 0;
-  color: #0ea5e9;
+  color: var(--primary);
   transition: opacity 0.2s ease;
 }
 
@@ -1223,7 +1223,7 @@
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), transparent 60%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), transparent 60%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -1231,8 +1231,8 @@
 .admin-document-item:hover,
 .admin-update-item:hover {
   transform: translateY(-3px);
-  border-color: rgba(14, 165, 233, 0.25);
-  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.1), 0 0 0 1px rgba(14, 165, 233, 0.06);
+  border-color: rgba(var(--primary-rgb), 0.25);
+  box-shadow: 0 8px 28px rgba(var(--primary-rgb), 0.1), 0 0 0 1px rgba(var(--primary-rgb), 0.06);
 }
 
 .admin-document-item:hover::before,
@@ -1278,7 +1278,7 @@
 }
 
 .admin-breadcrumb span {
-  background: linear-gradient(135deg, #0ea5e9 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1318,8 +1318,8 @@
   width: 40px;
   height: 40px;
   margin-right: 12px;
-  border: 3px solid rgba(14, 165, 233, 0.2);
-  border-top-color: #0ea5e9;
+  border: 3px solid rgba(var(--primary-rgb), 0.2);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1333,8 +1333,8 @@
 /* Input & Textarea Enhancements */
 .portal-input:focus {
   outline: none;
-  border-color: rgba(14, 165, 233, 0.6);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15), 0 0 20px rgba(14, 165, 233, 0.2);
+  border-color: rgba(var(--primary-rgb), 0.6);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15), 0 0 20px rgba(var(--primary-rgb), 0.2);
   background: transparent;
 }
 
@@ -1458,12 +1458,12 @@ select.portal-input {
 }
 
 .portal-container select option:checked {
-  background-color: rgba(14, 165, 233, 0.3);
+  background-color: rgba(var(--primary-rgb), 0.3);
   color: #fff;
 }
 
 .portal-container select option:hover {
-  background-color: rgba(14, 165, 233, 0.2);
+  background-color: rgba(var(--primary-rgb), 0.2);
 }
 
 /* Link Enhancements */
@@ -1486,7 +1486,7 @@ a.portal-button {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #0ea5e9, #3b82f6, #22d3ee, #0ea5e9);
+  background: linear-gradient(45deg, var(--primary), #3b82f6, var(--primary-light), var(--primary));
   background-size: 300% 300%;
   border-radius: inherit;
   z-index: -1;
@@ -1564,10 +1564,10 @@ a.portal-button {
 /* Divider */
 .admin-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(14, 165, 233, 0.5) 20%, rgba(59, 130, 246, 0.5) 50%, rgba(14, 165, 233, 0.5) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.5) 20%, rgba(59, 130, 246, 0.5) 50%, rgba(var(--primary-rgb), 0.5) 80%, transparent 100%);
   margin: 24px 0;
   border: none;
-  box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
   position: relative;
 }
 
@@ -1579,9 +1579,9 @@ a.portal-button {
   transform: translate(-50%, -50%);
   width: 8px;
   height: 8px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(14, 165, 233, 0.6);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.6);
 }
 
 /* Tooltip */
@@ -1603,9 +1603,9 @@ a.portal-button {
   font-size: 12px;
   white-space: nowrap;
   margin-bottom: 8px;
-  border: 1px solid rgba(14, 165, 233, 0.5);
+  border: 1px solid rgba(var(--primary-rgb), 0.5);
   z-index: 1000;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(var(--primary-rgb), 0.3);
   animation: tooltip-appear 0.3s ease;
 }
 
@@ -1616,7 +1616,7 @@ a.portal-button {
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   border: 6px solid transparent;
-  border-top-color: rgba(14, 165, 233, 0.5);
+  border-top-color: rgba(var(--primary-rgb), 0.5);
   z-index: 999;
 }
 
@@ -1667,13 +1667,13 @@ a.portal-button {
 
 .admin-tab.active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(59, 130, 246, 0.2) 100%);
-  border-color: rgba(14, 165, 233, 0.5);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.25) 0%, rgba(59, 130, 246, 0.2) 100%);
+  border-color: rgba(var(--primary-rgb), 0.5);
   box-shadow:
-    0 0 20px rgba(14, 165, 233, 0.2),
-    0 4px 16px rgba(14, 165, 233, 0.15),
+    0 0 20px rgba(var(--primary-rgb), 0.2),
+    0 4px 16px rgba(var(--primary-rgb), 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
+  text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.5);
 }
 
 .admin-tab.active::before {
@@ -1710,8 +1710,8 @@ a.portal-button {
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, #0ea5e9 0%, #3b82f6 50%, #22d3ee 100%);
-  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
 }
 
 .project-form-section-header {
@@ -1726,14 +1726,14 @@ a.portal-button {
 .project-form-section-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  border: 1px solid rgba(14, 165, 233, 0.5);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
 }
 
@@ -1871,13 +1871,13 @@ a.portal-button {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(59, 130, 246, 0.15) 100%);
-  border: 1px solid rgba(14, 165, 233, 0.4);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(59, 130, 246, 0.15) 100%);
+  border: 1px solid rgba(var(--primary-rgb), 0.4);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -1920,8 +1920,8 @@ a.portal-button {
   gap: 8px;
   align-items: center;
   padding: 12px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
   border-radius: 10px;
   transition: all 0.3s ease;
   position: relative;
@@ -1935,7 +1935,7 @@ a.portal-button {
   top: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, #0ea5e9 0%, #3b82f6 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -1946,7 +1946,7 @@ a.portal-button {
 
 /* Info Box */
 .project-info-box {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(14, 165, 233, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(var(--primary-rgb), 0.08) 100%);
   border: 1px solid rgba(59, 130, 246, 0.4);
   border-radius: 10px;
   padding: 16px;
@@ -1966,7 +1966,7 @@ a.portal-button {
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, #3b82f6 0%, #0ea5e9 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, var(--primary) 100%);
 }
 
 .project-info-box-icon {
@@ -1988,12 +1988,12 @@ a.portal-button {
   padding: 24px 0;
   margin-top: 32px;
   z-index: 10;
-  border-top: 1px solid rgba(14, 165, 233, 0.2);
+  border-top: 1px solid rgba(var(--primary-rgb), 0.2);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .project-form-submit .portal-button {
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
 }
 
 .project-form-submit .portal-button:hover {
@@ -2026,7 +2026,7 @@ a.portal-button {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #0ea5e9 0%, #3b82f6 50%, #22d3ee 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
   border-radius: 14px 14px 0 0;
 }
 
@@ -2041,7 +2041,7 @@ a.portal-button {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2072,7 +2072,7 @@ a.portal-button {
   left: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, #0ea5e9 0%, #3b82f6 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
 }
 
 .crm-card:hover {
@@ -2167,9 +2167,9 @@ a.portal-button {
 }
 
 .crm-view-btn.active {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(59, 130, 246, 0.2));
-  color: #0ea5e9;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3), rgba(59, 130, 246, 0.2));
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2186,7 +2186,7 @@ a.portal-button {
   gap: 12px;
   padding: 16px 20px;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .crm-table-search-wrap {
@@ -2220,8 +2220,8 @@ a.portal-button {
 }
 
 .crm-table-search:focus {
-  border-color: rgba(14, 165, 233, 0.6);
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.15);
+  border-color: rgba(var(--primary-rgb), 0.6);
+  box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.15);
 }
 
 .crm-table-search::placeholder {
@@ -2260,7 +2260,7 @@ a.portal-button {
 }
 
 .crm-table-filter:focus {
-  border-color: rgba(14, 165, 233, 0.5);
+  border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .crm-table-filter-clear {
@@ -2319,7 +2319,7 @@ a.portal-button {
   letter-spacing: 0.5px;
   color: var(--text-muted);
   background: transparent;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.2);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
   user-select: none;
@@ -2355,7 +2355,7 @@ a.portal-button {
 }
 
 .crm-sort-icon.active {
-  color: #0ea5e9;
+  color: var(--primary);
 }
 
 /* Group header row (Monday.com style) */
@@ -2375,7 +2375,7 @@ a.portal-button {
   gap: 10px;
   padding: 10px 14px;
   background: linear-gradient(90deg, rgba(var(--group-color-rgb, 14, 165, 233), 0.08), transparent 60%);
-  border-left: 3px solid var(--group-color, #0ea5e9);
+  border-left: 3px solid var(--group-color, var(--primary));
   transition: background 0.2s ease;
 }
 
@@ -2513,8 +2513,8 @@ a.portal-button {
   padding: 3px 8px;
   font-size: 11px;
   border-radius: 6px;
-  background: rgba(14, 165, 233, 0.15);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--primary-rgb), 0.15);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
   color: #93c5fd;
 }
 
@@ -2524,9 +2524,9 @@ a.portal-button {
   font-size: 11px;
   font-weight: 600;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--priority-color, #0ea5e9) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--priority-color, #0ea5e9) 40%, transparent);
-  color: var(--priority-color, #0ea5e9);
+  background: color-mix(in srgb, var(--priority-color, var(--primary)) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--priority-color, var(--primary)) 40%, transparent);
+  color: var(--priority-color, var(--primary));
 }
 
 /* Inline selects (Monday.com style) */
@@ -2551,9 +2551,9 @@ a.portal-button {
 
 .crm-inline-status {
   font-weight: 600;
-  border-color: color-mix(in srgb, var(--select-color, #0ea5e9) 40%, transparent);
-  color: var(--select-color, #0ea5e9);
-  background-color: color-mix(in srgb, var(--select-color, #0ea5e9) 8%, transparent);
+  border-color: color-mix(in srgb, var(--select-color, var(--primary)) 40%, transparent);
+  color: var(--select-color, var(--primary));
+  background-color: color-mix(in srgb, var(--select-color, var(--primary)) 8%, transparent);
 }
 
 .crm-inline-status:hover {
@@ -2812,8 +2812,8 @@ a.portal-button {
 }
 
 .crm-row-selected {
-  background: rgba(14, 165, 233, 0.07) !important;
-  outline: 1px solid rgba(14, 165, 233, 0.25);
+  background: rgba(var(--primary-rgb), 0.07) !important;
+  outline: 1px solid rgba(var(--primary-rgb), 0.25);
 }
 
 /* Card states */
@@ -2956,7 +2956,7 @@ a.portal-button {
 .crm-settings-section-header svg {
   width: 22px;
   height: 22px;
-  color: #0ea5e9;
+  color: var(--primary);
 }
 
 .crm-settings-section-header h2 {
@@ -3068,7 +3068,7 @@ a.portal-button {
 }
 
 .crm-toggle input:checked + .crm-toggle-slider {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
 .crm-toggle input:checked + .crm-toggle-slider::before {
@@ -3107,7 +3107,7 @@ a.portal-button {
 
 .crm-settings-inline-input input:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-settings-inline-input input:disabled {
@@ -3129,7 +3129,7 @@ a.portal-button {
 
 .crm-settings-select:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-settings-select:disabled {
@@ -3149,7 +3149,7 @@ a.portal-button {
 
 .crm-settings-time-input:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-settings-time-input:disabled {
@@ -3169,7 +3169,7 @@ a.portal-button {
 
 .crm-settings-text-input:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-settings-text-input:disabled {
@@ -3238,7 +3238,7 @@ a.portal-button {
 
 .crm-settings-weight-row input:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-settings-weight-row input:disabled {
@@ -3252,7 +3252,7 @@ a.portal-button {
   bottom: 24px;
   right: 24px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.9) 0%, rgba(2, 132, 199, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.9) 0%, rgba(2, 132, 199, 0.9) 100%);
   color: white;
   border-radius: 8px;
   font-size: 13px;
@@ -3489,7 +3489,7 @@ a.portal-button {
 
 .crm-modal-textarea:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .crm-modal-textarea:disabled {
@@ -3515,14 +3515,14 @@ a.portal-button {
   padding: 0;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
-  color: #0ea5e9;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(var(--primary-rgb), 0.1) 100%);
+  color: var(--primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .crm-btn-notes:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(14, 165, 233, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3) 0%, rgba(var(--primary-rgb), 0.2) 100%);
   transform: scale(1.05);
 }
 
@@ -3797,10 +3797,10 @@ a.portal-button {
   color: #8b5cf6;
 }
 .qualiopi-stat-card:nth-child(3) {
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 .qualiopi-stat-card:nth-child(3) .qualiopi-stat-number {
-  color: #0ea5e9;
+  color: var(--primary);
 }
 .qualiopi-stat-card:nth-child(4) {
   border-color: #22c55e;
@@ -3961,7 +3961,7 @@ a.portal-button {
 
 .qualiopi-criterion-edit-input {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
   border-radius: 6px;
   color: #fff;
   padding: 6px 10px;
@@ -3973,7 +3973,7 @@ a.portal-button {
 
 .qualiopi-criterion-edit-input:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .qualiopi-criterion-edit-save,
@@ -4193,8 +4193,8 @@ a.portal-button {
 
 /* Date input */
 .qualiopi-date-input {
-  background: rgba(14, 165, 233, 0.06);
-  border: 1px solid rgba(14, 165, 233, 0.25);
+  background: rgba(var(--primary-rgb), 0.06);
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
   border-radius: 8px;
   color: #e0e7ff;
   font-size: 12px;
@@ -4207,8 +4207,8 @@ a.portal-button {
 }
 
 .qualiopi-date-input:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Sub-elements list */
@@ -4389,7 +4389,7 @@ a.portal-button {
 }
 
 .qualiopi-file-dl:hover {
-  color: #0ea5e9;
+  color: var(--primary);
 }
 
 /* Preview modal */
@@ -4957,8 +4957,8 @@ a.portal-button {
    ───────────────────────────────────────────────────────────────── */
 
 .ticket-hero {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.04), rgba(59, 130, 246, 0.02));
-  border: 1px solid rgba(14, 165, 233, 0.12);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.04), rgba(59, 130, 246, 0.02));
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
   border-radius: 16px;
   padding: 28px 32px;
   display: flex;
@@ -4976,7 +4976,7 @@ a.portal-button {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #0ea5e9, #3b82f6, #22d3ee, #0ea5e9);
+  background: linear-gradient(90deg, var(--primary), #3b82f6, var(--primary-light), var(--primary));
   background-size: 200% 100%;
   animation: qualiopi-gradient-slide 4s linear infinite;
 }
@@ -4998,9 +4998,9 @@ a.portal-button {
 }
 
 .ticket-back-btn:hover {
-  color: #0ea5e9;
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.05);
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 
 .ticket-hero-content {
@@ -5011,7 +5011,7 @@ a.portal-button {
   font-size: 26px;
   font-weight: 700;
   margin: 4px 0 6px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #22d3ee 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -5027,7 +5027,7 @@ a.portal-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -5040,9 +5040,9 @@ a.portal-button {
 }
 
 .ticket-new-btn:hover {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
+  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Stats */
@@ -5065,8 +5065,8 @@ a.portal-button {
 
 .ticket-stat-card:hover,
 .ticket-stat-card.active {
-  border-color: var(--accent, rgba(14, 165, 233, 0.4));
-  box-shadow: 0 0 16px rgba(14, 165, 233, 0.1);
+  border-color: var(--accent, rgba(var(--primary-rgb), 0.4));
+  box-shadow: 0 0 16px rgba(var(--primary-rgb), 0.1);
 }
 
 .ticket-stat-count {
@@ -5128,7 +5128,7 @@ a.portal-button {
 .ticket-form-field textarea:focus,
 .ticket-form-field select:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .ticket-form-field textarea {
@@ -5148,12 +5148,12 @@ a.portal-button {
 }
 
 .ticket-cancel-btn:hover {
-  border-color: rgba(14, 165, 233, 0.3);
+  border-color: rgba(var(--primary-rgb), 0.3);
   color: #fff;
 }
 
 .ticket-submit-btn {
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -5165,8 +5165,8 @@ a.portal-button {
 }
 
 .ticket-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
-  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.25);
+  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
+  box-shadow: 0 2px 10px rgba(var(--primary-rgb), 0.25);
 }
 
 .ticket-submit-btn:disabled {
@@ -5194,7 +5194,7 @@ a.portal-button {
 }
 
 .ticket-card.expanded {
-  border-color: rgba(14, 165, 233, 0.2);
+  border-color: rgba(var(--primary-rgb), 0.2);
 }
 
 .ticket-card-header {
@@ -5280,7 +5280,7 @@ a.portal-button {
 }
 
 .ticket-meta strong {
-  color: #0ea5e9;
+  color: var(--primary);
 }
 
 .ticket-message {
@@ -5288,9 +5288,9 @@ a.portal-button {
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
   padding: 12px 16px;
-  background: rgba(14, 165, 233, 0.03);
+  background: rgba(var(--primary-rgb), 0.03);
   border-radius: 8px;
-  border-left: 3px solid rgba(14, 165, 233, 0.3);
+  border-left: 3px solid rgba(var(--primary-rgb), 0.3);
   white-space: pre-wrap;
 }
 
@@ -5359,7 +5359,7 @@ a.portal-button {
 
 .ticket-reply-form textarea:focus {
   outline: none;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 .ticket-status-select {
@@ -5394,8 +5394,8 @@ a.portal-button {
   align-items: center;
   gap: 6px;
   background: transparent;
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  color: #0ea5e9;
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  color: var(--primary);
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 12px;
@@ -5406,8 +5406,8 @@ a.portal-button {
 }
 
 .ticket-archive-btn:hover {
-  background: rgba(14, 165, 233, 0.1);
-  border-color: #0ea5e9;
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
 }
 
 /* Tabs */
@@ -5444,12 +5444,12 @@ a.portal-button {
 }
 
 .ticket-tab.active {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
 }
 
 .ticket-tab-badge {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -5502,15 +5502,15 @@ a.portal-button {
 }
 
 .ticket-kpi-period-btn.active {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
 }
 
 .ticket-export-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -5523,9 +5523,9 @@ a.portal-button {
 }
 
 .ticket-export-btn:hover {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
+  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
 }
 
 .ticket-kpi-grid {
@@ -5638,8 +5638,8 @@ a.portal-button {
 }
 
 .ticket-attach-btn:hover {
-  border-color: #0ea5e9;
-  color: #0ea5e9;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* File previews (before upload) */
@@ -5654,8 +5654,8 @@ a.portal-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(14, 165, 233, 0.05);
-  border: 1px solid rgba(14, 165, 233, 0.15);
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
@@ -5709,8 +5709,8 @@ a.portal-button {
 }
 
 .ticket-attachment-img:hover {
-  border-color: #0ea5e9;
-  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.2);
   transform: scale(1.02);
 }
 
@@ -5719,18 +5719,18 @@ a.portal-button {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(14, 165, 233, 0.05);
-  border: 1px solid rgba(14, 165, 233, 0.15);
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
   border-radius: 8px;
-  color: #0ea5e9;
+  color: var(--primary);
   text-decoration: none;
   font-size: 12px;
   transition: all 0.2s;
 }
 
 .ticket-attachment-file:hover {
-  background: rgba(14, 165, 233, 0.1);
-  border-color: #0ea5e9;
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
 }
 
 .ticket-attachment-size {
@@ -5758,7 +5758,7 @@ a.portal-button {
   border-radius: 12px;
   overflow: hidden;
   background: #0a0a0f;
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
 .ticket-preview-header {
@@ -5837,7 +5837,7 @@ a.portal-button {
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #0ea5e9;
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -5859,9 +5859,9 @@ a.portal-button {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  background: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -5869,13 +5869,13 @@ a.portal-button {
 }
 
 .portal-profile-btn:hover {
-  background: rgba(14, 165, 233, 0.2);
-  border-color: rgba(14, 165, 233, 0.5);
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.15);
+  background: rgba(var(--primary-rgb), 0.2);
+  border-color: rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.15);
 }
 
 .portal-profile-btn svg {
-  stroke: #0ea5e9;
+  stroke: var(--primary);
 }
 
 /* ── Bouton deconnexion (icône seule, rouge) ── */
@@ -5913,13 +5913,13 @@ a.portal-button {
   height: 60px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 24px rgba(14, 165, 233, 0.4), 0 0 0 0 rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 24px rgba(var(--primary-rgb), 0.4), 0 0 0 0 rgba(var(--primary-rgb), 0.3);
   transition: all 0.3s ease;
   z-index: 1000;
   animation: ticket-fab-pulse 2s infinite;
@@ -5927,7 +5927,7 @@ a.portal-button {
 
 .ticket-fab:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 32px rgba(14, 165, 233, 0.6);
+  box-shadow: 0 6px 32px rgba(var(--primary-rgb), 0.6);
   animation: none;
 }
 
@@ -5936,8 +5936,8 @@ a.portal-button {
 }
 
 @keyframes ticket-fab-pulse {
-  0%, 100% { box-shadow: 0 4px 24px rgba(14, 165, 233, 0.4), 0 0 0 0 rgba(14, 165, 233, 0.3); }
-  50% { box-shadow: 0 4px 24px rgba(14, 165, 233, 0.4), 0 0 0 8px rgba(14, 165, 233, 0); }
+  0%, 100% { box-shadow: 0 4px 24px rgba(var(--primary-rgb), 0.4), 0 0 0 0 rgba(var(--primary-rgb), 0.3); }
+  50% { box-shadow: 0 4px 24px rgba(var(--primary-rgb), 0.4), 0 0 0 8px rgba(var(--primary-rgb), 0); }
 }
 
 /* ── Bouton flottant "Mes tickets" (non-super-admin, bas gauche) ── */
@@ -5997,7 +5997,7 @@ a.portal-button {
 
 .ticket-quick-modal {
   background: #060d1f;
-  border: 1px solid rgba(14, 165, 233, 0.25);
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
   border-radius: 16px;
   width: 90%;
   max-width: 480px;
@@ -6020,7 +6020,7 @@ a.portal-button {
 .ticket-quick-header h3 {
   margin: 0;
   font-size: 18px;
-  color: #0ea5e9;
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -6049,7 +6049,7 @@ a.portal-button {
   width: 100%;
   padding: 10px 14px;
   background: #01040e;
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
   border-radius: 8px;
   color: #e0e7ff;
   font-size: 14px;
@@ -6059,7 +6059,7 @@ a.portal-button {
   width: 100%;
   padding: 12px 14px;
   background: #01040e;
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
   border-radius: 8px;
   color: #e0e7ff;
   font-size: 14px;
@@ -6071,8 +6071,8 @@ a.portal-button {
 .ticket-quick-form select:focus,
 .ticket-quick-form textarea:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
 }
 
 @media (max-width: 600px) {
@@ -6132,14 +6132,14 @@ a.portal-button {
 }
 
 [data-theme="light"] .client-card:hover {
-  border-color: rgba(14, 165, 233, 0.4);
-  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.08);
+  border-color: rgba(var(--primary-rgb), 0.4);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb), 0.08);
 }
 
 [data-theme="light"] .client-card-avatar {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(59, 130, 246, 0.08));
-  border-color: rgba(14, 165, 233, 0.2);
-  color: #0284c7;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(59, 130, 246, 0.08));
+  border-color: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .client-card-name {
@@ -6167,9 +6167,9 @@ a.portal-button {
 }
 
 [data-theme="light"] .client-card-status--prospect {
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.25);
-  color: #0284c7;
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.25);
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .client-card-status--en_pause {
@@ -6208,8 +6208,8 @@ a.portal-button {
 }
 
 [data-theme="light"] .admin-card-you {
-  background: rgba(34, 211, 238, 0.08);
-  border-color: rgba(34, 211, 238, 0.2);
+  background: rgba(var(--primary-light-rgb), 0.08);
+  border-color: rgba(var(--primary-light-rgb), 0.2);
   color: #0891b2;
 }
 
@@ -6223,9 +6223,9 @@ a.portal-button {
 }
 
 [data-theme="light"] .admin-card-btn--edit:hover {
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.3);
-  color: #0284c7;
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .admin-card-btn--delete:hover:not(:disabled) {
@@ -6273,9 +6273,9 @@ a.portal-button {
 
 [data-theme="light"] .admin-tab.active {
   color: #fff;
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.25);
   text-shadow: none;
 }
 
@@ -6399,8 +6399,8 @@ a.portal-button {
 }
 
 [data-theme="light"] .admin-breadcrumb a:hover {
-  color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.06);
+  color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.06);
 }
 
 [data-theme="light"] .admin-breadcrumb span {
@@ -6433,9 +6433,9 @@ a.portal-button {
 
 [data-theme="light"] .admin-actions .portal-action-link:hover {
   background: #f8fafc;
-  border-color: #0ea5e9;
-  color: #0ea5e9;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.1);
 }
 
 [data-theme="light"] .admin-actions .portal-action-link .portal-action-icon svg {
@@ -6443,7 +6443,7 @@ a.portal-button {
 }
 
 [data-theme="light"] .admin-actions .portal-action-link:hover .portal-action-icon svg {
-  stroke: #0ea5e9;
+  stroke: var(--primary);
 }
 
 /* Profile & Logout Buttons */
@@ -6583,8 +6583,8 @@ a.portal-button {
 }
 
 [data-theme="light"] .ticket-tab.active {
-  color: #0ea5e9;
-  border-bottom-color: #0ea5e9;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 /* Ticket Form */
@@ -6646,7 +6646,7 @@ a.portal-button {
 }
 
 [data-theme="light"] .ticket-kpi-period-btn.active {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
 }
 
@@ -6752,7 +6752,7 @@ a.portal-button {
 
 [data-theme="light"] .qualiopi-date-input {
   background: #ffffff;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
   color: #1e293b;
   color-scheme: light;
 }
@@ -6858,9 +6858,9 @@ a.portal-button {
 }
 
 [data-theme="light"] .crm-badge {
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.25);
-  color: #0284c7;
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.25);
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .crm-view-toggle {
@@ -6945,9 +6945,9 @@ a.portal-button {
 }
 
 [data-theme="light"] .crm-table-badge {
-  background: rgba(14, 165, 233, 0.06);
-  border-color: rgba(14, 165, 233, 0.2);
-  color: #0284c7;
+  background: rgba(var(--primary-rgb), 0.06);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .crm-btn-delete {
@@ -7230,7 +7230,7 @@ a.portal-button {
 /* Qualiopi criterion edit input */
 [data-theme="light"] .qualiopi-criterion-edit-input {
   background: #ffffff;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
   color: #1e293b;
 }
 
@@ -7317,8 +7317,8 @@ a.portal-button {
 
 /* Ticket Hero */
 [data-theme="light"] .ticket-hero {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(59, 130, 246, 0.03));
-  border-color: rgba(14, 165, 233, 0.15);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(59, 130, 246, 0.03));
+  border-color: rgba(var(--primary-rgb), 0.15);
 }
 
 [data-theme="light"] .ticket-back-btn {
@@ -7328,9 +7328,9 @@ a.portal-button {
 }
 
 [data-theme="light"] .ticket-back-btn:hover {
-  color: #0ea5e9;
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.05);
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 
 [data-theme="light"] .ticket-hero-subtitle {
@@ -7338,7 +7338,7 @@ a.portal-button {
 }
 
 [data-theme="light"] .ticket-new-btn {
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
 }
 
 /* Ticket status badge */
@@ -7445,8 +7445,8 @@ a.portal-button {
   background: rgba(255, 255, 255, 0.6);
 }
 [data-theme="light"] .admin-list-item:hover {
-  border-color: rgba(14, 165, 233, 0.3);
-  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.08), 0 0 0 1px rgba(14, 165, 233, 0.06);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 8px 28px rgba(var(--primary-rgb), 0.08), 0 0 0 1px rgba(var(--primary-rgb), 0.06);
 }
 [data-theme="light"] .admin-list-item-title {
   color: #1e293b;
@@ -7455,12 +7455,12 @@ a.portal-button {
   color: #64748b;
 }
 [data-theme="light"] .admin-list-item-actions .portal-button {
-  border-color: rgba(14, 165, 233, 0.3);
-  color: #0284c7;
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--primary-dark);
 }
 [data-theme="light"] .admin-list-item-actions .portal-button:hover {
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.5);
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.5);
   color: #0369a1;
 }
 

@@ -66,8 +66,8 @@
   width: 2px;
   background: var(--primary);
   box-shadow:
-    0 0 6px rgba(14, 165, 233, 0.7),
-    0 0 14px rgba(14, 165, 233, 0.4);
+    0 0 6px rgba(var(--primary-rgb), 0.7),
+    0 0 14px rgba(var(--primary-rgb), 0.4);
   transform: scaleY(0);
   transform-origin: center;
   transition: transform 0.4s ease;

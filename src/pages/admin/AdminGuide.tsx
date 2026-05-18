@@ -82,13 +82,13 @@ const Section = ({
 const Kbd = ({ children }: { children: React.ReactNode }) => (
   <span
     style={{
-      background: 'rgba(14, 165, 233, 0.12)',
+      background: 'rgba(var(--primary-rgb), 0.12)',
       color: 'var(--primary)',
       padding: '2px 8px',
       borderRadius: 6,
       fontSize: 12,
       fontWeight: 600,
-      border: '1px solid rgba(14, 165, 233, 0.25)',
+      border: '1px solid rgba(var(--primary-rgb), 0.25)',
     }}
   >
     {children}
@@ -383,8 +383,8 @@ const AdminGuide = () => {
             onClick={toggleAll}
             style={{
               padding: '8px 16px',
-              background: 'rgba(14, 165, 233, 0.1)',
-              border: '1px solid rgba(14, 165, 233, 0.3)',
+              background: 'rgba(var(--primary-rgb), 0.1)',
+              border: '1px solid rgba(var(--primary-rgb), 0.3)',
               borderRadius: 8,
               color: 'var(--primary)',
               fontSize: 13,
@@ -412,8 +412,8 @@ const AdminGuide = () => {
           style={{
             marginTop: 32,
             padding: '16px 20px',
-            background: 'rgba(14, 165, 233, 0.06)',
-            border: '1px solid rgba(14, 165, 233, 0.2)',
+            background: 'rgba(var(--primary-rgb), 0.06)',
+            border: '1px solid rgba(var(--primary-rgb), 0.2)',
             borderRadius: 10,
             color: 'var(--text-muted)',
             fontSize: 13,

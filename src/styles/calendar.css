@@ -104,12 +104,12 @@
 }
 
 .calendar-day.selected {
-  background: rgba(14, 165, 233, 0.08);
+  background: rgba(var(--primary-rgb), 0.08);
 }
 
 /* Today highlight */
 .calendar-day.today .calendar-day-number {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
   border-radius: 50%;
   width: 26px;

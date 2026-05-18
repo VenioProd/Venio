@@ -20,7 +20,7 @@
   height: 500px;
   top: 15%;
   right: -150px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.03) 0%, transparent 70%);
 }
 
 /* Responsive */

@@ -90,7 +90,7 @@
   color: #e2e8f0;
 }
 .gestion-view-btn.active {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
 }
 .gestion-view-icon {
@@ -326,7 +326,7 @@
   color: #64748b;
 }
 .gestion-kanban-assignee {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
   width: 22px;
   height: 22px;
@@ -375,7 +375,7 @@
   color: #e2e8f0;
 }
 .gestion-gantt-mode-btn.active {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
 }
 
@@ -406,13 +406,13 @@
   border: 1px solid #1e293b;
   border-radius: 6px;
   background: transparent;
-  color: #0ea5e9;
+  color: var(--primary);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
   transition: all 0.15s;
 }
-.gantt-nav-today:hover { background: #0ea5e9; color: #fff; }
+.gantt-nav-today:hover { background: var(--primary); color: #fff; }
 .gantt-range-label {
   font-size: 0.9rem;
   color: #e2e8f0;
@@ -558,8 +558,8 @@
 .gantt-today-col {
   position: absolute;
   bottom: 0;
-  background: rgba(14, 165, 233, 0.08);
-  border-left: 2px solid rgba(14, 165, 233, 0.4);
+  background: rgba(var(--primary-rgb), 0.08);
+  border-left: 2px solid rgba(var(--primary-rgb), 0.4);
   z-index: 1;
   pointer-events: none;
 }
@@ -690,19 +690,19 @@
   transition: all 0.15s;
 }
 .gestion-kpi-period-btn:hover { background: #1e293b; color: #e2e8f0; }
-.gestion-kpi-period-btn.active { background: #0ea5e9; color: #fff; }
+.gestion-kpi-period-btn.active { background: var(--primary); color: #fff; }
 .gestion-export-btn {
   padding: 8px 18px;
   border: none;
   border-radius: 8px;
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
   transition: background 0.15s;
 }
-.gestion-export-btn:hover { background: #0284c7; }
+.gestion-export-btn:hover { background: var(--primary-dark); }
 
 .gestion-kpi-cards {
   display: grid;
@@ -719,7 +719,7 @@
 .gestion-kpi-card-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #0ea5e9;
+  color: var(--primary);
 }
 .gestion-kpi-card-success .gestion-kpi-card-value { color: #22c55e; }
 .gestion-kpi-card-danger .gestion-kpi-card-value { color: #ef4444; }
@@ -845,7 +845,7 @@
   cursor: pointer;
 }
 .gestion-brief-checkbox input[type="checkbox"] {
-  accent-color: #0ea5e9;
+  accent-color: var(--primary);
 }
 
 /* Brief list */
@@ -991,7 +991,7 @@
   width: 100%;
   padding: 10px 12px;
   background: #01040e;
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
   border-radius: 8px;
   color: #e0e7ff;
   font-size: 13px;
@@ -1002,8 +1002,8 @@
 
 .gestion-brief-comment-input:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
 }
 
 /* ─── Expandable Rows ─── */
@@ -1020,7 +1020,7 @@
 }
 
 .gestion-row-expanded {
-  background: rgba(14, 165, 233, 0.06) !important;
+  background: rgba(var(--primary-rgb), 0.06) !important;
 }
 
 .gestion-details-row td {
@@ -1074,8 +1074,8 @@
 
 .gestion-detail-tag {
   padding: 3px 10px;
-  background: rgba(14, 165, 233, 0.12);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-light);
   border-radius: 12px;
   font-size: 12px;
 }
@@ -1101,7 +1101,7 @@
 
 .gestion-attachment-item:hover {
   background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(14, 165, 233, 0.3);
+  border-color: rgba(var(--primary-rgb), 0.3);
 }
 
 .gestion-attachment-icon {
@@ -1134,9 +1134,9 @@
 
 .gestion-upload-btn {
   padding: 8px 16px;
-  background: rgba(14, 165, 233, 0.12);
-  color: #7dd3fc;
-  border: 1px dashed rgba(14, 165, 233, 0.3);
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-light);
+  border: 1px dashed rgba(var(--primary-rgb), 0.3);
   border-radius: 8px;
   font-size: 13px;
   cursor: pointer;
@@ -1144,8 +1144,8 @@
 }
 
 .gestion-upload-btn:hover {
-  background: rgba(14, 165, 233, 0.2);
-  border-color: rgba(14, 165, 233, 0.5);
+  background: rgba(var(--primary-rgb), 0.2);
+  border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .gestion-upload-btn:disabled {
@@ -1243,7 +1243,7 @@
 }
 
 [data-theme="light"] .gestion-view-btn.active {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
 }
 
@@ -1322,7 +1322,7 @@
 
 /* Expandable Row Details */
 [data-theme="light"] .gestion-row-expanded {
-  background: rgba(14, 165, 233, 0.04) !important;
+  background: rgba(var(--primary-rgb), 0.04) !important;
 }
 
 [data-theme="light"] .gestion-task-details {
@@ -1343,8 +1343,8 @@
 }
 
 [data-theme="light"] .gestion-detail-tag {
-  background: rgba(14, 165, 233, 0.08);
-  color: #0284c7;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary-dark);
 }
 
 /* Attachments */
@@ -1355,7 +1355,7 @@
 
 [data-theme="light"] .gestion-attachment-item:hover {
   background: #f8fafc;
-  border-color: #0ea5e9;
+  border-color: var(--primary);
 }
 
 [data-theme="light"] .gestion-attachment-name {
@@ -1365,7 +1365,7 @@
 [data-theme="light"] .gestion-upload-btn {
   background: #f0f9ff;
   border-color: #bae6fd;
-  color: #0284c7;
+  color: var(--primary-dark);
 }
 
 [data-theme="light"] .gestion-upload-btn:hover {
@@ -1473,7 +1473,7 @@
 }
 
 [data-theme="light"] .gestion-gantt-mode-btn.active {
-  background: #0ea5e9;
+  background: var(--primary);
   color: #fff;
 }
 
@@ -1559,7 +1559,7 @@
 }
 
 [data-theme="light"] .gantt-today-col {
-  background: rgba(14, 165, 233, 0.06);
+  background: rgba(var(--primary-rgb), 0.06);
 }
 
 [data-theme="light"] .gantt-row-even {

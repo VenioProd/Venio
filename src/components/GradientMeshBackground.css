@@ -8,7 +8,7 @@
   pointer-events: none;
   overflow: hidden;
   /* Dégradé statique en fond de base pour fallback */
-  background: radial-gradient(ellipse at 30% 40%, rgba(14, 165, 233, 0.15) 0%, rgba(0, 0, 0, 1) 60%),
+  background: radial-gradient(ellipse at 30% 40%, rgba(var(--primary-rgb), 0.15) 0%, rgba(0, 0, 0, 1) 60%),
               radial-gradient(ellipse at 70% 60%, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 1) 60%),
               #000000;
   /* Optimisation GPU : forcer l'accélération matérielle */
@@ -19,7 +19,7 @@
 
 /* Mode GPU OFF : rendre le fond strictement statique */
 .gradient-mesh-background.gpu-off-static {
-  background: radial-gradient(ellipse at 30% 40%, rgba(14, 165, 233, 0.08) 0%, rgba(0, 0, 0, 1) 60%),
+  background: radial-gradient(ellipse at 30% 40%, rgba(var(--primary-rgb), 0.08) 0%, rgba(0, 0, 0, 1) 60%),
               radial-gradient(ellipse at 70% 60%, rgba(59, 130, 246, 0.05) 0%, rgba(0, 0, 0, 1) 60%),
               #000000;
 }
@@ -46,7 +46,7 @@
 .gradient-mesh-layer-1 {
   background: radial-gradient(
     circle at 20% 30%, 
-    rgba(14, 165, 233, 0.25) 0%, 
+    rgba(var(--primary-rgb), 0.25) 0%, 
     transparent 50%
   );
   animation: float-1 40s linear infinite;
@@ -68,7 +68,7 @@
 .gradient-mesh-layer-3 {
   background: radial-gradient(
     circle at 50% 70%, 
-    rgba(34, 211, 238, 0.15) 0%, 
+    rgba(var(--primary-light-rgb), 0.15) 0%, 
     transparent 50%
   );
   animation: float-3 60s linear infinite;
@@ -241,7 +241,7 @@
 @supports not (filter: blur(10px)) {
   .gradient-mesh-background {
     background: linear-gradient(135deg, 
-      rgba(14, 165, 233, 0.1) 0%, 
+      rgba(var(--primary-rgb), 0.1) 0%, 
       rgba(0, 0, 0, 1) 50%,
       rgba(59, 130, 246, 0.1) 100%
     );
@@ -276,7 +276,7 @@ body.gpu-off .gradient-mesh-layer {
 
 body.gpu-off .gradient-mesh-background {
   /* Utiliser un fond statique simple */
-  background: radial-gradient(ellipse at 30% 40%, rgba(14, 165, 233, 0.08) 0%, rgba(0, 0, 0, 1) 60%),
+  background: radial-gradient(ellipse at 30% 40%, rgba(var(--primary-rgb), 0.08) 0%, rgba(0, 0, 0, 1) 60%),
               radial-gradient(ellipse at 70% 60%, rgba(59, 130, 246, 0.05) 0%, rgba(0, 0, 0, 1) 60%),
               #000000;
 }

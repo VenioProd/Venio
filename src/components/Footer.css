@@ -1,6 +1,6 @@
 footer {
   padding: 80px 40px 40px;
-  border-top: 2px solid rgba(14, 165, 233, 0.4);
+  border-top: 2px solid rgba(var(--primary-rgb), 0.4);
   position: relative;
   background: var(--bg-primary);
   backdrop-filter: blur(10px);

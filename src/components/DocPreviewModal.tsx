@@ -58,7 +58,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
             <a
               href={url}
               download={name}
-              style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, background: 'rgba(14,165,233,0.1)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.2)', textDecoration: 'none' }}
+              style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', border: '1px solid rgba(var(--primary-rgb), 0.2)', textDecoration: 'none' }}
             >
               Télécharger
             </a>
@@ -86,7 +86,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
                 <polyline points="14 2 14 8 20 8" />
               </svg>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 16 }}>Ce format ne peut pas être prévisualisé</p>
-              <a href={url} download={name} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, background: 'rgba(14,165,233,0.15)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.3)', textDecoration: 'none' }}>
+              <a href={url} download={name} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, background: 'rgba(var(--primary-rgb), 0.15)', color: 'var(--primary)', border: '1px solid rgba(var(--primary-rgb), 0.3)', textDecoration: 'none' }}>
                 Télécharger le fichier
               </a>
             </div>

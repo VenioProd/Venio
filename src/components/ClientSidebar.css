@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   background: rgba(7, 10, 18, 0.98);
-  border-right: 1px solid rgba(14, 165, 233, 0.16);
+  border-right: 1px solid rgba(var(--primary-rgb), 0.16);
   box-shadow: 10px 0 32px rgba(0, 0, 0, 0.28);
   padding-top: env(safe-area-inset-top, 0px);
 }
@@ -35,7 +35,7 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #22c55e);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #031018;
   font-size: 0.95rem;
   font-weight: 900;
@@ -61,7 +61,7 @@
 
 .client-sb-section-label {
   padding: 9px 10px 4px;
-  color: rgba(125, 211, 252, 0.72);
+  color: rgba(var(--primary-light-rgb), 0.72);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -85,12 +85,12 @@
 
 .client-sb-item:hover {
   color: rgba(255, 255, 255, 0.94);
-  background: rgba(14, 165, 233, 0.08);
+  background: rgba(var(--primary-rgb), 0.08);
 }
 
 .client-sb-item.active {
   color: #ffffff;
-  background: rgba(14, 165, 233, 0.14);
+  background: rgba(var(--primary-rgb), 0.14);
 }
 
 .client-sb-item.active::before {
@@ -101,7 +101,7 @@
   bottom: 7px;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: linear-gradient(180deg, #0ea5e9, #22c55e);
+  background: linear-gradient(180deg, var(--primary), var(--primary-light));
 }
 
 .client-sb-icon {
@@ -130,8 +130,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(14, 165, 233, 0.18);
-  color: #7dd3fc;
+  background: rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-light);
   font-size: 0.84rem;
   font-weight: 900;
 }
@@ -195,7 +195,7 @@
   display: flex;
   flex-direction: column;
   background: rgba(7, 10, 18, 0.99);
-  border-right: 1px solid rgba(14, 165, 233, 0.22);
+  border-right: 1px solid rgba(var(--primary-rgb), 0.22);
   box-shadow: 16px 0 34px rgba(0, 0, 0, 0.42);
   padding-top: env(safe-area-inset-top, 0px);
 }

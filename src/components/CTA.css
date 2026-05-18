@@ -4,8 +4,8 @@
   background: var(--bg-secondary);
   position: relative;
   overflow: hidden;
-  border-top: 2px solid rgba(14, 165, 233, 0.4);
-  border-bottom: 2px solid rgba(14, 165, 233, 0.4);
+  border-top: 2px solid rgba(var(--primary-rgb), 0.4);
+  border-bottom: 2px solid rgba(var(--primary-rgb), 0.4);
 }
 
 .cta-section::before {

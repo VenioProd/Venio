@@ -135,7 +135,7 @@ export default function EmailComposer() {
           <p className="ticket-hero-subtitle">
             Envoyez un message à plusieurs personnes en une seule fois
             {fromEmail && (
-              <span style={{ marginLeft: 10, padding: '2px 10px', borderRadius: 20, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)', color: '#38bdf8', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
+              <span style={{ marginLeft: 10, padding: '2px 10px', borderRadius: 20, background: 'rgba(var(--primary-rgb), 0.12)', border: '1px solid rgba(var(--primary-rgb), 0.25)', color: 'var(--primary-light)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
                 ✉ Depuis : {fromEmail}
               </span>
             )}
@@ -144,7 +144,7 @@ export default function EmailComposer() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {totalSelected > 0 && (
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-              <strong style={{ color: '#0ea5e9' }}>{totalSelected}</strong> destinataire{totalSelected > 1 ? 's' : ''}
+              <strong style={{ color: 'var(--primary)' }}>{totalSelected}</strong> destinataire{totalSelected > 1 ? 's' : ''}
             </span>
           )}
           <button
@@ -180,10 +180,10 @@ export default function EmailComposer() {
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0' }}>Destinataires</span>
             <span style={{
-              background: totalSelected > 0 ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.06)',
-              color: totalSelected > 0 ? '#38bdf8' : '#475569',
+              background: totalSelected > 0 ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(255,255,255,0.06)',
+              color: totalSelected > 0 ? 'var(--primary-light)' : '#475569',
               borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700,
-              border: totalSelected > 0 ? '1px solid rgba(14,165,233,0.3)' : '1px solid rgba(255,255,255,0.1)',
+              border: totalSelected > 0 ? '1px solid rgba(var(--primary-rgb), 0.3)' : '1px solid rgba(255,255,255,0.1)',
             }}>
               {totalSelected} sélectionné{totalSelected > 1 ? 's' : ''}
             </span>
@@ -205,8 +205,8 @@ export default function EmailComposer() {
             <div style={{ marginBottom: 14 }}>
               <button onClick={selectAllAdmins} style={{
                 width: '100%', padding: '7px 0', borderRadius: 8,
-                border: '1px solid rgba(14,165,233,0.25)', background: 'rgba(14,165,233,0.06)',
-                color: '#38bdf8', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+                border: '1px solid rgba(var(--primary-rgb), 0.25)', background: 'rgba(var(--primary-rgb), 0.06)',
+                color: 'var(--primary-light)', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
               }}>
                 {admins.length > 0 && admins.every(a => selectedEmails.has(a.email))
                   ? "Tout désélectionner"
@@ -231,18 +231,18 @@ export default function EmailComposer() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         padding: '9px 12px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                        background: selected ? 'rgba(14,165,233,0.12)' : 'rgba(255,255,255,0.03)',
-                        border: selected ? '1px solid rgba(14,165,233,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                        background: selected ? 'rgba(var(--primary-rgb), 0.12)' : 'rgba(255,255,255,0.03)',
+                        border: selected ? '1px solid rgba(var(--primary-rgb), 0.35)' : '1px solid rgba(255,255,255,0.07)',
                         transition: 'all 0.15s', width: '100%',
                       }}
                     >
                       {/* Avatar */}
                       <div style={{
                         width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                        background: selected ? 'rgba(14,165,233,0.25)' : 'rgba(255,255,255,0.08)',
+                        background: selected ? 'rgba(var(--primary-rgb), 0.25)' : 'rgba(255,255,255,0.08)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 13, fontWeight: 700,
-                        color: selected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
+                        color: selected ? 'var(--primary-light)' : 'rgba(255,255,255,0.6)',
                         transition: 'all 0.15s',
                       }}>
                         {r.name.charAt(0).toUpperCase()}
@@ -261,7 +261,7 @@ export default function EmailComposer() {
                       {/* Indicateur sélection */}
                       <div style={{
                         width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                        background: selected ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
+                        background: selected ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
                         border: selected ? 'none' : '1px solid rgba(255,255,255,0.15)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 0.15s',
@@ -296,7 +296,7 @@ export default function EmailComposer() {
                 </div>
                 <button onClick={addCustomEmail} style={{
                   padding: '10px 14px', borderRadius: 8, border: 'none',
-                  background: 'rgba(14,165,233,0.15)', color: '#38bdf8',
+                  background: 'rgba(var(--primary-rgb), 0.15)', color: 'var(--primary-light)',
                   cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0,
                 }}>+</button>
               </div>
@@ -306,8 +306,8 @@ export default function EmailComposer() {
                     <span key={e} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                       padding: '3px 8px', borderRadius: 20,
-                      background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.25)',
-                      fontSize: 11, color: '#7dd3fc',
+                      background: 'rgba(var(--primary-rgb), 0.1)', border: '1px solid rgba(var(--primary-rgb), 0.25)',
+                      fontSize: 11, color: 'var(--primary-light)',
                     }}>
                       {e}
                       <button onClick={() => setCustomEmails(p => p.filter(x => x !== e))} style={{
@@ -361,7 +361,7 @@ export default function EmailComposer() {
             {preview ? (
               <div style={{
                 minHeight: 200, padding: '18px 20px', borderRadius: 10,
-                background: '#07080f', border: '1px solid rgba(14,165,233,0.15)',
+                background: '#07080f', border: '1px solid rgba(var(--primary-rgb), 0.15)',
                 fontSize: 14, color: '#cbd5e1', lineHeight: 1.8,
               }}>
                 {body.trim() ? (
@@ -377,7 +377,7 @@ export default function EmailComposer() {
                   <div style={{ marginTop: 16 }}>
                     <span style={{
                       display: 'inline-block', padding: '10px 22px', borderRadius: 8,
-                      background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)',
+                      background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
                       color: '#fff', fontWeight: 600, fontSize: 13,
                     }}>{ctaLabel}</span>
                   </div>
@@ -402,7 +402,7 @@ export default function EmailComposer() {
                 type="checkbox"
                 checked={showCta}
                 onChange={e => setShowCta(e.target.checked)}
-                style={{ accentColor: '#0ea5e9', width: 14, height: 14 }}
+                style={{ accentColor: 'var(--primary)', width: 14, height: 14 }}
               />
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
                 Ajouter un bouton d'action dans l'email (optionnel)

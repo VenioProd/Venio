@@ -16,9 +16,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(14, 165, 233, 0) 15%,
-    rgba(14, 165, 233, 0.5) 50%,
-    rgba(14, 165, 233, 0) 85%,
+    rgba(var(--primary-rgb), 0) 15%,
+    rgba(var(--primary-rgb), 0.5) 50%,
+    rgba(var(--primary-rgb), 0) 85%,
     transparent 100%
   );
   position: relative;
@@ -31,9 +31,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(14, 165, 233, 0) 25%,
-    rgba(14, 165, 233, 0.35) 50%,
-    rgba(14, 165, 233, 0) 75%,
+    rgba(var(--primary-rgb), 0) 25%,
+    rgba(var(--primary-rgb), 0.35) 50%,
+    rgba(var(--primary-rgb), 0) 75%,
     transparent 100%
   );
   filter: blur(4px);
@@ -50,9 +50,9 @@
   background: var(--primary);
   transform: translate(-50%, -50%);
   box-shadow:
-    0 0 6px rgba(14, 165, 233, 0.9),
-    0 0 14px rgba(14, 165, 233, 0.6),
-    0 0 26px rgba(14, 165, 233, 0.3);
+    0 0 6px rgba(var(--primary-rgb), 0.9),
+    0 0 14px rgba(var(--primary-rgb), 0.6),
+    0 0 26px rgba(var(--primary-rgb), 0.3);
   animation: neonDotPulse 3.5s ease-in-out infinite;
 }
 
