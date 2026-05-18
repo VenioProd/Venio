@@ -39,6 +39,7 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   locale: 'fr' | 'en' | null
+  agentTokenId?: Types.ObjectId | null
   createdAt: Date
   updatedAt: Date
 }

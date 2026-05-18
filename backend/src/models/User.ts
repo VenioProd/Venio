@@ -59,6 +59,12 @@ const userSchema = new mongoose.Schema<IUser>(
     lastLoginIp: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     locale: { type: String, enum: ['fr', 'en'], default: null },
+    agentTokenId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AgentToken',
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 )
