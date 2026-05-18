@@ -4,6 +4,7 @@ import InternalConversationMember from '../models/InternalConversationMember.js'
 import InternalMessage from '../models/InternalMessage.js'
 import Notification from '../models/Notification.js'
 import User from '../models/User.js'
+import { sendPushToUser } from '../lib/webPush.js'
 import { isAdminRole } from '../lib/permissions.js'
 import type { JwtPayload } from '../types/express.js'
 import type { IInternalMessageAttachment } from '../types/models/index.js'
@@ -249,14 +250,27 @@ async function notifyMessageRecipients(user: JwtPayload, conversationId: string,
     ? `Mention dans #${conversation.slug || conversation.name}`
     : `Nouveau message de ${user.name || 'Venio'}`
   const preview = content.length > 140 ? `${content.slice(0, 137)}...` : content
+  const link = `/admin/messages?conversation=${conversationId}&message=${messageId}`
+
   await Notification.insertMany(Array.from(recipients).map((recipient) => ({
     recipient,
     type: 'INTERNAL_MESSAGE',
     title,
     message: preview,
-    link: `/admin/messages?conversation=${conversationId}&message=${messageId}`,
+    link,
     metadata: { conversationId, messageId },
   })), { ordered: false })
+
+  // Push web pour chaque destinataire (background, ne bloque pas)
+  for (const recipient of recipients) {
+    sendPushToUser(recipient, {
+      title,
+      body: preview,
+      link,
+      tag: `conversation:${conversationId}`,
+      data: { conversationId, messageId, type: 'INTERNAL_MESSAGE' },
+    }).catch(() => {})
+  }
 }
 
 export async function createMessage(user: JwtPayload, conversationId: string, input: {

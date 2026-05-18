@@ -25,6 +25,7 @@ import adminBillingRoutes from './routes/admin/billing.js'
 import adminCrmRoutes from './routes/admin/crm.js'
 import adminTaskRoutes from './routes/admin/tasks/index.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
+import pushRoutes from './routes/push.js'
 import adminDashboardRoutes from './routes/admin/dashboard.js'
 import adminSearchRoutes from './routes/admin/search.js'
 import adminTemplateRoutes from './routes/admin/templates.js'
@@ -156,6 +157,7 @@ app.use('/api/auth', authLimiter, authRoutes)
 
 app.use('/api/projects', projectRoutes)
 app.use('/api/documents', documentRoutes)
+app.use('/api/push', pushRoutes)
 
 app.use('/api/admin/users', adminUserRoutes)
 app.use('/api/admin/clients', adminClientRoutes)

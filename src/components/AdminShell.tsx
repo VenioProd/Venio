@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import AdminSidebar from './AdminSidebar'
 import AutoBreadcrumb from './AutoBreadcrumb'
+import PushPermissionPrompt from './PushPermissionPrompt'
 import { MessagingProvider } from '../context/MessagingContext'
 import './AdminShell.css'
 
@@ -42,6 +43,7 @@ const AdminShell = () => {
             <AutoBreadcrumb />
           </div>
           <main className="admin-shell-main">
+            <PushPermissionPrompt variant="admin" />
             <Outlet />
           </main>
         </div>

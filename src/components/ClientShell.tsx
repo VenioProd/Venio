@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import ClientSidebar from './ClientSidebar'
+import PushPermissionPrompt from './PushPermissionPrompt'
 import './ClientShell.css'
 
 const ClientShell = () => {
@@ -23,6 +24,7 @@ const ClientShell = () => {
           <span className="client-shell-kicker">Espace client</span>
         </header>
         <main className="client-shell-main">
+          <PushPermissionPrompt variant="client" />
           <Outlet />
         </main>
       </div>

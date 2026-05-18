@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
+import NotificationSettings from '../../components/NotificationSettings'
 import './ClientPortal.css'
 
 const ClientProfile = () => {
@@ -173,6 +174,10 @@ const ClientProfile = () => {
             {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </form>
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+        <NotificationSettings />
       </div>
 
       <div className="portal-card">
