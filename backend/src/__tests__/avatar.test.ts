@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import mongoose from 'mongoose'
+import path from 'path'
 
 // Re-create the User schema inline to avoid side-effects from importing
 // the model file (which calls mongoose.model and could conflict).
@@ -43,5 +44,26 @@ describe('User model — avatarUrl field', () => {
     const user = new UserTest(validBase())
     const errors = user.validateSync()
     expect(errors).toBeUndefined()
+  })
+})
+
+function isPathSafe(filename: string, dir: string): boolean {
+  const resolved = path.resolve(dir, filename)
+  return resolved.startsWith(dir)
+}
+
+describe('avatar route — sécurité path-traversal', () => {
+  const testDir = '/app/uploads/avatars'
+
+  it('accepte un nom de fichier normal', () => {
+    expect(isPathSafe('64abc123.jpg', testDir)).toBe(true)
+  })
+
+  it('rejette une attaque path-traversal', () => {
+    expect(isPathSafe('../../../etc/passwd', testDir)).toBe(false)
+  })
+
+  it('rejette un chemin absolu', () => {
+    expect(isPathSafe('/etc/passwd', testDir)).toBe(false)
   })
 })
