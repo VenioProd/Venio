@@ -76,6 +76,26 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     expect(user!.name).toBe('New name')
   })
 
+  it('revoke désactive le User AGENT lié et préfixe son nom', async () => {
+    const jwtTok = await loginAsSuperAdmin()
+    const created = await request(app)
+      .post('/api/admin/agent-tokens')
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({ name: 'ToRevoke', scopes: ['read:crm'] })
+    const tokenId = created.body.token._id
+    const userId = (await AgentToken.findById(tokenId).lean())!.userId
+
+    const revokeRes = await request(app)
+      .post(`/api/admin/agent-tokens/${tokenId}/revoke`)
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({})
+    expect(revokeRes.status).toBe(200)
+
+    const user = await User.findById(userId).lean()
+    expect(user!.isActive).toBe(false)
+    expect(user!.name).toBe('[Révoqué] ToRevoke')
+  })
+
   it('POST /agent-tokens crée un User AGENT lié et l\'ajoute à #general', async () => {
     const jwtTok = await loginAsSuperAdmin()
 

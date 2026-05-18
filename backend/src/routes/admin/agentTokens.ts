@@ -322,6 +322,14 @@ router.post(
       token.revokedBy = req.user!.id as unknown as typeof token.revokedBy
       await token.save()
 
+      // Désactive le User AGENT lié et marque son nom.
+      if (token.userId) {
+        await User.updateOne(
+          { _id: token.userId },
+          { $set: { isActive: false, name: `[Révoqué] ${token.name}` } }
+        ).catch((err) => console.warn('[agent-token-revoke] user deactivate failed:', (err as Error).message))
+      }
+
       void recordAudit({
         action: 'AGENT_TOKEN_REVOKE',
         actor: buildActorFromReq(req),
