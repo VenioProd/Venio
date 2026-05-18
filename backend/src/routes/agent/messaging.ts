@@ -326,46 +326,64 @@ router.post(
       const absDir = path.resolve(process.cwd(), relDir)
       await fs.mkdir(absDir, { recursive: true })
 
-      for (const file of files) {
-        const buffer = Buffer.from(file.contentBase64, 'base64')
-        if (buffer.length === 0) {
-          return respondError(res, 400, 'INVALID_BASE64', `contentBase64 vide pour ${file.filename}`)
-        }
-        if (buffer.length > RAW_LIMIT_BYTES) {
-          return respondError(
-            res,
-            413,
-            'FILE_TOO_LARGE',
-            `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+      const writtenPaths: string[] = []
+      const cleanup = async () => {
+        await Promise.all(
+          writtenPaths.map((p) =>
+            fs.unlink(p).catch((e) => console.warn('[attachments] cleanup failed:', p, (e as Error).message))
           )
+        )
+      }
+
+      try {
+        for (const file of files) {
+          const buffer = Buffer.from(file.contentBase64, 'base64')
+          if (buffer.length === 0) {
+            await cleanup()
+            return respondError(res, 400, 'INVALID_BASE64', `contentBase64 vide pour ${file.filename}`)
+          }
+          if (buffer.length > RAW_LIMIT_BYTES) {
+            await cleanup()
+            return respondError(
+              res,
+              413,
+              'FILE_TOO_LARGE',
+              `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+            )
+          }
+          const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
+          const relPath = path.join(relDir, stored)
+          const absPath = path.resolve(process.cwd(), relPath)
+          if (!absPath.startsWith(uploadsRoot())) {
+            await cleanup()
+            return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
+          }
+          await fs.writeFile(absPath, buffer)
+          writtenPaths.push(absPath)
+          attachments.push({
+            originalName: file.filename,
+            storagePath: relPath,
+            mimeType: file.mimeType,
+            size: buffer.length,
+          })
         }
-        const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
-        const relPath = path.join(relDir, stored)
-        const absPath = path.resolve(process.cwd(), relPath)
-        if (!absPath.startsWith(uploadsRoot())) {
-          return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
-        }
-        await fs.writeFile(absPath, buffer)
-        attachments.push({
-          originalName: file.filename,
-          storagePath: relPath,
-          mimeType: file.mimeType,
-          size: buffer.length,
+
+        const message = await createMessage(user, conversationId, {
+          content: String(req.body.content || 'Pièce jointe').trim() || 'Pièce jointe',
+          attachments,
         })
-      }
 
-      const message = await createMessage(user, conversationId, {
-        content: String(req.body.content || 'Pièce jointe').trim() || 'Pièce jointe',
-        attachments,
-      })
-
-      res.locals.audit = {
-        entityType: 'InternalMessage',
-        entityId: String(message._id),
-        summary: `Message + ${attachments.length} attachment(s) dans conv ${conversationId}`,
-        after: { attachments: attachments.map((a) => a.originalName) },
+        res.locals.audit = {
+          entityType: 'InternalMessage',
+          entityId: String(message._id),
+          summary: `Message + ${attachments.length} attachment(s) dans conv ${conversationId}`,
+          after: { attachments: attachments.map((a) => a.originalName) },
+        }
+        res.status(201).json({ message })
+      } catch (err) {
+        await cleanup()
+        next(err)
       }
-      res.status(201).json({ message })
     } catch (err) {
       next(err)
     }
@@ -400,7 +418,15 @@ router.get(
       }
       res.setHeader('Content-Type', attachment.mimeType)
       res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName.replace(/"/g, '_')}"`)
-      createReadStream(filePath).pipe(res)
+      const stream = createReadStream(filePath)
+      stream.on('error', (streamErr) => {
+        if (!res.headersSent) {
+          next(streamErr)
+        } else {
+          res.destroy(streamErr)
+        }
+      })
+      stream.pipe(res)
     } catch (err) {
       next(err)
     }
