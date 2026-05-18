@@ -50,7 +50,15 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     const tickets = await InternalTicket.find(filter).sort({ createdAt: -1 })
-    res.json(tickets)
+    const authorIds = [...new Set(tickets.map((t) => t.authorId.toString()))]
+    const authors = await User.find({ _id: { $in: authorIds } }).select('_id avatarUrl')
+    const avatarMap: Record<string, string> = {}
+    authors.forEach((u) => { avatarMap[u._id.toString()] = u.avatarUrl || '' })
+    const enriched = tickets.map((t) => ({
+      ...t.toObject(),
+      authorAvatarUrl: avatarMap[t.authorId.toString()] || '',
+    }))
+    res.json(enriched)
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -161,7 +169,20 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const ticket = await InternalTicket.findById(req.params.id)
     if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
-    res.json(ticket)
+
+    const replyAuthorIds = ticket.replies.map((r) => r.authorId.toString())
+    const allAuthorIds = [...new Set([ticket.authorId.toString(), ...replyAuthorIds])]
+    const authors = await User.find({ _id: { $in: allAuthorIds } }).select('_id avatarUrl')
+    const avatarMap: Record<string, string> = {}
+    authors.forEach((u) => { avatarMap[u._id.toString()] = u.avatarUrl || '' })
+
+    const ticketObj = ticket.toObject() as Record<string, unknown>
+    ticketObj.authorAvatarUrl = avatarMap[ticket.authorId.toString()] || ''
+    ticketObj.replies = ticket.replies.map((r) => ({
+      ...r.toObject(),
+      authorAvatarUrl: avatarMap[r.authorId.toString()] || '',
+    }))
+    res.json(ticketObj)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }
