@@ -83,6 +83,8 @@ const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDe
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
+const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
+const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -241,6 +243,24 @@ function App() {
             element={
               <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
                 <AgentTokensList />
+              </RequirePermission>
+            }
+          />
+
+          {/* System health & activity center */}
+          <Route
+            path="health"
+            element={
+              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                <SystemHealth />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="centre-activite"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                <ActivityCenter />
               </RequirePermission>
             }
           />

@@ -56,6 +56,8 @@ import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
+import adminHealthRoutes from './routes/admin/health.js'
+import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
@@ -194,6 +196,8 @@ app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
+app.use('/api/admin/health', adminHealthRoutes)
+app.use('/api/admin/activity-center', adminActivityCenterRoutes)
 
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
