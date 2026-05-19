@@ -17,7 +17,7 @@ router.use(requireAdmin)
 router.get('/recipients', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [admins, clients] = await Promise.all([
-      User.find({ role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] }, isActive: { $ne: false } })
+      User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] }, isActive: { $ne: false } })
         .select('name email role tags').sort({ name: 1 }),
       User.find({ role: 'CLIENT', isActive: { $ne: false } })
         .select('name email companyName').sort({ name: 1 }),

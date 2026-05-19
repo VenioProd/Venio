@@ -774,7 +774,7 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
     if (recipientIds.length > 0) {
       recipients = await User.find({ _id: { $in: recipientIds }, isActive: { $ne: false } }).select('_id email')
     } else {
-      recipients = await User.find({ role: { $in: ['SUPER_ADMIN', 'PDG'] }, isActive: { $ne: false } }).select('_id email')
+      recipients = await User.find({ role: 'SUPER_ADMIN', isActive: { $ne: false } }).select('_id email')
     }
     const emailRecipients: string[] = []
     for (const recipient of recipients) {

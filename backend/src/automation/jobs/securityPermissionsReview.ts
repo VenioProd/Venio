@@ -39,17 +39,22 @@ const definition: AutomationDefinition = {
 
     const issues: ReviewIssue[] = []
 
-    // 1. Users with custom permissions override
+    // 1. Users with permission overrides (granted or denied)
     const customPermUsers = await User.find({
-      customPermissions: { $ne: null, $exists: true, $not: { $size: 0 } },
-      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] },
-    }).select('name email role customPermissions')
+      $or: [
+        { grantedPermissions: { $exists: true, $not: { $size: 0 } } },
+        { deniedPermissions: { $exists: true, $not: { $size: 0 } } },
+      ],
+      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMPTABLE', 'VIEWER'] },
+    }).select('name email role grantedPermissions deniedPermissions')
 
     if (customPermUsers.length > 0) {
       for (const u of customPermUsers) {
+        const grantedCount = (u.grantedPermissions as string[] | undefined)?.length || 0
+        const deniedCount = (u.deniedPermissions as string[] | undefined)?.length || 0
         issues.push({
           category: 'Permissions custom',
-          description: `${u.name} (${u.email}, ${u.role}) a ${u.customPermissions?.length || 0} permission(s) custom`,
+          description: `${u.name} (${u.email}, ${u.role}) — ${grantedCount} accordée(s), ${deniedCount} retirée(s)`,
           severity: 'info',
         })
       }
@@ -93,7 +98,10 @@ const definition: AutomationDefinition = {
     // 4. Clients with admin-level status but CLIENT role (data integrity)
     const clientsWithAdminAccess = await User.countDocuments({
       role: 'CLIENT',
-      customPermissions: { $ne: null, $not: { $size: 0 } },
+      $or: [
+        { grantedPermissions: { $exists: true, $not: { $size: 0 } } },
+        { deniedPermissions: { $exists: true, $not: { $size: 0 } } },
+      ],
     })
 
     if (clientsWithAdminAccess > 0) {

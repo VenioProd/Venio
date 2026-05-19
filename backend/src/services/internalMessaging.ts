@@ -167,7 +167,7 @@ export async function createConversation(user: JwtPayload, input: {
 
   const activeInternalUsers = await User.find({
     _id: { $in: participantIds },
-    role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
+    role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
     isActive: { $ne: false },
   }).select('_id name')
   if (activeInternalUsers.length !== participantIds.length) {

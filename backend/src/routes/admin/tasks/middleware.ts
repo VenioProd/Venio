@@ -12,9 +12,9 @@ export function requirePermissionOrAssignee(permission: string) {
     if (req.user!.role === 'SUPER_ADMIN') return next()
 
     // Check permission via DB lookup
-    const u = await User.findById(req.user!.id).select('customPermissions')
+    const u = await User.findById(req.user!.id).select('grantedPermissions deniedPermissions')
     const { hasPermissionResolved } = await import('../../../lib/permissions.js')
-    if (hasPermissionResolved(req.user!.role, permission as any, u?.customPermissions ?? null)) {
+    if (hasPermissionResolved(req.user!.role, permission as any, u?.grantedPermissions ?? [], u?.deniedPermissions ?? [])) {
       return next()
     }
 

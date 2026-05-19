@@ -146,7 +146,7 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
     const overdueTasks = allTasks.filter((t) => t.dueDate && t.status !== 'TERMINE' && new Date(t.dueDate) < now).length
 
     // Admin list for filters
-    const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] } }).select('_id name email')
+    const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] } }).select('_id name email')
 
     // Brief stats — missions attribuees par super admin
     const briefFilter: Record<string, unknown> = { createdAt: { $gte: since } }

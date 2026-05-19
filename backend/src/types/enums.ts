@@ -1,6 +1,6 @@
 // ─── User ───
-export type UserRole = 'CLIENT' | 'SUPER_ADMIN' | 'PDG' | 'ADMIN' | 'RH' | 'COMMERCIAL' | 'VIEWER' | 'STAGIAIRE' | 'AGENT'
-export type AdminRole = 'SUPER_ADMIN' | 'PDG' | 'ADMIN' | 'RH' | 'COMMERCIAL' | 'VIEWER' | 'STAGIAIRE'
+export type UserRole = 'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE' | 'AGENT'
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
 export type HealthStatus = 'EXCELLENT' | 'BON' | 'ATTENTION' | 'CRITIQUE'

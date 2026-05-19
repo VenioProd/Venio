@@ -126,7 +126,7 @@ router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }
-    const permissions = resolvePermissions(user.role, user.customPermissions)
+    const permissions = resolvePermissions(user.role, user.grantedPermissions ?? [], user.deniedPermissions ?? [])
     return res.json({ user: { ...user.toObject(), permissions } })
   } catch (err) {
     return next(err)

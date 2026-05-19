@@ -250,7 +250,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         { $group: { _id: null, total: { $sum: '$budget' } } },
       ]).catch(() => []),
       User.countDocuments({ role: 'CLIENT' }).catch(() => 0),
-      User.countDocuments({ role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] } }).catch(() => 0),
+      User.countDocuments({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] } }).catch(() => 0),
       User.countDocuments({ role: 'INTERN' }).catch(() => 0),
       Lead.countDocuments({
         leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },

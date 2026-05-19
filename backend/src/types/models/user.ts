@@ -33,7 +33,9 @@ export interface IUser extends Document {
   archivedAt: Date | null
   twoFactorSecret: string | null
   twoFactorEnabled: boolean
-  customPermissions: string[] | null
+  jobTitle: string
+  grantedPermissions: string[]
+  deniedPermissions: string[]
   passwordChangedAt: Date | null
   lastLoginAt: Date | null
   lastLoginIp: string

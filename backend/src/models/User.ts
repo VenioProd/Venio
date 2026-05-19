@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['CLIENT', 'SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE', 'AGENT'], required: true },
+    role: { type: String, enum: ['CLIENT', 'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'], required: true },
     name: { type: String, required: true },
     title: { type: String, default: '' },
     companyName: { type: String, default: '' },
@@ -51,8 +51,10 @@ const userSchema = new mongoose.Schema<IUser>(
     // 2FA fields
     twoFactorSecret: { type: String, default: null },
     twoFactorEnabled: { type: Boolean, default: false },
-    // Custom permissions override (null = use role defaults)
-    customPermissions: { type: [String], default: null },
+    jobTitle: { type: String, default: '' },
+    // Fine-grained permission overrides
+    grantedPermissions: { type: [String], default: [] },
+    deniedPermissions: { type: [String], default: [] },
     // Security tracking
     passwordChangedAt: { type: Date, default: null },
     lastLoginAt: { type: Date, default: null },

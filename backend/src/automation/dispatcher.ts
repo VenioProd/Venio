@@ -150,7 +150,7 @@ export async function resolveRecipients(
     }
     case 'all_internal_active': {
       const users = await User.find({
-        role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] },
+        role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] },
         isActive: { $ne: false },
       }).select('_id email name')
       for (const u of users) {

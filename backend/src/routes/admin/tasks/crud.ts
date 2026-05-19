@@ -137,9 +137,9 @@ router.patch(
       // If user doesn't have MANAGE_TASKS permission, restrict to progress only
       let isAssigneeOnly = false
       if (req.user!.role !== 'SUPER_ADMIN') {
-        const u = await User.findById(req.user!.id).select('customPermissions')
+        const u = await User.findById(req.user!.id).select('grantedPermissions deniedPermissions')
         const { hasPermissionResolved } = await import('../../../lib/permissions.js')
-        if (!hasPermissionResolved(req.user!.role, PERMISSIONS.MANAGE_TASKS as any, u?.customPermissions ?? null)) {
+        if (!hasPermissionResolved(req.user!.role, PERMISSIONS.MANAGE_TASKS as any, u?.grantedPermissions ?? [], u?.deniedPermissions ?? [])) {
           isAssigneeOnly = true
         }
       }

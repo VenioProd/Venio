@@ -27,7 +27,7 @@ import { respondError } from './_middleware/errors.js'
 
 const router = express.Router()
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] as const
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as const
 
 function isValidObjectId(id: unknown): boolean {
   return typeof id === 'string' && mongoose.isValidObjectId(id)
@@ -51,7 +51,9 @@ const ADMIN_AGENT_FIELDS = [
   'phone',
   'isActive',
   'twoFactorEnabled',
-  'customPermissions',
+  'jobTitle',
+  'grantedPermissions',
+  'deniedPermissions',
   'locale',
   'colorTheme',
   'avatarUrl',
@@ -143,10 +145,13 @@ router.post(
         name: String(req.body.name).trim(),
         role: req.body.role,
         title: typeof req.body.title === 'string' ? req.body.title : '',
-        customPermissions:
-          Array.isArray(req.body.customPermissions) && req.body.customPermissions.length > 0
-            ? req.body.customPermissions.map(String)
-            : null,
+        jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
+        grantedPermissions: Array.isArray(req.body.grantedPermissions)
+          ? req.body.grantedPermissions.map(String)
+          : [],
+        deniedPermissions: Array.isArray(req.body.deniedPermissions)
+          ? req.body.deniedPermissions.map(String)
+          : [],
       })
       const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
       res.locals.audit = {
@@ -186,10 +191,14 @@ router.patch(
       if (typeof req.body.role === 'string' && (ADMIN_ROLES as readonly string[]).includes(req.body.role)) {
         user.role = req.body.role as typeof user.role
       }
-      if (Array.isArray(req.body.customPermissions)) {
-        user.customPermissions = req.body.customPermissions.length > 0
-          ? req.body.customPermissions.map(String)
-          : null
+      if (Array.isArray(req.body.grantedPermissions)) {
+        user.grantedPermissions = req.body.grantedPermissions.map(String)
+      }
+      if (Array.isArray(req.body.deniedPermissions)) {
+        user.deniedPermissions = req.body.deniedPermissions.map(String)
+      }
+      if (typeof req.body.jobTitle === 'string') {
+        user.jobTitle = req.body.jobTitle
       }
       if (typeof req.body.isActive === 'boolean') user.isActive = req.body.isActive
       if (typeof req.body.password === 'string' && req.body.password.length >= 8) {

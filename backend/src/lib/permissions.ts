@@ -1,6 +1,6 @@
 import type { UserRole, AdminRole, Permission } from '../types/enums.js'
 
-export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE']
+export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE']
 
 export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_ADMINS: 'manage_admins',
@@ -37,7 +37,6 @@ export const PERMISSIONS: Record<string, Permission> = {
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
   SUPER_ADMIN: new Set(Object.values(PERMISSIONS)),
-  PDG: new Set(Object.values(PERMISSIONS)),
   ADMIN: new Set([
     PERMISSIONS.MANAGE_CLIENTS,
     PERMISSIONS.VIEW_CRM,
@@ -61,6 +60,43 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.EXPORT_FEC,
     PERMISSIONS.VIEW_DEV,
     PERMISSIONS.MANAGE_DEV,
+  ]),
+  // MANAGER = ADMIN sans manage_admins, lock_accounting, export_fec, manage_external_sources
+  MANAGER: new Set([
+    PERMISSIONS.MANAGE_CLIENTS,
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.MANAGE_CHANNELS,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.EDIT_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.EDIT_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.MANAGE_BILLING,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.MANAGE_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.MANAGE_VAT,
+    PERMISSIONS.VIEW_DEV,
+    PERMISSIONS.MANAGE_DEV,
+  ]),
+  COMPTABLE: new Set([
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.MANAGE_ACCOUNTING,
+    PERMISSIONS.LOCK_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.MANAGE_VAT,
+    PERMISSIONS.EXPORT_FEC,
+    PERMISSIONS.MANAGE_EXTERNAL_SOURCES,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
   ]),
   RH: new Set([
     PERMISSIONS.VIEW_PROJECTS,
@@ -140,16 +176,16 @@ export function getPermissionsForRole(role: UserRole): Permission[] {
   return Array.from(rolePermissions)
 }
 
-export function resolvePermissions(role: UserRole, customPermissions: string[] | null): Permission[] {
-  const rolePerms = getPermissionsForRole(role)
-  if (!Array.isArray(customPermissions) || customPermissions.length === 0) return rolePerms
-  // Merge: role defaults + custom (no duplicates)
-  const merged = new Set<string>([...rolePerms, ...customPermissions])
-  return Array.from(merged) as Permission[]
+export function resolvePermissions(role: UserRole, grantedPermissions: string[], deniedPermissions: string[]): Permission[] {
+  if (role === 'SUPER_ADMIN' || role === 'AGENT') return Object.values(PERMISSIONS) as Permission[]
+  const base = new Set(getPermissionsForRole(role))
+  for (const p of grantedPermissions) base.add(p as Permission)
+  for (const p of deniedPermissions) base.delete(p as Permission)
+  return Array.from(base)
 }
 
-export function hasPermissionResolved(role: UserRole, permission: Permission, customPermissions: string[] | null): boolean {
-  if (role === 'SUPER_ADMIN' || role === 'PDG') return true
-  const perms = resolvePermissions(role, customPermissions)
+export function hasPermissionResolved(role: UserRole, permission: Permission, grantedPermissions: string[], deniedPermissions: string[]): boolean {
+  if (role === 'SUPER_ADMIN' || role === 'AGENT') return true
+  const perms = resolvePermissions(role, grantedPermissions, deniedPermissions)
   return perms.includes(permission)
 }

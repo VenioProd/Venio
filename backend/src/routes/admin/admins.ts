@@ -73,13 +73,16 @@ router.post(
       }
     }
 
-    // Custom permissions (SUPER_ADMIN only)
-    let customPermissions: string[] | null = null
+    // Fine-grained permission overrides (SUPER_ADMIN only)
     const allPermValues = Object.values(PERMISSIONS) as string[]
-    if (req.body.customPermissions !== undefined && req.user!.role === 'SUPER_ADMIN') {
-      if (Array.isArray(req.body.customPermissions)) {
-        const validated = req.body.customPermissions.filter((p: string) => allPermValues.includes(p))
-        customPermissions = validated.length > 0 ? validated : null
+    let grantedPermissions: string[] = []
+    let deniedPermissions: string[] = []
+    if (req.user!.role === 'SUPER_ADMIN') {
+      if (Array.isArray(req.body.grantedPermissions)) {
+        grantedPermissions = req.body.grantedPermissions.filter((p: string) => allPermValues.includes(p))
+      }
+      if (Array.isArray(req.body.deniedPermissions)) {
+        deniedPermissions = req.body.deniedPermissions.filter((p: string) => allPermValues.includes(p))
       }
     }
 
@@ -89,7 +92,9 @@ router.post(
       passwordHash,
       role: nextRole,
       name,
-      customPermissions,
+      jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
+      grantedPermissions,
+      deniedPermissions,
     })
 
     // Trigger internal user onboarding
@@ -147,7 +152,7 @@ router.patch(
       return res.status(404).json({ error: 'Admin not found' })
     }
     const oldRole = user.role
-    const oldPermissions = JSON.stringify(user.customPermissions || [])
+    const oldPermissions = JSON.stringify({ granted: user.grantedPermissions || [], denied: user.deniedPermissions || [] })
 
     if (role) {
       if (!ADMIN_ROLES.includes(role)) {
@@ -233,16 +238,17 @@ router.patch(
       }
     }
 
-    // Custom permissions (SUPER_ADMIN only)
-    if (req.body.customPermissions !== undefined && req.user!.role === 'SUPER_ADMIN') {
-      if (req.body.customPermissions === null) {
-        user.customPermissions = null
-      } else if (Array.isArray(req.body.customPermissions)) {
-        const allPermValues = Object.values(PERMISSIONS) as string[]
-        const validated = req.body.customPermissions.filter((p: string) => allPermValues.includes(p))
-        user.customPermissions = validated.length > 0 ? validated : null
+    // Fine-grained permission overrides (SUPER_ADMIN only)
+    if (req.user!.role === 'SUPER_ADMIN') {
+      const allPermValues = Object.values(PERMISSIONS) as string[]
+      if (Array.isArray(req.body.grantedPermissions)) {
+        user.grantedPermissions = req.body.grantedPermissions.filter((p: string) => allPermValues.includes(p))
+      }
+      if (Array.isArray(req.body.deniedPermissions)) {
+        user.deniedPermissions = req.body.deniedPermissions.filter((p: string) => allPermValues.includes(p))
       }
     }
+    if (req.body.jobTitle !== undefined) user.jobTitle = String(req.body.jobTitle)
 
     await user.save()
     const safeUser = await User.findById(user._id).select('-passwordHash')
@@ -270,7 +276,7 @@ router.patch(
     }
 
     // Notif : changement de permissions
-    const newPermissions = JSON.stringify(user.customPermissions || [])
+    const newPermissions = JSON.stringify({ granted: user.grantedPermissions || [], denied: user.deniedPermissions || [] })
     if (oldPermissions !== newPermissions && String(user._id) !== req.user!.id) {
       createNotification({
         recipient: user._id,

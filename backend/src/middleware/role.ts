@@ -22,7 +22,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 }
 
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (!req.user || (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'PDG')) {
+  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
     res.status(403).json({ error: 'Forbidden' })
     return
   }
@@ -40,10 +40,11 @@ export function requirePermission(permission: Permission) {
       next()
       return
     }
-    // For other roles, check customPermissions from DB
-    User.findById(req.user.id).select('customPermissions').then((dbUser) => {
-      const customPerms = dbUser?.customPermissions ?? null
-      if (!hasPermissionResolved(req.user!.role as UserRole, permission, customPerms)) {
+    // For other roles, check grantedPermissions/deniedPermissions from DB
+    User.findById(req.user.id).select('grantedPermissions deniedPermissions').then((dbUser) => {
+      const granted = dbUser?.grantedPermissions ?? []
+      const denied = dbUser?.deniedPermissions ?? []
+      if (!hasPermissionResolved(req.user!.role as UserRole, permission, granted, denied)) {
         res.status(403).json({ error: 'Forbidden' })
         return
       }
@@ -64,9 +65,10 @@ export function requireAnyPermission(permissions: Permission[] = []) {
       next()
       return
     }
-    User.findById(req.user.id).select('customPermissions').then((dbUser) => {
-      const customPerms = dbUser?.customPermissions ?? null
-      const hasAny = permissions.some((perm) => hasPermissionResolved(req.user!.role as UserRole, perm, customPerms))
+    User.findById(req.user.id).select('grantedPermissions deniedPermissions').then((dbUser) => {
+      const granted = dbUser?.grantedPermissions ?? []
+      const denied = dbUser?.deniedPermissions ?? []
+      const hasAny = permissions.some((perm) => hasPermissionResolved(req.user!.role as UserRole, perm, granted, denied))
       if (!hasAny) {
         res.status(403).json({ error: 'Forbidden' })
         return

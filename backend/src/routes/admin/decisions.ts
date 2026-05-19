@@ -31,7 +31,7 @@ async function notifyDecision(
   excludeUserId: string,
   extraRecipientIds: string[] = []
 ) {
-  const superAdmins = await User.find({ role: { $in: ['SUPER_ADMIN', 'PDG'] }, isActive: true }).select('_id').lean()
+  const superAdmins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
   const allIds = new Set([
     ...superAdmins.map((a) => String(a._id)),
     ...extraRecipientIds,
@@ -241,7 +241,7 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     const decision = await Decision.findById(req.params.id)
     if (!decision) return res.status(404).json({ message: 'Décision introuvable' })
     const isOwner = String(decision.submittedBy) === req.user!.id
-    const isSuper = ['SUPER_ADMIN', 'PDG'].includes(req.user!.role)
+    const isSuper = req.user!.role === 'SUPER_ADMIN'
     if (!isOwner && !isSuper) return res.status(403).json({ message: 'Accès refusé' })
     await decision.deleteOne()
     return res.json({ ok: true })
