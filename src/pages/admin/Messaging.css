@@ -720,6 +720,25 @@
   white-space: nowrap;
 }
 
+.messaging-search-result-attachment {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--msg-primary) !important;
+  font-size: 11.5px !important;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.messaging-search-result-attachment svg {
+  width: 12px;
+  height: 12px;
+}
+
 .messaging-search-empty {
   margin-top: 10px;
   padding: 14px;
@@ -924,13 +943,17 @@
   grid-template-columns: 36px 1fr;
   gap: 10px;
   align-items: center;
+  width: 100%;
   padding: 8px 10px;
   background: rgba(var(--primary-rgb), 0.08);
   border: 1px solid rgba(var(--primary-rgb), 0.18);
   border-radius: 10px;
   color: var(--msg-text);
   text-decoration: none;
+  text-align: left;
+  font: inherit;
   font-size: 13px;
+  cursor: pointer;
   transition: background 0.18s, border-color 0.18s, transform 0.18s;
 }
 
@@ -938,6 +961,75 @@
   background: rgba(var(--primary-rgb), 0.14);
   border-color: var(--msg-border-strong);
   transform: translateY(-1px);
+}
+
+/* ---- Image thumbnails grid ---- */
+.messaging-attachment-grid {
+  display: grid;
+  gap: 4px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 480px;
+}
+
+.messaging-attachment-grid[data-count='1'] {
+  grid-template-columns: 1fr;
+}
+
+.messaging-attachment-grid[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.messaging-attachment-grid[data-count='3'] {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.messaging-attachment-grid[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.messaging-attachment-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(var(--primary-rgb), 0.08);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.messaging-attachment-thumb:hover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.messaging-attachment-thumb:focus-visible {
+  outline: 2px solid var(--msg-primary);
+  outline-offset: 2px;
+}
+
+.messaging-attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.messaging-attachment-thumb-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--msg-muted);
+}
+
+.messaging-attachment-thumb-placeholder svg {
+  width: 28px;
+  height: 28px;
 }
 
 .messaging-attachment-icon {
@@ -1387,6 +1479,98 @@
   padding: 8px;
 }
 
+/* ---- Inline suggest (autocomplete au clavier `:emoji` et `@mention`) ---- */
+.messaging-composer-inline-suggest {
+  position: absolute;
+  bottom: calc(100% - 6px);
+  left: 18px;
+  right: 18px;
+  max-width: 360px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--msg-panel-strong);
+  border: 1px solid var(--msg-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+  z-index: 6;
+  animation: messagingFadeIn 0.14s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--primary-rgb), 0.25) transparent;
+}
+
+.messaging-composer-inline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--msg-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.messaging-composer-inline-item:hover,
+.messaging-composer-inline-item.active {
+  background: rgba(var(--primary-rgb), 0.18);
+}
+
+.messaging-composer-inline-emoji {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.messaging-composer-inline-label {
+  color: var(--msg-muted);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.messaging-composer-inline-item.active .messaging-composer-inline-label {
+  color: #fff;
+}
+
+.messaging-composer-inline-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--msg-primary);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.messaging-composer-inline-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.messaging-composer-inline-body strong {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.messaging-composer-inline-body small {
+  color: var(--msg-muted);
+  font-size: 11px;
+}
+
 .messaging-composer-emojis button {
   height: 38px;
   border: 0;
@@ -1547,6 +1731,288 @@
 }
 
 /* ============================================================
+   Attachment Lightbox (fullscreen preview)
+   ============================================================ */
+.attachment-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: messagingFadeIn 0.18s ease-out;
+}
+
+.attachment-lightbox__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.attachment-lightbox__topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px calc(14px + env(safe-area-inset-top, 0px));
+  color: #fff;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+}
+
+.attachment-lightbox__meta {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.attachment-lightbox__meta strong {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+}
+
+.attachment-lightbox__meta span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.attachment-lightbox__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachment-lightbox__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.attachment-lightbox__action:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.attachment-lightbox__action:active {
+  transform: scale(0.95);
+}
+
+.attachment-lightbox__action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.attachment-lightbox__stage {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  min-height: 0;
+}
+
+.attachment-lightbox__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.attachment-lightbox__nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.attachment-lightbox__nav:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.attachment-lightbox__nav svg {
+  width: 22px;
+  height: 22px;
+}
+
+.attachment-lightbox__content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.attachment-lightbox__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+
+.attachment-lightbox__video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  background: #000;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+
+.attachment-lightbox__audio {
+  display: grid;
+  gap: 24px;
+  place-items: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 40px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.attachment-lightbox__audio-icon {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--msg-primary);
+}
+
+.attachment-lightbox__audio-icon svg {
+  width: 44px;
+  height: 44px;
+}
+
+.attachment-lightbox__audio-player {
+  width: 100%;
+}
+
+.attachment-lightbox__pdf {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.attachment-lightbox__text {
+  width: min(800px, 100%);
+  max-height: 100%;
+  margin: 0;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.attachment-lightbox__loader,
+.attachment-lightbox__error,
+.attachment-lightbox__other {
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.attachment-lightbox__other-icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.attachment-lightbox__other-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.attachment-lightbox__loader p,
+.attachment-lightbox__error p,
+.attachment-lightbox__other p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ============================================================
+   PromptModal (input variant)
+   ============================================================ */
+.prompt-modal__input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--msg-text, #fff);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.prompt-modal__input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+}
+
+.prompt-modal__input--multiline {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.prompt-modal__error {
+  margin: 8px 0 0;
+  color: #f87171;
+  font-size: 12px;
+}
+
+[data-theme='light'] .prompt-modal__input {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* ============================================================
    Animations
    ============================================================ */
 @keyframes messagingFadeIn {
@@ -1579,6 +2045,13 @@
     height: calc(100dvh - 44px - env(safe-area-inset-top, 0px));
     border-radius: 0;
     overflow: hidden;
+  }
+
+  /* iOS keyboard offset — pousse le composer au-dessus du clavier virtuel
+     via la variable --messaging-kb-offset alimentée par visualViewport API */
+  .messaging-main {
+    padding-bottom: var(--messaging-kb-offset, 0px);
+    transition: padding-bottom 0.18s ease-out;
   }
 
   .messaging-sidebar,
@@ -1709,35 +2182,141 @@
     gap: 0;
   }
 
+  /* Tap target Apple HIG : 44x44pt minimum */
   .messaging-composer-tool {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
   }
 
   .messaging-composer-send {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .messaging-composer-hint {
     display: none;
   }
 
-  .messaging-composer-popover {
-    left: 10px;
-    right: 10px;
+  /* Popover emoji/mentions plein largeur sur mobile pour éviter les débordements */
+  .messaging-composer-popover,
+  .messaging-composer-inline-suggest {
+    left: 8px;
+    right: 8px;
+    max-width: none;
   }
 
+  .messaging-composer-inline-item {
+    padding: 10px 12px;
+  }
+
+  .messaging-composer-inline-emoji {
+    font-size: 24px;
+  }
+
+  .messaging-composer-inline-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .messaging-composer-emojis {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .messaging-composer-emojis button {
+    height: 44px;
+    font-size: 22px;
+  }
+
+  .messaging-composer-popover-list {
+    max-height: 260px;
+  }
+
+  .messaging-composer-popover-list button {
+    padding: 12px;
+  }
+
+  /* Pièces jointes dans le composer prennent toute la largeur */
+  .messaging-composer-files li {
+    max-width: none;
+    width: 100%;
+  }
+
+  .messaging-composer-file-remove {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Sidebar mobile */
   .messaging-sidebar-top {
     padding: 14px 14px 10px;
+  }
+
+  .messaging-sidebar-new {
+    width: 44px;
+    height: 44px;
   }
 
   .messaging-sidebar-filter {
     margin: 8px 10px 6px;
   }
 
+  .messaging-sidebar-filter input {
+    height: 44px;
+    font-size: 16px; /* iOS ne zoom plus dès qu'on tape si ≥ 16px */
+  }
+
   .messaging-sidebar-scroll {
     padding: 4px 6px 16px;
+  }
+
+  .messaging-sidebar-conversation,
+  .messaging-conversation {
+    padding: 12px 10px;
+  }
+
+  /* Composer textarea ≥ 16px pour bloquer l'auto-zoom iOS */
+  .messaging-composer textarea {
+    font-size: 16px;
+  }
+
+  /* Search input idem */
+  .messaging-search-field input {
+    height: 44px;
+    font-size: 16px;
+  }
+
+  /* Header actions */
+  .messaging-header-action,
+  .messaging-header-back {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Lightbox mobile : nav buttons plus discrets, contenu déborde la stage padding */
+  .attachment-lightbox__stage {
+    padding: 0 8px calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+  }
+
+  .attachment-lightbox__nav {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .attachment-lightbox__topbar {
+    padding: 12px 14px calc(12px + env(safe-area-inset-top, 0px));
+  }
+
+  .attachment-lightbox__meta strong {
+    max-width: 50vw;
+    font-size: 13px;
+  }
+
+  .attachment-lightbox__action {
+    width: 40px;
+    height: 40px;
   }
 }
 

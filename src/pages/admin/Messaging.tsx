@@ -145,19 +145,33 @@ function MessagingSurface() {
             </div>
             {results.length > 0 && (
               <div className="messaging-search-results">
-                {results.map((result) => (
-                  <button
-                    key={result._id}
-                    type="button"
-                    onClick={() => {
-                      selectConversation(String(result.conversation))
-                      setQuery('')
-                    }}
-                  >
-                    <strong>{result.sender.name}</strong>
-                    <span>{result.content}</span>
-                  </button>
-                ))}
+                {results.map((result) => {
+                  const q = query.trim().toLowerCase()
+                  const matchingAttachment = result.attachments?.find((att) =>
+                    att.originalName.toLowerCase().includes(q)
+                  )
+                  return (
+                    <button
+                      key={result._id}
+                      type="button"
+                      onClick={() => {
+                        selectConversation(String(result.conversation))
+                        setQuery('')
+                      }}
+                    >
+                      <strong>{result.sender.name}</strong>
+                      <span>{result.content}</span>
+                      {matchingAttachment && (
+                        <span className="messaging-search-result-attachment">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                          </svg>
+                          {matchingAttachment.originalName}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             )}
             {query.trim().length >= 2 && results.length === 0 && (

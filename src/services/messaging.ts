@@ -1,4 +1,4 @@
-import { apiFetch, apiUpload } from '../lib/api'
+import { apiDownload, apiFetch, apiUpload, type ApiDownloadResult } from '../lib/api'
 import type { InternalConversation, InternalMessage, MessagingSearchResult, MessagingUser } from '../types/messaging.types'
 
 export async function fetchMessagingUsers(): Promise<MessagingUser[]> {
@@ -74,6 +74,15 @@ export async function deleteMessage(messageId: string) {
     method: 'DELETE',
   })
   return res.message
+}
+
+/**
+ * Télécharge une pièce jointe avec auth JWT et retourne le blob.
+ * Utilisé par la lightbox pour générer un object URL local — évite d'exposer
+ * le fichier via une URL publique signée.
+ */
+export async function downloadMessageAttachment(messageId: string, index: number): Promise<ApiDownloadResult> {
+  return apiDownload(`/api/admin/messaging/messages/${messageId}/attachments/${index}/download`)
 }
 
 export async function toggleReaction(messageId: string, emoji: string) {

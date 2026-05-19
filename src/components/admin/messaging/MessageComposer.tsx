@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '../../../context/ToastContext'
 import { uploadMessageAttachments } from '../../../services/messaging'
+import { getEmojiSuggestions, type EmojiSuggestion } from '../../../lib/emojiShortcodes'
 import type { MessagingUser } from '../../../types/messaging.types'
 
 interface MessageComposerProps {
@@ -12,6 +13,51 @@ interface MessageComposerProps {
 }
 
 const QUICK_EMOJIS = ['😀', '😅', '😂', '😍', '😎', '🤔', '👍', '🙏', '🔥', '🚀', '🎉', '❤️']
+
+type InlineSuggestType = 'emoji' | 'mention'
+
+interface InlineSuggestState {
+  type: InlineSuggestType
+  query: string
+  start: number
+  end: number
+}
+
+/**
+ * Détecte si la position du curseur est au sein d'un trigger `:xxx` ou `@xxx`
+ * (préfixé par début de texte ou espace). Ignore les mentions déjà formatées
+ * `@[Nom](id)` pour éviter de réouvrir le popover dessus.
+ */
+function detectInlineTrigger(text: string, cursor: number): InlineSuggestState | null {
+  const before = text.slice(0, cursor)
+
+  // Emoji : `:abc` (lettres, chiffres, _ + -). Précédé d'un break ou début de chaîne.
+  const emojiMatch = before.match(/(?:^|\s)(:([a-z0-9_+-]*))$/i)
+  if (emojiMatch) {
+    const token = emojiMatch[1]
+    return {
+      type: 'emoji',
+      query: emojiMatch[2],
+      start: cursor - token.length,
+      end: cursor,
+    }
+  }
+
+  // Mention : `@xxx` où xxx accepte lettres / accents / apostrophe / tiret / espace.
+  // On exclut volontairement les `[` qui font partie du format final `@[Nom](id)`.
+  const mentionMatch = before.match(/(?:^|\s)(@([A-Za-zÀ-ſ][\wÀ-ſ'\- ]{0,30})?)$/)
+  if (mentionMatch) {
+    const token = mentionMatch[1]
+    return {
+      type: 'mention',
+      query: (mentionMatch[2] || '').trim(),
+      start: cursor - token.length,
+      end: cursor,
+    }
+  }
+
+  return null
+}
 
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return ''
@@ -31,14 +77,31 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
   const [sending, setSending] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [mentionOpen, setMentionOpen] = useState(false)
-  const [mentionQuery, setMentionQuery] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [inlineSuggest, setInlineSuggest] = useState<InlineSuggestState | null>(null)
+  const [suggestIndex, setSuggestIndex] = useState(0)
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const filteredMentionUsers = mentionQuery
-    ? users.filter((u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 8)
-    : users.slice(0, 8)
+  const emojiSuggestions = useMemo<EmojiSuggestion[]>(
+    () => (inlineSuggest?.type === 'emoji' ? getEmojiSuggestions(inlineSuggest.query) : []),
+    [inlineSuggest]
+  )
+
+  const mentionSuggestions = useMemo<MessagingUser[]>(() => {
+    if (inlineSuggest?.type !== 'mention') return []
+    const q = inlineSuggest.query.toLowerCase()
+    const filtered = q
+      ? users.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+      : users
+    return filtered.slice(0, 8)
+  }, [inlineSuggest, users])
+
+  const suggestionCount = inlineSuggest?.type === 'emoji' ? emojiSuggestions.length : mentionSuggestions.length
+
+  useEffect(() => {
+    setSuggestIndex(0)
+  }, [inlineSuggest?.type, inlineSuggest?.query])
 
   const disabled = !conversationId || sending
   const canSend = !!conversationId && !sending && (content.trim().length > 0 || files.length > 0)
@@ -48,6 +111,28 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
     textareaRef.current.style.height = 'auto'
     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`
   }, [content])
+
+  // Sur iOS Safari, quand le clavier virtuel s'ouvre, le visualViewport rétrécit
+  // mais le layout fixed reste collé au bas du *document* — donc le composer
+  // peut se retrouver caché sous le clavier. On suit visualViewport et on pousse
+  // le composer vers le haut de l'overlay clavier.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return
+    const vv = window.visualViewport
+    const root = document.documentElement
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      root.style.setProperty('--messaging-kb-offset', `${offset}px`)
+    }
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      root.style.removeProperty('--messaging-kb-offset')
+    }
+  }, [])
 
   const submit = async () => {
     if (!conversationId || sending) return
@@ -67,7 +152,6 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       setEmojiOpen(false)
       onTyping(false)
     } catch (err) {
-      console.error('[MessageComposer] submit error:', err)
       const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi'
       showToast(msg, 'error')
     } finally {
@@ -91,6 +175,50 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       textarea.setSelectionRange(cursor, cursor)
     })
   }
+
+  /**
+   * Remplace le token de trigger (`:xxx` ou `@xxx`) par le résultat sélectionné
+   * et repositionne le curseur juste après l'insertion.
+   */
+  const applyInlineSuggestion = useCallback(
+    (replacement: string) => {
+      const trigger = inlineSuggest
+      if (!trigger) return
+      const next = content.slice(0, trigger.start) + replacement + content.slice(trigger.end)
+      setContent(next)
+      setInlineSuggest(null)
+      const newCursor = trigger.start + replacement.length
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current
+        if (!textarea) return
+        textarea.focus()
+        textarea.setSelectionRange(newCursor, newCursor)
+      })
+    },
+    [content, inlineSuggest]
+  )
+
+  const selectSuggestion = useCallback(
+    (index: number) => {
+      if (!inlineSuggest) return
+      if (inlineSuggest.type === 'emoji') {
+        const suggestion = emojiSuggestions[index]
+        if (suggestion) applyInlineSuggestion(`${suggestion.emoji} `)
+      } else {
+        const user = mentionSuggestions[index]
+        if (user) applyInlineSuggestion(`@[${user.name}](${user._id}) `)
+      }
+    },
+    [inlineSuggest, emojiSuggestions, mentionSuggestions, applyInlineSuggestion]
+  )
+
+  const refreshTrigger = useCallback(
+    (text: string, cursor: number) => {
+      const next = detectInlineTrigger(text, cursor)
+      setInlineSuggest(next)
+    },
+    []
+  )
 
   const addFiles = (newFiles: FileList | null) => {
     if (!newFiles) return
@@ -134,33 +262,16 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
         <div className="messaging-composer-popover">
           <header>Mentionner</header>
           <div className="messaging-composer-popover-list">
-            {filteredMentionUsers.length === 0 ? (
+            {users.length === 0 ? (
               <p>Aucun utilisateur</p>
             ) : (
-              filteredMentionUsers.map((user) => (
+              users.slice(0, 20).map((user) => (
                 <button
                   key={user._id}
                   type="button"
                   onClick={() => {
-                    const textarea = textareaRef.current
-                    const cursor = textarea?.selectionStart ?? content.length
-                    const before = content.slice(0, cursor)
-                    const after = content.slice(cursor)
-                    const match = before.match(/@([^\s]*)$/)
-                    const newBefore = match
-                      ? before.slice(0, before.length - match[0].length)
-                      : before
-                    const mention = `@[${user.name}](${user._id}) `
-                    setContent(newBefore + mention + after)
+                    insertAtCursor(`@[${user.name}](${user._id}) `)
                     setMentionOpen(false)
-                    setMentionQuery('')
-                    requestAnimationFrame(() => {
-                      if (textarea) {
-                        const pos = (newBefore + mention).length
-                        textarea.focus()
-                        textarea.setSelectionRange(pos, pos)
-                      }
-                    })
                   }}
                 >
                   <strong>{user.name}</strong>
@@ -189,6 +300,51 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {inlineSuggest && suggestionCount > 0 && (
+        <div className="messaging-composer-inline-suggest" role="listbox" aria-label={inlineSuggest.type === 'emoji' ? 'Suggestions emoji' : 'Suggestions de mention'}>
+          {inlineSuggest.type === 'emoji'
+            ? emojiSuggestions.map((suggestion, index) => (
+                <button
+                  key={suggestion.shortcode}
+                  type="button"
+                  role="option"
+                  aria-selected={index === suggestIndex}
+                  className={`messaging-composer-inline-item ${index === suggestIndex ? 'active' : ''}`}
+                  onMouseDown={(event) => {
+                    event.preventDefault()
+                    selectSuggestion(index)
+                  }}
+                  onMouseEnter={() => setSuggestIndex(index)}
+                >
+                  <span className="messaging-composer-inline-emoji">{suggestion.emoji}</span>
+                  <span className="messaging-composer-inline-label">:{suggestion.shortcode}:</span>
+                </button>
+              ))
+            : mentionSuggestions.map((user, index) => (
+                <button
+                  key={user._id}
+                  type="button"
+                  role="option"
+                  aria-selected={index === suggestIndex}
+                  className={`messaging-composer-inline-item ${index === suggestIndex ? 'active' : ''}`}
+                  onMouseDown={(event) => {
+                    event.preventDefault()
+                    selectSuggestion(index)
+                  }}
+                  onMouseEnter={() => setSuggestIndex(index)}
+                >
+                  <span className="messaging-composer-inline-avatar" aria-hidden="true">
+                    {user.name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="messaging-composer-inline-body">
+                    <strong>{user.name}</strong>
+                    <small>{user.role}</small>
+                  </span>
+                </button>
+              ))}
         </div>
       )}
 
@@ -246,30 +402,46 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
           placeholder={conversationId ? 'Écrire un message…' : 'Sélectionnez une conversation pour écrire'}
           rows={1}
           onChange={(event) => {
-            const val = event.target.value
-            setContent(val)
+            const value = event.target.value
+            setContent(value)
+            refreshTrigger(value, event.target.selectionStart ?? value.length)
             onTyping(true)
             if (typingTimeout.current) clearTimeout(typingTimeout.current)
             typingTimeout.current = setTimeout(() => onTyping(false), 1200)
-            // Autocomplete @ : détecte @mot avant le curseur
-            const cursor = event.target.selectionStart ?? val.length
-            const before = val.slice(0, cursor)
-            const match = before.match(/@([^\s]*)$/)
-            if (match) {
-              setMentionQuery(match[1])
-              setMentionOpen(true)
-              setEmojiOpen(false)
-            } else {
-              setMentionOpen(false)
-              setMentionQuery('')
-            }
+          }}
+          onSelect={(event) => {
+            const target = event.currentTarget
+            refreshTrigger(target.value, target.selectionStart ?? target.value.length)
+          }}
+          onBlur={() => {
+            // Petit délai pour laisser le clic sur un item de la liste passer avant fermeture
+            setTimeout(() => setInlineSuggest(null), 120)
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setMentionOpen(false)
-              setEmojiOpen(false)
+            // Autocomplete inline a la priorité sur Enter / flèches
+            if (inlineSuggest && suggestionCount > 0) {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                setSuggestIndex((i) => (i + 1) % suggestionCount)
+                return
+              }
+              if (event.key === 'ArrowUp') {
+                event.preventDefault()
+                setSuggestIndex((i) => (i - 1 + suggestionCount) % suggestionCount)
+                return
+              }
+              if (event.key === 'Enter' || event.key === 'Tab') {
+                event.preventDefault()
+                selectSuggestion(suggestIndex)
+                return
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                setInlineSuggest(null)
+                return
+              }
             }
-            if (event.key === 'Enter' && !event.shiftKey && !mentionOpen) {
+            if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()
               submit()
             }
