@@ -92,6 +92,7 @@ const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
+const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
 const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
 const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
 
@@ -381,7 +382,7 @@ function App() {
             path="dev/projects/:projectId"
             element={
               <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
-                <DevWorkspace />
+                <DevProjectCockpit />
               </RequirePermission>
             }
           />

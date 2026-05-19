@@ -213,6 +213,94 @@ export function fetchDevOverview(): Promise<DevOverview> {
   return apiFetch('/api/admin/dev/overview')
 }
 
+// Project cockpit (per-project dashboard)
+export interface DevCockpitProject {
+  _id: string
+  key: string
+  name: string
+  description: string
+  color: string
+  status: DevProjectStatus
+  lead: { _id: string; name: string; email: string; avatarUrl?: string } | null
+  members: Array<{ _id: string; name: string; email: string; avatarUrl?: string }>
+  createdBy: { _id: string; name: string; email: string } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevCockpitCounts {
+  total: number
+  open: number
+  done: number
+  cancelled: number
+  urgent: number
+  blocked: number
+  overdue: number
+}
+
+export interface DevCockpitVelocityPoint {
+  date: string
+  completed: number
+  created: number
+}
+
+export interface DevCockpitIssueRef {
+  _id: string
+  identifier: string
+  title: string
+  status: DevIssueStatus
+  priority: DevIssuePriority
+  type: DevIssueType
+  labels: string[]
+  dueDate: string | null
+  updatedAt: string
+  assignee: { _id: string; name: string; email: string; avatarUrl?: string } | null
+}
+
+export interface DevCockpitActivityEvent {
+  type: 'issue_created' | 'issue_completed' | 'issue_updated' | 'comment'
+  at: string
+  issue: { _id: string; identifier: string; title: string; status: DevIssueStatus } | null
+  actor: { _id: string; name: string; email: string } | null
+}
+
+export interface DevCockpitAssigneeRow {
+  user: { _id: string; name: string; email: string; avatarUrl?: string } | null
+  open: number
+  done: number
+  urgent: number
+}
+
+export interface DevCockpit {
+  project: DevCockpitProject
+  counts: DevCockpitCounts
+  progress: number
+  health: 'on_track' | 'at_risk' | 'blocked'
+  lastActivityAt: string
+  byStatus: Record<DevIssueStatus, number>
+  byPriority: Record<DevIssuePriority, number>
+  byType: Record<DevIssueType, number>
+  velocity: {
+    days: DevCockpitVelocityPoint[]
+    completed7d: number
+    completed14d: number
+    created14d: number
+    velocityPerDay14d: number
+    avgCompletionDays: number | null
+  }
+  blockers: DevCockpitIssueRef[]
+  urgent: DevCockpitIssueRef[]
+  overdue: DevCockpitIssueRef[]
+  nextDue: DevCockpitIssueRef[]
+  recentlyDone: DevCockpitIssueRef[]
+  activity: DevCockpitActivityEvent[]
+  assignees: DevCockpitAssigneeRow[]
+}
+
+export function fetchDevProjectCockpit(projectId: string): Promise<DevCockpit> {
+  return apiFetch(`/api/admin/dev/projects/${projectId}/dashboard`)
+}
+
 // UI helpers
 export const STATUS_LABEL: Record<DevIssueStatus, string> = {
   BACKLOG: 'Backlog',

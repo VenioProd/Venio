@@ -68,3 +68,38 @@ describe('GET /api/admin/dev/overview', () => {
     expect(res.body.projects[0].counts).toMatchObject({ total: 1, done: 1, open: 0 })
   })
 })
+
+describe('GET /api/admin/dev/projects/:id/dashboard', () => {
+  it('returns 400 on invalid id', async () => {
+    await request(app).get('/api/admin/dev/projects/not-an-id/dashboard').expect(400)
+  })
+
+  it('returns 404 on unknown id', async () => {
+    const ghost = new mongoose.Types.ObjectId().toString()
+    await request(app).get(`/api/admin/dev/projects/${ghost}/dashboard`).expect(404)
+  })
+
+  it('returns the cockpit payload shape with charts', async () => {
+    const { default: DevProject } = await import('../models/DevProject.js')
+    const { default: DevIssue } = await import('../models/DevIssue.js')
+    const p = await DevProject.create({ key: 'VEN', name: 'Venio', createdBy: systemUserId })
+    await DevIssue.create({
+      project: p._id, identifier: 'VEN-1', title: 'A', number: 1,
+      status: 'IN_PROGRESS', priority: 'URGENT', type: 'BUG', reporter: systemUserId,
+    })
+    await DevIssue.create({
+      project: p._id, identifier: 'VEN-2', title: 'B', number: 2,
+      status: 'DONE', priority: 'MEDIUM', type: 'FEATURE',
+      reporter: systemUserId, completedAt: new Date(),
+    })
+    const res = await request(app).get(`/api/admin/dev/projects/${p._id}/dashboard`).expect(200)
+    expect(res.body.project.key).toBe('VEN')
+    expect(res.body.counts.total).toBe(2)
+    expect(res.body.counts.urgent).toBe(1)
+    expect(res.body.byStatus.IN_PROGRESS).toBe(1)
+    expect(res.body.byPriority.URGENT).toBe(1)
+    expect(res.body.byType.BUG).toBe(1)
+    expect(res.body.velocity.days).toHaveLength(14)
+    expect(res.body.urgent).toHaveLength(1)
+  })
+})
