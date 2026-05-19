@@ -12,6 +12,7 @@ import DevIssue, {
 } from '../../models/DevIssue.js'
 import DevIssueComment from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
+import { computeStats, computeOverview } from '../../lib/dev/stats.js'
 
 /**
  * Routes agent pour le suivi des développements (DevProject + DevIssue +
@@ -45,6 +46,39 @@ function sanitizeKey(raw: unknown): string | null {
   if (!/^[A-Z][A-Z0-9]{1,7}$/.test(trimmed)) return null
   return trimmed
 }
+
+// ─── Stats & overview (read:dev) ─────────────────────────────────────────────
+
+router.get(
+  '/dev/stats',
+  requireScope('read:dev'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const match: Record<string, unknown> = {}
+      const { project } = req.query
+      if (isObjectId(project)) {
+        match.project = new mongoose.Types.ObjectId(project)
+      }
+      const stats = await computeStats(match)
+      res.json(stats)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get(
+  '/dev/overview',
+  requireScope('read:dev'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const overview = await computeOverview()
+      res.json(overview)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
