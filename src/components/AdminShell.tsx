@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import AdminSidebar from './AdminSidebar'
+import SidebarCollapseToggle from './SidebarCollapseToggle'
 import AutoBreadcrumb from './AutoBreadcrumb'
 import PushPermissionPrompt from './PushPermissionPrompt'
 import { MessagingProvider } from '../context/MessagingContext'
@@ -21,15 +22,29 @@ const AdminShell = () => {
     try { localStorage.setItem(LS_KEY, String(next)) } catch {}
   }
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        // ignore si dans un input
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+        e.preventDefault()
+        handleCollapseToggle()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [collapsed])
+
   return (
     <MessagingProvider>
       <div className="admin-shell" data-collapsed={collapsed ? 'true' : 'false'}>
         <AdminSidebar
           collapsed={collapsed}
-          onCollapseToggle={handleCollapseToggle}
           drawerOpen={mobileDrawerOpen}
           onDrawerClose={() => setMobileDrawerOpen(false)}
         />
+        <SidebarCollapseToggle collapsed={collapsed} onToggle={handleCollapseToggle} />
         <div className="admin-shell-body">
           <div className="admin-shell-topbar">
             <button
