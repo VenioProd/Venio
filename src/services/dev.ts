@@ -12,6 +12,14 @@ export interface UserRef {
   avatarUrl?: string
 }
 
+export interface DevProjectGithubConfig {
+  owner: string | null
+  repo: string | null
+  defaultBranch: string | null
+  htmlUrl: string | null
+  repoPath: string | null
+}
+
 export interface DevProject {
   _id: string
   key: string
@@ -22,6 +30,7 @@ export interface DevProject {
   lead: UserRef | null
   members: UserRef[]
   createdBy: UserRef | null
+  github: DevProjectGithubConfig | null
   openIssues?: number
   createdAt: string
   updatedAt: string
@@ -299,6 +308,125 @@ export interface DevCockpit {
 
 export function fetchDevProjectCockpit(projectId: string): Promise<DevCockpit> {
   return apiFetch(`/api/admin/dev/projects/${projectId}/dashboard`)
+}
+
+// ─── Project intelligence (github, tokens, code metrics) ────────────────────
+
+export interface DevGithubLinks {
+  repoUrl: string | null
+  prsUrl: string | null
+  commitsUrl: string | null
+  actionsUrl: string | null
+  branchesUrl: string | null
+  issuesUrl: string | null
+}
+
+export interface DevGithubPullRequestRef {
+  issueId: string
+  identifier: string
+  title: string
+  prNumber: number | null
+  prUrl: string | null
+  branch: string | null
+  ciStatus: DevCiStatus | null
+  mergedAt: string | null
+  repo: string | null
+}
+
+export interface DevGithubSummary {
+  configured: boolean
+  owner: string | null
+  repo: string | null
+  defaultBranch: string | null
+  htmlUrl: string | null
+  repoPath: string | null
+  links: DevGithubLinks
+  pullRequests: {
+    open: DevGithubPullRequestRef[]
+    merged: DevGithubPullRequestRef[]
+    failing: DevGithubPullRequestRef[]
+    counts: { open: number; merged: number; failing: number }
+  }
+  reason?: string
+}
+
+export interface DevTokensSnapshot {
+  available: boolean
+  source: 'none' | 'agents' | 'llm-runs'
+  reason: string
+  period: { since: string | null; until: string | null }
+  totalTokens: number | null
+  inputTokens: number | null
+  outputTokens: number | null
+  estimatedCostUsd: number | null
+  missing: string[]
+}
+
+export interface DevCodeMetricsExtension {
+  ext: string
+  language: string
+  files: number
+  lines: number
+  bytes: number
+  largestFiles: Array<{ path: string; lines: number; bytes: number }>
+}
+
+export interface DevCodeMetricsLargeFile {
+  path: string
+  ext: string
+  language: string
+  lines: number
+  threshold: number
+  score: number
+  reason: string
+}
+
+export interface DevCodeMetrics {
+  available: boolean
+  source: 'filesystem' | 'unconfigured' | 'error'
+  resolvedPath: string | null
+  scannedAt: string | null
+  durationMs: number | null
+  reason?: string
+  totals: { files: number; lines: number; bytes: number }
+  byExtension: DevCodeMetricsExtension[]
+  largeFiles: DevCodeMetricsLargeFile[]
+  topFilesGlobal: Array<{ path: string; ext: string; language: string; lines: number; bytes: number }>
+}
+
+export interface DevProjectIntelligence {
+  projectId: string
+  github: DevGithubSummary
+  tokens: DevTokensSnapshot
+  code: DevCodeMetrics
+  generatedAt: string
+}
+
+export interface DevLargeFilesSnapshot {
+  projectId: string
+  available: boolean
+  source: DevCodeMetrics['source']
+  scannedAt: string | null
+  durationMs: number | null
+  reason?: string
+  largeFiles: DevCodeMetricsLargeFile[]
+  totals: DevCodeMetrics['totals']
+}
+
+export function fetchDevProjectIntelligence(
+  projectId: string,
+  opts: { refresh?: boolean } = {}
+): Promise<DevProjectIntelligence> {
+  const refresh = opts.refresh ? '?refresh=1' : ''
+  return apiFetch(`/api/admin/dev/projects/${projectId}/intelligence${refresh}`)
+}
+
+export function fetchDevProjectLargeFiles(
+  projectId: string,
+  opts: { refresh?: boolean } = {}
+): Promise<DevLargeFilesSnapshot> {
+  const refresh = opts.refresh ? '?refresh=1' : ''
+  return apiFetch(`/api/admin/dev/projects/${projectId}/large-files${refresh}`)
 }
 
 // UI helpers

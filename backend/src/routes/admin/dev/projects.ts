@@ -2,10 +2,11 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import mongoose from 'mongoose'
 import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
-import DevProject, { DEV_PROJECT_STATUSES } from '../../../models/DevProject.js'
+import DevProject, { DEV_PROJECT_STATUSES, type DevProjectGithubConfig } from '../../../models/DevProject.js'
 import DevIssue from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import { notifyUsers } from '../../../lib/notifyHelpers.js'
+import { invalidateCodeMetricsCache } from '../../../lib/dev/codeMetrics.js'
 
 const router = express.Router()
 
@@ -16,6 +17,65 @@ function sanitizeKey(raw: unknown): string | null {
   const trimmed = raw.trim().toUpperCase()
   if (!/^[A-Z][A-Z0-9]{1,7}$/.test(trimmed)) return null
   return trimmed
+}
+
+function sanitizeString(raw: unknown, maxLength: number): string | null {
+  if (raw === null) return null
+  if (typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  return trimmed.slice(0, maxLength)
+}
+
+// Reject anything that looks like a path-traversal attempt. The resolver does
+// the final containment check at scan time, but this catches typos earlier.
+function sanitizeRepoPath(raw: unknown): string | null {
+  if (raw === null) return null
+  if (typeof raw !== 'string') return null
+  const t = raw.trim()
+  if (!t) return null
+  if (t.startsWith('/') || t.startsWith('\\') || t.includes('..')) return null
+  return t.slice(0, 200)
+}
+
+/**
+ * Parse a github config patch sent over PATCH. Accepts a partial object whose
+ * keys are validated individually. Unknown keys are ignored.
+ *
+ *   - `null` → caller wants to clear the config
+ *   - object → individual fields applied; missing fields preserved
+ */
+export function parseProjectGithubPatch(
+  raw: unknown
+): Partial<DevProjectGithubConfig> | null | undefined {
+  if (raw === undefined) return undefined
+  if (raw === null) return null
+  if (typeof raw !== 'object') return undefined
+  const src = raw as Record<string, unknown>
+  const out: Partial<DevProjectGithubConfig> = {}
+  if ('owner' in src) out.owner = sanitizeString(src.owner, 80)
+  if ('repo' in src) out.repo = sanitizeString(src.repo, 120)
+  if ('defaultBranch' in src) out.defaultBranch = sanitizeString(src.defaultBranch, 80)
+  if ('htmlUrl' in src) {
+    const url = sanitizeString(src.htmlUrl, 300)
+    out.htmlUrl = url && /^https?:\/\//i.test(url) ? url : null
+  }
+  if ('repoPath' in src) out.repoPath = sanitizeRepoPath(src.repoPath)
+  return out
+}
+
+function mergeGithubConfig(
+  prev: DevProjectGithubConfig | null,
+  patch: Partial<DevProjectGithubConfig>
+): DevProjectGithubConfig {
+  const base: DevProjectGithubConfig = prev ?? {
+    owner: null,
+    repo: null,
+    defaultBranch: null,
+    htmlUrl: null,
+    repoPath: null,
+  }
+  return { ...base, ...patch }
 }
 
 // GET /api/admin/dev/projects
@@ -75,6 +135,12 @@ router.post('/projects', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: 
     const existing = await DevProject.findOne({ key })
     if (existing) return res.status(409).json({ error: `Une clé "${key}" existe déjà` })
 
+    const githubPatch = parseProjectGithubPatch(req.body?.github)
+    const githubConfig =
+      githubPatch === undefined || githubPatch === null
+        ? null
+        : mergeGithubConfig(null, githubPatch)
+
     const created = await DevProject.create({
       key,
       name,
@@ -83,6 +149,7 @@ router.post('/projects', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: 
       lead,
       members,
       createdBy: req.user!.id,
+      github: githubConfig,
     })
 
     const populated = await DevProject.findById(created._id)
@@ -147,7 +214,16 @@ router.patch('/projects/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (
       )
     }
 
+    const githubPatch = parseProjectGithubPatch(req.body?.github)
+    if (githubPatch === null) {
+      project.github = null
+    } else if (githubPatch && typeof githubPatch === 'object') {
+      project.github = mergeGithubConfig(project.github, githubPatch)
+    }
+
     await project.save()
+    // Drop any cached code-metrics if the repo configuration changed.
+    if (githubPatch !== undefined) invalidateCodeMetricsCache()
 
     // Notif nouveaux membres / nouveau lead
     const newMembers = project.members.map((id) => String(id))
