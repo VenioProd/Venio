@@ -416,39 +416,52 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(4px)',
+        background: 'rgba(0,0,0,0.65)',
+        backdropFilter: 'blur(6px)',
         zIndex: 1000,
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px 16px',
-        overflowY: 'auto',
+        padding: '24px 16px',
       }}
     >
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         style={{
-          background: '#0f172a',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          padding: 24,
+          background: 'var(--bg-card, #1e293b)',
+          border: '1px solid var(--border, rgba(255,255,255,0.1))',
+          borderRadius: 16,
+          padding: '28px 28px 24px',
           width: '100%',
-          maxWidth: 600,
+          maxWidth: 580,
+          maxHeight: 'calc(100vh - 48px)',
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 14,
+          gap: 16,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Nouvelle décision</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>Nouvelle décision</h2>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              borderRadius: 8,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -541,19 +554,22 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '8px 10px',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 6,
-  color: 'inherit',
-  fontSize: 13,
+  padding: '9px 12px',
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 8,
+  color: 'var(--text-primary)',
+  fontSize: 14,
   fontFamily: 'inherit',
+  outline: 'none',
+  transition: 'border-color 0.15s',
+  boxSizing: 'border-box',
 }
 
 function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}>
-      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</span>
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, ...style }}>
+      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
       {children}
     </label>
   )
