@@ -291,7 +291,7 @@ router.post(
 router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({
-      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
+      role: { $in: ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
       isActive: true,
     })
       .select('name email role')

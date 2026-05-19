@@ -1,6 +1,6 @@
 import type { UserRole, AdminRole, Permission } from '../types/enums.js'
 
-export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE']
+export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE']
 
 export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_ADMINS: 'manage_admins',
@@ -37,6 +37,7 @@ export const PERMISSIONS: Record<string, Permission> = {
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
   SUPER_ADMIN: new Set(Object.values(PERMISSIONS)),
+  PDG: new Set(Object.values(PERMISSIONS)),
   ADMIN: new Set([
     PERMISSIONS.MANAGE_CLIENTS,
     PERMISSIONS.VIEW_CRM,
@@ -83,10 +84,25 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_VAT,
     PERMISSIONS.VIEW_DEV,
   ]),
+  COMMERCIAL: new Set([
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
+    PERMISSIONS.MANAGE_CLIENTS,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
   STAGIAIRE: new Set([
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
     PERMISSIONS.VIEW_MESSAGING,
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_TICKETS,
@@ -133,7 +149,7 @@ export function resolvePermissions(role: UserRole, customPermissions: string[] |
 }
 
 export function hasPermissionResolved(role: UserRole, permission: Permission, customPermissions: string[] | null): boolean {
-  if (role === 'SUPER_ADMIN') return true
+  if (role === 'SUPER_ADMIN' || role === 'PDG') return true
   const perms = resolvePermissions(role, customPermissions)
   return perms.includes(permission)
 }

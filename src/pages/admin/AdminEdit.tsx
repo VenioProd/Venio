@@ -11,8 +11,10 @@ import './AdminPortal.css'
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super admin',
+  PDG: 'PDG',
   ADMIN: 'Contributeur',
   RH: 'RH',
+  COMMERCIAL: 'Commercial',
   VIEWER: 'Lecture seule',
   STAGIAIRE: 'Stagiaire',
 }
@@ -275,8 +277,10 @@ const AdminEdit = () => {
               onChange={(v) => setForm({ ...form, role: v })}
               options={[
                 ...(admin?.role === 'SUPER_ADMIN' ? [{ value: 'SUPER_ADMIN', label: 'Super admin' }] : []),
+                { value: 'PDG', label: 'PDG' },
                 { value: 'ADMIN', label: 'Contributeur' },
                 { value: 'RH', label: 'RH' },
+                { value: 'COMMERCIAL', label: 'Commercial' },
                 { value: 'VIEWER', label: 'Lecture seule' },
                 { value: 'STAGIAIRE', label: 'Stagiaire' },
               ]}

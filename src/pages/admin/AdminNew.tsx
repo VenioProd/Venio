@@ -43,9 +43,17 @@ const roleMeta: Record<string, { label: string; description: string }> = {
     label: 'Lecture seule',
     description: 'Consultation sans modification des données.',
   },
+  PDG: {
+    label: 'PDG',
+    description: 'Accès total — même niveau que Super admin.',
+  },
+  COMMERCIAL: {
+    label: 'Commercial',
+    description: 'CRM complet, clients, projets (lecture), facturation (lecture), messagerie, tâches.',
+  },
   STAGIAIRE: {
     label: 'Stagiaire',
-    description: 'Accès limité : projets et tâches assignés, messagerie interne, tickets.',
+    description: 'Projets et tâches assignés, CRM, messagerie interne, tickets.',
   },
 }
 

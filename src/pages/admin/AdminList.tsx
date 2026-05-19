@@ -11,24 +11,30 @@ import './AdminPortal.css'
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super admin',
+  PDG: 'PDG',
   ADMIN: 'Contributeur',
   RH: 'RH',
+  COMMERCIAL: 'Commercial',
   VIEWER: 'Lecture seule',
   STAGIAIRE: 'Stagiaire',
 }
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   SUPER_ADMIN: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
+  PDG: { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.4)', text: '#fca5a5' },
   ADMIN: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
   RH: { bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.35)', text: '#f9a8d4' },
+  COMMERCIAL: { bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.35)', text: '#93c5fd' },
   VIEWER: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
   STAGIAIRE: { bg: 'rgba(251, 146, 60, 0.12)', border: 'rgba(251, 146, 60, 0.35)', text: '#fdba74' },
 }
 
 const ROLE_AVATARS: Record<string, string> = {
   SUPER_ADMIN: 'linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(202, 138, 4, 0.12))',
+  PDG: 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(185, 28, 28, 0.12))',
   ADMIN: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.1))',
   RH: 'linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(219, 39, 119, 0.1))',
+  COMMERCIAL: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.1))',
   VIEWER: 'linear-gradient(135deg, rgba(100, 116, 180, 0.25), rgba(100, 116, 180, 0.1))',
   STAGIAIRE: 'linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(234, 88, 12, 0.1))',
 }

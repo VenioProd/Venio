@@ -22,7 +22,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 }
 
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+  if (!req.user || (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'PDG')) {
     res.status(403).json({ error: 'Forbidden' })
     return
   }
