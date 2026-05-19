@@ -584,10 +584,10 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
           <div className="dm-field">
             <label className="dm-label">Pièces jointes <small>(max 5 × 20 Mo)</small></label>
-            <label className="dm-file-btn">
+            <label className="dm-file-btn" style={{ position: 'relative', overflow: 'hidden' }}>
               <Paperclip size={14} />
               <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
-              <input type="file" multiple style={{ display: 'none' }} onChange={(e) => {
+              <input type="file" multiple style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => {
                 setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
                 e.target.value = ''
               }} />
