@@ -395,10 +395,7 @@ export default function DecisionsList() {
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={async () => {
-                                    await openPreview(d._id, idx, a.originalName, a.mimeType)
-                                    if (err) showToast(err, 'error')
-                                  }}
+                                  onClick={() => openPreview(d._id, idx, a.originalName, a.mimeType)}
                                   style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#93c5fd', textAlign: 'left' }}
                                 >
                                   <Paperclip size={12} />
