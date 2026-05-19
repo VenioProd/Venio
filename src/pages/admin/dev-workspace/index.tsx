@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { Activity, CheckCircle2, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
+import { Activity, CheckCircle2, ChevronDown, ChevronUp, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
@@ -258,6 +258,7 @@ const DevWorkspace = () => {
   const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'none'>('status')
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
   const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>('all')
+  const [showAllProjects, setShowAllProjects] = useState(false)
 
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projectForm, setProjectForm] = useState({ key: '', name: '', description: '', color: '#7c5cff' })
@@ -519,20 +520,24 @@ const DevWorkspace = () => {
 
   const projectOverview = useMemo(() => {
     if (!overview) return []
-    return overview.projects.map((p) => {
-      const active = (p.counts.byStatus.IN_PROGRESS || 0) + (p.counts.byStatus.IN_REVIEW || 0)
-      return {
-        project: { _id: p._id, key: p.key, name: p.name, color: p.color },
-        total: p.counts.total,
-        done: p.counts.done,
-        active,
-        urgent: p.counts.urgent,
-        blocked: p.counts.blocked,
-        percent: p.progress,
-        health: p.health,
-      }
-    })
+    return [...overview.projects]
+      .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
+      .map((p) => {
+        const active = (p.counts.byStatus.IN_PROGRESS || 0) + (p.counts.byStatus.IN_REVIEW || 0)
+        return {
+          project: { _id: p._id, key: p.key, name: p.name, color: p.color },
+          total: p.counts.total,
+          done: p.counts.done,
+          active,
+          urgent: p.counts.urgent,
+          blocked: p.counts.blocked,
+          percent: p.progress,
+          lastActivityAt: p.lastActivityAt,
+        }
+      })
   }, [overview])
+
+  const visibleProjectOverview = showAllProjects ? projectOverview : projectOverview.slice(0, 6)
 
   const globalCompletion = stats ? computeWeightedProgress(stats.byStatus as Record<DevIssueStatus, number>) : 0
 
@@ -638,31 +643,48 @@ const DevWorkspace = () => {
           </section>
 
           {projectOverview.length > 0 && (
-            <div className="dev-project-strip">
-              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, blocked, percent, health }) => (
-                <button
-                  key={project._id}
-                  type="button"
-                  className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
-                  onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
-                  style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
-                  title="Ouvrir le cockpit du projet"
-                >
-                  <span className="dev-project-card-key">{project.key}</span>
-                  <strong>{project.name}</strong>
-                  <span className="dev-project-card-meta">
-                    {done}/{total} terminées · {active} actives
-                  </span>
-                  <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
-                  <span className="dev-project-card-footer">
-                    <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
-                    <span className={blocked ? 'warn' : ''}>
-                      {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
+            <section className="dev-project-overview-block" aria-label="Projets triés par dernière modification">
+              <div className="dev-project-strip-header">
+                <span>Projets récents</span>
+                <small>Triés par dernière modification, du plus récent au plus ancien</small>
+                {projectOverview.length > 6 && (
+                  <button
+                    type="button"
+                    className="dev-project-toggle"
+                    onClick={() => setShowAllProjects((v) => !v)}
+                  >
+                    {showAllProjects ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    {showAllProjects ? 'Réduire' : `Voir les ${projectOverview.length} projets`}
+                  </button>
+                )}
+              </div>
+              <div className={'dev-project-strip' + (showAllProjects ? ' expanded' : '')}>
+                {visibleProjectOverview.map(({ project, total, done, active, urgent, blocked, percent, lastActivityAt }) => (
+                  <button
+                    key={project._id}
+                    type="button"
+                    className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
+                    onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
+                    style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
+                    title="Ouvrir le cockpit du projet"
+                  >
+                    <span className="dev-project-card-key">{project.key}</span>
+                    <strong>{project.name}</strong>
+                    <span className="dev-project-card-meta">
+                      {done}/{total} terminées · {active} actives
                     </span>
-                  </span>
-                </button>
-              ))}
-            </div>
+                    <span className="dev-project-card-activity">Mis à jour {formatRelative(lastActivityAt)}</span>
+                    <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
+                    <span className="dev-project-card-footer">
+                      <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
+                      <span className={blocked ? 'warn' : ''}>
+                        {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       )}

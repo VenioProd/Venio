@@ -182,6 +182,55 @@
   gap: 10px;
 }
 
+.dev-project-overview-block {
+  display: grid;
+  gap: 8px;
+}
+
+.dev-project-strip-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.dev-project-strip-header > span {
+  color: #f8fafc;
+  font-weight: 650;
+}
+
+.dev-project-strip-header small {
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.dev-project-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 5px 9px;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dev-project-toggle:hover {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #f8fafc;
+}
+
+.dev-project-strip.expanded {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
 .dev-project-card {
   display: grid;
   gap: 7px;
@@ -222,6 +271,12 @@
 .dev-project-card-footer {
   color: #94a3b8;
   font-size: 11.5px;
+}
+
+.dev-project-card-activity {
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .dev-project-progress {
