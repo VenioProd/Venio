@@ -368,23 +368,30 @@ const SuperAdminDashboard = () => {
               <DashKpiCard
                 label="CA facturé (mois)"
                 value={formatEUR(data.business.monthlyInvoiced)}
-                tone="success"
+                accentColor="#ff0080"
+                accentRgb="255, 0, 128"
               />
               <DashKpiCard
                 label="Pipeline CRM"
                 value={formatEUR(data.business.pipelineTotal)}
+                accentColor="#8b5cf6"
+                accentRgb="139, 92, 246"
                 hint="Tous leads ouverts"
                 to="/admin/crm"
               />
               <DashKpiCard
                 label="Leads chauds"
                 value={data.business.hotLeads}
+                accentColor="#f59e0b"
+                accentRgb="245, 158, 11"
                 icon={<TrendingUp size={14} />}
                 to="/admin/crm"
               />
               <DashKpiCard
                 label="Comptabilité"
                 value="→"
+                accentColor="#22c55e"
+                accentRgb="34, 197, 94"
                 icon={<Receipt size={14} />}
                 to="/admin/comptabilite"
               />
@@ -455,9 +462,9 @@ const SuperAdminDashboard = () => {
           {/* ─── Équipe ─── */}
           <DashSection title="Équipe" icon={<Users size={16} />}>
             <div className="admin-stats-grid" style={{ marginBottom: 16 }}>
-              <DashKpiCard label="Clients" value={data.team.clients} to="/admin/comptes-clients" />
-              <DashKpiCard label="Admins" value={data.team.admins} to="/admin/comptes-admin" icon={<ShieldCheck size={14} />} />
-              <DashKpiCard label="Stagiaires" value={data.team.interns} to="/admin/stagiaires" />
+              <DashKpiCard label="Clients" value={data.team.clients} accentColor="#ff0080" accentRgb="255, 0, 128" to="/admin/comptes-clients" />
+              <DashKpiCard label="Admins" value={data.team.admins} accentColor="#8b5cf6" accentRgb="139, 92, 246" to="/admin/comptes-admin" icon={<ShieldCheck size={14} />} />
+              <DashKpiCard label="Stagiaires" value={data.team.interns} accentColor="#f59e0b" accentRgb="245, 158, 11" to="/admin/stagiaires" />
             </div>
             {teamLoadData.length > 0 && (
               <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12 }}>
