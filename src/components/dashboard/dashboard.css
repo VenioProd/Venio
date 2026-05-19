@@ -422,3 +422,40 @@
 .ix-btn--mark_done { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); color: #86efac; }
 
 .ix-btn:hover { transform: translateY(-1px); }
+
+/* ── InboxFilters ── */
+.ix-filters {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.ix-filter {
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.ix-filter--active {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary-light);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  text-shadow: 0 0 6px rgba(var(--primary-rgb), 0.4);
+}
+
+.ix-filter__n {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.ix-filter--active .ix-filter__n { background: rgba(var(--primary-rgb), 0.3); }
