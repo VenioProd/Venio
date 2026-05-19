@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip } from 'lucide-react'
 import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
@@ -504,7 +505,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
     }
   }
 
-  return (
+  return createPortal(
     <>
       <div className="dm-backdrop" onClick={onClose} />
       <form className="dm-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
@@ -616,6 +617,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
           </button>
         </div>
       </form>
-    </>
+    </>,
+    document.body
   )
 }
