@@ -3,9 +3,10 @@
    ═══════════════════════════════════════════ */
 
 .sb-pivot-toggle {
-  position: absolute;
-  top: 84px;
-  right: -12px;
+  position: fixed;
+  top: 50vh;
+  left: calc(200px - 12px);
+  transform: translateY(-50%);
   z-index: 1100;
   width: 24px;
   height: 24px;
@@ -21,7 +22,11 @@
   box-shadow:
     0 0 8px rgba(var(--primary-rgb), 0.4),
     0 0 18px rgba(var(--primary-rgb), 0.2);
-  transition: background 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition: background 0.15s, box-shadow 0.2s, left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sb-pivot-toggle[data-collapsed="true"] {
+  left: calc(56px - 12px);
 }
 
 .sb-pivot-toggle svg { transition: transform 0.25s; }
