@@ -41,6 +41,11 @@
   text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
 }
 
+.dash-widget__action::after {
+  content: " →";
+  margin-left: 2px;
+}
+
 .dash-widget--neon::before,
 .dash-widget--neon::after {
   content: "";
