@@ -438,7 +438,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   const [optionsText, setOptionsText] = useState('')
   const [recommendation, setRecommendation] = useState('')
   const [deadline, setDeadline] = useState('')
-  const [files, setFiles] = useState<File[]>([])
+  const [fileNames, setFileNames] = useState<string[]>([])
   const [selectedRecipients, setSelectedRecipients] = useState<UserRef[]>([])
   const [allUsers, setAllUsers] = useState<UserRef[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -486,7 +486,8 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       if (recommendation.trim()) form.append('recommendation', recommendation.trim())
       if (deadline) form.append('deadline', deadline)
       if (selectedRecipients.length > 0) form.append('recipients', JSON.stringify(selectedRecipients.map((r) => r._id)))
-      files.forEach((f) => form.append('files', f))
+      const inputFiles = fileInputRef.current?.files
+      if (inputFiles) Array.from(inputFiles).forEach((f) => form.append('files', f))
 
       const token = getToken()
       const res = await fetch('/api/admin/decisions', {
@@ -592,8 +593,8 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               multiple
               style={{ display: 'none' }}
               onChange={(e) => {
-                setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
-                e.target.value = ''
+                const names = Array.from(e.target.files || []).map((f) => f.name)
+                setFileNames(names)
               }}
             />
             <button
@@ -602,16 +603,14 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip size={14} />
-              <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
+              <span>{fileNames.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${fileNames.length} fichier(s) sélectionné(s)`}</span>
             </button>
-            {files.length > 0 && (
+            {fileNames.length > 0 && (
               <div className="dm-file-list">
-                {files.map((f, i) => (
+                {fileNames.map((name, i) => (
                   <div key={i} className="dm-file-item">
                     <Paperclip size={11} />
-                    <span className="dm-fname">{f.name}</span>
-                    <span className="dm-fsize">{formatFileSize(f.size)}</span>
-                    <button type="button" className="dm-fdel" onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>×</button>
+                    <span className="dm-fname">{name}</span>
                   </div>
                 ))}
               </div>
