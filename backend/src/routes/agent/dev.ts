@@ -13,6 +13,7 @@ import DevIssue, {
 import DevIssueComment from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
 import { computeStats, computeOverview } from '../../lib/dev/stats.js'
+import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
 
 /**
  * Routes agent pour le suivi des développements (DevProject + DevIssue +
@@ -45,6 +46,18 @@ function sanitizeKey(raw: unknown): string | null {
   const trimmed = raw.trim().toUpperCase()
   if (!/^[A-Z][A-Z0-9]{1,7}$/.test(trimmed)) return null
   return trimmed
+}
+
+function parseLabels(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return Array.from(
+    new Set(
+      raw
+        .filter((l): l is string => typeof l === 'string')
+        .map((l) => l.trim().toLowerCase())
+        .filter((l) => l.length > 0 && l.length <= 32)
+    )
+  ).slice(0, 16)
 }
 
 // ─── Stats & overview (read:dev) ─────────────────────────────────────────────
@@ -169,8 +182,28 @@ router.get('/dev/issues', requireScope('read:dev'), async (req: Request, res: Re
     if (typeof req.query.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.query.type)) {
       filter.type = req.query.type
     }
-    if (typeof req.query.assignee === 'string' && isObjectId(req.query.assignee)) {
-      filter.assignee = req.query.assignee
+    if (typeof req.query.assignee === 'string') {
+      if (req.query.assignee === 'unassigned') filter.assignee = null
+      else if (req.query.assignee === 'me') {
+        // Agent tokens are not bound to a user; "me" has no meaning here.
+        return respondError(
+          res,
+          400,
+          'UNSUPPORTED_FILTER',
+          "assignee=me n'est pas supporté pour un token agent (pas d'utilisateur lié). Passez l'ID utilisateur explicitement."
+        )
+      }
+      else if (isObjectId(req.query.assignee)) filter.assignee = req.query.assignee
+    }
+    if (typeof req.query.label === 'string' && req.query.label.trim()) {
+      filter.labels = req.query.label.trim().toLowerCase()
+    }
+    if (typeof req.query.q === 'string' && req.query.q.trim()) {
+      const safe = req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      filter.$or = [
+        { title: { $regex: safe, $options: 'i' } },
+        { identifier: { $regex: safe, $options: 'i' } },
+      ]
     }
     const [items, total] = await Promise.all([
       DevIssue.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
@@ -196,37 +229,38 @@ router.post(
       const systemId = await resolveSystemUserId()
       if (!systemId) return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN pour reporter')
 
-      const last = await DevIssue.findOne({ project: projectDoc._id }).sort({ number: -1 }).select('number').lean()
-      const number = (last?.number ?? 0) + 1
-      const identifier = `${projectDoc.key}-${number}`
-
       const status =
         typeof req.body?.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(req.body.status)
-          ? req.body.status
+          ? (req.body.status as (typeof DEV_ISSUE_STATUSES)[number])
           : 'BACKLOG'
 
-      const issue = await DevIssue.create({
+      const dueDateRaw = req.body?.dueDate
+      let dueDate: Date | null = null
+      if (typeof dueDateRaw === 'string') {
+        const d = new Date(dueDateRaw)
+        if (!Number.isNaN(d.getTime())) dueDate = d
+      }
+      const assignee = isObjectId(req.body?.assignee) ? req.body.assignee : null
+
+      const issue = await createIssueWithRetry({
         project: projectDoc._id,
-        number,
-        identifier,
+        projectKey: projectDoc.key,
         title: String(req.body.title).trim().slice(0, 200),
         description:
           typeof req.body?.description === 'string' ? req.body.description.trim().slice(0, 20000) : '',
         type:
           typeof req.body?.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.body.type)
-            ? req.body.type
+            ? (req.body.type as (typeof DEV_ISSUE_TYPES)[number])
             : 'TASK',
         status,
         priority:
           typeof req.body?.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)
-            ? req.body.priority
+            ? (req.body.priority as (typeof DEV_ISSUE_PRIORITIES)[number])
             : 'NO_PRIORITY',
         reporter: systemId,
-        labels: Array.isArray(req.body?.labels)
-          ? Array.from(new Set(req.body.labels.filter((l: unknown) => typeof l === 'string').map((l: string) => l.trim().toLowerCase()))).slice(0, 16)
-          : [],
-        startedAt: status === 'IN_PROGRESS' || status === 'IN_REVIEW' ? new Date() : null,
-        completedAt: status === 'DONE' ? new Date() : null,
+        assignee,
+        labels: parseLabels(req.body?.labels),
+        dueDate,
       })
 
       res.locals.audit = {
@@ -273,6 +307,12 @@ router.patch(
       }
       if (req.body?.assignee === null) issue.assignee = null
       else if (isObjectId(req.body?.assignee)) issue.assignee = new mongoose.Types.ObjectId(req.body.assignee)
+      if (Array.isArray(req.body?.labels)) issue.labels = parseLabels(req.body.labels)
+      if (req.body?.dueDate === null) issue.dueDate = null
+      else if (typeof req.body?.dueDate === 'string') {
+        const d = new Date(req.body.dueDate)
+        if (!Number.isNaN(d.getTime())) issue.dueDate = d
+      }
 
       await issue.save()
       res.locals.audit = {

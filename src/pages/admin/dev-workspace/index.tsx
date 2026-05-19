@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Activity, CircleDot, Layers3, Plus, RefreshCw, Target, Trash2, X } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
@@ -7,6 +8,7 @@ import {
   listDevProjects,
   listDevIssues,
   fetchDevStats,
+  fetchDevOverview,
   createDevIssue,
   updateDevIssue,
   deleteDevIssue,
@@ -22,6 +24,7 @@ import {
   PRIORITY_ORDER,
   TYPE_LABEL,
   TYPE_COLOR,
+  computeWeightedProgress,
   type DevProject,
   type DevIssue,
   type DevIssueComment,
@@ -29,6 +32,7 @@ import {
   type DevIssuePriority,
   type DevIssueType,
   type DevStats,
+  type DevOverview,
   type IssueFilters,
 } from '../../../services/dev'
 import './DevWorkspace.css'
@@ -63,33 +67,31 @@ function userInitial(u: { name?: string; email?: string } | null | undefined): s
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
 }
 
-function progressPercent(done: number, total: number): number {
-  if (!total) return 0
-  return Math.round((done / total) * 100)
-}
-
-function dueTone(date: string | null | undefined): 'neutral' | 'soon' | 'late' {
-  if (!date) return 'neutral'
-  const due = new Date(date).getTime()
-  if (Number.isNaN(due)) return 'neutral'
-  const diff = due - Date.now()
-  if (diff < 0) return 'late'
-  if (diff < 7 * 24 * 60 * 60 * 1000) return 'soon'
-  return 'neutral'
+interface DeepLinkParams {
+  issueId?: string
+  projectId?: string
 }
 
 const DevWorkspace = () => {
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
   const { confirm, ConfirmDialog } = useConfirm()
+  const params = useParams<DeepLinkParams>()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const deepIssueId = params.issueId
+  const deepProjectId = params.projectId
 
   const [projects, setProjects] = useState<DevProject[]>([])
   const [issues, setIssues] = useState<DevIssue[]>([])
-  const [allIssues, setAllIssues] = useState<DevIssue[]>([])
+  const [overview, setOverview] = useState<DevOverview | null>(null)
   const [stats, setStats] = useState<DevStats | null>(null)
 
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<IssueFilters>({ status: 'open' })
+  const [filters, setFilters] = useState<IssueFilters>({
+    status: 'open',
+    project: deepProjectId,
+  })
   const [selectedIssue, setSelectedIssue] = useState<DevIssue | null>(null)
   const [comments, setComments] = useState<DevIssueComment[]>([])
   const [commentDraft, setCommentDraft] = useState('')
@@ -143,10 +145,10 @@ const DevWorkspace = () => {
     }
   }, [filters.project])
 
-  const loadOverviewIssues = useCallback(async () => {
+  const loadOverview = useCallback(async () => {
     try {
-      const data = await listDevIssues({ status: 'all' })
-      setAllIssues(data.issues)
+      const data = await fetchDevOverview()
+      setOverview(data)
     } catch (e) {
       console.error(e)
     }
@@ -155,7 +157,7 @@ const DevWorkspace = () => {
   useEffect(() => { loadProjects() }, [loadProjects])
   useEffect(() => { loadIssues() }, [loadIssues])
   useEffect(() => { loadStats() }, [loadStats])
-  useEffect(() => { loadOverviewIssues() }, [loadOverviewIssues])
+  useEffect(() => { loadOverview() }, [loadOverview])
 
   const loadIssueDetail = useCallback(async (id: string) => {
     try {
@@ -164,20 +166,49 @@ const DevWorkspace = () => {
       setComments(data.comments)
     } catch (e) {
       console.error(e)
+      // Deep link to an issue that no longer exists: bounce back to workspace root.
+      if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev', { replace: true })
     }
-  }, [])
+  }, [location.pathname, navigate])
 
   const handleSelectIssue = (issue: DevIssue) => {
     setSelectedIssue(issue)
     setComments([])
     setCommentDraft('')
     loadIssueDetail(issue._id)
+    if (deepIssueId !== issue._id) {
+      navigate(`/admin/dev/issues/${issue._id}`, { replace: false })
+    }
   }
 
   const handleCloseDetail = () => {
     setSelectedIssue(null)
     setComments([])
+    if (location.pathname.startsWith('/admin/dev/issues/')) {
+      navigate('/admin/dev', { replace: false })
+    }
   }
+
+  // Deep link: open the issue when /admin/dev/issues/:id is navigated to.
+  useEffect(() => {
+    if (deepIssueId && selectedIssue?._id !== deepIssueId) {
+      setSelectedIssue(null)
+      setComments([])
+      setCommentDraft('')
+      loadIssueDetail(deepIssueId)
+    }
+    if (!deepIssueId && selectedIssue && location.pathname === '/admin/dev') {
+      setSelectedIssue(null)
+      setComments([])
+    }
+  }, [deepIssueId, loadIssueDetail, selectedIssue, location.pathname])
+
+  // Deep link: scope filters to the project when /admin/dev/projects/:id is navigated to.
+  useEffect(() => {
+    if (deepProjectId && filters.project !== deepProjectId) {
+      setFilters((f) => ({ ...f, project: deepProjectId }))
+    }
+  }, [deepProjectId, filters.project])
 
   // Mutations
   const handleQuickCreate = async (e?: React.FormEvent) => {
@@ -193,7 +224,7 @@ const DevWorkspace = () => {
         status: quickCreate.status,
       })
       setQuickCreate((q) => ({ ...q, title: '' }))
-      await Promise.all([loadIssues(), loadStats(), loadOverviewIssues()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     } finally {
@@ -205,9 +236,8 @@ const DevWorkspace = () => {
     try {
       const updated = await updateDevIssue(id, patch)
       setIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
-      setAllIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
       if (selectedIssue?._id === id) setSelectedIssue((prev) => (prev ? { ...prev, ...updated } : prev))
-      Promise.all([loadStats(), loadOverviewIssues()])
+      Promise.all([loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     }
@@ -218,9 +248,8 @@ const DevWorkspace = () => {
     try {
       await deleteDevIssue(id)
       setIssues((prev) => prev.filter((i) => i._id !== id))
-      setAllIssues((prev) => prev.filter((i) => i._id !== id))
       if (selectedIssue?._id === id) handleCloseDetail()
-      Promise.all([loadStats(), loadOverviewIssues()])
+      Promise.all([loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     }
@@ -295,30 +324,23 @@ const DevWorkspace = () => {
   }, [issues, groupBy])
 
   const projectOverview = useMemo(() => {
-    return projects.map((project) => {
-      const projectIssues = allIssues.filter((issue) => {
-        const issueProject = typeof issue.project === 'object' ? issue.project._id : issue.project
-        return issueProject === project._id
-      })
-      const done = projectIssues.filter((issue) => issue.status === 'DONE').length
-      const active = projectIssues.filter((issue) => issue.status === 'IN_PROGRESS' || issue.status === 'IN_REVIEW').length
-      const urgent = projectIssues.filter((issue) => issue.priority === 'URGENT' || issue.priority === 'HIGH').length
-      const nextDue = projectIssues
-        .filter((issue) => issue.dueDate && issue.status !== 'DONE' && issue.status !== 'CANCELLED')
-        .sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime())[0]
+    if (!overview) return []
+    return overview.projects.map((p) => {
+      const active = (p.counts.byStatus.IN_PROGRESS || 0) + (p.counts.byStatus.IN_REVIEW || 0)
       return {
-        project,
-        total: projectIssues.length,
-        done,
+        project: { _id: p._id, key: p.key, name: p.name, color: p.color },
+        total: p.counts.total,
+        done: p.counts.done,
         active,
-        urgent,
-        percent: progressPercent(done, projectIssues.length),
-        nextDue,
+        urgent: p.counts.urgent,
+        blocked: p.counts.blocked,
+        percent: p.progress,
+        health: p.health,
       }
     })
-  }, [allIssues, projects])
+  }, [overview])
 
-  const globalCompletion = stats ? progressPercent(stats.byStatus.DONE, stats.total) : 0
+  const globalCompletion = stats ? computeWeightedProgress(stats.byStatus as Record<DevIssueStatus, number>) : 0
 
   const renderRow = (issue: DevIssue) => {
     const project = typeof issue.project === 'object' ? issue.project : null
@@ -423,13 +445,19 @@ const DevWorkspace = () => {
 
           {projectOverview.length > 0 && (
             <div className="dev-project-strip">
-              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, percent, nextDue }) => (
+              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, blocked, percent, health }) => (
                 <button
                   key={project._id}
                   type="button"
                   className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
-                  onClick={() => setFilters((f) => ({ ...f, project: f.project === project._id ? undefined : project._id }))}
+                  onClick={() => {
+                    const next = filters.project === project._id ? undefined : project._id
+                    setFilters((f) => ({ ...f, project: next }))
+                    if (next) navigate(`/admin/dev/projects/${next}`)
+                    else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
+                  }}
                   style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
+                  title={`Santé: ${health}`}
                 >
                   <span className="dev-project-card-key">{project.key}</span>
                   <strong>{project.name}</strong>
@@ -438,9 +466,9 @@ const DevWorkspace = () => {
                   </span>
                   <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
                   <span className="dev-project-card-footer">
-                    <span className={urgent ? 'warn' : ''}>{urgent} haute priorité</span>
-                    <span className={'due-' + dueTone(nextDue?.dueDate)}>
-                      {nextDue?.dueDate ? new Date(nextDue.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'pas d’échéance'}
+                    <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
+                    <span className={blocked ? 'warn' : ''}>
+                      {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
                     </span>
                   </span>
                 </button>
@@ -460,7 +488,12 @@ const DevWorkspace = () => {
         <select
           className="dev-select"
           value={filters.project || 'all'}
-          onChange={(e) => setFilters((f) => ({ ...f, project: e.target.value === 'all' ? undefined : e.target.value }))}
+          onChange={(e) => {
+            const next = e.target.value === 'all' ? undefined : e.target.value
+            setFilters((f) => ({ ...f, project: next }))
+            if (next) navigate(`/admin/dev/projects/${next}`)
+            else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
+          }}
         >
           <option value="all">Tous projets</option>
           {projects.map((p) => (
