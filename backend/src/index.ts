@@ -28,6 +28,7 @@ import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
 import notificationPreferencesRoutes from './routes/notificationPreferences.js'
 import adminDashboardRoutes from './routes/admin/dashboard.js'
+import adminDecisionRoutes from './routes/admin/decisions.js'
 import adminSearchRoutes from './routes/admin/search.js'
 import adminTemplateRoutes from './routes/admin/templates.js'
 import adminAnalyticsRoutes from './routes/admin/analytics.js'
@@ -173,6 +174,7 @@ app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/projects', adminTaskRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
+app.use('/api/admin/decisions', adminDecisionRoutes)
 app.use('/api/admin/search', adminSearchRoutes)
 app.use('/api/admin/templates', adminTemplateRoutes)
 app.use('/api/admin/analytics', adminAnalyticsRoutes)

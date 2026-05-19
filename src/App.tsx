@@ -26,6 +26,12 @@ function ThemeSync() {
   return null
 }
 
+function DashboardByRole() {
+  const { user } = useAuth()
+  if (user?.role === 'SUPER_ADMIN') return <SuperAdminDashboard />
+  return <AdminDashboard />
+}
+
 // Lazy-loaded: Site vitrine
 const Home = lazy(() => import('./pages/Home'))
 const ServicesCommunication = lazy(() => import('./pages/ServicesCommunication'))
@@ -51,6 +57,7 @@ const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 // Lazy-loaded: Admin
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const SuperAdminDashboard = lazy(() => import('./pages/admin/SuperAdminDashboard'))
 const ClientAccountList = lazy(() => import('./pages/admin/ClientAccountList'))
 const ClientAccountNew = lazy(() => import('./pages/admin/ClientAccountNew'))
 const ClientAccountDetail = lazy(() => import('./pages/admin/client-detail'))
@@ -77,6 +84,7 @@ const InternList = lazy(() => import('./pages/admin/InternList'))
 const InternDetail = lazy(() => import('./pages/admin/InternDetail'))
 const MyReports = lazy(() => import('./pages/admin/MyReports'))
 const EmailComposer = lazy(() => import('./pages/admin/EmailComposer'))
+const DecisionsList = lazy(() => import('./pages/admin/DecisionsList'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
@@ -183,7 +191,9 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<AdminDashboard />} />
+          <Route index element={<DashboardByRole />} />
+          <Route path="decisions" element={<DecisionsList />} />
+          <Route path="mon-espace" element={<AdminDashboard />} />
           <Route path="profil" element={<AdminProfile />} />
 
           {/* Clients */}

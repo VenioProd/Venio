@@ -27,6 +27,7 @@ import {
   Crosshair,
   ShieldCheck,
   Bot,
+  ClipboardCheck,
   HelpCircle,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +37,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import UserAvatar from './UserAvatar'
+import { apiFetch } from '../lib/api'
 import './AdminSidebar.css'
 
 const LS_KEY = 'venio-admin-sidebar-collapsed'
@@ -100,6 +102,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/admin/comptes-admin', label: 'Comptes admin', icon: ShieldCheck, perm: PERMISSIONS.MANAGE_ADMINS },
       { to: '/admin/agents', label: 'Agents API', icon: Bot, roles: ['SUPER_ADMIN'] },
+      { to: '/admin/decisions', label: 'Décisions', icon: ClipboardCheck, roles: ['SUPER_ADMIN'] },
       { to: '/admin/guide', label: 'Guide', icon: HelpCircle },
     ],
   },
@@ -129,6 +132,30 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
     () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
     [conversations]
   )
+
+  const [pendingDecisionsCount, setPendingDecisionsCount] = useState(0)
+
+  useEffect(() => {
+    if (user?.role !== 'SUPER_ADMIN') {
+      setPendingDecisionsCount(0)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await apiFetch<{ decisions: any[] }>('/api/admin/decisions?status=PENDING')
+        if (!cancelled) setPendingDecisionsCount(res?.decisions?.length ?? 0)
+      } catch {
+        // silencieux
+      }
+    }
+    load()
+    const id = setInterval(load, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [user?.role])
 
   // Ferme le drawer mobile à la navigation
   useEffect(() => {
@@ -176,6 +203,14 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
                     aria-label={`${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
                   >
                     {unreadTotal > 99 ? '99+' : unreadTotal}
+                  </span>
+                )}
+                {item.to === '/admin/decisions' && pendingDecisionsCount > 0 && (
+                  <span
+                    className="admin-sb-badge"
+                    aria-label={`${pendingDecisionsCount} décision${pendingDecisionsCount > 1 ? 's' : ''} en attente`}
+                  >
+                    {pendingDecisionsCount > 99 ? '99+' : pendingDecisionsCount}
                   </span>
                 )}
               </NavLink>
