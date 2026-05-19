@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════
+   SidebarCollapseToggle — bouton flottant pivot Linear-style
+   ═══════════════════════════════════════════ */
+
+.sb-pivot-toggle {
+  position: absolute;
+  top: 84px;
+  right: -12px;
+  z-index: 1100;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #000;
+  border: 1px solid rgba(var(--primary-rgb), 0.45);
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow:
+    0 0 8px rgba(var(--primary-rgb), 0.4),
+    0 0 18px rgba(var(--primary-rgb), 0.2);
+  transition: background 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.sb-pivot-toggle svg { transition: transform 0.25s; }
+
+.sb-pivot-toggle[data-collapsed="true"] svg { transform: rotate(180deg); }
+
+.sb-pivot-toggle:hover {
+  background: rgba(var(--primary-rgb), 0.15);
+  box-shadow:
+    0 0 10px rgba(var(--primary-rgb), 0.7),
+    0 0 28px rgba(var(--primary-rgb), 0.35);
+}
+
+.sb-pivot-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Hide on mobile — drawer is used instead */
+@media (max-width: 900px) {
+  .sb-pivot-toggle { display: none; }
+}
