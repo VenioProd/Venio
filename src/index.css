@@ -521,3 +521,105 @@ p,
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+
+/* ── Decisions modal ─────────────────────────────────────────────────── */
+.dm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.dm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  width: calc(100% - 32px);
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-card, #0f172a);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+.dm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card, #0f172a);
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+.dm-header h2 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.dm-close {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06); border: none; border-radius: 8px;
+  cursor: pointer; color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+.dm-close:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+.dm-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.dm-field { display: flex; flex-direction: column; gap: 6px; }
+.dm-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.dm-label small { text-transform: none; font-weight: 400; font-size: 11px; }
+.dm-row { display: flex; gap: 12px; }
+.dm-row .dm-field { flex: 1; min-width: 0; }
+.dm-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px; min-height: 42px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+}
+.dm-chip {
+  font-size: 12px; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.dm-chip:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.08); color: #a5b4fc; }
+.dm-chip.on { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.18); color: #a5b4fc; font-weight: 600; }
+.dm-file-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.15);
+  border-radius: 8px; color: var(--text-muted); font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dm-file-btn:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.04); color: #a5b4fc; }
+.dm-file-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.dm-file-item {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  color: var(--text-secondary); padding: 4px 8px;
+  background: rgba(255,255,255,0.03); border-radius: 6px;
+}
+.dm-file-item .dm-fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm-file-item .dm-fsize { color: var(--text-muted); flex-shrink: 0; }
+.dm-file-item .dm-fdel { background: none; border: none; cursor: pointer; color: #ef4444; font-size: 16px; padding: 0; flex-shrink: 0; }
+.dm-error { color: #ef4444; font-size: 13px; padding: 8px 12px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; }
+.dm-footer {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  position: sticky; bottom: 0;
+  background: var(--bg-card, #0f172a);
+  border-radius: 0 0 16px 16px;
+}
+[data-theme='light'] .dm-modal { background: #fff; border-color: #e2e8f0; }
+[data-theme='light'] .dm-header { background: #fff; border-color: #e2e8f0; }
+[data-theme='light'] .dm-footer { background: #fff; border-color: #e2e8f0; }
+[data-theme='light'] .dm-chips { background: #f8fafc; border-color: #e2e8f0; }
+[data-theme='light'] .dm-file-btn { background: #f8fafc; border-color: #cbd5e1; }

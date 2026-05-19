@@ -505,119 +505,117 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   }
 
   return (
-    <div className="decision-modal-overlay" onClick={onClose}>
-      <form className="decision-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+    <>
+      <div className="dm-backdrop" onClick={onClose} />
+      <form className="dm-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
 
-        <div className="decision-modal__header">
-          <h2 className="decision-modal__title">Nouvelle demande de décision</h2>
-          <button type="button" className="decision-modal__close" onClick={onClose}>
-            <X size={16} />
-          </button>
+        <div className="dm-header">
+          <h2>Nouvelle demande de décision</h2>
+          <button type="button" className="dm-close" onClick={onClose}><X size={16} /></button>
         </div>
 
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Titre *</label>
-          <input className="portal-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-            required minLength={3} maxLength={200} placeholder="Intitulé de la décision…" />
-        </div>
-
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Description *</label>
-          <textarea className="portal-input" value={description} onChange={(e) => setDescription(e.target.value)}
-            required rows={3} placeholder="Décrivez la décision à prendre…" />
-        </div>
-
-        <div className="decision-modal__row">
-          <div className="decision-modal__field">
-            <label className="decision-modal__label">Catégorie</label>
-            <select className="portal-input" value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+        <div className="dm-body">
+          <div className="dm-field">
+            <label className="dm-label">Titre *</label>
+            <input className="portal-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+              required minLength={3} maxLength={200} placeholder="Intitulé de la décision…" />
           </div>
-          <div className="decision-modal__field">
-            <label className="decision-modal__label">Priorité</label>
-            <select className="portal-input" value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)}>
-              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
+
+          <div className="dm-field">
+            <label className="dm-label">Description *</label>
+            <textarea className="portal-input" value={description} onChange={(e) => setDescription(e.target.value)}
+              required rows={3} placeholder="Décrivez la décision à prendre…" />
           </div>
-        </div>
 
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Contexte <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
-          <textarea className="portal-input" value={context} onChange={(e) => setContext(e.target.value)}
-            rows={2} placeholder="Informations de contexte utiles à la décision…" />
-        </div>
-
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Options <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(une par ligne — {parsedOptions.length}/10)</span></label>
-          <textarea className="portal-input" value={optionsText} onChange={(e) => setOptionsText(e.target.value)}
-            rows={3} placeholder={'Option A\nOption B\nOption C'} />
-        </div>
-
-        <div className="decision-modal__row">
-          <div className="decision-modal__field">
-            <label className="decision-modal__label">Recommandation <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
-            <textarea className="portal-input" value={recommendation} onChange={(e) => setRecommendation(e.target.value)}
-              rows={2} placeholder="Votre recommandation…" />
-          </div>
-          <div className="decision-modal__field">
-            <label className="decision-modal__label">Échéance <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
-            <input className="portal-input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Adresser à <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(en plus des admins)</span></label>
-          <div className="decision-modal__recipients">
-            {allUsers.length === 0
-              ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
-              : allUsers.map((u) => {
-                  const selected = selectedRecipients.some((r) => r._id === u._id)
-                  return (
-                    <button key={u._id} type="button"
-                      className={`decision-modal__recipient-btn${selected ? ' selected' : ''}`}
-                      onClick={() => toggleRecipient(u)}>
-                      {u.name || u.email}
-                    </button>
-                  )
-                })}
-          </div>
-        </div>
-
-        <div className="decision-modal__field">
-          <label className="decision-modal__label">Pièces jointes <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(max 5 × 20 Mo)</span></label>
-          <label className="decision-modal__file-zone">
-            <Paperclip size={14} />
-            <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
-            <input type="file" multiple style={{ display: 'none' }} onChange={(e) => {
-              setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
-              e.target.value = ''
-            }} />
-          </label>
-          {files.length > 0 && (
-            <div className="decision-modal__file-list">
-              {files.map((f, i) => (
-                <div key={i} className="decision-modal__file-item">
-                  <Paperclip size={11} />
-                  <span>{f.name}</span>
-                  <span className="decision-modal__file-size">{formatFileSize(f.size)}</span>
-                  <button type="button" className="decision-modal__file-remove"
-                    onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}>×</button>
-                </div>
-              ))}
+          <div className="dm-row">
+            <div className="dm-field">
+              <label className="dm-label">Catégorie</label>
+              <select className="portal-input" value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)}>
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
-          )}
+            <div className="dm-field">
+              <label className="dm-label">Priorité</label>
+              <select className="portal-input" value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)}>
+                {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="dm-field">
+            <label className="dm-label">Contexte <small>(optionnel)</small></label>
+            <textarea className="portal-input" value={context} onChange={(e) => setContext(e.target.value)}
+              rows={2} placeholder="Informations de contexte utiles à la décision…" />
+          </div>
+
+          <div className="dm-field">
+            <label className="dm-label">Options <small>(une par ligne — {parsedOptions.length}/10)</small></label>
+            <textarea className="portal-input" value={optionsText} onChange={(e) => setOptionsText(e.target.value)}
+              rows={3} placeholder={'Option A\nOption B\nOption C'} />
+          </div>
+
+          <div className="dm-row">
+            <div className="dm-field">
+              <label className="dm-label">Recommandation <small>(optionnel)</small></label>
+              <textarea className="portal-input" value={recommendation} onChange={(e) => setRecommendation(e.target.value)}
+                rows={2} placeholder="Votre recommandation…" />
+            </div>
+            <div className="dm-field">
+              <label className="dm-label">Échéance <small>(optionnel)</small></label>
+              <input className="portal-input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="dm-field">
+            <label className="dm-label">Adresser à <small>(en plus des admins)</small></label>
+            <div className="dm-chips">
+              {allUsers.length === 0
+                ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
+                : allUsers.map((u) => {
+                    const sel = selectedRecipients.some((r) => r._id === u._id)
+                    return (
+                      <button key={u._id} type="button" className={`dm-chip${sel ? ' on' : ''}`} onClick={() => toggleRecipient(u)}>
+                        {u.name || u.email}
+                      </button>
+                    )
+                  })}
+            </div>
+          </div>
+
+          <div className="dm-field">
+            <label className="dm-label">Pièces jointes <small>(max 5 × 20 Mo)</small></label>
+            <label className="dm-file-btn">
+              <Paperclip size={14} />
+              <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
+              <input type="file" multiple style={{ display: 'none' }} onChange={(e) => {
+                setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
+                e.target.value = ''
+              }} />
+            </label>
+            {files.length > 0 && (
+              <div className="dm-file-list">
+                {files.map((f, i) => (
+                  <div key={i} className="dm-file-item">
+                    <Paperclip size={11} />
+                    <span className="dm-fname">{f.name}</span>
+                    <span className="dm-fsize">{formatFileSize(f.size)}</span>
+                    <button type="button" className="dm-fdel" onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {err && <p className="dm-error">{err}</p>}
         </div>
 
-        {err && <p className="decision-modal__error">{err}</p>}
-
-        <div className="decision-modal__actions">
+        <div className="dm-footer">
           <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>Annuler</button>
           <button type="submit" className="portal-button" disabled={submitting}>
             {submitting ? 'Envoi…' : 'Soumettre la demande'}
           </button>
         </div>
       </form>
-    </div>
+    </>
   )
 }
