@@ -3,7 +3,10 @@ import mongoose from 'mongoose'
 import { setupMongo, teardownMongo, clearDb } from '../__tests__/helpers/mongoTestEnv.js'
 import InboxSnooze from './InboxSnooze.js'
 
-beforeAll(async () => { await setupMongo() })
+beforeAll(async () => {
+  await setupMongo()
+  await InboxSnooze.init()  // ensure unique index is built before tests
+})
 afterAll(async () => { await teardownMongo() })
 beforeEach(async () => { await clearDb() })
 
