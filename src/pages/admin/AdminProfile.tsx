@@ -101,8 +101,8 @@ const AdminProfile = () => {
       e.target.value = ''
       return
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarError("L'image dépasse 2 Mo.")
+    if (file.size > 10 * 1024 * 1024) {
+      setAvatarError("L'image dépasse 10 Mo.")
       e.target.value = ''
       return
     }
@@ -266,7 +266,7 @@ const AdminProfile = () => {
             )}
             {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
             <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>
-              JPEG, PNG ou WebP · 2 Mo max
+              JPEG, PNG ou WebP · 10 Mo max
             </p>
           </div>
         </div>
