@@ -24,3 +24,22 @@ export function computeProgress(byStatus: Record<DevIssueStatus, number>): numbe
   if (nonCancelled === 0) return 0
   return Math.round(weighted / nonCancelled)
 }
+
+export type ProjectHealth = 'on_track' | 'at_risk' | 'blocked'
+
+export interface HealthSignals {
+  blocked: number
+  urgent: number
+}
+
+/**
+ * Heuristique provisoire :
+ *   blocked > 0             → 'blocked'
+ *   urgent > 0 && progress < 50 → 'at_risk'
+ *   sinon                   → 'on_track'
+ */
+export function computeHealth(signals: HealthSignals, progress: number): ProjectHealth {
+  if (signals.blocked > 0) return 'blocked'
+  if (signals.urgent > 0 && progress < 50) return 'at_risk'
+  return 'on_track'
+}

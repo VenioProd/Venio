@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeProgress, STATUS_WEIGHT } from '../lib/dev/stats.js'
+import { computeProgress, STATUS_WEIGHT, computeHealth } from '../lib/dev/stats.js'
 import type { DevIssueStatus } from '../models/DevIssue.js'
 
 const empty: Record<DevIssueStatus, number> = {
@@ -41,5 +41,27 @@ describe('computeProgress', () => {
     expect(STATUS_WEIGHT).toEqual({
       BACKLOG: 0, TODO: 10, IN_PROGRESS: 50, IN_REVIEW: 80, DONE: 100, CANCELLED: 0,
     })
+  })
+})
+
+describe('computeHealth', () => {
+  it("returns 'blocked' when blocked > 0, even with high progress", () => {
+    expect(computeHealth({ blocked: 1, urgent: 0 }, 90)).toBe('blocked')
+  })
+
+  it("returns 'at_risk' when urgent > 0 and progress < 50", () => {
+    expect(computeHealth({ blocked: 0, urgent: 1 }, 30)).toBe('at_risk')
+  })
+
+  it("returns 'on_track' when urgent > 0 but progress >= 50", () => {
+    expect(computeHealth({ blocked: 0, urgent: 2 }, 60)).toBe('on_track')
+  })
+
+  it("returns 'on_track' for healthy projects", () => {
+    expect(computeHealth({ blocked: 0, urgent: 0 }, 10)).toBe('on_track')
+  })
+
+  it('prioritises blocked over urgent', () => {
+    expect(computeHealth({ blocked: 1, urgent: 5 }, 0)).toBe('blocked')
   })
 })
