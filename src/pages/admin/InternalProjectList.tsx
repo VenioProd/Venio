@@ -149,10 +149,10 @@ export default function InternalProjectList() {
     try {
       const data = await apiFetch<Partial<ArrowPilotage>>('/api/admin/arrow-pilotage')
       setArrowPilotage({
-        goals: data.goals?.length ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
-        scorecard: data.scorecard?.length ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
-        decisions: data.decisions?.length ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
-        cadence: data.cadence?.length ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
+        goals: Array.isArray(data.goals) ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
+        scorecard: Array.isArray(data.scorecard) ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
+        decisions: Array.isArray(data.decisions) ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
+        cadence: Array.isArray(data.cadence) ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
       })
     } catch {
       showToast('Pilotage Arrow indisponible pour le moment', 'error')
@@ -178,10 +178,10 @@ export default function InternalProjectList() {
         body: JSON.stringify({ section: editingArrowSection, values: lines }),
       })
       setArrowPilotage({
-        goals: data.goals?.length ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
-        scorecard: data.scorecard?.length ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
-        decisions: data.decisions?.length ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
-        cadence: data.cadence?.length ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
+        goals: Array.isArray(data.goals) ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
+        scorecard: Array.isArray(data.scorecard) ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
+        decisions: Array.isArray(data.decisions) ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
+        cadence: Array.isArray(data.cadence) ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
       })
       setEditingArrowSection(null)
       setArrowSectionDraft('')
