@@ -10,6 +10,7 @@ import Decision from '../../models/Decision.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import InternalConversation from '../../models/InternalConversation.js'
 import InternalConversationMember from '../../models/InternalConversationMember.js'
+import { evaluatePulseRules, type PulseContext } from '../../lib/dashboard/pulseRules.js'
 
 const router = express.Router()
 
@@ -143,6 +144,9 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
       revenueTrendRaw,
       adminLoadRaw,
       myConversationMembers,
+      monthlyInvoicedPrev,
+      pipelinePrev30Raw,
+      hotLeadsNeglectedCount,
     ] = await Promise.all([
       Task.countDocuments({ status: { $ne: 'TERMINE' }, dueDate: { $lt: now, $ne: null } }),
       Lead.countDocuments({ leadTemperature: 'FROID', status: { $nin: ['WON', 'LOST'] } }).catch(() => 0),
@@ -261,6 +265,41 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         },
       ]),
       InternalConversationMember.find({ user: userId }).select('conversation lastReadAt').lean(),
+
+      // CA previous month (for delta)
+      BillingDocument.aggregate([
+        {
+          $match: {
+            type: 'INVOICE',
+            status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
+            issuedAt: { $gte: new Date(now.getFullYear(), now.getMonth() - 1, 1), $lt: startOfMonth },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]).catch(() => []),
+
+      // Pipeline as of 30d ago (heuristic: leads created before -30d, still open)
+      Lead.aggregate([
+        {
+          $match: {
+            status: { $nin: ['WON', 'LOST'] },
+            budget: { $gt: 0 },
+            createdAt: { $lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$budget' } } },
+      ]).catch(() => []),
+
+      // Hot leads sans contact 7j+ (or never contacted)
+      Lead.countDocuments({
+        leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
+        status: { $nin: ['WON', 'LOST'] },
+        $or: [
+          { nextActionAt: { $exists: false } },
+          { nextActionAt: null },
+          { nextActionAt: { $lt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+        ],
+      }).catch(() => 0),
     ])
 
     // Messages en attente : conversations dont lastMessageAt > lastReadAt
@@ -285,6 +324,55 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
       month: r._id.m,
       total: r.total,
     }))
+
+    // --- Pulse + enriched KPIs ---
+    const monthlyInvoicedTotal = monthlyInvoiced[0]?.total ?? 0
+    const monthlyInvoicedPrevTotal = (monthlyInvoicedPrev as Array<{ total: number }>)[0]?.total ?? 0
+    const pipelineTotal = pipelineSum[0]?.total ?? 0
+    const pipelinePrev30Total = (pipelinePrev30Raw as Array<{ total: number }>)[0]?.total ?? 0
+
+    // CA delta vs previous month
+    const caDeltaPct = monthlyInvoicedPrevTotal > 0
+      ? Math.round(((monthlyInvoicedTotal - monthlyInvoicedPrevTotal) / monthlyInvoicedPrevTotal) * 100)
+      : 0
+    const caDirection = caDeltaPct > 0 ? 'up' : caDeltaPct < 0 ? 'down' : 'flat'
+
+    // Pipeline delta vs 30 days ago
+    const pipelineDeltaPct = pipelinePrev30Total > 0
+      ? Math.round(((pipelineTotal - pipelinePrev30Total) / pipelinePrev30Total) * 100)
+      : 0
+    const pipelineDirection = pipelineDeltaPct > 0 ? 'up' : pipelineDeltaPct < 0 ? 'down' : 'flat'
+
+    // Build Pulse context
+    const CA_OBJECTIVE_DEFAULT = 60000 // TODO: move to CompanySettings when product team defines monthly objectives
+    const pulseCtx: PulseContext = {
+      monthlyCA: monthlyInvoicedTotal,
+      caObjective: CA_OBJECTIVE_DEFAULT,
+      pipelinePrev30: pipelinePrev30Total,
+      pipelineCurrent: pipelineTotal,
+      hotLeadsNeglected: hotLeadsNeglectedCount as number,
+      adminLoads: adminLoadRaw.map((a: { name?: string; total: number }) => ({ name: a.name ?? '?', total: a.total })),
+      briefsP1Overdue: overdueBriefsP1Count,
+      lastBackupAt: null, // no Backup model — TODO when model added
+      qualiopiExpiringWithin30Days: 0, // no QualiopiSignature with expiresAt — TODO
+    }
+
+    const pulseChecks = await evaluatePulseRules(pulseCtx)
+
+    // Enriched KPIs (frontend-friendly shape)
+    const kpis = {
+      ca: {
+        value: monthlyInvoicedTotal,
+        delta: { value: caDeltaPct, direction: caDirection as 'up' | 'down' | 'flat' },
+        objective: { current: monthlyInvoicedTotal, target: CA_OBJECTIVE_DEFAULT, label: 'Obj mois' },
+      },
+      pipeline: {
+        value: pipelineTotal,
+        delta: { value: pipelineDeltaPct, direction: pipelineDirection as 'up' | 'down' | 'flat' },
+      },
+      hotLeads: { value: hotLeadsCount },
+      activeProjects: { value: activeProjectCount },
+    }
 
     return res.json({
       generatedAt: now.toISOString(),
@@ -340,6 +428,9 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         interns: internCount,
         load: adminLoadRaw,
       },
+
+      pulseChecks,
+      kpis,
     })
   } catch (err) {
     return next(err)

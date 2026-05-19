@@ -2,8 +2,6 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -17,7 +15,6 @@ import {
 } from 'recharts'
 import {
   AlertTriangle,
-  Wallet,
   FolderKanban,
   Users,
   MessageSquare,
@@ -34,6 +31,10 @@ import { useAuth } from '../../context/AuthContext'
 import { SkeletonRow } from '../../components/Skeleton'
 import { DashKpiCard, DashAlertBanner, DashSection } from '../../components/dashboard'
 import type { AlertItem } from '../../components/dashboard'
+import PulseStatus from '../../components/dashboard/PulseStatus'
+import KpiGrid2x2 from '../../components/dashboard/KpiGrid2x2'
+import FinancialChart from '../../components/dashboard/FinancialChart'
+import type { PulseCheck } from '../../components/dashboard/types'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -100,6 +101,21 @@ interface SuperDashboard {
       avatarUrl?: string
       role: string
     }>
+  }
+  // Phase 3 — new fields from Task 3.2
+  pulseChecks: PulseCheck[]
+  kpis: {
+    ca: {
+      value: number
+      delta: { value: number; direction: 'up' | 'down' | 'flat' }
+      objective: { current: number; target: number; label?: string }
+    }
+    pipeline: {
+      value: number
+      delta: { value: number; direction: 'up' | 'down' | 'flat' }
+    }
+    hotLeads: { value: number }
+    activeProjects: { value: number }
   }
 }
 
@@ -348,54 +364,49 @@ const SuperAdminDashboard = () => {
             </DashSection>
           )}
 
-          {/* ─── Business ─── */}
-          <DashSection title="Business" icon={<Wallet size={16} />}>
-            <div className="admin-stats-grid">
-              <DashKpiCard
-                label="CA facturé (mois)"
-                value={formatEUR(data.business.monthlyInvoiced)}
-                accentColor="#ff0080"
-                accentRgb="255, 0, 128"
-              />
-              <DashKpiCard
-                label="Pipeline CRM"
-                value={formatEUR(data.business.pipelineTotal)}
-                accentColor="#8b5cf6"
-                accentRgb="139, 92, 246"
-                hint="Tous leads ouverts"
-                to="/admin/crm"
-              />
-              <DashKpiCard
-                label="Leads chauds"
-                value={data.business.hotLeads}
-                accentColor="#f59e0b"
-                accentRgb="245, 158, 11"
-                icon={<TrendingUp size={14} />}
-                to="/admin/crm"
-              />
-              <DashKpiCard
-                label="Comptabilité"
-                value="→"
-                accentColor="#22c55e"
-                accentRgb="34, 197, 94"
-                icon={<Receipt size={14} />}
-                to="/admin/comptabilite"
-              />
+          {/* ─── Analytics ─── */}
+          <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
+            <PulseStatus checks={data.pulseChecks} />
+            <div style={{ marginTop: 12 }}>
+              <KpiGrid2x2 kpis={[
+                {
+                  label: 'CA · mois',
+                  value: formatEUR(data.kpis.ca.value),
+                  accentColor: '#ff0080',
+                  accentRgb: '255, 0, 128',
+                  delta: data.kpis.ca.delta,
+                  objective: data.kpis.ca.objective,
+                },
+                {
+                  label: 'Pipeline',
+                  value: formatEUR(data.kpis.pipeline.value),
+                  accentColor: '#8b5cf6',
+                  accentRgb: '139, 92, 246',
+                  delta: data.kpis.pipeline.delta,
+                  to: '/admin/crm',
+                },
+                {
+                  label: 'Leads chauds',
+                  value: data.kpis.hotLeads.value,
+                  accentColor: '#f59e0b',
+                  accentRgb: '245, 158, 11',
+                  to: '/admin/crm',
+                },
+                {
+                  label: 'Projets actifs',
+                  value: data.kpis.activeProjects.value,
+                  accentColor: '#22c55e',
+                  accentRgb: '34, 197, 94',
+                },
+              ]} />
             </div>
             {trendData.length > 0 && (
-              <div className="dash-chart-legacy">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} />
-                    <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(v) => formatEUR(v as number)} />
-                    <Tooltip
-                      contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}
-                      formatter={(v) => formatEUR(Number(v) || 0)}
-                    />
-                    <Line type="monotone" dataKey="ca" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} name="CA facturé" />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div style={{ marginTop: 12 }}>
+                <FinancialChart
+                  data={trendData.map((t) => ({ ts: t.month, value: t.ca }))}
+                  label="CA + Volume · 6 mois"
+                  currentValue={formatEUR(data.kpis.ca.value)}
+                />
               </div>
             )}
           </DashSection>
