@@ -411,166 +411,136 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.65)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-      }}
-    >
+    <div className="task-modal-overlay" onClick={onClose}>
       <form
+        className="task-modal"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        style={{
-          background: 'var(--bg-card, #1e293b)',
-          border: '1px solid var(--border, rgba(255,255,255,0.1))',
-          borderRadius: 16,
-          padding: '28px 28px 24px',
-          width: '100%',
-          maxWidth: 580,
-          maxHeight: 'calc(100vh - 48px)',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-        }}
+        style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 0 }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>Nouvelle décision</h2>
+        {/* En-tête */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Nouvelle demande de décision
+          </h2>
           <button
             type="button"
             onClick={onClose}
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
               borderRadius: 8,
-              width: 32,
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'var(--text-muted)',
+              flexShrink: 0,
             }}
           >
             <X size={16} />
           </button>
         </div>
 
-        <Field label="Titre *">
+        {/* Champs */}
+        <div className="task-form-group">
+          <label>Titre *</label>
           <input
+            className="portal-input"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
             minLength={3}
             maxLength={200}
-            style={inputStyle}
+            placeholder="Intitulé de la décision…"
           />
-        </Field>
+        </div>
 
-        <Field label="Description *">
+        <div className="task-form-group">
+          <label>Description *</label>
           <textarea
+            className="portal-input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
             rows={3}
-            style={{ ...inputStyle, resize: 'vertical' }}
+            placeholder="Décrivez la décision à prendre…"
           />
-        </Field>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Field label="Catégorie" style={{ flex: 1 }}>
-            <select value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)} style={inputStyle}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <Field label="Priorité" style={{ flex: 1 }}>
-            <select value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)} style={inputStyle}>
-              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
         </div>
 
-        <Field label="Contexte (optionnel)">
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div className="task-form-group">
+            <label>Catégorie</label>
+            <select className="portal-input" value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="task-form-group">
+            <label>Priorité</label>
+            <select className="portal-input" value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)}>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="task-form-group">
+          <label>Contexte <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
           <textarea
+            className="portal-input"
             value={context}
             onChange={(e) => setContext(e.target.value)}
             rows={2}
-            style={{ ...inputStyle, resize: 'vertical' }}
+            placeholder="Informations de contexte utiles à la décision…"
           />
-        </Field>
+        </div>
 
-        <Field label={`Options (une par ligne, max 10) — ${parsedOptions.length}/10`}>
+        <div className="task-form-group">
+          <label>
+            Options <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(une par ligne, {parsedOptions.length}/10)</span>
+          </label>
           <textarea
+            className="portal-input"
             value={optionsText}
             onChange={(e) => setOptionsText(e.target.value)}
             rows={3}
-            style={{ ...inputStyle, resize: 'vertical' }}
-            placeholder="Option A&#10;Option B"
+            placeholder={'Option A\nOption B\nOption C'}
           />
-        </Field>
+        </div>
 
-        <Field label="Recommandation (optionnel)">
+        <div className="task-form-group">
+          <label>Recommandation <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
           <textarea
+            className="portal-input"
             value={recommendation}
             onChange={(e) => setRecommendation(e.target.value)}
             rows={2}
-            style={{ ...inputStyle, resize: 'vertical' }}
+            placeholder="Votre recommandation personnelle…"
           />
-        </Field>
+        </div>
 
-        <Field label="Échéance (optionnel)">
+        <div className="task-form-group">
+          <label>Échéance <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
           <input
+            className="portal-input"
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
-            style={inputStyle}
           />
-        </Field>
+        </div>
 
-        {err && <div style={{ color: '#ef4444', fontSize: 13 }}>{err}</div>}
+        {err && (
+          <p style={{ margin: '0 0 12px', color: '#ef4444', fontSize: 13 }}>{err}</p>
+        )}
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>
             Annuler
           </button>
           <button type="submit" className="portal-button" disabled={submitting}>
-            {submitting ? 'Envoi…' : 'Soumettre'}
+            {submitting ? 'Envoi…' : 'Soumettre la demande'}
           </button>
         </div>
       </form>
     </div>
-  )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '9px 12px',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: 8,
-  color: 'var(--text-primary)',
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-  transition: 'border-color 0.15s',
-  boxSizing: 'border-box',
-}
-
-function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, ...style }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
-      {children}
-    </label>
   )
 }
