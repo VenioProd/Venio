@@ -65,6 +65,7 @@ export interface StatsPayload {
 }
 
 const BLOCKED_LABELS = ['blocked', 'blocker']
+const BLOCKED_LABEL_REGEXES = BLOCKED_LABELS.map((l) => new RegExp(`^${l}$`, 'i'))
 const CLOSED_STATUSES = ['DONE', 'CANCELLED'] as const
 
 export async function computeStats(
@@ -84,10 +85,7 @@ export async function computeStats(
       DevIssue.countDocuments(openMatch),
       DevProject.countDocuments({ status: { $ne: 'ARCHIVED' } }),
       DevIssue.countDocuments({ ...openMatch, priority: 'URGENT' }),
-      DevIssue.countDocuments({
-        ...openMatch,
-        labels: { $in: BLOCKED_LABELS.map((l) => new RegExp(`^${l}$`, 'i')) },
-      }),
+      DevIssue.countDocuments({ ...openMatch, labels: { $in: BLOCKED_LABEL_REGEXES } }),
       DevIssue.countDocuments({ ...match, status: 'DONE', completedAt: { $gte: since7 } }),
       DevIssue.countDocuments({ ...match, status: 'DONE', completedAt: { $gte: since14 } }),
     ])
@@ -166,17 +164,23 @@ export async function computeOverview(): Promise<OverviewPayload> {
     )
     .lean()
 
+  const statusSumStage = Object.fromEntries(
+    (Object.keys(emptyByStatus()) as DevIssueStatus[]).map((s) => [
+      s,
+      { $sum: { $cond: [{ $eq: ['$status', s] }, 1, 0] } },
+    ])
+  )
+
   const perProjectAgg = await DevIssue.aggregate<{
     _id: mongoose.Types.ObjectId
-    byStatus: { status: string; count: number }[]
     urgent: number
     blocked: number
     lastUpdatedAt: Date | null
-  }>([
+  } & Record<DevIssueStatus, number>>([
     {
       $group: {
         _id: '$project',
-        byStatus: { $push: { status: '$status', count: 1 } },
+        ...statusSumStage,
         urgent: {
           $sum: {
             $cond: [
@@ -231,8 +235,8 @@ export async function computeOverview(): Promise<OverviewPayload> {
     const agg = aggByProjectId.get(String(p._id))
     const byStatus = emptyByStatus()
     if (agg) {
-      for (const row of agg.byStatus) {
-        byStatus[row.status as DevIssueStatus] = (byStatus[row.status as DevIssueStatus] ?? 0) + row.count
+      for (const s of Object.keys(byStatus) as DevIssueStatus[]) {
+        byStatus[s] = agg[s] ?? 0
       }
     }
     const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
@@ -272,16 +276,24 @@ export async function computeOverview(): Promise<OverviewPayload> {
     return b.lastActivityAt.localeCompare(a.lastActivityAt)
   })
 
-  const stats = await computeStats()
+  const now = Date.now()
+  const day = 24 * 60 * 60 * 1000
+  const since14 = new Date(now - 14 * day)
+  const since7 = new Date(now - 7 * day)
+  const [completed7d, completed14d] = await Promise.all([
+    DevIssue.countDocuments({ status: 'DONE', completedAt: { $gte: since7 } }),
+    DevIssue.countDocuments({ status: 'DONE', completedAt: { $gte: since14 } }),
+  ])
+
   const kpis: OverviewKpis = {
-    totalProjects: stats.totalProjects,
+    totalProjects: projects.filter((p) => p.status !== 'ARCHIVED').length,
     activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
-    totalOpen: stats.open,
-    urgent: stats.urgent,
-    blocked: stats.blocked,
-    completed7d: stats.completed7d,
-    completed14d: stats.completed14d,
-    velocity14d: stats.velocity14d,
+    totalOpen: projects.reduce((s, p) => s + p.counts.open, 0),
+    urgent: projects.reduce((s, p) => s + p.counts.urgent, 0),
+    blocked: projects.reduce((s, p) => s + p.counts.blocked, 0),
+    completed7d,
+    completed14d,
+    velocity14d: Math.round((completed14d / 14) * 100) / 100,
   }
 
   return { kpis, projects }
