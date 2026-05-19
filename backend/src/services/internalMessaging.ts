@@ -338,10 +338,17 @@ export async function searchMessages(user: JwtPayload, query: string) {
 
   const conversations = await listConversations(user)
   const conversationIds = conversations.map((conversation) => conversation._id)
+  // Match sur le contenu textuel OU sur le nom d'un fichier joint, pour que
+  // les pièces jointes soient retrouvables via la barre de recherche.
+  const safe = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = { $regex: safe, $options: 'i' as const }
   return InternalMessage.find({
     conversation: { $in: conversationIds },
     deletedAt: null,
-    content: { $regex: trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' },
+    $or: [
+      { content: regex },
+      { 'attachments.originalName': regex },
+    ],
   })
     .sort({ createdAt: -1 })
     .limit(30)

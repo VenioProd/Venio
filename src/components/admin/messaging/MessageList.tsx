@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
-import { deleteMessage, editMessage, toggleReaction } from '../../../services/messaging'
-import type { InternalMessage } from '../../../types/messaging.types'
+import { deleteMessage, downloadMessageAttachment, editMessage, toggleReaction } from '../../../services/messaging'
+import type { InternalMessage, InternalMessageAttachment } from '../../../types/messaging.types'
+import PromptModal from '../../PromptModal'
+import AttachmentLightbox from './AttachmentLightbox'
 
 interface MessageListProps {
   messages: InternalMessage[]
@@ -57,11 +59,80 @@ function formatFileSize(bytes: number): string {
   return `${size.toFixed(size >= 100 || index === 0 ? 0 : 1)} ${units[index]}`
 }
 
+function isImageAttachment(attachment: InternalMessageAttachment): boolean {
+  return (attachment.mimeType || '').toLowerCase().startsWith('image/')
+}
+
+interface ImageThumbProps {
+  messageId: string
+  index: number
+  attachment: InternalMessageAttachment
+  onOpen: () => void
+}
+
+function ImageThumb({ messageId, index, attachment, onOpen }: ImageThumbProps) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [errored, setErrored] = useState(false)
+  const urlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    let canceled = false
+    downloadMessageAttachment(messageId, index)
+      .then(({ blob }) => {
+        if (canceled) return
+        const objectUrl = URL.createObjectURL(blob)
+        urlRef.current = objectUrl
+        setUrl(objectUrl)
+      })
+      .catch(() => {
+        if (!canceled) setErrored(true)
+      })
+    return () => {
+      canceled = true
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current)
+      urlRef.current = null
+    }
+  }, [messageId, index])
+
+  return (
+    <button type="button" className="messaging-attachment-thumb" onClick={onOpen} aria-label={`Ouvrir ${attachment.originalName}`}>
+      {url && !errored ? (
+        <img src={url} alt={attachment.originalName} loading="lazy" />
+      ) : (
+        <span className="messaging-attachment-thumb-placeholder" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </span>
+      )}
+    </button>
+  )
+}
+
+interface LightboxState {
+  messageId: string
+  attachments: InternalMessageAttachment[]
+  index: number
+}
+
+interface EditState {
+  messageId: string
+  initialValue: string
+}
+
 export default function MessageList({ messages, typingUsers, onReplaceMessage }: MessageListProps) {
   const { user } = useAuth()
   const endRef = useRef<HTMLDivElement>(null)
   const [openActionsId, setOpenActionsId] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null)
+  const [editState, setEditState] = useState<EditState | null>(null)
   const typingNames = Object.values(typingUsers)
+
+  const openLightbox = useCallback((messageId: string, attachments: InternalMessageAttachment[], index: number) => {
+    setLightbox({ messageId, attachments, index })
+  }, [])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -137,28 +208,56 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                   )}
                   {!message.deletedAt && message.attachments.length > 0 && (
                     <div className="messaging-attachments">
-                      {message.attachments.map((attachment, attachmentIndex) => (
-                        <a
-                          key={`${message._id}-${attachment.originalName}-${attachmentIndex}`}
-                          className="messaging-attachment"
-                          href={`/api/admin/messaging/messages/${message._id}/attachments/${attachmentIndex}/download`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <span className="messaging-attachment-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                            </svg>
-                          </span>
-                          <span className="messaging-attachment-body">
-                            <span className="messaging-attachment-name">{attachment.originalName}</span>
-                            <span className="messaging-attachment-meta">
-                              {attachment.mimeType?.split('/').pop()?.toUpperCase() || 'FICHIER'}
-                              {attachment.size ? ` · ${formatFileSize(attachment.size)}` : ''}
-                            </span>
-                          </span>
-                        </a>
-                      ))}
+                      {(() => {
+                        const imageAttachments = message.attachments
+                          .map((att, idx) => ({ att, idx }))
+                          .filter(({ att }) => isImageAttachment(att))
+                        const otherAttachments = message.attachments
+                          .map((att, idx) => ({ att, idx }))
+                          .filter(({ att }) => !isImageAttachment(att))
+                        return (
+                          <>
+                            {imageAttachments.length > 0 && (
+                              <div
+                                className="messaging-attachment-grid"
+                                data-count={Math.min(imageAttachments.length, 4)}
+                              >
+                                {imageAttachments.map(({ att, idx }) => (
+                                  <ImageThumb
+                                    key={`${message._id}-img-${idx}`}
+                                    messageId={message._id}
+                                    index={idx}
+                                    attachment={att}
+                                    onOpen={() => openLightbox(message._id, message.attachments, idx)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {otherAttachments.map(({ att, idx }) => (
+                              <button
+                                type="button"
+                                key={`${message._id}-${att.originalName}-${idx}`}
+                                className="messaging-attachment"
+                                onClick={() => openLightbox(message._id, message.attachments, idx)}
+                              >
+                                <span className="messaging-attachment-icon" aria-hidden="true">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                  </svg>
+                                </span>
+                                <span className="messaging-attachment-body">
+                                  <span className="messaging-attachment-name">{att.originalName}</span>
+                                  <span className="messaging-attachment-meta">
+                                    {att.mimeType?.split('/').pop()?.toUpperCase() || 'FICHIER'}
+                                    {att.size ? ` · ${formatFileSize(att.size)}` : ''}
+                                  </span>
+                                </span>
+                              </button>
+                            ))}
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
@@ -216,9 +315,8 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                           <button
                             type="button"
                             className="messaging-message-action-btn"
-                            onClick={async () => {
-                              const content = window.prompt('Modifier le message', message.content)
-                              if (content?.trim()) onReplaceMessage(await editMessage(message._id, content.trim()))
+                            onClick={() => {
+                              setEditState({ messageId: message._id, initialValue: message.content })
                               setOpenActionsId(null)
                             }}
                             aria-label="Modifier"
@@ -263,6 +361,35 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
         </div>
       )}
       <div ref={endRef} />
+
+      {lightbox && (
+        <AttachmentLightbox
+          messageId={lightbox.messageId}
+          attachments={lightbox.attachments}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+
+      <PromptModal
+        isOpen={!!editState}
+        title="Modifier le message"
+        initialValue={editState?.initialValue || ''}
+        placeholder="Contenu du message"
+        confirmLabel="Enregistrer"
+        multiline
+        maxLength={4000}
+        onConfirm={async (content) => {
+          if (!editState) return
+          try {
+            const updated = await editMessage(editState.messageId, content)
+            onReplaceMessage(updated)
+          } finally {
+            setEditState(null)
+          }
+        }}
+        onCancel={() => setEditState(null)}
+      />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import PromptModal from '../../PromptModal'
 import type { InternalConversation, MessagingUser } from '../../../types/messaging.types'
 
 interface ConversationSidebarProps {
@@ -66,6 +67,7 @@ export default function ConversationSidebar({
   const [filter, setFilter] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
+  const [channelPrompt, setChannelPrompt] = useState<'PUBLIC' | 'PRIVATE' | null>(null)
 
   const channels = useMemo(
     () => conversations.filter((conversation) => conversation.type === 'CHANNEL'),
@@ -165,11 +167,8 @@ export default function ConversationSidebar({
             type="button"
             className="messaging-sidebar-picker-item"
             onClick={() => {
-              const name = window.prompt('Nom du channel')
-              if (name?.trim()) {
-                onCreateChannel(name.trim(), 'PUBLIC')
-                setPickerOpen(false)
-              }
+              setChannelPrompt('PUBLIC')
+              setPickerOpen(false)
             }}
           >
             <span className="messaging-sidebar-picker-icon">#</span>
@@ -182,11 +181,8 @@ export default function ConversationSidebar({
             type="button"
             className="messaging-sidebar-picker-item"
             onClick={() => {
-              const name = window.prompt('Nom du channel privé')
-              if (name?.trim()) {
-                onCreateChannel(name.trim(), 'PRIVATE')
-                setPickerOpen(false)
-              }
+              setChannelPrompt('PRIVATE')
+              setPickerOpen(false)
             }}
           >
             <span className="messaging-sidebar-picker-icon">🔒</span>
@@ -197,6 +193,21 @@ export default function ConversationSidebar({
           </button>
         </div>
       )}
+
+      <PromptModal
+        isOpen={channelPrompt !== null}
+        title={channelPrompt === 'PRIVATE' ? 'Nouveau channel privé' : 'Nouveau channel public'}
+        message={channelPrompt === 'PRIVATE' ? 'Sur invitation uniquement.' : 'Visible par tous les membres.'}
+        placeholder="ex. design-system"
+        confirmLabel="Créer"
+        maxLength={48}
+        validate={(value) => (value.length < 2 ? 'Au moins 2 caractères' : null)}
+        onConfirm={(name) => {
+          if (channelPrompt) onCreateChannel(name, channelPrompt)
+          setChannelPrompt(null)
+        }}
+        onCancel={() => setChannelPrompt(null)}
+      />
 
       <div className="messaging-sidebar-scroll">
         <div className="messaging-sidebar-section">
