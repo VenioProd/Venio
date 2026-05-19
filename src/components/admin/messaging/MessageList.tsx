@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
+import { getToken } from '../../../lib/api'
 import { deleteMessage, editMessage, toggleReaction } from '../../../services/messaging'
 import type { InternalMessage } from '../../../types/messaging.types'
 
@@ -55,6 +56,25 @@ function formatFileSize(bytes: number): string {
     index += 1
   }
   return `${size.toFixed(size >= 100 || index === 0 ? 0 : 1)} ${units[index]}`
+}
+
+async function openAttachment(messageId: string, index: number, originalName: string, mimeType: string) {
+  const token = getToken()
+  const url = `/api/admin/messaging/messages/${messageId}/attachments/${index}/download`
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) return
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const viewable = mimeType?.startsWith('image/') || mimeType === 'application/pdf' || mimeType?.startsWith('video/')
+  if (viewable) {
+    window.open(objectUrl, '_blank')
+  } else {
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = originalName
+    a.click()
+  }
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
 }
 
 export default function MessageList({ messages, typingUsers, onReplaceMessage }: MessageListProps) {
@@ -138,12 +158,11 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                   {!message.deletedAt && message.attachments.length > 0 && (
                     <div className="messaging-attachments">
                       {message.attachments.map((attachment, attachmentIndex) => (
-                        <a
+                        <button
                           key={`${message._id}-${attachment.originalName}-${attachmentIndex}`}
+                          type="button"
                           className="messaging-attachment"
-                          href={`/api/admin/messaging/messages/${message._id}/attachments/${attachmentIndex}/download`}
-                          target="_blank"
-                          rel="noreferrer"
+                          onClick={() => openAttachment(message._id, attachmentIndex, attachment.originalName, attachment.mimeType)}
                         >
                           <span className="messaging-attachment-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,7 +176,7 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                               {attachment.size ? ` · ${formatFileSize(attachment.size)}` : ''}
                             </span>
                           </span>
-                        </a>
+                        </button>
                       ))}
                     </div>
                   )}
