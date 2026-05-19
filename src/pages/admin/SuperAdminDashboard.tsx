@@ -232,16 +232,16 @@ const SuperAdminDashboard = () => {
 
           {/* ─── Mon activité (compact) ─── */}
           <DashSection title="Mon activité" icon={<Zap size={16} />} action={{ label: 'Mon espace', to: '/admin/mon-espace' }}>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link to="/admin/gestion?assignee=me" className="admin-stat-card" style={{ flex: 1, minWidth: 140, textDecoration: 'none' }}>
+            <div className="dash-mine-row">
+              <Link to="/admin/gestion?assignee=me" className="admin-stat-card dash-mine-row__item">
                 <div className="admin-stat-label">Mes tâches</div>
                 <div className="admin-stat-value">{data.mine.tasks}</div>
               </Link>
-              <Link to="/admin/gestion?view=briefs" className="admin-stat-card" style={{ flex: 1, minWidth: 140, textDecoration: 'none' }}>
+              <Link to="/admin/gestion?view=briefs" className="admin-stat-card dash-mine-row__item">
                 <div className="admin-stat-label">Mes briefs</div>
                 <div className="admin-stat-value">{data.mine.briefs}</div>
               </Link>
-              <Link to="/admin/messages" className="admin-stat-card" style={{ flex: 1, minWidth: 140, textDecoration: 'none' }}>
+              <Link to="/admin/messages" className="admin-stat-card dash-mine-row__item">
                 <div className="admin-stat-label">Messages non lus</div>
                 <div className="admin-stat-value">{data.mine.pendingMessages}</div>
               </Link>
@@ -261,62 +261,48 @@ const SuperAdminDashboard = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {data.decisions.pending.map((d) => (
-                  <div
-                    key={d._id}
-                    style={{
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 10,
-                      padding: 14,
-                      background: 'rgba(255,255,255,0.02)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <span
-                        style={{
-                          width: 4,
-                          alignSelf: 'stretch',
-                          background: PRIORITY_COLORS[d.priority] || '#64748b',
-                          borderRadius: 2,
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                          <strong style={{ fontSize: 14 }}>{d.title}</strong>
-                          <span className="admin-badge">{d.category}</span>
-                        </div>
-                        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0' }}>
-                          {d.description.length > 200 ? d.description.slice(0, 200) + '…' : d.description}
-                        </p>
-                        <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                          <span>Soumis par <strong>{d.submittedByName}</strong></span>
-                          <span>{new Date(d.createdAt).toLocaleDateString('fr-FR')}</span>
-                          {d.deadline && (
-                            <span style={{ color: new Date(d.deadline) < new Date() ? '#ef4444' : undefined }}>
-                              Échéance : {new Date(d.deadline).toLocaleDateString('fr-FR')}
-                            </span>
-                          )}
-                        </div>
+                  <div key={d._id} className="dash-decision-card">
+                    <span
+                      className="dash-decision-card__priority"
+                      style={{ background: PRIORITY_COLORS[d.priority] || '#64748b' }}
+                    />
+                    <div className="dash-decision-card__body">
+                      <div className="dash-decision-card__head">
+                        <strong style={{ fontSize: 14 }}>{d.title}</strong>
+                        <span className="admin-badge">{d.category}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          className="portal-button"
-                          style={{ background: '#10b981', borderColor: '#10b981', padding: '6px 12px', fontSize: 12 }}
-                          disabled={decidingId === d._id}
-                          onClick={() => handleDecision(d._id, 'approve')}
-                        >
-                          Valider
-                        </button>
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: '#ef4444' }}
-                          disabled={decidingId === d._id}
-                          onClick={() => handleDecision(d._id, 'reject')}
-                        >
-                          Rejeter
-                        </button>
+                      <p className="dash-decision-card__desc">
+                        {d.description.length > 200 ? d.description.slice(0, 200) + '…' : d.description}
+                      </p>
+                      <div className="dash-decision-card__meta">
+                        <span>Soumis par <strong>{d.submittedByName}</strong></span>
+                        <span>{new Date(d.createdAt).toLocaleDateString('fr-FR')}</span>
+                        {d.deadline && (
+                          <span style={{ color: new Date(d.deadline) < new Date() ? '#ef4444' : undefined }}>
+                            Échéance : {new Date(d.deadline).toLocaleDateString('fr-FR')}
+                          </span>
+                        )}
                       </div>
+                    </div>
+                    <div className="dash-decision-card__actions">
+                      <button
+                        type="button"
+                        className="portal-button"
+                        style={{ background: '#10b981', borderColor: '#10b981', padding: '6px 12px', fontSize: 12 }}
+                        disabled={decidingId === d._id}
+                        onClick={() => handleDecision(d._id, 'approve')}
+                      >
+                        Valider
+                      </button>
+                      <button
+                        type="button"
+                        className="portal-button secondary"
+                        style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: '#ef4444' }}
+                        disabled={decidingId === d._id}
+                        onClick={() => handleDecision(d._id, 'reject')}
+                      >
+                        Rejeter
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -397,7 +383,7 @@ const SuperAdminDashboard = () => {
               />
             </div>
             {trendData.length > 0 && (
-              <div style={{ marginTop: 16, height: 220, background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12 }}>
+              <div className="dash-chart-legacy">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -416,9 +402,9 @@ const SuperAdminDashboard = () => {
 
           {/* ─── Opérations ─── */}
           <DashSection title="Opérations" icon={<FolderKanban size={16} />}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12 }}>
-                <h3 style={{ fontSize: 13, margin: '0 0 8px', color: 'var(--text-muted)' }}>
+            <div className="dash-twocol-grid">
+              <div className="dash-subcard">
+                <h3 className="dash-subcard__title">
                   Projets par statut ({data.operations.activeProjects} actifs)
                 </h3>
                 {projectsPie.length > 0 ? (
@@ -439,14 +425,14 @@ const SuperAdminDashboard = () => {
                   <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Aucun projet actif</p>
                 )}
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12 }}>
-                <h3 style={{ fontSize: 13, margin: '0 0 8px', color: 'var(--text-muted)' }}>Briefs par priorité</h3>
+              <div className="dash-subcard">
+                <h3 className="dash-subcard__title">Briefs par priorité</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(['P1', 'P2', 'P3'] as const).map((p) => {
                     const count = data.operations.briefsByPriority[p] || 0
                     const color = p === 'P1' ? '#ef4444' : p === 'P2' ? '#f59e0b' : '#64748b'
                     return (
-                      <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
+                      <div key={p} className="dash-brief-row">
                         <span style={{ fontSize: 13 }}>
                           <strong style={{ color }}>{p}</strong> — {p === 'P1' ? 'Urgent' : p === 'P2' ? 'Important' : 'Normal'}
                         </span>
@@ -467,8 +453,8 @@ const SuperAdminDashboard = () => {
               <DashKpiCard label="Stagiaires" value={data.team.interns} accentColor="#f59e0b" accentRgb="245, 158, 11" to="/admin/stagiaires" />
             </div>
             {teamLoadData.length > 0 && (
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12 }}>
-                <h3 style={{ fontSize: 13, margin: '0 0 8px', color: 'var(--text-muted)' }}>
+              <div className="dash-subcard">
+                <h3 className="dash-subcard__title">
                   Charge par admin (tâches ouvertes)
                 </h3>
                 <div style={{ height: 240 }}>

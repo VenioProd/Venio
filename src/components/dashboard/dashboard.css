@@ -225,4 +225,74 @@
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
 }
 
+/* ── Décisions card legacy (Phase 1 wrap, sera remplacé par InboxCard en Phase 5) ── */
+.dash-decision-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dash-decision-card__priority {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+}
+
+.dash-decision-card__body { flex: 1; min-width: 0; }
+.dash-decision-card__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.dash-decision-card__desc { font-size: 13px; color: var(--text-muted); margin: 6px 0; }
+.dash-decision-card__meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.dash-decision-card__actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Sections grid 2-col (Opérations/Équipe) ── */
+.dash-twocol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dash-subcard {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.dash-subcard__title {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text-muted);
+}
+
+/* ── Chart container legacy (Phase 1 wrap) ── */
+.dash-chart-legacy {
+  margin-top: 16px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* ── Mon activité card legacy ── */
+.dash-mine-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dash-mine-row > .dash-mine-row__item { flex: 1; min-width: 140px; text-decoration: none; }
+
+/* ── Briefs par priorité ── */
+.dash-brief-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .dash-fchart__price--neg { color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
