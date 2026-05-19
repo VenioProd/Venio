@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import DevIssue, {
   DEV_ISSUE_STATUSES,
   DEV_ISSUE_PRIORITIES,
@@ -112,4 +113,176 @@ export async function computeStats(
     byStatus,
     byPriority,
   }
+}
+
+export interface ProjectCounts {
+  total: number
+  open: number
+  done: number
+  cancelled: number
+  urgent: number
+  blocked: number
+  byStatus: Record<DevIssueStatus, number>
+}
+
+export interface OverviewProject {
+  _id: string
+  key: string
+  name: string
+  color: string
+  status: string
+  lead: { _id: string; name: string; email: string } | null
+  counts: ProjectCounts
+  progress: number
+  health: ProjectHealth
+  lastActivityAt: string
+}
+
+export interface OverviewKpis {
+  totalProjects: number
+  activeProjects: number
+  totalOpen: number
+  urgent: number
+  blocked: number
+  completed7d: number
+  completed14d: number
+  velocity14d: number
+}
+
+export interface OverviewPayload {
+  kpis: OverviewKpis
+  projects: OverviewProject[]
+}
+
+function emptyByStatus(): Record<DevIssueStatus, number> {
+  return { BACKLOG: 0, TODO: 0, IN_PROGRESS: 0, IN_REVIEW: 0, DONE: 0, CANCELLED: 0 }
+}
+
+export async function computeOverview(): Promise<OverviewPayload> {
+  const projectsRaw = await DevProject.find({})
+    .populate<{ lead: { _id: mongoose.Types.ObjectId; name: string; email: string } | null }>(
+      'lead',
+      'name email'
+    )
+    .lean()
+
+  const perProjectAgg = await DevIssue.aggregate<{
+    _id: mongoose.Types.ObjectId
+    byStatus: { status: string; count: number }[]
+    urgent: number
+    blocked: number
+    lastUpdatedAt: Date | null
+  }>([
+    {
+      $group: {
+        _id: '$project',
+        byStatus: { $push: { status: '$status', count: 1 } },
+        urgent: {
+          $sum: {
+            $cond: [
+              { $and: [{ $eq: ['$priority', 'URGENT'] }, { $not: { $in: ['$status', CLOSED_STATUSES] } }] },
+              1,
+              0,
+            ],
+          },
+        },
+        blocked: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $not: { $in: ['$status', CLOSED_STATUSES] } },
+                  {
+                    $gt: [
+                      {
+                        $size: {
+                          $filter: {
+                            input: { $ifNull: ['$labels', []] },
+                            as: 'l',
+                            cond: {
+                              $regexMatch: {
+                                input: '$$l',
+                                regex: '^(blocked|blocker)$',
+                                options: 'i',
+                              },
+                            },
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        lastUpdatedAt: { $max: '$updatedAt' },
+      },
+    },
+  ])
+
+  const aggByProjectId = new Map<string, (typeof perProjectAgg)[number]>()
+  for (const row of perProjectAgg) aggByProjectId.set(String(row._id), row)
+
+  const projects: OverviewProject[] = projectsRaw.map((p) => {
+    const agg = aggByProjectId.get(String(p._id))
+    const byStatus = emptyByStatus()
+    if (agg) {
+      for (const row of agg.byStatus) {
+        byStatus[row.status as DevIssueStatus] = (byStatus[row.status as DevIssueStatus] ?? 0) + row.count
+      }
+    }
+    const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
+    const done = byStatus.DONE
+    const cancelled = byStatus.CANCELLED
+    const open = total - done - cancelled
+    const urgent = agg?.urgent ?? 0
+    const blocked = agg?.blocked ?? 0
+    const progress = computeProgress(byStatus)
+    const health = computeHealth({ urgent, blocked }, progress)
+    const lastActivityAt = new Date(
+      Math.max(
+        new Date(p.updatedAt).getTime(),
+        agg?.lastUpdatedAt ? new Date(agg.lastUpdatedAt).getTime() : 0
+      )
+    ).toISOString()
+    return {
+      _id: String(p._id),
+      key: p.key,
+      name: p.name,
+      color: p.color,
+      status: p.status,
+      lead: p.lead
+        ? { _id: String(p.lead._id), name: p.lead.name, email: p.lead.email }
+        : null,
+      counts: { total, open, done, cancelled, urgent, blocked, byStatus },
+      progress,
+      health,
+      lastActivityAt,
+    }
+  })
+
+  projects.sort((a, b) => {
+    const aActive = a.status === 'ACTIVE' ? 0 : 1
+    const bActive = b.status === 'ACTIVE' ? 0 : 1
+    if (aActive !== bActive) return aActive - bActive
+    return b.lastActivityAt.localeCompare(a.lastActivityAt)
+  })
+
+  const stats = await computeStats()
+  const kpis: OverviewKpis = {
+    totalProjects: stats.totalProjects,
+    activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
+    totalOpen: stats.open,
+    urgent: stats.urgent,
+    blocked: stats.blocked,
+    completed7d: stats.completed7d,
+    completed14d: stats.completed14d,
+    velocity14d: stats.velocity14d,
+  }
+
+  return { kpis, projects }
 }

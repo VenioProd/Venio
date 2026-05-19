@@ -4,7 +4,7 @@ import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import DevProject from '../models/DevProject.js'
 import DevIssue from '../models/DevIssue.js'
 import User from '../models/User.js'
-import { computeStats } from '../lib/dev/stats.js'
+import { computeStats, computeOverview } from '../lib/dev/stats.js'
 
 let systemUserId: mongoose.Types.ObjectId
 let projectId: mongoose.Types.ObjectId
@@ -97,5 +97,66 @@ describe('computeStats', () => {
     expect(sFiltered.total).toBe(1)
     const sAll = await computeStats()
     expect(sAll.total).toBe(2)
+  })
+})
+
+describe('computeOverview', () => {
+  it('includes projects with no issues, progress=0, health=on_track', async () => {
+    const o = await computeOverview()
+    expect(o.projects).toHaveLength(1)
+    expect(o.projects[0].key).toBe('VEN')
+    expect(o.projects[0].progress).toBe(0)
+    expect(o.projects[0].health).toBe('on_track')
+    expect(o.projects[0].counts.total).toBe(0)
+    expect(o.kpis.totalProjects).toBe(1)
+    expect(o.kpis.activeProjects).toBe(1)
+    expect(o.kpis.totalOpen).toBe(0)
+  })
+
+  it('computes progress, counts and health for a project with mixed issues', async () => {
+    await createIssue({ status: 'BACKLOG' })
+    await createIssue({ status: 'IN_PROGRESS' })
+    await createIssue({ status: 'DONE' })
+    await createIssue({ status: 'CANCELLED' })
+    await createIssue({ priority: 'URGENT', status: 'TODO', labels: ['blocked'] })
+
+    const o = await computeOverview()
+    const p = o.projects.find((x) => x.key === 'VEN')!
+    expect(p.counts.total).toBe(5)
+    expect(p.counts.done).toBe(1)
+    expect(p.counts.cancelled).toBe(1)
+    expect(p.counts.urgent).toBe(1)
+    expect(p.counts.blocked).toBe(1)
+    expect(p.counts.open).toBe(3) // total - DONE - CANCELLED
+    // Statuts non-CANCELLED : BACKLOG(0) + IN_PROGRESS(50) + DONE(100) + TODO(10) = 160 / 400 = 40
+    expect(p.progress).toBe(40)
+    // blocked > 0 → 'blocked'
+    expect(p.health).toBe('blocked')
+  })
+
+  it("sorts ACTIVE projects first, then by lastActivityAt desc", async () => {
+    const archived = await DevProject.create({
+      key: 'ARC', name: 'Archived', status: 'ARCHIVED', createdBy: systemUserId,
+    })
+    const newer = await DevProject.create({
+      key: 'NEW', name: 'Newer', createdBy: systemUserId,
+    })
+    // Force ordering: bump VEN's updatedAt
+    await DevProject.updateOne({ _id: projectId }, { $set: { updatedAt: new Date(Date.now() - 1000) } }, { timestamps: false })
+    const o = await computeOverview()
+    const keys = o.projects.map((p) => p.key)
+    // ACTIVE first (NEW, VEN), then ARCHIVED
+    expect(keys[keys.length - 1]).toBe('ARC')
+    expect(keys.indexOf('NEW')).toBeLessThan(keys.indexOf('VEN'))
+  })
+
+  it('populates lead with name and email when present', async () => {
+    const lead = await User.create({
+      email: 'lead@test.local', name: 'Lead', role: 'ADMIN', passwordHash: 'x',
+    })
+    await DevProject.updateOne({ _id: projectId }, { $set: { lead: lead._id } })
+    const o = await computeOverview()
+    const p = o.projects.find((x) => x.key === 'VEN')!
+    expect(p.lead).toMatchObject({ name: 'Lead', email: 'lead@test.local' })
   })
 })
