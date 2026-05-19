@@ -268,7 +268,7 @@ export default function ConversationSidebar({
                     </span>
                     <span className="messaging-sidebar-person-body">
                       <span className="messaging-sidebar-person-name">{user.name}</span>
-                      <span className="messaging-sidebar-person-role">{user.role}</span>
+                      <span className="messaging-sidebar-person-role">{user.jobTitle || user.role}</span>
                     </span>
                   </button>
                 )

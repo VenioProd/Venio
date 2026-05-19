@@ -275,7 +275,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
                   }}
                 >
                   <strong>{user.name}</strong>
-                  <span>{user.role}</span>
+                  <span>{user.jobTitle || user.role}</span>
                 </button>
               ))
             )}
@@ -341,7 +341,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
                   </span>
                   <span className="messaging-composer-inline-body">
                     <strong>{user.name}</strong>
-                    <small>{user.role}</small>
+                    <small>{user.jobTitle || user.role}</small>
                   </span>
                 </button>
               ))}

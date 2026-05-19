@@ -1,4 +1,4 @@
-export type AdminRole = 'SUPER_ADMIN' | 'PDG' | 'ADMIN' | 'RH' | 'COMMERCIAL' | 'VIEWER' | 'STAGIAIRE'
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'COMPTABLE' | 'RH' | 'COMMERCIAL' | 'VIEWER' | 'STAGIAIRE'
 export type ClientRole = 'CLIENT'
 export type UserRole = AdminRole | ClientRole
 
@@ -33,6 +33,9 @@ export interface User {
   email: string
   role: UserRole
   permissions: Permission[]
+  jobTitle?: string
+  grantedPermissions?: string[]
+  deniedPermissions?: string[]
   companyName?: string
   phone?: string
   website?: string

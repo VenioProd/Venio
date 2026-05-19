@@ -7,6 +7,7 @@ export interface MessagingUser {
   name: string
   email: string
   role: string
+  jobTitle?: string
 }
 
 export interface InternalMessageAttachment {

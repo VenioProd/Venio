@@ -1,6 +1,6 @@
 import type { Permission, User, UserRole } from '../types/auth.types'
 
-export const ADMIN_ROLES = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] as const
+export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COMPTABLE', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] as const
 
 export const PERMISSIONS = {
   MANAGE_ADMINS: 'manage_admins',
@@ -59,6 +59,42 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.VIEW_DEV,
     PERMISSIONS.MANAGE_DEV,
   ]),
+  MANAGER: new Set([
+    PERMISSIONS.MANAGE_CLIENTS,
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.MANAGE_CHANNELS,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.EDIT_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.EDIT_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.MANAGE_BILLING,
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.MANAGE_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.MANAGE_VAT,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+    PERMISSIONS.VIEW_DEV,
+    PERMISSIONS.MANAGE_DEV,
+  ]),
+  COMPTABLE: new Set([
+    PERMISSIONS.VIEW_ACCOUNTING,
+    PERMISSIONS.MANAGE_ACCOUNTING,
+    PERMISSIONS.LOCK_ACCOUNTING,
+    PERMISSIONS.VIEW_VAT,
+    PERMISSIONS.MANAGE_VAT,
+    PERMISSIONS.EXPORT_FEC,
+    PERMISSIONS.MANAGE_EXTERNAL_SOURCES,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+  ]),
   RH: new Set([
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.VIEW_CONTENT,
@@ -66,6 +102,30 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_QUALIOPI,
     PERMISSIONS.MANAGE_QUALIOPI,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
+  COMMERCIAL: new Set([
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
+    PERMISSIONS.MANAGE_CLIENTS,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_BILLING,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
+  ]),
+  STAGIAIRE: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.MANAGE_CRM,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
   ]),
@@ -96,13 +156,11 @@ export function getPermissionsForRole(role: string): string[] {
 
 export function resolveUserPermissions(user: User | null): string[] {
   if (!user) return []
-  const rolePerms = getPermissionsForRole(user.role)
-  if (!Array.isArray(user.permissions) || user.permissions.length === 0) {
-    return rolePerms
-  }
-  // Merge: role defaults + custom (no duplicates)
-  const merged = new Set<string>([...rolePerms, ...user.permissions])
-  return Array.from(merged)
+  if (user.role === 'SUPER_ADMIN') return Object.values(PERMISSIONS)
+  const base = new Set(getPermissionsForRole(user.role))
+  for (const p of user.grantedPermissions ?? []) base.add(p)
+  for (const p of user.deniedPermissions ?? []) base.delete(p)
+  return Array.from(base)
 }
 
 export function hasPermission(user: User | null, permission: string): boolean {

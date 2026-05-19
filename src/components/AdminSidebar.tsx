@@ -64,14 +64,14 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/crm', label: 'CRM', icon: Target, perm: PERMISSIONS.VIEW_CRM },
       { to: '/admin/gestion', label: 'Projets', icon: FolderKanban, perm: PERMISSIONS.VIEW_PROJECTS },
       { to: '/admin/comptabilite', label: 'Comptabilité', icon: Receipt, perm: PERMISSIONS.VIEW_ACCOUNTING },
-      { to: '/admin/stagiaires', label: 'Équipe', icon: UserCheck, roles: ['SUPER_ADMIN', 'RH'] },
+      { to: '/admin/stagiaires', label: 'Équipe', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH'] },
     ],
   },
   {
     label: 'Outils',
     items: [
       { to: '/admin/calendrier', label: 'Calendrier', icon: Calendar },
-      { to: '/admin/emails', label: 'Emails', icon: Mail, roles: ['SUPER_ADMIN', 'RH'] },
+      { to: '/admin/emails', label: 'Emails', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH'] },
       { to: '/admin/templates', label: 'Templates', icon: FileText },
       { to: '/admin/ressources', label: 'Ressources', icon: BookOpen },
       { to: '/admin/acces-outils', label: 'Accès outils', icon: KeyRound },
@@ -241,7 +241,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
           <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
           <div className="admin-sb-user-info">
             <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
-            <div className="admin-sb-user-role">{user?.role}</div>
+            <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
           </div>
         </div>
 
@@ -296,7 +296,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                   <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
                   <div className="admin-sb-user-info">
                     <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
-                    <div className="admin-sb-user-role">{user?.role}</div>
+                    <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
                   </div>
                 </div>
                 <button
