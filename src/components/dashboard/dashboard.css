@@ -1,0 +1,298 @@
+/* ═══════════════════════════════════════════
+   Dashboard — composants génériques
+   ═══════════════════════════════════════════ */
+
+/* ── DashWidget ── */
+.dash-widget {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.dash-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dash-widget__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.dash-widget__subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dash-widget__action {
+  font-size: 11px;
+  color: var(--primary);
+  text-decoration: none;
+  text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
+}
+
+.dash-widget__action::after {
+  content: " →";
+  margin-left: 2px;
+  speak: none;
+}
+
+.dash-widget--neon::before,
+.dash-widget--neon::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(var(--primary-rgb), 0.7)) drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.35));
+}
+
+.dash-widget--neon::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--primary);
+  border-left: 1px solid var(--primary);
+}
+
+.dash-widget--neon::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
+}
+
+.dash-widget__empty,
+.dash-widget__error {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.dash-widget__error {
+  color: #fca5a5;
+}
+
+/* ── DashKpiCard étendu ── */
+.dash-kpi {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--dash-kpi-accent, #0ea5e9);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.dash-kpi:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(var(--dash-kpi-accent-rgb, 14, 165, 233), 0.15);
+}
+
+.dash-kpi__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dash-kpi__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dash-kpi-accent, #0ea5e9);
+  text-shadow: 0 0 14px rgba(var(--dash-kpi-accent-rgb, 14, 165, 233), 0.5);
+  line-height: 1.1;
+}
+
+.dash-kpi__delta {
+  font-size: 11px;
+  color: #86efac;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dash-kpi__delta--neg { color: #fca5a5; }
+.dash-kpi__delta--neutral { color: var(--text-muted); }
+
+.dash-kpi__objective {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dash-kpi__objective-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.dash-kpi__objective-bar__fill {
+  height: 100%;
+  background: var(--dash-kpi-accent, #0ea5e9);
+  box-shadow: 0 0 6px rgba(var(--dash-kpi-accent-rgb, 14, 165, 233), 0.6);
+}
+
+.dash-kpi__sparkline {
+  margin-top: 6px;
+  height: 22px;
+  width: 100%;
+}
+
+/* ── PeriodSelector ── */
+.dash-period {
+  display: flex;
+  gap: 4px;
+}
+
+.dash-period__chip {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dash-period__chip:hover {
+  color: var(--text-secondary);
+}
+
+.dash-period__chip--active {
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: rgba(var(--primary-rgb), 0.4);
+  color: var(--primary-light);
+  text-shadow: 0 0 6px rgba(var(--primary-rgb), 0.4);
+}
+
+/* ── FinancialChart ── */
+.dash-fchart {
+  /* Local tokens — chart keeps a "trading terminal" look even in light theme.
+     Override these via [data-theme] selectors if you want it to adapt. */
+  --dash-fchart-bg: #050505;
+  --dash-fchart-grid: rgba(255, 255, 255, 0.04);
+
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(var(--primary-rgb), 0.04) 0%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent 0 19px, var(--dash-fchart-grid) 19px 20px),
+    repeating-linear-gradient(90deg, transparent 0 29px, var(--dash-fchart-grid) 29px 30px);
+  background-color: var(--dash-fchart-bg);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 8px;
+  box-shadow: inset 0 0 30px rgba(var(--primary-rgb), 0.05), 0 0 18px rgba(var(--primary-rgb), 0.08);
+  overflow: hidden;
+  min-height: 220px;
+}
+
+.dash-fchart__label {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2;
+  font-size: 10px;
+  color: var(--primary-light);
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 3px 7px;
+  border-radius: 3px;
+  text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+.dash-fchart__price {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 700;
+  color: #22c55e;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+}
+
+/* ── Décisions card legacy (Phase 1 wrap, sera remplacé par InboxCard en Phase 5) ── */
+.dash-decision-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dash-decision-card__priority {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+}
+
+.dash-decision-card__body { flex: 1; min-width: 0; }
+.dash-decision-card__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.dash-decision-card__desc { font-size: 13px; color: var(--text-muted); margin: 6px 0; }
+.dash-decision-card__meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.dash-decision-card__actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Sections grid 2-col (Opérations/Équipe) ── */
+.dash-twocol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dash-subcard {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.dash-subcard__title {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text-muted);
+}
+
+/* ── Chart container legacy (Phase 1 wrap) ── */
+.dash-chart-legacy {
+  margin-top: 16px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* ── Mon activité card legacy ── */
+.dash-mine-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dash-mine-row > .dash-mine-row__item { flex: 1; min-width: 140px; text-decoration: none; }
+
+/* ── Briefs par priorité ── */
+.dash-brief-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dash-fchart__price--neg { color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }

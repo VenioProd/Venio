@@ -32,3 +32,6 @@ backend/backups/
 
 muse/
 prospection/
+
+# Superpowers / brainstorming companion
+.superpowers/
