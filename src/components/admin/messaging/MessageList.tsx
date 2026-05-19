@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { getToken } from '../../../lib/api'
+import { useToast } from '../../../context/ToastContext'
 import { deleteMessage, editMessage, toggleReaction } from '../../../services/messaging'
 import type { InternalMessage } from '../../../types/messaging.types'
 
@@ -58,27 +59,32 @@ function formatFileSize(bytes: number): string {
   return `${size.toFixed(size >= 100 || index === 0 ? 0 : 1)} ${units[index]}`
 }
 
-async function openAttachment(messageId: string, index: number, originalName: string, mimeType: string) {
+async function openAttachment(messageId: string, index: number, originalName: string, mimeType: string): Promise<string | null> {
   const token = getToken()
   const url = `/api/admin/messaging/messages/${messageId}/attachments/${index}/download`
   const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-  if (!res.ok) return
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    return (data as Record<string, string>)?.error || `Erreur ${res.status}`
+  }
   const blob = await res.blob()
   const objectUrl = URL.createObjectURL(blob)
+  // Toujours passer par un <a> pour éviter le blocage popup après await
+  const a = document.createElement('a')
+  a.href = objectUrl
   const viewable = mimeType?.startsWith('image/') || mimeType === 'application/pdf' || mimeType?.startsWith('video/')
-  if (viewable) {
-    window.open(objectUrl, '_blank')
-  } else {
-    const a = document.createElement('a')
-    a.href = objectUrl
-    a.download = originalName
-    a.click()
-  }
+  if (!viewable) a.download = originalName
+  else a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
   setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+  return null
 }
 
 export default function MessageList({ messages, typingUsers, onReplaceMessage }: MessageListProps) {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const endRef = useRef<HTMLDivElement>(null)
   const [openActionsId, setOpenActionsId] = useState<string | null>(null)
   const typingNames = Object.values(typingUsers)
@@ -162,7 +168,10 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                           key={`${message._id}-${attachment.originalName}-${attachmentIndex}`}
                           type="button"
                           className="messaging-attachment"
-                          onClick={() => openAttachment(message._id, attachmentIndex, attachment.originalName, attachment.mimeType)}
+                          onClick={async () => {
+                            const err = await openAttachment(message._id, attachmentIndex, attachment.originalName, attachment.mimeType)
+                            if (err) showToast(err, 'error')
+                          }}
                         >
                           <span className="messaging-attachment-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
