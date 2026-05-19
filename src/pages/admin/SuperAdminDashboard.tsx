@@ -29,7 +29,7 @@ import {
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonRow } from '../../components/Skeleton'
-import { DashKpiCard, DashAlertBanner, DashSection } from '../../components/dashboard'
+import { DashKpiCard, DashAlertBanner, DashSection, InboxStream } from '../../components/dashboard'
 import type { AlertItem } from '../../components/dashboard'
 import PulseStatus from '../../components/dashboard/PulseStatus'
 import KpiGrid2x2 from '../../components/dashboard/KpiGrid2x2'
@@ -246,123 +246,8 @@ const SuperAdminDashboard = () => {
           {/* ─── Alertes ─── */}
           <DashAlertBanner alerts={alerts} />
 
-          {/* ─── Mon activité (compact) ─── */}
-          <DashSection title="Mon activité" icon={<Zap size={16} />} action={{ label: 'Mon espace', to: '/admin/mon-espace' }}>
-            <div className="dash-mine-row">
-              <Link to="/admin/gestion?assignee=me" className="admin-stat-card dash-mine-row__item">
-                <div className="admin-stat-label">Mes tâches</div>
-                <div className="admin-stat-value">{data.mine.tasks}</div>
-              </Link>
-              <Link to="/admin/gestion?view=briefs" className="admin-stat-card dash-mine-row__item">
-                <div className="admin-stat-label">Mes briefs</div>
-                <div className="admin-stat-value">{data.mine.briefs}</div>
-              </Link>
-              <Link to="/admin/messages" className="admin-stat-card dash-mine-row__item">
-                <div className="admin-stat-label">Messages non lus</div>
-                <div className="admin-stat-value">{data.mine.pendingMessages}</div>
-              </Link>
-            </div>
-          </DashSection>
-
-          {/* ─── Décisions à valider ─── */}
-          <DashSection
-            title="Décisions à valider"
-            icon={<CheckSquare size={16} />}
-            subtitle={data.decisions.pendingCount > 0 ? `${data.decisions.pendingCount} en attente` : 'aucune'}
-          >
-            {data.decisions.pending.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                Aucune décision en attente. Les membres peuvent soumettre une décision via leur espace.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {data.decisions.pending.map((d) => (
-                  <div key={d._id} className="dash-decision-card">
-                    <span
-                      className="dash-decision-card__priority"
-                      style={{ background: PRIORITY_COLORS[d.priority] || '#64748b' }}
-                    />
-                    <div className="dash-decision-card__body">
-                      <div className="dash-decision-card__head">
-                        <strong style={{ fontSize: 14 }}>{d.title}</strong>
-                        <span className="admin-badge">{d.category}</span>
-                      </div>
-                      <p className="dash-decision-card__desc">
-                        {d.description.length > 200 ? d.description.slice(0, 200) + '…' : d.description}
-                      </p>
-                      <div className="dash-decision-card__meta">
-                        <span>Soumis par <strong>{d.submittedByName}</strong></span>
-                        <span>{new Date(d.createdAt).toLocaleDateString('fr-FR')}</span>
-                        {d.deadline && (
-                          <span style={{ color: new Date(d.deadline) < new Date() ? '#ef4444' : undefined }}>
-                            Échéance : {new Date(d.deadline).toLocaleDateString('fr-FR')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="dash-decision-card__actions">
-                      <button
-                        type="button"
-                        className="portal-button"
-                        style={{ background: '#10b981', borderColor: '#10b981', padding: '6px 12px', fontSize: 12 }}
-                        disabled={decidingId === d._id}
-                        onClick={() => handleDecision(d._id, 'approve')}
-                      >
-                        Valider
-                      </button>
-                      <button
-                        type="button"
-                        className="portal-button secondary"
-                        style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: '#ef4444' }}
-                        disabled={decidingId === d._id}
-                        onClick={() => handleDecision(d._id, 'reject')}
-                      >
-                        Rejeter
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {data.decisions.pendingCount > data.decisions.pending.length && (
-                  <Link to="/admin/decisions" style={{ color: '#0ea5e9', fontSize: 13, alignSelf: 'flex-end' }}>
-                    Voir toutes ({data.decisions.pendingCount}) →
-                  </Link>
-                )}
-              </div>
-            )}
-          </DashSection>
-
-          {/* ─── Messages en attente ─── */}
-          {data.messages.unreadCount > 0 && (
-            <DashSection
-              title="Messages en attente"
-              icon={<MessageSquare size={16} />}
-              subtitle={`${data.messages.unreadCount} conversation${data.messages.unreadCount > 1 ? 's' : ''} non lue${data.messages.unreadCount > 1 ? 's' : ''}`}
-              action={{ label: 'Ouvrir messagerie', to: '/admin/messages' }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {data.messages.unreadConversations.map((c) => (
-                  <Link
-                    key={c._id}
-                    to="/admin/messages"
-                    className="dash-task-item"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <span
-                      className="dash-task-priority"
-                      style={{ background: c.type === 'DM' ? '#8b5cf6' : c.type === 'CHANNEL' ? '#0ea5e9' : '#10b981' }}
-                    />
-                    <div className="dash-task-info">
-                      <span className="dash-task-title">{c.name || (c.type === 'DM' ? 'Message direct' : 'Conversation')}</span>
-                      <span className="dash-task-project">{c.type}</span>
-                    </div>
-                    <span className="dash-task-due">
-                      {new Date(c.lastMessageAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </DashSection>
-          )}
+          {/* ─── Inbox unifiée (Phase 5) ─── */}
+          <InboxStream />
 
           {/* ─── Analytics ─── */}
           <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
