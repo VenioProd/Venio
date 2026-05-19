@@ -2,8 +2,9 @@
 
 > **Date** : 2026-05-19
 > **Auteur** : Raphaël Bentvelzen (brainstorming avec Claude)
-> **Statut** : design validé, en attente du plan d'implémentation
-> **Worktree** : `claude/xenodochial-mclean-73615e`
+> **Statut** : ✅ Livré le 2026-05-19 via PRs [#46](https://github.com/VenioProd/Venio/pull/46) (Phase 1 — fondations), [#47](https://github.com/VenioProd/Venio/pull/47) (Phase 2 — sidebar pivot), [#48](https://github.com/VenioProd/Venio/pull/48) (Phase 3 — analytics), [#49](https://github.com/VenioProd/Venio/pull/49) (Phase 4 — inbox backend), [#53](https://github.com/VenioProd/Venio/pull/53) (Phase 5 — inbox frontend), Phase 6 (layout final + cleanup) dans la PR courante.
+> **Worktrees** : `claude/xenodochial-mclean-73615e` (Phases 1–4), worktrees Claude par phase ensuite.
+> **Follow-up connu** : le `PeriodSelector` est wire côté frontend (state + localStorage + query param `?period=`), mais le backend `/api/admin/dashboard/super` ignore actuellement le param — support `period` au backend à ajouter en suivi pour que le sélecteur pilote vraiment les données.
 
 ## Contexte
 
