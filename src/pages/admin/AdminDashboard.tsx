@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import { SkeletonRow } from '../../components/Skeleton'
-import type { User } from '../../types/auth.types'
 import type { Project } from '../../types/project.types'
 import type { Task } from '../../types/task.types'
-import type { CrmAlerts } from '../../types/crm.types'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -80,11 +78,6 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
 const AdminDashboard = () => {
   const { logout, user } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
-  const [clientCount, setClientCount] = useState(0)
-  const [adminCount, setAdminCount] = useState(0)
-  const [crmLeadCount, setCrmLeadCount] = useState(0)
-  const [crmAlerts, setCrmAlerts] = useState<CrmAlerts>({ coldLeads: [], overdueLeads: [], staleLeads: [] })
-  const [allProjects, setAllProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
@@ -105,35 +98,8 @@ const AdminDashboard = () => {
     const load = async () => {
       setLoading(true)
       try {
-        const promises: Promise<unknown>[] = [
-          apiFetch<DashboardData>('/api/admin/dashboard'),
-        ]
-
-        if (isSuperAdmin) {
-          promises.push(
-            apiFetch<{ users?: User[] }>('/api/admin/users?role=CLIENT'),
-            apiFetch<{ users?: User[] }>('/api/admin/admins'),
-            apiFetch<{ leads?: unknown[] }>('/api/admin/crm/leads').catch(() => ({ leads: [] })),
-            apiFetch<CrmAlerts>('/api/admin/crm/alerts').catch(() => ({ coldLeads: [], overdueLeads: [], staleLeads: [] })),
-            apiFetch<{ projects?: Project[] }>('/api/admin/projects?archived=all&includeClient=true'),
-          )
-        }
-
-        const results = await Promise.all(promises)
-        setData(results[0] as DashboardData)
-
-        if (isSuperAdmin) {
-          const clientsRes = results[1] as { users?: User[] }
-          const adminsRes = results[2] as { users?: User[] }
-          const leadsRes = results[3] as { leads?: unknown[] }
-          const alertsRes = results[4] as CrmAlerts
-          const projectsRes = results[5] as { projects?: Project[] }
-          setClientCount(clientsRes.users?.length || 0)
-          setAdminCount(adminsRes.users?.length || 0)
-          setCrmLeadCount(leadsRes.leads?.length || 0)
-          setCrmAlerts(alertsRes || { coldLeads: [], overdueLeads: [], staleLeads: [] })
-          setAllProjects(projectsRes.projects || [])
-        }
+        const result = await apiFetch<DashboardData>('/api/admin/dashboard')
+        setData(result)
       } catch {
         // Silent for dashboard
       } finally {
@@ -155,18 +121,6 @@ const AdminDashboard = () => {
       .then(d => setMyMissions(d.missions || []))
       .catch(() => {})
   }, [isSuperAdmin, user])
-
-  const projectStats = useMemo(() => {
-    const active = allProjects.filter((p) => !p.isArchived)
-    const byStatus = active.reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>
-    )
-    return { byStatus, archived: allProjects.filter((p) => p.isArchived).length }
-  }, [allProjects])
 
   const formatDate = (d: string | null | undefined) => {
     if (!d) return ''
@@ -597,96 +551,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* Super admin: full overview widgets + table */}
-          {isSuperAdmin && (
-            <>
-              <div className="admin-widgets-grid" style={{ marginTop: 24 }}>
-                <Link to="/admin/comptes-clients" className="admin-widget">
-                  <div className="admin-widget-label">Clients</div>
-                  <div className="admin-widget-value">{clientCount}</div>
-                </Link>
-                <Link to="/admin/comptes-admin" className="admin-widget">
-                  <div className="admin-widget-label">Admins</div>
-                  <div className="admin-widget-value">{adminCount}</div>
-                </Link>
-                <Link to="/admin/crm" className="admin-widget">
-                  <div className="admin-widget-label">Leads CRM</div>
-                  <div className="admin-widget-value">{crmLeadCount}</div>
-                </Link>
-                <Link to="/admin/comptabilite" className="admin-widget">
-                  <div className="admin-widget-label">Comptabilité</div>
-                  <div className="admin-widget-value" style={{ fontSize: '20px' }}>Tableau de bord</div>
-                </Link>
-                <div className="admin-widget">
-                  <div className="admin-widget-label">Taches totales</div>
-                  <div className="admin-widget-value">
-                    {Object.values(data.tasksByStatus).reduce((a, b) => a + b, 0)}
-                  </div>
-                </div>
-                <div className="admin-widget">
-                  <div className="admin-widget-label">Archives</div>
-                  <div className="admin-widget-value">{projectStats.archived}</div>
-                </div>
-                {Object.entries(projectStats.byStatus).map(([status, count]) => (
-                  <div key={status} className="admin-widget">
-                    <div className="admin-widget-label">{PROJECT_STATUS_LABELS[status] || status}</div>
-                    <div className="admin-widget-value">{count}</div>
-                  </div>
-                ))}
-                <Link to="/admin/crm" className="admin-widget admin-widget-alert admin-widget-alert-cold">
-                  <div className="admin-widget-label">Leads froids</div>
-                  <div className="admin-widget-value">{crmAlerts.coldLeads?.length || 0}</div>
-                </Link>
-                <Link to="/admin/crm" className="admin-widget admin-widget-alert admin-widget-alert-overdue">
-                  <div className="admin-widget-label">Actions CRM en retard</div>
-                  <div className="admin-widget-value">{crmAlerts.overdueLeads?.length || 0}</div>
-                </Link>
-                <Link to="/admin/crm" className="admin-widget admin-widget-alert admin-widget-alert-stale">
-                  <div className="admin-widget-label">Leads bloques</div>
-                  <div className="admin-widget-value">{crmAlerts.staleLeads?.length || 0}</div>
-                </Link>
-              </div>
-
-              <div style={{ marginTop: 24 }}>
-                  <h2 className="dash-section-title">Etat des projets clients</h2>
-                  <div className="admin-table-wrapper">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Client</th>
-                          <th>Projet</th>
-                          <th>Statut</th>
-                          <th>Budget</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allProjects.filter(p => !p.isArchived).slice(0, 3).map((project) => (
-                          <tr key={project._id}>
-                            <td>{project.client?.name || '--'}</td>
-                            <td>
-                              <Link to={`/admin/projets/${project._id}`} style={{ color: '#818cf8', textDecoration: 'none' }}>
-                                {project.name}
-                              </Link>
-                            </td>
-                            <td><span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span></td>
-                            <td>
-                              {project.budget?.amount != null ? `${Number(project.budget.amount).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}` : '--'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {allProjects.filter(p => !p.isArchived).length > 3 && (
-                    <div style={{ marginTop: 12, textAlign: 'right' }}>
-                      <Link to="/admin/gestion" style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
-                        Voir tous les projets ({allProjects.filter(p => !p.isArchived).length}) →
-                      </Link>
-                    </div>
-                  )}
-              </div>
-            </>
-          )}
         </>
       )}
     </div>
