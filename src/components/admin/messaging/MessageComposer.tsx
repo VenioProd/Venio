@@ -31,9 +31,14 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
   const [sending, setSending] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const filteredMentionUsers = mentionQuery
+    ? users.filter((u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 8)
+    : users.slice(0, 8)
 
   const disabled = !conversationId || sending
   const canSend = !!conversationId && !sending && (content.trim().length > 0 || files.length > 0)
@@ -62,6 +67,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       setEmojiOpen(false)
       onTyping(false)
     } catch (err) {
+      console.error('[MessageComposer] submit error:', err)
       const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi'
       showToast(msg, 'error')
     } finally {
@@ -128,16 +134,33 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
         <div className="messaging-composer-popover">
           <header>Mentionner</header>
           <div className="messaging-composer-popover-list">
-            {users.length === 0 ? (
+            {filteredMentionUsers.length === 0 ? (
               <p>Aucun utilisateur</p>
             ) : (
-              users.slice(0, 20).map((user) => (
+              filteredMentionUsers.map((user) => (
                 <button
                   key={user._id}
                   type="button"
                   onClick={() => {
-                    insertAtCursor(`@[${user.name}](${user._id}) `)
+                    const textarea = textareaRef.current
+                    const cursor = textarea?.selectionStart ?? content.length
+                    const before = content.slice(0, cursor)
+                    const after = content.slice(cursor)
+                    const match = before.match(/@([^\s]*)$/)
+                    const newBefore = match
+                      ? before.slice(0, before.length - match[0].length)
+                      : before
+                    const mention = `@[${user.name}](${user._id}) `
+                    setContent(newBefore + mention + after)
                     setMentionOpen(false)
+                    setMentionQuery('')
+                    requestAnimationFrame(() => {
+                      if (textarea) {
+                        const pos = (newBefore + mention).length
+                        textarea.focus()
+                        textarea.setSelectionRange(pos, pos)
+                      }
+                    })
                   }}
                 >
                   <strong>{user.name}</strong>
@@ -223,13 +246,30 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
           placeholder={conversationId ? 'Écrire un message…' : 'Sélectionnez une conversation pour écrire'}
           rows={1}
           onChange={(event) => {
-            setContent(event.target.value)
+            const val = event.target.value
+            setContent(val)
             onTyping(true)
             if (typingTimeout.current) clearTimeout(typingTimeout.current)
             typingTimeout.current = setTimeout(() => onTyping(false), 1200)
+            // Autocomplete @ : détecte @mot avant le curseur
+            const cursor = event.target.selectionStart ?? val.length
+            const before = val.slice(0, cursor)
+            const match = before.match(/@([^\s]*)$/)
+            if (match) {
+              setMentionQuery(match[1])
+              setMentionOpen(true)
+              setEmojiOpen(false)
+            } else {
+              setMentionOpen(false)
+              setMentionQuery('')
+            }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            if (event.key === 'Escape') {
+              setMentionOpen(false)
+              setEmojiOpen(false)
+            }
+            if (event.key === 'Enter' && !event.shiftKey && !mentionOpen) {
               event.preventDefault()
               submit()
             }
