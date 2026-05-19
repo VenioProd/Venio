@@ -16,7 +16,7 @@ interface BroadcastParams {
  * Notifie tous les SUPER_ADMIN actifs (sauf l'auteur optionnel).
  */
 export async function notifySuperAdmins({ type, title, message, link, metadata, excludeUserId }: BroadcastParams) {
-  const admins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
+  const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'PDG'] }, isActive: true }).select('_id').lean()
   await Promise.allSettled(
     admins
       .filter((admin) => !excludeUserId || String(admin._id) !== excludeUserId)
