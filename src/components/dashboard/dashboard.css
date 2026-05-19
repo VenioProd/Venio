@@ -517,3 +517,36 @@
   color: var(--text-muted);
   font-family: monospace;
 }
+
+/* ── TwoColumnGrid ── */
+.dash-twocol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dash-twocol__col { min-width: 0; }
+
+.dash-twocol-mobile__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+}
+
+.dash-twocol-mobile__tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.dash-twocol-mobile__tab--active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  text-shadow: 0 0 6px rgba(var(--primary-rgb), 0.4);
+}
