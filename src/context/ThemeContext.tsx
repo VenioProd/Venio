@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 type Theme = 'dark' | 'light'
 export type ColorAccent = 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow'
@@ -15,7 +16,13 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 const STORAGE_KEY = 'venio-theme'
 const ACCENT_KEY = 'venio-accent'
 
+const isPortalPath = (pathname: string) =>
+  pathname.startsWith('/admin') || pathname.startsWith('/espace-client')
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const isPortal = isPortalPath(location.pathname)
+
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     return stored === 'light' ? 'light' : 'dark'
@@ -31,13 +38,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   useEffect(() => {
-    if (colorAccent === 'sky') {
-      document.documentElement.removeAttribute('data-accent')
-    } else {
-      document.documentElement.setAttribute('data-accent', colorAccent)
-    }
     localStorage.setItem(ACCENT_KEY, colorAccent)
-  }, [colorAccent])
+    if (!isPortal || colorAccent === 'sky') {
+      document.documentElement.removeAttribute('data-accent')
+      return
+    }
+    document.documentElement.setAttribute('data-accent', colorAccent)
+  }, [colorAccent, isPortal])
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
