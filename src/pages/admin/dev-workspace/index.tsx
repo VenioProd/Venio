@@ -257,6 +257,8 @@ const DevWorkspace = () => {
   const [comments, setComments] = useState<DevIssueComment[]>([])
   const [commentDraft, setCommentDraft] = useState('')
   const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'none'>('status')
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>('all')
 
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projectForm, setProjectForm] = useState({ key: '', name: '', description: '', color: '#7c5cff' })
@@ -370,6 +372,38 @@ const DevWorkspace = () => {
       setFilters((f) => ({ ...f, project: deepProjectId }))
     }
   }, [deepProjectId, filters.project])
+
+  const applyQuickView = (view: typeof quickView) => {
+    setQuickView(view)
+    setFilters((f) => {
+      const base: IssueFilters = { ...f }
+      // Reset quick-view-managed fields each time.
+      base.assignee = undefined
+      base.priority = undefined
+      base.label = undefined
+      base.status = 'open'
+      switch (view) {
+        case 'mine':
+          base.assignee = 'me'
+          break
+        case 'urgent':
+          base.priority = 'URGENT'
+          break
+        case 'blocked':
+          base.label = 'blocked'
+          break
+        case 'review':
+          base.status = 'IN_REVIEW'
+          break
+        case 'backlog':
+          base.status = 'BACKLOG'
+          break
+        default:
+          base.status = 'open'
+      }
+      return base
+    })
+  }
 
   // Mutations
   const handleQuickCreate = async (e?: React.FormEvent) => {
@@ -639,6 +673,44 @@ const DevWorkspace = () => {
         </div>
       )}
 
+      <div className="dev-quick-views">
+        {([
+          ['all', 'Toutes ouvertes'],
+          ['mine', 'Mes issues'],
+          ['urgent', 'Urgentes'],
+          ['blocked', 'Bloquées'],
+          ['review', 'En revue'],
+          ['backlog', 'Backlog'],
+        ] as Array<[typeof quickView, string]>).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={'dev-quick-view-btn' + (quickView === key ? ' active' : '')}
+            onClick={() => applyQuickView(key)}
+          >
+            {label}
+          </button>
+        ))}
+        <div className="dev-view-mode">
+          <button
+            type="button"
+            className={'dev-view-mode-btn' + (viewMode === 'list' ? ' active' : '')}
+            onClick={() => setViewMode('list')}
+            title="Vue liste"
+          >
+            Liste
+          </button>
+          <button
+            type="button"
+            className={'dev-view-mode-btn' + (viewMode === 'kanban' ? ' active' : '')}
+            onClick={() => setViewMode('kanban')}
+            title="Vue Kanban (statuts)"
+          >
+            Kanban
+          </button>
+        </div>
+      </div>
+
       <div className="dev-toolbar">
         <input
           className="dev-search"
@@ -768,6 +840,63 @@ const DevWorkspace = () => {
                   </button>
                 </div>
               )}
+            </div>
+          ) : viewMode === 'kanban' ? (
+            <div className="dev-kanban">
+              {STATUS_ORDER.filter((s) => s !== 'CANCELLED').map((status) => {
+                const colIssues = issues.filter((i) => i.status === status)
+                return (
+                  <div key={status} className="dev-kanban-col">
+                    <header
+                      className="dev-kanban-col-header"
+                      style={{ ['--col-color' as never]: STATUS_COLOR[status] }}
+                    >
+                      <span className="dev-kanban-col-dot" />
+                      <span className="dev-kanban-col-title">{STATUS_LABEL[status]}</span>
+                      <span className="dev-kanban-col-count">{colIssues.length}</span>
+                    </header>
+                    <div className="dev-kanban-col-body">
+                      {colIssues.length === 0 ? (
+                        <div className="dev-kanban-empty">—</div>
+                      ) : (
+                        colIssues.map((issue) => {
+                          const project = typeof issue.project === 'object' ? issue.project : null
+                          return (
+                            <button
+                              key={issue._id}
+                              type="button"
+                              className={'dev-kanban-card' + (selectedIssue?._id === issue._id ? ' selected' : '')}
+                              onClick={() => handleSelectIssue(issue)}
+                              style={{ ['--prio-color' as never]: PRIORITY_COLOR[issue.priority] }}
+                            >
+                              <div className="dev-kanban-card-top">
+                                <span className="dev-kanban-card-id">
+                                  {project ? `${project.key}-${issue.number}` : issue.identifier}
+                                </span>
+                                <span className="dev-kanban-card-prio">{PRIORITY_ICON[issue.priority]}</span>
+                              </div>
+                              <div className="dev-kanban-card-title">{issue.title}</div>
+                              <div className="dev-kanban-card-meta">
+                                <span className="dev-kanban-card-type" style={{ ['--type-color' as never]: TYPE_COLOR[issue.type] }}>
+                                  {TYPE_LABEL[issue.type]}
+                                </span>
+                                {issue.labels.slice(0, 2).map((l) => (
+                                  <span key={l} className="dev-kanban-card-label">{l}</span>
+                                ))}
+                                {issue.assignee && (
+                                  <span className="dev-kanban-card-assignee" title={issue.assignee.name || issue.assignee.email}>
+                                    {userInitial(issue.assignee)}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             grouped.map((group) => (
