@@ -36,7 +36,7 @@ export type ActivityAction =
   | 'ITEM_CREATED' | 'ITEM_DELETED' | 'UPDATE_POSTED' | 'BILLING_CREATED'
 
 // ─── Notification ───
-export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY' | 'INTERNAL_MESSAGE'
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY' | 'INTERNAL_MESSAGE' | 'DECISION_SUBMITTED' | 'DECISION_APPROVED' | 'DECISION_REJECTED'
 
 // ─── Audit ───
 export type AuditAction =

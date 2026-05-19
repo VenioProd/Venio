@@ -8,6 +8,7 @@ import {
   createMessage,
   markConversationRead,
 } from '../services/internalMessaging.js'
+import { setIo } from './ioSingleton.js'
 
 export function initInternalMessagingSocket(server: HttpServer, origin: string) {
   const io = new Server(server, {
@@ -17,6 +18,8 @@ export function initInternalMessagingSocket(server: HttpServer, origin: string) 
     },
     path: '/socket.io',
   })
+
+  setIo(io)
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.toString().replace(/^Bearer\s+/i, '')

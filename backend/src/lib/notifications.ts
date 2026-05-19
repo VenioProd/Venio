@@ -3,6 +3,7 @@ import type { NotificationType } from '../types/enums.js'
 import Notification from '../models/Notification.js'
 import { sendPushToUser } from './webPush.js'
 import { shouldNotify } from './notificationPreferences.js'
+import { getIo } from '../realtime/ioSingleton.js'
 
 interface CreateNotificationParams {
   recipient: Types.ObjectId | string
@@ -30,6 +31,24 @@ export async function createNotification({ recipient, type, title, message, link
       link: link || '',
       metadata: metadata || {},
     })
+  }
+
+  // Socket temps réel : émet notification:new à l'utilisateur connecté pour
+  // déclencher un refresh immédiat de la cloche sans attendre le polling.
+  if (notification) {
+    try {
+      getIo()?.to(`user:${recipientId}`).emit('notification:new', {
+        _id: String(notification._id),
+        type,
+        title,
+        message: message || '',
+        link: link || '',
+        isRead: false,
+        createdAt: notification.createdAt,
+      })
+    } catch {
+      // Non bloquant
+    }
   }
 
   // Push : envoyé indépendamment de la notif in-app (l'utilisateur peut vouloir

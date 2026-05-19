@@ -3,6 +3,8 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireSuperAdmin } from '../../middleware/role.js'
 import Decision from '../../models/Decision.js'
+import User from '../../models/User.js'
+import { createNotification } from '../../lib/notifications.js'
 
 const router = express.Router()
 
@@ -70,6 +72,24 @@ router.post(
         deadline: deadline ? new Date(deadline) : null,
       })
 
+      // Notifier tous les super admins d'une nouvelle décision à traiter
+      const superAdmins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
+      const submitterName = req.user!.name || req.user!.email || 'Un admin'
+      await Promise.allSettled(
+        superAdmins
+          .filter((admin) => String(admin._id) !== req.user!.id)
+          .map((admin) =>
+            createNotification({
+              recipient: admin._id,
+              type: 'DECISION_SUBMITTED',
+              title: `Nouvelle décision à valider`,
+              message: `${submitterName} a soumis : "${title}"`,
+              link: `/admin/decisions`,
+              metadata: { decisionId: String(decision._id) },
+            })
+          )
+      )
+
       return res.status(201).json({ decision })
     } catch (err) {
       return next(err)
@@ -92,6 +112,19 @@ router.post('/:id/approve', requireSuperAdmin, async (req: Request, res: Respons
     decision.decisionComment = comment || null
     decision.decidedAt = new Date()
     await decision.save()
+
+    // Notifier le soumetteur
+    if (decision.submittedBy && String(decision.submittedBy) !== req.user!.id) {
+      createNotification({
+        recipient: decision.submittedBy,
+        type: 'DECISION_APPROVED',
+        title: `Décision approuvée ✅`,
+        message: `"${decision.title}" a été approuvée${comment ? ` : ${comment}` : ''}`,
+        link: `/admin/decisions`,
+        metadata: { decisionId: String(decision._id) },
+      }).catch(() => {})
+    }
+
     return res.json({ decision })
   } catch (err) {
     return next(err)
@@ -113,6 +146,19 @@ router.post('/:id/reject', requireSuperAdmin, async (req: Request, res: Response
     decision.decisionComment = comment || null
     decision.decidedAt = new Date()
     await decision.save()
+
+    // Notifier le soumetteur
+    if (decision.submittedBy && String(decision.submittedBy) !== req.user!.id) {
+      createNotification({
+        recipient: decision.submittedBy,
+        type: 'DECISION_REJECTED',
+        title: `Décision refusée ❌`,
+        message: `"${decision.title}" a été refusée${comment ? ` : ${comment}` : ''}`,
+        link: `/admin/decisions`,
+        metadata: { decisionId: String(decision._id) },
+      }).catch(() => {})
+    }
+
     return res.json({ decision })
   } catch (err) {
     return next(err)

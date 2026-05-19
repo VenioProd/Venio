@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { io, type Socket } from 'socket.io-client'
 import { fetchNotifications as fetchNotificationsApi, fetchUnreadCount, markAsRead as markAsReadApi, markAllAsRead as markAllAsReadApi } from '../services/notifications'
 import { useAuth } from './AuthContext'
 import { isAdminRole } from '../lib/permissions'
@@ -14,7 +15,7 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null)
 
-const POLL_INTERVAL = 30_000
+const POLL_INTERVAL = 60_000
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
@@ -22,6 +23,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const socketRef = useRef<Socket | null>(null)
 
   const refresh = useCallback(async () => {
     if (!isAdmin) return
@@ -36,6 +38,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // silently fail polling
     }
   }, [isAdmin])
+
+  // Socket : écoute notification:new pour un refresh instantané de la cloche
+  useEffect(() => {
+    if (!isAdmin || !user) return
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const socket = io('/', {
+      auth: { token },
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+    })
+    socketRef.current = socket
+
+    socket.on('notification:new', (notif: AppNotification) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n._id === notif._id)) return prev
+        return [notif, ...prev]
+      })
+      setUnreadCount((prev) => prev + 1)
+    })
+
+    return () => {
+      socket.disconnect()
+      socketRef.current = null
+    }
+  }, [isAdmin, user])
 
   useEffect(() => {
     if (!isAdmin) {
