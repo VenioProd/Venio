@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { getToken } from '../../../lib/api'
 import { useToast } from '../../../context/ToastContext'
@@ -85,10 +86,23 @@ function downloadBlob(objectUrl: string, name: string) {
   document.body.removeChild(a)
 }
 
+const EXT_MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf',
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime',
+}
+
+function resolveMime(mimeType: string, name: string): string {
+  if (mimeType && mimeType !== 'application/octet-stream') return mimeType
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return EXT_MIME[ext] || mimeType
+}
+
 function AttachmentPreviewModal({ preview, onClose }: { preview: AttachmentPreview; onClose: () => void }) {
-  const isImage = preview.mimeType?.startsWith('image/')
-  const isPdf = preview.mimeType === 'application/pdf'
-  const isVideo = preview.mimeType?.startsWith('video/')
+  const mime = resolveMime(preview.mimeType, preview.name)
+  const isImage = mime.startsWith('image/')
+  const isPdf = mime === 'application/pdf'
+  const isVideo = mime.startsWith('video/')
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -96,18 +110,14 @@ function AttachmentPreviewModal({ preview, onClose }: { preview: AttachmentPrevi
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
-    <div className="attachment-modal-backdrop" onClick={onClose}>
-      <div className="attachment-modal" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <>
+      <div className="attachment-modal-backdrop" onClick={onClose} style={{ cursor: 'default' }} />
+      <div className="attachment-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2001 }}>
         <div className="attachment-modal-header">
           <span className="attachment-modal-name">{preview.name}</span>
           <div className="attachment-modal-actions">
-            <button
-              type="button"
-              className="attachment-modal-btn"
-              onClick={() => downloadBlob(preview.objectUrl, preview.name)}
-              title="Télécharger"
-            >
+            <button type="button" className="attachment-modal-btn" onClick={() => downloadBlob(preview.objectUrl, preview.name)} title="Télécharger">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
@@ -139,7 +149,8 @@ function AttachmentPreviewModal({ preview, onClose }: { preview: AttachmentPrevi
           )}
         </div>
       </div>
-    </div>
+    </>,
+    document.body
   )
 }
 
