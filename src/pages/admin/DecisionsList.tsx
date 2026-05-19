@@ -50,27 +50,75 @@ function formatFileSize(bytes: number): string {
   return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-async function downloadDecisionFile(decisionId: string, index: number, name: string, mimeType: string): Promise<string | null> {
+interface FilePreview { objectUrl: string; name: string; mimeType: string }
+
+async function fetchDecisionBlob(decisionId: string, index: number): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
   const token = getToken()
   const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   if (!res.ok) {
     const d = await res.json().catch(() => null)
-    return (d as any)?.error || `Erreur ${res.status}`
+    return { error: (d as any)?.error || `Erreur ${res.status}` }
   }
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
+  return { blob: await res.blob() }
+}
+
+function forceDownload(objectUrl: string, name: string) {
   const a = document.createElement('a')
-  a.href = url
-  const viewable = mimeType?.startsWith('image/') || mimeType === 'application/pdf' || mimeType?.startsWith('video/')
-  if (!viewable) a.download = name
-  else a.target = '_blank'
+  a.href = objectUrl
+  a.download = name
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  return null
+}
+
+function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose: () => void }) {
+  const isImage = preview.mimeType?.startsWith('image/')
+  const isPdf = preview.mimeType === 'application/pdf'
+  const isVideo = preview.mimeType?.startsWith('video/')
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return createPortal(
+    <>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
+      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2001, width: 'calc(100% - 32px)', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-card,#1e293b)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview.name}</span>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button type="button" onClick={() => forceDownload(preview.objectUrl, preview.name)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13 }}>
+              Télécharger
+            </button>
+            <button type="button" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.12)', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#ef4444' }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        {/* Contenu */}
+        <div style={{ flex: 1, overflow: 'auto', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+          {isImage && <img src={preview.objectUrl} alt={preview.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />}
+          {isPdf && <iframe src={preview.objectUrl} title={preview.name} style={{ width: '100%', height: '80vh', border: 'none', display: 'block' }} />}
+          {isVideo && <video src={preview.objectUrl} controls style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />}
+          {!isImage && !isPdf && !isVideo && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 48, background: 'var(--bg-card,#1e293b)' }}>
+              <Paperclip size={48} style={{ color: 'var(--text-muted)' }} />
+              <p style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{preview.name}</p>
+              <button type="button" onClick={() => forceDownload(preview.objectUrl, preview.name)} style={{ padding: '10px 24px', background: 'var(--primary,#7c3aed)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                Télécharger
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>,
+    document.body
+  )
 }
 
 const PRIORITY_COLORS: Record<DecisionPriority, string> = {
@@ -109,6 +157,22 @@ export default function DecisionsList() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [actingId, setActingId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [preview, setPreview] = useState<FilePreview | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
+
+  const openPreview = async (decisionId: string, index: number, name: string, mimeType: string) => {
+    const result = await fetchDecisionBlob(decisionId, index)
+    if (result.error || !result.blob) { showToast(result.error ?? 'Erreur', 'error'); return }
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    const url = URL.createObjectURL(result.blob)
+    previewUrlRef.current = url
+    setPreview({ objectUrl: url, name, mimeType })
+  }
+
+  const closePreview = () => {
+    setPreview(null)
+    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
+  }
 
   const loadDecisions = useCallback(async () => {
     setLoading(true)
@@ -332,7 +396,7 @@ export default function DecisionsList() {
                                   key={idx}
                                   type="button"
                                   onClick={async () => {
-                                    const err = await downloadDecisionFile(d._id, idx, a.originalName, a.mimeType)
+                                    await openPreview(d._id, idx, a.originalName, a.mimeType)
                                     if (err) showToast(err, 'error')
                                   }}
                                   style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#93c5fd', textAlign: 'left' }}
@@ -340,6 +404,7 @@ export default function DecisionsList() {
                                   <Paperclip size={12} />
                                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{a.originalName}</span>
                                   {a.size > 0 && <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatFileSize(a.size)}</span>}
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 2 }}>👁</span>
                                 </button>
                               ))}
                             </div>
@@ -418,6 +483,7 @@ export default function DecisionsList() {
           }}
         />
       )}
+      {preview && <FilePreviewModal preview={preview} onClose={closePreview} />}
     </div>
   )
 }
