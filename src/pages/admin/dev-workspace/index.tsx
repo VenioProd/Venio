@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { Activity, CircleDot, Layers3, Plus, RefreshCw, Target, Trash2, X } from 'lucide-react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Activity, CheckCircle2, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
@@ -7,6 +8,7 @@ import {
   listDevProjects,
   listDevIssues,
   fetchDevStats,
+  fetchDevOverview,
   createDevIssue,
   updateDevIssue,
   deleteDevIssue,
@@ -22,6 +24,7 @@ import {
   PRIORITY_ORDER,
   TYPE_LABEL,
   TYPE_COLOR,
+  computeWeightedProgress,
   type DevProject,
   type DevIssue,
   type DevIssueComment,
@@ -29,6 +32,9 @@ import {
   type DevIssuePriority,
   type DevIssueType,
   type DevStats,
+  type DevOverview,
+  type DevIssueGithubLink,
+  type DevCiStatus,
   type IssueFilters,
 } from '../../../services/dev'
 import './DevWorkspace.css'
@@ -63,37 +69,196 @@ function userInitial(u: { name?: string; email?: string } | null | undefined): s
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
 }
 
-function progressPercent(done: number, total: number): number {
-  if (!total) return 0
-  return Math.round((done / total) * 100)
+interface DeepLinkParams {
+  issueId?: string
+  projectId?: string
 }
 
-function dueTone(date: string | null | undefined): 'neutral' | 'soon' | 'late' {
-  if (!date) return 'neutral'
-  const due = new Date(date).getTime()
-  if (Number.isNaN(due)) return 'neutral'
-  const diff = due - Date.now()
-  if (diff < 0) return 'late'
-  if (diff < 7 * 24 * 60 * 60 * 1000) return 'soon'
+const CI_STATUS_LABEL: Record<DevCiStatus, string> = {
+  PENDING: 'En attente',
+  RUNNING: 'En cours',
+  SUCCESS: 'Succès',
+  FAILURE: 'Échec',
+  UNKNOWN: 'Inconnu',
+}
+
+function ciStatusTone(status: DevCiStatus | null | undefined): 'ok' | 'warn' | 'fail' | 'neutral' {
+  if (status === 'SUCCESS') return 'ok'
+  if (status === 'PENDING' || status === 'RUNNING') return 'warn'
+  if (status === 'FAILURE') return 'fail'
   return 'neutral'
+}
+
+interface GithubLinkPanelProps {
+  issue: DevIssue
+  canManage: boolean
+  onPatch: (patch: DevIssueGithubLink) => void
+  onClear: () => void
+}
+
+const GithubLinkPanel = ({ issue, canManage, onPatch, onClear }: GithubLinkPanelProps) => {
+  const link = issue.github
+  const isMerged = Boolean(link?.mergedAt)
+
+  if (!link && !canManage) return null
+  if (!link) {
+    return (
+      <div className="dev-detail-github empty">
+        <button
+          type="button"
+          className="dev-btn subtle"
+          onClick={() =>
+            onPatch({
+              repo: null,
+              prNumber: null,
+              prUrl: null,
+              branch: null,
+              commitSha: null,
+              ciStatus: null,
+              mergedAt: null,
+            })
+          }
+        >
+          <GitBranch size={12} /> Rattacher une PR / branche GitHub
+        </button>
+      </div>
+    )
+  }
+
+  const tone = ciStatusTone(link.ciStatus)
+  return (
+    <div className="dev-detail-github">
+      <div className="dev-detail-github-header">
+        <span className="dev-detail-github-title">
+          <GitPullRequest size={13} />
+          {isMerged ? 'PR mergée' : link.prNumber ? `PR #${link.prNumber}` : 'Lien GitHub'}
+        </span>
+        {link.ciStatus && (
+          <span className={`dev-detail-github-ci tone-${tone}`} title={CI_STATUS_LABEL[link.ciStatus] || link.ciStatus}>
+            {tone === 'ok' && <CheckCircle2 size={12} />}
+            {tone === 'fail' && <XCircle size={12} />}
+            {tone === 'warn' && <Activity size={12} />}
+            {CI_STATUS_LABEL[link.ciStatus] || link.ciStatus}
+          </span>
+        )}
+        {canManage && (
+          <button className="dev-detail-github-clear" type="button" onClick={onClear} title="Détacher">
+            <X size={11} />
+          </button>
+        )}
+      </div>
+      <div className="dev-detail-github-grid">
+        <label>
+          <span>Repo</span>
+          <input
+            disabled={!canManage}
+            defaultValue={link.repo ?? ''}
+            placeholder="org/repo"
+            onBlur={(e) => canManage && onPatch({ ...link, repo: e.target.value.trim() || null })}
+          />
+        </label>
+        <label>
+          <span>Branche</span>
+          <input
+            disabled={!canManage}
+            defaultValue={link.branch ?? ''}
+            placeholder="feature/…"
+            onBlur={(e) => canManage && onPatch({ ...link, branch: e.target.value.trim() || null })}
+          />
+        </label>
+        <label>
+          <span>PR</span>
+          <input
+            disabled={!canManage}
+            type="number"
+            min={1}
+            defaultValue={link.prNumber ?? ''}
+            onBlur={(e) =>
+              canManage &&
+              onPatch({
+                ...link,
+                prNumber: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+          />
+        </label>
+        <label>
+          <span>URL PR</span>
+          <input
+            disabled={!canManage}
+            defaultValue={link.prUrl ?? ''}
+            placeholder="https://github.com/…/pull/123"
+            onBlur={(e) => canManage && onPatch({ ...link, prUrl: e.target.value.trim() || null })}
+          />
+        </label>
+        <label>
+          <span>CI</span>
+          <select
+            disabled={!canManage}
+            value={link.ciStatus ?? ''}
+            onChange={(e) =>
+              canManage && onPatch({ ...link, ciStatus: (e.target.value || null) as DevCiStatus | null })
+            }
+          >
+            <option value="">—</option>
+            <option value="PENDING">En attente</option>
+            <option value="RUNNING">En cours</option>
+            <option value="SUCCESS">Succès</option>
+            <option value="FAILURE">Échec</option>
+            <option value="UNKNOWN">Inconnu</option>
+          </select>
+        </label>
+        <label>
+          <span>Mergée</span>
+          <input
+            disabled={!canManage}
+            type="date"
+            value={link.mergedAt ? link.mergedAt.slice(0, 10) : ''}
+            onChange={(e) =>
+              canManage &&
+              onPatch({
+                ...link,
+                mergedAt: e.target.value || null,
+              })
+            }
+          />
+        </label>
+      </div>
+      {link.prUrl && (
+        <a className="dev-detail-github-link" href={link.prUrl} target="_blank" rel="noopener noreferrer">
+          {link.prUrl}
+        </a>
+      )}
+    </div>
+  )
 }
 
 const DevWorkspace = () => {
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
   const { confirm, ConfirmDialog } = useConfirm()
+  const params = useParams<DeepLinkParams>()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const deepIssueId = params.issueId
+  const deepProjectId = params.projectId
 
   const [projects, setProjects] = useState<DevProject[]>([])
   const [issues, setIssues] = useState<DevIssue[]>([])
-  const [allIssues, setAllIssues] = useState<DevIssue[]>([])
+  const [overview, setOverview] = useState<DevOverview | null>(null)
   const [stats, setStats] = useState<DevStats | null>(null)
 
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<IssueFilters>({ status: 'open' })
+  const [filters, setFilters] = useState<IssueFilters>({
+    status: 'open',
+    project: deepProjectId,
+  })
   const [selectedIssue, setSelectedIssue] = useState<DevIssue | null>(null)
   const [comments, setComments] = useState<DevIssueComment[]>([])
   const [commentDraft, setCommentDraft] = useState('')
   const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'none'>('status')
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>('all')
 
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projectForm, setProjectForm] = useState({ key: '', name: '', description: '', color: '#7c5cff' })
@@ -143,10 +308,10 @@ const DevWorkspace = () => {
     }
   }, [filters.project])
 
-  const loadOverviewIssues = useCallback(async () => {
+  const loadOverview = useCallback(async () => {
     try {
-      const data = await listDevIssues({ status: 'all' })
-      setAllIssues(data.issues)
+      const data = await fetchDevOverview()
+      setOverview(data)
     } catch (e) {
       console.error(e)
     }
@@ -155,7 +320,7 @@ const DevWorkspace = () => {
   useEffect(() => { loadProjects() }, [loadProjects])
   useEffect(() => { loadIssues() }, [loadIssues])
   useEffect(() => { loadStats() }, [loadStats])
-  useEffect(() => { loadOverviewIssues() }, [loadOverviewIssues])
+  useEffect(() => { loadOverview() }, [loadOverview])
 
   const loadIssueDetail = useCallback(async (id: string) => {
     try {
@@ -164,19 +329,80 @@ const DevWorkspace = () => {
       setComments(data.comments)
     } catch (e) {
       console.error(e)
+      // Deep link to an issue that no longer exists: bounce back to workspace root.
+      if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev', { replace: true })
     }
-  }, [])
+  }, [location.pathname, navigate])
 
   const handleSelectIssue = (issue: DevIssue) => {
     setSelectedIssue(issue)
     setComments([])
     setCommentDraft('')
     loadIssueDetail(issue._id)
+    if (deepIssueId !== issue._id) {
+      navigate(`/admin/dev/issues/${issue._id}`, { replace: false })
+    }
   }
 
   const handleCloseDetail = () => {
     setSelectedIssue(null)
     setComments([])
+    if (location.pathname.startsWith('/admin/dev/issues/')) {
+      navigate('/admin/dev', { replace: false })
+    }
+  }
+
+  // Deep link: open the issue when /admin/dev/issues/:id is navigated to.
+  useEffect(() => {
+    if (deepIssueId && selectedIssue?._id !== deepIssueId) {
+      setSelectedIssue(null)
+      setComments([])
+      setCommentDraft('')
+      loadIssueDetail(deepIssueId)
+    }
+    if (!deepIssueId && selectedIssue && location.pathname === '/admin/dev') {
+      setSelectedIssue(null)
+      setComments([])
+    }
+  }, [deepIssueId, loadIssueDetail, selectedIssue, location.pathname])
+
+  // Deep link: scope filters to the project when /admin/dev/projects/:id is navigated to.
+  useEffect(() => {
+    if (deepProjectId && filters.project !== deepProjectId) {
+      setFilters((f) => ({ ...f, project: deepProjectId }))
+    }
+  }, [deepProjectId, filters.project])
+
+  const applyQuickView = (view: typeof quickView) => {
+    setQuickView(view)
+    setFilters((f) => {
+      const base: IssueFilters = { ...f }
+      // Reset quick-view-managed fields each time.
+      base.assignee = undefined
+      base.priority = undefined
+      base.label = undefined
+      base.status = 'open'
+      switch (view) {
+        case 'mine':
+          base.assignee = 'me'
+          break
+        case 'urgent':
+          base.priority = 'URGENT'
+          break
+        case 'blocked':
+          base.label = 'blocked'
+          break
+        case 'review':
+          base.status = 'IN_REVIEW'
+          break
+        case 'backlog':
+          base.status = 'BACKLOG'
+          break
+        default:
+          base.status = 'open'
+      }
+      return base
+    })
   }
 
   // Mutations
@@ -193,7 +419,7 @@ const DevWorkspace = () => {
         status: quickCreate.status,
       })
       setQuickCreate((q) => ({ ...q, title: '' }))
-      await Promise.all([loadIssues(), loadStats(), loadOverviewIssues()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     } finally {
@@ -205,9 +431,8 @@ const DevWorkspace = () => {
     try {
       const updated = await updateDevIssue(id, patch)
       setIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
-      setAllIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
       if (selectedIssue?._id === id) setSelectedIssue((prev) => (prev ? { ...prev, ...updated } : prev))
-      Promise.all([loadStats(), loadOverviewIssues()])
+      Promise.all([loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     }
@@ -218,9 +443,8 @@ const DevWorkspace = () => {
     try {
       await deleteDevIssue(id)
       setIssues((prev) => prev.filter((i) => i._id !== id))
-      setAllIssues((prev) => prev.filter((i) => i._id !== id))
       if (selectedIssue?._id === id) handleCloseDetail()
-      Promise.all([loadStats(), loadOverviewIssues()])
+      Promise.all([loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
     }
@@ -295,30 +519,23 @@ const DevWorkspace = () => {
   }, [issues, groupBy])
 
   const projectOverview = useMemo(() => {
-    return projects.map((project) => {
-      const projectIssues = allIssues.filter((issue) => {
-        const issueProject = typeof issue.project === 'object' ? issue.project._id : issue.project
-        return issueProject === project._id
-      })
-      const done = projectIssues.filter((issue) => issue.status === 'DONE').length
-      const active = projectIssues.filter((issue) => issue.status === 'IN_PROGRESS' || issue.status === 'IN_REVIEW').length
-      const urgent = projectIssues.filter((issue) => issue.priority === 'URGENT' || issue.priority === 'HIGH').length
-      const nextDue = projectIssues
-        .filter((issue) => issue.dueDate && issue.status !== 'DONE' && issue.status !== 'CANCELLED')
-        .sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime())[0]
+    if (!overview) return []
+    return overview.projects.map((p) => {
+      const active = (p.counts.byStatus.IN_PROGRESS || 0) + (p.counts.byStatus.IN_REVIEW || 0)
       return {
-        project,
-        total: projectIssues.length,
-        done,
+        project: { _id: p._id, key: p.key, name: p.name, color: p.color },
+        total: p.counts.total,
+        done: p.counts.done,
         active,
-        urgent,
-        percent: progressPercent(done, projectIssues.length),
-        nextDue,
+        urgent: p.counts.urgent,
+        blocked: p.counts.blocked,
+        percent: p.progress,
+        health: p.health,
       }
     })
-  }, [allIssues, projects])
+  }, [overview])
 
-  const globalCompletion = stats ? progressPercent(stats.byStatus.DONE, stats.total) : 0
+  const globalCompletion = stats ? computeWeightedProgress(stats.byStatus as Record<DevIssueStatus, number>) : 0
 
   const renderRow = (issue: DevIssue) => {
     const project = typeof issue.project === 'object' ? issue.project : null
@@ -423,13 +640,19 @@ const DevWorkspace = () => {
 
           {projectOverview.length > 0 && (
             <div className="dev-project-strip">
-              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, percent, nextDue }) => (
+              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, blocked, percent, health }) => (
                 <button
                   key={project._id}
                   type="button"
                   className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
-                  onClick={() => setFilters((f) => ({ ...f, project: f.project === project._id ? undefined : project._id }))}
+                  onClick={() => {
+                    const next = filters.project === project._id ? undefined : project._id
+                    setFilters((f) => ({ ...f, project: next }))
+                    if (next) navigate(`/admin/dev/projects/${next}`)
+                    else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
+                  }}
                   style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
+                  title={`Santé: ${health}`}
                 >
                   <span className="dev-project-card-key">{project.key}</span>
                   <strong>{project.name}</strong>
@@ -438,9 +661,9 @@ const DevWorkspace = () => {
                   </span>
                   <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
                   <span className="dev-project-card-footer">
-                    <span className={urgent ? 'warn' : ''}>{urgent} haute priorité</span>
-                    <span className={'due-' + dueTone(nextDue?.dueDate)}>
-                      {nextDue?.dueDate ? new Date(nextDue.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'pas d’échéance'}
+                    <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
+                    <span className={blocked ? 'warn' : ''}>
+                      {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
                     </span>
                   </span>
                 </button>
@@ -449,6 +672,44 @@ const DevWorkspace = () => {
           )}
         </div>
       )}
+
+      <div className="dev-quick-views">
+        {([
+          ['all', 'Toutes ouvertes'],
+          ['mine', 'Mes issues'],
+          ['urgent', 'Urgentes'],
+          ['blocked', 'Bloquées'],
+          ['review', 'En revue'],
+          ['backlog', 'Backlog'],
+        ] as Array<[typeof quickView, string]>).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={'dev-quick-view-btn' + (quickView === key ? ' active' : '')}
+            onClick={() => applyQuickView(key)}
+          >
+            {label}
+          </button>
+        ))}
+        <div className="dev-view-mode">
+          <button
+            type="button"
+            className={'dev-view-mode-btn' + (viewMode === 'list' ? ' active' : '')}
+            onClick={() => setViewMode('list')}
+            title="Vue liste"
+          >
+            Liste
+          </button>
+          <button
+            type="button"
+            className={'dev-view-mode-btn' + (viewMode === 'kanban' ? ' active' : '')}
+            onClick={() => setViewMode('kanban')}
+            title="Vue Kanban (statuts)"
+          >
+            Kanban
+          </button>
+        </div>
+      </div>
 
       <div className="dev-toolbar">
         <input
@@ -460,7 +721,12 @@ const DevWorkspace = () => {
         <select
           className="dev-select"
           value={filters.project || 'all'}
-          onChange={(e) => setFilters((f) => ({ ...f, project: e.target.value === 'all' ? undefined : e.target.value }))}
+          onChange={(e) => {
+            const next = e.target.value === 'all' ? undefined : e.target.value
+            setFilters((f) => ({ ...f, project: next }))
+            if (next) navigate(`/admin/dev/projects/${next}`)
+            else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
+          }}
         >
           <option value="all">Tous projets</option>
           {projects.map((p) => (
@@ -575,6 +841,63 @@ const DevWorkspace = () => {
                 </div>
               )}
             </div>
+          ) : viewMode === 'kanban' ? (
+            <div className="dev-kanban">
+              {STATUS_ORDER.filter((s) => s !== 'CANCELLED').map((status) => {
+                const colIssues = issues.filter((i) => i.status === status)
+                return (
+                  <div key={status} className="dev-kanban-col">
+                    <header
+                      className="dev-kanban-col-header"
+                      style={{ ['--col-color' as never]: STATUS_COLOR[status] }}
+                    >
+                      <span className="dev-kanban-col-dot" />
+                      <span className="dev-kanban-col-title">{STATUS_LABEL[status]}</span>
+                      <span className="dev-kanban-col-count">{colIssues.length}</span>
+                    </header>
+                    <div className="dev-kanban-col-body">
+                      {colIssues.length === 0 ? (
+                        <div className="dev-kanban-empty">—</div>
+                      ) : (
+                        colIssues.map((issue) => {
+                          const project = typeof issue.project === 'object' ? issue.project : null
+                          return (
+                            <button
+                              key={issue._id}
+                              type="button"
+                              className={'dev-kanban-card' + (selectedIssue?._id === issue._id ? ' selected' : '')}
+                              onClick={() => handleSelectIssue(issue)}
+                              style={{ ['--prio-color' as never]: PRIORITY_COLOR[issue.priority] }}
+                            >
+                              <div className="dev-kanban-card-top">
+                                <span className="dev-kanban-card-id">
+                                  {project ? `${project.key}-${issue.number}` : issue.identifier}
+                                </span>
+                                <span className="dev-kanban-card-prio">{PRIORITY_ICON[issue.priority]}</span>
+                              </div>
+                              <div className="dev-kanban-card-title">{issue.title}</div>
+                              <div className="dev-kanban-card-meta">
+                                <span className="dev-kanban-card-type" style={{ ['--type-color' as never]: TYPE_COLOR[issue.type] }}>
+                                  {TYPE_LABEL[issue.type]}
+                                </span>
+                                {issue.labels.slice(0, 2).map((l) => (
+                                  <span key={l} className="dev-kanban-card-label">{l}</span>
+                                ))}
+                                {issue.assignee && (
+                                  <span className="dev-kanban-card-assignee" title={issue.assignee.name || issue.assignee.email}>
+                                    {userInitial(issue.assignee)}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           ) : (
             grouped.map((group) => (
               <div key={group.key}>
@@ -681,6 +1004,13 @@ const DevWorkspace = () => {
                   {formatRelative(selectedIssue.createdAt)}
                 </span>
               </div>
+
+              <GithubLinkPanel
+                issue={selectedIssue}
+                canManage={canManage}
+                onPatch={(patch) => handlePatchIssue(selectedIssue._id, { github: patch })}
+                onClear={() => handlePatchIssue(selectedIssue._id, { github: null })}
+              />
 
               <textarea
                 className="dev-detail-description"

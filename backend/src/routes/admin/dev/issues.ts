@@ -10,6 +10,8 @@ import DevIssue, {
 } from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import { createNotification } from '../../../lib/notifications.js'
+import { createIssueWithRetry } from '../../../lib/dev/createIssue.js'
+import { parseGithubPatch, mergeGithubLink } from '../../../lib/dev/github.js'
 
 const router = express.Router()
 
@@ -27,10 +29,6 @@ function parseLabels(raw: unknown): string[] {
   ).slice(0, 16)
 }
 
-async function nextIssueNumber(projectId: mongoose.Types.ObjectId): Promise<number> {
-  const last = await DevIssue.findOne({ project: projectId }).sort({ number: -1 }).select('number').lean()
-  return (last?.number ?? 0) + 1
-}
 
 // GET /api/admin/dev/issues — filtre principal type Linear
 router.get('/issues', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Request, res: Response, next: NextFunction) => {
@@ -109,28 +107,20 @@ router.post('/issues', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: Re
     const labels = parseLabels(req.body?.labels)
     const dueDate = req.body?.dueDate ? new Date(req.body.dueDate) : null
 
-    const number = await nextIssueNumber(projectDoc._id)
-    const identifier = `${projectDoc.key}-${number}`
-
-    const startedAt = status === 'IN_PROGRESS' || status === 'IN_REVIEW' ? new Date() : null
-    const completedAt = status === 'DONE' ? new Date() : null
-
-    const issue = await DevIssue.create({
+    const issue = await createIssueWithRetry({
       project: projectDoc._id,
-      number,
-      identifier,
+      projectKey: projectDoc.key,
       title: title.slice(0, 200),
       description: description.slice(0, 20000),
       type,
       status,
       priority,
       assignee,
-      reporter: req.user!.id,
+      reporter: new mongoose.Types.ObjectId(req.user!.id),
       labels,
       dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,
-      startedAt,
-      completedAt,
     })
+    const identifier = issue.identifier
 
     const populated = await DevIssue.findById(issue._id)
       .populate('assignee', 'name email avatarUrl')
@@ -214,6 +204,9 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
       const d = new Date(req.body.dueDate)
       if (!Number.isNaN(d.getTime())) issue.dueDate = d
     }
+    const githubPatch = parseGithubPatch(req.body?.github)
+    if (githubPatch === null) issue.github = null
+    else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
 
     await issue.save()
     const populated = await DevIssue.findById(issue._id)

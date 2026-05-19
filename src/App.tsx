@@ -370,6 +370,22 @@ function App() {
             }
           />
           <Route
+            path="dev/issues/:issueId"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                <DevWorkspace />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="dev/projects/:projectId"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                <DevWorkspace />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="acces-outils"
             element={
               <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">

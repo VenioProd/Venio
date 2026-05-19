@@ -13,6 +13,10 @@ export interface IDevProject extends Document {
   lead: mongoose.Types.ObjectId | null
   members: mongoose.Types.ObjectId[]
   createdBy: mongoose.Types.ObjectId
+  // High-water mark used to allocate the per-project issue number atomically.
+  // Missing on legacy documents — the issue-creation helper backfills from
+  // max(DevIssue.number) when seen as 0.
+  issueCounter: number
   createdAt: Date
   updatedAt: Date
 }
@@ -40,6 +44,7 @@ const devProjectSchema = new Schema<IDevProject>(
     lead: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    issueCounter: { type: Number, default: 0 },
   },
   { timestamps: true }
 )

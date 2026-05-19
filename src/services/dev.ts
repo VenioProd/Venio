@@ -27,6 +27,18 @@ export interface DevProject {
   updatedAt: string
 }
 
+export type DevCiStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'UNKNOWN'
+
+export interface DevIssueGithubLink {
+  repo: string | null
+  prNumber: number | null
+  prUrl: string | null
+  branch: string | null
+  commitSha: string | null
+  ciStatus: DevCiStatus | null
+  mergedAt: string | null
+}
+
 export interface DevIssue {
   _id: string
   project: { _id: string; key: string; name: string; color?: string } | string
@@ -43,6 +55,7 @@ export interface DevIssue {
   dueDate: string | null
   startedAt: string | null
   completedAt: string | null
+  github: DevIssueGithubLink | null
   createdAt: string
   updatedAt: string
 }
@@ -132,7 +145,10 @@ export function createDevIssue(data: {
   return apiFetch('/api/admin/dev/issues', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function updateDevIssue(id: string, data: Partial<DevIssue> & { assignee?: string | null }): Promise<DevIssue> {
+export function updateDevIssue(
+  id: string,
+  data: Partial<DevIssue> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null }
+): Promise<DevIssue> {
   return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
@@ -151,6 +167,50 @@ export function deleteDevIssueComment(issueId: string, commentId: string): Promi
 // Stats
 export function fetchDevStats(project?: string): Promise<DevStats> {
   return apiFetch(`/api/admin/dev/stats${qs({ project })}`)
+}
+
+// Overview (KPIs + per-project counts)
+export interface DevOverviewProjectCounts {
+  total: number
+  open: number
+  done: number
+  cancelled: number
+  urgent: number
+  blocked: number
+  byStatus: Record<DevIssueStatus, number>
+}
+
+export interface DevOverviewProject {
+  _id: string
+  key: string
+  name: string
+  color: string
+  status: DevProjectStatus
+  lead: { _id: string; name?: string; email?: string } | null
+  counts: DevOverviewProjectCounts
+  progress: number
+  health: 'on_track' | 'at_risk' | 'blocked'
+  lastActivityAt: string
+}
+
+export interface DevOverviewKpis {
+  totalProjects: number
+  activeProjects: number
+  totalOpen: number
+  urgent: number
+  blocked: number
+  completed7d: number
+  completed14d: number
+  velocity14d: number
+}
+
+export interface DevOverview {
+  kpis: DevOverviewKpis
+  projects: DevOverviewProject[]
+}
+
+export function fetchDevOverview(): Promise<DevOverview> {
+  return apiFetch('/api/admin/dev/overview')
 }
 
 // UI helpers
@@ -204,4 +264,28 @@ export const TYPE_COLOR: Record<DevIssueType, string> = {
   BUG: '#ef4444',
   CHORE: '#a3a3a3',
   TASK: '#7c5cff',
+}
+
+// Weighted progression — must match backend src/lib/dev/stats.ts STATUS_WEIGHT.
+// CANCELLED issues are excluded from both numerator and denominator.
+export const STATUS_WEIGHT: Record<DevIssueStatus, number> = {
+  BACKLOG: 0,
+  TODO: 10,
+  IN_PROGRESS: 50,
+  IN_REVIEW: 80,
+  DONE: 100,
+  CANCELLED: 0,
+}
+
+export function computeWeightedProgress(byStatus: Record<DevIssueStatus, number>): number {
+  let weighted = 0
+  let nonCancelled = 0
+  for (const status of STATUS_ORDER) {
+    if (status === 'CANCELLED') continue
+    const count = byStatus[status] || 0
+    weighted += STATUS_WEIGHT[status] * count
+    nonCancelled += count
+  }
+  if (nonCancelled === 0) return 0
+  return Math.round(weighted / nonCancelled)
 }

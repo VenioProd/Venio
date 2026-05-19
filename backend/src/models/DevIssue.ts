@@ -16,6 +16,19 @@ export type DevIssuePriority = (typeof DEV_ISSUE_PRIORITIES)[number]
 export const DEV_ISSUE_TYPES = ['FEATURE', 'BUG', 'CHORE', 'TASK'] as const
 export type DevIssueType = (typeof DEV_ISSUE_TYPES)[number]
 
+export const DEV_CI_STATUSES = ['PENDING', 'RUNNING', 'SUCCESS', 'FAILURE', 'UNKNOWN'] as const
+export type DevCiStatus = (typeof DEV_CI_STATUSES)[number]
+
+export interface DevIssueGithubLink {
+  repo: string | null
+  prNumber: number | null
+  prUrl: string | null
+  branch: string | null
+  commitSha: string | null
+  ciStatus: DevCiStatus | null
+  mergedAt: Date | null
+}
+
 export interface IDevIssue extends Document {
   _id: mongoose.Types.ObjectId
   project: mongoose.Types.ObjectId
@@ -32,6 +45,7 @@ export interface IDevIssue extends Document {
   dueDate: Date | null
   startedAt: Date | null
   completedAt: Date | null
+  github: DevIssueGithubLink | null
   createdAt: Date
   updatedAt: Date
 }
@@ -52,6 +66,21 @@ const devIssueSchema = new Schema<IDevIssue>(
     dueDate: { type: Date, default: null },
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
+    github: {
+      type: new Schema<DevIssueGithubLink>(
+        {
+          repo: { type: String, default: null, maxlength: 200 },
+          prNumber: { type: Number, default: null },
+          prUrl: { type: String, default: null, maxlength: 500 },
+          branch: { type: String, default: null, maxlength: 200 },
+          commitSha: { type: String, default: null, maxlength: 80 },
+          ciStatus: { type: String, enum: [...DEV_CI_STATUSES, null], default: null },
+          mergedAt: { type: Date, default: null },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
   },
   { timestamps: true }
 )
