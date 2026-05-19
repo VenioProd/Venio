@@ -14,6 +14,7 @@ import DevIssueComment from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
 import { computeStats, computeOverview } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
+import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
 
 /**
  * Routes agent pour le suivi des développements (DevProject + DevIssue +
@@ -313,6 +314,9 @@ router.patch(
         const d = new Date(req.body.dueDate)
         if (!Number.isNaN(d.getTime())) issue.dueDate = d
       }
+      const githubPatch = parseGithubPatch(req.body?.github)
+      if (githubPatch === null) issue.github = null
+      else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
 
       await issue.save()
       res.locals.audit = {

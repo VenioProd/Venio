@@ -27,6 +27,18 @@ export interface DevProject {
   updatedAt: string
 }
 
+export type DevCiStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'UNKNOWN'
+
+export interface DevIssueGithubLink {
+  repo: string | null
+  prNumber: number | null
+  prUrl: string | null
+  branch: string | null
+  commitSha: string | null
+  ciStatus: DevCiStatus | null
+  mergedAt: string | null
+}
+
 export interface DevIssue {
   _id: string
   project: { _id: string; key: string; name: string; color?: string } | string
@@ -43,6 +55,7 @@ export interface DevIssue {
   dueDate: string | null
   startedAt: string | null
   completedAt: string | null
+  github: DevIssueGithubLink | null
   createdAt: string
   updatedAt: string
 }
@@ -132,7 +145,10 @@ export function createDevIssue(data: {
   return apiFetch('/api/admin/dev/issues', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function updateDevIssue(id: string, data: Partial<DevIssue> & { assignee?: string | null }): Promise<DevIssue> {
+export function updateDevIssue(
+  id: string,
+  data: Partial<DevIssue> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null }
+): Promise<DevIssue> {
   return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 

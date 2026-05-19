@@ -804,3 +804,91 @@
     display: none;
   }
 }
+
+/* ── GitHub link panel (Phase 2 V2) ─────────────────────────────────────── */
+.dev-detail-github {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.35);
+}
+.dev-detail-github.empty {
+  display: flex;
+  justify-content: flex-start;
+  background: transparent;
+  border: 1px dashed rgba(148, 163, 184, 0.18);
+}
+.dev-detail-github-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+}
+.dev-detail-github-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+.dev-detail-github-ci {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dev-detail-github-ci.tone-ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+.dev-detail-github-ci.tone-warn { background: rgba(250, 204, 21, 0.18); color: #facc15; }
+.dev-detail-github-ci.tone-fail { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.dev-detail-github-ci.tone-neutral { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+.dev-detail-github-clear {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+}
+.dev-detail-github-clear:hover { color: #fca5a5; }
+.dev-detail-github-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+.dev-detail-github-grid label {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dev-detail-github-grid input,
+.dev-detail-github-grid select {
+  padding: 4px 6px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12.5px;
+  font-family: inherit;
+}
+.dev-detail-github-grid input:focus,
+.dev-detail-github-grid select:focus {
+  outline: none;
+  border-color: rgba(124, 92, 255, 0.55);
+}
+.dev-detail-github-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #93c5fd;
+  font-size: 12px;
+  word-break: break-all;
+}
+.dev-detail-github-link:hover { text-decoration: underline; }
