@@ -3,7 +3,11 @@ import mongoose from 'mongoose'
 import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import DevProject, { DEV_PROJECT_STATUSES, type DevProjectGithubConfig } from '../../../models/DevProject.js'
-import DevIssue from '../../../models/DevIssue.js'
+import DevIssue, {
+  DEV_ISSUE_STATUSES,
+  DEV_ISSUE_PRIORITIES,
+  DEV_ISSUE_TYPES,
+} from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import { notifyUsers } from '../../../lib/notifyHelpers.js'
 import { invalidateCodeMetricsCache } from '../../../lib/dev/codeMetrics.js'
@@ -185,6 +189,90 @@ router.get('/projects/:id', requirePermission(PERMISSIONS.VIEW_DEV), async (req:
       .populate('createdBy', 'name email')
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })
     res.json(project)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/admin/dev/projects/:id/detail
+// Renvoie le projet enrichi + breakdown statut/priorité/type, progression %,
+// activité récente et 5 dernières issues touchées. Utilisé par la vue projet.
+router.get('/projects/:id/detail', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!isObjectId(req.params.id)) return res.status(400).json({ error: 'ID invalide' })
+    const project = await DevProject.findById(req.params.id)
+      .populate('lead', 'name email avatarUrl')
+      .populate('members', 'name email avatarUrl')
+      .populate('createdBy', 'name email')
+      .lean()
+    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+
+    const projectId = project._id
+    const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const since14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+    const now = new Date()
+
+    const [byStatusAgg, byPriorityAgg, byTypeAgg, total, completed14, completed7, created7, overdue, recentIssues] = await Promise.all([
+      DevIssue.aggregate([
+        { $match: { project: projectId } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      DevIssue.aggregate([
+        { $match: { project: projectId } },
+        { $group: { _id: '$priority', count: { $sum: 1 } } },
+      ]),
+      DevIssue.aggregate([
+        { $match: { project: projectId } },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]),
+      DevIssue.countDocuments({ project: projectId }),
+      DevIssue.countDocuments({ project: projectId, status: 'DONE', completedAt: { $gte: since14 } }),
+      DevIssue.countDocuments({ project: projectId, status: 'DONE', completedAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ project: projectId, createdAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ project: projectId, dueDate: { $ne: null, $lt: now }, status: { $nin: ['DONE', 'CANCELLED'] } }),
+      DevIssue.find({ project: projectId })
+        .populate('assignee', 'name email avatarUrl')
+        .populate('reporter', 'name email avatarUrl')
+        .sort({ updatedAt: -1 })
+        .limit(8)
+        .lean(),
+    ])
+
+    const byStatus: Record<string, number> = {}
+    for (const s of DEV_ISSUE_STATUSES) byStatus[s] = 0
+    for (const row of byStatusAgg) byStatus[row._id] = row.count
+
+    const byPriority: Record<string, number> = {}
+    for (const p of DEV_ISSUE_PRIORITIES) byPriority[p] = 0
+    for (const row of byPriorityAgg) byPriority[row._id] = row.count
+
+    const byType: Record<string, number> = {}
+    for (const t of DEV_ISSUE_TYPES) byType[t] = 0
+    for (const row of byTypeAgg) byType[row._id] = row.count
+
+    const done = byStatus.DONE || 0
+    const cancelled = byStatus.CANCELLED || 0
+    const open = total - done - cancelled
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0
+
+    res.json({
+      project,
+      stats: {
+        total,
+        open,
+        done,
+        cancelled,
+        progress,
+        completed14,
+        completed7,
+        created7,
+        overdue,
+        byStatus,
+        byPriority,
+        byType,
+      },
+      recentIssues,
+    })
   } catch (err) {
     next(err)
   }
