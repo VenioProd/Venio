@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip } from 'lucide-react'
 import { apiFetch, getToken } from '../../lib/api'
@@ -443,6 +443,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   const [allUsers, setAllUsers] = useState<UserRef[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -585,14 +586,24 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
           <div className="dm-field">
             <label className="dm-label">Pièces jointes <small>(max 5 × 20 Mo)</small></label>
-            <label className="dm-file-btn" style={{ position: 'relative', overflow: 'hidden' }}>
-              <Paperclip size={14} />
-              <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
-              <input type="file" multiple style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => {
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => {
                 setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
                 e.target.value = ''
-              }} />
-            </label>
+              }}
+            />
+            <button
+              type="button"
+              className="dm-file-btn"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={14} />
+              <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
+            </button>
             {files.length > 0 && (
               <div className="dm-file-list">
                 {files.map((f, i) => (
