@@ -356,3 +356,14 @@
 
 .dash-pulse__label { flex: 1; }
 .dash-pulse__detail { font-size: 10px; color: var(--text-muted); font-style: italic; }
+
+/* ── KpiGrid2x2 ── */
+.dash-kpi-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .dash-kpi-grid-2x2 { grid-template-columns: 1fr; }
+}
