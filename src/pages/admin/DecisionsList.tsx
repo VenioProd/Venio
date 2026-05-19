@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp } from 'lucide-react'
-import { apiFetch } from '../../lib/api'
+import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip } from 'lucide-react'
+import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -9,11 +10,12 @@ type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 type DecisionCategory = 'BUDGET' | 'EMBAUCHE' | 'PROJET' | 'PARTENARIAT' | 'AUTRE'
 type DecisionPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
-interface SubmittedByRef {
-  _id: string
-  name?: string
-  email?: string
-  avatarUrl?: string
+interface UserRef { _id: string; name?: string; email?: string; avatarUrl?: string }
+
+interface DecisionAttachment {
+  originalName: string
+  mimeType: string
+  size: number
 }
 
 interface Decision {
@@ -23,9 +25,9 @@ interface Decision {
   category: DecisionCategory
   priority: DecisionPriority
   status: DecisionStatus
-  submittedBy: SubmittedByRef | string
+  submittedBy: UserRef | string
   submittedByName: string
-  decidedBy?: string | SubmittedByRef
+  decidedBy?: string | UserRef
   decidedByName?: string
   decisionComment?: string
   decidedAt?: string
@@ -33,8 +35,41 @@ interface Decision {
   options?: string[]
   recommendation?: string
   deadline?: string
+  attachments?: DecisionAttachment[]
+  recipients?: UserRef[]
   createdAt: string
   updatedAt: string
+}
+
+function formatFileSize(bytes: number): string {
+  if (!bytes) return ''
+  const units = ['o', 'Ko', 'Mo']
+  let size = bytes, i = 0
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++ }
+  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+async function downloadDecisionFile(decisionId: string, index: number, name: string, mimeType: string): Promise<string | null> {
+  const token = getToken()
+  const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => null)
+    return (d as any)?.error || `Erreur ${res.status}`
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  const viewable = mimeType?.startsWith('image/') || mimeType === 'application/pdf' || mimeType?.startsWith('video/')
+  if (!viewable) a.download = name
+  else a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  return null
 }
 
 const PRIORITY_COLORS: Record<DecisionPriority, string> = {
@@ -62,7 +97,8 @@ function getSubmitterId(d: Decision): string {
 
 export default function DecisionsList() {
   const { user } = useAuth()
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+  const { showToast } = useToast()
+  const isSuperAdmin = ['SUPER_ADMIN', 'PDG'].includes(user?.role || '')
   const currentUserId = user?._id || ''
 
   const [tab, setTab] = useState<Tab>('PENDING')
@@ -269,6 +305,45 @@ export default function DecisionsList() {
                             <div style={{ color: 'var(--text-muted)' }}>{d.recommendation}</div>
                           </div>
                         )}
+                        {/* Destinataires */}
+                        {d.recipients && d.recipients.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Adressé à</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {d.recipients.map((r) => (
+                                <span key={typeof r === 'string' ? r : r._id} style={{ fontSize: 12, padding: '2px 8px', borderRadius: 12, background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
+                                  {typeof r === 'string' ? r : (r.name || r.email)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Pièces jointes */}
+                        {d.attachments && d.attachments.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>
+                              <Paperclip size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                              Pièces jointes
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {d.attachments.map((a, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={async () => {
+                                    const err = await downloadDecisionFile(d._id, idx, a.originalName, a.mimeType)
+                                    if (err) showToast(err, 'error')
+                                  }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#93c5fd', textAlign: 'left' }}
+                                >
+                                  <Paperclip size={12} />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{a.originalName}</span>
+                                  {a.size > 0 && <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatFileSize(a.size)}</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {d.status !== 'PENDING' && (
                           <div style={{ padding: 10, borderRadius: 8, background: d.status === 'APPROVED' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}>
                             <div style={{ fontSize: 11, textTransform: 'uppercase', color: d.status === 'APPROVED' ? '#10b981' : '#ef4444', marginBottom: 4 }}>
@@ -362,21 +437,29 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   const [optionsText, setOptionsText] = useState('')
   const [recommendation, setRecommendation] = useState('')
   const [deadline, setDeadline] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [selectedRecipients, setSelectedRecipients] = useState<UserRef[]>([])
+  const [allUsers, setAllUsers] = useState<UserRef[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
+    apiFetch<{ users: UserRef[] }>('/api/admin/messaging/users').then((d) => setAllUsers(d.users)).catch(() => {})
+    return () => { document.body.style.overflow = prev }
   }, [])
 
   const parsedOptions = useMemo(
     () => optionsText.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 10),
     [optionsText]
   )
+
+  const toggleRecipient = (u: UserRef) => {
+    setSelectedRecipients((prev) =>
+      prev.some((r) => r._id === u._id) ? prev.filter((r) => r._id !== u._id) : [...prev, u]
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -391,17 +474,28 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
     setSubmitting(true)
     setErr(null)
     try {
-      const body: Record<string, unknown> = {
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        priority,
+      const form = new FormData()
+      form.append('title', title.trim())
+      form.append('description', description.trim())
+      form.append('category', category)
+      form.append('priority', priority)
+      if (context.trim()) form.append('context', context.trim())
+      if (parsedOptions.length > 0) form.append('options', JSON.stringify(parsedOptions))
+      if (recommendation.trim()) form.append('recommendation', recommendation.trim())
+      if (deadline) form.append('deadline', deadline)
+      if (selectedRecipients.length > 0) form.append('recipients', JSON.stringify(selectedRecipients.map((r) => r._id)))
+      files.forEach((f) => form.append('files', f))
+
+      const token = getToken()
+      const res = await fetch('/api/admin/decisions', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        throw new Error((d as any)?.message || 'Erreur')
       }
-      if (context.trim()) body.context = context.trim()
-      if (parsedOptions.length > 0) body.options = parsedOptions
-      if (recommendation.trim()) body.recommendation = recommendation.trim()
-      if (deadline) body.deadline = deadline
-      await apiFetch('/api/admin/decisions', { method: 'POST', body: JSON.stringify(body) })
       onCreated()
     } catch (e2) {
       setErr((e2 as Error).message || 'Erreur')
@@ -525,6 +619,61 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
           />
+        </div>
+
+        {/* Destinataires */}
+        <div className="task-form-group">
+          <label>Adresser à <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(en plus des admins)</span></label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', minHeight: 40 }}>
+            {allUsers.map((u) => {
+              const selected = selectedRecipients.some((r) => r._id === u._id)
+              return (
+                <button
+                  key={u._id}
+                  type="button"
+                  onClick={() => toggleRecipient(u)}
+                  style={{
+                    fontSize: 12, padding: '3px 10px', borderRadius: 12, cursor: 'pointer',
+                    border: `1px solid ${selected ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                    background: selected ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: selected ? '#a5b4fc' : 'var(--text-secondary)',
+                    fontWeight: selected ? 600 : 400,
+                  }}
+                >
+                  {u.name || u.email}
+                </button>
+              )
+            })}
+            {allUsers.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>}
+          </div>
+        </div>
+
+        {/* Pièces jointes */}
+        <div className="task-form-group">
+          <label>Pièces jointes <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(max 5 × 20 Mo)</span></label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer' }}>
+            <Paperclip size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              {files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}
+            </span>
+            <input type="file" multiple style={{ display: 'none' }} onChange={(e) => {
+              const added = Array.from(e.target.files || [])
+              setFiles((prev) => [...prev, ...added].slice(0, 5))
+              e.target.value = ''
+            }} />
+          </label>
+          {files.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {files.map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <Paperclip size={11} />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{formatFileSize(f.size)}</span>
+                  <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {err && (

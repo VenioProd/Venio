@@ -4,6 +4,13 @@ export type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type DecisionPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type DecisionCategory = 'BUDGET' | 'EMBAUCHE' | 'PROJET' | 'PARTENARIAT' | 'AUTRE'
 
+export interface IDecisionAttachment {
+  originalName: string
+  storagePath: string
+  mimeType: string
+  size: number
+}
+
 export interface IDecision extends Document {
   title: string
   description: string
@@ -20,6 +27,8 @@ export interface IDecision extends Document {
   options: string[]
   recommendation: string | null
   deadline: Date | null
+  attachments: IDecisionAttachment[]
+  recipients: mongoose.Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
 }
@@ -54,6 +63,18 @@ const decisionSchema = new Schema<IDecision>(
     options: { type: [String], default: [] },
     recommendation: { type: String, default: null },
     deadline: { type: Date, default: null },
+    attachments: {
+      type: [
+        {
+          originalName: { type: String, required: true },
+          storagePath: { type: String, required: true },
+          mimeType: { type: String, default: '' },
+          size: { type: Number, default: 0 },
+        },
+      ],
+      default: [],
+    },
+    recipients: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
   },
   { timestamps: true }
 )
