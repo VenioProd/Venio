@@ -665,6 +665,7 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 .mobile-menu-bottom {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
   padding-top: 16px;
