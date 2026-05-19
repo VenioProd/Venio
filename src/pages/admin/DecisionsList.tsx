@@ -505,186 +505,114 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   }
 
   return (
-    <div className="task-modal-overlay" onClick={onClose}>
-      <form
-        className="task-modal"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 0 }}
-      >
-        {/* En-tête */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            Nouvelle demande de décision
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: 'none',
-              borderRadius: 8,
-              width: 32, height: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-muted)',
-              flexShrink: 0,
-            }}
-          >
+    <div className="decision-modal-overlay" onClick={onClose}>
+      <form className="decision-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+
+        <div className="decision-modal__header">
+          <h2 className="decision-modal__title">Nouvelle demande de décision</h2>
+          <button type="button" className="decision-modal__close" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
 
-        {/* Champs */}
-        <div className="task-form-group">
-          <label>Titre *</label>
-          <input
-            className="portal-input"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            minLength={3}
-            maxLength={200}
-            placeholder="Intitulé de la décision…"
-          />
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Titre *</label>
+          <input className="portal-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+            required minLength={3} maxLength={200} placeholder="Intitulé de la décision…" />
         </div>
 
-        <div className="task-form-group">
-          <label>Description *</label>
-          <textarea
-            className="portal-input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            rows={3}
-            placeholder="Décrivez la décision à prendre…"
-          />
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Description *</label>
+          <textarea className="portal-input" value={description} onChange={(e) => setDescription(e.target.value)}
+            required rows={3} placeholder="Décrivez la décision à prendre…" />
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div className="task-form-group">
-            <label>Catégorie</label>
+        <div className="decision-modal__row">
+          <div className="decision-modal__field">
+            <label className="decision-modal__label">Catégorie</label>
             <select className="portal-input" value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)}>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <div className="task-form-group">
-            <label>Priorité</label>
+          <div className="decision-modal__field">
+            <label className="decision-modal__label">Priorité</label>
             <select className="portal-input" value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)}>
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
         </div>
 
-        <div className="task-form-group">
-          <label>Contexte <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
-          <textarea
-            className="portal-input"
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            rows={2}
-            placeholder="Informations de contexte utiles à la décision…"
-          />
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Contexte <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
+          <textarea className="portal-input" value={context} onChange={(e) => setContext(e.target.value)}
+            rows={2} placeholder="Informations de contexte utiles à la décision…" />
         </div>
 
-        <div className="task-form-group">
-          <label>
-            Options <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(une par ligne, {parsedOptions.length}/10)</span>
-          </label>
-          <textarea
-            className="portal-input"
-            value={optionsText}
-            onChange={(e) => setOptionsText(e.target.value)}
-            rows={3}
-            placeholder={'Option A\nOption B\nOption C'}
-          />
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Options <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(une par ligne — {parsedOptions.length}/10)</span></label>
+          <textarea className="portal-input" value={optionsText} onChange={(e) => setOptionsText(e.target.value)}
+            rows={3} placeholder={'Option A\nOption B\nOption C'} />
         </div>
 
-        <div className="task-form-group">
-          <label>Recommandation <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
-          <textarea
-            className="portal-input"
-            value={recommendation}
-            onChange={(e) => setRecommendation(e.target.value)}
-            rows={2}
-            placeholder="Votre recommandation personnelle…"
-          />
-        </div>
-
-        <div className="task-form-group">
-          <label>Échéance <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
-          <input
-            className="portal-input"
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
-        </div>
-
-        {/* Destinataires */}
-        <div className="task-form-group">
-          <label>Adresser à <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(en plus des admins)</span></label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', minHeight: 40 }}>
-            {allUsers.map((u) => {
-              const selected = selectedRecipients.some((r) => r._id === u._id)
-              return (
-                <button
-                  key={u._id}
-                  type="button"
-                  onClick={() => toggleRecipient(u)}
-                  style={{
-                    fontSize: 12, padding: '3px 10px', borderRadius: 12, cursor: 'pointer',
-                    border: `1px solid ${selected ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                    background: selected ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: selected ? '#a5b4fc' : 'var(--text-secondary)',
-                    fontWeight: selected ? 600 : 400,
-                  }}
-                >
-                  {u.name || u.email}
-                </button>
-              )
-            })}
-            {allUsers.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>}
+        <div className="decision-modal__row">
+          <div className="decision-modal__field">
+            <label className="decision-modal__label">Recommandation <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
+            <textarea className="portal-input" value={recommendation} onChange={(e) => setRecommendation(e.target.value)}
+              rows={2} placeholder="Votre recommandation…" />
+          </div>
+          <div className="decision-modal__field">
+            <label className="decision-modal__label">Échéance <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(optionnel)</span></label>
+            <input className="portal-input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
           </div>
         </div>
 
-        {/* Pièces jointes */}
-        <div className="task-form-group">
-          <label>Pièces jointes <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(max 5 × 20 Mo)</span></label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer' }}>
-            <Paperclip size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              {files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}
-            </span>
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Adresser à <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(en plus des admins)</span></label>
+          <div className="decision-modal__recipients">
+            {allUsers.length === 0
+              ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
+              : allUsers.map((u) => {
+                  const selected = selectedRecipients.some((r) => r._id === u._id)
+                  return (
+                    <button key={u._id} type="button"
+                      className={`decision-modal__recipient-btn${selected ? ' selected' : ''}`}
+                      onClick={() => toggleRecipient(u)}>
+                      {u.name || u.email}
+                    </button>
+                  )
+                })}
+          </div>
+        </div>
+
+        <div className="decision-modal__field">
+          <label className="decision-modal__label">Pièces jointes <span style={{ textTransform: 'none', fontWeight: 400, fontSize: 11 }}>(max 5 × 20 Mo)</span></label>
+          <label className="decision-modal__file-zone">
+            <Paperclip size={14} />
+            <span>{files.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${files.length} fichier(s) sélectionné(s)`}</span>
             <input type="file" multiple style={{ display: 'none' }} onChange={(e) => {
-              const added = Array.from(e.target.files || [])
-              setFiles((prev) => [...prev, ...added].slice(0, 5))
+              setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))
               e.target.value = ''
             }} />
           </label>
           {files.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="decision-modal__file-list">
               {files.map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+                <div key={i} className="decision-modal__file-item">
                   <Paperclip size={11} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{formatFileSize(f.size)}</span>
-                  <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0 }}>×</button>
+                  <span>{f.name}</span>
+                  <span className="decision-modal__file-size">{formatFileSize(f.size)}</span>
+                  <button type="button" className="decision-modal__file-remove"
+                    onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}>×</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {err && (
-          <p style={{ margin: '0 0 12px', color: '#ef4444', fontSize: 13 }}>{err}</p>
-        )}
+        {err && <p className="decision-modal__error">{err}</p>}
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>
-            Annuler
-          </button>
+        <div className="decision-modal__actions">
+          <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>Annuler</button>
           <button type="submit" className="portal-button" disabled={submitting}>
             {submitting ? 'Envoi…' : 'Soumettre la demande'}
           </button>
