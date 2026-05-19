@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import User from '../../models/User.js'
+import { createNotification } from '../../lib/notifications.js'
 
 const router = express.Router()
 
@@ -74,6 +75,15 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
     user.twoFactorEnabled = true
     await user.save()
 
+    // Notif à l'utilisateur (confirmation sécurité)
+    createNotification({
+      recipient: user._id,
+      type: 'TWO_FACTOR_ENABLED',
+      title: `🔐 2FA activée`,
+      message: `L'authentification à deux facteurs est désormais active sur votre compte`,
+      link: `/admin/profile`,
+    }).catch(() => {})
+
     return res.json({ enabled: true })
   } catch (err) {
     return next(err)
@@ -89,6 +99,15 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
     user.twoFactorSecret = null
     user.twoFactorEnabled = false
     await user.save()
+
+    // Notif alerte sécurité à l'utilisateur
+    createNotification({
+      recipient: user._id,
+      type: 'TWO_FACTOR_DISABLED',
+      title: `⚠️ 2FA désactivée`,
+      message: `L'authentification à deux facteurs a été désactivée sur votre compte`,
+      link: `/admin/profile`,
+    }).catch(() => {})
 
     return res.json({ enabled: false })
   } catch (err) {

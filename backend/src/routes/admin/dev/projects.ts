@@ -5,6 +5,7 @@ import { PERMISSIONS } from '../../../lib/permissions.js'
 import DevProject, { DEV_PROJECT_STATUSES } from '../../../models/DevProject.js'
 import DevIssue from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
+import { notifyUsers } from '../../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -89,6 +90,18 @@ router.post('/projects', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: 
       .populate('members', 'name email avatarUrl')
       .populate('createdBy', 'name email')
 
+    // Notif au lead + chaque membre
+    const recipients: string[] = [...(members as string[])]
+    if (lead) recipients.push(lead)
+    notifyUsers(recipients, {
+      type: 'INTERNAL_PROJECT_CREATED',
+      title: `Nouveau projet dev`,
+      message: `Vous avez été ajouté à "${name}" (${key})`,
+      link: `/admin/dev/projects/${created._id}`,
+      metadata: { projectId: String(created._id), key },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     res.status(201).json(populated)
   } catch (err) {
     next(err)
@@ -117,6 +130,9 @@ router.patch('/projects/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (
     const project = await DevProject.findById(req.params.id)
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
+    const oldMembers = project.members.map((id) => String(id))
+    const oldLead = project.lead ? String(project.lead) : null
+
     if (typeof req.body?.name === 'string') project.name = req.body.name.trim().slice(0, 120)
     if (typeof req.body?.description === 'string') project.description = req.body.description.trim().slice(0, 2000)
     if (typeof req.body?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(req.body.color)) project.color = req.body.color
@@ -132,6 +148,22 @@ router.patch('/projects/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (
     }
 
     await project.save()
+
+    // Notif nouveaux membres / nouveau lead
+    const newMembers = project.members.map((id) => String(id))
+    const newLead = project.lead ? String(project.lead) : null
+    const added = newMembers.filter((id) => !oldMembers.includes(id))
+    if (newLead && newLead !== oldLead) added.push(newLead)
+    if (added.length > 0) {
+      notifyUsers(added, {
+        type: 'INTERNAL_PROJECT_CREATED',
+        title: `Ajouté au projet dev`,
+        message: `"${project.name}" (${project.key})`,
+        link: `/admin/dev/projects/${project._id}`,
+        metadata: { projectId: String(project._id), key: project.key },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+    }
     const populated = await DevProject.findById(project._id)
       .populate('lead', 'name email avatarUrl')
       .populate('members', 'name email avatarUrl')

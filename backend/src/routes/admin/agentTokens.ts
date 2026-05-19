@@ -15,6 +15,7 @@ import {
 import { generateAgentToken } from '../../lib/agent/tokens.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 import { ensureGeneralChannel } from '../../services/internalMessaging.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
@@ -165,6 +166,16 @@ router.post(
       const tokenSafe = await AgentToken.findById(token._id)
         .populate('createdBy', 'email name')
         .lean()
+
+      // Notif sécurité aux super admins
+      notifySuperAdmins({
+        type: 'AGENT_TOKEN_CREATED',
+        title: `🤖 Nouveau token agent créé`,
+        message: `"${token.name}" (scopes : ${(scopes as string[]).slice(0, 3).join(', ')}${scopes.length > 3 ? '...' : ''})`,
+        link: '/admin/agents',
+        metadata: { tokenId: String(token._id), prefix: token.prefix },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
 
       return res.status(201).json({
         token: tokenSafe,
@@ -347,6 +358,16 @@ router.post(
         summary: `Révocation du token agent "${token.name}"`,
         after: { revokedAt: token.revokedAt },
       })
+
+      // Notif sécurité aux super admins
+      notifySuperAdmins({
+        type: 'AGENT_TOKEN_REVOKED',
+        title: `🔒 Token agent révoqué`,
+        message: `"${token.name}" (${token.prefix}) a été révoqué`,
+        link: '/admin/agents',
+        metadata: { tokenId: String(token._id), prefix: token.prefix },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
 
       const safe = await AgentToken.findById(token._id)
         .populate('createdBy', 'email name')

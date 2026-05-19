@@ -66,6 +66,12 @@ export type NotificationType =
   | 'PROJECT_ITEM_CREATED' | 'PROJECT_ITEM_VALIDATED'
   // Resources / Tool access
   | 'TOOL_ACCESS_GRANTED' | 'RESOURCE_REQUESTED'
+  // Security / Admin
+  | 'ADMIN_CREATED' | 'ADMIN_ROLE_CHANGED' | 'ADMIN_PERMISSIONS_CHANGED'
+  | 'TWO_FACTOR_ENABLED' | 'TWO_FACTOR_DISABLED'
+  | 'AGENT_TOKEN_CREATED' | 'AGENT_TOKEN_REVOKED'
+  // Briefs (mission briefs)
+  | 'BRIEF_ASSIGNED' | 'BRIEF_STATUS_CHANGED'
 
 // ─── Audit ───
 export type AuditAction =

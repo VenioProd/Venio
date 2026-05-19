@@ -352,6 +352,8 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
     const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
     if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
+    const oldAssignees = mission.assignedTo.map((id) => String(id))
+
     const { title, description, assignedTo, status, dueDate, steps, progress, deliverables } = req.body
     if (isAdmin) {
       if (title !== undefined) mission.title = title.trim()
@@ -369,6 +371,21 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
       .populate('assignedTo', 'name email')
       .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
+
+    // Notif aux nouveaux assignés (différence entre ancienne et nouvelle liste)
+    const newAssignees = mission.assignedTo.map((id) => String(id))
+    const added = newAssignees.filter((id) => !oldAssignees.includes(id))
+    if (added.length > 0) {
+      notifyUsers(added, {
+        type: 'INTERNAL_MISSION_ASSIGNED',
+        title: `Mission assignée`,
+        message: `"${mission.title}"`,
+        link: `/admin/projets-internes/${req.params.projectId}`,
+        metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+    }
+
     return res.json({ mission: populated })
   } catch (err) { return next(err) }
 })
@@ -408,6 +425,19 @@ router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request,
       .populate('assignedTo', 'name email')
       .populate('participants.user', 'name email')
       .populate('createdBy', 'name')
+
+    // Si blocage signalé → notif aux super admins
+    if (blocked && blockedReason) {
+      notifySuperAdmins({
+        type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
+        title: `🚫 Mission bloquée : ${mission.title}`,
+        message: blockedReason.slice(0, 200),
+        link: `/admin/projets-internes/${req.params.projectId}`,
+        metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), blocked: true },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+    }
+
     return res.json({ mission: populated })
   } catch (err) { return next(err) }
 })

@@ -11,6 +11,8 @@ import type { AdminRole } from '../../types/enums.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import { sendAdminCredentials, sendPasswordResetEmail } from '../../lib/email.js'
 import { resetTokens } from '../auth.js'
+import { createNotification } from '../../lib/notifications.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -97,6 +99,17 @@ router.post(
     )
 
     const safeUser = await User.findById(user._id).select('-passwordHash')
+
+    // Notif aux super admins (audit / sécurité)
+    notifySuperAdmins({
+      type: 'ADMIN_CREATED',
+      title: `Nouvel admin créé`,
+      message: `${name} (${normalizedEmail}) — rôle : ${nextRole}`,
+      link: `/admin/team`,
+      metadata: { userId: String(user._id), role: nextRole },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ user: safeUser })
   } catch (err) {
     return next(err)
@@ -133,6 +146,8 @@ router.patch(
     if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
       return res.status(404).json({ error: 'Admin not found' })
     }
+    const oldRole = user.role
+    const oldPermissions = JSON.stringify(user.customPermissions || [])
 
     if (role) {
       if (!ADMIN_ROLES.includes(role)) {
@@ -231,6 +246,42 @@ router.patch(
 
     await user.save()
     const safeUser = await User.findById(user._id).select('-passwordHash')
+
+    // Notif : changement de rôle (à l'utilisateur concerné + super admins)
+    if (role && role !== oldRole) {
+      if (String(user._id) !== req.user!.id) {
+        createNotification({
+          recipient: user._id,
+          type: 'ADMIN_ROLE_CHANGED',
+          title: `Votre rôle a été modifié`,
+          message: `Nouveau rôle : ${role}`,
+          link: `/admin/profile`,
+          metadata: { from: oldRole, to: role },
+        }).catch(() => {})
+      }
+      notifySuperAdmins({
+        type: 'ADMIN_ROLE_CHANGED',
+        title: `Rôle modifié : ${user.name || user.email}`,
+        message: `${oldRole} → ${role}`,
+        link: `/admin/team`,
+        metadata: { userId: String(user._id), from: oldRole, to: role },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+    }
+
+    // Notif : changement de permissions
+    const newPermissions = JSON.stringify(user.customPermissions || [])
+    if (oldPermissions !== newPermissions && String(user._id) !== req.user!.id) {
+      createNotification({
+        recipient: user._id,
+        type: 'ADMIN_PERMISSIONS_CHANGED',
+        title: `Vos permissions ont été modifiées`,
+        message: `Un super admin a ajusté vos accès`,
+        link: `/admin/profile`,
+        metadata: { userId: String(user._id) },
+      }).catch(() => {})
+    }
+
     return res.json({ user: safeUser })
   } catch (err) {
     return next(err)

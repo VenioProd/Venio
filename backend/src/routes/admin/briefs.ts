@@ -86,10 +86,11 @@ router.post('/', async (req: Request, res: Response) => {
     if (String(destinataire) !== String(user.id)) {
       createNotification({
         recipient: destinataire,
-        type: 'TASK_ASSIGNED',
+        type: 'BRIEF_ASSIGNED',
         title: `Nouveau brief : ${intitule}`,
         message: `${user.name} vous a attribue un brief de mission`,
         link: '/admin/gestion',
+        metadata: { briefId: String(brief._id) },
       }).catch(() => {})
 
       // Send email
@@ -131,6 +132,9 @@ router.patch('/:id', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Acces refuse' })
     }
 
+    const oldStatut = brief.statut
+    const oldDestinataire = brief.destinataire.toString()
+
     if (user.role === 'SUPER_ADMIN') {
       const fields = [
         'project', 'destinataire', 'entity', 'briefPriority', 'deadline',
@@ -153,6 +157,30 @@ router.patch('/:id', async (req: Request, res: Response) => {
     await brief.populate('destinataire', 'name email')
     await brief.populate('createdBy', 'name email')
     await brief.populate('project', 'name')
+
+    // Notif si destinataire changé → nouveau destinataire
+    const newDestinataire = brief.destinataire.toString()
+    if (newDestinataire !== oldDestinataire && newDestinataire !== user.id) {
+      createNotification({
+        recipient: brief.destinataire,
+        type: 'BRIEF_ASSIGNED',
+        title: `Brief réassigné à vous`,
+        message: brief.intitule,
+        link: '/admin/gestion',
+        metadata: { briefId: String(brief._id) },
+      }).catch(() => {})
+    }
+    // Notif si statut changé → super admin créateur
+    if (oldStatut !== brief.statut && brief.createdBy && String(brief.createdBy) !== user.id) {
+      createNotification({
+        recipient: brief.createdBy,
+        type: 'BRIEF_STATUS_CHANGED',
+        title: `Brief "${brief.intitule}" — ${brief.statut}`,
+        message: `Statut mis à jour par ${user.name || user.email}`,
+        link: '/admin/gestion',
+        metadata: { briefId: String(brief._id), statut: brief.statut },
+      }).catch(() => {})
+    }
 
     res.json(brief)
   } catch {
