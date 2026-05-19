@@ -657,7 +657,6 @@ router.get('/reports/all', requireAdmin, async (req: Request, res: Response) => 
   try {
     const { internId, date, status } = req.query
     const filter: Record<string, unknown> = {}
-    if (internId) filter.internId = internId
     if (status) filter.status = status
     if (date) {
       const d = new Date(date as string)
@@ -665,6 +664,16 @@ router.get('/reports/all', requireAdmin, async (req: Request, res: Response) => 
         $gte: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
         $lt: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
       }
+    }
+
+    if (internId) {
+      filter.internId = internId
+    } else {
+      // Restreindre aux vrais stagiaires/alternants (exclut les admins auto-créés)
+      const stagiaires = await User.find({ role: 'STAGIAIRE' }).select('_id')
+      const stagiaireIds = stagiaires.map((u) => u._id)
+      const validInterns = await Intern.find({ userId: { $in: stagiaireIds } }).select('_id')
+      filter.internId = { $in: validInterns.map((i) => i._id) }
     }
 
     const reports = await ActivityReport.find(filter)
@@ -677,17 +686,22 @@ router.get('/reports/all', requireAdmin, async (req: Request, res: Response) => 
   }
 })
 
-// GET /api/admin/interns/reports/mine — mes rapports (tous les admins)
+// GET /api/admin/interns/reports/mine — mes rapports (stagiaires uniquement)
 router.get('/reports/mine', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
 
-    // Chercher ou creer automatiquement une fiche intern pour cet admin
+    // Chercher la fiche intern existante
     let intern = await Intern.findOne({ userId: user.id })
+
+    // Créer automatiquement une fiche uniquement pour les STAGIAIRE
     if (!intern) {
+      if (user.role !== 'STAGIAIRE') {
+        return res.json([])
+      }
       intern = await Intern.create({
         userId: user.id,
-        poste: user.role || 'Admin',
+        poste: 'Stagiaire',
         dateDebut: new Date(),
         dateFin: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
         createdBy: user.id,
