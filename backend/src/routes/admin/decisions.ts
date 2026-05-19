@@ -72,8 +72,8 @@ router.post(
         deadline: deadline ? new Date(deadline) : null,
       })
 
-      // Notifier tous les super admins d'une nouvelle décision à traiter
-      const superAdmins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
+      // Notifier tous les super admins et PDG d'une nouvelle décision à traiter
+      const superAdmins = await User.find({ role: { $in: ['SUPER_ADMIN', 'PDG'] }, isActive: true }).select('_id').lean()
       const submitterName = req.user!.name || req.user!.email || 'Un admin'
       await Promise.allSettled(
         superAdmins
