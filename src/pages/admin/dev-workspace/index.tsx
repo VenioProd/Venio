@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Activity, CheckCircle2, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
@@ -69,10 +69,7 @@ function userInitial(u: { name?: string; email?: string } | null | undefined): s
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
 }
 
-interface DeepLinkParams {
-  issueId?: string
-  projectId?: string
-}
+type DeepLinkParams = { issueId?: string; projectId?: string } & Record<string, string | undefined>
 
 const CI_STATUS_LABEL: Record<DevCiStatus, string> = {
   PENDING: 'En attente',
@@ -240,8 +237,10 @@ const DevWorkspace = () => {
   const params = useParams<DeepLinkParams>()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const deepIssueId = params.issueId
-  const deepProjectId = params.projectId
+  const queryProjectId = searchParams.get('project') || undefined
+  const deepProjectId = params.projectId || queryProjectId
 
   const [projects, setProjects] = useState<DevProject[]>([])
   const [issues, setIssues] = useState<DevIssue[]>([])
@@ -645,14 +644,9 @@ const DevWorkspace = () => {
                   key={project._id}
                   type="button"
                   className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
-                  onClick={() => {
-                    const next = filters.project === project._id ? undefined : project._id
-                    setFilters((f) => ({ ...f, project: next }))
-                    if (next) navigate(`/admin/dev/projects/${next}`)
-                    else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
-                  }}
+                  onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
                   style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
-                  title={`Santé: ${health}`}
+                  title="Ouvrir le cockpit du projet"
                 >
                   <span className="dev-project-card-key">{project.key}</span>
                   <strong>{project.name}</strong>
@@ -724,8 +718,6 @@ const DevWorkspace = () => {
           onChange={(e) => {
             const next = e.target.value === 'all' ? undefined : e.target.value
             setFilters((f) => ({ ...f, project: next }))
-            if (next) navigate(`/admin/dev/projects/${next}`)
-            else if (location.pathname.startsWith('/admin/dev/projects/')) navigate('/admin/dev')
           }}
         >
           <option value="all">Tous projets</option>
@@ -733,6 +725,16 @@ const DevWorkspace = () => {
             <option key={p._id} value={p._id}>{p.key} · {p.name}</option>
           ))}
         </select>
+        {filters.project && (
+          <button
+            type="button"
+            className="dev-btn subtle"
+            onClick={() => navigate(`/admin/dev/projects/${filters.project}`)}
+            title="Ouvrir le cockpit projet"
+          >
+            <Target size={12} /> Cockpit projet
+          </button>
+        )}
         <select
           className="dev-select"
           value={filters.status || 'open'}

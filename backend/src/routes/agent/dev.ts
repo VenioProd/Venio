@@ -12,7 +12,7 @@ import DevIssue, {
 } from '../../models/DevIssue.js'
 import DevIssueComment from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
-import { computeStats, computeOverview } from '../../lib/dev/stats.js'
+import { computeStats, computeOverview, computeProjectCockpit } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
 import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
 
@@ -163,6 +163,22 @@ router.get('/dev/projects/:id', requireScope('read:dev'), param('id').isMongoId(
     next(err)
   }
 })
+
+router.get(
+  '/dev/projects/:id/dashboard',
+  requireScope('read:dev'),
+  param('id').isMongoId(),
+  async (req, res, next) => {
+    if (emit(req, res)) return
+    try {
+      const payload = await computeProjectCockpit(String(req.params.id))
+      if (!payload) return respondError(res, 404, 'NOT_FOUND', 'Projet introuvable')
+      res.json(payload)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 // ─── Issues ──────────────────────────────────────────────────────────────────
 

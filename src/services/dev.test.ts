@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { computeWeightedProgress, type DevIssueStatus } from './dev'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import {
+  computeWeightedProgress,
+  fetchDevProjectCockpit,
+  type DevIssueStatus,
+} from './dev'
 
 const empty = (): Record<DevIssueStatus, number> => ({
   BACKLOG: 0,
@@ -46,5 +50,27 @@ describe('computeWeightedProgress', () => {
     m.IN_REVIEW = 2
     m.DONE = 2
     expect(computeWeightedProgress(m)).toBe(48)
+  })
+})
+
+describe('fetchDevProjectCockpit', () => {
+  const ORIGINAL_FETCH = global.fetch
+  afterEach(() => {
+    global.fetch = ORIGINAL_FETCH
+  })
+
+  it('hits the admin cockpit endpoint with the project id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ project: { key: 'VEN' }, counts: { total: 0 } }),
+    })
+    global.fetch = fetchMock as unknown as typeof fetch
+    const res = await fetchDevProjectCockpit('507f1f77bcf86cd799439011')
+    expect(fetchMock).toHaveBeenCalled()
+    const calledUrl = fetchMock.mock.calls[0]![0] as string
+    expect(calledUrl).toContain('/api/admin/dev/projects/507f1f77bcf86cd799439011/dashboard')
+    expect(res.project.key).toBe('VEN')
   })
 })
