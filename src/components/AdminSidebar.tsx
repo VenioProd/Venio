@@ -29,8 +29,6 @@ import {
   Bot,
   ClipboardCheck,
   HelpCircle,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
   User,
   X,
@@ -117,12 +115,11 @@ function isItemVisible(item: NavItem, user: ReturnType<typeof useAuth>['user']):
 
 export interface AdminSidebarProps {
   collapsed: boolean
-  onCollapseToggle: () => void
   drawerOpen?: boolean
   onDrawerClose?: () => void
 }
 
-const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawerClose }: AdminSidebarProps) => {
+const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSidebarProps) => {
   const { user, logout } = useAuth()
   const { conversations } = useMessaging()
   const navigate = useNavigate()
@@ -269,15 +266,6 @@ const AdminSidebar = ({ collapsed, onCollapseToggle, drawerOpen = false, onDrawe
           </button>
         </div>
 
-        <button
-          type="button"
-          className="admin-sb-collapse-btn"
-          onClick={onCollapseToggle}
-          aria-label={collapsed ? 'Étendre la navigation' : 'Réduire la navigation'}
-        >
-          {collapsed ? <ChevronRight size={15} aria-hidden /> : <ChevronLeft size={15} aria-hidden />}
-          <span className="admin-sb-label">Réduire</span>
-        </button>
       </aside>
 
       {/* ---- Drawer mobile (portal) ---- */}
