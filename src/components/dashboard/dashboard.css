@@ -459,3 +459,31 @@
 }
 
 .ix-filter--active .ix-filter__n { background: rgba(var(--primary-rgb), 0.3); }
+
+/* ── SnoozePopover ── */
+.ix-snooze {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px dashed rgba(var(--primary-rgb), 0.3);
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--primary-light);
+}
+
+.ix-snooze__label { font-weight: 600; }
+
+.ix-snooze__opt {
+  padding: 3px 8px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: none;
+  border-radius: 3px;
+  color: var(--primary-light);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ix-snooze__opt:hover { background: rgba(var(--primary-rgb), 0.2); }
