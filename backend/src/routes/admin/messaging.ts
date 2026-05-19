@@ -8,6 +8,7 @@ import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import User from '../../models/User.js'
 import InternalMessage from '../../models/InternalMessage.js'
+import { getIo } from '../../realtime/ioSingleton.js'
 import {
   createConversation,
   createMessage,
@@ -165,6 +166,7 @@ router.post(
         content: String(req.body.content || 'Pièce jointe'),
         attachments,
       })
+      getIo()?.to(`conversation:${req.params.conversationId}`).emit('message:created', { message })
       return res.status(201).json({ message })
     } catch (err) {
       return next(err)

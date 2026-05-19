@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useToast } from '../../../context/ToastContext'
 import { uploadMessageAttachments } from '../../../services/messaging'
 import type { MessagingUser } from '../../../types/messaging.types'
 
@@ -25,6 +26,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function MessageComposer({ conversationId, users, onSend, onUploaded, onTyping }: MessageComposerProps) {
+  const { showToast } = useToast()
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
   const [files, setFiles] = useState<File[]>([])
@@ -59,6 +61,9 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       setMentionOpen(false)
       setEmojiOpen(false)
       onTyping(false)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi'
+      showToast(msg, 'error')
     } finally {
       setSending(false)
     }
