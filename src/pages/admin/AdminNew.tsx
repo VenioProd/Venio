@@ -43,6 +43,10 @@ const roleMeta: Record<string, { label: string; description: string }> = {
     label: 'Lecture seule',
     description: 'Consultation sans modification des données.',
   },
+  STAGIAIRE: {
+    label: 'Stagiaire',
+    description: 'Accès limité : projets et tâches assignés, messagerie interne, tickets.',
+  },
 }
 
 const permissionLabels: Record<string, string> = {

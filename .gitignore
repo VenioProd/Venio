@@ -27,4 +27,8 @@ dist-ssr
 backend/.env
 backend/node_modules
 backend/uploads
-backend/distbackend/backups/
+backend/dist
+backend/backups/
+
+muse/
+prospection/

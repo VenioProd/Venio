@@ -1,6 +1,6 @@
 import type { UserRole, AdminRole, Permission } from '../types/enums.js'
 
-export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER']
+export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE']
 
 export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_ADMINS: 'manage_admins',
@@ -82,6 +82,15 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_ACCOUNTING,
     PERMISSIONS.VIEW_VAT,
     PERMISSIONS.VIEW_DEV,
+  ]),
+  STAGIAIRE: new Set([
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.MANAGE_TASKS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_MESSAGING,
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.VIEW_TICKETS,
+    PERMISSIONS.CREATE_TICKETS,
   ]),
   CLIENT: new Set<Permission>(),
   // Agents (API Bearer tokens) n'héritent d'aucune permission par rôle ;

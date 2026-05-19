@@ -1,6 +1,6 @@
 import type { Permission, User, UserRole } from '../types/auth.types'
 
-export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] as const
+export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE'] as const
 
 export const PERMISSIONS = {
   MANAGE_ADMINS: 'manage_admins',

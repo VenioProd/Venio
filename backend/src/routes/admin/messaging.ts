@@ -38,7 +38,7 @@ router.use(requirePermission(PERMISSIONS.VIEW_MESSAGING))
 router.get('/users', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({
-      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
+      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
       isActive: { $ne: false },
     })
       .select('name email role')

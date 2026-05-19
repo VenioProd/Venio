@@ -12,7 +12,9 @@ import './AdminPortal.css'
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super admin',
   ADMIN: 'Contributeur',
+  RH: 'RH',
   VIEWER: 'Lecture seule',
+  STAGIAIRE: 'Stagiaire',
 }
 
 const permissionLabels: Record<string, string> = {
@@ -276,6 +278,7 @@ const AdminEdit = () => {
                 { value: 'ADMIN', label: 'Contributeur' },
                 { value: 'RH', label: 'RH' },
                 { value: 'VIEWER', label: 'Lecture seule' },
+                { value: 'STAGIAIRE', label: 'Stagiaire' },
               ]}
             />
           </div>

@@ -59,7 +59,7 @@ describe('permissions module', () => {
 
   describe('ADMIN_ROLES constant', () => {
     it('should include SUPER_ADMIN, ADMIN, and VIEWER', () => {
-      expect(ADMIN_ROLES).toEqual(['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'])
+      expect(ADMIN_ROLES).toEqual(['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE'])
     })
   })
 

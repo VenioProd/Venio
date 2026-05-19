@@ -1,4 +1,4 @@
-export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER' | 'STAGIAIRE'
 export type ClientRole = 'CLIENT'
 export type UserRole = AdminRole | ClientRole
 
