@@ -17,9 +17,6 @@ import {
   AlertTriangle,
   FolderKanban,
   Users,
-  MessageSquare,
-  CheckSquare,
-  Zap,
   TrendingUp,
   Plus,
   ShieldCheck,
@@ -119,13 +116,6 @@ interface SuperDashboard {
   }
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
-  HAUTE: '#f59e0b',
-  URGENTE: '#ef4444',
-}
-
 const PROJECT_STATUS_LABELS: Record<string, string> = {
   EN_COURS: 'En cours',
   EN_ATTENTE: 'En attente',
@@ -144,7 +134,6 @@ const SuperAdminDashboard = () => {
   const { user } = useAuth()
   const [data, setData] = useState<SuperDashboard | null>(null)
   const [loading, setLoading] = useState(true)
-  const [decidingId, setDecidingId] = useState<string | null>(null)
   const [refresh, setRefresh] = useState(0)
   const [period, setPeriod] = useState<Period>(() => {
     try { return (localStorage.getItem('venio-admin-dashboard-period') as Period) || '30d' } catch { return '30d' }
@@ -204,22 +193,6 @@ const SuperAdminDashboard = () => {
       Retard: m.overdue,
     }))
   }, [data])
-
-  const handleDecision = async (id: string, action: 'approve' | 'reject') => {
-    const comment = action === 'reject' ? window.prompt('Motif du rejet (optionnel) :') || '' : ''
-    setDecidingId(id)
-    try {
-      await apiFetch(`/api/admin/decisions/${id}/${action}`, {
-        method: 'POST',
-        body: JSON.stringify({ comment }),
-      })
-      setRefresh((r) => r + 1)
-    } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
-    } finally {
-      setDecidingId(null)
-    }
-  }
 
   return (
     <div className="portal-container">
