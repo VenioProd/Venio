@@ -17,9 +17,6 @@ import {
   AlertTriangle,
   FolderKanban,
   Users,
-  MessageSquare,
-  CheckSquare,
-  Zap,
   TrendingUp,
   Plus,
   ShieldCheck,
@@ -29,7 +26,7 @@ import {
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonRow } from '../../components/Skeleton'
-import { DashKpiCard, DashAlertBanner, DashSection, InboxStream } from '../../components/dashboard'
+import { DashKpiCard, DashAlertBanner, DashSection, InboxStream, TwoColumnGrid, PeriodSelector, type Period } from '../../components/dashboard'
 import type { AlertItem } from '../../components/dashboard'
 import PulseStatus from '../../components/dashboard/PulseStatus'
 import KpiGrid2x2 from '../../components/dashboard/KpiGrid2x2'
@@ -119,13 +116,6 @@ interface SuperDashboard {
   }
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
-  HAUTE: '#f59e0b',
-  URGENTE: '#ef4444',
-}
-
 const PROJECT_STATUS_LABELS: Record<string, string> = {
   EN_COURS: 'En cours',
   EN_ATTENTE: 'En attente',
@@ -144,13 +134,18 @@ const SuperAdminDashboard = () => {
   const { user } = useAuth()
   const [data, setData] = useState<SuperDashboard | null>(null)
   const [loading, setLoading] = useState(true)
-  const [decidingId, setDecidingId] = useState<string | null>(null)
   const [refresh, setRefresh] = useState(0)
+  const [period, setPeriod] = useState<Period>(() => {
+    try { return (localStorage.getItem('venio-admin-dashboard-period') as Period) || '30d' } catch { return '30d' }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('venio-admin-dashboard-period', period) } catch {}
+  }, [period])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    apiFetch<SuperDashboard>('/api/admin/dashboard/super')
+    apiFetch<SuperDashboard>(`/api/admin/dashboard/super?period=${period}`)
       .then((d) => {
         if (!cancelled) setData(d)
       })
@@ -161,7 +156,7 @@ const SuperAdminDashboard = () => {
     return () => {
       cancelled = true
     }
-  }, [refresh])
+  }, [refresh, period])
 
   const alerts: AlertItem[] = useMemo(() => {
     if (!data) return []
@@ -199,22 +194,6 @@ const SuperAdminDashboard = () => {
     }))
   }, [data])
 
-  const handleDecision = async (id: string, action: 'approve' | 'reject') => {
-    const comment = action === 'reject' ? window.prompt('Motif du rejet (optionnel) :') || '' : ''
-    setDecidingId(id)
-    try {
-      await apiFetch(`/api/admin/decisions/${id}/${action}`, {
-        method: 'POST',
-        body: JSON.stringify({ comment }),
-      })
-      setRefresh((r) => r + 1)
-    } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
-    } finally {
-      setDecidingId(null)
-    }
-  }
-
   return (
     <div className="portal-container">
       <div className="admin-page-header">
@@ -226,6 +205,7 @@ const SuperAdminDashboard = () => {
           </p>
         </div>
         <div className="admin-quick-actions">
+          <PeriodSelector value={period} onChange={setPeriod} />
           <button
             type="button"
             className="portal-button secondary"
@@ -246,55 +226,57 @@ const SuperAdminDashboard = () => {
           {/* ─── Alertes ─── */}
           <DashAlertBanner alerts={alerts} />
 
-          {/* ─── Inbox unifiée (Phase 5) ─── */}
-          <InboxStream />
-
-          {/* ─── Analytics ─── */}
-          <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
-            <PulseStatus checks={data.pulseChecks} />
-            <div style={{ marginTop: 12 }}>
-              <KpiGrid2x2 kpis={[
-                {
-                  label: 'CA · mois',
-                  value: formatEUR(data.kpis.ca.value),
-                  accentColor: '#ff0080',
-                  accentRgb: '255, 0, 128',
-                  delta: data.kpis.ca.delta,
-                  objective: data.kpis.ca.objective,
-                },
-                {
-                  label: 'Pipeline',
-                  value: formatEUR(data.kpis.pipeline.value),
-                  accentColor: '#8b5cf6',
-                  accentRgb: '139, 92, 246',
-                  delta: data.kpis.pipeline.delta,
-                  to: '/admin/crm',
-                },
-                {
-                  label: 'Leads chauds',
-                  value: data.kpis.hotLeads.value,
-                  accentColor: '#f59e0b',
-                  accentRgb: '245, 158, 11',
-                  to: '/admin/crm',
-                },
-                {
-                  label: 'Projets actifs',
-                  value: data.kpis.activeProjects.value,
-                  accentColor: '#22c55e',
-                  accentRgb: '34, 197, 94',
-                },
-              ]} />
-            </div>
-            {trendData.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <FinancialChart
-                  data={trendData.map((t) => ({ ts: t.month, value: t.ca }))}
-                  label="CA + Volume · 6 mois"
-                  currentValue={formatEUR(data.kpis.ca.value)}
-                />
-              </div>
-            )}
-          </DashSection>
+          {/* ─── Inbox + Analytics (2-column) ─── */}
+          <TwoColumnGrid
+            left={<InboxStream />}
+            right={
+              <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
+                <PulseStatus checks={data.pulseChecks} />
+                <div style={{ marginTop: 12 }}>
+                  <KpiGrid2x2 kpis={[
+                    {
+                      label: 'CA · mois',
+                      value: formatEUR(data.kpis.ca.value),
+                      accentColor: '#ff0080',
+                      accentRgb: '255, 0, 128',
+                      delta: data.kpis.ca.delta,
+                      objective: data.kpis.ca.objective,
+                    },
+                    {
+                      label: 'Pipeline',
+                      value: formatEUR(data.kpis.pipeline.value),
+                      accentColor: '#8b5cf6',
+                      accentRgb: '139, 92, 246',
+                      delta: data.kpis.pipeline.delta,
+                      to: '/admin/crm',
+                    },
+                    {
+                      label: 'Leads chauds',
+                      value: data.kpis.hotLeads.value,
+                      accentColor: '#f59e0b',
+                      accentRgb: '245, 158, 11',
+                      to: '/admin/crm',
+                    },
+                    {
+                      label: 'Projets actifs',
+                      value: data.kpis.activeProjects.value,
+                      accentColor: '#22c55e',
+                      accentRgb: '34, 197, 94',
+                    },
+                  ]} />
+                </div>
+                {trendData.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <FinancialChart
+                      data={trendData.map((t) => ({ ts: t.month, value: t.ca }))}
+                      label="CA + Volume · 6 mois"
+                      currentValue={formatEUR(data.kpis.ca.value)}
+                    />
+                  </div>
+                )}
+              </DashSection>
+            }
+          />
 
           {/* ─── Opérations ─── */}
           <DashSection title="Opérations" icon={<FolderKanban size={16} />}>
