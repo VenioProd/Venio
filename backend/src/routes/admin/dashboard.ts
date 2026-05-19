@@ -112,13 +112,61 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // GET /api/admin/dashboard/super — agrégation pour le super admin
 // Inclut alertes, business KPIs, ops, équipe, messages/décisions en attente,
 // trends CA sur les 6 derniers mois.
+type Period = '7d' | '30d' | '90d' | 'ytd'
+const PERIOD_VALUES: ReadonlyArray<Period> = ['7d', '30d', '90d', 'ytd']
+const PERIOD_DAYS: Record<Exclude<Period, 'ytd'>, number> = { '7d': 7, '30d': 30, '90d': 90 }
+// Monthly target used as the baseline; non-monthly periods are scaled pro-rata.
+const CA_OBJECTIVE_MONTHLY = 60000
+
+function parsePeriod(raw: unknown): Period {
+  if (typeof raw === 'string' && (PERIOD_VALUES as readonly string[]).includes(raw)) {
+    return raw as Period
+  }
+  return '30d'
+}
+
+function computePeriodWindows(period: Period, now: Date): {
+  periodStart: Date
+  periodPrevStart: Date
+  periodDays: number
+  caObjective: number
+  objectiveLabel: string
+} {
+  if (period === 'ytd') {
+    const periodStart = new Date(now.getFullYear(), 0, 1)
+    const periodPrevStart = new Date(now.getFullYear() - 1, 0, 1)
+    const periodDays = Math.max(1, Math.round((now.getTime() - periodStart.getTime()) / 86_400_000))
+    // Pro-rata: months elapsed (inclusive of current)
+    const monthsElapsed = now.getMonth() + 1
+    return {
+      periodStart,
+      periodPrevStart,
+      periodDays,
+      caObjective: CA_OBJECTIVE_MONTHLY * monthsElapsed,
+      objectiveLabel: 'Obj YTD',
+    }
+  }
+  const days = PERIOD_DAYS[period]
+  const periodStart = new Date(now.getTime() - days * 86_400_000)
+  const periodPrevStart = new Date(now.getTime() - 2 * days * 86_400_000)
+  return {
+    periodStart,
+    periodPrevStart,
+    periodDays: days,
+    caObjective: Math.round((CA_OBJECTIVE_MONTHLY * days) / 30),
+    objectiveLabel: `Obj ${period === '7d' ? '7j' : period === '30d' ? '30j' : '90j'}`,
+  }
+}
+
 router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const period = parsePeriod(req.query.period)
+    const { periodStart, periodPrevStart, periodDays, caObjective, objectiveLabel } = computePeriodWindows(period, now)
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    const pipelineSnapshotAgo = new Date(now.getTime() - periodDays * 86_400_000)
 
     const [
       overdueTasksCount,
@@ -192,7 +240,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
           $match: {
             type: 'INVOICE',
             status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
-            issuedAt: { $gte: startOfMonth },
+            issuedAt: { $gte: periodStart },
           },
         },
         { $group: { _id: null, total: { $sum: '$total' } } },
@@ -266,25 +314,25 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
       ]),
       InternalConversationMember.find({ user: userId }).select('conversation lastReadAt').lean(),
 
-      // CA previous month (for delta)
+      // CA previous period (for delta — same window length, immediately before)
       BillingDocument.aggregate([
         {
           $match: {
             type: 'INVOICE',
             status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
-            issuedAt: { $gte: new Date(now.getFullYear(), now.getMonth() - 1, 1), $lt: startOfMonth },
+            issuedAt: { $gte: periodPrevStart, $lt: periodStart },
           },
         },
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]).catch(() => []),
 
-      // Pipeline as of 30d ago (heuristic: leads created before -30d, still open)
+      // Pipeline as of N days ago (heuristic: leads created before -N days, still open)
       Lead.aggregate([
         {
           $match: {
             status: { $nin: ['WON', 'LOST'] },
             budget: { $gt: 0 },
-            createdAt: { $lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+            createdAt: { $lt: pipelineSnapshotAgo },
           },
         },
         { $group: { _id: null, total: { $sum: '$budget' } } },
@@ -331,23 +379,22 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
     const pipelineTotal = pipelineSum[0]?.total ?? 0
     const pipelinePrev30Total = (pipelinePrev30Raw as Array<{ total: number }>)[0]?.total ?? 0
 
-    // CA delta vs previous month
+    // CA delta vs previous period (same length, immediately before)
     const caDeltaPct = monthlyInvoicedPrevTotal > 0
       ? Math.round(((monthlyInvoicedTotal - monthlyInvoicedPrevTotal) / monthlyInvoicedPrevTotal) * 100)
       : 0
     const caDirection = caDeltaPct > 0 ? 'up' : caDeltaPct < 0 ? 'down' : 'flat'
 
-    // Pipeline delta vs 30 days ago
+    // Pipeline delta vs N days ago (N = periodDays)
     const pipelineDeltaPct = pipelinePrev30Total > 0
       ? Math.round(((pipelineTotal - pipelinePrev30Total) / pipelinePrev30Total) * 100)
       : 0
     const pipelineDirection = pipelineDeltaPct > 0 ? 'up' : pipelineDeltaPct < 0 ? 'down' : 'flat'
 
-    // Build Pulse context
-    const CA_OBJECTIVE_DEFAULT = 60000 // TODO: move to CompanySettings when product team defines monthly objectives
+    // Build Pulse context (CA scaled to selected period)
     const pulseCtx: PulseContext = {
       monthlyCA: monthlyInvoicedTotal,
-      caObjective: CA_OBJECTIVE_DEFAULT,
+      caObjective,
       pipelinePrev30: pipelinePrev30Total,
       pipelineCurrent: pipelineTotal,
       hotLeadsNeglected: hotLeadsNeglectedCount as number,
@@ -364,7 +411,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
       ca: {
         value: monthlyInvoicedTotal,
         delta: { value: caDeltaPct, direction: caDirection as 'up' | 'down' | 'flat' },
-        objective: { current: monthlyInvoicedTotal, target: CA_OBJECTIVE_DEFAULT, label: 'Obj mois' },
+        objective: { current: monthlyInvoicedTotal, target: caObjective, label: objectiveLabel },
       },
       pipeline: {
         value: pipelineTotal,
@@ -376,6 +423,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
 
     return res.json({
       generatedAt: now.toISOString(),
+      period,
 
       alerts: {
         overdueTasks: overdueTasksCount,
