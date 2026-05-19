@@ -44,6 +44,7 @@
 .dash-widget__action::after {
   content: " →";
   margin-left: 2px;
+  speak: none;
 }
 
 .dash-widget--neon::before,

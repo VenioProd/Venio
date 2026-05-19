@@ -25,7 +25,7 @@ const DashWidget = ({
   children,
 }: DashWidgetProps) => {
   return (
-    <section className={`dash-widget${neon ? ' dash-widget--neon' : ''}`}>
+    <section className={`dash-widget${neon ? ' dash-widget--neon' : ''}`} aria-label={title}>
       <header className="dash-widget__header">
         <div className="dash-widget__title">
           {icon}
@@ -38,7 +38,7 @@ const DashWidget = ({
           )}
         </div>
         {action && (
-          <Link to={action.to} className="dash-widget__action" aria-label={action.label}>
+          <Link to={action.to} className="dash-widget__action">
             {action.label}
           </Link>
         )}
