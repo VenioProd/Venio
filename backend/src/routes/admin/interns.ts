@@ -10,6 +10,7 @@ import Intern from '../../models/Intern.js'
 import ActivityReport from '../../models/ActivityReport.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
 import { sendAdminCredentials } from '../../lib/email.js'
@@ -500,6 +501,26 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       .populate('userId', 'name email phone lastLoginAt')
       .populate('tuteur', 'name email')
 
+    // Notifier les super admins (sauf le créateur) et le tuteur le cas échéant
+    notifySuperAdmins({
+      type: 'INTERN_CREATED',
+      title: `Nouveau ${internType.toLowerCase()}`,
+      message: `${name} (${poste}) rejoint l'équipe`,
+      link: '/admin/stagiaires',
+      metadata: { internId: String(intern._id) },
+      excludeUserId: user.id,
+    }).catch(() => {})
+    if (tuteur) {
+      createNotification({
+        recipient: tuteur,
+        type: 'INTERN_CREATED',
+        title: `Vous êtes tuteur de ${name}`,
+        message: `${name} (${poste}) vous a été assigné`,
+        link: '/admin/stagiaires',
+        metadata: { internId: String(intern._id) },
+      }).catch(() => {})
+    }
+
     res.status(201).json(populated)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -611,6 +632,15 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
     if (!result.sent) {
       return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
     }
+
+    // Notifier le stagiaire en in-app aussi (l'email peut être désactivé)
+    createNotification({
+      recipient: user._id,
+      type: 'INTERN_CREDENTIALS_SENT',
+      title: 'Nouveaux identifiants envoyés',
+      message: `Un super admin a réinitialisé votre mot de passe — consultez votre email.`,
+      link: '/admin/profile',
+    }).catch(() => {})
 
     return res.json({ success: true })
   } catch {
@@ -737,7 +767,7 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
       if (recipient._id.toString() === user.id) continue
       createNotification({
         recipient: recipient._id,
-        type: 'TASK_UPDATED',
+        type: 'INTERN_REPORT_SUBMITTED',
         title: `Nouveau rapport d'activite`,
         message: `${user.name} a soumis un rapport pour le ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
         link: '/admin/stagiaires',
@@ -800,7 +830,7 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
           if (report.userId.toString() !== user.id) {
             createNotification({
               recipient: report.userId,
-              type: 'TASK_UPDATED',
+              type: 'INTERN_REPORT_UPDATED',
               title: 'Rapport valide',
               message: `${user.name} a valide votre rapport du ${new Date(report.date).toLocaleDateString('fr-FR')}`,
               link: '/admin/mes-rapports',
@@ -826,7 +856,7 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
         if (commentaireAdmin && report.userId.toString() !== user.id) {
           createNotification({
             recipient: report.userId,
-            type: 'TASK_UPDATED',
+            type: 'INTERN_REPORT_UPDATED',
             title: 'Commentaire sur votre rapport',
             message: `${user.name} a commente votre rapport du ${new Date(report.date).toLocaleDateString('fr-FR')}`,
             link: '/admin/mes-rapports',
@@ -897,6 +927,18 @@ router.post('/:id/convention', requireAdmin, uploadConvention.single('file'), as
 
     await Intern.findByIdAndUpdate(req.params.id, { $push: { conventions: newEntry } })
     syncUploadToNextcloud(file, 'conventions', String(req.params.id))
+
+    // Notifier le stagiaire qu'une convention a été ajoutée
+    if (intern.userId) {
+      createNotification({
+        recipient: intern.userId,
+        type: 'INTERN_CONVENTION_ADDED',
+        title: 'Convention déposée',
+        message: `Votre convention "${file.originalname}" a été ajoutée à votre dossier`,
+        link: '/admin/profile',
+      }).catch(() => {})
+    }
+
     res.json({ ok: true, ...newEntry })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })

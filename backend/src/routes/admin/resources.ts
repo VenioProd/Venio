@@ -8,6 +8,7 @@ import CompanyResource, { RESOURCE_CATEGORIES } from '../../models/CompanyResour
 import User from '../../models/User.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { sendResourcePublishedEmail } from '../../lib/email/templates/project.js'
+import { notifyInternalAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 router.use(auth)
@@ -106,6 +107,16 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
         }
       } catch { /* silent */ }
     })()
+
+    // Notif in-app à tous les admins internes
+    notifyInternalAdmins({
+      type: 'RESOURCE_REQUESTED',
+      title: `Nouvelle ressource publiée`,
+      message: `"${resource.name}" (${resource.category})`,
+      link: '/admin/ressources',
+      metadata: { resourceId: String(resource._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
 
     return res.status(201).json({ resource: populated })
   } catch (err) { return next(err) }

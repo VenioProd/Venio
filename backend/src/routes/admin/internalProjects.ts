@@ -10,6 +10,8 @@ import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
 import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sendStepReviewRequestEmail } from '../../lib/email/templates/project.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { createNotification } from '../../lib/notifications.js'
+import { notifySuperAdmins, notifyUsers } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 router.use(auth)
@@ -169,6 +171,16 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    // Notif in-app à chaque membre
+    notifyUsers(membersList.map((m) => String(m._id)), {
+      type: 'INTERNAL_PROJECT_CREATED',
+      title: `Nouveau projet interne`,
+      message: `Vous avez été ajouté à "${project.name}" (${project.entity})`,
+      link: `/admin/projets-internes/${project._id}`,
+      metadata: { projectId: String(project._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ project: populated })
   } catch (err) {
     return next(err)
@@ -313,6 +325,16 @@ router.post('/:projectId/missions', async (req: Request, res: Response, next: Ne
       }
     }
 
+    // Notif in-app à chaque assigné
+    notifyUsers(assignedToArr, {
+      type: 'INTERNAL_MISSION_ASSIGNED',
+      title: `Nouvelle mission assignée`,
+      message: `"${mission.title}" — projet ${project.name}`,
+      link: `/admin/projets-internes/${project._id}`,
+      metadata: { projectId: String(project._id), missionId: String(mission._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ mission: populated })
   } catch (err) { return next(err) }
 })
@@ -436,6 +458,17 @@ router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'
     })
     await mission.save()
     syncUploadToNextcloud(req.file, 'projets-internes', String(req.params.projectId))
+
+    // Notif aux autres membres de la mission
+    notifyUsers(mission.assignedTo.map((id) => String(id)), {
+      type: 'INTERNAL_MISSION_FILE_ADDED',
+      title: `Nouveau fichier sur "${mission.title}"`,
+      message: `${req.file.originalname} ajouté`,
+      link: `/admin/projets-internes/${req.params.projectId}`,
+      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ files: mission.files })
   } catch (err) { return next(err) }
 })
@@ -530,6 +563,16 @@ router.post('/:projectId/missions/:missionId/request-review', async (req: Reques
       }
     }
 
+    // Notif in-app aux super admins
+    notifySuperAdmins({
+      type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
+      title: `Validation d'étape demandée`,
+      message: `${requester?.name || 'Un membre'} demande la validation de "${step.title}" (mission ${mission.title})`,
+      link: `/admin/projets-internes/${req.params.projectId}`,
+      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')
       .populate('participants.user', 'name email')
@@ -558,6 +601,16 @@ router.post('/:projectId/missions/:missionId/validate-step', async (req: Request
     step.done = true
     step.waitingReview = false
     await mission.save()
+
+    // Notif aux membres assignés de la mission
+    notifyUsers(mission.assignedTo.map((id) => String(id)), {
+      type: 'INTERNAL_MISSION_VALIDATED',
+      title: `Étape validée ✅`,
+      message: `"${step.title}" (mission ${mission.title}) a été validée`,
+      link: `/admin/projets-internes/${req.params.projectId}`,
+      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
 
     const populated = await InternalMission.findById(mission._id)
       .populate('assignedTo', 'name email')

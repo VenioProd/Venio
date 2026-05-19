@@ -9,6 +9,8 @@ import { triggerAutomations } from '../../../automation/trigger.js'
 import User from '../../../models/User.js'
 import { createClientFolders, getClientCloudInfo } from '../../../lib/nextcloud.js'
 import { ok, error, parsePagination, normalizeClientPayload, ensureClient, logActivity } from './helpers.js'
+import { createNotification } from '../../../lib/notifications.js'
+import { notifySuperAdmins } from '../../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -148,6 +150,27 @@ router.post(
     )
 
     const fullClient = await User.findById(client._id).select('-passwordHash').populate('ownerAdminId', 'name email role').lean()
+
+    // Notif super admins (sauf créateur) + owner admin assigné
+    notifySuperAdmins({
+      type: 'CLIENT_CREATED',
+      title: `Nouveau client`,
+      message: `${client.companyName || client.name} créé`,
+      link: `/admin/clients/${client._id}`,
+      metadata: { clientId: String(client._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+    if (payload.ownerAdminId && String(payload.ownerAdminId) !== req.user!.id) {
+      createNotification({
+        recipient: payload.ownerAdminId,
+        type: 'CLIENT_CREATED',
+        title: `Client assigné à vous`,
+        message: `${client.companyName || client.name}`,
+        link: `/admin/clients/${client._id}`,
+        metadata: { clientId: String(client._id) },
+      }).catch(() => {})
+    }
+
     return ok(res, { client: fullClient }, null, 201)
   } catch (err) {
     return next(err)

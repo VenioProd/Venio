@@ -3,6 +3,7 @@ import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import ClientNote from '../../../models/ClientNote.js'
 import { ok, error, ensureClient, logActivity } from './helpers.js'
+import { createNotification } from '../../../lib/notifications.js'
 
 const router = express.Router()
 
@@ -49,6 +50,20 @@ router.post('/:id/notes', requirePermission(PERMISSIONS.MANAGE_CLIENTS), async (
     })
 
     const populatedNote = await ClientNote.findById(note._id).populate('createdBy', 'name email').lean()
+
+    // Notif au owner admin du client (si différent du créateur de la note)
+    const ownerAdminId = (client as any).ownerAdminId
+    if (ownerAdminId && String(ownerAdminId) !== req.user!.id) {
+      createNotification({
+        recipient: ownerAdminId,
+        type: 'CLIENT_NOTE_ADDED',
+        title: `Note interne sur ${client.companyName || client.name}`,
+        message: String(content).slice(0, 140),
+        link: `/admin/clients/${client._id}`,
+        metadata: { clientId: String(client._id), noteId: String(note._id) },
+      }).catch(() => {})
+    }
+
     return ok(res, { note: populatedNote }, null, 201)
   } catch (err) {
     return next(err)

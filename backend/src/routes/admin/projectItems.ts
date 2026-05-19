@@ -8,6 +8,7 @@ import ProjectItem from '../../models/ProjectItem.js'
 import Project from '../../models/Project.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import { triggerAutomations } from '../../automation/trigger.js'
+import { createNotification } from '../../lib/notifications.js'
 
 const router = express.Router()
 
@@ -150,6 +151,18 @@ router.post('/:projectId/items', requirePermission(PERMISSIONS.EDIT_CONTENT), up
       )
     }
 
+    // Notif au client du projet (sauf si c'est lui qui ajoute)
+    if (project.client && String(project.client) !== req.user!.id) {
+      createNotification({
+        recipient: project.client,
+        type: 'PROJECT_ITEM_CREATED',
+        title: `Nouveau ${type?.toLowerCase() || 'élément'} sur ${project.name}`,
+        message: title || '',
+        link: `/client/projects/${project._id}`,
+        metadata: { projectId, itemId: String(item._id), type },
+      }).catch(() => {})
+    }
+
     res.status(201).json({ item })
   } catch (err) {
     console.error(err)
@@ -171,6 +184,8 @@ router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CON
     if (!item) {
       return res.status(404).json({ error: 'Item non trouvé' })
     }
+
+    const oldStatus = item.status
 
     if (title !== undefined) item.title = title
     if (description !== undefined) item.description = description
@@ -201,6 +216,22 @@ router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CON
     await item.save()
     await item.populate('section', 'title')
     await item.populate('createdBy', 'name email')
+
+    // Notif si validation
+    if (oldStatus !== 'VALIDE' && item.status === 'VALIDE') {
+      const project = await Project.findById(projectId)
+      // Notifier le créateur si différent de l'auteur de la validation
+      if (item.createdBy && String((item.createdBy as any)._id || item.createdBy) !== req.user!.id) {
+        createNotification({
+          recipient: (item.createdBy as any)._id || item.createdBy,
+          type: 'PROJECT_ITEM_VALIDATED',
+          title: `Élément validé ✅`,
+          message: `"${item.title}" sur ${project?.name || 'projet'} validé`,
+          link: `/admin/projects/${projectId}`,
+          metadata: { projectId, itemId: String(item._id) },
+        }).catch(() => {})
+      }
+    }
 
     res.json({ item })
   } catch (err) {

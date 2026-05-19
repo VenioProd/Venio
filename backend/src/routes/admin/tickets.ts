@@ -350,6 +350,19 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 
     const ticket = await InternalTicket.findByIdAndUpdate(req.params.id, { status }, { new: true })
     if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
+
+    // Notif à l'auteur du ticket
+    if (ticket.authorId && String(ticket.authorId) !== user.id) {
+      createNotification({
+        recipient: ticket.authorId,
+        type: 'TICKET_STATUS_CHANGED',
+        title: `Ticket "${ticket.title || 'sans titre'}" — ${status}`,
+        message: `Statut mis à jour par ${user.name || user.email}`,
+        link: `/admin/tickets/${ticket._id}`,
+        metadata: { ticketId: String(ticket._id), status },
+      }).catch(() => {})
+    }
+
     res.json(ticket)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })

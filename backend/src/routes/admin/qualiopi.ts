@@ -7,6 +7,7 @@ import { requireAdmin, requirePermission, requireAnyPermission } from '../../mid
 import { PERMISSIONS } from '../../lib/permissions.js'
 import QualiopiCriterion from '../../models/QualiopiCriterion.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { createNotification } from '../../lib/notifications.js'
 
 const router = express.Router()
 router.use(auth)
@@ -113,6 +114,20 @@ router.patch('/criteria/:criterionId/indicators/:indicatorId', requirePermission
       { new: true }
     )
     if (!criterion) return res.status(404).json({ error: 'Indicateur non trouve' })
+
+    // Notif : nouvel assigné de l'indicateur
+    if (req.body.assignee && req.body.assignee !== req.user!.id) {
+      const ind = criterion.indicators.find((i: any) => i._id.toString() === indicatorId)
+      createNotification({
+        recipient: req.body.assignee,
+        type: 'QUALIOPI_INDICATOR_UPDATED',
+        title: `Indicateur Qualiopi assigné`,
+        message: `"${ind?.title || 'Indicateur'}" vous a été assigné`,
+        link: `/admin/qualiopi`,
+        metadata: { criterionId, indicatorId },
+      }).catch(() => {})
+    }
+
     res.json(criterion)
   } catch (err) { next(err) }
 })

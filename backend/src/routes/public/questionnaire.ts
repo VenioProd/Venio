@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import QualiopiQuestionnaire from '../../models/QualiopiQuestionnaire.js'
 import QualiopiCreationToken from '../../models/QualiopiCreationToken.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -91,6 +92,16 @@ router.post('/:token/submit', async (req: Request, res: Response, next: NextFunc
     })
 
     await q.save()
+
+    // Notif super admins : nouvelle réponse questionnaire qualiopi
+    notifySuperAdmins({
+      type: 'QUALIOPI_QUESTIONNAIRE_RECEIVED',
+      title: `Nouvelle réponse questionnaire`,
+      message: `${respondentName.trim()} a répondu au questionnaire "${q.title || 'Qualiopi'}"`,
+      link: `/admin/qualiopi/questionnaires/${q._id}`,
+      metadata: { questionnaireId: String(q._id), respondentEmail: respondentEmail.trim() },
+    }).catch(() => {})
+
     res.status(201).json({ ok: true, message: 'Merci pour votre retour !' })
   } catch (err) { next(err) }
 })

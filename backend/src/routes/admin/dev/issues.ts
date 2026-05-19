@@ -9,6 +9,7 @@ import DevIssue, {
   DEV_ISSUE_TYPES,
 } from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
+import { createNotification } from '../../../lib/notifications.js'
 
 const router = express.Router()
 
@@ -135,6 +136,19 @@ router.post('/issues', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: Re
       .populate('assignee', 'name email avatarUrl')
       .populate('reporter', 'name email avatarUrl')
       .populate('project', 'key name color')
+
+    // Notif à l'assigné si différent du reporter
+    if (assignee && assignee !== req.user!.id) {
+      createNotification({
+        recipient: assignee,
+        type: 'DEV_ISSUE_ASSIGNED',
+        title: `Issue assignée — ${identifier}`,
+        message: title,
+        link: `/admin/dev/issues/${issue._id}`,
+        metadata: { issueId: String(issue._id), identifier },
+      }).catch(() => {})
+    }
+
     res.status(201).json(populated)
   } catch (err) {
     next(err)
@@ -167,6 +181,9 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
     if (!isObjectId(req.params.id)) return res.status(400).json({ error: 'ID invalide' })
     const issue = await DevIssue.findById(req.params.id)
     if (!issue) return res.status(404).json({ error: 'Issue introuvable' })
+
+    const oldStatus = issue.status
+    const oldAssignee = issue.assignee ? String(issue.assignee) : null
 
     if (typeof req.body?.title === 'string' && req.body.title.trim()) {
       issue.title = req.body.title.trim().slice(0, 200)
@@ -203,6 +220,30 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
       .populate('assignee', 'name email avatarUrl')
       .populate('reporter', 'name email avatarUrl')
       .populate('project', 'key name color')
+
+    // Notifs : nouvel assigné + reporter si status changé
+    const newAssignee = issue.assignee ? String(issue.assignee) : null
+    if (newAssignee && newAssignee !== oldAssignee && newAssignee !== req.user!.id) {
+      createNotification({
+        recipient: newAssignee,
+        type: 'DEV_ISSUE_ASSIGNED',
+        title: `Issue assignée — ${issue.identifier}`,
+        message: issue.title,
+        link: `/admin/dev/issues/${issue._id}`,
+        metadata: { issueId: String(issue._id), identifier: issue.identifier },
+      }).catch(() => {})
+    }
+    if (oldStatus !== issue.status && issue.reporter && String(issue.reporter) !== req.user!.id) {
+      createNotification({
+        recipient: issue.reporter,
+        type: 'DEV_ISSUE_STATUS_CHANGED',
+        title: `${issue.identifier} → ${issue.status}`,
+        message: issue.title,
+        link: `/admin/dev/issues/${issue._id}`,
+        metadata: { issueId: String(issue._id), identifier: issue.identifier, status: issue.status },
+      }).catch(() => {})
+    }
+
     res.json(populated)
   } catch (err) {
     next(err)

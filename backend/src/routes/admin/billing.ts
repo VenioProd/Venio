@@ -12,6 +12,8 @@ import { getNextSequence } from '../../models/Sequence.js'
 import { generateBillingPdf } from '../../lib/pdfBilling.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import { sendInvoiceEmail } from '../../lib/email.js'
+import { createNotification } from '../../lib/notifications.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import {
   createSaleEntryFromBilling,
   buildBillingIdempotencyKey,
@@ -98,6 +100,17 @@ router.post('/projects/:projectId/quotes', requirePermission(PERMISSIONS.MANAGE_
     })
 
     const fullDoc = await BillingDocument.findById(doc._id).lean()
+
+    // Notif aux super admins
+    notifySuperAdmins({
+      type: 'BILLING_QUOTE_CREATED',
+      title: `Nouveau devis ${formatted}`,
+      message: `${(project as any).name} — ${total.toLocaleString('fr-FR')} ${currency}`,
+      link: `/admin/billing/${doc._id}`,
+      metadata: { documentId: String(doc._id), projectId: String(project._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ document: fullDoc })
   } catch (err) {
     return next(err)
@@ -158,6 +171,17 @@ router.post('/projects/:projectId/invoices', requirePermission(PERMISSIONS.MANAG
     })
 
     const fullDoc = await BillingDocument.findById(doc._id).lean()
+
+    // Notif aux super admins
+    notifySuperAdmins({
+      type: 'BILLING_INVOICE_CREATED',
+      title: `Nouvelle facture ${formatted}`,
+      message: `${(project as any).name} — ${total.toLocaleString('fr-FR')} ${currency}`,
+      link: `/admin/billing/${doc._id}`,
+      metadata: { documentId: String(doc._id), projectId: String(project._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
+
     return res.status(201).json({ document: fullDoc })
   } catch (err) {
     return next(err)
@@ -239,6 +263,22 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_BILLING), async (req: 
       }
     }
 
+    // Notif si la facture passe à PAID
+    if (
+      doc.type === 'INVOICE' &&
+      previousStatus !== 'PAID' &&
+      doc.status === 'PAID'
+    ) {
+      notifySuperAdmins({
+        type: 'BILLING_DOCUMENT_PAID',
+        title: `Facture payée 💰`,
+        message: `${doc.number} — ${doc.total.toLocaleString('fr-FR')} ${doc.currency} encaissés`,
+        link: `/admin/billing/${doc._id}`,
+        metadata: { documentId: String(doc._id) },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+    }
+
     return res.json({
       document: doc.toObject(),
       accounting: paymentEntry ? { paymentEntry } : undefined,
@@ -277,6 +317,27 @@ router.post('/:id/send', requirePermission(PERMISSIONS.MANAGE_BILLING), async (r
         }).catch(() => {})
       }
     }
+
+    // Notif client (in-app — l'email peut être désactivé)
+    if (doc.client) {
+      createNotification({
+        recipient: doc.client,
+        type: 'BILLING_DOCUMENT_SENT',
+        title: doc.type === 'INVOICE' ? `Nouvelle facture` : `Nouveau devis`,
+        message: `${doc.number} — ${doc.total.toLocaleString('fr-FR')} ${doc.currency}`,
+        link: `/client/billing/${doc._id}`,
+        metadata: { documentId: String(doc._id) },
+      }).catch(() => {})
+    }
+    // Notif super admins (traçabilité)
+    notifySuperAdmins({
+      type: 'BILLING_DOCUMENT_SENT',
+      title: `${doc.type === 'INVOICE' ? 'Facture' : 'Devis'} ${doc.number} envoyé(e)`,
+      message: `Envoyé(e) au client`,
+      link: `/admin/billing/${doc._id}`,
+      metadata: { documentId: String(doc._id) },
+      excludeUserId: req.user!.id,
+    }).catch(() => {})
 
     return res.json({ document: doc.toObject() })
   } catch (err) {

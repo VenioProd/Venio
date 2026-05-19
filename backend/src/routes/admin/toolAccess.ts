@@ -4,6 +4,7 @@ import { requireAdmin } from '../../middleware/role.js'
 import ToolAccess from '../../models/ToolAccess.js'
 import AuditLog from '../../models/AuditLog.js'
 import { encrypt, decrypt, isEncryptionConfigured, looksEncrypted } from '../../lib/crypto.js'
+import { notifyInternalAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 router.use(auth)
@@ -106,6 +107,16 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       ip: req.headers['x-forwarded-for'] || req.ip || '',
       userAgent: req.headers['user-agent'] || '',
       metadata: { toolId: tool._id.toString(), toolName: name },
+    }).catch(() => {})
+
+    // Notif tous les admins internes (les accès outils sont partagés)
+    notifyInternalAdmins({
+      type: 'TOOL_ACCESS_GRANTED',
+      title: `Nouvel accès outil`,
+      message: `${name} (${category || 'AUTRE'}) ajouté par ${user.name || user.email}`,
+      link: '/admin/tools',
+      metadata: { toolId: String(tool._id) },
+      excludeUserId: user.id,
     }).catch(() => {})
 
     res.status(201).json(sanitizeTool(tool))

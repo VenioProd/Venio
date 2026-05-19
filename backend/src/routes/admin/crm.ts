@@ -19,6 +19,8 @@ import {
   autoCreateProjectFromLead,
 } from '../../lib/crmAutomations.js'
 import { createClientFolders } from '../../lib/nextcloud.js'
+import { createNotification } from '../../lib/notifications.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -251,6 +253,18 @@ router.post(
       }
     }
 
+    // Notif in-app à l'assigné (toujours, même si email désactivé)
+    if (lead.assignedTo && String(lead.assignedTo) !== req.user!.id) {
+      createNotification({
+        recipient: lead.assignedTo,
+        type: 'CRM_LEAD_ASSIGNED',
+        title: `Nouveau lead assigné`,
+        message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
+        link: `/admin/crm/leads/${lead._id}`,
+        metadata: { leadId: String(lead._id) },
+      }).catch(() => {})
+    }
+
     // Auto-create client account when lead is WON
     if (lead.status === 'WON') {
       await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
@@ -333,6 +347,32 @@ router.patch('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req
           ['crm.auto_convert_won_lead'],
           { leadId: lead._id.toString(), newStatus: 'WON', actorId: req.user!.id }
         )
+
+        // Notif super admins : nouveau client signé 🎉
+        notifySuperAdmins({
+          type: 'CRM_LEAD_CONVERTED',
+          title: `🎉 Nouveau client signé`,
+          message: `${lead.company} (lead converti en WON)`,
+          link: `/admin/crm/leads/${lead._id}`,
+          metadata: { leadId: String(lead._id) },
+          excludeUserId: req.user!.id,
+        }).catch(() => {})
+      } else {
+        // Notif au créateur et à l'assigné du changement de statut
+        const recipients = new Set<string>()
+        if (lead.assignedTo) recipients.add(String(lead.assignedTo))
+        if (lead.createdBy) recipients.add(String(lead.createdBy))
+        recipients.delete(req.user!.id)
+        for (const recipientId of recipients) {
+          createNotification({
+            recipient: recipientId,
+            type: 'CRM_LEAD_STATUS_CHANGED',
+            title: `Lead ${lead.company} — ${payload.status}`,
+            message: `Statut passé de ${oldStatus} à ${payload.status}`,
+            link: `/admin/crm/leads/${lead._id}`,
+            metadata: { leadId: String(lead._id) },
+          }).catch(() => {})
+        }
       }
     }
 
@@ -354,6 +394,18 @@ router.patch('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req
         if (assignee) {
           notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
         }
+      }
+
+      // Notif in-app au nouvel assigné (toujours)
+      if (newAssignee && newAssignee !== req.user!.id) {
+        createNotification({
+          recipient: newAssignee,
+          type: 'CRM_LEAD_ASSIGNED',
+          title: `Lead réassigné à vous`,
+          message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
+          link: `/admin/crm/leads/${lead._id}`,
+          metadata: { leadId: String(lead._id) },
+        }).catch(() => {})
       }
     }
 
