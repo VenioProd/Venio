@@ -4,7 +4,9 @@ import ConversationHeader from '../../components/admin/messaging/ConversationHea
 import ConversationSidebar from '../../components/admin/messaging/ConversationSidebar'
 import MessageComposer from '../../components/admin/messaging/MessageComposer'
 import MessageList from '../../components/admin/messaging/MessageList'
+import { useAuth } from '../../context/AuthContext'
 import { useMessaging } from '../../context/MessagingContext'
+import { useToast } from '../../context/ToastContext'
 import { createChannel, fetchMessagingUsers, openDirectConversation, searchMessages } from '../../services/messaging'
 import type { MessagingSearchResult, MessagingUser } from '../../types/messaging.types'
 import './Messaging.css'
@@ -12,6 +14,8 @@ import './Messaging.css'
 type MobileView = 'sidebar' | 'thread'
 
 function MessagingSurface() {
+  const { user: authUser } = useAuth()
+  const { showToast } = useToast()
   const [users, setUsers] = useState<MessagingUser[]>([])
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<MessagingSearchResult[]>([])
@@ -40,8 +44,10 @@ function MessagingSurface() {
   )
 
   useEffect(() => {
-    fetchMessagingUsers().then(setUsers).catch(() => setUsers([]))
-  }, [])
+    fetchMessagingUsers()
+      .then((data) => setUsers(authUser ? data.filter((u) => u._id !== authUser._id) : data))
+      .catch(() => setUsers([]))
+  }, [authUser])
 
   useEffect(() => {
     const conversationId = searchParams.get('conversation')
@@ -95,9 +101,14 @@ function MessagingSurface() {
           selectConversation(conversation._id)
         }}
         onOpenDirect={async (userId) => {
-          const conversation = await openDirectConversation(userId)
-          await refreshConversations()
-          selectConversation(conversation._id)
+          try {
+            const conversation = await openDirectConversation(userId)
+            await refreshConversations()
+            selectConversation(conversation._id)
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+            showToast(msg, 'error')
+          }
         }}
       />
       <main className="messaging-main">

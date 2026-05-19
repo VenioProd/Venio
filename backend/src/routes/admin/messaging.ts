@@ -38,7 +38,7 @@ router.get('/users', async (_req: Request, res: Response, next: NextFunction) =>
   try {
     const users = await User.find({
       role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
-      isActive: true,
+      isActive: { $ne: false },
     })
       .select('name email role')
       .sort({ name: 1 })

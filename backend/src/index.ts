@@ -270,6 +270,16 @@ mongoose
       console.log(`🔒 Removed plainPassword from ${migrated.modifiedCount} user(s)`)
     }
 
+    // One-time migration: unset slug: null on DM/GROUP conversations (sparse unique index fix)
+    const { default: InternalConversation } = await import('./models/InternalConversation.js')
+    const slugFixed = await InternalConversation.updateMany(
+      { type: { $in: ['DM', 'GROUP'] }, slug: null },
+      { $unset: { slug: '' } }
+    )
+    if (slugFixed.modifiedCount > 0) {
+      console.log(`🔧 Unset slug:null from ${slugFixed.modifiedCount} DM/GROUP conversation(s)`)
+    }
+
   })
   .then(() => {
     const server = createServer(app)

@@ -168,7 +168,7 @@ export async function createConversation(user: JwtPayload, input: {
   const activeInternalUsers = await User.find({
     _id: { $in: participantIds },
     role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'AGENT'] },
-    isActive: true,
+    isActive: { $ne: false },
   }).select('_id name')
   if (activeInternalUsers.length !== participantIds.length) {
     throw Object.assign(new Error('Participant interne invalide'), { status: 400 })
@@ -199,12 +199,12 @@ export async function createConversation(user: JwtPayload, input: {
 
   const name = (input.name || '').trim()
   if (!name) throw Object.assign(new Error('Le nom de la conversation est requis'), { status: 400 })
-  const slug = input.type === 'CHANNEL' ? normalizeConversationSlug(name) : null
+  const slug = input.type === 'CHANNEL' ? normalizeConversationSlug(name) : undefined
 
   const conversation = await InternalConversation.create({
     type: input.type,
     name,
-    slug,
+    ...(slug !== undefined && { slug }),
     visibility: input.type === 'CHANNEL' ? input.visibility || 'PUBLIC' : 'PRIVATE',
     memberKey: input.type === 'GROUP' ? buildMemberKey(participantIds) : '',
     createdBy: user.id,

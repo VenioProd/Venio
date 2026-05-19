@@ -7,7 +7,7 @@ interface ConversationSidebarProps {
   activeConversationId: string | null
   onSelect: (id: string) => void
   onCreateChannel: (name: string, visibility: 'PUBLIC' | 'PRIVATE') => void
-  onOpenDirect: (userId: string) => void
+  onOpenDirect: (userId: string) => Promise<void>
 }
 
 function getConversationLabel(conversation: InternalConversation): string {
@@ -65,6 +65,7 @@ export default function ConversationSidebar({
 }: ConversationSidebarProps) {
   const [filter, setFilter] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
 
   const channels = useMemo(
     () => conversations.filter((conversation) => conversation.type === 'CHANNEL'),
@@ -236,8 +237,16 @@ export default function ConversationSidebar({
                   <button
                     key={user._id}
                     type="button"
-                    className="messaging-sidebar-person"
-                    onClick={() => onOpenDirect(user._id)}
+                    className={`messaging-sidebar-person${loadingUserId === user._id ? ' loading' : ''}`}
+                    disabled={loadingUserId !== null}
+                    onClick={async () => {
+                      setLoadingUserId(user._id)
+                      try {
+                        await onOpenDirect(user._id)
+                      } finally {
+                        setLoadingUserId(null)
+                      }
+                    }}
                   >
                     <span
                       className="messaging-conversation-avatar is-dm"

@@ -9,7 +9,6 @@ const internalConversationSchema = new mongoose.Schema<IInternalConversation>(
       type: String,
       trim: true,
       lowercase: true,
-      default: null,
       required(this: IInternalConversation) {
         return this.type === 'CHANNEL'
       },
