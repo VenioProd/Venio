@@ -71,7 +71,19 @@ self.addEventListener('push', (event) => {
     vibrate: [80, 40, 80],
   }
 
-  event.waitUntil(self.registration.showNotification(title, options))
+  // Badging API : alimente le badge numérique sur l'icône de l'app installée.
+  // Le backend joint `unreadCount` au payload push. Disponible sur Chrome/Edge
+  // (desktop + Android) et iOS 16.4+ pour les PWA ajoutées à l'écran d'accueil.
+  const tasks = [self.registration.showNotification(title, options)]
+  if (typeof payload.unreadCount === 'number' && 'setAppBadge' in self.navigator) {
+    tasks.push(
+      payload.unreadCount > 0
+        ? self.navigator.setAppBadge(payload.unreadCount).catch(() => {})
+        : self.navigator.clearAppBadge().catch(() => {})
+    )
+  }
+
+  event.waitUntil(Promise.all(tasks))
 })
 
 self.addEventListener('notificationclick', (event) => {

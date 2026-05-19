@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import { fetchNotifications as fetchNotificationsApi, fetchUnreadCount, markAsRead as markAsReadApi, markAllAsRead as markAllAsReadApi } from '../services/notifications'
+import { syncAppBadge } from '../lib/appBadge'
 import { useAuth } from './AuthContext'
 import { isAdminRole } from '../lib/permissions'
 import type { AppNotification } from '../types/notification.types'
@@ -79,6 +80,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [isAdmin, refresh])
+
+  // Badging API : reflète unreadCount sur l'icône de l'app installée (PWA).
+  // Non-bloquant : aucun effet si l'API n'est pas supportée ou si l'app n'est
+  // pas installée. Clear quand l'utilisateur n'est plus admin / déconnecté.
+  useEffect(() => {
+    syncAppBadge(isAdmin ? unreadCount : 0)
+  }, [unreadCount, isAdmin])
 
   const markAsRead = useCallback(async (id: string) => {
     try {

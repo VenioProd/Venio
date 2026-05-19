@@ -53,14 +53,17 @@ export async function createNotification({ recipient, type, title, message, link
 
   // Push : envoyé indépendamment de la notif in-app (l'utilisateur peut vouloir
   // l'un sans l'autre). En arrière-plan, n'échoue jamais l'appelant.
-  shouldNotify(recipientId, type, 'push').then((allowed) => {
+  // unreadCount est joint au payload pour alimenter la Badging API côté SW.
+  shouldNotify(recipientId, type, 'push').then(async (allowed) => {
     if (!allowed) return
+    const unreadCount = await Notification.countDocuments({ recipient, isRead: false }).catch(() => undefined)
     return sendPushToUser(recipientId, {
       title,
       body: message || '',
       link: link || '/',
       tag: type,
       data: { notificationId: notification ? String(notification._id) : null, type, ...(metadata || {}) },
+      unreadCount: typeof unreadCount === 'number' ? unreadCount : undefined,
     })
   }).catch((err) => {
     console.warn('[notifications] push fail', { recipientId, err: err?.message })

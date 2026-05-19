@@ -29,6 +29,11 @@ export interface PushPayload {
   icon?: string
   badge?: string
   data?: Record<string, unknown>
+  /**
+   * Compteur de notifications non lues — utilisé par le service worker pour
+   * alimenter la Badging API (badge numérique sur l'icône de l'app installée).
+   */
+  unreadCount?: number
 }
 
 /**
@@ -49,6 +54,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
     icon: payload.icon || '/favicon-192x192.png',
     badge: payload.badge || '/favicon-192x192.png',
     data: payload.data || {},
+    unreadCount: typeof payload.unreadCount === 'number' ? payload.unreadCount : undefined,
   })
 
   await Promise.allSettled(
