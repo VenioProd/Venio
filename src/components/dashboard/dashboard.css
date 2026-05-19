@@ -134,7 +134,7 @@
   margin-top: 3px;
 }
 
-.dash-kpi__objective-bar > div {
+.dash-kpi__objective-bar__fill {
   height: 100%;
   background: var(--dash-kpi-accent, #0ea5e9);
   box-shadow: 0 0 6px rgba(var(--dash-kpi-accent-rgb, 14, 165, 233), 0.6);
@@ -176,12 +176,17 @@
 
 /* ── FinancialChart ── */
 .dash-fchart {
+  /* Local tokens — chart keeps a "trading terminal" look even in light theme.
+     Override these via [data-theme] selectors if you want it to adapt. */
+  --dash-fchart-bg: #050505;
+  --dash-fchart-grid: rgba(255, 255, 255, 0.04);
+
   position: relative;
   background:
     linear-gradient(180deg, rgba(var(--primary-rgb), 0.04) 0%, transparent 100%),
-    repeating-linear-gradient(0deg, transparent 0 19px, rgba(255, 255, 255, 0.04) 19px 20px),
-    repeating-linear-gradient(90deg, transparent 0 29px, rgba(255, 255, 255, 0.04) 29px 30px);
-  background-color: #050505;
+    repeating-linear-gradient(0deg, transparent 0 19px, var(--dash-fchart-grid) 19px 20px),
+    repeating-linear-gradient(90deg, transparent 0 29px, var(--dash-fchart-grid) 29px 30px);
+  background-color: var(--dash-fchart-bg);
   border: 1px solid rgba(var(--primary-rgb), 0.2);
   border-radius: 8px;
   box-shadow: inset 0 0 30px rgba(var(--primary-rgb), 0.05), 0 0 18px rgba(var(--primary-rgb), 0.08);
