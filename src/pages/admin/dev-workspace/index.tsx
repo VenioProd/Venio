@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { Plus, X, Trash2, RefreshCw } from 'lucide-react'
+import { Activity, CircleDot, Layers3, Plus, RefreshCw, Target, Trash2, X } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
@@ -63,6 +63,21 @@ function userInitial(u: { name?: string; email?: string } | null | undefined): s
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
 }
 
+function progressPercent(done: number, total: number): number {
+  if (!total) return 0
+  return Math.round((done / total) * 100)
+}
+
+function dueTone(date: string | null | undefined): 'neutral' | 'soon' | 'late' {
+  if (!date) return 'neutral'
+  const due = new Date(date).getTime()
+  if (Number.isNaN(due)) return 'neutral'
+  const diff = due - Date.now()
+  if (diff < 0) return 'late'
+  if (diff < 7 * 24 * 60 * 60 * 1000) return 'soon'
+  return 'neutral'
+}
+
 const DevWorkspace = () => {
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
@@ -70,6 +85,7 @@ const DevWorkspace = () => {
 
   const [projects, setProjects] = useState<DevProject[]>([])
   const [issues, setIssues] = useState<DevIssue[]>([])
+  const [allIssues, setAllIssues] = useState<DevIssue[]>([])
   const [stats, setStats] = useState<DevStats | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -127,9 +143,19 @@ const DevWorkspace = () => {
     }
   }, [filters.project])
 
+  const loadOverviewIssues = useCallback(async () => {
+    try {
+      const data = await listDevIssues({ status: 'all' })
+      setAllIssues(data.issues)
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
   useEffect(() => { loadProjects() }, [loadProjects])
   useEffect(() => { loadIssues() }, [loadIssues])
   useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => { loadOverviewIssues() }, [loadOverviewIssues])
 
   const loadIssueDetail = useCallback(async (id: string) => {
     try {
@@ -167,7 +193,7 @@ const DevWorkspace = () => {
         status: quickCreate.status,
       })
       setQuickCreate((q) => ({ ...q, title: '' }))
-      await Promise.all([loadIssues(), loadStats()])
+      await Promise.all([loadIssues(), loadStats(), loadOverviewIssues()])
     } catch (err) {
       console.error(err)
     } finally {
@@ -179,8 +205,9 @@ const DevWorkspace = () => {
     try {
       const updated = await updateDevIssue(id, patch)
       setIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
+      setAllIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
       if (selectedIssue?._id === id) setSelectedIssue((prev) => (prev ? { ...prev, ...updated } : prev))
-      loadStats()
+      Promise.all([loadStats(), loadOverviewIssues()])
     } catch (err) {
       console.error(err)
     }
@@ -191,8 +218,9 @@ const DevWorkspace = () => {
     try {
       await deleteDevIssue(id)
       setIssues((prev) => prev.filter((i) => i._id !== id))
+      setAllIssues((prev) => prev.filter((i) => i._id !== id))
       if (selectedIssue?._id === id) handleCloseDetail()
-      loadStats()
+      Promise.all([loadStats(), loadOverviewIssues()])
     } catch (err) {
       console.error(err)
     }
@@ -265,6 +293,32 @@ const DevWorkspace = () => {
       count: issues.filter((i) => i.status === s).length,
     })).filter((g) => g.count > 0)
   }, [issues, groupBy])
+
+  const projectOverview = useMemo(() => {
+    return projects.map((project) => {
+      const projectIssues = allIssues.filter((issue) => {
+        const issueProject = typeof issue.project === 'object' ? issue.project._id : issue.project
+        return issueProject === project._id
+      })
+      const done = projectIssues.filter((issue) => issue.status === 'DONE').length
+      const active = projectIssues.filter((issue) => issue.status === 'IN_PROGRESS' || issue.status === 'IN_REVIEW').length
+      const urgent = projectIssues.filter((issue) => issue.priority === 'URGENT' || issue.priority === 'HIGH').length
+      const nextDue = projectIssues
+        .filter((issue) => issue.dueDate && issue.status !== 'DONE' && issue.status !== 'CANCELLED')
+        .sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime())[0]
+      return {
+        project,
+        total: projectIssues.length,
+        done,
+        active,
+        urgent,
+        percent: progressPercent(done, projectIssues.length),
+        nextDue,
+      }
+    })
+  }, [allIssues, projects])
+
+  const globalCompletion = stats ? progressPercent(stats.byStatus.DONE, stats.total) : 0
 
   const renderRow = (issue: DevIssue) => {
     const project = typeof issue.project === 'object' ? issue.project : null
@@ -347,29 +401,52 @@ const DevWorkspace = () => {
       </div>
 
       {stats && (
-        <div className="dev-stats-bar">
-          <span className="dev-stat">
-            <span className="dev-stat-value">{stats.total}</span> total
-          </span>
-          <span className="dev-stat" style={{ color: STATUS_COLOR.IN_PROGRESS }}>
-            <span className="dev-stat-dot" />
-            <span className="dev-stat-value">{stats.byStatus.IN_PROGRESS}</span> en cours
-          </span>
-          <span className="dev-stat" style={{ color: STATUS_COLOR.IN_REVIEW }}>
-            <span className="dev-stat-dot" />
-            <span className="dev-stat-value">{stats.byStatus.IN_REVIEW}</span> en revue
-          </span>
-          <span className="dev-stat" style={{ color: STATUS_COLOR.DONE }}>
-            <span className="dev-stat-dot" />
-            <span className="dev-stat-value">{stats.byStatus.DONE}</span> terminées
-          </span>
-          <span className="dev-stat" style={{ color: PRIORITY_COLOR.URGENT }}>
-            <span className="dev-stat-dot" />
-            <span className="dev-stat-value">{stats.byPriority.URGENT}</span> urgentes
-          </span>
-          <span className="dev-stat">
-            <span className="dev-stat-value">{stats.completedRecent}</span> terminées (14j)
-          </span>
+        <div className="dev-overview">
+          <section className="dev-command-card">
+            <div className="dev-command-card-main">
+              <span className="dev-kicker">Command center</span>
+              <div className="dev-command-title-row">
+                <h2>{globalCompletion}%</h2>
+                <span>complétion globale</span>
+              </div>
+              <div className="dev-progress-track" aria-label={'Complétion globale ' + globalCompletion + '%'}>
+                <span style={{ width: globalCompletion + '%' }} />
+              </div>
+            </div>
+            <div className="dev-command-metrics">
+              <span><Layers3 size={14} /> {stats.totalProjects} projets</span>
+              <span><CircleDot size={14} /> {stats.open} ouvertes</span>
+              <span><Activity size={14} /> {stats.byStatus.IN_PROGRESS + stats.byStatus.IN_REVIEW} actives</span>
+              <span><Target size={14} /> {stats.completedRecent} finies / 14j</span>
+            </div>
+          </section>
+
+          {projectOverview.length > 0 && (
+            <div className="dev-project-strip">
+              {projectOverview.slice(0, 6).map(({ project, total, done, active, urgent, percent, nextDue }) => (
+                <button
+                  key={project._id}
+                  type="button"
+                  className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
+                  onClick={() => setFilters((f) => ({ ...f, project: f.project === project._id ? undefined : project._id }))}
+                  style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
+                >
+                  <span className="dev-project-card-key">{project.key}</span>
+                  <strong>{project.name}</strong>
+                  <span className="dev-project-card-meta">
+                    {done}/{total} terminées · {active} actives
+                  </span>
+                  <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
+                  <span className="dev-project-card-footer">
+                    <span className={urgent ? 'warn' : ''}>{urgent} haute priorité</span>
+                    <span className={'due-' + dueTone(nextDue?.dueDate)}>
+                      {nextDue?.dueDate ? new Date(nextDue.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'pas d’échéance'}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
