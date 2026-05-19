@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../../context/NotificationContext'
 import '../../styles/notifications.css'
 
-const NotificationBell = () => {
+type NotificationBellProps = {
+  onNavigate?: () => void
+}
+
+const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
   const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotifications()
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -28,6 +32,7 @@ const NotificationBell = () => {
     }
     if (notif.link) {
       navigate(notif.link)
+      onNavigate?.()
     }
     setOpen(false)
   }
@@ -49,6 +54,8 @@ const NotificationBell = () => {
         className="notif-bell-btn"
         onClick={() => setOpen(!open)}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} non lues)` : ''}`}
+        aria-expanded={open}
+        aria-haspopup="dialog"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="notif-bell-icon">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -60,7 +67,7 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="notif-dropdown">
+        <div className="notif-dropdown" role="dialog" aria-label="Notifications">
           <div className="notif-dropdown-header">
             <span className="notif-dropdown-title">Notifications</span>
             {unreadCount > 0 && (
