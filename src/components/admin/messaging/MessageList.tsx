@@ -59,27 +59,88 @@ function formatFileSize(bytes: number): string {
   return `${size.toFixed(size >= 100 || index === 0 ? 0 : 1)} ${units[index]}`
 }
 
-async function openAttachment(messageId: string, index: number, originalName: string, mimeType: string): Promise<string | null> {
+interface AttachmentPreview {
+  objectUrl: string
+  name: string
+  mimeType: string
+}
+
+async function fetchAttachmentBlob(messageId: string, index: number): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
   const token = getToken()
   const url = `/api/admin/messaging/messages/${messageId}/attachments/${index}/download`
   const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   if (!res.ok) {
     const data = await res.json().catch(() => null)
-    return (data as Record<string, string>)?.error || `Erreur ${res.status}`
+    return { error: (data as Record<string, string>)?.error || `Erreur ${res.status}` }
   }
-  const blob = await res.blob()
-  const objectUrl = URL.createObjectURL(blob)
-  // Toujours passer par un <a> pour éviter le blocage popup après await
+  return { blob: await res.blob() }
+}
+
+function downloadBlob(objectUrl: string, name: string) {
   const a = document.createElement('a')
   a.href = objectUrl
-  const viewable = mimeType?.startsWith('image/') || mimeType === 'application/pdf' || mimeType?.startsWith('video/')
-  if (!viewable) a.download = originalName
-  else a.target = '_blank'
+  a.download = name
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
-  return null
+}
+
+function AttachmentPreviewModal({ preview, onClose }: { preview: AttachmentPreview; onClose: () => void }) {
+  const isImage = preview.mimeType?.startsWith('image/')
+  const isPdf = preview.mimeType === 'application/pdf'
+  const isVideo = preview.mimeType?.startsWith('video/')
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="attachment-modal-backdrop" onClick={onClose}>
+      <div className="attachment-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="attachment-modal-header">
+          <span className="attachment-modal-name">{preview.name}</span>
+          <div className="attachment-modal-actions">
+            <button
+              type="button"
+              className="attachment-modal-btn"
+              onClick={() => downloadBlob(preview.objectUrl, preview.name)}
+              title="Télécharger"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            <button type="button" className="attachment-modal-btn attachment-modal-close" onClick={onClose} title="Fermer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="attachment-modal-body">
+          {isImage && <img src={preview.objectUrl} alt={preview.name} className="attachment-preview-img" />}
+          {isPdf && <iframe src={preview.objectUrl} title={preview.name} className="attachment-preview-iframe" />}
+          {isVideo && <video src={preview.objectUrl} controls className="attachment-preview-video" />}
+          {!isImage && !isPdf && !isVideo && (
+            <div className="attachment-preview-generic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="64" height="64">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <p>{preview.name}</p>
+              <button type="button" className="attachment-download-btn" onClick={() => downloadBlob(preview.objectUrl, preview.name)}>
+                Télécharger
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function MessageList({ messages, typingUsers, onReplaceMessage }: MessageListProps) {
@@ -87,7 +148,26 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
   const { showToast } = useToast()
   const endRef = useRef<HTMLDivElement>(null)
   const [openActionsId, setOpenActionsId] = useState<string | null>(null)
+  const [preview, setPreview] = useState<AttachmentPreview | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
   const typingNames = Object.values(typingUsers)
+
+  const closePreview = () => {
+    setPreview(null)
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
+    }
+  }
+
+  const handleAttachmentClick = async (messageId: string, index: number, name: string, mimeType: string) => {
+    const result = await fetchAttachmentBlob(messageId, index)
+    if (result.error || !result.blob) { showToast(result.error ?? 'Erreur', 'error'); return }
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    const objectUrl = URL.createObjectURL(result.blob)
+    previewUrlRef.current = objectUrl
+    setPreview({ objectUrl, name, mimeType })
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -168,10 +248,7 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                           key={`${message._id}-${attachment.originalName}-${attachmentIndex}`}
                           type="button"
                           className="messaging-attachment"
-                          onClick={async () => {
-                            const err = await openAttachment(message._id, attachmentIndex, attachment.originalName, attachment.mimeType)
-                            if (err) showToast(err, 'error')
-                          }}
+                          onClick={() => handleAttachmentClick(message._id, attachmentIndex, attachment.originalName, attachment.mimeType)}
                         >
                           <span className="messaging-attachment-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -291,6 +368,7 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
         </div>
       )}
       <div ref={endRef} />
+      {preview && <AttachmentPreviewModal preview={preview} onClose={closePreview} />}
     </div>
   )
 }
