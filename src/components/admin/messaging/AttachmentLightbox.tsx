@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { downloadMessageAttachment } from '../../../services/messaging'
 import type { InternalMessageAttachment } from '../../../types/messaging.types'
 
@@ -11,8 +12,34 @@ interface AttachmentLightboxProps {
 
 type PreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'other'
 
+const EXT_MIME: Record<string, string> = {
+  // images
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif',
+  heic: 'image/heic',
+  // documents
+  pdf: 'application/pdf',
+  // vidéo
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', m4v: 'video/x-m4v',
+  // audio
+  mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4',
+  oga: 'audio/ogg', flac: 'audio/flac',
+}
+
+/**
+ * Renvoie un mimeType utilisable même quand le serveur a stocké un type
+ * générique (octet-stream) ou vide. Fallback sur l'extension du fichier.
+ */
+function resolveMime(mimeType: string | undefined, name: string): string {
+  if (mimeType && mimeType !== 'application/octet-stream' && mimeType !== '') {
+    return mimeType
+  }
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return EXT_MIME[ext] || mimeType || 'application/octet-stream'
+}
+
 function detectKind(mimeType: string | undefined, name: string): PreviewKind {
-  const mime = (mimeType || '').toLowerCase()
+  const mime = resolveMime(mimeType, name).toLowerCase()
   if (mime.startsWith('image/')) return 'image'
   if (mime.startsWith('video/')) return 'video'
   if (mime.startsWith('audio/')) return 'audio'
@@ -136,7 +163,10 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
 
   if (!current) return null
 
-  return (
+  // Portalisé sur document.body pour échapper aux contraintes overflow/transform
+  // des parents (ex. la conversation est dans un panel avec backdrop-filter qui
+  // crée un contexte de stacking et limite la portée d'un position:fixed).
+  return createPortal(
     <div className="attachment-lightbox" role="dialog" aria-modal="true" aria-label={current.originalName}>
       <div className="attachment-lightbox__overlay" onClick={onClose} aria-hidden="true" />
 
@@ -252,6 +282,7 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
