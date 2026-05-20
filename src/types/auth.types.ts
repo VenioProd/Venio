@@ -16,6 +16,9 @@ export type Permission =
   | 'edit_content'
   | 'view_billing'
   | 'manage_billing'
+  | 'manage_tasks'
+  | 'view_qualiopi'
+  | 'manage_qualiopi'
   | 'view_accounting'
   | 'manage_accounting'
   | 'lock_accounting'
@@ -26,6 +29,10 @@ export type Permission =
   | 'view_tickets'
   | 'create_tickets'
   | 'manage_tickets'
+  | 'view_dev'
+  | 'manage_dev'
+  | 'view_education'
+  | 'manage_education'
 
 export interface User {
   _id: string

@@ -82,10 +82,102 @@ export interface DevIssueComment {
 export interface DevStats {
   total: number
   open: number
+  done?: number
+  cancelled?: number
+  progress?: number
   completedRecent: number
+  completed7?: number
+  completed14?: number
+  created7?: number
+  overdue?: number
   totalProjects: number
   byStatus: Record<DevIssueStatus, number>
   byPriority: Record<DevIssuePriority, number>
+  byType?: Record<DevIssueType, number>
+}
+
+export interface DevProjectDetail {
+  project: DevProject
+  stats: {
+    total: number
+    open: number
+    done: number
+    cancelled: number
+    progress: number
+    completed14: number
+    completed7: number
+    created7: number
+    overdue: number
+    byStatus: Record<DevIssueStatus, number>
+    byPriority: Record<DevIssuePriority, number>
+    byType: Record<DevIssueType, number>
+  }
+  recentIssues: DevIssue[]
+}
+
+export type DevActivityKind = 'created' | 'completed' | 'comment'
+
+export interface DevActivityEntry {
+  kind: DevActivityKind
+  at: string
+  user: UserRef | null
+  issue: { _id: string; identifier: string; number: number; title: string }
+  project: { _id: string; key: string; name: string; color?: string } | null
+  body?: string
+}
+
+export interface DevRoadmapIssueSummary {
+  _id: string
+  identifier: string
+  number: number
+  title: string
+  type: DevIssueType
+  status: DevIssueStatus
+  priority: DevIssuePriority
+  assignee: UserRef | null
+  dueDate: string | null
+  startedAt: string | null
+  completedAt: string | null
+  updatedAt: string
+  github: {
+    prNumber: number | null
+    prUrl: string | null
+    prState: 'open' | 'closed' | null
+    ciStatus: 'NEUTRAL' | 'PENDING' | 'SUCCESS' | 'FAILURE'
+  } | null
+}
+
+export interface DevRoadmapProject {
+  project: {
+    _id: string
+    key: string
+    name: string
+    color: string
+    description: string
+    status: DevProjectStatus
+    lead: UserRef | null
+    updatedAt: string
+  }
+  summary: {
+    total: number
+    open: number
+    done: number
+    cancelled: number
+    inProgress: number
+    inReview: number
+    todo: number
+    backlog: number
+    overdue: number
+    progress: number
+  }
+  active: DevRoadmapIssueSummary[]
+  upcoming: DevRoadmapIssueSummary[]
+  recentlyDone: DevRoadmapIssueSummary[]
+}
+
+export interface DevRoadmapResponse {
+  projects: DevRoadmapProject[]
+  generatedAt: string
 }
 
 export interface IssueFilters {
@@ -427,6 +519,29 @@ export function fetchDevProjectLargeFiles(
 ): Promise<DevLargeFilesSnapshot> {
   const refresh = opts.refresh ? '?refresh=1' : ''
   return apiFetch(`/api/admin/dev/projects/${projectId}/large-files${refresh}`)
+}
+
+export function fetchDevProjectDetail(id: string): Promise<DevProjectDetail> {
+  return apiFetch(`/api/admin/dev/projects/${id}/detail`)
+}
+
+export function fetchDevActivity(opts: { project?: string; limit?: number } = {}): Promise<{ entries: DevActivityEntry[] }> {
+  return apiFetch(
+    `/api/admin/dev/activity${qs({ project: opts.project, limit: opts.limit ? String(opts.limit) : undefined })}`
+  )
+}
+
+export function fetchDevRoadmap(
+  opts: { includeArchived?: boolean; upcomingLimit?: number; recentLimit?: number; activeLimit?: number } = {}
+): Promise<DevRoadmapResponse> {
+  return apiFetch(
+    `/api/admin/dev/roadmap${qs({
+      includeArchived: opts.includeArchived ? 'true' : undefined,
+      upcomingLimit: opts.upcomingLimit ? String(opts.upcomingLimit) : undefined,
+      recentLimit: opts.recentLimit ? String(opts.recentLimit) : undefined,
+      activeLimit: opts.activeLimit ? String(opts.activeLimit) : undefined,
+    })}`
+  )
 }
 
 // UI helpers
