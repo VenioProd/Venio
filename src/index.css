@@ -623,3 +623,21 @@ p,
 [data-theme='light'] .dm-footer { background: #fff; border-color: #e2e8f0; }
 [data-theme='light'] .dm-chips { background: #f8fafc; border-color: #e2e8f0; }
 [data-theme='light'] .dm-file-btn { background: #f8fafc; border-color: #cbd5e1; }
+
+/* ── Responsive mobile dm-modal ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  .dm-modal {
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 32px);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .dm-header { padding: 14px 16px; }
+  .dm-header h2 { font-size: 15px; }
+  .dm-body { padding: 14px 16px; gap: 12px; }
+  .dm-footer { padding: 12px 16px; }
+  .dm-row { flex-direction: column; gap: 8px; }
+  .dm-chips { gap: 4px; padding: 6px; }
+  .dm-chip { font-size: 11px; padding: 3px 8px; }
+}

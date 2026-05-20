@@ -296,7 +296,7 @@ export default function DecisionsList() {
                   background: 'rgba(255,255,255,0.02)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div className="decision-card-layout">
                   <span
                     title={d.priority}
                     style={{

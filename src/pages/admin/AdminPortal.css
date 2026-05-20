@@ -7900,3 +7900,29 @@ a.portal-button {
 [data-theme='light'] .decision-modal__recipients { background: #f8fafc; border-color: #e2e8f0; }
 [data-theme='light'] .decision-modal__file-zone { border-color: #cbd5e1; background: #f8fafc; }
 [data-theme='light'] .decision-modal__actions { border-top-color: #e2e8f0; }
+
+/* ── Decisions cards responsive ──────────────────────────────────────── */
+.decision-card-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .decision-card-layout {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .decision-card-layout > div:last-child {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+  .decision-card-layout > div:last-child .portal-button {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+  }
+}

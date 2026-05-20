@@ -2504,3 +2504,17 @@
 }
 
 .attachment-download-btn:hover { opacity: 0.85; }
+
+/* ── Responsive mobile attachment preview ───────────────────────────── */
+@media (max-width: 600px) {
+  .attachment-modal {
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 32px);
+  }
+  .attachment-modal-header {
+    padding: 10px 12px;
+    min-height: 46px;
+  }
+  .attachment-modal-name { font-size: 13px; }
+  .attachment-preview-iframe { height: 70vh; }
+}
