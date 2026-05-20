@@ -243,11 +243,12 @@ function ProjectDetailContent({
         </div>
       </section>
 
+      {/* KPIs drawer ordonnés par actionabilité : en retard d'abord, vélocité ensuite. */}
       <section className="dev-project-drawer-kpis">
+        <DrawerKpi label="En retard" value={stats.overdue} tone={stats.overdue > 0 ? 'rose' : undefined} />
+        <DrawerKpi label="Terminées (14j)" value={stats.completed14} />
         <DrawerKpi label="Velocity (7j)" value={stats.completed7} />
         <DrawerKpi label="Créées (7j)" value={stats.created7} />
-        <DrawerKpi label="Terminées (14j)" value={stats.completed14} />
-        <DrawerKpi label="En retard" value={stats.overdue} tone={stats.overdue > 0 ? 'rose' : undefined} />
       </section>
 
       <section className="dev-project-drawer-section">

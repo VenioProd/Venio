@@ -902,7 +902,8 @@ const DevProjectCockpit = () => {
         </div>
       </header>
 
-      {/* KPI strip */}
+      {/* KPI strip — ordered by actionability: santé, blocages, urgentes, en retard,
+         then secondary signals (issues totales, vélocité, récent). */}
       <section className="cockpit-kpis">
         <div className={`cockpit-kpi-card health tone-${HEALTH_META[health].tone}`}>
           <div className="cockpit-kpi-label">
@@ -914,15 +915,15 @@ const DevProjectCockpit = () => {
             <span style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <div className="cockpit-kpi-card">
-          <div className="cockpit-kpi-label"><Hash size={12} /> Issues</div>
-          <div className="cockpit-kpi-value">{counts.total}</div>
-          <div className="cockpit-kpi-sub">{counts.open} ouvertes · {counts.done} terminées</div>
+        <div className={`cockpit-kpi-card${counts.blocked ? ' tone-fail' : ''}`}>
+          <div className="cockpit-kpi-label"><ShieldAlert size={12} /> Bloquées</div>
+          <div className="cockpit-kpi-value">{counts.blocked}</div>
+          <div className="cockpit-kpi-sub">à débloquer en priorité</div>
         </div>
         <div className={`cockpit-kpi-card${counts.urgent ? ' tone-warn' : ''}`}>
           <div className="cockpit-kpi-label"><Flame size={12} /> Urgentes</div>
           <div className="cockpit-kpi-value">{counts.urgent}</div>
-          <div className="cockpit-kpi-sub">{counts.blocked} bloquée(s)</div>
+          <div className="cockpit-kpi-sub">à traiter</div>
         </div>
         <div className={`cockpit-kpi-card${counts.overdue ? ' tone-fail' : ''}`}>
           <div className="cockpit-kpi-label"><Clock size={12} /> En retard</div>
@@ -930,201 +931,18 @@ const DevProjectCockpit = () => {
           <div className="cockpit-kpi-sub">échéances dépassées</div>
         </div>
         <div className="cockpit-kpi-card">
-          <div className="cockpit-kpi-label"><TrendingUp size={12} /> Vélocité</div>
-          <div className="cockpit-kpi-value">{velocity.velocityPerDay14d.toFixed(1)}</div>
-          <div className="cockpit-kpi-sub">issues / jour · 14 j</div>
+          <div className="cockpit-kpi-label"><Hash size={12} /> Issues</div>
+          <div className="cockpit-kpi-value">{counts.total}</div>
+          <div className="cockpit-kpi-sub">{counts.open} ouvertes · {counts.done} terminées</div>
         </div>
         <div className="cockpit-kpi-card">
           <div className="cockpit-kpi-label"><Target size={12} /> Récent</div>
           <div className="cockpit-kpi-value">{velocity.completed7d}</div>
-          <div className="cockpit-kpi-sub">{velocity.completed14d} sur 14 j</div>
+          <div className="cockpit-kpi-sub">terminées sur 7 j</div>
         </div>
       </section>
 
-      {/* Project meta + état */}
-      <section className="cockpit-row">
-        <div className="cockpit-card cockpit-readme">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Contexte projet</span>
-            <span className="cockpit-card-meta">
-              <Users size={11} /> {project.members.length} membre(s)
-              {project.lead && <> · Lead : {project.lead.name || project.lead.email}</>}
-            </span>
-          </div>
-          {project.description ? (
-            <pre className="cockpit-readme-body">{project.description}</pre>
-          ) : (
-            <div className="cockpit-readme-empty">
-              Aucune description. Renseignez-la dans le workspace pour donner du contexte au projet.
-            </div>
-          )}
-        </div>
-
-        <div className="cockpit-card cockpit-status">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Où ça en est</span>
-            <span className="cockpit-card-meta">
-              dernière activité {formatRelative(cockpit.lastActivityAt)}
-            </span>
-          </div>
-          <ul className="cockpit-status-list">
-            <li>
-              <strong>{counts.open}</strong> issue(s) ouverte(s) — {counts.done} terminée(s) / {counts.total}
-            </li>
-            {counts.urgent > 0 && (
-              <li className="warn">
-                <Flame size={11} /> <strong>{counts.urgent}</strong> urgentes à traiter
-              </li>
-            )}
-            {counts.blocked > 0 && (
-              <li className="fail">
-                <ShieldAlert size={11} /> <strong>{counts.blocked}</strong> bloquée(s) — débloquer pour avancer
-              </li>
-            )}
-            {counts.overdue > 0 && (
-              <li className="fail">
-                <Clock size={11} /> <strong>{counts.overdue}</strong> en retard sur échéance
-              </li>
-            )}
-            {velocity.avgCompletionDays !== null && (
-              <li>
-                <Activity size={11} /> Temps moyen de résolution :
-                {' '}<strong>{velocity.avgCompletionDays} j</strong>
-              </li>
-            )}
-            {cockpit.nextDue[0] && (
-              <li>
-                <CalendarClock size={11} /> Prochaine échéance :{' '}
-                <button className="cockpit-inline-link" onClick={() => openIssue(cockpit.nextDue[0]!._id)}>
-                  {cockpit.nextDue[0].identifier} · {formatShortDate(cockpit.nextDue[0].dueDate!)}
-                </button>
-              </li>
-            )}
-            {counts.open === 0 && counts.total > 0 && (
-              <li className="ok">
-                <CheckCircle2 size={11} /> Backlog vidé : aucune issue ouverte.
-              </li>
-            )}
-            {counts.total === 0 && (
-              <li>Aucune issue pour ce projet. Créez-en une depuis le workspace.</li>
-            )}
-          </ul>
-        </div>
-      </section>
-
-      {/* Charts row */}
-      <section className="cockpit-row">
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Vélocité 14 jours</span>
-            <span className="cockpit-card-meta">
-              terminées vs créées par jour
-            </span>
-          </div>
-          <div className="cockpit-chart" style={{ height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={velocityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} interval={1} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip content={<VelocityTooltip />} cursor={{ stroke: 'rgba(148,163,184,0.18)' }} />
-                <Line type="monotone" dataKey="created" stroke="#7c5cff" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={1.8} dot={{ r: 2, fill: '#10b981' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Statut</span>
-            <span className="cockpit-card-meta">{counts.total} issue(s)</span>
-          </div>
-          {statusData.length === 0 ? (
-            <div className="cockpit-empty">Aucune donnée</div>
-          ) : (
-            <div className="cockpit-chart-wrap">
-              <div className="cockpit-chart" style={{ height: 180, flex: '0 0 180px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Tooltip content={<PieTooltip />} />
-                    <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} stroke="none" paddingAngle={2}>
-                      {statusData.map((d) => (
-                        <Cell key={d.key} fill={d.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <ul className="cockpit-legend">
-                {statusData.map((d) => (
-                  <li key={d.key}>
-                    <span className="cockpit-legend-dot" style={{ background: d.color }} />
-                    <span className="cockpit-legend-label">{d.name}</span>
-                    <span className="cockpit-legend-value">{d.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="cockpit-row">
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Priorité</span>
-            <span className="cockpit-card-meta">répartition</span>
-          </div>
-          {priorityData.length === 0 ? (
-            <div className="cockpit-empty">Aucune donnée</div>
-          ) : (
-            <div className="cockpit-chart" style={{ height: 180 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={priorityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {priorityData.map((d) => (
-                      <Cell key={d.key} fill={d.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Type</span>
-            <span className="cockpit-card-meta">feature · bug · …</span>
-          </div>
-          {typeData.length === 0 ? (
-            <div className="cockpit-empty">Aucune donnée</div>
-          ) : (
-            <div className="cockpit-chart" style={{ height: 180 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={typeData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} layout="vertical">
-                  <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {typeData.map((d) => (
-                      <Cell key={d.key} fill={d.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Lists row : risks/blockers/overdue */}
+      {/* ── Priorité 1 — Santé synthétique : blocages, urgences, retards ── */}
       <section className="cockpit-row triple">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
@@ -1163,34 +981,7 @@ const DevProjectCockpit = () => {
         </div>
       </section>
 
-      {/* Next actions + recently done */}
-      <section className="cockpit-row">
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><CalendarClock size={11} /> Prochaines échéances</span>
-            <span className="cockpit-card-meta">{cockpit.nextDue.length}</span>
-          </div>
-          {cockpit.nextDue.length === 0 ? (
-            <div className="cockpit-empty">Aucune échéance à venir.</div>
-          ) : (
-            cockpit.nextDue.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
-          )}
-        </div>
-
-        <div className="cockpit-card">
-          <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><CheckCircle2 size={11} /> Récemment terminées</span>
-            <span className="cockpit-card-meta">{cockpit.recentlyDone.length}</span>
-          </div>
-          {cockpit.recentlyDone.length === 0 ? (
-            <div className="cockpit-empty">Aucune issue terminée.</div>
-          ) : (
-            cockpit.recentlyDone.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
-          )}
-        </div>
-      </section>
-
-      {/* Intelligence: GitHub + Tokens */}
+      {/* ── Priorité 1 (suite) — PRs ouvertes / CI ── */}
       {intel && (
         <section className="cockpit-row cockpit-intel-row">
           <GithubPanel
@@ -1214,25 +1005,86 @@ const DevProjectCockpit = () => {
             onCancel={cancelGhEdit}
             onToggleEdit={(v) => (v ? beginGhEdit() : cancelGhEdit())}
           />
-          <TokensPanel tokens={intel.tokens} />
+          <div className="cockpit-card cockpit-intel-card">
+            <div className="cockpit-card-header">
+              <span className="cockpit-card-kicker">Contexte projet</span>
+              <span className="cockpit-card-meta">
+                <Users size={11} /> {project.members.length} membre(s)
+                {project.lead && <> · Lead : {project.lead.name || project.lead.email}</>}
+              </span>
+            </div>
+            {project.description ? (
+              <pre className="cockpit-readme-body">{project.description}</pre>
+            ) : (
+              <div className="cockpit-readme-empty">
+                Aucune description. Renseignez-la dans le workspace pour donner du contexte au projet.
+              </div>
+            )}
+          </div>
         </section>
       )}
 
-      {/* Intelligence: Code metrics + Large files */}
-      {intel && (
-        <section className="cockpit-row cockpit-intel-row">
-          <CodeMetricsPanel code={intel.code} />
-          <LargeFilesPanel
-            snapshot={largeFiles}
-            loading={largeLoading || intelLoading}
-            onRefresh={() => refreshLargeFiles(true)}
-            github={intel.github}
-            nextRefreshIn={largeNextIn}
-          />
-        </section>
-      )}
+      {/* ── Priorité 2 — Prochaine action ── */}
+      <section className="cockpit-row">
+        <div className="cockpit-card">
+          <div className="cockpit-card-header">
+            <span className="cockpit-card-kicker"><CalendarClock size={11} /> Prochaine action</span>
+            <span className="cockpit-card-meta">{cockpit.nextDue.length} échéance(s) à venir</span>
+          </div>
+          {cockpit.nextDue.length === 0 ? (
+            <div className="cockpit-empty">Aucune échéance à venir.</div>
+          ) : (
+            cockpit.nextDue.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
+          )}
+        </div>
 
-      {/* Workload + activity */}
+        <div className="cockpit-card cockpit-status">
+          <div className="cockpit-card-header">
+            <span className="cockpit-card-kicker">Où ça en est</span>
+            <span className="cockpit-card-meta">
+              dernière activité {formatRelative(cockpit.lastActivityAt)}
+            </span>
+          </div>
+          <ul className="cockpit-status-list">
+            <li>
+              <strong>{counts.open}</strong> issue(s) ouverte(s) — {counts.done} terminée(s) / {counts.total}
+            </li>
+            {counts.urgent > 0 && (
+              <li className="warn">
+                <Flame size={11} /> <strong>{counts.urgent}</strong> urgentes à traiter
+              </li>
+            )}
+            {counts.blocked > 0 && (
+              <li className="fail">
+                <ShieldAlert size={11} /> <strong>{counts.blocked}</strong> bloquée(s) — débloquer pour avancer
+              </li>
+            )}
+            {counts.overdue > 0 && (
+              <li className="fail">
+                <Clock size={11} /> <strong>{counts.overdue}</strong> en retard sur échéance
+              </li>
+            )}
+            {cockpit.nextDue[0] && (
+              <li>
+                <CalendarClock size={11} /> Prochaine échéance :{' '}
+                <button className="cockpit-inline-link" onClick={() => openIssue(cockpit.nextDue[0]!._id)}>
+                  {cockpit.nextDue[0].identifier} · {formatShortDate(cockpit.nextDue[0].dueDate!)}
+                </button>
+              </li>
+            )}
+            {counts.open === 0 && counts.total > 0 && (
+              <li className="ok">
+                <CheckCircle2 size={11} /> Backlog vidé : aucune issue ouverte.
+              </li>
+            )}
+            {counts.total === 0 && (
+              <li>Aucune issue pour ce projet. Créez-en une depuis le workspace.</li>
+            )}
+          </ul>
+        </div>
+      </section>
+
+      {/* ── Priorité 3 — Travail actif : charge par assigné (IN_PROGRESS / IN_REVIEW) ── */}
       <section className="cockpit-row">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
@@ -1265,6 +1117,21 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-card">
           <div className="cockpit-card-header">
+            <span className="cockpit-card-kicker"><CheckCircle2 size={11} /> Récemment terminées</span>
+            <span className="cockpit-card-meta">{cockpit.recentlyDone.length}</span>
+          </div>
+          {cockpit.recentlyDone.length === 0 ? (
+            <div className="cockpit-empty">Aucune issue terminée.</div>
+          ) : (
+            cockpit.recentlyDone.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
+          )}
+        </div>
+      </section>
+
+      {/* ── Priorité 5 — Activité récente ── */}
+      <section className="cockpit-row cockpit-row-single">
+        <div className="cockpit-card">
+          <div className="cockpit-card-header">
             <span className="cockpit-card-kicker"><Activity size={11} /> Activité récente</span>
             <span className="cockpit-card-meta">{cockpit.activity.length} événement(s)</span>
           </div>
@@ -1278,6 +1145,151 @@ const DevProjectCockpit = () => {
             </div>
           )}
         </div>
+      </section>
+
+      {/* ── Priorité 6 — Métriques secondaires (charts, code, tokens) ── */}
+      <section className="cockpit-metrics-section">
+        <header className="cockpit-metrics-header">
+          <TrendingUp size={12} />
+          <span>Métriques</span>
+          <span className="cockpit-metrics-subtitle">vélocité, répartitions, code, tokens — pour analyse</span>
+        </header>
+
+        <div className="cockpit-row">
+          <div className="cockpit-card">
+            <div className="cockpit-card-header">
+              <span className="cockpit-card-kicker">Vélocité 14 jours</span>
+              <span className="cockpit-card-meta">
+                {velocity.velocityPerDay14d.toFixed(1)}/j · {velocity.completed14d} terminées
+              </span>
+            </div>
+            <div className="cockpit-chart" style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={velocityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} interval={1} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip content={<VelocityTooltip />} cursor={{ stroke: 'rgba(148,163,184,0.18)' }} />
+                  <Line type="monotone" dataKey="created" stroke="#7c5cff" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={1.8} dot={{ r: 2, fill: '#10b981' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {velocity.avgCompletionDays !== null && (
+              <div className="cockpit-card-foot">
+                <Activity size={11} /> Temps moyen de résolution : <strong>{velocity.avgCompletionDays} j</strong>
+              </div>
+            )}
+          </div>
+
+          <div className="cockpit-card">
+            <div className="cockpit-card-header">
+              <span className="cockpit-card-kicker">Statut</span>
+              <span className="cockpit-card-meta">{counts.total} issue(s)</span>
+            </div>
+            {statusData.length === 0 ? (
+              <div className="cockpit-empty">Aucune donnée</div>
+            ) : (
+              <div className="cockpit-chart-wrap">
+                <div className="cockpit-chart" style={{ height: 180, flex: '0 0 180px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Tooltip content={<PieTooltip />} />
+                      <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} stroke="none" paddingAngle={2}>
+                        {statusData.map((d) => (
+                          <Cell key={d.key} fill={d.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <ul className="cockpit-legend">
+                  {statusData.map((d) => (
+                    <li key={d.key}>
+                      <span className="cockpit-legend-dot" style={{ background: d.color }} />
+                      <span className="cockpit-legend-label">{d.name}</span>
+                      <span className="cockpit-legend-value">{d.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="cockpit-row">
+          <div className="cockpit-card">
+            <div className="cockpit-card-header">
+              <span className="cockpit-card-kicker">Priorité</span>
+              <span className="cockpit-card-meta">répartition</span>
+            </div>
+            {priorityData.length === 0 ? (
+              <div className="cockpit-empty">Aucune donnée</div>
+            ) : (
+              <div className="cockpit-chart" style={{ height: 180 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={priorityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {priorityData.map((d) => (
+                        <Cell key={d.key} fill={d.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          <div className="cockpit-card">
+            <div className="cockpit-card-header">
+              <span className="cockpit-card-kicker">Type</span>
+              <span className="cockpit-card-meta">feature · bug · …</span>
+            </div>
+            {typeData.length === 0 ? (
+              <div className="cockpit-empty">Aucune donnée</div>
+            ) : (
+              <div className="cockpit-chart" style={{ height: 180 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={typeData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} layout="vertical">
+                    <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
+                    <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {typeData.map((d) => (
+                        <Cell key={d.key} fill={d.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {intel && (
+          <div className="cockpit-row cockpit-intel-row">
+            <CodeMetricsPanel code={intel.code} />
+            <LargeFilesPanel
+              snapshot={largeFiles}
+              loading={largeLoading || intelLoading}
+              onRefresh={() => refreshLargeFiles(true)}
+              github={intel.github}
+              nextRefreshIn={largeNextIn}
+            />
+          </div>
+        )}
+
+        {intel && (
+          <div className="cockpit-row cockpit-intel-row">
+            <TokensPanel tokens={intel.tokens} />
+            <div className="cockpit-card cockpit-intel-card cockpit-metrics-spacer" aria-hidden="true" />
+          </div>
+        )}
       </section>
 
     </div>
