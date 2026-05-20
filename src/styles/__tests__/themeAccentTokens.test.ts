@@ -82,4 +82,32 @@ describe('theme accent tokens', () => {
       expect(matches, `${path} contains ${matches?.[0]}`).toBeNull()
     }
   })
+  it('keeps non-blue dark accent themes from repainting browser-level backgrounds', () => {
+    const themeCss = readSource('src/styles/theme.css')
+    const neutralBackgroundTokens = [
+      '--admin-shell-bg-glow-1: rgba(255, 255, 255',
+      '--client-shell-bg-glow-1: rgba(255, 255, 255',
+      '--ambient-mesh-primary: rgba(255, 255, 255',
+      '--ambient-mesh-layer-1: rgba(255, 255, 255',
+    ]
+
+    expect(themeCss).toContain('[data-theme="dark"][data-accent="violet"]')
+    for (const token of neutralBackgroundTokens) {
+      expect(themeCss, 'non-blue accents should neutralize ' + token).toContain(token)
+    }
+
+    const shellFiles = [
+      'src/components/AdminShell.css',
+      'src/components/ClientShell.css',
+      'src/components/GradientMeshBackground.css',
+    ]
+
+    for (const path of shellFiles) {
+      const source = readSource(path)
+      expect(source, path + ' should use neutralizable background tokens').not.toMatch(
+        /radial-gradient\([^)]*rgba\(var\(--primary(?:-light|-dark)?-rgb\)/
+      )
+    }
+  })
+
 })
