@@ -9,6 +9,8 @@ import {
 import { hasAllScopes, missingScopes } from '../../../lib/agent/scopes.js'
 import { respondError } from './errors.js'
 
+const AUTH_SUCCESS_LOG_INTERVAL_MS = 15 * 60 * 1000
+
 /**
  * Middleware d'authentification de l'API agent.
  *
@@ -73,6 +75,7 @@ export default async function agentAuth(
 
   // 5. Expiration
   if (token.expiresAt && token.expiresAt.getTime() < Date.now()) {
+    void logAuthFail(req, 'EXPIRED_TOKEN', String(token._id))
     respondError(res, 401, 'EXPIRED_TOKEN', 'Token expiré')
     return
   }
@@ -91,6 +94,17 @@ export default async function agentAuth(
     rateLimitPerMin: token.rateLimitPerMin,
   }
 
+  if (shouldLogAuthSuccess(token.lastUsedAt, token.lastUsedIp, token.lastUsedUserAgent, ip, userAgent)) {
+    void logAuthSuccess(req, {
+      id: String(token._id),
+      name: token.name,
+      prefix: token.prefix,
+      scopes: [...token.scopes],
+      ip,
+      userAgent,
+    })
+  }
+
   AgentToken.updateOne(
     { _id: token._id },
     {
@@ -102,6 +116,52 @@ export default async function agentAuth(
   })
 
   next()
+}
+
+function shouldLogAuthSuccess(
+  lastUsedAt: Date | null | undefined,
+  lastUsedIp: string | null | undefined,
+  lastUsedUserAgent: string | null | undefined,
+  ip: string,
+  userAgent: string
+): boolean {
+  if (!lastUsedAt) return true
+  if ((lastUsedIp || '') !== ip) return true
+  if ((lastUsedUserAgent || '') !== userAgent) return true
+  return Date.now() - lastUsedAt.getTime() > AUTH_SUCCESS_LOG_INTERVAL_MS
+}
+
+async function logAuthSuccess(
+  req: Request,
+  token: {
+    id: string
+    name: string
+    prefix: string
+    scopes: string[]
+    ip: string
+    userAgent: string
+  }
+): Promise<void> {
+  try {
+    await AuditLog.create({
+      userId: null,
+      email: '',
+      action: 'AGENT_AUTH_SUCCESS',
+      ip: token.ip,
+      userAgent: token.userAgent,
+      metadata: {
+        actorType: 'AGENT',
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenPrefix: token.prefix,
+        scopes: token.scopes,
+        path: req.path,
+        method: req.method,
+      },
+    })
+  } catch (err) {
+    console.error('[agent-auth] logAuthSuccess error:', (err as Error).message)
+  }
 }
 
 /**

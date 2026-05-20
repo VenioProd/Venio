@@ -28,7 +28,7 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'EXTERNAL_SOURCE_DELETE', 'EXTERNAL_SOURCE_ROTATE',
         // ── API Agent ──
         'AGENT_TOKEN_CREATE', 'AGENT_TOKEN_UPDATE', 'AGENT_TOKEN_REVOKE',
-        'AGENT_AUTH_FAIL', 'AGENT_API_MUTATION',
+        'AGENT_AUTH_SUCCESS', 'AGENT_AUTH_FAIL', 'AGENT_API_MUTATION',
       ],
     },
     ip: { type: String, default: '' },
@@ -41,5 +41,6 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
 auditLogSchema.index({ userId: 1, createdAt: -1 })
 auditLogSchema.index({ action: 1, createdAt: -1 })
 auditLogSchema.index({ createdAt: -1 })
+auditLogSchema.index({ 'metadata.tokenId': 1, createdAt: -1 })
 
 export default mongoose.model<IAuditLog>('AuditLog', auditLogSchema)

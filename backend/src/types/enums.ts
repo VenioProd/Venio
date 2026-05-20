@@ -94,7 +94,7 @@ export type AuditAction =
   | 'EXTERNAL_SOURCE_DELETE' | 'EXTERNAL_SOURCE_ROTATE'
   // ── API Agent (Bearer + scopes) ──
   | 'AGENT_TOKEN_CREATE' | 'AGENT_TOKEN_UPDATE' | 'AGENT_TOKEN_REVOKE'
-  | 'AGENT_AUTH_FAIL' | 'AGENT_API_MUTATION'
+  | 'AGENT_AUTH_SUCCESS' | 'AGENT_AUTH_FAIL' | 'AGENT_API_MUTATION'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

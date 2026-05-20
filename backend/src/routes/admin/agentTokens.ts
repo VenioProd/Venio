@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
 import { requireSuperAdmin } from '../../middleware/role.js'
 import AgentToken from '../../models/AgentToken.js'
+import AuditLog from '../../models/AuditLog.js'
 import User from '../../models/User.js'
 import {
   AGENT_SCOPES,
@@ -48,6 +49,43 @@ router.use(requireSuperAdmin)
 router.get('/scopes', (_req: Request, res: Response) => {
   res.json({ scopes: AGENT_SCOPES, adminWildcard: ADMIN_WILDCARD_SCOPE })
 })
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET /:id/auth-log — journal de connexion / auth du token
+// ──────────────────────────────────────────────────────────────────────────
+
+router.get(
+  '/:id/auth-log',
+  param('id').isMongoId().withMessage('ID invalide'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'ID invalide' })
+      }
+
+      const token = await AgentToken.findById(req.params.id).select('_id prefix name').lean()
+      if (!token) {
+        return res.status(404).json({ error: 'Token introuvable' })
+      }
+
+      const limitRaw = Number(req.query.limit || 50)
+      const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 50, 1), 200)
+      const events = await AuditLog.find({
+        action: { $in: ['AGENT_AUTH_SUCCESS', 'AGENT_AUTH_FAIL'] },
+        'metadata.tokenId': String(token._id),
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .select('action ip userAgent metadata createdAt')
+        .lean()
+
+      return res.json({ token, events })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // ──────────────────────────────────────────────────────────────────────────
 // GET / — liste
