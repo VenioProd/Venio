@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, Pin, Archive, ChevronRight, Menu,
+  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
 } from 'lucide-react'
 import {
   fetchDashboard,
@@ -10,8 +10,9 @@ import {
   listSessions, createSession,
   listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
   listNotes, createNote, updateNote, deleteNote,
+  listTemplates,
   searchEducation,
-  studentDisplayName, formatRelative, formatDate,
+  studentDisplayName, formatDate,
   CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
@@ -20,17 +21,21 @@ import {
   type EducationSession, type EducationAssignment, type EducationSubmission,
   type EducationNote, type NoteBlock,
   type EducationAssignmentStatus,
+  type EducationTemplate,
 } from '../../../services/education'
 import { DashboardView } from './DashboardView'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { TemplatesView } from './TemplatesView'
 import './EducationWorkspace.css'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'search'
+type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
   const [dashboard, setDashboard] = useState<EducationDashboard | null>(null)
   const [classes, setClasses] = useState<EducationClass[]>([])
+  const [templates, setTemplates] = useState<EducationTemplate[]>([])
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [showCreateClass, setShowCreateClass] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -59,10 +64,21 @@ export default function EducationWorkspace() {
     }
   }, [])
 
+  const refreshTemplates = useCallback(async () => {
+    try {
+      const r = await listTemplates()
+      setTemplates(r.templates)
+    } catch {
+      // Best-effort : si l'API templates n'est pas dispo, on n'empêche pas le cockpit.
+      setTemplates([])
+    }
+  }, [])
+
   useEffect(() => {
     refreshDashboard()
     refreshClasses()
-  }, [refreshDashboard, refreshClasses])
+    refreshTemplates()
+  }, [refreshDashboard, refreshClasses, refreshTemplates])
 
   // Cmd+K → search
   useEffect(() => {
@@ -134,6 +150,10 @@ export default function EducationWorkspace() {
         <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => selectView('notes')}>
           <FileText size={15} /> Notes
         </button>
+        <button className={`edu-side-item ${view === 'templates' ? 'active' : ''}`} onClick={() => selectView('templates')}>
+          <Sparkles size={15} /> Templates
+          {templates.length > 0 && <span className="edu-side-badge">{templates.length}</span>}
+        </button>
         <button className="edu-side-item" onClick={() => { setSearchOpen(true); setSidebarOpen(false) }}>
           <Search size={15} /> Recherche
           <span className="edu-side-badge">⌘K</span>
@@ -189,7 +209,10 @@ export default function EducationWorkspace() {
           <AssignmentsView classes={classes} onChanged={refreshDashboard} />
         )}
         {view === 'notes' && (
-          <NotesView classes={classes} />
+          <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
+        )}
+        {view === 'templates' && (
+          <TemplatesView />
         )}
       </main>
 
@@ -209,6 +232,8 @@ export default function EducationWorkspace() {
           classId={selectedClassId}
           onClose={() => setSelectedClassId(null)}
           onChanged={async () => { await Promise.all([refreshClasses(), refreshDashboard()]) }}
+          templates={templates}
+          onTemplatesChanged={refreshTemplates}
         />
       )}
 
@@ -253,7 +278,13 @@ function ClassesView({
       {classes.length === 0 ? (
         <div className="edu-empty">
           <div className="edu-empty-icon">📚</div>
-          Aucune classe pour l'instant. Crée ta première classe pour commencer.
+          <div>Aucune classe pour l'instant.</div>
+          <div className="edu-empty-sub">
+            Crée ta première classe pour démarrer ton cockpit : étudiants, séances, devoirs et notes s'organiseront autour.
+          </div>
+          <button className="edu-btn" style={{ marginTop: 12 }} onClick={onCreate}>
+            <Plus size={13} /> Créer ma première classe
+          </button>
         </div>
       ) : (
         <div className="edu-class-grid">
@@ -430,8 +461,8 @@ function ClassFormDrawer({
 type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
 function ClassDetailDrawer({
-  classId, onClose, onChanged,
-}: { classId: string; onClose: () => void; onChanged: () => void }) {
+  classId, onClose, onChanged, templates, onTemplatesChanged,
+}: { classId: string; onClose: () => void; onChanged: () => void; templates?: EducationTemplate[]; onTemplatesChanged?: () => void }) {
   const [klass, setKlass] = useState<EducationClass | null>(null)
   const [stats, setStats] = useState<{ studentCount: number; sessionCount: number; assignmentCount: number; openAssignments: number } | null>(null)
   const [tab, setTab] = useState<ClassTab>('overview')
@@ -505,7 +536,7 @@ function ClassDetailDrawer({
             <AssignmentsTab classId={classId} onChanged={() => { refresh(); onChanged() }} />
           )}
           {tab === 'notes' && (
-            <NotesTab classId={classId} />
+            <NotesTab classId={classId} templates={templates} onTemplatesChanged={onTemplatesChanged} />
           )}
         </div>
       </div>
@@ -1119,14 +1150,24 @@ function AssignmentDetailDrawer({
 }
 
 /* ─── Notes tab ────────────────────────────────────────────────────────── */
-function NotesTab({ classId }: { classId: string }) {
-  return <NotesView classes={[]} fixedLink={{ type: 'class', refId: classId }} />
+function NotesTab({ classId, templates, onTemplatesChanged }: { classId: string; templates?: EducationTemplate[]; onTemplatesChanged?: () => void }) {
+  return <NotesView classes={[]} fixedLink={{ type: 'class', refId: classId }} templates={templates} onTemplatesChanged={onTemplatesChanged} />
 }
 
 /* ─── Notes view ───────────────────────────────────────────────────────── */
 type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-function NotesView({ classes: _classes, fixedLink }: { classes: EducationClass[]; fixedLink?: { type: 'class' | 'session' | 'assignment' | 'student'; refId: string } }) {
+function NotesView({
+  classes,
+  fixedLink,
+  templates,
+  onTemplatesChanged: _onTemplatesChanged,
+}: {
+  classes: EducationClass[]
+  fixedLink?: { type: 'class' | 'session' | 'assignment' | 'student'; refId: string }
+  templates?: EducationTemplate[]
+  onTemplatesChanged?: () => void
+}) {
   const [notes, setNotes] = useState<EducationNote[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeNote, setActiveNote] = useState<EducationNote | null>(null)
@@ -1228,25 +1269,50 @@ function NotesView({ classes: _classes, fixedLink }: { classes: EducationClass[]
       <div className="edu-notes-layout">
         <div className="edu-notes-list">
           {notes.length === 0 ? (
-            <div className="edu-empty">Aucune note encore.</div>
+            <div className="edu-empty edu-empty-compact">
+              <div className="edu-empty-icon">📝</div>
+              <div>Aucune note encore.</div>
+              <div className="edu-empty-sub">Crée ta première note pour ce contexte.</div>
+              <button className="edu-btn" style={{ marginTop: 10 }} onClick={newNote}>
+                <Plus size={13} /> Première note
+              </button>
+            </div>
           ) : notes.map((n) => (
             <div
               key={n._id}
               className={`edu-note-list-item ${activeId === n._id ? 'active' : ''}`}
               onClick={() => setActiveId(n._id)}
             >
-              <div className="edu-note-list-title">{n.pinned && <Pin size={11} style={{ marginRight: 4 }} />}{n.title || 'Sans titre'}</div>
+              <div className="edu-note-list-title">{n.pinned && <span className="edu-note-list-pin">📌</span>}{n.title || 'Sans titre'}</div>
               <div className="edu-note-list-preview">{n.markdown.replace(/[#>*`\-]/g, '').slice(0, 80) || '—'}</div>
+              {n.links.length > 0 && (
+                <div className="edu-note-list-links">
+                  {n.links.length} lien{n.links.length > 1 ? 's' : ''}
+                </div>
+              )}
             </div>
           ))}
         </div>
         <div className="edu-note-editor">
           {!activeNote ? (
-            <div className="edu-empty">Sélectionne ou crée une note.</div>
+            <div className="edu-empty">
+              <div className="edu-empty-icon">✍️</div>
+              <div>Sélectionne ou crée une note.</div>
+              <div className="edu-empty-sub">Tape « / » dans un bloc pour les commandes Notion.</div>
+            </div>
           ) : (
             <NoteEditor
               note={activeNote}
               onChange={persist}
+              templates={templates}
+              backlinks={buildBacklinks(activeNote, classes)}
+              onApplyTemplate={(t) => {
+                const tplBlocks = Array.isArray((t.body as { blocks?: NoteBlock[] }).blocks)
+                  ? ((t.body as { blocks: NoteBlock[] }).blocks).map((b) => ({ ...b, id: makeBlockId() }))
+                  : []
+                if (tplBlocks.length === 0) return
+                persist({ ...activeNote, blocks: [...activeNote.blocks, ...tplBlocks] })
+              }}
               onDelete={async () => {
                 if (!confirm('Supprimer cette note ?')) return
                 try {
@@ -1282,91 +1348,31 @@ function NoteSaveIndicator({ state }: { state: NoteSaveState }) {
 
 function makeBlockId() { return Math.random().toString(36).slice(2, 10) }
 
-function NoteEditor({ note, onChange, onDelete }: { note: EducationNote; onChange: (n: EducationNote) => void; onDelete: () => void }) {
-  function updateBlock(idx: number, patch: Partial<NoteBlock>) {
-    const blocks = note.blocks.map((b, i) => i === idx ? { ...b, ...patch } : b)
-    onChange({ ...note, blocks })
-  }
-  function addBlockAfter(idx: number, type: NoteBlock['type'] = 'paragraph') {
-    const blocks = [...note.blocks]
-    blocks.splice(idx + 1, 0, { id: makeBlockId(), type, text: '', checked: false, level: 1, meta: {} })
-    onChange({ ...note, blocks })
-  }
-  function removeBlock(idx: number) {
-    if (note.blocks.length <= 1) return
-    const blocks = note.blocks.filter((_, i) => i !== idx)
-    onChange({ ...note, blocks })
-  }
-
-  return (
-    <div>
-      <div className="edu-row between" style={{ marginBottom: 4 }}>
-        <input
-          className="edu-note-title"
-          value={note.title}
-          placeholder="Sans titre"
-          onChange={(e) => onChange({ ...note, title: e.target.value })}
-        />
-        <div className="edu-row" style={{ gap: 4 }}>
-          <button className="edu-btn-icon" title="Épingler" onClick={() => onChange({ ...note, pinned: !note.pinned })}>
-            <Pin size={16} color={note.pinned ? '#22C55E' : undefined} />
-          </button>
-          <button className="edu-btn-icon" title="Archiver" onClick={() => onChange({ ...note, archived: !note.archived })}>
-            <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
-          </button>
-          <button className="edu-btn-icon" title="Supprimer" onClick={onDelete}><Trash2 size={16} /></button>
-        </div>
-      </div>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Mis à jour {formatRelative(note.updatedAt)}</div>
-
-      {note.blocks.map((b, i) => (
-        <div key={b.id} className="edu-block">
-          <span className="edu-block-handle">⋮⋮</span>
-          {b.type === 'checklist' && (
-            <input
-              type="checkbox"
-              className="edu-block-checkbox"
-              checked={b.checked}
-              onChange={(e) => updateBlock(i, { checked: e.target.checked })}
-            />
-          )}
-          <select
-            className="edu-select edu-block-type-pill"
-            value={b.type}
-            onChange={(e) => updateBlock(i, { type: e.target.value as NoteBlock['type'] })}
-          >
-            <option value="paragraph">¶</option>
-            <option value="heading">H</option>
-            <option value="checklist">☐</option>
-            <option value="bullet">•</option>
-            <option value="quote">❝</option>
-            <option value="code">{'</>'}</option>
-            <option value="callout">💡</option>
-          </select>
-          <textarea
-            className={`edu-block-input ${b.type === 'heading' ? `heading-${Math.min(Math.max(b.level || 1, 1), 3)}` : b.type === 'code' ? 'code' : b.type === 'quote' ? 'quote' : ''}`}
-            value={b.text}
-            placeholder={b.type === 'heading' ? 'Titre…' : 'Écris quelque chose…'}
-            onChange={(e) => updateBlock(i, { text: e.target.value })}
-            rows={1}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                addBlockAfter(i)
-              }
-              if (e.key === 'Backspace' && b.text === '' && note.blocks.length > 1) {
-                e.preventDefault()
-                removeBlock(i)
-              }
-            }}
-          />
-        </div>
-      ))}
-      <button className="edu-btn ghost" style={{ marginTop: 12 }} onClick={() => addBlockAfter(note.blocks.length - 1)}>
-        <Plus size={13} /> Ajouter un bloc
-      </button>
-    </div>
-  )
+/** Compose un tableau de backlinks à partir des links de la note + contexte. */
+function buildBacklinks(
+  note: EducationNote,
+  classes: EducationClass[],
+  onOpenClass?: (id: string) => void,
+): BacklinkEntry[] {
+  const map = new Map<string, EducationClass>()
+  classes.forEach((c) => map.set(c._id, c))
+  return note.links.map((l) => {
+    if (l.type === 'class') {
+      const c = map.get(l.refId)
+      return {
+        type: l.type,
+        refId: l.refId,
+        label: c?.name ?? `Classe ${l.refId.slice(-6)}`,
+        meta: c ? [c.school, c.level].filter(Boolean).join(' · ') : undefined,
+        onOpen: onOpenClass ? () => onOpenClass(l.refId) : undefined,
+      }
+    }
+    return {
+      type: l.type,
+      refId: l.refId,
+      label: `${l.type === 'session' ? 'Séance' : l.type === 'assignment' ? 'Devoir' : 'Étudiant'} ${l.refId.slice(-6)}`,
+    }
+  })
 }
 
 /* ─── Sessions standalone view ─────────────────────────────────────────── */
@@ -1395,7 +1401,11 @@ function SessionsView({ classes }: { classes: EducationClass[] }) {
       )}
       <p className="edu-sub">{items.length} séance{items.length > 1 ? 's' : ''}</p>
       {items.length === 0 ? (
-        <div className="edu-empty">Aucune séance.</div>
+        <div className="edu-empty">
+          <div className="edu-empty-icon">📅</div>
+          <div>{filterClass ? 'Aucune séance pour cette classe.' : 'Aucune séance encore.'}</div>
+          <div className="edu-empty-sub">Les séances apparaîtront ici dès qu'elles sont planifiées depuis une classe.</div>
+        </div>
       ) : (
         <table className="edu-table">
           <thead>
@@ -1452,32 +1462,43 @@ function AssignmentsView({ classes, onChanged }: { classes: EducationClass[]; on
         </select>
       </div>
       <p className="edu-sub">{items.length} devoir{items.length > 1 ? 's' : ''}</p>
-      <div className="edu-kanban">
-        {cols.map((col) => {
-          const list = items.filter((i) => i.status === col.status)
-          return (
-            <div key={col.status} className="edu-kanban-col">
-              <div className="edu-kanban-col-head">
-                <span>{col.label}</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
-              </div>
-              {list.map((a) => {
-                const cls = typeof a.classId === 'string' ? null : a.classId
-                return (
-                  <div key={a._id} className="edu-kanban-card" onClick={() => setOpenId(a._id)}>
-                    <div className="edu-kanban-card-title">{a.title}</div>
-                    <div className="edu-kanban-card-meta">
-                      {cls && <span style={{ color: cls.color }}>● </span>}
-                      {ASSIGNMENT_KIND_LABEL[a.kind]}
-                      {a.deadline && ` · ${formatDate(a.deadline)}`}
+      {items.length === 0 ? (
+        <div className="edu-empty">
+          <div className="edu-empty-icon">📋</div>
+          <div>{filterClass ? 'Aucun devoir pour cette classe.' : 'Aucun devoir encore.'}</div>
+          <div className="edu-empty-sub">Crée un devoir depuis l'onglet « Devoirs » d'une classe pour démarrer le kanban.</div>
+        </div>
+      ) : (
+        <div className="edu-kanban">
+          {cols.map((col) => {
+            const list = items.filter((i) => i.status === col.status)
+            return (
+              <div key={col.status} className="edu-kanban-col">
+                <div className="edu-kanban-col-head">
+                  <span>{col.label}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
+                </div>
+                {list.length === 0 && (
+                  <div className="edu-kanban-empty">—</div>
+                )}
+                {list.map((a) => {
+                  const cls = typeof a.classId === 'string' ? null : a.classId
+                  return (
+                    <div key={a._id} className="edu-kanban-card" onClick={() => setOpenId(a._id)}>
+                      <div className="edu-kanban-card-title">{a.title}</div>
+                      <div className="edu-kanban-card-meta">
+                        {cls && <span style={{ color: cls.color }}>● </span>}
+                        {ASSIGNMENT_KIND_LABEL[a.kind]}
+                        {a.deadline && ` · ${formatDate(a.deadline)}`}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      )}
       {openId && (
         <AssignmentDetailDrawer
           assignmentId={openId}

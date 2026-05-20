@@ -141,6 +141,19 @@ export interface EducationNote {
   updatedAt: string
 }
 
+export type EducationTemplateKind = 'session' | 'assignment' | 'note' | 'class'
+
+export interface EducationTemplate {
+  _id: string
+  kind: EducationTemplateKind
+  name: string
+  description: string
+  body: Record<string, unknown>
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface EducationDocument {
   _id: string
   parentType: EducationDocumentParentType
@@ -416,6 +429,38 @@ export async function updateNote(id: string, data: Partial<EducationNote>): Prom
 
 export async function deleteNote(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/notes/${id}`, { method: 'DELETE' })
+}
+
+// Templates
+export const TEMPLATE_KIND_LABEL: Record<EducationTemplateKind, string> = {
+  session: 'Séance',
+  assignment: 'Devoir / projet',
+  note: 'Note',
+  class: 'Classe',
+}
+
+export async function listTemplates(params: { kind?: EducationTemplateKind } = {}): Promise<{ templates: EducationTemplate[]; total: number }> {
+  const qs = new URLSearchParams()
+  if (params.kind) qs.set('kind', params.kind)
+  return await apiFetch(`${base}/templates${qs.toString() ? '?' + qs.toString() : ''}`)
+}
+
+export async function createTemplate(data: Partial<EducationTemplate>): Promise<{ template: EducationTemplate }> {
+  return await apiFetch(`${base}/templates`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export async function updateTemplate(id: string, data: Partial<EducationTemplate>): Promise<{ template: EducationTemplate }> {
+  return await apiFetch(`${base}/templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export async function deleteTemplate(id: string): Promise<{ success: true }> {
+  return await apiFetch(`${base}/templates/${id}`, { method: 'DELETE' })
+}
+
+// Backlinks — notes liées à une entité spécifique
+export async function listLinkedNotes(linkType: NoteLinkType, linkId: string): Promise<{ notes: EducationNote[] }> {
+  const r = await listNotes({ linkType, linkId })
+  return { notes: r.notes }
 }
 
 // Search
