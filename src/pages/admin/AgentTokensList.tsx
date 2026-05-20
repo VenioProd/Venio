@@ -47,6 +47,21 @@ interface AgentToken {
   updatedAt: string
 }
 
+interface AgentAuthLogEvent {
+  _id: string
+  action: 'AGENT_AUTH_SUCCESS' | 'AGENT_AUTH_FAIL'
+  ip?: string
+  userAgent?: string
+  metadata?: {
+    reason?: string
+    path?: string
+    method?: string
+    tokenName?: string
+    tokenPrefix?: string
+  }
+  createdAt: string
+}
+
 interface ScopesCatalog {
   scopes: string[]
   adminWildcard: string
@@ -98,6 +113,9 @@ const AgentTokensList: React.FC = () => {
   const [copied, setCopied] = useState(false)
 
   const [revokeTarget, setRevokeTarget] = useState<AgentToken | null>(null)
+  const [authLogToken, setAuthLogToken] = useState<AgentToken | null>(null)
+  const [authLogEvents, setAuthLogEvents] = useState<AgentAuthLogEvent[]>([])
+  const [authLogLoading, setAuthLogLoading] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -265,6 +283,22 @@ const AgentTokensList: React.FC = () => {
       await load()
     } catch (err) {
       showToast((err as Error).message || 'Erreur révocation', 'error')
+    }
+  }
+
+  const openAuthLog = async (token: AgentToken) => {
+    setAuthLogToken(token)
+    setAuthLogEvents([])
+    setAuthLogLoading(true)
+    try {
+      const data = await apiFetch<{ events: AgentAuthLogEvent[] }>(
+        `/api/admin/agent-tokens/${token._id}/auth-log?limit=50`
+      )
+      setAuthLogEvents(data.events || [])
+    } catch (err) {
+      showToast((err as Error).message || 'Erreur chargement journal', 'error')
+    } finally {
+      setAuthLogLoading(false)
     }
   }
 
@@ -450,6 +484,15 @@ const AgentTokensList: React.FC = () => {
                     </button>
                   </div>
                 )}
+                <div className="admin-card-actions" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="admin-card-btn"
+                    onClick={() => openAuthLog(t)}
+                  >
+                    Journal
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -734,6 +777,110 @@ const AgentTokensList: React.FC = () => {
         onConfirm={handleRevoke}
         onCancel={() => setRevokeTarget(null)}
       />
+
+      {authLogToken && (
+        <div className="confirm-modal-overlay" onClick={() => setAuthLogToken(null)}>
+          <div
+            className="confirm-modal"
+            style={{ maxWidth: 760, width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="confirm-modal__header">
+              <h2 className="confirm-modal__title">Journal token : {authLogToken.name}</h2>
+              <button
+                type="button"
+                className="confirm-modal__close"
+                onClick={() => setAuthLogToken(null)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="confirm-modal__body">
+              <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
+                Connexions réussies/refusées liées au préfixe {authLogToken.prefix}…
+              </p>
+              {authLogLoading ? (
+                <p style={{ color: 'var(--text-secondary)' }}>Chargement…</p>
+              ) : authLogEvents.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  Aucun événement de connexion enregistré pour ce token.
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
+                  {authLogEvents.map((event) => {
+                    const success = event.action === 'AGENT_AUTH_SUCCESS'
+                    return (
+                      <div
+                        key={event._id}
+                        style={{
+                          border: `1px solid ${success ? 'rgba(16,185,129,0.28)' : 'rgba(248,113,113,0.32)'}`,
+                          borderRadius: 8,
+                          padding: 12,
+                          background: 'rgba(255,255,255,0.03)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 12,
+                            flexWrap: 'wrap',
+                            marginBottom: 6,
+                          }}
+                        >
+                          <strong style={{ color: success ? '#6ee7b7' : '#f87171' }}>
+                            {success ? 'Connexion réussie' : 'Connexion refusée'}
+                          </strong>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                            {formatDate(event.createdAt)}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gap: 4,
+                            color: 'var(--text-secondary)',
+                            fontSize: '0.85rem',
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          <span>
+                            <strong>Route :</strong> {event.metadata?.method || '—'}{' '}
+                            {event.metadata?.path || '—'}
+                          </span>
+                          <span>
+                            <strong>IP :</strong> {event.ip || '—'}
+                          </span>
+                          {event.metadata?.reason && (
+                            <span>
+                              <strong>Raison :</strong> {event.metadata.reason}
+                            </span>
+                          )}
+                          <span style={{ wordBreak: 'break-word' }}>
+                            <strong>User-agent :</strong> {event.userAgent || '—'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="confirm-modal__footer">
+              <button
+                type="button"
+                className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
+                onClick={() => setAuthLogToken(null)}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

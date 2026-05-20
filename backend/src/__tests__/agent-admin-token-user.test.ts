@@ -6,6 +6,7 @@ import { createAdminTestApp } from './helpers/agentTestApp.js'
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
 import AgentToken from '../models/AgentToken.js'
+import AuditLog from '../models/AuditLog.js'
 import jwt from 'jsonwebtoken'
 
 // Garantit que le middleware auth peut vérifier les tokens JWT dans les tests
@@ -140,5 +141,42 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     expect(userInDb!.isActive).toBe(true)
     expect(userInDb!.agentTokenId!.toString()).toBe(String(tokenId))
     expect(userInDb!.email).toMatch(/^agent-.+@venio\.internal$/)
+  })
+
+  it('GET /agent-tokens/:id/auth-log retourne les connexions du token', async () => {
+    const jwtTok = await loginAsSuperAdmin()
+    const created = await request(app)
+      .post('/api/admin/agent-tokens')
+      .set('Authorization', `Bearer ${jwtTok}`)
+      .send({ name: 'Kuro Prod', scopes: ['read:crm'] })
+
+    expect(created.status).toBe(201)
+    const tokenId = created.body.token._id
+
+    await AuditLog.create({
+      userId: null,
+      email: '',
+      action: 'AGENT_AUTH_SUCCESS',
+      ip: '127.0.0.1',
+      userAgent: 'vitest',
+      metadata: {
+        actorType: 'AGENT',
+        tokenId,
+        tokenName: 'Kuro Prod',
+        tokenPrefix: created.body.token.prefix,
+        path: '/api/v1/agent/ping',
+        method: 'GET',
+      },
+    })
+
+    const res = await request(app)
+      .get(`/api/admin/agent-tokens/${tokenId}/auth-log`)
+      .set('Authorization', `Bearer ${jwtTok}`)
+
+    expect(res.status).toBe(200)
+    expect(res.body.token._id).toBe(tokenId)
+    expect(res.body.events).toHaveLength(1)
+    expect(res.body.events[0].action).toBe('AGENT_AUTH_SUCCESS')
+    expect(res.body.events[0].metadata.path).toBe('/api/v1/agent/ping')
   })
 })
