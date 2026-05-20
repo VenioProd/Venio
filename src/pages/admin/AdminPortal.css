@@ -5048,16 +5048,17 @@ a.portal-button {
 /* Stats */
 .ticket-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 16px;
 }
 
 .ticket-stat-card {
   background: #010104;
   border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 24px 16px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
