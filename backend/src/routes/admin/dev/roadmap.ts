@@ -214,7 +214,7 @@ type RawIssue = {
   startedAt: Date | null
   completedAt: Date | null
   updatedAt: Date
-  github?: { prNumber?: number | null; prUrl?: string | null; prState?: string | null; ciStatus?: string } | null
+  github?: { prNumber?: number | null; prUrl?: string | null; prState?: string | null; ciStatus?: string | null } | null
 }
 
 function groupByProject(rows: RawIssue[], perProjectLimit: number) {
