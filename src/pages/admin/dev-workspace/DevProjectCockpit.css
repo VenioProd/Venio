@@ -33,6 +33,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
   padding-bottom: 4px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
@@ -104,16 +105,19 @@
 }
 
 .cockpit-title {
+  max-width: 100%;
   margin: 0;
   color: #f8fafc;
   font-size: 22px;
   font-weight: 660;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 .cockpit-header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   flex-wrap: wrap;
 }
@@ -1247,5 +1251,115 @@
   }
   .cockpit-gh-pr-branch {
     display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .cockpit-page {
+    gap: 12px;
+    padding: 12px 12px 22px;
+  }
+
+  .cockpit-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cockpit-header-left {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .cockpit-header-id {
+    flex-wrap: wrap;
+  }
+
+  .cockpit-title {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .cockpit-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .cockpit-btn {
+    justify-content: center;
+    min-height: 34px;
+    padding-inline: 8px;
+  }
+
+  .cockpit-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cockpit-kpi-card,
+  .cockpit-card {
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .cockpit-chart-wrap {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cockpit-chart {
+    min-height: 180px;
+  }
+
+  .cockpit-issue-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding: 8px;
+  }
+
+  .cockpit-issue-row-id,
+  .cockpit-issue-row-title {
+    grid-column: 1 / -1;
+  }
+
+  .cockpit-issue-row-title {
+    white-space: normal;
+  }
+
+  .cockpit-issue-row-status,
+  .cockpit-issue-row-assignee,
+  .cockpit-issue-row-due {
+    justify-self: start;
+  }
+
+  .cockpit-activity-row {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 4px 6px;
+    align-items: start;
+  }
+
+  .cockpit-activity-action {
+    grid-column: 2 / 3;
+  }
+
+  .cockpit-activity-issue {
+    grid-column: 2 / -1;
+    white-space: normal;
+  }
+
+  .cockpit-activity-date {
+    grid-column: 3 / 4;
+    grid-row: 1 / 2;
+  }
+}
+
+@media (max-width: 420px) {
+  .cockpit-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .cockpit-header-actions {
+    grid-template-columns: 1fr;
   }
 }
