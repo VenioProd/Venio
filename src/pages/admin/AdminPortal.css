@@ -114,9 +114,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 30%, rgba(var(--primary-rgb), 0.08), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(var(--primary-dark-rgb), 0.06), transparent 40%),
     radial-gradient(circle at 50% 50%, rgba(var(--primary-light-rgb), 0.04), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -130,12 +130,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 15%, rgba(var(--primary-rgb), 0.4) 1px, transparent 1px),
-    radial-gradient(circle at 85% 25%, rgba(59, 130, 246, 0.3) 1px, transparent 1px),
+    radial-gradient(circle at 85% 25%, rgba(var(--primary-dark-rgb), 0.3) 1px, transparent 1px),
     radial-gradient(circle at 45% 65%, rgba(var(--primary-light-rgb), 0.3) 1px, transparent 1px),
     radial-gradient(circle at 75% 85%, rgba(var(--primary-rgb), 0.3) 1px, transparent 1px),
-    radial-gradient(circle at 25% 75%, rgba(59, 130, 246, 0.4) 1px, transparent 1px);
+    radial-gradient(circle at 25% 75%, rgba(var(--primary-dark-rgb), 0.4) 1px, transparent 1px);
   background-size: 100% 100%;
   pointer-events: none;
   z-index: 0;
@@ -188,7 +188,7 @@
   right: -20px;
   bottom: -20px;
   background: radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.15), transparent 60%),
-              radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent 60%);
+              radial-gradient(circle at bottom left, rgba(var(--primary-dark-rgb), 0.1), transparent 60%);
   pointer-events: none;
   z-index: -1;
 }
@@ -199,7 +199,7 @@
   font-size: 32px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -508,7 +508,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -724,8 +724,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2), rgba(59, 130, 246, 0.15));
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.22), rgba(var(--primary-dark-rgb), 0.15));
+  border: 1px solid var(--accent-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1029,15 +1029,16 @@
   left: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 50%, var(--primary-light) 100%);
   border-radius: 16px 0 0 16px;
+  box-shadow: 0 0 12px var(--accent-glow-soft);
 }
 
 .admin-form-section h2 {
   margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1118,9 +1119,9 @@
   text-align: center;
   padding: 48px 24px;
   color: var(--text-muted);
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(59, 130, 246, 0.03) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-dark-rgb), 0.03) 100%);
   border-radius: 12px;
-  border: 1px dashed rgba(var(--primary-rgb), 0.3);
+  border: 1px dashed var(--accent-border);
 }
 
 .admin-empty-state-icon {
@@ -1278,7 +1279,7 @@
 }
 
 .admin-breadcrumb span {
-  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1486,7 +1487,7 @@ a.portal-button {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, var(--primary), #3b82f6, var(--primary-light), var(--primary));
+  background: linear-gradient(45deg, var(--primary), var(--primary-dark), var(--primary-light), var(--primary));
   background-size: 300% 300%;
   border-radius: inherit;
   z-index: -1;
@@ -1564,7 +1565,7 @@ a.portal-button {
 /* Divider */
 .admin-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.5) 20%, rgba(59, 130, 246, 0.5) 50%, rgba(var(--primary-rgb), 0.5) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.5) 20%, rgba(var(--primary-light-rgb), 0.5) 50%, rgba(var(--primary-rgb), 0.5) 80%, transparent 100%);
   margin: 24px 0;
   border: none;
   box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
@@ -1579,9 +1580,9 @@ a.portal-button {
   transform: translate(-50%, -50%);
   width: 8px;
   height: 8px;
-  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.6);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* Tooltip */
@@ -1667,8 +1668,8 @@ a.portal-button {
 
 .admin-tab.active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.25) 0%, rgba(59, 130, 246, 0.2) 100%);
-  border-color: rgba(var(--primary-rgb), 0.5);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.28) 0%, rgba(var(--primary-dark-rgb), 0.2) 100%);
+  border-color: var(--accent-border-strong);
   box-shadow:
     0 0 20px rgba(var(--primary-rgb), 0.2),
     0 4px 16px rgba(var(--primary-rgb), 0.15),
@@ -1710,8 +1711,8 @@ a.portal-button {
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
-  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 50%, var(--primary-light) 100%);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .project-form-section-header {
@@ -1726,14 +1727,14 @@ a.portal-button {
 .project-form-section-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3) 0%, rgba(var(--primary-dark-rgb), 0.2) 100%);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  border: 1px solid rgba(var(--primary-rgb), 0.5);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--accent-border-strong);
+  box-shadow: 0 4px 12px var(--accent-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
 }
 
@@ -1871,13 +1872,13 @@ a.portal-button {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(59, 130, 246, 0.15) 100%);
-  border: 1px solid rgba(var(--primary-rgb), 0.4);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(var(--primary-dark-rgb), 0.15) 100%);
+  border: 1px solid var(--accent-border);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
+  box-shadow: 0 2px 8px var(--accent-glow-soft);
   position: relative;
   overflow: hidden;
 }
@@ -1920,8 +1921,8 @@ a.portal-button {
   gap: 8px;
   align-items: center;
   padding: 12px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(var(--primary-dark-rgb), 0.05) 100%);
+  border: 1px solid var(--accent-border);
   border-radius: 10px;
   transition: all 0.3s ease;
   position: relative;
@@ -1935,7 +1936,7 @@ a.portal-button {
   top: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -1946,15 +1947,15 @@ a.portal-button {
 
 /* Info Box */
 .project-info-box {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(var(--primary-rgb), 0.08) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, rgba(var(--primary-dark-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.08) 100%);
+  border: 1px solid var(--accent-border);
   border-radius: 10px;
   padding: 16px;
   margin-top: 16px;
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 12px var(--accent-glow-soft);
   position: relative;
   overflow: hidden;
 }
@@ -1966,7 +1967,7 @@ a.portal-button {
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, #3b82f6 0%, var(--primary) 100%);
+  background: linear-gradient(90deg, var(--primary-light) 0%, var(--primary) 100%);
 }
 
 .project-info-box-icon {
@@ -2026,7 +2027,7 @@ a.portal-button {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 50%, var(--primary-light) 100%);
   border-radius: 14px 14px 0 0;
 }
 
@@ -2041,7 +2042,7 @@ a.portal-button {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2072,7 +2073,7 @@ a.portal-button {
   left: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
 }
 
 .crm-card:hover {
@@ -2167,9 +2168,9 @@ a.portal-button {
 }
 
 .crm-view-btn.active {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3), rgba(59, 130, 246, 0.2));
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3), rgba(var(--primary-dark-rgb), 0.2));
   color: var(--primary);
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
+  box-shadow: 0 2px 8px var(--accent-glow-soft);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2466,13 +2467,13 @@ a.portal-button {
 }
 
 .crm-email-link {
-  color: #60a5fa;
+  color: var(--primary-light);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .crm-email-link:hover {
-  color: #93c5fd;
+  color: var(--primary);
   text-decoration: underline;
 }
 
@@ -4957,8 +4958,8 @@ a.portal-button {
    ───────────────────────────────────────────────────────────────── */
 
 .ticket-hero {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.04), rgba(59, 130, 246, 0.02));
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-dark-rgb), 0.03));
+  border: 1px solid var(--accent-border);
   border-radius: 16px;
   padding: 28px 32px;
   display: flex;
@@ -4976,7 +4977,7 @@ a.portal-button {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--primary), #3b82f6, var(--primary-light), var(--primary));
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark), var(--primary-light), var(--primary));
   background-size: 200% 100%;
   animation: qualiopi-gradient-slide 4s linear infinite;
 }
@@ -5011,7 +5012,7 @@ a.portal-button {
   font-size: 26px;
   font-weight: 700;
   margin: 4px 0 6px;
-  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 50%, var(--primary-light) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -5027,8 +5028,8 @@ a.portal-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--primary), #3b82f6);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--primary-fg);
   border: none;
   border-radius: 10px;
   padding: 10px 20px;
@@ -5040,9 +5041,9 @@ a.portal-button {
 }
 
 .ticket-new-btn:hover {
-  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 /* Stats */
@@ -5153,8 +5154,8 @@ a.portal-button {
 }
 
 .ticket-submit-btn {
-  background: linear-gradient(135deg, var(--primary), #3b82f6);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--primary-fg);
   border: none;
   border-radius: 8px;
   padding: 8px 18px;
@@ -5165,7 +5166,7 @@ a.portal-button {
 }
 
 .ticket-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   box-shadow: 0 2px 10px rgba(var(--primary-rgb), 0.25);
 }
 
@@ -5304,9 +5305,9 @@ a.portal-button {
 
 .ticket-reply {
   padding: 12px 16px;
-  background: rgba(59, 130, 246, 0.03);
+  background: rgba(var(--primary-rgb), 0.04);
   border-radius: 8px;
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--primary);
 }
 
 .ticket-reply-header {
@@ -5319,7 +5320,7 @@ a.portal-button {
 }
 
 .ticket-reply-header strong {
-  color: #3b82f6;
+  color: var(--primary-light);
 }
 
 .ticket-reply p {
@@ -5510,8 +5511,8 @@ a.portal-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--primary), #3b82f6);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--primary-fg);
   border: none;
   border-radius: 10px;
   padding: 10px 20px;
@@ -5523,9 +5524,9 @@ a.portal-button {
 }
 
 .ticket-export-btn:hover {
-  background: linear-gradient(135deg, var(--primary-dark), #2563eb);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .ticket-kpi-grid {
@@ -6137,8 +6138,8 @@ a.portal-button {
 }
 
 [data-theme="light"] .client-card-avatar {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(59, 130, 246, 0.08));
-  border-color: rgba(var(--primary-rgb), 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-dark-rgb), 0.08));
+  border-color: var(--accent-border);
   color: var(--primary-dark);
 }
 
@@ -6272,10 +6273,10 @@ a.portal-button {
 }
 
 [data-theme="light"] .admin-tab.active {
-  color: #fff;
-  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+  color: var(--primary-fg);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.25);
+  box-shadow: 0 2px 8px var(--accent-glow-soft);
   text-shadow: none;
 }
 
@@ -7317,8 +7318,8 @@ a.portal-button {
 
 /* Ticket Hero */
 [data-theme="light"] .ticket-hero {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(59, 130, 246, 0.03));
-  border-color: rgba(var(--primary-rgb), 0.15);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-dark-rgb), 0.03));
+  border-color: var(--accent-border);
 }
 
 [data-theme="light"] .ticket-back-btn {

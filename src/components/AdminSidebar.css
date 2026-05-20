@@ -135,7 +135,8 @@
 
 .admin-sb-item.active {
   color: #ffffff;
-  background: rgba(var(--primary-rgb), 0.13);
+  background: var(--accent-surface-strong);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
 .admin-sb-item.active::before {
@@ -147,6 +148,7 @@
   width: 3px;
   border-radius: 0 2px 2px 0;
   background: linear-gradient(180deg, var(--primary), var(--primary-light));
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .admin-sb-icon {
@@ -162,13 +164,14 @@
   padding: 0 5px;
   border-radius: 99px;
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
   font-size: 0.65rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .admin-sidebar.collapsed .admin-sb-badge {
@@ -207,13 +210,14 @@
   height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, var(--primary));
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.82rem;
-  color: #fff;
+  color: var(--primary-fg);
+  box-shadow: 0 0 12px var(--accent-glow-soft);
 }
 
 .admin-sb-user-info {

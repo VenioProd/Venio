@@ -2,7 +2,34 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 type Theme = 'dark' | 'light'
-export type ColorAccent = 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow'
+export type ColorAccent =
+  | 'sky'
+  | 'violet'
+  | 'emerald'
+  | 'amber'
+  | 'rose'
+  | 'coral'
+  | 'yellow'
+  | 'indigo'
+  | 'teal'
+  | 'fuchsia'
+  | 'lime'
+  | 'slate'
+
+export const COLOR_ACCENTS: readonly ColorAccent[] = [
+  'sky',
+  'violet',
+  'emerald',
+  'amber',
+  'rose',
+  'coral',
+  'yellow',
+  'indigo',
+  'teal',
+  'fuchsia',
+  'lime',
+  'slate',
+] as const
 
 interface ThemeContextValue {
   theme: Theme

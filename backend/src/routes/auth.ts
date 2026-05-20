@@ -142,7 +142,21 @@ router.patch(
   body('phone').optional().trim(),
   body('companyName').optional().trim(),
   body('website').optional().trim(),
-  body('colorTheme').optional({ nullable: true }).isIn(['sky', 'violet', 'emerald', 'amber', 'rose', 'coral', 'yellow', null]),
+  body('colorTheme').optional({ nullable: true }).isIn([
+    'sky',
+    'violet',
+    'emerald',
+    'amber',
+    'rose',
+    'coral',
+    'yellow',
+    'indigo',
+    'teal',
+    'fuchsia',
+    'lime',
+    'slate',
+    null,
+  ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
