@@ -55,6 +55,7 @@ import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
 import adminDevRoutes from './routes/admin/dev/index.js'
+import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
@@ -211,6 +212,7 @@ app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
 
 // Dev workspace (suivi développement type Linear, séparé de Projets clients).
 app.use('/api/admin/dev', adminDevRoutes)
+app.use('/api/admin/education', adminEducationRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)

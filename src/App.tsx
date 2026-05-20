@@ -95,6 +95,7 @@ const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
 const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
 const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
+const EducationWorkspace = lazy(() => import('./pages/admin/education'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -383,6 +384,14 @@ function App() {
             element={
               <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
                 <DevProjectCockpit />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="education"
+            element={
+              <RequirePermission permission={PERMISSIONS.VIEW_EDUCATION} redirectTo="/admin">
+                <EducationWorkspace />
               </RequirePermission>
             }
           />
