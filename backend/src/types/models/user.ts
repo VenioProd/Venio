@@ -41,7 +41,20 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   locale: 'fr' | 'en' | null
-  colorTheme?: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'coral' | 'yellow' | null
+  colorTheme?:
+    | 'sky'
+    | 'violet'
+    | 'emerald'
+    | 'amber'
+    | 'rose'
+    | 'coral'
+    | 'yellow'
+    | 'indigo'
+    | 'teal'
+    | 'fuchsia'
+    | 'lime'
+    | 'slate'
+    | null
   agentTokenId?: Types.ObjectId | null
   avatarUrl: string
   createdAt: Date

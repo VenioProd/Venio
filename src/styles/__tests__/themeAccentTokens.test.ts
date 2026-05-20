@@ -9,7 +9,21 @@ const readSource = (path: string) => readFileSync(join(root, path), 'utf8')
 describe('theme accent tokens', () => {
   it('defines reusable RGB and surface variables for every selectable accent', () => {
     const themeCss = readSource('src/styles/theme.css')
-    const accents = ['dark', 'light', 'violet', 'emerald', 'amber', 'rose', 'coral', 'yellow']
+    const accents = [
+      'dark',
+      'light',
+      'violet',
+      'emerald',
+      'amber',
+      'rose',
+      'coral',
+      'yellow',
+      'indigo',
+      'teal',
+      'fuchsia',
+      'lime',
+      'slate',
+    ]
     const requiredTokens = [
       '--primary-rgb',
       '--primary-light-rgb',
@@ -21,6 +35,9 @@ describe('theme accent tokens', () => {
       '--accent-glow-soft',
       '--accent-glow',
       '--accent-glow-strong',
+      '--accent-surface',
+      '--accent-surface-strong',
+      '--accent-ring',
     ]
 
     for (const accent of accents) {

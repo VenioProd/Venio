@@ -2,8 +2,9 @@
   min-height: 100vh;
   color: var(--text-primary);
   background:
-    radial-gradient(circle at 14% 18%, rgba(var(--primary-rgb), 0.08), transparent 34%),
-    radial-gradient(circle at 85% 72%, rgba(16, 185, 129, 0.05), transparent 36%),
+    radial-gradient(circle at 14% 18%, rgba(var(--primary-rgb), 0.1), transparent 34%),
+    radial-gradient(circle at 85% 72%, rgba(var(--primary-light-rgb), 0.06), transparent 36%),
+    radial-gradient(circle at 50% 100%, rgba(var(--primary-dark-rgb), 0.05), transparent 55%),
     #05070d;
 }
 
@@ -25,16 +26,17 @@
   padding: 0 clamp(16px, 3vw, 32px) 0;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--accent-border);
   background: rgba(5, 7, 13, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .client-shell-kicker {
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(var(--primary-light-rgb), 0.78);
   font-size: 0.84rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .client-shell-burger {
