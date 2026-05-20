@@ -4,6 +4,7 @@ import { requireAdmin } from '../../../middleware/role.js'
 import projectsRouter from './projects.js'
 import issuesRouter from './issues.js'
 import statsRouter from './stats.js'
+import roadmapRouter from './roadmap.js'
 
 const router = express.Router()
 
@@ -13,5 +14,6 @@ router.use(requireAdmin)
 router.use(projectsRouter)
 router.use(issuesRouter)
 router.use(statsRouter)
+router.use(roadmapRouter)
 
 export default router
