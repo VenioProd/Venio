@@ -15,7 +15,7 @@ import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const TicketList = () => {
   const { user } = useAuth()
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+  const isSuperAdmin = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'MANAGER'].includes(user?.role || '')
   const { confirm, ConfirmDialog } = useConfirm()
 
   const [activeTab, setActiveTab] = useState<'tickets' | 'resolus' | 'archives' | 'kpi'>('tickets')
@@ -300,9 +300,10 @@ const TicketList = () => {
             {loading ? (
               <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Chargement...</p>
             ) : filteredActive.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>
-                {filterStatus !== 'all' || filterCategory !== 'all' || filterPriority !== 'all' ? 'Aucun ticket avec ces filtres' : 'Aucun ticket pour le moment'}
-              </p>
+              <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                <p style={{ margin: 0, fontSize: 14 }}>{filterStatus !== 'all' || filterCategory !== 'all' || filterPriority !== 'all' ? 'Aucun ticket avec ces filtres' : 'Aucun ticket pour le moment'}</p>
+              </div>
             ) : filteredActive.map((ticket) => (
               <TicketDetail
                 key={ticket._id}
@@ -331,7 +332,10 @@ const TicketList = () => {
       {activeTab === 'resolus' && (
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {filteredResolved.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Aucun ticket resolu</p>
+            <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p style={{ margin: 0, fontSize: 14 }}>Aucun ticket résolu pour le moment</p>
+            </div>
           ) : filteredResolved.map((ticket) => (
             <TicketDetail
               key={ticket._id}
@@ -359,7 +363,10 @@ const TicketList = () => {
       {activeTab === 'archives' && (
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {archivedTickets.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Aucun ticket archive</p>
+            <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }}><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" /></svg>
+              <p style={{ margin: 0, fontSize: 14 }}>Aucun ticket archivé pour le moment</p>
+            </div>
           ) : archivedTickets.map((ticket) => (
             <TicketDetail
               key={ticket._id}
