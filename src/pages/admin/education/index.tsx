@@ -30,10 +30,11 @@ import { TemplatesView } from './TemplatesView'
 import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'
 import { SchoolsView } from './SchoolsView'
-import { Building2, FileSearch } from 'lucide-react'
+import { CalendarView } from './CalendarView'
+import { Building2, FileSearch, CalendarDays } from 'lucide-react'
 import './EducationWorkspace.css'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools'
+type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
@@ -148,6 +149,9 @@ export default function EducationWorkspace() {
         <button className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`} onClick={() => selectView('sessions')}>
           <CalIcon size={15} /> Séances
         </button>
+        <button className={`edu-side-item ${view === 'calendar' ? 'active' : ''}`} onClick={() => selectView('calendar')}>
+          <CalendarDays size={15} /> Calendrier Apple
+        </button>
         <button className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`} onClick={() => selectView('assignments')}>
           <ClipboardList size={15} /> Devoirs & projets
           {dashboard && dashboard.counters.toGrade > 0 && (
@@ -221,6 +225,9 @@ export default function EducationWorkspace() {
             incomingOpenId={pendingSessionId}
             onCloseIncomingOpen={() => setPendingSessionId(null)}
           />
+        )}
+        {view === 'calendar' && (
+          <CalendarView />
         )}
         {view === 'assignments' && (
           <AssignmentsView
