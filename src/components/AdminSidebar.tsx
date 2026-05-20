@@ -88,7 +88,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/audit', label: 'Audit', icon: Shield, perm: PERMISSIONS.MANAGE_ADMINS, roles: ['SUPER_ADMIN'] },
       { to: '/admin/projets-internes', label: 'Projets internes', icon: FolderGit2 },
       { to: '/admin/dev', label: 'Dev workspace', icon: GitBranch, perm: PERMISSIONS.VIEW_DEV },
-      { to: '/admin/education', label: 'Pédagogie', icon: GraduationCap, perm: PERMISSIONS.VIEW_EDUCATION },
+      { to: '/admin/education', label: 'Pédagogie', icon: GraduationCap, perm: PERMISSIONS.VIEW_EDUCATION, roles: ['SUPER_ADMIN'] },
     ],
   },
   {
