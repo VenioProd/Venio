@@ -123,13 +123,15 @@ const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Pr
 
   return (
     <div className="dev-dashboard">
+      {/* KPIs ordonnés par actionabilité : ce qui demande une décision en premier,
+         vélocité et totaux comme contexte ensuite. */}
       <div className="dev-kpi-grid">
         <KpiCard
-          label="Issues totales"
-          value={total}
-          icon={<Inbox size={16} />}
-          tone="slate"
-          hint={`${stats?.totalProjects ?? 0} projet(s)`}
+          label="Urgentes"
+          value={urgent}
+          icon={<AlertOctagon size={16} />}
+          tone="rose"
+          hint={overdue > 0 ? `${overdue} en retard` : 'à jour'}
         />
         <KpiCard
           label="Ouvertes"
@@ -137,6 +139,14 @@ const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Pr
           icon={<CircleDot size={16} />}
           tone="amber"
           hint={`${inProgressCount} en cours · ${inReviewCount} en revue`}
+        />
+        <KpiCard
+          label="Progression"
+          value={`${progress}%`}
+          icon={<Sparkles size={16} />}
+          tone="cyan"
+          hint={`${done}/${total} closes`}
+          progress={progress}
         />
         <KpiCard
           label="Résolues"
@@ -147,26 +157,18 @@ const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Pr
           onClick={focusGlobalDone}
         />
         <KpiCard
+          label="Issues totales"
+          value={total}
+          icon={<Inbox size={16} />}
+          tone="slate"
+          hint={`${stats?.totalProjects ?? 0} projet(s)`}
+        />
+        <KpiCard
           label="Velocity (7j)"
           value={velocity}
           icon={<TrendingUp size={16} />}
           tone="violet"
           hint={`${stats?.created7 ?? 0} créées sur 7j`}
-        />
-        <KpiCard
-          label="Urgentes"
-          value={urgent}
-          icon={<AlertOctagon size={16} />}
-          tone="rose"
-          hint={overdue > 0 ? `${overdue} en retard` : 'à jour'}
-        />
-        <KpiCard
-          label="Progression"
-          value={`${progress}%`}
-          icon={<Sparkles size={16} />}
-          tone="cyan"
-          hint={`${done}/${total} closes`}
-          progress={progress}
         />
       </div>
 
@@ -237,7 +239,71 @@ const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Pr
         )}
       </section>
 
-      <div className="dev-dash-grid">
+      {/* Activité récente — Priorité 5 : merges, créations, commentaires utiles. */}
+      <section className="dev-card">
+        <header className="dev-card-header">
+          <h2>
+            <Activity size={14} style={{ marginRight: 6, verticalAlign: -2 }} />
+            Activité récente
+          </h2>
+          <span className="dev-card-sub">{activity?.length ?? 0} entrée(s)</span>
+        </header>
+        {loadingActivity ? (
+          <div className="dev-loading">Chargement…</div>
+        ) : !activity || activity.length === 0 ? (
+          <div className="dev-empty" style={{ padding: '18px 0' }}>
+            Aucune activité pour l'instant.
+          </div>
+        ) : (
+          <ul className="dev-activity">
+            {activity.slice(0, 12).map((e, idx) => (
+              <li key={`${e.kind}-${e.issue._id}-${e.at}-${idx}`} className="dev-activity-item">
+                <span className={`dev-activity-icon kind-${e.kind}`}>
+                  {e.kind === 'created' && <Sparkles size={12} />}
+                  {e.kind === 'completed' && <CircleCheck size={12} />}
+                  {e.kind === 'comment' && <MessageSquareText size={12} />}
+                </span>
+                <div className="dev-activity-body">
+                  <div className="dev-activity-line">
+                    <Avatar user={e.user} size={18} />
+                    <span className="dev-activity-user">
+                      {e.user?.name || e.user?.email || 'Inconnu'}
+                    </span>
+                    <span className="dev-activity-verb">
+                      {e.kind === 'created' && 'a créé'}
+                      {e.kind === 'completed' && 'a terminé'}
+                      {e.kind === 'comment' && 'a commenté'}
+                    </span>
+                    {e.project && (
+                      <span
+                        className="dev-activity-ref"
+                        style={{ color: e.project.color }}
+                      >
+                        {e.project.key}-{e.issue.number}
+                      </span>
+                    )}
+                    <span className="dev-activity-title" title={e.issue.title}>
+                      {e.issue.title}
+                    </span>
+                    <span className="dev-activity-when">{formatRelative(e.at)}</span>
+                  </div>
+                  {e.kind === 'comment' && e.body && (
+                    <div className="dev-activity-quote">{e.body}</div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Métriques secondaires — répartition globale, contexte d'analyse. */}
+      <section className="dev-metrics-section">
+        <header className="dev-metrics-header">
+          <TrendingUp size={12} />
+          <span>Métriques</span>
+          <span className="dev-metrics-subtitle">répartition des statuts — pour analyse</span>
+        </header>
         <section className="dev-card">
           <header className="dev-card-header">
             <h2>Répartition des statuts</h2>
@@ -266,64 +332,7 @@ const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Pr
             {!stats && <div className="dev-loading">Chargement…</div>}
           </div>
         </section>
-
-        <section className="dev-card">
-          <header className="dev-card-header">
-            <h2>
-              <Activity size={14} style={{ marginRight: 6, verticalAlign: -2 }} />
-              Activité récente
-            </h2>
-            <span className="dev-card-sub">{activity?.length ?? 0} entrée(s)</span>
-          </header>
-          {loadingActivity ? (
-            <div className="dev-loading">Chargement…</div>
-          ) : !activity || activity.length === 0 ? (
-            <div className="dev-empty" style={{ padding: '18px 0' }}>
-              Aucune activité pour l'instant.
-            </div>
-          ) : (
-            <ul className="dev-activity">
-              {activity.slice(0, 12).map((e, idx) => (
-                <li key={`${e.kind}-${e.issue._id}-${e.at}-${idx}`} className="dev-activity-item">
-                  <span className={`dev-activity-icon kind-${e.kind}`}>
-                    {e.kind === 'created' && <Sparkles size={12} />}
-                    {e.kind === 'completed' && <CircleCheck size={12} />}
-                    {e.kind === 'comment' && <MessageSquareText size={12} />}
-                  </span>
-                  <div className="dev-activity-body">
-                    <div className="dev-activity-line">
-                      <Avatar user={e.user} size={18} />
-                      <span className="dev-activity-user">
-                        {e.user?.name || e.user?.email || 'Inconnu'}
-                      </span>
-                      <span className="dev-activity-verb">
-                        {e.kind === 'created' && 'a créé'}
-                        {e.kind === 'completed' && 'a terminé'}
-                        {e.kind === 'comment' && 'a commenté'}
-                      </span>
-                      {e.project && (
-                        <span
-                          className="dev-activity-ref"
-                          style={{ color: e.project.color }}
-                        >
-                          {e.project.key}-{e.issue.number}
-                        </span>
-                      )}
-                      <span className="dev-activity-title" title={e.issue.title}>
-                        {e.issue.title}
-                      </span>
-                      <span className="dev-activity-when">{formatRelative(e.at)}</span>
-                    </div>
-                    {e.kind === 'comment' && e.body && (
-                      <div className="dev-activity-quote">{e.body}</div>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+      </section>
     </div>
   )
 }

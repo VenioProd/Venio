@@ -256,11 +256,74 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.cockpit-row.cockpit-row-single {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 980px) {
   .cockpit-row,
   .cockpit-row.triple {
     grid-template-columns: 1fr;
   }
+}
+
+/* Métriques zone — secondary signals grouped at the bottom of the cockpit.
+   Visually de-emphasised so the actionable cards above stay dominant. */
+.cockpit-metrics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.18);
+  opacity: 0.92;
+}
+
+.cockpit-metrics-header {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-left: 2px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cockpit-metrics-header svg {
+  align-self: center;
+}
+
+.cockpit-metrics-subtitle {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.cockpit-metrics-spacer {
+  background: transparent;
+  border-color: transparent;
+  min-height: 0;
+}
+
+@media (max-width: 980px) {
+  .cockpit-metrics-spacer {
+    display: none;
+  }
+}
+
+.cockpit-card-foot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
+  color: #94a3b8;
+  font-size: 11.5px;
 }
 
 .cockpit-card {
