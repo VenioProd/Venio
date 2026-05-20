@@ -41,6 +41,9 @@ describe('permissions module', () => {
         // Dev workspace
         'VIEW_DEV',
         'MANAGE_DEV',
+        // Education workspace (workspace pédagogique type Notion)
+        'VIEW_EDUCATION',
+        'MANAGE_EDUCATION',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })
@@ -58,8 +61,17 @@ describe('permissions module', () => {
   })
 
   describe('ADMIN_ROLES constant', () => {
-    it('should include SUPER_ADMIN, ADMIN, and VIEWER', () => {
-      expect(ADMIN_ROLES).toEqual(['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER', 'STAGIAIRE'])
+    it('should include the full admin role hierarchy', () => {
+      expect(ADMIN_ROLES).toEqual([
+        'SUPER_ADMIN',
+        'ADMIN',
+        'MANAGER',
+        'RH',
+        'COMMERCIAL',
+        'COMPTABLE',
+        'VIEWER',
+        'STAGIAIRE',
+      ])
     })
   })
 

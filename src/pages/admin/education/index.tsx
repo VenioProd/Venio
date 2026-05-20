@@ -1,26 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  GraduationCap, BookOpen, Users, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, Pin, Archive, ChevronRight, CheckSquare,
+  GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
+  Plus, Search, X, Trash2, Upload, Pin, Archive, ChevronRight, Menu,
 } from 'lucide-react'
 import {
   fetchDashboard,
   listClasses, getClass, createClass, updateClass, deleteClass,
-  listStudents, createStudent, importStudentsCsv, updateStudent, deleteStudent,
-  listSessions, getSession, createSession, updateSession, updateAttendance,
+  listStudents, createStudent, importStudentsCsv, deleteStudent,
+  listSessions, createSession,
   listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
   listNotes, createNote, updateNote, deleteNote,
   searchEducation,
   studentDisplayName, formatRelative, formatDate,
-  CLASS_STATUS_LABEL, SESSION_STATUS_LABEL, ATTENDANCE_LABEL, ATTENDANCE_COLOR,
+  CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
   type EducationDashboard, type EducationClass, type EducationStudent,
   type EducationSession, type EducationAssignment, type EducationSubmission,
-  type EducationNote, type NoteBlock, type AttendanceState,
-  type EducationSessionStatus, type EducationAssignmentStatus,
+  type EducationNote, type NoteBlock,
+  type EducationAssignmentStatus,
 } from '../../../services/education'
+import { DashboardView } from './DashboardView'
+import { SessionDetailDrawer } from './SessionDetailDrawer'
 import './EducationWorkspace.css'
 
 type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'search'
@@ -32,16 +34,29 @@ export default function EducationWorkspace() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [showCreateClass, setShowCreateClass] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [school, setSchool] = useState<string>('')
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [classesError, setClassesError] = useState<string | null>(null)
 
   const refreshDashboard = useCallback(async () => {
-    try { setDashboard(await fetchDashboard()) } catch { /* silent */ }
-  }, [])
+    try {
+      const r = await fetchDashboard(school ? { school } : {})
+      setDashboard(r)
+      setDashboardError(null)
+    } catch (err) {
+      setDashboardError(err instanceof Error ? err.message : 'Impossible de charger le cockpit')
+    }
+  }, [school])
 
   const refreshClasses = useCallback(async () => {
     try {
       const r = await listClasses()
       setClasses(r.classes)
-    } catch { /* silent */ }
+      setClassesError(null)
+    } catch (err) {
+      setClassesError(err instanceof Error ? err.message : 'Impossible de charger les classes')
+    }
   }, [])
 
   useEffect(() => {
@@ -61,30 +76,65 @@ export default function EducationWorkspace() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Ferme la sidebar mobile à chaque changement de vue.
+  function selectView(v: View) {
+    setView(v)
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="edu-workspace">
-      <aside className="edu-sidebar">
-        <h3>Espace pédagogique</h3>
-        <button className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
-          <GraduationCap size={15} /> Vue d'ensemble
+      {/* Barre mobile : burger + titre. Reste visible en sticky en haut. */}
+      <div className="edu-mobile-bar">
+        <button
+          type="button"
+          className="edu-mobile-burger"
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label="Ouvrir la navigation"
+          aria-expanded={sidebarOpen}
+        >
+          <Menu size={16} /> Menu
         </button>
-        <button className={`edu-side-item ${view === 'classes' ? 'active' : ''}`} onClick={() => setView('classes')}>
+        <div className="edu-mobile-bar-title">Espace pédagogique</div>
+        <button
+          type="button"
+          className="edu-mobile-burger"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Rechercher"
+        >
+          <Search size={16} />
+        </button>
+      </div>
+
+      {/* Backdrop mobile pour la sidebar */}
+      <div
+        className={`edu-sidebar-backdrop ${sidebarOpen ? 'is-open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden
+      />
+
+      <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
+        <h3>Espace pédagogique</h3>
+        <button className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => selectView('dashboard')}>
+          <GraduationCap size={15} /> Cockpit
+        </button>
+        <button className={`edu-side-item ${view === 'classes' ? 'active' : ''}`} onClick={() => selectView('classes')}>
           <BookOpen size={15} /> Classes
           <span className="edu-side-badge">{classes.filter((c) => c.status === 'ACTIVE').length}</span>
         </button>
-        <button className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`} onClick={() => setView('sessions')}>
+        <button className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`} onClick={() => selectView('sessions')}>
           <CalIcon size={15} /> Séances
         </button>
-        <button className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`} onClick={() => setView('assignments')}>
+        <button className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`} onClick={() => selectView('assignments')}>
           <ClipboardList size={15} /> Devoirs & projets
           {dashboard && dashboard.counters.toGrade > 0 && (
             <span className="edu-side-badge">{dashboard.counters.toGrade}</span>
           )}
         </button>
-        <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => setView('notes')}>
+        <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => selectView('notes')}>
           <FileText size={15} /> Notes
         </button>
-        <button className="edu-side-item" onClick={() => setSearchOpen(true)}>
+        <button className="edu-side-item" onClick={() => { setSearchOpen(true); setSidebarOpen(false) }}>
           <Search size={15} /> Recherche
           <span className="edu-side-badge">⌘K</span>
         </button>
@@ -96,7 +146,7 @@ export default function EducationWorkspace() {
               <button
                 key={c._id}
                 className="edu-side-item"
-                onClick={() => { setSelectedClassId(c._id); setView('classes') }}
+                onClick={() => { setSelectedClassId(c._id); selectView('classes') }}
               >
                 <span className="edu-side-dot" style={{ background: c.color }} />
                 {c.name}
@@ -107,11 +157,21 @@ export default function EducationWorkspace() {
       </aside>
 
       <main className="edu-main">
+        {classesError && (
+          <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
+            {classesError}
+            <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refreshClasses}>Réessayer</button>
+          </div>
+        )}
         {view === 'dashboard' && (
           <DashboardView
             dashboard={dashboard}
-            onOpenClass={(id) => { setSelectedClassId(id); setView('classes') }}
+            selectedSchool={school}
+            onChangeSchool={setSchool}
+            onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }}
             onCreateClass={() => setShowCreateClass(true)}
+            reloadError={dashboardError}
+            onReload={refreshDashboard}
           />
         )}
         {view === 'classes' && (
@@ -162,101 +222,7 @@ export default function EducationWorkspace() {
   )
 }
 
-/* ─── Dashboard ────────────────────────────────────────────────────────── */
-function DashboardView({
-  dashboard, onOpenClass, onCreateClass,
-}: { dashboard: EducationDashboard | null; onOpenClass: (id: string) => void; onCreateClass: () => void }) {
-  if (!dashboard) {
-    return <p className="edu-sub">Chargement…</p>
-  }
-  const c = dashboard.counters
-  return (
-    <div>
-      <div className="edu-row between">
-        <div>
-          <h1 className="edu-h1">Vue d'ensemble</h1>
-          <p className="edu-sub">Ton workspace pédagogique pour aujourd'hui et la semaine.</p>
-        </div>
-        <button className="edu-btn" onClick={onCreateClass}><Plus size={14} /> Nouvelle classe</button>
-      </div>
-
-      <div className="edu-kpi-grid">
-        <Kpi label="Classes actives" value={c.activeClasses} />
-        <Kpi label="Étudiants suivis" value={c.totalStudents} />
-        <Kpi label="Séances aujourd'hui" value={c.todaySessions} sub={`${c.weekSessions} cette semaine`} />
-        <Kpi label="Devoirs ouverts" value={c.openAssignments} />
-        <Kpi label="À corriger" value={c.toGrade} sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined} />
-      </div>
-
-      <h2 className="edu-h2">Aujourd'hui</h2>
-      {dashboard.today.length === 0 ? (
-        <p className="edu-empty">Aucune séance aujourd'hui.</p>
-      ) : (
-        <table className="edu-table">
-          <thead>
-            <tr><th>Heure</th><th>Classe</th><th>Séance</th><th>Statut</th></tr>
-          </thead>
-          <tbody>
-            {dashboard.today.map((s) => {
-              const cls = typeof s.classId === 'string' ? null : s.classId
-              return (
-                <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
-                  <td>{new Date(s.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-                  <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
-                  <td>{s.title}</td>
-                  <td><span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span></td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
-
-      <h2 className="edu-h2">Devoirs ouverts</h2>
-      {dashboard.openAssignments.length === 0 ? (
-        <p className="edu-empty">Tout est sous contrôle.</p>
-      ) : (
-        <table className="edu-table">
-          <thead>
-            <tr><th>Devoir</th><th>Classe</th><th>Type</th><th>Échéance</th><th>Statut</th></tr>
-          </thead>
-          <tbody>
-            {dashboard.openAssignments.map((a) => {
-              const cls = typeof a.classId === 'string' ? null : a.classId
-              return (
-                <tr key={a._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
-                  <td>{a.title}</td>
-                  <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
-                  <td>{ASSIGNMENT_KIND_LABEL[a.kind]}</td>
-                  <td>{a.deadline ? formatDate(a.deadline) : '—'}</td>
-                  <td>
-                    <span className="edu-pill"><span className="edu-pill-dot" style={{ background: ASSIGNMENT_STATUS_COLOR[a.status] }} />{ASSIGNMENT_STATUS_LABEL[a.status]}</span>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
-
-      <h2 className="edu-h2">Activité récente</h2>
-      {dashboard.activity.length === 0 ? (
-        <p className="edu-empty">—</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {dashboard.activity.slice(0, 10).map((a) => (
-            <li key={a._id} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13 }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{formatRelative(a.createdAt)}</span>
-              {' · '}
-              <span>{a.action.toLowerCase()} {a.entityType}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
+/* DashboardView et Kpi sont extraits dans ./DashboardView.tsx (VENIO-27). */
 function Kpi({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
   return (
     <div className="edu-kpi">
@@ -881,89 +847,9 @@ function SessionForm({ classId, onClose, onSaved }: { classId: string; onClose: 
   )
 }
 
-function SessionDetailDrawer({
-  sessionId, onClose, onChanged,
-}: { sessionId: string; onClose: () => void; onChanged: () => void }) {
-  const [session, setSession] = useState<EducationSession | null>(null)
-  const [recap, setRecap] = useState('')
-  const [status, setStatus] = useState<EducationSessionStatus>('PLANIFIEE')
-
-  const refresh = useCallback(async () => {
-    const r = await getSession(sessionId)
-    setSession(r.session)
-    setRecap(r.session.recap || '')
-    setStatus(r.session.status)
-  }, [sessionId])
-
-  useEffect(() => { refresh() }, [refresh])
-
-  if (!session) return null
-
-  return (
-    <>
-      <div className="edu-drawer-backdrop" onClick={onClose} />
-      <div className="edu-drawer">
-        <div className="edu-drawer-head">
-          <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>{session.title}</h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(session.date, true)}</div>
-          </div>
-          <div className="edu-row" style={{ gap: 6 }}>
-            <select className="edu-select" style={{ width: 'auto' }} value={status} onChange={(e) => setStatus(e.target.value as EducationSessionStatus)}>
-              {Object.entries(SESSION_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-            <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
-          </div>
-        </div>
-        <div className="edu-drawer-body">
-          <h2 className="edu-h2">Présence</h2>
-          {session.attendance.length === 0 ? (
-            <div className="edu-empty">Aucun étudiant inscrit dans la classe.</div>
-          ) : (
-            <table className="edu-table">
-              <thead><tr><th>Étudiant</th><th>État</th></tr></thead>
-              <tbody>
-                {session.attendance.map((a) => {
-                  const stu = typeof a.studentId === 'string' ? null : a.studentId
-                  return (
-                    <tr key={typeof a.studentId === 'string' ? a.studentId : a.studentId._id}>
-                      <td>{stu ? studentDisplayName(stu) : '—'}</td>
-                      <td>
-                        <select
-                          className="edu-select"
-                          style={{ width: 'auto', borderColor: ATTENDANCE_COLOR[a.state] }}
-                          value={a.state}
-                          onChange={async (e) => {
-                            const studentId = typeof a.studentId === 'string' ? a.studentId : a.studentId._id
-                            await updateAttendance(session._id, [{ studentId, state: e.target.value as AttendanceState }])
-                            await refresh()
-                          }}
-                        >
-                          {Object.entries(ATTENDANCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                        </select>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-
-          <h2 className="edu-h2">Compte-rendu</h2>
-          <textarea className="edu-textarea" value={recap} onChange={(e) => setRecap(e.target.value)} placeholder="Ce qui s'est passé, ce qu'il faut retenir…" style={{ minHeight: 140 }} />
-        </div>
-        <div className="edu-drawer-foot">
-          <button className="edu-btn ghost" onClick={onClose}>Fermer</button>
-          <button className="edu-btn" onClick={async () => {
-            await updateSession(session._id, { recap, status })
-            await refresh()
-            onChanged()
-          }}>Enregistrer</button>
-        </div>
-      </div>
-    </>
-  )
-}
+/* SessionDetailDrawer extrait dans ./SessionDetailDrawer.tsx (VENIO-27).
+   - Recap central, autosave visible ("Sauvegarde…/Sauvegardé/Erreur").
+   - Présence repositionnée en note légère repliable, non centrale. */
 
 /* ─── Assignments tab (kanban) ─────────────────────────────────────────── */
 function AssignmentsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
@@ -1238,18 +1124,28 @@ function NotesTab({ classId }: { classId: string }) {
 }
 
 /* ─── Notes view ───────────────────────────────────────────────────────── */
-function NotesView({ classes, fixedLink }: { classes: EducationClass[]; fixedLink?: { type: 'class' | 'session' | 'assignment' | 'student'; refId: string } }) {
+type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
+
+function NotesView({ classes: _classes, fixedLink }: { classes: EducationClass[]; fixedLink?: { type: 'class' | 'session' | 'assignment' | 'student'; refId: string } }) {
   const [notes, setNotes] = useState<EducationNote[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeNote, setActiveNote] = useState<EducationNote | null>(null)
   const [savingTimer, setSavingTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [saveState, setSaveState] = useState<NoteSaveState>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    const r = await listNotes(fixedLink ? { linkType: fixedLink.type, linkId: fixedLink.refId } : {})
-    setNotes(r.notes)
-    if (!activeId && r.notes.length > 0) {
-      setActiveId(r.notes[0]._id)
-      setActiveNote(r.notes[0])
+    try {
+      const r = await listNotes(fixedLink ? { linkType: fixedLink.type, linkId: fixedLink.refId } : {})
+      setNotes(r.notes)
+      setLoadError(null)
+      if (!activeId && r.notes.length > 0) {
+        setActiveId(r.notes[0]._id)
+        setActiveNote(r.notes[0])
+      }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Impossible de charger les notes')
     }
   }, [fixedLink, activeId])
 
@@ -1264,36 +1160,69 @@ function NotesView({ classes, fixedLink }: { classes: EducationClass[]; fixedLin
   const persist = useCallback((next: EducationNote) => {
     setActiveNote(next)
     if (savingTimer) clearTimeout(savingTimer)
-    const t = setTimeout(() => {
-      updateNote(next._id, { title: next.title, blocks: next.blocks, pinned: next.pinned, archived: next.archived })
-        .then(() => refresh())
-        .catch(() => {})
+    setSaveState('saving')
+    setErrorMessage(null)
+    const t = setTimeout(async () => {
+      try {
+        await updateNote(next._id, { title: next.title, blocks: next.blocks, pinned: next.pinned, archived: next.archived })
+        setSaveState('saved')
+        // Rafraîchir en arrière-plan sans écraser le contenu actif déjà à jour.
+        const r = await listNotes(fixedLink ? { linkType: fixedLink.type, linkId: fixedLink.refId } : {})
+        setNotes(r.notes)
+        // Retour idle après 1.5s pour ne pas polluer l'UI.
+        setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
+      } catch (err) {
+        setSaveState('error')
+        setErrorMessage(err instanceof Error ? err.message : 'Erreur de sauvegarde de la note')
+      }
     }, 600)
     setSavingTimer(t)
-  }, [refresh, savingTimer])
+  }, [savingTimer, fixedLink])
 
   async function newNote() {
-    const r = await createNote({
-      title: 'Nouvelle note',
-      blocks: [{ id: makeBlockId(), type: 'paragraph', text: '', checked: false, level: 1, meta: {} }],
-      links: fixedLink ? [fixedLink] : [],
-    })
-    await refresh()
-    setActiveId(r.note._id)
+    try {
+      const r = await createNote({
+        title: 'Nouvelle note',
+        blocks: [{ id: makeBlockId(), type: 'paragraph', text: '', checked: false, level: 1, meta: {} }],
+        links: fixedLink ? [fixedLink] : [],
+      })
+      await refresh()
+      setActiveId(r.note._id)
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Impossible de créer la note')
+    }
   }
 
   return (
     <div>
       {!fixedLink && (
-        <div className="edu-row between" style={{ marginBottom: 12 }}>
+        <div className="edu-row between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <h1 className="edu-h1" style={{ margin: 0 }}>Notes</h1>
-          <button className="edu-btn" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+          <div className="edu-row" style={{ gap: 8 }}>
+            <NoteSaveIndicator state={saveState} />
+            <button className="edu-btn" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+          </div>
         </div>
       )}
       {fixedLink && (
-        <div className="edu-row between" style={{ marginBottom: 12 }}>
+        <div className="edu-row between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <strong>{notes.length} note{notes.length > 1 ? 's' : ''}</strong>
-          <button className="edu-btn" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+          <div className="edu-row" style={{ gap: 8 }}>
+            <NoteSaveIndicator state={saveState} />
+            <button className="edu-btn" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+          </div>
+        </div>
+      )}
+      {(errorMessage || loadError) && (
+        <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
+          {errorMessage || loadError}
+          <button
+            className="edu-btn ghost"
+            style={{ marginLeft: 12 }}
+            onClick={() => { setErrorMessage(null); setLoadError(null); refresh() }}
+          >
+            Réessayer
+          </button>
         </div>
       )}
       <div className="edu-notes-layout">
@@ -1320,15 +1249,34 @@ function NotesView({ classes, fixedLink }: { classes: EducationClass[]; fixedLin
               onChange={persist}
               onDelete={async () => {
                 if (!confirm('Supprimer cette note ?')) return
-                await deleteNote(activeNote._id)
-                setActiveId(null)
-                refresh()
+                try {
+                  await deleteNote(activeNote._id)
+                  setActiveId(null)
+                  refresh()
+                } catch (err) {
+                  setErrorMessage(err instanceof Error ? err.message : 'Impossible de supprimer la note')
+                }
               }}
             />
           )}
         </div>
       </div>
     </div>
+  )
+}
+
+function NoteSaveIndicator({ state }: { state: NoteSaveState }) {
+  if (state === 'idle') return null
+  const label = state === 'saving' ? 'Sauvegarde…' : state === 'saved' ? 'Sauvegardé' : 'Erreur'
+  const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
+  return (
+    <span
+      className="edu-pill"
+      style={{ background: 'rgba(255,255,255,0.06)', color, fontSize: 11.5 }}
+      aria-live="polite"
+    >
+      {label}
+    </span>
   )
 }
 
@@ -1425,20 +1373,26 @@ function NoteEditor({ note, onChange, onDelete }: { note: EducationNote; onChang
 function SessionsView({ classes }: { classes: EducationClass[] }) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationSession[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    listSessions(filterClass ? { classId: filterClass } : {}).then((r) => setItems(r.sessions)).catch(() => {})
+    listSessions(filterClass ? { classId: filterClass } : {})
+      .then((r) => { setItems(r.sessions); setError(null) })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Impossible de charger les séances'))
   }, [filterClass])
 
   return (
     <div>
-      <div className="edu-row between">
+      <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <h1 className="edu-h1">Séances</h1>
         <select className="edu-select" style={{ width: 220 }} value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
           <option value="">Toutes les classes</option>
           {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
         </select>
       </div>
+      {error && (
+        <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>{error}</div>
+      )}
       <p className="edu-sub">{items.length} séance{items.length > 1 ? 's' : ''}</p>
       {items.length === 0 ? (
         <div className="edu-empty">Aucune séance.</div>

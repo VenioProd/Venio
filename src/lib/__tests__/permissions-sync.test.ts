@@ -4,7 +4,7 @@ import { resolve } from 'path'
 import { PERMISSIONS } from '../permissions'
 
 /**
- * Canonical list of 28 permissions shared between front and back.
+ * Canonical list of permissions shared between front and back.
  * If you add a permission to either side, add it here too — this test
  * will catch any drift between the two files.
  */
@@ -37,6 +37,8 @@ const CANONICAL_VALUES = [
   'manage_external_sources',
   'view_dev',
   'manage_dev',
+  'view_education',
+  'manage_education',
 ]
 
 const CANONICAL_KEYS = [
@@ -68,6 +70,8 @@ const CANONICAL_KEYS = [
   'MANAGE_EXTERNAL_SOURCES',
   'VIEW_DEV',
   'MANAGE_DEV',
+  'VIEW_EDUCATION',
+  'MANAGE_EDUCATION',
 ]
 
 // --------------------------------------------------------------------------
@@ -97,8 +101,8 @@ describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
   const frontValues = Object.values(PERMISSIONS) as string[]
   const frontKeys = Object.keys(PERMISSIONS)
 
-  it('has exactly 28 permissions', () => {
-    expect(frontValues.length).toBe(28)
+  it('has exactly 30 permissions', () => {
+    expect(frontValues.length).toBe(30)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
@@ -122,8 +126,8 @@ describe('Backend PERMISSIONS (backend/src/lib/permissions.ts)', () => {
   )
   const { keys: backendKeys, values: backendValues } = parseBackendPermissions(backendSrc)
 
-  it('has exactly 28 permissions', () => {
-    expect(backendValues.length).toBe(28)
+  it('has exactly 30 permissions', () => {
+    expect(backendValues.length).toBe(30)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
