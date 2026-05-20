@@ -850,6 +850,102 @@
 }
 
 @media (max-width: 720px) {
+  .dev-workspace {
+    height: auto;
+    min-height: calc(100vh - 64px);
+    overflow: visible;
+  }
+
+  .dev-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .dev-header-left,
+  .dev-header-actions {
+    width: 100%;
+  }
+
+  .dev-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dev-header-actions .dev-btn {
+    justify-content: center;
+    min-height: 34px;
+  }
+
+  .dev-title {
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .dev-overview {
+    padding: 10px 12px;
+  }
+
+  .dev-command-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dev-command-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dev-command-title-row h2 {
+    font-size: 28px;
+  }
+
+  .dev-command-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .dev-project-strip-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dev-project-toggle {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .dev-project-strip,
+  .dev-project-strip.expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .dev-quick-views {
+    padding: 8px 12px 0;
+  }
+
+  .dev-view-mode {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .dev-view-mode-btn {
+    flex: 1;
+  }
+
+  .dev-toolbar {
+    padding: 10px 12px;
+  }
+
+  .dev-search,
+  .dev-select {
+    max-width: none;
+    width: 100%;
+  }
+
   .dev-row {
     grid-template-columns: 16px 56px 1fr auto auto;
   }
