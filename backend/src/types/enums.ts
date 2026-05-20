@@ -116,6 +116,8 @@ export type Permission =
   | 'manage_external_sources'
   // ── Dev workspace (suivi développement, type Linear) ──
   | 'view_dev' | 'manage_dev'
+  // ── Education (workspace pédagogique type Notion) ──
+  | 'view_education' | 'manage_education'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'

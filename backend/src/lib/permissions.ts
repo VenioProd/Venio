@@ -33,6 +33,9 @@ export const PERMISSIONS: Record<string, Permission> = {
   // ── Dev workspace ──
   VIEW_DEV: 'view_dev',
   MANAGE_DEV: 'manage_dev',
+  // ── Education (workspace pédagogique type Notion) ──
+  VIEW_EDUCATION: 'view_education',
+  MANAGE_EDUCATION: 'manage_education',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
@@ -60,6 +63,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.EXPORT_FEC,
     PERMISSIONS.VIEW_DEV,
     PERMISSIONS.MANAGE_DEV,
+    PERMISSIONS.VIEW_EDUCATION,
+    PERMISSIONS.MANAGE_EDUCATION,
   ]),
   // MANAGER = ADMIN sans manage_admins, lock_accounting, export_fec, manage_external_sources
   MANAGER: new Set([
@@ -84,6 +89,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.MANAGE_VAT,
     PERMISSIONS.VIEW_DEV,
     PERMISSIONS.MANAGE_DEV,
+    PERMISSIONS.VIEW_EDUCATION,
+    PERMISSIONS.MANAGE_EDUCATION,
   ]),
   COMPTABLE: new Set([
     PERMISSIONS.VIEW_ACCOUNTING,
@@ -119,6 +126,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_ACCOUNTING,
     PERMISSIONS.VIEW_VAT,
     PERMISSIONS.VIEW_DEV,
+    PERMISSIONS.VIEW_EDUCATION,
   ]),
   COMMERCIAL: new Set([
     PERMISSIONS.VIEW_CRM,
