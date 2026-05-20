@@ -363,14 +363,107 @@
   min-width: 40px;
 }
 
+/* ─── Mobile nav (burger) ───────────────────────────────────────────── */
+.edu-mobile-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.edu-mobile-bar-title { font-size: 14px; font-weight: 600; }
+.edu-mobile-burger {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #E5E7EB;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.edu-mobile-burger:hover { background: rgba(255,255,255,0.06); }
+.edu-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 49;
+  backdrop-filter: blur(2px);
+}
+
+/* ─── Collapse (présence note légère, autres sections repliables) ──── */
+.edu-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #E5E7EB;
+  padding: 8px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13.5px;
+  margin-top: 16px;
+  font-family: inherit;
+  font-weight: 500;
+}
+.edu-collapse-toggle:hover { background: rgba(255,255,255,0.05); }
+.edu-collapse-toggle .edu-side-badge {
+  margin-left: 6px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.08);
+  padding: 1px 6px;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ─── Banner error / save indicator inline ──────────────────────────── */
+.edu-banner-error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.35);
+  color: #FCA5A5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* ─── Mobile ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .edu-workspace { grid-template-columns: 1fr; }
-  .edu-sidebar { display: none; }
+  .edu-workspace { grid-template-columns: 1fr; position: relative; }
+  .edu-mobile-bar { display: flex; }
+  /* La sidebar devient un panneau coulissant accessible via le burger.
+     ⚠️ NE PAS la cacher sans alternative — la barre mobile la rouvre. */
+  .edu-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 86vw);
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    background: #0E1116;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+  .edu-sidebar.is-open { transform: translateX(0); }
+  .edu-sidebar-backdrop.is-open { display: block; }
   .edu-main { padding: 16px; }
   .edu-notes-layout { grid-template-columns: 1fr; height: auto; }
   .edu-notes-list { max-height: 280px; }
   .edu-drawer { width: 100%; }
+  .edu-kanban-col { flex: 0 0 88vw; }
+  .edu-table { font-size: 12.5px; }
+  .edu-table th, .edu-table td { padding: 8px 6px; }
 }
 
 /* ─── Search modal ───────────────────────────────────────────────────── */

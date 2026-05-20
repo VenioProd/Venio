@@ -8,14 +8,15 @@ import {
 } from '../permissions'
 import type { User, UserRole } from '../../types/auth.types'
 
-const makeUser = (role: string, permissions?: string[]) =>
+const makeUser = (role: string, grantedPermissions?: string[]) =>
   ({
     _id: '1',
     name: 'Test',
     email: 'test@test.com',
     role: role as UserRole,
-    permissions: permissions ?? [],
-  }) as User
+    grantedPermissions: grantedPermissions ?? [],
+    deniedPermissions: [],
+  }) as unknown as User
 
 describe('isAdminRole', () => {
   it('returns true for SUPER_ADMIN', () => {

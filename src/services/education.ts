@@ -164,10 +164,19 @@ export interface EducationDashboard {
     openAssignments: number
     lateSubmissions: number
     toGrade: number
+    toPrepare: number
   }
   today: EducationSession[]
   week: EducationSession[]
+  toPrepare: EducationSession[]
   openAssignments: EducationAssignment[]
+  toCorrect: EducationAssignment[]
+  lastSessionByClass: Array<{
+    class: { _id: string; name: string; color?: string; school?: string }
+    lastSession: EducationSession | null
+  }>
+  schools: string[]
+  filter: { school: string | null }
   activity: Array<{
     _id: string
     entityType: string
@@ -253,8 +262,11 @@ export const CLASS_COLOR_PALETTE = [
 
 const base = '/api/admin/education'
 
-export async function fetchDashboard(): Promise<EducationDashboard> {
-  return await apiFetch<EducationDashboard>(`${base}/dashboard`)
+export async function fetchDashboard(params: { school?: string } = {}): Promise<EducationDashboard> {
+  const qs = new URLSearchParams()
+  if (params.school) qs.set('school', params.school)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch<EducationDashboard>(`${base}/dashboard${suffix}`)
 }
 
 // Classes
