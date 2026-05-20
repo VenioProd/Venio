@@ -5,11 +5,10 @@ import mongoose from 'mongoose'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 
 /**
- * VENIO-27 — Permissions Education :
- *   - view_education = lecture seule
- *   - manage_education = écriture
- * Toute méthode non-GET sur /api/admin/education doit échouer en 403
- * pour un utilisateur qui n'a que view_education.
+ * VENIO-27 — Accès Education :
+ * l'espace pédagogique contient des données de cours personnelles et reste
+ * volontairement réservé au SUPER_ADMIN. Les permissions view/manage ne doivent
+ * pas ouvrir cette zone à un rôle interne non super-admin.
  */
 
 const OWNER_ID = new mongoose.Types.ObjectId().toString()
@@ -23,7 +22,7 @@ vi.mock('../models/User.js', () => ({
   },
 }))
 
-// Auth permissive : injecte un user VIEWER (lecture seule).
+// Auth permissive : injecte un user VIEWER.
 vi.mock('../middleware/auth.js', () => ({
   default: (req: Request, _res: Response, next: NextFunction) => {
     req.user = { id: OWNER_ID, role: 'VIEWER' } as Request['user']
@@ -49,13 +48,13 @@ beforeEach(async () => {
   await clearDb()
 })
 
-describe('education permissions — view vs manage', () => {
-  it('VIEWER (view_education seul) peut lire le dashboard', async () => {
-    await request(app).get('/api/admin/education/dashboard').expect(200)
+describe('education access — super-admin only', () => {
+  it('VIEWER ne peut pas lire le dashboard', async () => {
+    await request(app).get('/api/admin/education/dashboard').expect(403)
   })
 
-  it('VIEWER (view_education seul) peut lister les classes', async () => {
-    await request(app).get('/api/admin/education/classes').expect(200)
+  it('VIEWER ne peut pas lister les classes', async () => {
+    await request(app).get('/api/admin/education/classes').expect(403)
   })
 
   it('VIEWER ne peut pas créer une classe (POST → 403)', async () => {
