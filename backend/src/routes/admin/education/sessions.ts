@@ -166,4 +166,58 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err) }
 })
 
+// GET /:id/export.csv — export CSV présence + récap
+router.get('/:id/export.csv', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
+      .populate('classId', 'name school')
+    if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+
+    const students = await EducationStudent.find({
+      _id: { $in: item.attendance.map((a) => a.studentId) },
+      ...ownerFilter(req),
+    }).select('firstName lastName email externalId')
+    const map = new Map(students.map((s) => [s._id.toString(), s]))
+
+    const headers = ['Etudiant', 'Email', 'Identifiant', 'Présence', 'Commentaire']
+    const rows = item.attendance.map((a) => {
+      const stu = map.get(a.studentId.toString())
+      const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
+      return [name, stu?.email || '', stu?.externalId || '', a.state, a.comment || '']
+    })
+
+    const csv = toCsv([headers, ...rows])
+    const klassName = item.classId && typeof item.classId === 'object'
+      ? (item.classId as unknown as { name?: string }).name || 'classe'
+      : 'classe'
+    const dateSlug = new Date(item.date).toISOString().slice(0, 10)
+    const fname = `seance-${slugify(klassName)}-${dateSlug}-${slugify(item.title)}.csv`
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`)
+    res.send('﻿' + csv)
+  } catch (err) { next(err) }
+})
+
+function escapeCsvCell(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  const s = String(v)
+  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes(';')) {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+  return s
+}
+
+function toCsv(rows: unknown[][]): string {
+  return rows.map((r) => r.map(escapeCsvCell).join(',')).join('\n')
+}
+
+function slugify(s: string): string {
+  return String(s).toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 64) || 'export'
+}
+
 export default router

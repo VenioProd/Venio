@@ -6,6 +6,11 @@ export type EducationAssignmentStatus = typeof ASSIGNMENT_STATUSES[number]
 export const ASSIGNMENT_KINDS = ['DEVOIR', 'PROJET', 'EXPOSE', 'QCM', 'EXAMEN', 'AUTRE'] as const
 export type EducationAssignmentKind = typeof ASSIGNMENT_KINDS[number]
 
+export interface IRubricCriterion {
+  label: string
+  max: number
+}
+
 export interface IEducationAssignment {
   owner: mongoose.Types.ObjectId
   classId: mongoose.Types.ObjectId
@@ -18,6 +23,8 @@ export interface IEducationAssignment {
   weight: number
   status: EducationAssignmentStatus
   expectedDeliverables: string[]
+  rubric: IRubricCriterion[]
+  feedbackSnippets: string[]
   groupMode: boolean
   tags: string[]
   deletedAt: Date | null
@@ -38,6 +45,16 @@ const schema = new Schema<IEducationAssignment>(
     weight: { type: Number, default: 1 },
     status: { type: String, enum: ASSIGNMENT_STATUSES, default: 'DRAFT', index: true },
     expectedDeliverables: { type: [String], default: [] },
+    rubric: {
+      type: [
+        {
+          label: { type: String, required: true },
+          max: { type: Number, required: true, min: 0 },
+        },
+      ],
+      default: [],
+    },
+    feedbackSnippets: { type: [String], default: [] },
     groupMode: { type: Boolean, default: false },
     tags: { type: [String], default: [] },
     deletedAt: { type: Date, default: null, index: true },

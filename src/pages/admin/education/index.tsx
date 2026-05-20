@@ -12,7 +12,7 @@ import {
   listNotes, createNote, updateNote, deleteNote,
   listTemplates,
   searchEducation,
-  studentDisplayName, formatDate,
+  studentDisplayName, formatDate, assignmentExportUrl,
   CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
@@ -27,9 +27,13 @@ import { DashboardView } from './DashboardView'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { TemplatesView } from './TemplatesView'
+import { CorrectionMode } from './CorrectionMode'
+import { AdvancedSearchView } from './AdvancedSearchView'
+import { SchoolsView } from './SchoolsView'
+import { Building2, FileSearch } from 'lucide-react'
 import './EducationWorkspace.css'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search'
+type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
@@ -39,6 +43,9 @@ export default function EducationWorkspace() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [showCreateClass, setShowCreateClass] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [correctionAssignmentId, setCorrectionAssignmentId] = useState<string | null>(null)
+  const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null)
+  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [school, setSchool] = useState<string>('')
   const [dashboardError, setDashboardError] = useState<string | null>(null)
@@ -154,8 +161,14 @@ export default function EducationWorkspace() {
           <Sparkles size={15} /> Templates
           {templates.length > 0 && <span className="edu-side-badge">{templates.length}</span>}
         </button>
+        <button className={`edu-side-item ${view === 'schools' ? 'active' : ''}`} onClick={() => selectView('schools')}>
+          <Building2 size={15} /> Écoles
+        </button>
+        <button className={`edu-side-item ${view === 'advanced-search' ? 'active' : ''}`} onClick={() => selectView('advanced-search')}>
+          <FileSearch size={15} /> Recherche avancée
+        </button>
         <button className="edu-side-item" onClick={() => { setSearchOpen(true); setSidebarOpen(false) }}>
-          <Search size={15} /> Recherche
+          <Search size={15} /> Quickfind
           <span className="edu-side-badge">⌘K</span>
         </button>
 
@@ -203,16 +216,36 @@ export default function EducationWorkspace() {
           />
         )}
         {view === 'sessions' && (
-          <SessionsView classes={classes} />
+          <SessionsView
+            classes={classes}
+            incomingOpenId={pendingSessionId}
+            onCloseIncomingOpen={() => setPendingSessionId(null)}
+          />
         )}
         {view === 'assignments' && (
-          <AssignmentsView classes={classes} onChanged={refreshDashboard} />
+          <AssignmentsView
+            classes={classes}
+            onChanged={refreshDashboard}
+            incomingOpenId={pendingAssignmentId}
+            onCloseIncomingOpen={() => setPendingAssignmentId(null)}
+            onStartCorrection={(id) => setCorrectionAssignmentId(id)}
+          />
         )}
         {view === 'notes' && (
           <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
         )}
         {view === 'templates' && (
           <TemplatesView />
+        )}
+        {view === 'schools' && (
+          <SchoolsView onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }} />
+        )}
+        {view === 'advanced-search' && (
+          <AdvancedSearchView
+            onPickClass={(id) => { setSelectedClassId(id); selectView('classes') }}
+            onPickAssignment={(id) => { setPendingAssignmentId(id); selectView('assignments') }}
+            onPickSession={(id) => { setPendingSessionId(id); selectView('sessions') }}
+          />
         )}
       </main>
 
@@ -241,6 +274,14 @@ export default function EducationWorkspace() {
         <SearchModal
           onClose={() => setSearchOpen(false)}
           onPickClass={(id) => { setSelectedClassId(id); setSearchOpen(false); setView('classes') }}
+        />
+      )}
+
+      {correctionAssignmentId && (
+        <CorrectionMode
+          assignmentId={correctionAssignmentId}
+          onClose={() => setCorrectionAssignmentId(null)}
+          onSaved={() => { refreshDashboard() }}
         />
       )}
     </div>
@@ -1016,8 +1057,13 @@ function AssignmentForm({ classId, onClose, onSaved }: { classId: string; onClos
 }
 
 function AssignmentDetailDrawer({
-  assignmentId, onClose, onChanged,
-}: { assignmentId: string; onClose: () => void; onChanged: () => void }) {
+  assignmentId, onClose, onChanged, onStartCorrection,
+}: {
+  assignmentId: string
+  onClose: () => void
+  onChanged: () => void
+  onStartCorrection?: (id: string) => void
+}) {
   const [data, setData] = useState<{
     assignment: EducationAssignment
     submissions: EducationSubmission[]
@@ -1056,6 +1102,17 @@ function AssignmentDetailDrawer({
             >
               {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
+            {onStartCorrection && (
+              <button className="edu-btn" onClick={() => onStartCorrection(assignmentId)} title="Ouvrir le mode correction groupée">
+                Mode correction
+              </button>
+            )}
+            <a
+              className="edu-btn ghost"
+              href={assignmentExportUrl(assignmentId)}
+              target="_blank" rel="noopener"
+              title="Exporter les corrections en CSV"
+            >Export CSV</a>
             <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
           </div>
         </div>
@@ -1376,18 +1433,35 @@ function buildBacklinks(
 }
 
 /* ─── Sessions standalone view ─────────────────────────────────────────── */
-function SessionsView({ classes }: { classes: EducationClass[] }) {
+function SessionsView({
+  classes, incomingOpenId, onCloseIncomingOpen,
+}: {
+  classes: EducationClass[]
+  incomingOpenId?: string | null
+  onCloseIncomingOpen?: () => void
+}) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationSession[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null)
 
-  useEffect(() => {
+  const refreshSessions = useCallback(() => {
     listSessions(filterClass ? { classId: filterClass } : {})
       .then((r) => { setItems(r.sessions); setError(null) })
       .catch((err) => setError(err instanceof Error ? err.message : 'Impossible de charger les séances'))
   }, [filterClass])
 
+  useEffect(() => { refreshSessions() }, [refreshSessions])
+
+  useEffect(() => {
+    if (incomingOpenId) {
+      setOpenSessionId(incomingOpenId)
+      onCloseIncomingOpen?.()
+    }
+  }, [incomingOpenId, onCloseIncomingOpen])
+
   return (
+    <>
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <h1 className="edu-h1">Séances</h1>
@@ -1416,7 +1490,7 @@ function SessionsView({ classes }: { classes: EducationClass[] }) {
               const cls = typeof s.classId === 'string' ? null : s.classId
               const present = s.attendance.filter((a) => a.state === 'PRESENT').length
               return (
-                <tr key={s._id}>
+                <tr key={s._id} onClick={() => setOpenSessionId(s._id)} style={{ cursor: 'pointer' }}>
                   <td>{formatDate(s.date, true)}</td>
                   <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
                   <td>{s.title}</td>
@@ -1429,14 +1503,36 @@ function SessionsView({ classes }: { classes: EducationClass[] }) {
         </table>
       )}
     </div>
+    {openSessionId && (
+      <SessionDetailDrawer
+        sessionId={openSessionId}
+        onClose={() => setOpenSessionId(null)}
+        onChanged={refreshSessions}
+      />
+    )}
+    </>
   )
 }
 
 /* ─── Assignments standalone view ──────────────────────────────────────── */
-function AssignmentsView({ classes, onChanged }: { classes: EducationClass[]; onChanged: () => void }) {
+function AssignmentsView({
+  classes, onChanged, incomingOpenId, onCloseIncomingOpen, onStartCorrection,
+}: {
+  classes: EducationClass[]
+  onChanged: () => void
+  incomingOpenId?: string | null
+  onCloseIncomingOpen?: () => void
+  onStartCorrection?: (id: string) => void
+}) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
+  useEffect(() => {
+    if (incomingOpenId) {
+      setOpenId(incomingOpenId)
+      onCloseIncomingOpen?.()
+    }
+  }, [incomingOpenId, onCloseIncomingOpen])
 
   const refresh = useCallback(async () => {
     const r = await listAssignments(filterClass ? { classId: filterClass } : {})
@@ -1504,6 +1600,7 @@ function AssignmentsView({ classes, onChanged }: { classes: EducationClass[]; on
           assignmentId={openId}
           onClose={() => setOpenId(null)}
           onChanged={async () => { await refresh(); onChanged() }}
+          onStartCorrection={onStartCorrection}
         />
       )}
     </div>

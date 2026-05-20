@@ -84,9 +84,14 @@ export interface EducationSession {
   updatedAt: string
 }
 
+export interface RubricCriterion {
+  label: string
+  max: number
+}
+
 export interface EducationAssignment {
   _id: string
-  classId: string | { _id: string; name: string; color?: string }
+  classId: string | { _id: string; name: string; color?: string; school?: string }
   sessionId: string | null
   title: string
   kind: EducationAssignmentKind
@@ -96,6 +101,8 @@ export interface EducationAssignment {
   weight: number
   status: EducationAssignmentStatus
   expectedDeliverables: string[]
+  rubric: RubricCriterion[]
+  feedbackSnippets: string[]
   groupMode: boolean
   tags: string[]
   createdAt: string
@@ -404,6 +411,32 @@ export async function updateSubmission(assignmentId: string, studentId: string, 
   })
 }
 
+export interface SubmissionBulkUpdate {
+  studentId: string
+  status?: EducationSubmissionStatus
+  grade?: number | null
+  feedback?: string
+  submittedAt?: string | null
+}
+
+export async function bulkUpdateSubmissions(
+  assignmentId: string,
+  updates: SubmissionBulkUpdate[],
+): Promise<{ updated: number; submissions: EducationSubmission[] }> {
+  return await apiFetch(`${base}/assignments/${assignmentId}/submissions/bulk`, {
+    method: 'PATCH',
+    body: JSON.stringify({ updates }),
+  })
+}
+
+export function assignmentExportUrl(assignmentId: string): string {
+  return `${base}/assignments/${assignmentId}/export.csv`
+}
+
+export function sessionExportUrl(sessionId: string): string {
+  return `${base}/sessions/${sessionId}/export.csv`
+}
+
 // Notes
 export async function listNotes(params: { archived?: boolean; pinned?: boolean; linkType?: NoteLinkType; linkId?: string; search?: string } = {}): Promise<{ notes: EducationNote[]; total: number }> {
   const qs = new URLSearchParams()
@@ -473,6 +506,72 @@ export async function searchEducation(q: string): Promise<{ results: {
   documents: EducationDocument[]
 } }> {
   return await apiFetch(`${base}/search?q=${encodeURIComponent(q)}`)
+}
+
+export type AdvancedSearchEntity = 'all' | 'classes' | 'students' | 'sessions' | 'assignments' | 'notes'
+
+export interface AdvancedSearchParams {
+  q?: string
+  entity?: AdvancedSearchEntity
+  school?: string
+  classId?: string
+  kind?: EducationAssignmentKind | ''
+  status?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+
+export interface AdvancedSearchResult {
+  results: {
+    classes: EducationClass[]
+    students: EducationStudent[]
+    sessions: EducationSession[]
+    assignments: EducationAssignment[]
+    notes: EducationNote[]
+  }
+  counts: {
+    classes: number
+    students: number
+    sessions: number
+    assignments: number
+    notes: number
+  }
+  schools: string[]
+}
+
+export async function searchEducationAdvanced(params: AdvancedSearchParams = {}): Promise<AdvancedSearchResult> {
+  const qs = new URLSearchParams()
+  if (params.q) qs.set('q', params.q)
+  if (params.entity && params.entity !== 'all') qs.set('entity', params.entity)
+  if (params.school) qs.set('school', params.school)
+  if (params.classId) qs.set('classId', params.classId)
+  if (params.kind) qs.set('kind', params.kind)
+  if (params.status) qs.set('status', params.status)
+  if (params.from) qs.set('from', params.from)
+  if (params.to) qs.set('to', params.to)
+  if (params.limit) qs.set('limit', String(params.limit))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch(`${base}/search/advanced${suffix}`)
+}
+
+export interface SearchFacets {
+  classes: Array<{ _id: string; name: string; school?: string; color?: string; status: string }>
+  schools: Array<{ name: string; count: number }>
+}
+
+export async function fetchSearchFacets(): Promise<SearchFacets> {
+  return await apiFetch(`${base}/search/facets`)
+}
+
+export interface SchoolBucket {
+  school: string
+  classes: EducationClass[]
+  studentCount: number
+}
+
+export async function listEducationBySchool(): Promise<{ schools: SchoolBucket[] }> {
+  return await apiFetch(`${base}/search/by-school`)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

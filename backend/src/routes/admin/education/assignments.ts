@@ -120,6 +120,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       expectedDeliverables, groupMode, tags, sessionId,
     } = req.body
 
+    const { rubric, feedbackSnippets } = req.body
+
     if (title !== undefined) item.title = title.trim()
     if (kind !== undefined) item.kind = kind
     if (instructions !== undefined) item.instructions = instructions
@@ -128,6 +130,19 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     if (weight !== undefined) item.weight = weight
     if (status !== undefined) item.status = status
     if (Array.isArray(expectedDeliverables)) item.expectedDeliverables = expectedDeliverables
+    if (Array.isArray(rubric)) {
+      item.rubric = rubric
+        .filter((r: { label?: unknown; max?: unknown }) => typeof r?.label === 'string' && r.label.trim())
+        .map((r: { label: string; max: unknown }) => ({
+          label: r.label.trim(),
+          max: Number(r.max) || 0,
+        }))
+    }
+    if (Array.isArray(feedbackSnippets)) {
+      item.feedbackSnippets = feedbackSnippets
+        .filter((s) => typeof s === 'string' && s.trim())
+        .map((s) => String(s))
+    }
     if (groupMode !== undefined) item.groupMode = !!groupMode
     if (Array.isArray(tags)) item.tags = tags
     if (sessionId !== undefined) item.sessionId = validId(sessionId) ? sessionId : null
@@ -191,6 +206,83 @@ router.get('/:id/submissions', async (req: Request, res: Response, next: NextFun
   } catch (err) { next(err) }
 })
 
+// PATCH /:id/submissions/bulk — mise à jour groupée (correction par lot)
+// IMPORTANT : doit être déclarée AVANT /:id/submissions/:studentId pour ne pas
+// être interprétée comme un studentId 'bulk'.
+router.patch('/:id/submissions/bulk', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
+    if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
+
+    const updates = Array.isArray(req.body?.updates) ? req.body.updates : []
+    if (updates.length === 0) return res.json({ updated: 0, submissions: [] })
+
+    const updated: unknown[] = []
+    for (const u of updates) {
+      if (!u || typeof u !== 'object') continue
+      const studentId = (u as { studentId?: unknown }).studentId
+      if (!validId(studentId)) continue
+
+      let sub = await EducationSubmission.findOne({
+        assignmentId: req.params.id,
+        studentId,
+        ...ownerFilter(req),
+      })
+      if (!sub) {
+        sub = await EducationSubmission.create({
+          owner: req.user!.id,
+          assignmentId: req.params.id,
+          studentId,
+          status: 'NON_RENDU',
+        })
+      }
+
+      const patch = u as {
+        status?: string
+        grade?: number | null
+        feedback?: string
+        submittedAt?: string | null
+      }
+      if (patch.status !== undefined) sub.status = patch.status as typeof sub.status
+      if (patch.grade !== undefined) sub.grade = patch.grade
+      if (patch.feedback !== undefined) sub.feedback = String(patch.feedback)
+      if (patch.submittedAt !== undefined) sub.submittedAt = patch.submittedAt ? new Date(patch.submittedAt) : null
+
+      if (sub.submittedAt && assignment.deadline) {
+        sub.isLate = sub.submittedAt.getTime() > assignment.deadline.getTime()
+        if (sub.isLate && sub.status === 'RENDU') sub.status = 'EN_RETARD'
+      }
+      await sub.save()
+      updated.push(sub)
+    }
+
+    const impactedStudents = Array.from(new Set(
+      updates.map((u: { studentId?: unknown }) => validId(u.studentId) ? String(u.studentId) : null).filter(Boolean)
+    )) as string[]
+    for (const studentId of impactedStudents) {
+      const graded = await EducationSubmission.find({
+        studentId,
+        ...ownerFilter(req),
+        grade: { $ne: null },
+      }).select('grade')
+      if (graded.length > 0) {
+        const avg = graded.reduce((acc, s) => acc + (s.grade || 0), 0) / graded.length
+        await EducationStudent.updateOne(
+          { _id: studentId, owner: req.user!.id },
+          { averageGrade: Number(avg.toFixed(2)) }
+        )
+      }
+    }
+
+    await logActivity(req.user!.id, req.user!.id, 'submission', assignment._id, 'GRADE', {
+      bulk: true, count: updated.length, assignmentId: req.params.id,
+    })
+
+    res.json({ updated: updated.length, submissions: updated })
+  } catch (err) { next(err) }
+})
+
 // PATCH /:id/submissions/:studentId — update soumission (grade, feedback, status, url, textBody)
 router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -249,5 +341,69 @@ router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, 
     res.json({ submission: sub })
   } catch (err) { next(err) }
 })
+
+// GET /:id/export.csv — export CSV des corrections par étudiant
+router.get('/:id/export.csv', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
+      .populate('classId', 'name school level')
+    if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
+
+    const submissions = await EducationSubmission.find({
+      assignmentId: req.params.id,
+      ...ownerFilter(req),
+    }).populate('studentId', 'firstName lastName email externalId')
+
+    const headers = [
+      'Etudiant', 'Email', 'Identifiant', 'Statut', 'Rendu le', 'Note', 'Note max', 'En retard', 'Feedback',
+    ]
+    const rows = submissions.map((s) => {
+      const stu = (s.studentId as unknown as { firstName?: string; lastName?: string; email?: string; externalId?: string } | null)
+      const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
+      return [
+        name,
+        stu?.email || '',
+        stu?.externalId || '',
+        s.status,
+        s.submittedAt ? new Date(s.submittedAt).toISOString() : '',
+        s.grade != null ? String(s.grade) : '',
+        String(assignment.maxGrade),
+        s.isLate ? 'oui' : 'non',
+        s.feedback || '',
+      ]
+    })
+
+    const csv = toCsv([headers, ...rows])
+    const klassName = assignment.classId && typeof assignment.classId === 'object'
+      ? (assignment.classId as unknown as { name?: string }).name || 'classe'
+      : 'classe'
+    const fname = `corrections-${slugify(klassName)}-${slugify(assignment.title)}.csv`
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`)
+    res.send('﻿' + csv)
+  } catch (err) { next(err) }
+})
+
+function escapeCsvCell(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  const s = String(v)
+  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes(';')) {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+  return s
+}
+
+function toCsv(rows: unknown[][]): string {
+  return rows.map((r) => r.map(escapeCsvCell).join(',')).join('\n')
+}
+
+function slugify(s: string): string {
+  return String(s).toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 64) || 'export'
+}
 
 export default router
