@@ -521,6 +521,74 @@ export function fetchDevProjectLargeFiles(
   return apiFetch(`/api/admin/dev/projects/${projectId}/large-files${refresh}`)
 }
 
+// ─── Project recommendations (auto-refresh ~6h, heuristic) ──────────────────
+
+export type DevRecommendationSection = 'improve' | 'add' | 'optimize' | 'large_files'
+export type DevRecommendationPriority = 'critical' | 'high' | 'medium' | 'low'
+export type DevRecommendationSource =
+  | 'issues'
+  | 'pull_requests'
+  | 'code_metrics'
+  | 'backlog'
+  | 'roadmap'
+  | 'labels'
+  | 'ci'
+export type DevRecommendationStatus = 'ok' | 'partial' | 'empty' | 'error'
+export type DevRecommendationActionKind = 'open_issue' | 'open_pr' | 'open_file' | 'open_url'
+
+export interface DevRecommendationAction {
+  kind: DevRecommendationActionKind
+  label: string
+  href?: string | null
+  issueId?: string | null
+}
+
+export interface DevRecommendationItem {
+  id: string
+  section: DevRecommendationSection
+  title: string
+  description: string
+  priority: DevRecommendationPriority
+  source: DevRecommendationSource
+  badges: string[]
+  metric?: { label: string; value: string | number } | null
+  actions: DevRecommendationAction[]
+}
+
+export interface DevRecommendationsPayload {
+  projectId: string
+  generatedAt: string
+  nextRefreshAt: string
+  ttlSeconds: number
+  fromCache: boolean
+  cacheAgeSeconds: number
+  status: DevRecommendationStatus
+  source: { issues: boolean; github: boolean; code: boolean }
+  reasons: string[]
+  counts: {
+    total: number
+    improve: number
+    add: number
+    optimize: number
+    large_files: number
+    bySeverity: Record<DevRecommendationPriority, number>
+  }
+  sections: {
+    improve: DevRecommendationItem[]
+    add: DevRecommendationItem[]
+    optimize: DevRecommendationItem[]
+    large_files: DevRecommendationItem[]
+  }
+}
+
+export function fetchDevProjectRecommendations(
+  projectId: string,
+  opts: { refresh?: boolean } = {}
+): Promise<DevRecommendationsPayload> {
+  const refresh = opts.refresh ? '?refresh=1' : ''
+  return apiFetch(`/api/admin/dev/projects/${projectId}/recommendations${refresh}`)
+}
+
 export function fetchDevProjectDetail(id: string): Promise<DevProjectDetail> {
   return apiFetch(`/api/admin/dev/projects/${id}/detail`)
 }

@@ -71,6 +71,7 @@ import {
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
 
 const HEALTH_META: Record<DevCockpit['health'], { label: string; tone: 'ok' | 'warn' | 'fail'; icon: typeof Sparkles }> = {
@@ -1146,6 +1147,9 @@ const DevProjectCockpit = () => {
           )}
         </div>
       </section>
+
+      {/* ── Recommandations projet (auto-refresh ~6h) — VENIO-38 ── */}
+      <RecommendationsPanel projectId={projectId} onOpenIssue={openIssue} />
 
       {/* ── Priorité 6 — Métriques secondaires (charts, code, tokens) ── */}
       <section className="cockpit-metrics-section">

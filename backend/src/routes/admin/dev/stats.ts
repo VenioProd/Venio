@@ -13,6 +13,10 @@ import {
 } from '../../../lib/dev/codeMetrics.js'
 import { computeProjectGithubSummary } from '../../../lib/dev/githubSummary.js'
 import { computeProjectTokensSnapshot } from '../../../lib/dev/tokens.js'
+import {
+  computeProjectRecommendations,
+  invalidateRecommendationsCache,
+} from '../../../lib/dev/recommendations.js'
 
 const router = express.Router()
 
@@ -147,6 +151,32 @@ router.get(
         largeFiles: code.largeFiles,
         totals: code.totals,
       })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+/**
+ * Recommendations — heuristic module qui agrège dans une seule réponse les
+ * éléments actionnables d'un projet : features à améliorer, features à ajouter,
+ * optimisations, fichiers volumineux. Refresh automatique côté serveur via un
+ * cache TTL ~6h (refresh=1 force un recalcul).
+ */
+router.get(
+  '/projects/:id/recommendations',
+  requirePermission(PERMISSIONS.VIEW_DEV),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id
+      if (typeof id !== 'string' || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ error: 'ID invalide' })
+      }
+      const force = req.query.refresh === '1' || req.query.refresh === 'true'
+      if (force) invalidateRecommendationsCache(id)
+      const payload = await computeProjectRecommendations(id, { force })
+      if (!payload) return res.status(404).json({ error: 'Projet introuvable' })
+      res.json(payload)
     } catch (err) {
       next(err)
     }
