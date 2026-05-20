@@ -37,6 +37,22 @@
   --primary-glow-strong: rgba(14, 165, 233, 1);
   --primary-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
   --primary-shadow-strong: 0 0 40px rgba(14, 165, 233, 0.8);
+  --admin-shell-bg-base: #0a0c12;
+  --admin-shell-bg-glow-1: rgba(var(--primary-rgb), 0.06);
+  --admin-shell-bg-glow-2: rgba(var(--primary-light-rgb), 0.05);
+  --admin-shell-bg-glow-3: rgba(var(--primary-dark-rgb), 0.04);
+  --client-shell-bg-base: #05070d;
+  --client-shell-bg-glow-1: rgba(var(--primary-rgb), 0.1);
+  --client-shell-bg-glow-2: rgba(var(--primary-light-rgb), 0.06);
+  --client-shell-bg-glow-3: rgba(var(--primary-dark-rgb), 0.05);
+  --ambient-mesh-primary: rgba(var(--primary-rgb), 0.15);
+  --ambient-mesh-primary-soft: rgba(var(--primary-rgb), 0.08);
+  --ambient-mesh-secondary: rgba(59, 130, 246, 0.1);
+  --ambient-mesh-secondary-soft: rgba(59, 130, 246, 0.05);
+  --ambient-mesh-layer-1: rgba(var(--primary-rgb), 0.25);
+  --ambient-mesh-layer-2: rgba(59, 130, 246, 0.2);
+  --ambient-mesh-layer-3: rgba(var(--primary-light-rgb), 0.15);
+  --ambient-mesh-layer-4: rgba(37, 99, 235, 0.15);
 }
 
 [data-theme="light"] {
@@ -70,6 +86,22 @@
   --primary-glow-strong: rgba(14, 165, 233, 0.6);
   --primary-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
   --primary-shadow-strong: 0 0 40px rgba(14, 165, 233, 0.3);
+  --admin-shell-bg-base: #f5f5f7;
+  --admin-shell-bg-glow-1: rgba(var(--primary-rgb), 0.08);
+  --admin-shell-bg-glow-2: rgba(var(--primary-light-rgb), 0.06);
+  --admin-shell-bg-glow-3: rgba(var(--primary-dark-rgb), 0.04);
+  --client-shell-bg-base: #f5f5f7;
+  --client-shell-bg-glow-1: rgba(var(--primary-rgb), 0.08);
+  --client-shell-bg-glow-2: rgba(var(--primary-light-rgb), 0.06);
+  --client-shell-bg-glow-3: rgba(var(--primary-dark-rgb), 0.04);
+  --ambient-mesh-primary: rgba(var(--primary-rgb), 0.08);
+  --ambient-mesh-primary-soft: rgba(var(--primary-rgb), 0.04);
+  --ambient-mesh-secondary: rgba(59, 130, 246, 0.05);
+  --ambient-mesh-secondary-soft: rgba(59, 130, 246, 0.03);
+  --ambient-mesh-layer-1: rgba(var(--primary-rgb), 0.12);
+  --ambient-mesh-layer-2: rgba(59, 130, 246, 0.1);
+  --ambient-mesh-layer-3: rgba(var(--primary-light-rgb), 0.08);
+  --ambient-mesh-layer-4: rgba(37, 99, 235, 0.08);
 }
 
 /* ═══════════════════════════════════════════
@@ -338,4 +370,31 @@
   --primary-shadow: 0 0 20px rgba(148, 163, 184, 0.5);
   --primary-shadow-strong: 0 0 40px rgba(148, 163, 184, 0.7);
   --primary-fg: #0b0f17;
+}
+
+[data-theme="dark"][data-accent="violet"],
+[data-theme="dark"][data-accent="emerald"],
+[data-theme="dark"][data-accent="amber"],
+[data-theme="dark"][data-accent="rose"],
+[data-theme="dark"][data-accent="coral"],
+[data-theme="dark"][data-accent="yellow"],
+[data-theme="dark"][data-accent="indigo"],
+[data-theme="dark"][data-accent="teal"],
+[data-theme="dark"][data-accent="fuchsia"],
+[data-theme="dark"][data-accent="lime"],
+[data-theme="dark"][data-accent="slate"] {
+  --admin-shell-bg-glow-1: rgba(255, 255, 255, 0.018);
+  --admin-shell-bg-glow-2: rgba(255, 255, 255, 0.014);
+  --admin-shell-bg-glow-3: rgba(255, 255, 255, 0.012);
+  --client-shell-bg-glow-1: rgba(255, 255, 255, 0.02);
+  --client-shell-bg-glow-2: rgba(255, 255, 255, 0.016);
+  --client-shell-bg-glow-3: rgba(255, 255, 255, 0.014);
+  --ambient-mesh-primary: rgba(255, 255, 255, 0.035);
+  --ambient-mesh-primary-soft: rgba(255, 255, 255, 0.022);
+  --ambient-mesh-secondary: rgba(255, 255, 255, 0.026);
+  --ambient-mesh-secondary-soft: rgba(255, 255, 255, 0.018);
+  --ambient-mesh-layer-1: rgba(255, 255, 255, 0.045);
+  --ambient-mesh-layer-2: rgba(255, 255, 255, 0.035);
+  --ambient-mesh-layer-3: rgba(255, 255, 255, 0.03);
+  --ambient-mesh-layer-4: rgba(255, 255, 255, 0.026);
 }
