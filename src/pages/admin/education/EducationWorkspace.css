@@ -287,20 +287,30 @@
 .edu-form-group label { font-size: 12px; color: rgba(255,255,255,0.65); font-weight: 500; }
 
 /* ─── Drawer ─────────────────────────────────────────────────────────── */
+/* VENIO-46 — Le drawer démarre sous la barre breadcrumb de l'AdminShell
+   (.admin-shell-topbar : 44px + safe-area). Avant ce correctif, le drawer
+   couvrait la breadcrumb et le bouton "Fermer" pouvait être inaccessible
+   sur petites résolutions. La variable peut être surchargée par un parent. */
+.edu-workspace { --edu-topbar-offset: calc(44px + env(safe-area-inset-top, 0px)); }
 .edu-drawer-backdrop {
-  position: fixed; inset: 0;
+  position: fixed;
+  top: var(--edu-topbar-offset, 0);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(0,0,0,0.55);
   z-index: 100;
   backdrop-filter: blur(2px);
 }
 .edu-drawer {
   position: fixed;
-  top: 0;
+  top: var(--edu-topbar-offset, 0);
   right: 0;
   bottom: 0;
   width: min(720px, 96vw);
   background: #0E1116;
   border-left: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255,255,255,0.06);
   z-index: 101;
   display: flex;
   flex-direction: column;
@@ -1002,4 +1012,149 @@
   .edu-cockpit-cal-item-action { align-self: flex-end; }
   .edu-cockpit-cal-source { margin-left: 0; }
   .edu-cockpit-cal-item-action-label { display: none; }
+}
+
+/* ─── VENIO-46 — Documents (BDD documentaire) ──────────────────────────── */
+.edu-doc-counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+.edu-doc-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.85);
+  font-family: inherit;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  min-width: 96px;
+}
+.edu-doc-counter:hover { background: rgba(255,255,255,0.07); }
+.edu-doc-counter.is-active {
+  border-color: var(--primary);
+  background: var(--accent-medium);
+}
+.edu-doc-counter-value { font-size: 18px; font-weight: 600; line-height: 1; }
+.edu-doc-counter-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.02em;
+}
+
+.edu-doc-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.edu-doc-filter-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+.edu-doc-filter-search svg {
+  position: absolute;
+  left: 10px;
+  color: rgba(255,255,255,0.45);
+  pointer-events: none;
+}
+.edu-doc-filter-search .edu-input { padding-left: 30px; }
+.edu-doc-filters .edu-select { width: auto; min-width: 140px; }
+
+.edu-doc-table-wrap {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: auto;
+  background: rgba(255,255,255,0.02);
+}
+.edu-doc-table { font-size: 13px; }
+.edu-doc-table th { background: rgba(255,255,255,0.03); }
+.edu-doc-table td { vertical-align: top; }
+.edu-doc-title-cell {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.edu-doc-title-icon {
+  color: rgba(255,255,255,0.45);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.edu-doc-title-main {
+  font-weight: 500;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.edu-doc-title-sub {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.edu-doc-status-published {
+  background: rgba(34,197,94,0.15);
+  color: #86efac;
+}
+.edu-doc-status-draft {
+  background: rgba(245,158,11,0.15);
+  color: #fcd34d;
+}
+.edu-doc-status-archived {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.55);
+}
+
+.edu-doc-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.edu-doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.75);
+  font-size: 11px;
+}
+.edu-doc-tag-more {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  padding: 1px 4px;
+}
+
+.edu-doc-edit-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.75);
+}
+.edu-doc-edit-meta strong { color: rgba(255,255,255,0.55); font-weight: 500; margin-right: 4px; }
+
+@media (max-width: 720px) {
+  .edu-doc-counters { gap: 6px; }
+  .edu-doc-counter { min-width: 0; padding: 6px 10px; flex: 1 1 calc(50% - 6px); }
+  .edu-doc-filters .edu-select { flex: 1 1 calc(50% - 4px); min-width: 0; }
+  .edu-doc-edit-meta { grid-template-columns: 1fr; }
+  .edu-doc-title-main, .edu-doc-title-sub { max-width: 220px; }
 }

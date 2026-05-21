@@ -1,4 +1,4 @@
-import { apiFetch } from '../lib/api'
+import { apiFetch, apiUpload } from '../lib/api'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -200,16 +200,43 @@ export interface EducationTemplate {
   updatedAt: string
 }
 
+// VENIO-46 — BDD documentaire pédagogique : catégories + statut + liens
+// optionnels vers les entités existantes (classe, séance, devoir, étudiant…).
+export type EducationDocumentCategory =
+  | 'school_document'
+  | 'student_submission'
+  | 'assignment_submission'
+  | 'exam_subject'
+  | 'assignment_correction'
+  | 'teaching_resource'
+  | 'administrative'
+  | 'other'
+
+export type EducationDocumentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+
 export interface EducationDocument {
   _id: string
   parentType: EducationDocumentParentType
   parentId: string | null
+  category: EducationDocumentCategory
+  status: EducationDocumentStatus
   title: string
+  description: string
   originalName: string
+  storagePath: string
   mimeType: string
   size: number
   url: string
+  school: string
+  classId: string | null
+  sessionId: string | null
+  assignmentId: string | null
+  submissionId: string | null
+  studentId: string | null
+  documentDate: string | null
+  dueDate: string | null
   tags: string[]
+  deletedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -659,4 +686,138 @@ export function formatDate(date: string | null | undefined, withTime = false): s
     return d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
   }
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ─── VENIO-46 — Documents (BDD documentaire) ───────────────────────────────
+
+export const DOCUMENT_CATEGORY_LABEL: Record<EducationDocumentCategory, string> = {
+  school_document: 'Document école',
+  student_submission: 'Rendu étudiant',
+  assignment_submission: 'Rendu devoir',
+  exam_subject: "Sujet d'examen",
+  assignment_correction: 'Correction',
+  teaching_resource: 'Ressource pédagogique',
+  administrative: 'Administratif',
+  other: 'Autre',
+}
+
+export const DOCUMENT_STATUS_LABEL: Record<EducationDocumentStatus, string> = {
+  DRAFT: 'Brouillon',
+  PUBLISHED: 'Publié',
+  ARCHIVED: 'Archivé',
+}
+
+export interface ListDocumentsParams {
+  search?: string
+  category?: EducationDocumentCategory | ''
+  status?: EducationDocumentStatus | ''
+  school?: string
+  classId?: string
+  sessionId?: string
+  assignmentId?: string
+  submissionId?: string
+  studentId?: string
+  parentType?: EducationDocumentParentType
+  tag?: string
+  sort?: string
+  limit?: number
+  skip?: number
+}
+
+export interface ListDocumentsResult {
+  documents: EducationDocument[]
+  total: number
+  categoryCounts: Partial<Record<EducationDocumentCategory, number>>
+}
+
+export async function listDocuments(params: ListDocumentsParams = {}): Promise<ListDocumentsResult> {
+  const qs = new URLSearchParams()
+  if (params.search) qs.set('search', params.search)
+  if (params.category) qs.set('category', params.category)
+  if (params.status) qs.set('status', params.status)
+  if (params.school) qs.set('school', params.school)
+  if (params.classId) qs.set('classId', params.classId)
+  if (params.sessionId) qs.set('sessionId', params.sessionId)
+  if (params.assignmentId) qs.set('assignmentId', params.assignmentId)
+  if (params.submissionId) qs.set('submissionId', params.submissionId)
+  if (params.studentId) qs.set('studentId', params.studentId)
+  if (params.parentType) qs.set('parentType', params.parentType)
+  if (params.tag) qs.set('tag', params.tag)
+  if (params.sort) qs.set('sort', params.sort)
+  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.skip) qs.set('skip', String(params.skip))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch(`${base}/documents${suffix}`)
+}
+
+export interface DocumentCreatePayload {
+  title?: string
+  description?: string
+  category?: EducationDocumentCategory
+  status?: EducationDocumentStatus
+  school?: string
+  classId?: string
+  sessionId?: string
+  assignmentId?: string
+  submissionId?: string
+  studentId?: string
+  url?: string
+  tags?: string[]
+  documentDate?: string | null
+  dueDate?: string | null
+}
+
+function appendDocFields(form: FormData, payload: DocumentCreatePayload): void {
+  if (payload.title) form.append('title', payload.title)
+  if (payload.description) form.append('description', payload.description)
+  if (payload.category) form.append('category', payload.category)
+  if (payload.status) form.append('status', payload.status)
+  if (payload.school) form.append('school', payload.school)
+  if (payload.classId) form.append('classId', payload.classId)
+  if (payload.sessionId) form.append('sessionId', payload.sessionId)
+  if (payload.assignmentId) form.append('assignmentId', payload.assignmentId)
+  if (payload.submissionId) form.append('submissionId', payload.submissionId)
+  if (payload.studentId) form.append('studentId', payload.studentId)
+  if (payload.url) form.append('url', payload.url)
+  if (payload.tags && payload.tags.length) form.append('tags', payload.tags.join(','))
+  if (payload.documentDate) form.append('documentDate', payload.documentDate)
+  if (payload.dueDate) form.append('dueDate', payload.dueDate)
+}
+
+export async function uploadDocument(file: File, payload: DocumentCreatePayload = {}): Promise<{ document: EducationDocument }> {
+  const form = new FormData()
+  form.append('file', file)
+  appendDocFields(form, payload)
+  return await apiUpload(`${base}/documents`, form)
+}
+
+export async function createDocumentFromUrl(payload: DocumentCreatePayload & { url: string }): Promise<{ document: EducationDocument }> {
+  const form = new FormData()
+  appendDocFields(form, payload)
+  return await apiUpload(`${base}/documents`, form)
+}
+
+export async function updateDocument(
+  id: string,
+  data: Partial<Omit<EducationDocument, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'owner'>> & {
+    tags?: string[]
+  },
+): Promise<{ document: EducationDocument }> {
+  return await apiFetch(`${base}/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export async function deleteDocument(id: string): Promise<{ success: true }> {
+  return await apiFetch(`${base}/documents/${id}`, { method: 'DELETE' })
+}
+
+export function documentDownloadUrl(id: string): string {
+  return `${base}/documents/${id}/download`
+}
+
+export function formatFileSize(bytes: number): string {
+  if (!bytes || bytes < 0) return '—'
+  if (bytes < 1024) return `${bytes} o`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} Go`
 }

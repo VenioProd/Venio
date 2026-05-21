@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
   Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles, PanelLeftClose, PanelLeftOpen,
+  FolderOpen,
 } from 'lucide-react'
 import {
   fetchDashboard,
@@ -32,11 +33,12 @@ import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'
 import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
+import { DocumentsView } from './DocumentsView'
 import type { UpcomingCalendarEvent } from '../../../services/educationCalendar'
 import { Building2, FileSearch, CalendarDays } from 'lucide-react'
 import './EducationWorkspace.css'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
+type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'documents' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
@@ -181,6 +183,9 @@ export default function EducationWorkspace() {
         <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => selectView('notes')}>
           <FileText size={15} /> Notes
         </button>
+        <button className={`edu-side-item ${view === 'documents' ? 'active' : ''}`} onClick={() => selectView('documents')}>
+          <FolderOpen size={15} /> Documents
+        </button>
         <button className={`edu-side-item ${view === 'templates' ? 'active' : ''}`} onClick={() => selectView('templates')}>
           <Sparkles size={15} /> Templates
           {templates.length > 0 && <span className="edu-side-badge">{templates.length}</span>}
@@ -254,6 +259,9 @@ export default function EducationWorkspace() {
         )}
         {view === 'notes' && (
           <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
+        )}
+        {view === 'documents' && (
+          <DocumentsView classes={classes} />
         )}
         {view === 'templates' && (
           <TemplatesView />
