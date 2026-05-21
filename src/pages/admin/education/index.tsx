@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
+  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import {
   fetchDashboard,
@@ -56,6 +56,7 @@ export default function EducationWorkspace() {
   // le rattachement à une EducationClass lorsque le backend l'a inféré.
   const [calendarEvent, setCalendarEvent] = useState<UpcomingCalendarEvent | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [school, setSchool] = useState<string>('')
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [classesError, setClassesError] = useState<string | null>(null)
@@ -115,13 +116,13 @@ export default function EducationWorkspace() {
   }
 
   return (
-    <div className="edu-workspace">
+    <div className={`edu-workspace ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       {/* Barre mobile : burger + titre. Reste visible en sticky en haut. */}
       <div className="edu-mobile-bar">
         <button
           type="button"
           className="edu-mobile-burger"
-          onClick={() => setSidebarOpen((v) => !v)}
+          onClick={() => { setSidebarCollapsed(false); setSidebarOpen((v) => !v) }}
           aria-label="Ouvrir la navigation"
           aria-expanded={sidebarOpen}
         >
@@ -145,8 +146,19 @@ export default function EducationWorkspace() {
         aria-hidden
       />
 
-      <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-        <h3>Espace pédagogique</h3>
+      <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''} ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
+        <div className="edu-sidebar-title-row">
+          <h3>Espace pédagogique</h3>
+          <button
+            type="button"
+            className="edu-sidebar-collapse-btn"
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            aria-label={sidebarCollapsed ? 'Déplier le panneau pédagogique' : 'Rétracter le panneau pédagogique'}
+            title={sidebarCollapsed ? 'Déplier' : 'Rétracter'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+          </button>
+        </div>
         <button className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => selectView('dashboard')}>
           <GraduationCap size={15} /> Cockpit
         </button>

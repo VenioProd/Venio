@@ -1,18 +1,88 @@
 /* ─── Education Workspace — layout type Notion ────────────────────────── */
 .edu-workspace {
+  --edu-sidebar-width: 240px;
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: var(--edu-sidebar-width) 1fr;
   gap: 0;
   min-height: calc(100vh - 60px);
   background: var(--admin-bg, #0E1116);
   color: var(--admin-text, #E5E7EB);
 }
 
+.edu-workspace.is-sidebar-collapsed { --edu-sidebar-width: 58px; }
+
 .edu-sidebar {
   border-right: 1px solid rgba(255,255,255,0.06);
   padding: 16px 12px;
   background: rgba(255,255,255,0.02);
   overflow-y: auto;
+  overflow-x: hidden;
+  transition: padding 0.16s ease, width 0.16s ease;
+}
+
+.edu-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 4px 10px 8px;
+}
+
+.edu-sidebar-title-row h3 { margin: 0; }
+
+.edu-sidebar-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.035);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+}
+
+.edu-sidebar-collapse-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.95);
+}
+
+.edu-sidebar.is-collapsed {
+  padding: 14px 8px;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-title-row {
+  justify-content: center;
+  margin: 0 0 12px;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-title-row h3,
+.edu-sidebar.is-collapsed h3,
+.edu-sidebar.is-collapsed .edu-side-school-group,
+.edu-sidebar.is-collapsed .edu-side-classes-empty {
+  display: none;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-collapse-btn { display: inline-flex; }
+
+.edu-sidebar.is-collapsed .edu-side-item {
+  justify-content: center;
+  gap: 0;
+  padding: 9px 0;
+  font-size: 0;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item svg {
+  flex-shrink: 0;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item .edu-side-badge {
+  display: none;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item .edu-side-dot {
+  margin: 0;
 }
 
 .edu-sidebar h3 {
@@ -475,8 +545,10 @@
 
 /* ─── Mobile ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .edu-workspace { grid-template-columns: 1fr; position: relative; }
+  .edu-workspace,
+  .edu-workspace.is-sidebar-collapsed { grid-template-columns: 1fr; position: relative; }
   .edu-mobile-bar { display: flex; }
+  .edu-sidebar-collapse-btn { display: none; }
   /* La sidebar devient un panneau coulissant accessible via le burger.
      ⚠️ NE PAS la cacher sans alternative — la barre mobile la rouvre. */
   .edu-sidebar {
@@ -490,6 +562,24 @@
     transition: transform 0.18s ease;
     background: #0E1116;
     box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+  .edu-sidebar.is-collapsed {
+    padding: 16px 12px;
+  }
+  .edu-sidebar.is-collapsed .edu-sidebar-title-row h3,
+  .edu-sidebar.is-collapsed h3,
+  .edu-sidebar.is-collapsed .edu-side-school-group {
+    display: flex;
+  }
+  .edu-sidebar.is-collapsed .edu-side-school-group { flex-direction: column; }
+  .edu-sidebar.is-collapsed .edu-side-item {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 13.5px;
+  }
+  .edu-sidebar.is-collapsed .edu-side-item .edu-side-badge {
+    display: inline-flex;
   }
   .edu-sidebar.is-open { transform: translateX(0); }
   .edu-sidebar-backdrop.is-open { display: block; }
