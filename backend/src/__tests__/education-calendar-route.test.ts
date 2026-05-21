@@ -22,7 +22,13 @@ RRULE:FREQ=WEEKLY;COUNT=3
 END:VEVENT
 END:VCALENDAR`
 
-function makeApp(ics: string, opts: { url?: string | null } = {}) {
+function makeApp(
+  ics: string,
+  opts: {
+    url?: string | null
+    classes?: Array<{ _id: string; name: string; school: string; level?: string; program?: string; color?: string }>
+  } = {},
+) {
   const fetcher = vi.fn(async () => ({ ok: true, status: 200, text: async () => ics }))
   const cache = new IcsCache({ ttlMs: 60_000, fetcher })
   const app: Express = express()
@@ -30,6 +36,17 @@ function makeApp(ics: string, opts: { url?: string | null } = {}) {
   const router = createCalendarRouter({
     cache,
     getUrl: () => (opts.url === undefined ? 'https://example.com/cal.ics' : opts.url),
+    loadClasses: async () =>
+      (opts.classes || []).map((c) => ({
+        _id: c._id,
+        name: c.name,
+        school: c.school,
+        level: c.level || '',
+        program: c.program || '',
+        color: c.color || '#22C55E',
+        tags: [],
+        notes: '',
+      })),
   })
   app.use('/api/admin/education/calendar', router)
   app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
@@ -116,6 +133,68 @@ describe('education / calendar route', () => {
       .query({ from: '2025-01-01', to: '2026-12-31' })
       .expect(400)
     expect(r.body.error).toMatch(/366/)
+  })
+
+  it('GET /upcoming returns events matched to existing classes when possible', async () => {
+    // ICS contient un cours futur EMA + un événement perso non rattachable.
+    const futureIso = (offsetDays: number) => {
+      const d = new Date(Date.now() + offsetDays * 86_400_000)
+      const y = d.getUTCFullYear()
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(d.getUTCDate()).padStart(2, '0')
+      return `${y}${m}${day}T140000Z`
+    }
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:future-ema@example.com
+SUMMARY:Cours EMA — Marketing
+LOCATION:EMA Paris
+DTSTART:${futureIso(2)}
+DTEND:${futureIso(2).replace('T140000Z', 'T160000Z')}
+END:VEVENT
+BEGIN:VEVENT
+UID:dentiste@example.com
+SUMMARY:Rendez-vous dentiste
+DTSTART:${futureIso(3)}
+DTEND:${futureIso(3).replace('T140000Z', 'T143000Z')}
+END:VEVENT
+END:VCALENDAR`
+    const { app: localApp } = makeApp(ics, {
+      classes: [
+        { _id: 'class-ema', name: 'EMA B3 Marketing', school: 'EMA', level: 'B3', program: 'Marketing' },
+      ],
+    })
+    const r = await request(localApp)
+      .get('/api/admin/education/calendar/upcoming')
+      .query({ days: 7 })
+      .expect(200)
+    expect(r.body.configured).toBe(true)
+    expect(r.body.days).toBe(7)
+    const titles = r.body.events.map((e: { title: string }) => e.title)
+    expect(titles).toContain('Cours EMA — Marketing')
+    const ema = r.body.events.find((e: { title: string }) => e.title === 'Cours EMA — Marketing')
+    expect(ema.match).not.toBeNull()
+    expect(ema.match.classId).toBe('class-ema')
+    const dentist = r.body.events.find((e: { title: string }) => e.title === 'Rendez-vous dentiste')
+    expect(dentist.match).toBeNull()
+  })
+
+  it('GET /upcoming rejects an invalid days param', async () => {
+    const { app: localApp } = makeApp(ICS_SAMPLE)
+    await request(localApp)
+      .get('/api/admin/education/calendar/upcoming')
+      .query({ days: '999' })
+      .expect(400)
+  })
+
+  it('GET /upcoming returns 503 when calendar is unconfigured', async () => {
+    const { app: noUrlApp } = makeApp(ICS_SAMPLE, { url: null })
+    const r = await request(noUrlApp)
+      .get('/api/admin/education/calendar/upcoming')
+      .expect(503)
+    expect(r.body.configured).toBe(false)
+    expect(r.body.events).toEqual([])
   })
 
   it('keeps mounted education calendar router behind super-admin auth', async () => {

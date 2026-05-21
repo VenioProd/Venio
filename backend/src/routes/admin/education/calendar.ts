@@ -2,6 +2,12 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import { parseAndExpand } from '../../../lib/appleCalendar/ics.js'
 import { getDefaultCache, type IcsCache } from '../../../lib/appleCalendar/cache.js'
 import { inferSchool, inferClassLabel } from '../../../lib/appleCalendar/inference.js'
+import {
+  matchEventsToClasses,
+  type ClassCandidate,
+  type MatchedClass,
+} from '../../../lib/appleCalendar/matching.js'
+import EducationClass from '../../../models/education/EducationClass.js'
 
 const router = express.Router()
 
@@ -22,6 +28,10 @@ interface SerializedEvent {
   source: typeof SOURCE_LABEL
   school: string | null
   classLabel: string | null
+}
+
+interface UpcomingEvent extends SerializedEvent {
+  match: MatchedClass | null
 }
 
 function getIcsUrl(): string | null {
@@ -80,12 +90,44 @@ export function buildEvents(rawIcs: string, from: Date, to: Date): SerializedEve
 export interface CalendarRouterDeps {
   cache?: IcsCache
   getUrl?: () => string | null
+  loadClasses?: (req: Request) => Promise<ClassCandidate[]>
+}
+
+async function defaultLoadClasses(req: Request): Promise<ClassCandidate[]> {
+  if (!req.user?.id) return []
+  const rows = await EducationClass.find({
+    owner: req.user.id,
+    deletedAt: null,
+    status: { $ne: 'ARCHIVE' },
+  })
+    .select('_id name school level program color tags notes')
+    .lean()
+  return rows.map((c) => ({
+    _id: String(c._id),
+    name: c.name || '',
+    school: c.school || '',
+    level: c.level || '',
+    program: c.program || '',
+    color: c.color || '#22C55E',
+    tags: c.tags || [],
+    notes: c.notes || '',
+  }))
+}
+
+function parseUpcomingDays(req: Request): { days: number } | { error: string } {
+  const raw = req.query.days
+  if (raw === undefined || raw === null || raw === '') return { days: 14 }
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return { error: 'Paramètre "days" invalide.' }
+  if (n > 60) return { error: 'Paramètre "days" plafonné à 60.' }
+  return { days: Math.floor(n) }
 }
 
 export function createCalendarRouter(deps: CalendarRouterDeps = {}) {
   const r = express.Router()
   const cache = deps.cache ?? getDefaultCache()
   const getUrl = deps.getUrl ?? getIcsUrl
+  const loadClasses = deps.loadClasses ?? defaultLoadClasses
 
   // GET / — événements dans une fenêtre (par défaut : J-14 → J+60).
   r.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -112,6 +154,58 @@ export function createCalendarRouter(deps: CalendarRouterDeps = {}) {
         from: range.from.toISOString(),
         to: range.to.toISOString(),
         events,
+      })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // GET /upcoming — événements à venir (J -> J+days) rattachés aux classes
+  // du cockpit quand possible. Strictement lecture seule.
+  r.get('/upcoming', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const url = getUrl()
+      if (!url) {
+        return res.status(503).json({
+          error:
+            "Aucune URL Apple Calendar configurée. Définir EDUCATION_APPLE_CALENDAR_ICS_URL côté serveur.",
+          configured: false,
+          events: [],
+        })
+      }
+      const parsed = parseUpcomingDays(req)
+      if ('error' in parsed) return res.status(400).json({ error: parsed.error })
+
+      const now = new Date()
+      // On démarre à minuit pour inclure les cours d'aujourd'hui déjà commencés.
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const to = new Date(from.getTime() + parsed.days * 86_400_000)
+
+      const fetched = await cache.get(url)
+      const baseEvents = buildEvents(fetched.body, from, to)
+      const classes = await loadClasses(req)
+      const inputs = baseEvents.map((ev) => ({
+        title: ev.title,
+        location: ev.location,
+        description: ev.description,
+        inferredSchool: ev.school,
+        inferredClassLabel: ev.classLabel,
+      }))
+      const matches = matchEventsToClasses(inputs, classes)
+      const annotated: UpcomingEvent[] = baseEvents.map((ev, idx) => ({
+        ...ev,
+        match: matches[idx].match,
+      }))
+
+      res.json({
+        configured: true,
+        source: SOURCE_LABEL,
+        fetchedAt: fetched.fetchedAt.toISOString(),
+        fromCache: fetched.fromCache,
+        from: from.toISOString(),
+        to: to.toISOString(),
+        days: parsed.days,
+        events: annotated,
       })
     } catch (err) {
       next(err)

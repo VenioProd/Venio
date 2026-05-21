@@ -207,6 +207,7 @@ export default function EducationWorkspace() {
             onChangeSchool={setSchool}
             onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }}
             onCreateClass={() => setShowCreateClass(true)}
+            onOpenCalendar={() => selectView('calendar')}
             reloadError={dashboardError}
             onReload={refreshDashboard}
           />

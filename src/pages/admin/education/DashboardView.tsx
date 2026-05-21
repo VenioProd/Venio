@@ -1,4 +1,5 @@
-import { Plus } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Apple, CalendarDays, Clock, ExternalLink, MapPin, Plus, RefreshCw } from 'lucide-react'
 import {
   formatDate,
   formatRelative,
@@ -8,12 +9,22 @@ import {
   SESSION_STATUS_LABEL,
   type EducationDashboard,
 } from '../../../services/education'
+import {
+  fetchUpcomingCalendar,
+  type UpcomingCalendarEvent,
+  type UpcomingCalendarPayload,
+} from '../../../services/educationCalendar'
 
 /**
  * VENIO-27 — Cockpit intervenant multi-écoles.
  * Sections : Aujourd'hui · Cette semaine · À préparer · À corriger ·
  * Dernière séance par classe. Filtre école multi-écoles.
  * Vocabulaire neutre : "points d'attention pédagogiques" (pas de risque/alerte).
+ *
+ * VENIO-42 — bloc "Prochains cours" connecté au calendrier Apple :
+ * lecture seule, rapprochement best-effort avec les EducationClass quand
+ * possible. Permet d'ouvrir la classe rattachée ou de basculer sur la vue
+ * Calendrier sans quitter le cockpit.
  */
 export function DashboardView({
   dashboard,
@@ -21,6 +32,7 @@ export function DashboardView({
   onChangeSchool,
   onOpenClass,
   onCreateClass,
+  onOpenCalendar,
   reloadError,
   onReload,
 }: {
@@ -29,6 +41,7 @@ export function DashboardView({
   onChangeSchool: (school: string) => void
   onOpenClass: (id: string) => void
   onCreateClass: () => void
+  onOpenCalendar?: () => void
   reloadError: string | null
   onReload: () => void
 }) {
@@ -89,6 +102,12 @@ export function DashboardView({
         <Kpi label="À préparer" value={c.toPrepare} sub="prochaines 72 h" />
         <Kpi label="À corriger" value={c.toGrade} sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined} />
       </div>
+
+      {/* Prochains cours (calendrier Apple) — VENIO-42 */}
+      <UpcomingCalendarSection
+        onOpenClass={onOpenClass}
+        onOpenCalendar={onOpenCalendar}
+      />
 
       {/* Aujourd'hui */}
       <Section title="Aujourd'hui">
@@ -274,4 +293,250 @@ function Kpi({ label, value, sub }: { label: string; value: number | string; sub
       {sub && <div className="edu-kpi-sub">{sub}</div>}
     </div>
   )
+}
+
+// ─── VENIO-42 — Section "Prochains cours" branchée sur le calendrier Apple ─
+
+function UpcomingCalendarSection({
+  onOpenClass,
+  onOpenCalendar,
+}: {
+  onOpenClass: (id: string) => void
+  onOpenCalendar?: () => void
+}) {
+  const [payload, setPayload] = useState<UpcomingCalendarPayload | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [unconfigured, setUnconfigured] = useState(false)
+
+  const load = useCallback(async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setLoading(true)
+    else setRefreshing(true)
+    setError(null)
+    setUnconfigured(false)
+    try {
+      const data = await fetchUpcomingCalendar({ days: 14 })
+      setPayload(data)
+    } catch (err) {
+      const e = err as { status?: number; message?: string; data?: { configured?: boolean } }
+      if (e.status === 503 || e.data?.configured === false) {
+        setUnconfigured(true)
+        setPayload(null)
+      } else {
+        setError(e.message || 'Impossible de charger le calendrier.')
+      }
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  return (
+    <section className="edu-cockpit-cal">
+      <div className="edu-cockpit-cal-head">
+        <div>
+          <h2 className="edu-h2" style={{ marginBottom: 4 }}>
+            <CalendarDays size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+            Prochains cours
+          </h2>
+          <p className="edu-sub" style={{ marginBottom: 0 }}>
+            Calendrier Apple — 14 prochains jours, lecture seule.
+            {payload?.fetchedAt && (
+              <> · Sync : <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{formatRelative(payload.fetchedAt)}</strong>
+                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>(cache)</span>}
+              </>
+            )}
+          </p>
+        </div>
+        <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <button
+            className="edu-btn ghost"
+            onClick={() => load({ silent: true })}
+            disabled={refreshing || loading}
+            title="Rafraîchir depuis le cache serveur"
+          >
+            <RefreshCw size={13} className={refreshing ? 'edu-spin' : ''} /> Rafraîchir
+          </button>
+          {onOpenCalendar && (
+            <button className="edu-btn ghost" onClick={onOpenCalendar} title="Ouvrir la vue Calendrier complète">
+              <Apple size={13} /> Voir le calendrier
+            </button>
+          )}
+        </div>
+      </div>
+
+      {unconfigured && (
+        <div className="edu-cockpit-cal-state" role="alert">
+          <span className="edu-cockpit-cal-state-icon" aria-hidden>📅</span>
+          <div>
+            <div style={{ fontWeight: 600 }}>Calendrier Apple non configuré.</div>
+            <div style={{ opacity: 0.75, fontSize: 13 }}>
+              Définir <code>EDUCATION_APPLE_CALENDAR_ICS_URL</code> côté serveur pour activer ce bloc.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && !unconfigured && (
+        <div className="edu-cockpit-cal-state edu-cockpit-cal-state-error" role="alert">
+          <span className="edu-cockpit-cal-state-icon" aria-hidden>!</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600 }}>Erreur de chargement</div>
+            <div style={{ opacity: 0.85, fontSize: 13 }}>{error}</div>
+          </div>
+          <button className="edu-btn ghost" onClick={() => load()}>Réessayer</button>
+        </div>
+      )}
+
+      {loading && !payload && !error && !unconfigured && (
+        <div className="edu-cockpit-cal-state" aria-busy="true">
+          Chargement du calendrier…
+        </div>
+      )}
+
+      {payload && !unconfigured && !error && (
+        <UpcomingList
+          events={payload.events}
+          onOpenClass={onOpenClass}
+          onOpenCalendar={onOpenCalendar}
+        />
+      )}
+    </section>
+  )
+}
+
+function UpcomingList({
+  events,
+  onOpenClass,
+  onOpenCalendar,
+}: {
+  events: UpcomingCalendarEvent[]
+  onOpenClass: (id: string) => void
+  onOpenCalendar?: () => void
+}) {
+  const now = Date.now()
+  const upcoming = events
+    .filter((ev) => new Date(ev.end).getTime() >= now)
+    .slice(0, 8)
+
+  if (upcoming.length === 0) {
+    return (
+      <p className="edu-empty">
+        Pas de cours dans le calendrier sur les 14 prochains jours.
+      </p>
+    )
+  }
+
+  const byDay = new Map<string, UpcomingCalendarEvent[]>()
+  for (const ev of upcoming) {
+    const d = new Date(ev.start)
+    const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const list = byDay.get(dayKey) || []
+    list.push(ev)
+    byDay.set(dayKey, list)
+  }
+
+  return (
+    <div className="edu-cockpit-cal-list">
+      {Array.from(byDay.entries()).map(([key, dayEvents]) => (
+        <div key={key} className="edu-cockpit-cal-day">
+          <div className="edu-cockpit-cal-day-head">{formatDayLabel(dayEvents[0].start)}</div>
+          {dayEvents.map((ev) => (
+            <UpcomingItem
+              key={ev.occurrenceId}
+              event={ev}
+              onOpenClass={onOpenClass}
+              onOpenCalendar={onOpenCalendar}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function UpcomingItem({
+  event,
+  onOpenClass,
+  onOpenCalendar,
+}: {
+  event: UpcomingCalendarEvent
+  onOpenClass: (id: string) => void
+  onOpenCalendar?: () => void
+}) {
+  const start = new Date(event.start)
+  const end = new Date(event.end)
+  const matchColor = event.match?.color || '#0EA5E9'
+  const matchLabel = event.match?.className
+  const schoolBadge = event.match?.school || event.school
+
+  function handleOpen() {
+    if (event.match?.classId) {
+      onOpenClass(event.match.classId)
+    } else if (onOpenCalendar) {
+      onOpenCalendar()
+    }
+  }
+
+  const actionLabel = event.match ? 'Ouvrir la classe' : 'Voir le calendrier'
+
+  return (
+    <div className="edu-cockpit-cal-item" style={{ borderLeftColor: matchColor }}>
+      <div className="edu-cockpit-cal-item-main">
+        <div className="edu-cockpit-cal-item-time">
+          <Clock size={12} />
+          {event.allDay
+            ? 'Journée entière'
+            : `${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+        </div>
+        <div className="edu-cockpit-cal-item-title">{event.title}</div>
+        <div className="edu-cockpit-cal-item-meta">
+          {matchLabel ? (
+            <span
+              className="edu-pill"
+              title={`Classe rattachée (${event.match?.reason === 'exact-name' ? 'nom exact' : 'tokens'})`}
+            >
+              <span className="edu-pill-dot" style={{ background: matchColor }} />
+              {matchLabel}
+            </span>
+          ) : (
+            <span className="edu-cockpit-cal-item-loose">Non rattaché</span>
+          )}
+          {schoolBadge && <span className="edu-cockpit-cal-school">{schoolBadge}</span>}
+          {event.location && (
+            <span className="edu-cockpit-cal-item-loc">
+              <MapPin size={11} /> {event.location}
+            </span>
+          )}
+          <span className="edu-cockpit-cal-source" title="Source : Apple Calendar (lecture seule)">
+            <Apple size={11} /> Apple
+          </span>
+        </div>
+      </div>
+      <button
+        type="button"
+        className="edu-btn ghost edu-cockpit-cal-item-action"
+        onClick={handleOpen}
+        aria-label={actionLabel}
+      >
+        {event.match ? <ExternalLink size={13} /> : <CalendarDays size={13} />}
+        <span className="edu-cockpit-cal-item-action-label">{actionLabel}</span>
+      </button>
+    </div>
+  )
+}
+
+function formatDayLabel(iso: string): string {
+  const d = new Date(iso)
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(today.getDate() + 1)
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  if (isSameDay(d, today)) return 'Aujourd’hui'
+  if (isSameDay(d, tomorrow)) return 'Demain'
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'short' })
 }

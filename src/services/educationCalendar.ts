@@ -52,3 +52,40 @@ export async function refreshAppleCalendar(): Promise<{
 }> {
   return await apiFetch(`/api/admin/education/calendar/refresh`, { method: 'POST' })
 }
+
+// ─── Upcoming events rapprochés des classes du cockpit ──────────────────────
+//
+// VENIO-42 — endpoint dédié au cockpit intervenant qui renvoie les événements
+// Apple Calendar des prochains jours, rapprochés des EducationClass existantes
+// lorsque c'est possible (matching best-effort côté backend).
+
+export interface CalendarClassMatch {
+  classId: string
+  className: string
+  school: string
+  color: string
+  score: number
+  reason: 'exact-name' | 'tokens'
+}
+
+export interface UpcomingCalendarEvent extends AppleCalendarEvent {
+  match: CalendarClassMatch | null
+}
+
+export interface UpcomingCalendarPayload {
+  configured: boolean
+  source: 'Apple Calendar'
+  fetchedAt: string
+  fromCache: boolean
+  from: string
+  to: string
+  days: number
+  events: UpcomingCalendarEvent[]
+}
+
+export async function fetchUpcomingCalendar(params: { days?: number } = {}): Promise<UpcomingCalendarPayload> {
+  const qs = new URLSearchParams()
+  if (params.days) qs.set('days', String(params.days))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch<UpcomingCalendarPayload>(`/api/admin/education/calendar/upcoming${suffix}`)
+}
