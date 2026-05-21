@@ -102,7 +102,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/admin/comptes-admin', label: 'Comptes admin', icon: ShieldCheck, perm: PERMISSIONS.MANAGE_ADMINS },
       { to: '/admin/agents', label: 'Agents API', icon: Bot, roles: ['SUPER_ADMIN'] },
-      { to: '/admin/decisions', label: 'Décisions', icon: ClipboardCheck, roles: ['SUPER_ADMIN'] },
+      { to: '/admin/decisions', label: 'Décisions', icon: ClipboardCheck },
       { to: '/admin/guide', label: 'Guide', icon: HelpCircle },
     ],
   },
