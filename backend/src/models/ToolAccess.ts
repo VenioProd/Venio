@@ -7,6 +7,7 @@ export interface IToolAccess extends Document {
   password: string
   category: 'IA' | 'DESIGN' | 'DEV' | 'MARKETING' | 'COMMUNICATION' | 'GESTION' | 'AUTRE'
   notes: string
+  visibleTo: string[]
   addedBy: mongoose.Types.ObjectId
   lastRotatedAt: Date | null
   addedByName: string
@@ -27,6 +28,7 @@ const toolAccessSchema = new Schema<IToolAccess>(
       default: 'AUTRE',
     },
     notes: { type: String, default: '' },
+    visibleTo: { type: [String], default: [] },
     addedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     addedByName: { type: String, required: true },
   },

@@ -16,11 +16,21 @@ interface ToolAccess {
   password: string
   category: string
   notes: string
+  visibleTo: string[]
   addedByName: string
   createdAt: string
 }
 
 const CATEGORIES = ['IA', 'DESIGN', 'DEV', 'MARKETING', 'COMMUNICATION', 'GESTION', 'AUTRE']
+
+const ALL_ROLES = ['ADMIN', 'MANAGER', 'RH', 'VIEWER', 'CLIENT']
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Admin',
+  MANAGER: 'Manager',
+  RH: 'RH',
+  VIEWER: 'Viewer',
+  CLIENT: 'Client',
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   IA: 'Intelligence artificielle',
@@ -42,7 +52,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   AUTRE: '#64748b',
 }
 
-const emptyForm = { name: '', url: '', login: '', password: '', category: 'AUTRE', notes: '' }
+const emptyForm = { name: '', url: '', login: '', password: '', category: 'AUTRE', notes: '', visibleTo: [] as string[] }
 
 const ToolAccessList = () => {
   const { user } = useAuth()
@@ -97,7 +107,7 @@ const ToolAccessList = () => {
   const handleOpenForm = (tool?: ToolAccess) => {
     if (tool) {
       setEditId(tool._id)
-      setForm({ name: tool.name, url: tool.url, login: tool.login, password: tool.password, category: tool.category, notes: tool.notes })
+      setForm({ name: tool.name, url: tool.url, login: tool.login, password: tool.password, category: tool.category, notes: tool.notes, visibleTo: tool.visibleTo || [] })
     } else {
       setEditId(null)
       setForm(emptyForm)
@@ -223,7 +233,14 @@ const ToolAccessList = () => {
                 <div key={tool._id} className="portal-card" style={{ padding: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: 15, color: 'var(--text-primary)' }}>{tool.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <h3 style={{ margin: 0, fontSize: 15, color: 'var(--text-primary)' }}>{tool.name}</h3>
+                        {tool.visibleTo?.length > 0 && (
+                          <span title={`Visible par : ${tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}`} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', whiteSpace: 'nowrap' }}>
+                            {tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}
+                          </span>
+                        )}
+                      </div>
                       {tool.url && (
                         <a
                           href={tool.url}
@@ -354,6 +371,34 @@ const ToolAccessList = () => {
                   rows={3}
                   style={{ resize: 'vertical' }}
                 />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Visible par — <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>laisser vide = tous les admins</span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {ALL_ROLES.map((role) => {
+                    const checked = form.visibleTo.includes(role)
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setForm({ ...form, visibleTo: checked ? form.visibleTo.filter((r) => r !== role) : [...form.visibleTo, role] })}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: 20,
+                          border: `1px solid ${checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                          background: checked ? 'rgba(14,165,233,0.15)' : 'transparent',
+                          color: checked ? 'var(--accent-blue)' : 'var(--text-muted)',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {ROLE_LABELS[role]}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
               <div className="admin-button-group" style={{ marginTop: 4 }}>
                 <button className="portal-button" type="submit" disabled={saving}>
