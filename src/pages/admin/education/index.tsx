@@ -31,10 +31,11 @@ import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'
 import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
-import { Building2, FileSearch, CalendarDays } from 'lucide-react'
+import { NotionImportView } from './NotionImportView'
+import { Building2, FileSearch, CalendarDays, Download } from 'lucide-react'
 import './EducationWorkspace.css'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
+type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar' | 'notion-import'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
@@ -171,6 +172,9 @@ export default function EducationWorkspace() {
         <button className={`edu-side-item ${view === 'advanced-search' ? 'active' : ''}`} onClick={() => selectView('advanced-search')}>
           <FileSearch size={15} /> Recherche avancée
         </button>
+        <button className={`edu-side-item ${view === 'notion-import' ? 'active' : ''}`} onClick={() => selectView('notion-import')}>
+          <Download size={15} /> Import Notion
+        </button>
         <button className="edu-side-item" onClick={() => { setSearchOpen(true); setSidebarOpen(false) }}>
           <Search size={15} /> Quickfind
           <span className="edu-side-badge">⌘K</span>
@@ -253,6 +257,9 @@ export default function EducationWorkspace() {
             onPickAssignment={(id) => { setPendingAssignmentId(id); selectView('assignments') }}
             onPickSession={(id) => { setPendingSessionId(id); selectView('sessions') }}
           />
+        )}
+        {view === 'notion-import' && (
+          <NotionImportView classes={classes} />
         )}
       </main>
 

@@ -574,6 +574,79 @@ export async function listEducationBySchool(): Promise<{ schools: SchoolBucket[]
   return await apiFetch(`${base}/search/by-school`)
 }
 
+// ─── Notion import ──────────────────────────────────────────────────────────
+
+export type NotionImportSourceType = 'page' | 'database'
+export type NotionImportStatus = 'pending' | 'running' | 'success' | 'partial' | 'error'
+
+export interface NotionImportStats {
+  created: number
+  updated: number
+  skipped: number
+  errors: number
+}
+
+export interface NotionImportLog {
+  _id: string
+  owner: string
+  sourceType: NotionImportSourceType
+  pageId: string
+  databaseId: string
+  sourceUrl: string
+  classId: string | null
+  dryRun: boolean
+  status: NotionImportStatus
+  stats: NotionImportStats
+  messages: string[]
+  errors: string[]
+  startedAt: string
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotionImportPayload {
+  pageIdOrUrl?: string
+  databaseIdOrUrl?: string
+  query?: string
+  classId?: string | null
+}
+
+export interface NotionPreviewResult {
+  dryRun: true
+  sourceType: NotionImportSourceType
+  pageId: string
+  databaseId: string
+  classId: string | null
+  stats: NotionImportStats
+  messages: string[]
+  errors: string[]
+}
+
+export async function listNotionImportLogs(
+  params: { limit?: number; skip?: number } = {},
+): Promise<{ logs: NotionImportLog[]; total: number }> {
+  const qs = new URLSearchParams()
+  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.skip) qs.set('skip', String(params.skip))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch(`${base}/notion/logs${suffix}`)
+}
+
+export async function previewNotionImport(payload: NotionImportPayload): Promise<NotionPreviewResult> {
+  return await apiFetch(`${base}/notion/preview`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function runNotionImport(payload: NotionImportPayload): Promise<{ log: NotionImportLog }> {
+  return await apiFetch(`${base}/notion/import`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function studentDisplayName(s: EducationStudent | { firstName?: string; lastName?: string }): string {
