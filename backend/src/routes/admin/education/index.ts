@@ -12,6 +12,7 @@ import templates from './templates.js'
 import dashboard from './dashboard.js'
 import search from './search.js'
 import calendar from './calendar.js'
+import notion from './notion.js'
 
 const router = express.Router()
 
@@ -21,6 +22,7 @@ router.use(requireSuperAdmin)
 router.use('/dashboard', dashboard)
 router.use('/search', search)
 router.use('/calendar', calendar)
+router.use('/notion', notion)
 router.use('/classes', classes)
 router.use('/students', students)
 router.use('/sessions', sessions)

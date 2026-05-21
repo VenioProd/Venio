@@ -36,6 +36,13 @@ export interface INoteLink {
   refId: mongoose.Types.ObjectId
 }
 
+export interface INoteSource {
+  provider: string
+  id: string
+  url: string
+  lastEditedTime: Date | null
+}
+
 export interface IEducationNote {
   owner: mongoose.Types.ObjectId
   title: string
@@ -47,6 +54,7 @@ export interface IEducationNote {
   tags: string[]
   pinned: boolean
   archived: boolean
+  source: INoteSource | null
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -84,6 +92,18 @@ const schema = new Schema<IEducationNote>(
     tags: { type: [String], default: [] },
     pinned: { type: Boolean, default: false, index: true },
     archived: { type: Boolean, default: false, index: true },
+    source: {
+      type: new Schema<INoteSource>(
+        {
+          provider: { type: String, default: '' },
+          id: { type: String, default: '' },
+          url: { type: String, default: '' },
+          lastEditedTime: { type: Date, default: null },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
     deletedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true }
@@ -92,5 +112,6 @@ const schema = new Schema<IEducationNote>(
 schema.index({ owner: 1, archived: 1, pinned: -1, updatedAt: -1, deletedAt: 1 })
 schema.index({ 'links.type': 1, 'links.refId': 1 })
 schema.index({ title: 'text', markdown: 'text' })
+schema.index({ owner: 1, 'source.provider': 1, 'source.id': 1 })
 
 export default mongoose.model<IEducationNote>('EducationNote', schema)

@@ -24,3 +24,6 @@ export * from './EducationTemplate.js'
 
 export { default as EducationActivityLog } from './EducationActivityLog.js'
 export * from './EducationActivityLog.js'
+
+export { default as EducationNotionImport } from './EducationNotionImport.js'
+export * from './EducationNotionImport.js'
