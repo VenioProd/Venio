@@ -8,11 +8,12 @@ import {
   type AppleCalendarEvent,
   type AppleCalendarPayload,
 } from '../../../services/educationCalendar'
+import { listClasses, type EducationClass } from '../../../services/education'
+import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
 
 type Mode = 'week' | 'month'
 
 const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-const DAY_NAMES_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const MONTH_NAMES = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
@@ -61,13 +62,6 @@ function formatRange(start: string, end: string, allDay: boolean): string {
   return `${formatTime(start)} – ${formatTime(end)}`
 }
 
-function durationLabel(min: number): string {
-  if (min < 60) return `${min} min`
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`
-}
-
 function eventColor(ev: AppleCalendarEvent): string {
   // Couleur stable par école/classe pour aider Raphael à scanner.
   const key = (ev.school || ev.classLabel || ev.title || ev.uid).toLowerCase()
@@ -97,8 +91,19 @@ export function CalendarView() {
   const [error, setError] = useState<string | null>(null)
   const [unconfigured, setUnconfigured] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<AppleCalendarEvent | null>(null)
+  const [classes, setClasses] = useState<EducationClass[]>([])
 
   const { from, to } = useMemo(() => computeRange(mode, anchor), [mode, anchor])
+
+  // Charge la liste des classes une seule fois pour permettre le rattachement
+  // manuel d'un événement Apple à une EducationClass depuis le drawer.
+  useEffect(() => {
+    let cancelled = false
+    listClasses()
+      .then((r) => { if (!cancelled) setClasses(r.classes) })
+      .catch(() => { /* best effort — la fiche reste utilisable sans liste */ })
+    return () => { cancelled = true }
+  }, [])
 
   const load = useCallback(async (opts: { refresh?: boolean } = {}) => {
     if (opts.refresh) setRefreshing(true)
@@ -240,7 +245,13 @@ export function CalendarView() {
         </>
       )}
 
-      {selectedEvent && <EventDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && (
+        <CalendarEventWorkspaceDrawer
+          event={selectedEvent}
+          classes={classes}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
 
       <CalendarStyles />
     </div>
@@ -404,64 +415,10 @@ function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
   )
 }
 
-// ───────────────────────────── Détail événement ────────────────────────────
-
-function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: () => void }) {
-  const start = new Date(event.start)
-  const dayLabel = `${DAY_NAMES_LONG[(start.getDay() + 6) % 7]} ${start.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
-  return (
-    <>
-      <div className="edu-drawer-backdrop" onClick={onClose} />
-      <div className="edu-drawer">
-        <div className="edu-drawer-head">
-          <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>{event.title || '(Sans titre)'}</h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-              <Apple size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Apple Calendar
-              {event.status && ` · ${event.status.toLowerCase()}`}
-            </div>
-          </div>
-          <button className="edu-btn ghost" onClick={onClose}>Fermer</button>
-        </div>
-        <div className="edu-drawer-body">
-          <div className="edu-form-group">
-            <label>Quand</label>
-            <div>{dayLabel}</div>
-            <div style={{ marginTop: 4 }}>{formatRange(event.start, event.end, event.allDay)} · {durationLabel(event.durationMin)}</div>
-          </div>
-          {event.location && (
-            <div className="edu-form-group">
-              <label>Lieu</label>
-              <div>{event.location}</div>
-            </div>
-          )}
-          {(event.school || event.classLabel) && (
-            <div className="edu-form-group">
-              <label>Inféré</label>
-              <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                {event.school && <span className="edu-pill">{event.school}</span>}
-                {event.classLabel && <span className="edu-pill">{event.classLabel}</span>}
-              </div>
-            </div>
-          )}
-          {event.description && (
-            <div className="edu-form-group">
-              <label>Description</label>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{event.description}</div>
-            </div>
-          )}
-          {event.url && (
-            <div className="edu-form-group">
-              <label>Lien</label>
-              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: '#0EA5E9' }}>{event.url}</a>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
+// VENIO-44 — Le détail d'un événement a été remplacé par
+// CalendarEventWorkspaceDrawer (./CalendarEventWorkspaceDrawer.tsx) qui
+// affiche les mêmes métadonnées + ajoute une fiche exploitable persistée
+// côté Venio (notes/devoirs/rappels/remarques/liens).
 
 // ───────────────────────────── Styles inline scopés ────────────────────────
 // Les autres vues de l'espace pédagogique injectent leur CSS via

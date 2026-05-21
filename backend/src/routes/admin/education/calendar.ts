@@ -8,6 +8,14 @@ import {
   type MatchedClass,
 } from '../../../lib/appleCalendar/matching.js'
 import EducationClass from '../../../models/education/EducationClass.js'
+import EducationCalendarEventWorkspace from '../../../models/education/EducationCalendarEventWorkspace.js'
+import { logActivity, validId } from './helpers.js'
+import {
+  normalizeRemarks,
+  normalizeLinks,
+  normalizeReminders,
+  normalizeDuties,
+} from './workspaceHelpers.js'
 
 const router = express.Router()
 
@@ -212,6 +220,99 @@ export function createCalendarRouter(deps: CalendarRouterDeps = {}) {
     }
   })
 
+  // ─── Fiche "workspace" rattachée à un événement calendrier externe ────
+  // VENIO-44 — On stocke côté Venio un document léger lié par occurrenceId
+  // (UID + occurrence pour les RRULE). L'événement Apple Calendar lui-même
+  // reste read-only ; ces routes ne modifient JAMAIS la source ICS.
+
+  // GET /workspace?occurrenceId=... — récupère la fiche existante, ou un
+  // document "vide" stable pour faciliter le côté client (jamais 404).
+  r.get('/workspace', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user?.id) return res.status(401).json({ error: 'Authentification requise' })
+      const occurrenceId = String(req.query.occurrenceId || '').trim()
+      if (!occurrenceId) {
+        return res.status(400).json({ error: 'Paramètre "occurrenceId" requis.' })
+      }
+      const existing = await EducationCalendarEventWorkspace.findOne({
+        owner: req.user.id,
+        occurrenceId,
+      })
+      res.json({
+        workspace: existing
+          ? serializeWorkspace(existing)
+          : emptyWorkspace(occurrenceId),
+        exists: Boolean(existing),
+      })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // PUT /workspace — upsert idempotent. Le client envoie l'occurrenceId, le
+  // contexte minimal de l'événement (uid/start/title/source) pour faciliter
+  // la relecture, un classId optionnel, et les blocs de workspace.
+  r.put('/workspace', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user?.id) return res.status(401).json({ error: 'Authentification requise' })
+      const body = (req.body ?? {}) as Record<string, unknown>
+      const occurrenceId = typeof body.occurrenceId === 'string' ? body.occurrenceId.trim() : ''
+      if (!occurrenceId) {
+        return res.status(400).json({ error: 'Champ "occurrenceId" requis.' })
+      }
+
+      const uid = typeof body.uid === 'string' ? body.uid.trim() : ''
+      const title = typeof body.title === 'string' ? body.title.trim() : ''
+      const source = typeof body.source === 'string' && body.source.trim()
+        ? body.source.trim() as 'Apple Calendar'
+        : 'Apple Calendar' as const
+      const startRaw = body.start
+      let start: Date | null = null
+      if (typeof startRaw === 'string' && startRaw) {
+        const d = new Date(startRaw)
+        if (!Number.isNaN(d.getTime())) start = d
+      }
+      const classId = typeof body.classId === 'string' && validId(body.classId)
+        ? body.classId
+        : null
+
+      const update: Record<string, unknown> = {
+        owner: req.user.id,
+        occurrenceId,
+        source,
+      }
+      if (uid) update.uid = uid
+      if (title) update.title = title
+      if (start) update.start = start
+      // classId est explicitement nullable : on l'écrit même quand null pour
+      // refléter un détachement volontaire côté client.
+      update.classId = classId
+
+      if (typeof body.notes === 'string') update.notes = body.notes
+      if (Array.isArray(body.remarks)) update.remarks = normalizeRemarks(body.remarks)
+      if (Array.isArray(body.links)) update.links = normalizeLinks(body.links)
+      if (Array.isArray(body.reminders)) update.reminders = normalizeReminders(body.reminders)
+      if (Array.isArray(body.duties)) update.duties = normalizeDuties(body.duties)
+
+      const saved = await EducationCalendarEventWorkspace.findOneAndUpdate(
+        { owner: req.user.id, occurrenceId },
+        { $set: update, $setOnInsert: { createdAt: new Date() } },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      )
+      await logActivity(
+        req.user.id,
+        req.user.id,
+        'calendarEventWorkspace',
+        saved._id,
+        'UPDATE',
+        { occurrenceId, kind: 'workspace' },
+      )
+      res.json({ workspace: serializeWorkspace(saved), exists: true })
+    } catch (err) {
+      next(err)
+    }
+  })
+
   // POST /refresh — invalide le cache et refetch immédiatement.
   r.post('/refresh', async (_req: Request, res: Response, next: NextFunction) => {
     try {
@@ -239,5 +340,81 @@ export function createCalendarRouter(deps: CalendarRouterDeps = {}) {
 }
 
 router.use('/', createCalendarRouter())
+
+// ─── Sérialisation des workspaces calendrier (VENIO-44) ────────────────────
+// On expose uniquement les champs utiles côté client et on garde le format
+// stable même si Mongoose change. Les ids sont préservés tels qu'envoyés.
+
+interface SerializedWorkspace {
+  _id: string | null
+  occurrenceId: string
+  uid: string
+  source: string
+  title: string
+  start: string | null
+  classId: string | null
+  notes: string
+  remarks: Array<{ id: string; text: string; createdAt: string }>
+  links: Array<{ id: string; label: string; url: string }>
+  reminders: Array<{ id: string; label: string; dueAt: string | null; done: boolean }>
+  duties: Array<{ id: string; label: string; dueAt: string | null; done: boolean }>
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+function serializeWorkspace(
+  doc: InstanceType<typeof EducationCalendarEventWorkspace>,
+): SerializedWorkspace {
+  const obj = doc.toObject()
+  return {
+    _id: obj._id ? String(obj._id) : null,
+    occurrenceId: obj.occurrenceId,
+    uid: obj.uid || '',
+    source: obj.source || 'Apple Calendar',
+    title: obj.title || '',
+    start: obj.start ? new Date(obj.start).toISOString() : null,
+    classId: obj.classId ? String(obj.classId) : null,
+    notes: obj.notes || '',
+    remarks: (obj.remarks || []).map((r) => ({
+      id: r.id,
+      text: r.text,
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+    })),
+    links: (obj.links || []).map((l) => ({ id: l.id, label: l.label, url: l.url })),
+    reminders: (obj.reminders || []).map((r) => ({
+      id: r.id,
+      label: r.label,
+      dueAt: r.dueAt ? new Date(r.dueAt).toISOString() : null,
+      done: Boolean(r.done),
+    })),
+    duties: (obj.duties || []).map((d) => ({
+      id: d.id,
+      label: d.label,
+      dueAt: d.dueAt ? new Date(d.dueAt).toISOString() : null,
+      done: Boolean(d.done),
+    })),
+    createdAt: obj.createdAt ? new Date(obj.createdAt).toISOString() : null,
+    updatedAt: obj.updatedAt ? new Date(obj.updatedAt).toISOString() : null,
+  }
+}
+
+function emptyWorkspace(occurrenceId: string): SerializedWorkspace {
+  return {
+    _id: null,
+    occurrenceId,
+    uid: '',
+    source: 'Apple Calendar',
+    title: '',
+    start: null,
+    classId: null,
+    notes: '',
+    remarks: [],
+    links: [],
+    reminders: [],
+    duties: [],
+    createdAt: null,
+    updatedAt: null,
+  }
+}
 
 export default router

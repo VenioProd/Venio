@@ -1,4 +1,14 @@
 import mongoose, { Schema } from 'mongoose'
+import {
+  type ISessionRemark,
+  type ISessionLink,
+  type ISessionReminder,
+  type ISessionDuty,
+  remarkSchema,
+  linkSchema,
+  reminderSchema,
+  dutySchema,
+} from './sessionWorkspace.js'
 
 export const SESSION_STATUSES = ['PLANIFIEE', 'EN_COURS', 'TERMINEE', 'ANNULEE'] as const
 export type EducationSessionStatus = typeof SESSION_STATUSES[number]
@@ -12,34 +22,16 @@ export interface IAttendanceEntry {
   comment: string
 }
 
-// VENIO-43 — Enrichissements de fiche séance : à utiliser depuis le cockpit,
-// le calendrier ou la classe pour capturer notes, remarques, liens, rappels
-// et devoirs à donner sans quitter la séance.
-export interface ISessionRemark {
-  id: string
-  text: string
-  createdAt: Date
-}
-
-export interface ISessionLink {
-  id: string
-  label: string
-  url: string
-}
-
-export interface ISessionReminder {
-  id: string
-  label: string
-  dueAt: Date | null
-  done: boolean
-}
-
-export interface ISessionDuty {
-  id: string
-  label: string
-  dueAt: Date | null
-  done: boolean
-}
+// VENIO-43 — Les sous-types de workspace (remarques, liens, rappels, devoirs,
+// notes libres) sont partagés avec EducationCalendarEventWorkspace : un seul
+// modèle de fiche exploitable, exposable depuis n'importe quelle entrée
+// (séance interne ou événement Apple Calendar). Voir ./sessionWorkspace.ts.
+export type {
+  ISessionRemark,
+  ISessionLink,
+  ISessionReminder,
+  ISessionDuty,
+} from './sessionWorkspace.js'
 
 export interface IEducationSession {
   owner: mongoose.Types.ObjectId
@@ -65,48 +57,6 @@ export interface IEducationSession {
   createdAt: Date
   updatedAt: Date
 }
-
-function makeShortId(): string {
-  return Math.random().toString(36).slice(2, 10)
-}
-
-const remarkSchema = new Schema<ISessionRemark>(
-  {
-    id: { type: String, default: makeShortId },
-    text: { type: String, default: '', trim: true },
-    createdAt: { type: Date, default: () => new Date() },
-  },
-  { _id: false }
-)
-
-const linkSchema = new Schema<ISessionLink>(
-  {
-    id: { type: String, default: makeShortId },
-    label: { type: String, default: '', trim: true },
-    url: { type: String, default: '', trim: true },
-  },
-  { _id: false }
-)
-
-const reminderSchema = new Schema<ISessionReminder>(
-  {
-    id: { type: String, default: makeShortId },
-    label: { type: String, default: '', trim: true },
-    dueAt: { type: Date, default: null },
-    done: { type: Boolean, default: false },
-  },
-  { _id: false }
-)
-
-const dutySchema = new Schema<ISessionDuty>(
-  {
-    id: { type: String, default: makeShortId },
-    label: { type: String, default: '', trim: true },
-    dueAt: { type: Date, default: null },
-    done: { type: Boolean, default: false },
-  },
-  { _id: false }
-)
 
 const schema = new Schema<IEducationSession>(
   {

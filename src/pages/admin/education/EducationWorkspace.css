@@ -900,6 +900,13 @@
   flex-shrink: 0;
 }
 
+/* VENIO-44 — Tout le bloc devient cliquable pour ouvrir la fiche workspace. */
+.edu-cockpit-cal-item-clickable { cursor: pointer; }
+.edu-cockpit-cal-item-clickable:focus-visible {
+  outline: 2px solid rgba(14,165,233,0.6);
+  outline-offset: 2px;
+}
+
 @media (max-width: 720px) {
   .edu-cockpit-cal-item { flex-direction: column; align-items: stretch; }
   .edu-cockpit-cal-item-action { align-self: flex-end; }

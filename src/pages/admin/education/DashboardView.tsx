@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Apple, CalendarDays, Clock, ExternalLink, MapPin, Plus, RefreshCw } from 'lucide-react'
+import { Apple, CalendarDays, Clock, ExternalLink, MapPin, Plus, RefreshCw, StickyNote } from 'lucide-react'
 import {
   formatDate,
   formatRelative,
@@ -32,6 +32,7 @@ export function DashboardView({
   onChangeSchool,
   onOpenClass,
   onOpenSession,
+  onOpenCalendarEvent,
   onCreateClass,
   onOpenCalendar,
   reloadError,
@@ -42,6 +43,9 @@ export function DashboardView({
   onChangeSchool: (school: string) => void
   onOpenClass: (id: string) => void
   onOpenSession?: (id: string) => void
+  // VENIO-44 — Ouvre la fiche workspace d'un événement Apple Calendar
+  // (notes/devoirs/rappels/remarques/liens) sans toucher à l'événement source.
+  onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
   onCreateClass: () => void
   onOpenCalendar?: () => void
   reloadError: string | null
@@ -105,10 +109,11 @@ export function DashboardView({
         <Kpi label="À corriger" value={c.toGrade} sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined} />
       </div>
 
-      {/* Prochains cours (calendrier Apple) — VENIO-42 */}
+      {/* Prochains cours (calendrier Apple) — VENIO-42 + VENIO-44 */}
       <UpcomingCalendarSection
         onOpenClass={onOpenClass}
         onOpenCalendar={onOpenCalendar}
+        onOpenCalendarEvent={onOpenCalendarEvent}
       />
 
       {/* Aujourd'hui */}
@@ -326,9 +331,11 @@ function Kpi({ label, value, sub }: { label: string; value: number | string; sub
 function UpcomingCalendarSection({
   onOpenClass,
   onOpenCalendar,
+  onOpenCalendarEvent,
 }: {
   onOpenClass: (id: string) => void
   onOpenCalendar?: () => void
+  onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
   const [payload, setPayload] = useState<UpcomingCalendarPayload | null>(null)
   const [loading, setLoading] = useState(true)
@@ -428,6 +435,7 @@ function UpcomingCalendarSection({
           events={payload.events}
           onOpenClass={onOpenClass}
           onOpenCalendar={onOpenCalendar}
+          onOpenCalendarEvent={onOpenCalendarEvent}
         />
       )}
     </section>
@@ -438,10 +446,12 @@ function UpcomingList({
   events,
   onOpenClass,
   onOpenCalendar,
+  onOpenCalendarEvent,
 }: {
   events: UpcomingCalendarEvent[]
   onOpenClass: (id: string) => void
   onOpenCalendar?: () => void
+  onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
   const now = Date.now()
   const upcoming = events
@@ -476,6 +486,7 @@ function UpcomingList({
               event={ev}
               onOpenClass={onOpenClass}
               onOpenCalendar={onOpenCalendar}
+              onOpenCalendarEvent={onOpenCalendarEvent}
             />
           ))}
         </div>
@@ -488,10 +499,12 @@ function UpcomingItem({
   event,
   onOpenClass,
   onOpenCalendar,
+  onOpenCalendarEvent,
 }: {
   event: UpcomingCalendarEvent
   onOpenClass: (id: string) => void
   onOpenCalendar?: () => void
+  onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
   const start = new Date(event.start)
   const end = new Date(event.end)
@@ -499,18 +512,40 @@ function UpcomingItem({
   const matchLabel = event.match?.className
   const schoolBadge = event.match?.school || event.school
 
-  function handleOpen() {
-    if (event.match?.classId) {
+  // VENIO-44 — Le clic principal ouvre désormais la fiche workspace
+  // exploitable (notes, devoirs, rappels…). Si le parent ne l'a pas câblée,
+  // on retombe sur l'ancien comportement (classe rattachée puis calendrier).
+  function handleOpenWorkspace() {
+    if (onOpenCalendarEvent) {
+      onOpenCalendarEvent(event)
+    } else if (event.match?.classId) {
       onOpenClass(event.match.classId)
     } else if (onOpenCalendar) {
       onOpenCalendar()
     }
   }
 
-  const actionLabel = event.match ? 'Ouvrir la classe' : 'Voir le calendrier'
+  const primaryLabel = onOpenCalendarEvent
+    ? 'Ouvrir la fiche'
+    : event.match
+      ? 'Ouvrir la classe'
+      : 'Voir le calendrier'
 
   return (
-    <div className="edu-cockpit-cal-item" style={{ borderLeftColor: matchColor }}>
+    <div
+      className="edu-cockpit-cal-item edu-cockpit-cal-item-clickable"
+      style={{ borderLeftColor: matchColor }}
+      role="button"
+      tabIndex={0}
+      onClick={handleOpenWorkspace}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleOpenWorkspace()
+        }
+      }}
+      aria-label={primaryLabel}
+    >
       <div className="edu-cockpit-cal-item-main">
         <div className="edu-cockpit-cal-item-time">
           <Clock size={12} />
@@ -542,15 +577,31 @@ function UpcomingItem({
           </span>
         </div>
       </div>
-      <button
-        type="button"
-        className="edu-btn ghost edu-cockpit-cal-item-action"
-        onClick={handleOpen}
-        aria-label={actionLabel}
-      >
-        {event.match ? <ExternalLink size={13} /> : <CalendarDays size={13} />}
-        <span className="edu-cockpit-cal-item-action-label">{actionLabel}</span>
-      </button>
+      <div className="edu-row" style={{ gap: 6 }}>
+        {event.match && (
+          <button
+            type="button"
+            className="edu-btn ghost edu-cockpit-cal-item-action"
+            onClick={(e) => { e.stopPropagation(); onOpenClass(event.match!.classId) }}
+            aria-label="Ouvrir la classe"
+            title="Ouvrir la classe rattachée"
+          >
+            <ExternalLink size={13} />
+            <span className="edu-cockpit-cal-item-action-label">Classe</span>
+          </button>
+        )}
+        <button
+          type="button"
+          className="edu-btn ghost edu-cockpit-cal-item-action"
+          onClick={(e) => { e.stopPropagation(); handleOpenWorkspace() }}
+          aria-label={primaryLabel}
+        >
+          {onOpenCalendarEvent
+            ? <StickyNote size={13} />
+            : event.match ? <ExternalLink size={13} /> : <CalendarDays size={13} />}
+          <span className="edu-cockpit-cal-item-action-label">{primaryLabel}</span>
+        </button>
+      </div>
     </div>
   )
 }

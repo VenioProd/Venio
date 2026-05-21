@@ -25,12 +25,14 @@ import {
 } from '../../../services/education'
 import { DashboardView } from './DashboardView'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { TemplatesView } from './TemplatesView'
 import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'
 import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
+import type { UpcomingCalendarEvent } from '../../../services/educationCalendar'
 import { Building2, FileSearch, CalendarDays } from 'lucide-react'
 import './EducationWorkspace.css'
 
@@ -49,6 +51,10 @@ export default function EducationWorkspace() {
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
   // VENIO-43-INDEX-PATCH — fiche séance ouverte directement depuis le cockpit ou la sidebar.
   const [cockpitSessionId, setCockpitSessionId] = useState<string | null>(null)
+  // VENIO-44 — fiche d'événement Apple Calendar ouverte depuis le cockpit
+  // (cartes "Prochains cours"). On garde le défaut de match pour pré-remplir
+  // le rattachement à une EducationClass lorsque le backend l'a inféré.
+  const [calendarEvent, setCalendarEvent] = useState<UpcomingCalendarEvent | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [school, setSchool] = useState<string>('')
   const [dashboardError, setDashboardError] = useState<string | null>(null)
@@ -200,6 +206,7 @@ export default function EducationWorkspace() {
             onChangeSchool={setSchool}
             onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }}
             onOpenSession={(id) => setCockpitSessionId(id)}
+            onOpenCalendarEvent={(event) => setCalendarEvent(event)}
             onCreateClass={() => setShowCreateClass(true)}
             onOpenCalendar={() => selectView('calendar')}
             reloadError={dashboardError}
@@ -292,6 +299,20 @@ export default function EducationWorkspace() {
           sessionId={cockpitSessionId}
           onClose={() => setCockpitSessionId(null)}
           onChanged={refreshDashboard}
+        />
+      )}
+
+      {calendarEvent && (
+        <CalendarEventWorkspaceDrawer
+          event={calendarEvent}
+          defaultMatch={calendarEvent.match ?? null}
+          classes={classes}
+          onClose={() => setCalendarEvent(null)}
+          onOpenClass={(id) => {
+            setCalendarEvent(null)
+            setSelectedClassId(id)
+            selectView('classes')
+          }}
         />
       )}
     </div>

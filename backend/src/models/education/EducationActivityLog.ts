@@ -9,6 +9,7 @@ export const EDU_ENTITY_TYPES = [
   'note',
   'document',
   'template',
+  'calendarEventWorkspace',
 ] as const
 export type EduEntityType = typeof EDU_ENTITY_TYPES[number]
 
