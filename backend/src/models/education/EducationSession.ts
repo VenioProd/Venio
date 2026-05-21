@@ -12,6 +12,35 @@ export interface IAttendanceEntry {
   comment: string
 }
 
+// VENIO-43 — Enrichissements de fiche séance : à utiliser depuis le cockpit,
+// le calendrier ou la classe pour capturer notes, remarques, liens, rappels
+// et devoirs à donner sans quitter la séance.
+export interface ISessionRemark {
+  id: string
+  text: string
+  createdAt: Date
+}
+
+export interface ISessionLink {
+  id: string
+  label: string
+  url: string
+}
+
+export interface ISessionReminder {
+  id: string
+  label: string
+  dueAt: Date | null
+  done: boolean
+}
+
+export interface ISessionDuty {
+  id: string
+  label: string
+  dueAt: Date | null
+  done: boolean
+}
+
 export interface IEducationSession {
   owner: mongoose.Types.ObjectId
   classId: mongoose.Types.ObjectId
@@ -25,12 +54,59 @@ export interface IEducationSession {
   status: EducationSessionStatus
   attendance: IAttendanceEntry[]
   recap: string
+  notes: string
+  remarks: ISessionRemark[]
+  links: ISessionLink[]
+  reminders: ISessionReminder[]
+  duties: ISessionDuty[]
   supports: string[]
   tags: string[]
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
+
+function makeShortId(): string {
+  return Math.random().toString(36).slice(2, 10)
+}
+
+const remarkSchema = new Schema<ISessionRemark>(
+  {
+    id: { type: String, default: makeShortId },
+    text: { type: String, default: '', trim: true },
+    createdAt: { type: Date, default: () => new Date() },
+  },
+  { _id: false }
+)
+
+const linkSchema = new Schema<ISessionLink>(
+  {
+    id: { type: String, default: makeShortId },
+    label: { type: String, default: '', trim: true },
+    url: { type: String, default: '', trim: true },
+  },
+  { _id: false }
+)
+
+const reminderSchema = new Schema<ISessionReminder>(
+  {
+    id: { type: String, default: makeShortId },
+    label: { type: String, default: '', trim: true },
+    dueAt: { type: Date, default: null },
+    done: { type: Boolean, default: false },
+  },
+  { _id: false }
+)
+
+const dutySchema = new Schema<ISessionDuty>(
+  {
+    id: { type: String, default: makeShortId },
+    label: { type: String, default: '', trim: true },
+    dueAt: { type: Date, default: null },
+    done: { type: Boolean, default: false },
+  },
+  { _id: false }
+)
 
 const schema = new Schema<IEducationSession>(
   {
@@ -55,6 +131,11 @@ const schema = new Schema<IEducationSession>(
       default: [],
     },
     recap: { type: String, default: '' },
+    notes: { type: String, default: '' },
+    remarks: { type: [remarkSchema], default: [] },
+    links: { type: [linkSchema], default: [] },
+    reminders: { type: [reminderSchema], default: [] },
+    duties: { type: [dutySchema], default: [] },
     supports: { type: [String], default: [] },
     tags: { type: [String], default: [] },
     deletedAt: { type: Date, default: null, index: true },
@@ -63,6 +144,6 @@ const schema = new Schema<IEducationSession>(
 )
 
 schema.index({ owner: 1, classId: 1, date: -1, deletedAt: 1 })
-schema.index({ title: 'text', theme: 'text', recap: 'text' })
+schema.index({ title: 'text', theme: 'text', recap: 'text', notes: 'text' })
 
 export default mongoose.model<IEducationSession>('EducationSession', schema)

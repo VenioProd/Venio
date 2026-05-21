@@ -65,6 +65,40 @@ export interface AttendanceEntry {
   comment: string
 }
 
+export interface SessionRemark {
+  id: string
+  text: string
+  createdAt: string
+}
+
+export interface SessionLink {
+  id: string
+  label: string
+  url: string
+}
+
+export interface SessionReminder {
+  id: string
+  label: string
+  dueAt: string | null
+  done: boolean
+}
+
+export interface SessionDuty {
+  id: string
+  label: string
+  dueAt: string | null
+  done: boolean
+}
+
+export interface SessionWorkspacePayload {
+  notes?: string
+  remarks?: SessionRemark[]
+  links?: SessionLink[]
+  reminders?: SessionReminder[]
+  duties?: SessionDuty[]
+}
+
 export interface EducationSession {
   _id: string
   classId: string | { _id: string; name: string; color?: string }
@@ -78,6 +112,11 @@ export interface EducationSession {
   status: EducationSessionStatus
   attendance: AttendanceEntry[]
   recap: string
+  notes: string
+  remarks: SessionRemark[]
+  links: SessionLink[]
+  reminders: SessionReminder[]
+  duties: SessionDuty[]
   supports: string[]
   tags: string[]
   createdAt: string
@@ -361,6 +400,19 @@ export async function createSession(data: Partial<EducationSession> & { classId:
 
 export async function updateSession(id: string, data: Partial<EducationSession>): Promise<{ session: EducationSession }> {
   return await apiFetch(`${base}/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+// VENIO-43 — bulk-update des enrichissements (notes, remarques, liens,
+// rappels, devoirs) sans toucher au reste de la séance. Pratique pour le
+// drawer ouvert depuis cockpit/calendrier/classe.
+export async function updateSessionWorkspace(
+  id: string,
+  data: SessionWorkspacePayload
+): Promise<{ session: EducationSession }> {
+  return await apiFetch(`${base}/sessions/${id}/workspace`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
 }
 
 export async function deleteSession(id: string): Promise<{ success: true }> {

@@ -31,6 +31,7 @@ export function DashboardView({
   selectedSchool,
   onChangeSchool,
   onOpenClass,
+  onOpenSession,
   onCreateClass,
   onOpenCalendar,
   reloadError,
@@ -40,6 +41,7 @@ export function DashboardView({
   selectedSchool: string
   onChangeSchool: (school: string) => void
   onOpenClass: (id: string) => void
+  onOpenSession?: (id: string) => void
   onCreateClass: () => void
   onOpenCalendar?: () => void
   reloadError: string | null
@@ -123,7 +125,14 @@ export function DashboardView({
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 const school = (cls as { school?: string } | null)?.school
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr
+                    key={s._id}
+                    onClick={() => {
+                      if (onOpenSession) onOpenSession(s._id)
+                      else if (cls?._id) onOpenClass(cls._id)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>{new Date(s.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
                     <td>{school || '—'}</td>
@@ -151,7 +160,14 @@ export function DashboardView({
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 const school = (cls as { school?: string } | null)?.school
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr
+                    key={s._id}
+                    onClick={() => {
+                      if (onOpenSession) onOpenSession(s._id)
+                      else if (cls?._id) onOpenClass(cls._id)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>{formatDate(s.date, true)}</td>
                     <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
                     <td>{school || '—'}</td>
@@ -177,7 +193,14 @@ export function DashboardView({
               {dashboard.toPrepare.map((s) => {
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr
+                    key={s._id}
+                    onClick={() => {
+                      if (onOpenSession) onOpenSession(s._id)
+                      else if (cls?._id) onOpenClass(cls._id)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>{formatDate(s.date, true)}</td>
                     <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
                     <td>{s.title}{s.theme && <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {s.theme}</span>}</td>
@@ -232,7 +255,10 @@ export function DashboardView({
               {dashboard.lastSessionByClass.map((row) => (
                 <tr
                   key={row.class._id}
-                  onClick={() => onOpenClass(row.class._id)}
+                  onClick={() => {
+                    if (row.lastSession && onOpenSession) onOpenSession(row.lastSession._id)
+                    else onOpenClass(row.class._id)
+                  }}
                   style={{ cursor: 'pointer' }}
                 >
                   <td><span className="edu-pill"><span className="edu-pill-dot" style={{ background: row.class.color || '#22C55E' }} />{row.class.name}</span></td>

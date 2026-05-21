@@ -47,6 +47,8 @@ export default function EducationWorkspace() {
   const [correctionAssignmentId, setCorrectionAssignmentId] = useState<string | null>(null)
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null)
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
+  // VENIO-43-INDEX-PATCH — fiche séance ouverte directement depuis le cockpit ou la sidebar.
+  const [cockpitSessionId, setCockpitSessionId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [school, setSchool] = useState<string>('')
   const [dashboardError, setDashboardError] = useState<string | null>(null)
@@ -177,19 +179,10 @@ export default function EducationWorkspace() {
         </button>
 
         {classes.length > 0 && (
-          <>
-            <h3>Mes classes</h3>
-            {classes.slice(0, 12).map((c) => (
-              <button
-                key={c._id}
-                className="edu-side-item"
-                onClick={() => { setSelectedClassId(c._id); selectView('classes') }}
-              >
-                <span className="edu-side-dot" style={{ background: c.color }} />
-                {c.name}
-              </button>
-            ))}
-          </>
+          <ClassesSidebar
+            classes={classes}
+            onPickClass={(id) => { setSelectedClassId(id); selectView('classes') }}
+          />
         )}
       </aside>
 
@@ -206,6 +199,7 @@ export default function EducationWorkspace() {
             selectedSchool={school}
             onChangeSchool={setSchool}
             onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }}
+            onOpenSession={(id) => setCockpitSessionId(id)}
             onCreateClass={() => setShowCreateClass(true)}
             onOpenCalendar={() => selectView('calendar')}
             reloadError={dashboardError}
@@ -292,10 +286,88 @@ export default function EducationWorkspace() {
           onSaved={() => { refreshDashboard() }}
         />
       )}
+
+      {cockpitSessionId && (
+        <SessionDetailDrawer
+          sessionId={cockpitSessionId}
+          onClose={() => setCockpitSessionId(null)}
+          onChanged={refreshDashboard}
+        />
+      )}
     </div>
   )
 }
 
+
+/* ─── VENIO-43 — Sidebar « Mes classes » groupée par école ─────────────────
+   On agrège par école (en gardant un libellé « Sans école » pour celles qui
+   n'en ont pas), on trie les écoles A→Z avec « Sans école » en fin et on
+   affiche un compteur par groupe pour la lecture rapide.                    */
+function ClassesSidebar({
+  classes,
+  onPickClass,
+}: {
+  classes: EducationClass[]
+  onPickClass: (id: string) => void
+}) {
+  const groups = groupClassesBySchool(classes)
+  return (
+    <>
+      <h3>Mes classes</h3>
+      {groups.length === 0 && (
+        <div className="edu-side-classes-empty">Aucune classe à afficher.</div>
+      )}
+      {groups.map((group) => (
+        <div key={group.key} className="edu-side-school-group">
+          <div className="edu-side-school-head">
+            <span>{group.label}</span>
+            <span className="edu-side-school-count" aria-label={`${group.classes.length} classe${group.classes.length > 1 ? 's' : ''}`}>
+              {group.classes.length}
+            </span>
+          </div>
+          {group.classes.map((c) => (
+            <button
+              key={c._id}
+              className="edu-side-item"
+              onClick={() => onPickClass(c._id)}
+              title={[c.school, c.level, c.program].filter(Boolean).join(' · ') || c.name}
+            >
+              <span className="edu-side-dot" style={{ background: c.color }} />
+              {c.name}
+            </button>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+function groupClassesBySchool(classes: EducationClass[]): Array<{ key: string; label: string; classes: EducationClass[] }> {
+  const buckets = new Map<string, { key: string; label: string; classes: EducationClass[] }>()
+  for (const c of classes) {
+    const trimmed = (c.school || '').trim()
+    const key = trimmed.toLowerCase() || '__no_school__'
+    const label = trimmed || 'Sans école'
+    if (!buckets.has(key)) buckets.set(key, { key, label, classes: [] })
+    buckets.get(key)!.classes.push(c)
+  }
+  // Tri : classes ACTIVE en premier, puis A→Z. École « Sans école » en dernier.
+  for (const bucket of buckets.values()) {
+    bucket.classes.sort((a, b) => {
+      const aActive = a.status === 'ACTIVE' ? 0 : 1
+      const bActive = b.status === 'ACTIVE' ? 0 : 1
+      if (aActive !== bActive) return aActive - bActive
+      return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+    })
+  }
+  const arr = Array.from(buckets.values())
+  arr.sort((a, b) => {
+    if (a.key === '__no_school__') return 1
+    if (b.key === '__no_school__') return -1
+    return a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' })
+  })
+  return arr
+}
 /* DashboardView et Kpi sont extraits dans ./DashboardView.tsx (VENIO-27). */
 function Kpi({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
   return (

@@ -432,6 +432,34 @@
   color: rgba(255,255,255,0.7);
 }
 
+/* VENIO-43 — Fiche séance enrichie : sections repliables et lignes éditables */
+.edu-session-block { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.edu-session-block .edu-collapse-toggle { margin-top: 0; }
+.edu-session-block-body { display: flex; flex-direction: column; gap: 8px; padding: 4px 4px 4px 18px; border-left: 1px solid rgba(255,255,255,0.06); }
+.edu-session-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.edu-session-row .edu-input { min-width: 0; }
+.edu-session-remarks { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.edu-session-remark { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+@media (max-width: 720px) {
+  .edu-session-row { flex-direction: column; align-items: stretch; }
+  .edu-session-row .edu-input { width: 100% !important; }
+}
+
+/* VENIO-43 — Sidebar « Mes classes » groupée par école */
+.edu-side-school-group { display: flex; flex-direction: column; margin-top: 6px; }
+.edu-side-school-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  padding: 8px 6px 4px;
+  font-weight: 600;
+}
+.edu-side-school-head .edu-side-school-count {
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.65);
+  padding: 1px 7px; border-radius: 999px; font-size: 10.5px; letter-spacing: 0;
+}
+.edu-side-classes-empty { font-size: 12px; color: rgba(255,255,255,0.4); padding: 6px; }
+
 /* ─── Banner error / save indicator inline ──────────────────────────── */
 .edu-banner-error {
   background: rgba(239,68,68,0.1);

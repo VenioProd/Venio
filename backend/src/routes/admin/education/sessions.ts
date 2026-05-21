@@ -79,7 +79,11 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!item) return res.status(404).json({ error: 'Séance introuvable' })
 
-    const { title, theme, objectives, agenda, date, durationMin, location, status, recap, supports, tags } = req.body
+    const {
+      title, theme, objectives, agenda, date, durationMin, location, status,
+      recap, notes, supports, tags,
+      remarks, links, reminders, duties,
+    } = req.body
     if (title !== undefined) item.title = title.trim()
     if (theme !== undefined) item.theme = theme
     if (Array.isArray(objectives)) item.objectives = objectives
@@ -89,10 +93,34 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     if (location !== undefined) item.location = location
     if (status !== undefined) item.status = status
     if (recap !== undefined) item.recap = recap
+    if (notes !== undefined) item.notes = notes
     if (Array.isArray(supports)) item.supports = supports
     if (Array.isArray(tags)) item.tags = tags
+    if (Array.isArray(remarks)) item.remarks = normalizeRemarks(remarks)
+    if (Array.isArray(links)) item.links = normalizeLinks(links)
+    if (Array.isArray(reminders)) item.reminders = normalizeReminders(reminders)
+    if (Array.isArray(duties)) item.duties = normalizeDuties(duties)
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', {})
+    res.json({ session: item })
+  } catch (err) { next(err) }
+})
+
+// PUT /:id/workspace — bulk update des enrichissements de fiche séance
+// (notes/remarques/liens/rappels/devoirs) — pratique pour le drawer.
+router.put('/:id/workspace', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
+    if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+    const { notes, remarks, links, reminders, duties } = req.body
+    if (typeof notes === 'string') item.notes = notes
+    if (Array.isArray(remarks)) item.remarks = normalizeRemarks(remarks)
+    if (Array.isArray(links)) item.links = normalizeLinks(links)
+    if (Array.isArray(reminders)) item.reminders = normalizeReminders(reminders)
+    if (Array.isArray(duties)) item.duties = normalizeDuties(duties)
+    await item.save()
+    await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', { kind: 'workspace' })
     res.json({ session: item })
   } catch (err) { next(err) }
 })
@@ -218,6 +246,71 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 64) || 'export'
+}
+
+// ─── Helpers de normalisation des enrichissements de fiche séance ──────────
+// Préservent les ids existants côté client (au format string court) et
+// re-génèrent un id si manquant. Ignorent silencieusement les entrées vides
+// pour éviter des lignes fantômes lorsqu'on autosauvegarde.
+function shortId(): string { return Math.random().toString(36).slice(2, 10) }
+
+function parseDate(v: unknown): Date | null {
+  if (!v) return null
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v
+  const d = new Date(String(v))
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function normalizeRemarks(input: unknown[]): { id: string; text: string; createdAt: Date }[] {
+  return input
+    .map((r) => {
+      const row = (r ?? {}) as Record<string, unknown>
+      const text = typeof row.text === 'string' ? row.text.trim() : ''
+      if (!text) return null
+      const createdAt = parseDate(row.createdAt) ?? new Date()
+      return {
+        id: typeof row.id === 'string' && row.id ? row.id : shortId(),
+        text,
+        createdAt,
+      }
+    })
+    .filter((r): r is { id: string; text: string; createdAt: Date } => Boolean(r))
+}
+
+function normalizeLinks(input: unknown[]): { id: string; label: string; url: string }[] {
+  return input
+    .map((r) => {
+      const row = (r ?? {}) as Record<string, unknown>
+      const url = typeof row.url === 'string' ? row.url.trim() : ''
+      const label = typeof row.label === 'string' ? row.label.trim() : ''
+      if (!url && !label) return null
+      return {
+        id: typeof row.id === 'string' && row.id ? row.id : shortId(),
+        label,
+        url,
+      }
+    })
+    .filter((r): r is { id: string; label: string; url: string } => Boolean(r))
+}
+
+function normalizeReminders(input: unknown[]): { id: string; label: string; dueAt: Date | null; done: boolean }[] {
+  return input
+    .map((r) => {
+      const row = (r ?? {}) as Record<string, unknown>
+      const label = typeof row.label === 'string' ? row.label.trim() : ''
+      if (!label) return null
+      return {
+        id: typeof row.id === 'string' && row.id ? row.id : shortId(),
+        label,
+        dueAt: parseDate(row.dueAt),
+        done: Boolean(row.done),
+      }
+    })
+    .filter((r): r is { id: string; label: string; dueAt: Date | null; done: boolean } => Boolean(r))
+}
+
+function normalizeDuties(input: unknown[]): { id: string; label: string; dueAt: Date | null; done: boolean }[] {
+  return normalizeReminders(input)
 }
 
 export default router
