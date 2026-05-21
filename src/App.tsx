@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react'
+import { useEffect, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -6,6 +6,7 @@ import ToastContainer from './components/ToastContainer'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminShell from './components/AdminShell'
 import ClientShell from './components/ClientShell'
+import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './context/ToastContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
@@ -14,6 +15,7 @@ import { I18nProvider } from './context/I18nContext'
 import { useAuth } from './context/AuthContext'
 import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
+import { lazyWithRetry as lazy } from './lib/lazyWithRetry'
 import CookieConsent from './components/CookieConsent'
 import './App.css'
 
@@ -149,6 +151,7 @@ function App() {
     <NotificationProvider>
     <ToastProvider>
       {!isPublicQuestionnaire && !isPortal && <Navbar />}
+      <ErrorBoundary>
       <Suspense fallback={null}>
       <Routes>
         {/* Site vitrine */}
@@ -643,6 +646,7 @@ function App() {
         </Route>
       </Routes>
       </Suspense>
+      </ErrorBoundary>
       {!isPublicQuestionnaire && !isPortal && <Footer />}
       <CookieConsent />
       <ToastContainer />
