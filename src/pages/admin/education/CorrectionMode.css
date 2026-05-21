@@ -37,9 +37,9 @@
   bottom: 18px;
   right: 18px;
   padding: 8px 14px;
-  background: rgba(34,197,94,0.18);
-  color: #86EFAC;
-  border: 1px solid rgba(34,197,94,0.4);
+  background: var(--accent-surface-strong);
+  color: var(--primary-light);
+  border: 1px solid var(--accent-border-strong);
   border-radius: 8px;
   font-size: 13px;
   animation: edu-fade-out 2.5s forwards;
@@ -56,7 +56,7 @@
 .edu-correction-shortcuts {
   margin: 0 16px 8px;
   padding: 8px 12px;
-  background: rgba(34,197,94,0.06);
+  background: var(--accent-soft);
   border-radius: 8px;
   color: rgba(255,255,255,0.7);
   font-size: 12px;
@@ -94,7 +94,7 @@
   cursor: pointer;
 }
 .edu-correction-filter:hover { background: rgba(255,255,255,0.04); }
-.edu-correction-filter.active { background: rgba(34,197,94,0.15); color: #86EFAC; border-color: rgba(34,197,94,0.3); }
+.edu-correction-filter.active { background: var(--accent-medium); color: var(--primary-light); border-color: var(--accent-border); }
 
 .edu-correction-quick-actions {
   display: flex;
@@ -135,7 +135,7 @@
   color: rgba(255,255,255,0.85);
 }
 .edu-correction-row:hover { background: rgba(255,255,255,0.04); }
-.edu-correction-row.active { background: rgba(34,197,94,0.1); }
+.edu-correction-row.active { background: var(--accent-soft); }
 .edu-correction-row-name { font-size: 13px; font-weight: 500; }
 .edu-correction-row-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11.5px; }
 .edu-correction-row-grade { color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; }
@@ -263,7 +263,7 @@
   cursor: pointer;
   line-height: 1.35;
 }
-.edu-correction-snippet-apply:hover:not(:disabled) { background: rgba(34,197,94,0.1); color: #86EFAC; }
+.edu-correction-snippet-apply:hover:not(:disabled) { background: var(--accent-soft); color: var(--primary-light); }
 .edu-correction-snippet-apply:disabled { opacity: 0.5; cursor: not-allowed; }
 .edu-correction-snippet-form { display: flex; flex-direction: column; gap: 6px; }
 .edu-correction-snippet-add { justify-content: center; font-size: 12.5px; }

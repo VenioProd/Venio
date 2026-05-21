@@ -258,11 +258,11 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
               onClick={() => setShowTemplates((v) => !v)}
               aria-expanded={showTemplates}
             >
-              <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
+              <Sparkles size={16} color={showTemplates ? 'var(--primary)' : undefined} />
             </button>
           )}
           <button className="edu-btn-icon" title="Épingler" onClick={() => update({ pinned: !note.pinned })}>
-            <Pin size={16} color={note.pinned ? '#22C55E' : undefined} />
+            <Pin size={16} color={note.pinned ? 'var(--primary)' : undefined} />
           </button>
           <button className="edu-btn-icon" title="Archiver" onClick={() => update({ archived: !note.archived })}>
             <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />

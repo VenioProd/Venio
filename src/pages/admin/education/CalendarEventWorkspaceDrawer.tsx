@@ -254,7 +254,7 @@ export function CalendarEventWorkspaceDrawer({
             {event.url && (
               <div className="edu-calevt-meta-row">
                 <ExternalLink size={13} />
-                <a href={event.url} target="_blank" rel="noreferrer" style={{ color: '#0EA5E9' }}>{event.url}</a>
+                <a href={event.url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>{event.url}</a>
               </div>
             )}
           </div>

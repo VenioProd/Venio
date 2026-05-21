@@ -433,9 +433,9 @@ function CalendarStyles() {
       .edu-cal-nav { gap: 6px; align-items: center; }
       .edu-cal-label { margin-left: 8px; font-weight: 600; font-size: 15px; }
       .edu-cal .edu-btn.ghost.is-active {
-        background: rgba(34,197,94,0.15);
-        color: #86EFAC;
-        border-color: rgba(34,197,94,0.35);
+        background: var(--accent-medium);
+        color: var(--primary-light);
+        border-color: var(--accent-border-strong);
       }
       .edu-spin { animation: edu-cal-spin 1s linear infinite; }
       @keyframes edu-cal-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -460,7 +460,7 @@ function CalendarStyles() {
         display: flex; flex-direction: column;
         min-height: 220px;
       }
-      .edu-cal-week-col.is-today { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.05); }
+      .edu-cal-week-col.is-today { border-color: var(--accent-ring); background: var(--accent-soft); }
       .edu-cal-week-head {
         display: flex; justify-content: space-between; align-items: baseline;
         padding: 8px 10px;
@@ -475,7 +475,7 @@ function CalendarStyles() {
         display: block; text-align: left; width: 100%;
         background: rgba(255,255,255,0.05);
         border: 1px solid rgba(255,255,255,0.06);
-        border-left: 3px solid var(--edu-color, #22C55E);
+        border-left: 3px solid var(--edu-color, var(--primary));
         border-radius: 8px;
         padding: 6px 8px;
         font-size: 12px;
@@ -489,7 +489,7 @@ function CalendarStyles() {
       .edu-cal-event-school {
         display: inline-block; margin-top: 4px;
         font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
-        background: rgba(14,165,233,0.18); color: #BAE6FD;
+        background: var(--accent-surface-strong); color: var(--primary-light);
         padding: 2px 6px; border-radius: 4px;
       }
       .edu-cal-event.compact {
@@ -497,7 +497,7 @@ function CalendarStyles() {
         padding: 3px 6px;
         background: transparent;
         border: none;
-        border-left: 3px solid var(--edu-color, #22C55E);
+        border-left: 3px solid var(--edu-color, var(--primary));
         border-radius: 0;
       }
       .edu-cal-event.compact .edu-cal-event-time { margin: 0; font-size: 10px; color: rgba(255,255,255,0.5); }
@@ -524,7 +524,7 @@ function CalendarStyles() {
         display: flex; flex-direction: column; gap: 3px;
       }
       .edu-cal-month-cell.is-out { background: rgba(0,0,0,0.18); opacity: 0.55; }
-      .edu-cal-month-cell.is-today { background: rgba(34,197,94,0.07); }
+      .edu-cal-month-cell.is-today { background: var(--accent-soft); }
       .edu-cal-month-day { font-size: 12px; color: rgba(255,255,255,0.65); }
       .edu-cal-month-events { display: flex; flex-direction: column; gap: 2px; }
       .edu-cal-event-more { font-size: 10px; color: rgba(255,255,255,0.55); padding-left: 6px; }
@@ -535,7 +535,7 @@ function CalendarStyles() {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 12px;
         background: rgba(255,255,255,0.04);
-        border-left: 3px solid var(--edu-color, #22C55E);
+        border-left: 3px solid var(--edu-color, var(--primary));
         border-radius: 8px;
       }
       .edu-cal-upcoming-title { font-size: 14px; font-weight: 500; }

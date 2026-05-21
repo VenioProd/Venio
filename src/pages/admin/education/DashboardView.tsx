@@ -508,7 +508,7 @@ function UpcomingItem({
 }) {
   const start = new Date(event.start)
   const end = new Date(event.end)
-  const matchColor = event.match?.color || '#0EA5E9'
+  const matchColor = event.match?.color || 'var(--primary)'
   const matchLabel = event.match?.className
   const schoolBadge = event.match?.school || event.school
 
