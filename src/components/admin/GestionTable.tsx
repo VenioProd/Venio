@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { getToken } from '../../lib/api'
+import { apiUpload } from '../../lib/api'
 import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types/task.types'
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
@@ -106,11 +106,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
       for (let i = 0; i < files.length; i++) {
         const formData = new FormData()
         formData.append('file', files[i])
-        await fetch(`/api/admin/projects/${projectId}/tasks/${task._id}/attachments`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: formData,
-        })
+        await apiUpload(`/api/admin/projects/${projectId}/tasks/${task._id}/attachments`, formData)
       }
       if (fileRef.current) fileRef.current.value = ''
       onRefresh?.()

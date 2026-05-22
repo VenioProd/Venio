@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { STATUS_CONFIG, REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage, daysRemaining } from './types'
@@ -274,11 +274,7 @@ const InternList = () => {
       }
       reportFiles.forEach((f) => fd.append('files', f))
 
-      await fetch('/api/admin/interns/reports', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
+      await apiUpload('/api/admin/interns/reports', fd)
 
       setReportForm({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
       setReportFiles([])
@@ -293,11 +289,7 @@ const InternList = () => {
       const fd = new FormData()
       fd.append('status', status)
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
-      await fetch(`/api/admin/interns/reports/${reportId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
+      await apiUpload(`/api/admin/interns/reports/${reportId}`, fd, { method: 'PATCH' })
       loadReports()
     } catch { /* silent */ }
   }

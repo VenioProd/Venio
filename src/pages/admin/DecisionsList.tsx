@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip } from 'lucide-react'
-import { apiFetch, getToken } from '../../lib/api'
+import { ApiError, apiDownload, apiFetch, apiUpload } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import '../espace-client/ClientPortal.css'
@@ -53,15 +53,16 @@ function formatFileSize(bytes: number): string {
 interface FilePreview { objectUrl: string; name: string; mimeType: string }
 
 async function fetchDecisionBlob(decisionId: string, index: number): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
-  const token = getToken()
-  const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
-  if (!res.ok) {
-    const d = await res.json().catch(() => null)
-    return { error: (d as any)?.error || `Erreur ${res.status}` }
+  try {
+    const { blob } = await apiDownload(`/api/admin/decisions/${decisionId}/attachments/${index}/download`)
+    return { blob }
+  } catch (err) {
+    if (err instanceof ApiError) {
+      const msg = (err.payload as { error?: string } | null)?.error || `Erreur ${err.status}`
+      return { error: msg }
+    }
+    return { error: 'Erreur réseau' }
   }
-  return { blob: await res.blob() }
 }
 
 function forceDownload(objectUrl: string, name: string) {
@@ -552,19 +553,15 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       const inputFiles = fileInputRef.current?.files
       if (inputFiles) Array.from(inputFiles).forEach((f) => form.append('files', f))
 
-      const token = getToken()
-      const res = await fetch('/api/admin/decisions', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: form,
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => null)
-        throw new Error((d as any)?.message || 'Erreur')
-      }
+      await apiUpload('/api/admin/decisions', form)
       onCreated()
     } catch (e2) {
-      setErr((e2 as Error).message || 'Erreur')
+      if (e2 instanceof ApiError) {
+        const msg = (e2.payload as { message?: string; error?: string } | null)
+        setErr(msg?.message || msg?.error || e2.message || 'Erreur')
+      } else {
+        setErr((e2 as Error).message || 'Erreur')
+      }
     } finally {
       setSubmitting(false)
     }

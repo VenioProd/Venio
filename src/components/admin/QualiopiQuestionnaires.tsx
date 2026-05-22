@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiDownload, apiFetch } from '../../lib/api'
 import { useConfirm } from '../../hooks/useConfirm'
 
 interface Question {
@@ -159,11 +159,7 @@ const QualiopiQuestionnaires = () => {
 
   const downloadPdf = async (qId: string, rId: string, name: string) => {
     try {
-      const res = await fetch(`/api/admin/qualiopi-questionnaires/${qId}/responses/${rId}/pdf`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (!res.ok) throw new Error('Erreur PDF')
-      const blob = await res.blob()
+      const { blob } = await apiDownload(`/api/admin/qualiopi-questionnaires/${qId}/responses/${rId}/pdf`)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

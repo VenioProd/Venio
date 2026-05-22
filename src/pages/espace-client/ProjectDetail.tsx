@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiDownload, apiFetch } from '../../lib/api'
 import type { Project, ProjectSection, ProjectItem, ProjectUpdate, ProjectDocument } from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
@@ -88,16 +88,7 @@ const ClientProjectDetail = () => {
 
   const downloadDocument = async (doc: ProjectDocument) => {
     try {
-      const token = getToken()
-      const response = await fetch(`/api/documents/${doc._id}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (!response.ok) {
-        throw new Error('Telechargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob } = await apiDownload(`/api/documents/${doc._id}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -113,16 +104,7 @@ const ClientProjectDetail = () => {
 
   const downloadItem = async (itemId: string, fileName: string) => {
     try {
-      const token = getToken()
-      const response = await fetch(`/api/projects/${id}/items/${itemId}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (!response.ok) {
-        throw new Error('Téléchargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob } = await apiDownload(`/api/projects/${id}/items/${itemId}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

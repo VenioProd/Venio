@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import QualiopiQuestionnaires from '../../../components/admin/QualiopiQuestionnaires'
 import { CRITERIA_COLORS, getProgress } from './types'
@@ -110,26 +110,14 @@ const QualiopiBoard = () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const token = getToken()
-      const res = await fetch(`/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/sub/${subId}/files`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      })
-      if (!res.ok) throw new Error('Upload failed')
-      const updated = await res.json()
+      const updated = await apiUpload<QualiopiCriterion>(`/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/sub/${subId}/files`, formData)
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
     } catch (err) { console.error(err) }
   }
 
   const downloadFile = async (fileId: string, fileName: string) => {
     try {
-      const token = getToken()
-      const res = await fetch(`/api/admin/qualiopi/files/${fileId}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Download failed')
-      const blob = await res.blob()
+      const { blob } = await apiDownload(`/api/admin/qualiopi/files/${fileId}/download`)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -141,12 +129,7 @@ const QualiopiBoard = () => {
 
   const previewFile = async (fileId: string, fileName: string, mimeType: string) => {
     try {
-      const token = getToken()
-      const res = await fetch(`/api/admin/qualiopi/files/${fileId}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Preview failed')
-      const blob = await res.blob()
+      const { blob } = await apiDownload(`/api/admin/qualiopi/files/${fileId}/download`)
       const url = URL.createObjectURL(blob)
       setPreview({ url, name: fileName, mime: mimeType })
     } catch (err) { console.error(err) }
@@ -209,14 +192,7 @@ const QualiopiBoard = () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const token = getToken()
-      const res = await fetch(`/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/files`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      })
-      if (!res.ok) throw new Error('Upload failed')
-      const updated = await res.json()
+      const updated = await apiUpload<QualiopiCriterion>(`/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/files`, formData)
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
     } catch (err) { console.error(err) }
   }

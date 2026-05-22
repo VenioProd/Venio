@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch, apiDownload, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -75,13 +75,8 @@ export default function Resources() {
   const [previewName, setPreviewName] = useState('')
 
   const openFile = async (r: Resource, inline: boolean) => {
-    const token = getToken() || ''
     try {
-      const resp = await fetch(`/api/admin/resources/${r._id}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!resp.ok) { showToast('Impossible d\'ouvrir le fichier', 'error'); return }
-      const blob = await resp.blob()
+      const { blob } = await apiDownload(`/api/admin/resources/${r._id}/download`)
       const url = URL.createObjectURL(blob)
       if (inline) {
         setPreviewUrl(url)
@@ -94,7 +89,7 @@ export default function Resources() {
         a.click()
         setTimeout(() => URL.revokeObjectURL(url), 5000)
       }
-    } catch { showToast('Erreur réseau', 'error') }
+    } catch { showToast('Impossible d\'ouvrir le fichier', 'error') }
   }
 
   const closePreview = () => {

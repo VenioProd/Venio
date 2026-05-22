@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { ApiError, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { REPORT_STATUS_CONFIG, STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage } from '../intern-list/types'
@@ -159,11 +159,7 @@ const InternDetail = () => {
       const fd = new FormData()
       fd.append('status', status)
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
-      await fetch(`/api/admin/interns/reports/${reportId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
+      await apiUpload(`/api/admin/interns/reports/${reportId}`, fd, { method: 'PATCH' })
       loadData()
     } catch { /* silent */ }
   }
@@ -182,18 +178,15 @@ const InternDetail = () => {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch(`/api/admin/interns/${id}/convention`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        alert((err as any).error || 'Erreur upload')
-        return
-      }
+      await apiUpload(`/api/admin/interns/${id}/convention`, fd)
       loadData()
-    } catch { alert('Erreur réseau') } finally {
+    } catch (err) {
+      if (err instanceof ApiError) {
+        alert((err.payload as { error?: string } | null)?.error || err.message || 'Erreur upload')
+      } else {
+        alert('Erreur réseau')
+      }
+    } finally {
       setConventionUploading(false)
       e.target.value = ''
     }

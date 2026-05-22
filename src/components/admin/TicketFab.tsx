@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { getToken } from '../../lib/api'
+import { ApiError, apiUpload } from '../../lib/api'
 import '../../pages/admin/AdminPortal.css'
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -40,18 +40,16 @@ const TicketFab = () => {
       fd.append('message', form.message)
       fd.append('category', form.category)
       files.forEach((f) => fd.append('files', f))
-      const res = await fetch('/api/admin/tickets', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
-      if (res.ok) {
-        setForm({ message: '', category: 'QUESTION' })
-        setFiles([])
-        setSuccess(true)
-        setTimeout(() => { setSuccess(false); setShowForm(false) }, 1500)
+      await apiUpload('/api/admin/tickets', fd)
+      setForm({ message: '', category: 'QUESTION' })
+      setFiles([])
+      setSuccess(true)
+      setTimeout(() => { setSuccess(false); setShowForm(false) }, 1500)
+    } catch (err) {
+      if (!(err instanceof ApiError)) {
+        /* network/abort errors silently ignored */
       }
-    } catch { /* silent */ } finally { setSubmitting(false) }
+    } finally { setSubmitting(false) }
   }
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiFetch, getToken } from '../../lib/api'
+import { ApiError, apiFetch, apiUpload } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
 import { ColorThemePicker } from '../../components/ColorThemePicker'
@@ -117,21 +117,17 @@ const AdminProfile = () => {
     try {
       const formData = new FormData()
       formData.append('avatar', blob, 'avatar.jpg')
-      const token = getToken()
-      const res = await fetch('/api/auth/avatar', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Erreur lors de l'upload")
-      }
+      await apiUpload('/api/auth/avatar', formData)
       await refreshUser()
       setSuccess('Photo de profil mise à jour')
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setAvatarError((err as Error).message || "Erreur lors de l'upload")
+      if (err instanceof ApiError) {
+        const msg = (err.payload as { error?: string } | null)?.error
+        setAvatarError(msg || err.message || "Erreur lors de l'upload")
+      } else {
+        setAvatarError((err as Error).message || "Erreur lors de l'upload")
+      }
     } finally {
       setAvatarUploading(false)
     }

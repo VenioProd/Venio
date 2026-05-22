@@ -8,7 +8,7 @@ import {
   SUGGESTIONS_TAGS,
 } from '../../../lib/formatUtils'
 import CustomSelect from '../../../components/admin/CustomSelect'
-import { getToken } from '../../../lib/api'
+import { apiDownload } from '../../../lib/api'
 import type { ProjectDetailsTabProps } from './types'
 
 const BILLING_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', ISSUED: 'Émis', SENT: 'Envoyé', ACCEPTED: 'Accepté', PAID: 'Payé', CANCELLED: 'Annulé' }
@@ -497,12 +497,7 @@ const ProjectDetailsTab: React.FC<ProjectDetailsTabProps> = ({
                               style={{ padding: '8px 12px', fontSize: '13px' }}
                               onClick={async () => {
                                 try {
-                                  const token = getToken()
-                                  const res = await fetch(`/api/admin/billing/${doc._id}/pdf`, {
-                                    headers: token ? { Authorization: `Bearer ${token}` } : {},
-                                  })
-                                  if (!res.ok) throw new Error('PDF non disponible')
-                                  const blob = await res.blob()
+                                  const { blob } = await apiDownload(`/api/admin/billing/${doc._id}/pdf`)
                                   const url = URL.createObjectURL(blob)
                                   window.open(url, '_blank')
                                 } catch (e: unknown) {

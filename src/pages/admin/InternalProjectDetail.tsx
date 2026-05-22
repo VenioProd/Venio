@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../lib/api'
+import { ApiError, apiDownload, apiFetch, apiUpload } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -283,16 +283,14 @@ export default function InternalProjectDetail() {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const token = getToken() || ''
-      const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData,
-      })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data.error || 'Erreur upload')
+      await apiUpload(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, formData)
       const updated = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
       setMissions(updated.missions || [])
       showToast('Fichier ajouté', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: any) {
+      const msg = err instanceof ApiError ? ((err.payload as { error?: string } | null)?.error || err.message) : err?.message
+      showToast(msg || 'Erreur', 'error')
+    }
     finally { setUploadingFile(u => ({ ...u, [missionId]: false })) }
   }
 
@@ -859,12 +857,12 @@ export default function InternalProjectDetail() {
                                 <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                   <span style={{ fontSize: 13 }}>{f.mimeType.includes('pdf') ? '📄' : f.mimeType.startsWith('image/') ? '🖼️' : '📁'}</span>
                                   <button type="button" onClick={async () => {
-                                    const token = getToken() || ''
-                                    const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`, { headers: { Authorization: `Bearer ${token}` } })
-                                    const blob = await resp.blob()
-                                    const url = URL.createObjectURL(blob)
-                                    window.open(url, '_blank')
-                                    setTimeout(() => URL.revokeObjectURL(url), 5000)
+                                    try {
+                                      const { blob } = await apiDownload(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`)
+                                      const url = URL.createObjectURL(blob)
+                                      window.open(url, '_blank')
+                                      setTimeout(() => URL.revokeObjectURL(url), 5000)
+                                    } catch { showToast('Téléchargement impossible', 'error') }
                                   }} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: 12, padding: 0, flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {f.originalName}
                                   </button>

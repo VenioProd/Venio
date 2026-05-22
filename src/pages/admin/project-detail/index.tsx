@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../../hooks/useTabState'
-import { apiFetch, getToken } from '../../../lib/api'
+import { ApiError, apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import { useAuth } from '../../../context/AuthContext'
@@ -380,23 +380,17 @@ const AdminProjectDetail = () => {
     if (!ensurePermission(canEditProjects, 'Accès en lecture seule.')) return
     const formEl = event.target as HTMLFormElement
     try {
-      const token = getToken()
       const formData = new FormData(formEl)
-      const response = await fetch(`/api/admin/projects/${id}/documents`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erreur upload')
-      }
+      await apiUpload(`/api/admin/projects/${id}/documents`, formData)
       await load()
       formEl.reset()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur upload')
+      if (err instanceof ApiError) {
+        const msg = (err.payload as { error?: string } | null)?.error
+        setError(msg || err.message || 'Erreur upload')
+      } else {
+        setError((err as Error).message || 'Erreur upload')
+      }
     }
   }
 
@@ -449,7 +443,6 @@ const AdminProjectDetail = () => {
     setError('')
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
     try {
-      const token = getToken()
       const formData = new FormData()
 
       Object.keys(itemForm).forEach((key) => {
@@ -462,18 +455,7 @@ const AdminProjectDetail = () => {
         formData.append('file', selectedFile)
       }
 
-      const response = await fetch(`/api/admin/projects/${id}/items`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erreur ajout item')
-      }
+      await apiUpload(`/api/admin/projects/${id}/items`, formData)
 
       setItemForm({
         section: '',
@@ -489,7 +471,12 @@ const AdminProjectDetail = () => {
       setSelectedFile(null)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout item')
+      if (err instanceof ApiError) {
+        const msg = (err.payload as { error?: string } | null)?.error
+        setError(msg || err.message || 'Erreur ajout item')
+      } else {
+        setError((err as Error).message || 'Erreur ajout item')
+      }
     }
   }
 
@@ -524,16 +511,7 @@ const AdminProjectDetail = () => {
   const handleDownloadItem = async (itemId: string, fileName: string) => {
     if (!ensurePermission(canViewContent, 'Accès en lecture seule.')) return
     try {
-      const token = getToken()
-      const response = await fetch(`/api/admin/projects/${id}/items/${itemId}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (!response.ok) {
-        throw new Error('Téléchargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob } = await apiDownload(`/api/admin/projects/${id}/items/${itemId}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -569,12 +547,7 @@ const AdminProjectDetail = () => {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               onClick={async () => {
                 try {
-                  const token = getToken()
-                  const res = await fetch(`/api/admin/projects/${id}/recap-pdf`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  })
-                  if (!res.ok) throw new Error('Erreur PDF')
-                  const blob = await res.blob()
+                  const { blob } = await apiDownload(`/api/admin/projects/${id}/recap-pdf`)
                   const url = window.URL.createObjectURL(blob)
                   const a = document.createElement('a')
                   a.href = url
