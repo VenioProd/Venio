@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import { PERMISSIONS } from '../permissions'
+import { PERMISSIONS, getPermissionsForRole } from '../permissions'
 
 /**
  * Canonical list of permissions shared between front and back.
@@ -95,6 +95,43 @@ function parseBackendPermissions(src: string): { keys: string[]; values: string[
 }
 
 // --------------------------------------------------------------------------
+// Helper: parse a ROLE_PERMISSIONS map from a source file.
+// Recognises:
+//   ROLE: new Set([PERMISSIONS.FOO, PERMISSIONS.BAR, ...])
+//   ROLE: new Set(Object.values(PERMISSIONS))   (sentinel: ALL)
+//   ROLE: new Set([])  /  new Set<...>([])      (empty)
+// Returns Record<ROLE, string[]> where strings are PERMISSION KEYS
+// (e.g. 'VIEW_TICKETS'), or the sentinel '__ALL__' when the role
+// receives every permission via Object.values(PERMISSIONS).
+// --------------------------------------------------------------------------
+function parseRolePermissions(src: string): Record<string, string[]> {
+  const block = src.match(/ROLE_PERMISSIONS[^=]*=\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+  const result: Record<string, string[]> = {}
+  // Match: ROLE_NAME: new Set( ... ),  — the body is non-greedy up to the
+  // closing paren that precedes a comma+newline or the next role entry.
+  const roleRe = /^\s*([A-Z_]+)\s*:\s*new Set(?:<[^>]+>)?\s*\(([\s\S]*?)\)\s*,?\s*$/gm
+  let m: RegExpExecArray | null
+  while ((m = roleRe.exec(block)) !== null) {
+    const role = m[1]
+    const body = m[2].trim()
+    if (/Object\.values\s*\(\s*PERMISSIONS\s*\)/.test(body)) {
+      result[role] = ['__ALL__']
+      continue
+    }
+    if (body === '[]' || /^\[\s*\]$/.test(body)) {
+      result[role] = []
+      continue
+    }
+    const perms: string[] = []
+    const permRe = /PERMISSIONS\.([A-Z_]+)/g
+    let pm: RegExpExecArray | null
+    while ((pm = permRe.exec(body)) !== null) perms.push(pm[1])
+    result[role] = perms
+  }
+  return result
+}
+
+// --------------------------------------------------------------------------
 // Frontend PERMISSIONS
 // --------------------------------------------------------------------------
 describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
@@ -172,5 +209,65 @@ describe('Front/back synchronization', () => {
     const frontSet = new Set(frontValues)
     const backOnly = backendValues.filter((v) => !frontSet.has(v))
     expect(backOnly).toEqual([])
+  })
+})
+
+// --------------------------------------------------------------------------
+// ROLE_PERMISSIONS — make sure every role grants the same set of permissions
+// in front and back. This catches drift such as "ADMIN gained MANAGE_TICKETS
+// in the backend but not in the frontend", which is silent today and easy to
+// miss in code review.
+// --------------------------------------------------------------------------
+describe('Front/back ROLE_PERMISSIONS synchronization', () => {
+  const frontendSrc = readFileSync(
+    resolve(__dirname, '../permissions.ts'),
+    'utf-8',
+  )
+  const backendSrc = readFileSync(
+    resolve(__dirname, '../../../backend/src/lib/permissions.ts'),
+    'utf-8',
+  )
+
+  const frontRoles = parseRolePermissions(frontendSrc)
+  const backRoles = parseRolePermissions(backendSrc)
+
+  // Roles defined in both (intersection). Some roles (e.g. AGENT) only exist
+  // backend-side because frontend never holds an AGENT user.
+  const commonRoles = Object.keys(backRoles).filter((r) => r in frontRoles)
+
+  it('parsed at least the standard admin role set in both files', () => {
+    for (const role of ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COMPTABLE', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE', 'CLIENT']) {
+      expect(frontRoles, `frontend missing role ${role}`).toHaveProperty(role)
+      expect(backRoles, `backend missing role ${role}`).toHaveProperty(role)
+    }
+  })
+
+  for (const role of ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COMPTABLE', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE', 'CLIENT']) {
+    it(`role ${role}: front and back grant the same permissions`, () => {
+      const front = new Set(frontRoles[role] ?? [])
+      const back = new Set(backRoles[role] ?? [])
+      expect({ role, perms: [...back].sort() }).toEqual({ role, perms: [...front].sort() })
+    })
+  }
+
+  // Defensive: catch backend-only roles that quietly hold permissions which
+  // never round-trip to the frontend (e.g. AGENT). We don't require them in
+  // the frontend, but we surface the list so it's visible in test output.
+  it('reports backend-only roles (informational)', () => {
+    const backOnly = Object.keys(backRoles).filter((r) => !(r in frontRoles))
+    // Today: AGENT is backend-only and intentional. Update this list if a
+    // new backend-only role is added — the assertion fails loudly otherwise.
+    expect(backOnly.sort()).toEqual(['AGENT'])
+  })
+
+  // Smoke-check the runtime API of getPermissionsForRole against the parser.
+  // If the parser disagrees with the actual exported Set, both fail together.
+  it('getPermissionsForRole(ADMIN) matches parsed frontend ADMIN set', () => {
+    const expected = (frontRoles.ADMIN ?? []).map((k) => (PERMISSIONS as Record<string, string>)[k])
+    expect(new Set(getPermissionsForRole('ADMIN'))).toEqual(new Set(expected))
+  })
+
+  it('commonRoles non-empty (parser sanity)', () => {
+    expect(commonRoles.length).toBeGreaterThanOrEqual(8)
   })
 })
