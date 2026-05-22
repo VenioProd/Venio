@@ -66,7 +66,7 @@ Le frontend proxy `/api/*` et `/socket.io/*` vers `VITE_API_PROXY_TARGET` (défa
 
 ## Permissions
 
-Source de vérité = liste canonique de 26 permissions, dupliquée intentionnellement entre `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`. Un test `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive.
+Source de vérité = liste canonique de 30 permissions, dupliquée intentionnellement entre `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`. Un test `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive : il vérifie la liste canonique (clés + valeurs) **et** que chaque rôle (`SUPER_ADMIN`, `ADMIN`, `MANAGER`, `COMPTABLE`, `RH`, `COMMERCIAL`, `VIEWER`, `STAGIAIRE`, `CLIENT`) reçoit exactement les mêmes permissions des deux côtés.
 
 Toutes les routes admin sensibles sont protégées par `<RequirePermission>` côté frontend ET filtrées côté backend (cf. tickets).
 

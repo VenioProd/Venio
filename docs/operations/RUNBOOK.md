@@ -78,10 +78,10 @@ La variable `ALLOW_DEMO_CLEANUP=true` est **obligatoire** — sans elle, le scri
 
 ```bash
 # Frontend uniquement (racine)
-npm test                   # 62 tests environ
+npm test                   # ~117 tests, ~21 fichiers
 
 # Backend uniquement (lent — MongoMemoryServer non parallèle)
-cd backend && npm test     # 313 tests environ
+cd backend && npm test     # ~60 fichiers de tests
 
 # Tout (frontend puis backend)
 npm run test:all

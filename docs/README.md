@@ -91,70 +91,52 @@ npm run preview
 
 ## 📁 Structure du projet
 
+L'application est intégralement écrite en TypeScript (`.ts` / `.tsx`).
+
 ```
 venio/
-├── src/
-│   ├── components/              # Composants React réutilisables
-│   │   ├── Navbar.jsx          # Navigation principale
-│   │   ├── Footer.jsx          # Pied de page
-│   │   ├── Hero.jsx            # Section hero
-│   │   ├── Poles.jsx           # Section des pôles
-│   │   ├── PoleCard.jsx        # Carte de pôle
-│   │   ├── Expertises.jsx      # Section expertises
-│   │   ├── ExpertiseCard.jsx   # Carte d'expertise
-│   │   ├── CTA.jsx             # Section call-to-action
-│   │   ├── CTAFinal.jsx        # Section call-to-action finale
-│   │   ├── Citation.jsx        # Composant de citation
-│   │   ├── Manifeste.jsx      # Section manifeste
-│   │   ├── ServicesCore.jsx   # Services principaux
-│   │   ├── AnimatedBackground.jsx    # Arrière-plan animé
-│   │   ├── BackgroundWrapper.jsx     # Wrapper pour arrière-plan
-│   │   ├── VantaBackground.jsx       # Arrière-plan Vanta.js
-│   │   ├── DotsOverlay.jsx           # Overlay de points
-│   │   ├── GridOverlay.jsx           # Overlay de grille
-│   │   ├── GrainMicrodots.jsx        # Effet grain/micro-points
-│   │   └── MathCaptcha.jsx           # Captcha mathématique
-│   ├── pages/                  # Pages de l'application
-│   │   ├── Home.jsx            # Page d'accueil
-│   │   ├── ServicesCommunication.jsx    # Page services communication
-│   │   ├── ServicesDeveloppement.jsx    # Page services développement
-│   │   ├── ServicesConseil.jsx         # Page services conseil
-│   │   ├── PolesPage.jsx       # Page des pôles
-│   │   ├── Realisations.jsx    # Page réalisations
-│   │   ├── APropos.jsx         # Page à propos
-│   │   ├── Contact.jsx         # Page contact
-│   │   └── Legal.jsx           # Page mentions légales
-│   ├── App.jsx                 # Composant principal avec routing
-│   ├── main.jsx                # Point d'entrée de l'application
-│   ├── index.css               # Variables CSS globales
-│   ├── App.css                 # Styles de l'application
-│   └── fonts.css               # Définitions des polices
-├── public/
-│   ├── fonts/                  # Polices Cabinet Grotesk (woff/woff2)
-│   ├── realisations/           # Images des réalisations
-│   └── _redirects              # Configuration Netlify (pour React Router)
-├── scripts/
-│   └── create-htaccess.js      # Script de génération automatique du .htaccess
-├── index.html                  # Template HTML
-├── package.json                # Dépendances et scripts npm
-├── vite.config.js              # Configuration Vite
-├── vercel.json                 # Configuration Vercel (pour React Router)
-└── README.md                   # Documentation
+├── src/                        # Frontend React + Vite
+│   ├── components/             # Composants React (site public, admin, dashboard)
+│   ├── pages/                  # Pages : site public, /admin/*, /espace-client/*
+│   ├── context/                # Auth, I18n, Theme, Messaging, Notifications, Toast
+│   ├── hooks/                  # Hooks réutilisables (useConfirm, useTabState, ...)
+│   ├── services/               # Services métier (accounting, adminTasks, messaging, ...)
+│   ├── lib/                    # api.ts (apiFetch/apiUpload/apiDownload), permissions, utils
+│   ├── types/                  # Types partagés (auth, crm, projects, ...)
+│   ├── styles/                 # Styles globaux et tokens de thème
+│   ├── i18n/                   # Traductions
+│   ├── App.tsx                 # Routing principal (React Router 7)
+│   └── main.tsx                # Point d'entrée
+├── backend/                    # API Express 5 + MongoDB (Mongoose)
+│   ├── src/                    # Routes, middlewares, services, modèles
+│   ├── uploads/                # Fichiers uploadés (servis via routes Express)
+│   └── package.json            # Scripts backend (dev/build/test/seed/cleanup)
+├── public/                     # Assets statiques publics (fonts, images)
+├── scripts/                    # create-htaccess, generate-sitemap, prepare-deploy
+├── docs/                       # Documentation (cf. table ci-dessus)
+├── docker-compose.prod.yml     # Stack prod (frontend nginx + backend node)
+├── vite.config.ts              # Configuration Vite (proxy /api, manualChunks)
+├── tsconfig.json               # Configuration TypeScript
+└── package.json                # Scripts racine (dev/build/test/test:all)
 ```
 
 ## 🛣️ Routes
 
-Le site utilise React Router pour la navigation :
+Le site utilise React Router 7. Trois espaces cohabitent dans la même app :
 
-- `/` - Page d'accueil
-- `/services/communication` - Services communication
-- `/services/developpement` - Services développement
-- `/services/conseil` - Services conseil
-- `/poles` - Page des pôles
-- `/realisations` - Réalisations
-- `/a-propos` - À propos
-- `/contact` - Contact
-- `/legal` - Mentions légales
+**Site public**
+- `/`, `/services/communication`, `/services/developpement`, `/services/conseil`
+- `/poles`, `/realisations`, `/a-propos`, `/contact`
+- `/legal`, `/cgu`, `/cgv`, `/confidentialite`
+
+**Espace client** (`/espace-client/*`)
+- Login, dashboard, projets, profil, etc. — protégé par `AuthContext` (rôle `CLIENT`)
+
+**Back-office admin** (`/admin/*`)
+- Login, dashboard, CRM, projets internes, comptabilité, tickets, ressources, Qualiopi,
+  rapports de stage, gestion de tâches, dev-workspace, espace pédagogique, etc.
+- Chaque route sensible est encadrée par `<RequirePermission permission={PERMISSIONS.X}>`
+  et le backend re-vérifie la permission côté API.
 
 ## 🎨 Design
 
@@ -441,7 +423,7 @@ npm run deploy:check      # Vérifie que le build est prêt pour déploiement
 
 ### Fichiers de configuration
 
-- **`vite.config.js`** : Configuration Vite (port, host, plugins)
+- **`vite.config.ts`** : Configuration Vite (port, host, plugins, manualChunks pour split vendor)
 - **`vercel.json`** : Configuration pour déploiement Vercel (React Router)
 - **`public/_redirects`** : Configuration pour déploiement Netlify (React Router)
 - **`scripts/create-htaccess.js`** : Script qui génère automatiquement `.htaccess` pour IONOS

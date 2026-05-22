@@ -18,6 +18,8 @@
 
 Toutes les requêtes vers `/api/*` passent par ces helpers. Ne jamais appeler `fetch` directement pour des routes authentifiées.
 
+> Exception unique : `src/pages/admin/Resources.tsx` utilise `XMLHttpRequest` pour bénéficier de la barre de progression d'upload (`xhr.upload.onprogress`). C'est le seul cas où la lecture directe de `getToken()` est tolérée hors `src/lib/api.ts`.
+
 ## API agent (Bearer tokens)
 
 Voir [api-agent.md](../api-agent.md). Points clés :
