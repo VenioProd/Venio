@@ -74,8 +74,12 @@ import User from './models/User.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
+import { initSentry, Sentry } from './lib/sentry.js'
 
 dotenv.config()
+
+// Sentry — appelé tout en haut pour permettre l'instrumentation auto. No-op si pas de DSN.
+initSentry()
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -88,16 +92,27 @@ if (!mongoUri) {
 }
 
 // Security headers
+// scriptSrc : pas de 'unsafe-inline' — l'app n'a aucun <script> inline (vérifié
+// au chantier #6 : seuls des <script src="..."> dans index.html). Les CDN
+// utilisés (three.js, vanta) sont explicitement listés. Si Sentry est activé,
+// son origine est ajoutée à connectSrc.
+const sentryIngest = process.env.SENTRY_DSN
+  ? new URL(process.env.SENTRY_DSN).origin
+  : null
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: isProd ? {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: [
+        "'self'",
+        'https://cdnjs.cloudflare.com',
+        'https://cdn.jsdelivr.net',
+      ],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "https://api.emailjs.com"],
+      connectSrc: ["'self'", "https://api.emailjs.com", ...(sentryIngest ? [sentryIngest] : [])],
       frameSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -286,6 +301,10 @@ app.use(express.static(publicDir, { redirect: false }))
 app.get('{*path}', (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, 'index.html'))
 })
+
+// Sentry error handler — doit être AVANT le notre, capture les erreurs avant qu'on les
+// transforme en réponse JSON. No-op si Sentry désactivé (DSN absent).
+Sentry.setupExpressErrorHandler(app)
 
 // Global error handler — hide stack traces in production
 app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, res: Response, _next: NextFunction) => {
