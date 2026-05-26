@@ -7,6 +7,8 @@ import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import { emptyForm, type Member, type Mission, type Project } from './internal-project-list/types'
+import ArrowSectionEditorModal from './internal-project-list/ArrowSectionEditorModal'
+import ProjectFormDrawer from './internal-project-list/ProjectFormDrawer'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
 const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation']
@@ -569,110 +571,18 @@ export default function InternalProjectList() {
 
       {/* Create/Edit form */}
       {showForm && (
-        <div className="portal-card" style={{ marginTop: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
-            {editTarget ? 'Modifier le projet' : 'Nouveau projet interne'}
-          </h2>
-          <form onSubmit={handleSave}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Nom du projet *</label>
-                <input className="portal-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Plateforme Arrow" />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Description</label>
-                <textarea className="portal-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} style={{ resize: 'vertical' }} placeholder="Objectif, contexte..." />
-              </div>
-              <div>
-                <label className="portal-label">Entité</label>
-                <select className="portal-input" value={form.entity} onChange={e => setForm(f => ({ ...f, entity: e.target.value }))}>
-                  {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="portal-label">Statut</label>
-                <select className="portal-input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="portal-label">Priorité</label>
-                <select className="portal-input" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-                  <option value="BASSE">Basse</option>
-                  <option value="NORMALE">Normale</option>
-                  <option value="HAUTE">Haute</option>
-                  <option value="URGENTE">Urgente</option>
-                </select>
-              </div>
-              <div>
-                <label className="portal-label">Tags (virgule)</label>
-                <input className="portal-input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, refonte, v2..." />
-              </div>
-              {/* Poles */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Pôles concernés</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                  {POLES.map(pole => (
-                    <button
-                      key={pole}
-                      type="button"
-                      onClick={() => togglePole(pole)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 20,
-                        border: '1px solid',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        background: form.poles.includes(pole) ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
-                        borderColor: form.poles.includes(pole) ? '#0ea5e9' : 'var(--border)',
-                        color: form.poles.includes(pole) ? '#38bdf8' : 'var(--text-secondary)',
-                        transition: 'all .15s',
-                      }}
-                    >{pole}</button>
-                  ))}
-                </div>
-              </div>
-              {/* Members */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Membres assignés</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                  {admins.map(admin => (
-                    <button
-                      key={admin._id}
-                      type="button"
-                      onClick={() => toggleMember(admin._id)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 20,
-                        border: '1px solid',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        background: form.members.includes(admin._id) ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-                        borderColor: form.members.includes(admin._id) ? '#10b981' : 'var(--border)',
-                        color: form.members.includes(admin._id) ? '#6ee7b7' : 'var(--text-secondary)',
-                        transition: 'all .15s',
-                      }}
-                    >{admin.name}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-              <button className="portal-button" type="submit" disabled={saving}>
-                {saving ? 'Enregistrement...' : editTarget ? 'Mettre à jour' : 'Créer le projet'}
-              </button>
-              <button
-                className="portal-button secondary"
-                type="button"
-                onClick={() => { setShowForm(false); setEditTarget(null); setForm({ ...emptyForm }) }}
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
+        <ProjectFormDrawer
+          form={form}
+          setForm={setForm}
+          editTarget={editTarget}
+          saving={saving}
+          poles={POLES}
+          admins={admins}
+          togglePole={togglePole}
+          toggleMember={toggleMember}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleSave}
+        />
       )}
 
       {/* ─── ARROW PILOTAGE TAB ─── */}
@@ -1212,43 +1122,16 @@ export default function InternalProjectList() {
 
       {/* ─── MODAL ÉDITION PILOTAGE ARROW ─── */}
       {editingArrowSection && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1001, backdropFilter: 'blur(3px)' }}
-            onClick={() => setEditingArrowSection(null)} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 640, maxWidth: '92vw', background: '#141824', borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)', zIndex: 1002, padding: '26px 28px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Modifier · {ARROW_SECTION_LABELS[editingArrowSection]}</h3>
-                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                  Une ligne par élément. Décisions : date | titre | décision | responsable. Cadre : titre | contenu.
-                </p>
-              </div>
-              <button onClick={() => setEditingArrowSection(null)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 14 }}>X</button>
-            </div>
-            <textarea
-              className="portal-input"
-              value={arrowSectionDraft}
-              onChange={e => setArrowSectionDraft(e.target.value)}
-              rows={editingArrowSection === 'goals' ? 7 : 10}
-              style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', fontSize: 13, lineHeight: 1.55 }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 14, alignItems: 'center' }}>
-              <button
-                className="portal-button secondary"
-                type="button"
-                onClick={() => setArrowSectionDraft(DEFAULT_ARROW_PILOTAGE[editingArrowSection].join('\n'))}
-              >
-                Restaurer le modèle
-              </button>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="portal-button secondary" type="button" onClick={() => setEditingArrowSection(null)}>Annuler</button>
-                <button className="portal-button" type="button" onClick={saveArrowSection} disabled={savingArrowPilotage}>
-                  {savingArrowPilotage ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+        <ArrowSectionEditorModal
+          section={editingArrowSection}
+          draft={arrowSectionDraft}
+          setDraft={setArrowSectionDraft}
+          defaults={DEFAULT_ARROW_PILOTAGE}
+          labels={ARROW_SECTION_LABELS}
+          saving={savingArrowPilotage}
+          onClose={() => setEditingArrowSection(null)}
+          onSave={saveArrowSection}
+        />
       )}
 
       {/* ─── MISSION DETAIL DRAWER ─── */}
