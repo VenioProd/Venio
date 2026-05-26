@@ -13,7 +13,7 @@
  *     implémentation par un store partagé (Redis avec INCR + EXPIRE, ou un
  *     module dédié type rate-limiter-flexible avec store Redis).
  *
- * TODO(scaling) : passer sur Redis quand on aura plus d'une instance API.
+ * Migration Redis prévue pour le multi-instance — voir issue #81.
  */
 
 const WINDOW_MS = 60 * 1000

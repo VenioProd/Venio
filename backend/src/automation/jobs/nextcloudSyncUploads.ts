@@ -51,9 +51,9 @@ const definition: AutomationDefinition = {
 
     for (const doc of unsyncedDocs) {
       try {
-        // TODO: Implement actual file upload to Nextcloud via WebDAV PUT
-        // For now, we mark the intent and log it
-        // The actual upload requires reading the file from local storage
+        // Upload WebDAV PUT à implémenter — voir issue #82.
+        // Pour l'instant, on marque l'intent et on log ;
+        // l'upload réel nécessite de lire le fichier depuis le stockage local.
         // and uploading via PUT to the WebDAV endpoint
 
         console.log(`[NEXTCLOUD SYNC] Would sync: ${doc.originalName} → project ${(doc.project as { name?: string })?.name || doc.project}`)
