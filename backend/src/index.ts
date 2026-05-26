@@ -149,15 +149,36 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
 
-// Strict rate limit on auth: 10 requests per minute
+// Login bruteforce : 5 tentatives /15 min /IP, skip success (compteur n'avance que sur 4xx/5xx)
+// Plus strict que le quota général. Voir SECURITY.md.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' },
+})
+// Reset / forgot password : 3 demandes /15 min /IP (anti-énumération + anti-spam mail)
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de demandes. Réessayez dans 15 minutes.' },
+})
+// Quota global sur les autres endpoints /api/auth (signup, refresh, etc.) — 20/min
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de tentatives, veuillez réessayer dans une minute.' },
 })
 app.use('/api/avatars', avatarRoutes)
+app.use('/api/auth/login', loginLimiter)
+app.use('/api/auth/forgot-password', passwordResetLimiter)
+app.use('/api/auth/reset-password', passwordResetLimiter)
 app.use('/api/auth', authLimiter, authRoutes)
 
 app.use('/api/projects', projectRoutes)
