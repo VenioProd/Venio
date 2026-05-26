@@ -1,19 +1,18 @@
 name: 🚀 Déploiement automatique sur VPS
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.gitignore'
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     name: Build et déploiement sur VPS
     runs-on: ubuntu-latest
+    # N'exécute que si la CI a réussi (workflow_run) ou en dispatch manuel.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
 

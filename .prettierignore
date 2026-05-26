@@ -1,0 +1,17 @@
+node_modules
+dist
+build
+coverage
+public
+fonts
+.next
+.vercel
+.cache
+.claude
+.superpowers
+backend/uploads
+backend/dist
+docs
+package-lock.json
+*.min.js
+*.min.css
