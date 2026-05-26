@@ -59,7 +59,7 @@ async function fetchDecisionBlob(decisionId: string, index: number): Promise<{ b
   })
   if (!res.ok) {
     const d = await res.json().catch(() => null)
-    return { error: (d as any)?.error || `Erreur ${res.status}` }
+    return { error: (d as { error?: string })?.error || `Erreur ${res.status}` }
   }
   return { blob: await res.blob() }
 }
@@ -560,7 +560,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
-        throw new Error((d as any)?.message || 'Erreur')
+        throw new Error((d as { message?: string })?.message || 'Erreur')
       }
       onCreated()
     } catch (e2) {

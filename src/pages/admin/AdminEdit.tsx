@@ -71,14 +71,14 @@ const AdminEdit = () => {
         const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`)
         const u = data.user
         setAdmin(u)
-        setForm({ name: u.name || '', title: (u as any).title || '', role: u.role || 'ADMIN', password: '' })
+        setForm({ name: u.name || '', title: u.title || '', role: u.role || 'ADMIN', password: '' })
         // Initialize custom permissions from server
-        if (Array.isArray((u as any).customPermissions) && (u as any).customPermissions.length > 0) {
+        if (Array.isArray(u.customPermissions) && u.customPermissions.length > 0) {
           setCustomMode(true)
-          setCustomPermissions((u as any).customPermissions)
+          setCustomPermissions(u.customPermissions)
         }
         // Check stagiaire
-        const hasStagiaireTag = (u as any).tags?.includes('STAGIAIRE')
+        const hasStagiaireTag = u.tags?.includes('STAGIAIRE')
         setIsStagiaire(!!hasStagiaireTag)
         if (hasStagiaireTag) {
           try {
@@ -194,8 +194,8 @@ const AdminEdit = () => {
           <div>
             <h1 style={{ marginBottom: '8px' }}>{admin?.name || 'Administrateur'}</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              {admin?.email} · {(admin as any)?.title || roleLabels[admin?.role || ''] || admin?.role}
-              {(admin as any)?.tags?.includes('STAGIAIRE') && (
+              {admin?.email} · {admin?.title || roleLabels[admin?.role || ''] || admin?.role}
+              {admin?.tags?.includes('STAGIAIRE') && (
                 <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
               )}
             </p>
