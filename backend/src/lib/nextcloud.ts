@@ -9,6 +9,8 @@
  * - NEXTCLOUD_BASE_PATH: Base path for client folders (e.g., /Venio/Clients)
  */
 
+import logger from './logger.js'
+
 interface NextcloudConfig {
   url: string
   user: string
@@ -163,7 +165,7 @@ export async function createFolder(path: string): Promise<FolderResult> {
 export async function createClientFolders(clientName: string, clientId: string | null = null): Promise<ClientFoldersResult> {
   if (!isConfigured()) {
     if (!hasLoggedWarning) {
-      console.warn('[Nextcloud] Skipping folder creation — not configured. Set NEXTCLOUD_URL, NEXTCLOUD_USER, and NEXTCLOUD_APP_PASSWORD to enable.')
+      logger.warn('[Nextcloud] Skipping folder creation — not configured. Set NEXTCLOUD_URL, NEXTCLOUD_USER, and NEXTCLOUD_APP_PASSWORD to enable.')
       hasLoggedWarning = true
     }
     return { success: false, error: 'Nextcloud not configured' }
@@ -174,7 +176,7 @@ export async function createClientFolders(clientName: string, clientId: string |
   const folderName = sanitized || (clientId ? `client-${clientId}` : null)
 
   if (!folderName) {
-    console.error('[Nextcloud] Cannot create folders: no valid client name or ID')
+    logger.error('[Nextcloud] Cannot create folders: no valid client name or ID')
     return { success: false, error: 'No valid client name' }
   }
 
@@ -187,7 +189,7 @@ export async function createClientFolders(clientName: string, clientId: string |
   const created: string[] = []
   const errors: string[] = []
 
-  console.log(`[Nextcloud] Creating folders for client: ${folderName}`)
+  logger.info(`[Nextcloud] Creating folders for client: ${folderName}`)
 
   // First, ensure the base path exists (create parent folders)
   // Split basePath and create each level
@@ -198,7 +200,7 @@ export async function createClientFolders(clientName: string, clientId: string |
     const result = await createFolder(currentPath)
     if (!result.success && !result.alreadyExists) {
       // Log but continue - the folder might exist
-      console.warn(`[Nextcloud] Warning creating base path ${currentPath}: ${result.error}`)
+      logger.warn(`[Nextcloud] Warning creating base path ${currentPath}: ${result.error}`)
     }
   }
 
@@ -207,11 +209,11 @@ export async function createClientFolders(clientName: string, clientId: string |
   if (mainResult.success) {
     created.push(clientPath)
     if (!mainResult.alreadyExists) {
-      console.log(`[Nextcloud] Created: ${clientPath}`)
+      logger.info(`[Nextcloud] Created: ${clientPath}`)
     }
   } else {
     errors.push(`${clientPath}: ${mainResult.error}`)
-    console.error(`[Nextcloud] Failed to create ${clientPath}: ${mainResult.error}`)
+    logger.error(`[Nextcloud] Failed to create ${clientPath}: ${mainResult.error}`)
   }
 
   // Create subfolders
@@ -221,19 +223,19 @@ export async function createClientFolders(clientName: string, clientId: string |
     if (result.success) {
       created.push(subPath)
       if (!result.alreadyExists) {
-        console.log(`[Nextcloud] Created: ${subPath}`)
+        logger.info(`[Nextcloud] Created: ${subPath}`)
       }
     } else {
       errors.push(`${subPath}: ${result.error}`)
-      console.error(`[Nextcloud] Failed to create ${subPath}: ${result.error}`)
+      logger.error(`[Nextcloud] Failed to create ${subPath}: ${result.error}`)
     }
   }
 
   const success = errors.length === 0
   if (success) {
-    console.log(`[Nextcloud] Successfully created folder structure for ${folderName}`)
+    logger.info(`[Nextcloud] Successfully created folder structure for ${folderName}`)
   } else {
-    console.warn(`[Nextcloud] Completed with ${errors.length} error(s) for ${folderName}`)
+    logger.warn(`[Nextcloud] Completed with ${errors.length} error(s) for ${folderName}`)
   }
 
   return {
@@ -492,7 +494,7 @@ export function syncUploadToNextcloud(
 
   uploadFileToNextcloud(file.path, destPath).then(result => {
     if (!result.success) {
-      console.warn(`[Nextcloud] Upload échoué (${type}/${id}): ${result.error}`)
+      logger.warn(`[Nextcloud] Upload échoué (${type}/${id}): ${result.error}`)
     }
   }).catch(() => {})
 }

@@ -1,5 +1,6 @@
 import webpush from 'web-push'
 import PushSubscription from '../models/PushSubscription.js'
+import logger from './logger.js'
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || ''
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
@@ -76,7 +77,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         if (status === 404 || status === 410) {
           PushSubscription.deleteOne({ _id: sub._id }).catch(() => {})
         } else {
-          console.warn('[webPush] échec envoi', { endpoint: sub.endpoint.slice(0, 60), status, message: err?.message })
+          logger.warn({ data: { endpoint: sub.endpoint.slice(0, 60), status, message: err?.message } }, '[webPush] échec envoi')
         }
       }
     })

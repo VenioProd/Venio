@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import AgentIdempotencyKey from '../../../models/AgentIdempotencyKey.js'
 import { computeRequestHash, isValidIdempotencyKey } from '../../../lib/agent/idempotency.js'
 import { respondError } from './errors.js'
+import logger from '../../../lib/logger.js'
 
 /**
  * Méthodes considérées comme des mutations et qui exigent une Idempotency-Key.
@@ -71,7 +72,7 @@ export default async function agentIdempotency(
       key,
     }).lean()
   } catch (err) {
-    console.error('[agent-idempotency] lookup failed:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[agent-idempotency] lookup failed:')
     next()
     return
   }
@@ -117,7 +118,7 @@ export default async function agentIdempotency(
       // Code 11000 = collision unique (race condition entre 2 requêtes
       // concurrentes avec la même clé). C'est OK, le 1er insert a gagné.
       if (e.code !== 11000) {
-        console.error('[agent-idempotency] store failed:', e.message)
+        logger.error({ data: e.message }, '[agent-idempotency] store failed:')
       }
     })
     return originalJson(body)

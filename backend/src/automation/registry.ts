@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { AutomationDefinition } from './types.js'
+import logger from '../lib/logger.js'
 
 const registry = new Map<string, AutomationDefinition>()
 
@@ -11,7 +12,7 @@ const registry = new Map<string, AutomationDefinition>()
  */
 export function registerAutomation(def: AutomationDefinition): void {
   if (registry.has(def.key)) {
-    console.warn(`[AUTOMATION] Overwriting existing automation: ${def.key}`)
+    logger.warn(`[AUTOMATION] Overwriting existing automation: ${def.key}`)
   }
   registry.set(def.key, def)
 }

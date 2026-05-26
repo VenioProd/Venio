@@ -6,6 +6,7 @@
 import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.auto_archive_lost',
@@ -40,7 +41,7 @@ const definition: AutomationDefinition = {
 
     const archivedCount = result.modifiedCount || 0
 
-    console.log(`[CRM AUTO ARCHIVE] ${archivedCount} lead(s) LOST archivé(s) (inactifs depuis 30j+)`)
+    logger.info(`[CRM AUTO ARCHIVE] ${archivedCount} lead(s) LOST archivé(s) (inactifs depuis 30j+)`)
 
     return {
       actionsExecuted: [`auto_archive_lost:${archivedCount}_leads`],

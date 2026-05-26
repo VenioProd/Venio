@@ -21,6 +21,7 @@ import {
 import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
+import logger from '../../lib/logger.js'
 
 const router = express.Router()
 
@@ -112,7 +113,7 @@ async function ensureClientForWonLead(lead: any, actorId: string | null = null, 
 
     // Create Nextcloud folders for the new client (fire-and-forget)
     createClientFolders(client.companyName || client.name, client._id.toString()).catch((err: Error) => {
-      console.error('[Nextcloud] Error creating client folders from CRM:', err.message || err)
+      logger.error({ data: err.message || err }, '[Nextcloud] Error creating client folders from CRM:')
     })
   }
 

@@ -8,9 +8,15 @@ import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
 import rateLimit from 'express-rate-limit'
-import morgan from 'morgan'
+import { pinoHttp } from 'pino-http'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import logger from './lib/logger.js'
+
+// Version applicative pour les health checks et les headers
+import { readFileSync } from 'fs'
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
+const APP_VERSION = pkg.version
 
 import authRoutes from './routes/auth.js'
 import projectRoutes from './routes/projects.js'
@@ -141,10 +147,48 @@ app.use('/api/external', externalRoutes)
 app.use('/api/v1/agent', express.json({ limit: '8mb' }), agentRoutes)
 
 app.use(express.json({ limit: '2mb' }))
-app.use(morgan(isProd ? 'combined' : 'dev'))
 
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' })
+// Logging requêtes — pino-http (remplace morgan)
+import type { IncomingMessage, ServerResponse } from 'http'
+app.use(pinoHttp({
+  logger,
+  customLogLevel: function (_req: IncomingMessage, res: ServerResponse, err?: Error) {
+    if (err || res.statusCode >= 500) return 'error'
+    if (res.statusCode >= 400) return 'warn'
+    return 'info'
+  },
+  // En prod : volumes élevés → on évite de logger les health checks et assets statiques
+  autoLogging: {
+    ignore: (req: IncomingMessage) => {
+      const url = req.url ?? ''
+      return url === '/api/health' || url.startsWith('/api/avatars/') || url.startsWith('/assets/')
+    },
+  },
+}))
+
+// Healthcheck applicatif — ping Mongo + version. Non bloquant (Mongo down → status: degraded).
+app.get('/api/health', async (_req: Request, res: Response) => {
+  const mongoState = mongoose.connection.readyState
+  const mongoOk = mongoState === 1
+  let mongoPing: number | null = null
+  if (mongoOk) {
+    const start = Date.now()
+    try {
+      await mongoose.connection.db?.admin().ping()
+      mongoPing = Date.now() - start
+    } catch {
+      // ping failed — fall through, status reflects mongoOk=false
+    }
+  }
+
+  const overallOk = mongoOk && mongoPing !== null
+  res.status(overallOk ? 200 : 503).json({
+    status: overallOk ? 'ok' : 'degraded',
+    version: APP_VERSION,
+    uptime: Math.round(process.uptime()),
+    mongo: { ok: mongoOk, state: mongoState, pingMs: mongoPing },
+    checkedAt: new Date().toISOString(),
+  })
 })
 
 // Login bruteforce : 5 tentatives /15 min /IP, skip success (compteur n'avance que sur 4xx/5xx)
@@ -247,9 +291,7 @@ app.get('{*path}', (_req: Request, res: Response) => {
 app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || 500
 
-  if (!isProd) {
-    console.error(err)
-  }
+  logger.error({ err, status }, 'Unhandled request error')
 
   res.status(status).json({
     error: status >= 500 && isProd ? 'Erreur interne du serveur' : (err.message || 'Server error'),
@@ -260,11 +302,13 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 mongoose
   .connect(mongoUri)
   .then(async () => {
-    // Ensure main SUPER_ADMIN account exists
+    // Bootstrap SUPER_ADMIN — idempotent, vérifié à chaque démarrage.
+    // Note : les migrations one-shot historiques (unset plainPassword, fix slug:null)
+    // ont été sorties vers backend/scripts/migrations/. Voir le README de ce dossier.
     const adminEmail = process.env.SUPER_ADMIN_EMAIL
     const adminPassword = process.env.SUPER_ADMIN_PASSWORD
     if (!adminEmail || !adminPassword) {
-      console.log('ℹ️  SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD not set, skipping admin bootstrap')
+      logger.info('SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD not set, skipping admin bootstrap')
     }
     const mainAdmin = adminEmail ? await User.findOne({ email: adminEmail }) : null
     if (!mainAdmin && adminEmail && adminPassword) {
@@ -275,37 +319,17 @@ mongoose
         role: 'SUPER_ADMIN',
         name: process.env.SUPER_ADMIN_NAME || 'Marie-Blanche',
       })
-      console.log(`✅ SUPER_ADMIN account created (${adminEmail})`)
+      logger.info({ adminEmail }, 'SUPER_ADMIN account created')
     } else if (mainAdmin && mainAdmin.role !== 'SUPER_ADMIN') {
       mainAdmin.role = 'SUPER_ADMIN'
       await mainAdmin.save()
     }
-
-    // One-time migration: remove plainPassword field from all users
-    const migrated = await User.updateMany(
-      { plainPassword: { $exists: true } },
-      { $unset: { plainPassword: '' } }
-    )
-    if (migrated.modifiedCount > 0) {
-      console.log(`🔒 Removed plainPassword from ${migrated.modifiedCount} user(s)`)
-    }
-
-    // One-time migration: unset slug: null on DM/GROUP conversations (sparse unique index fix)
-    const { default: InternalConversation } = await import('./models/InternalConversation.js')
-    const slugFixed = await InternalConversation.updateMany(
-      { type: { $in: ['DM', 'GROUP'] }, slug: null },
-      { $unset: { slug: '' } }
-    )
-    if (slugFixed.modifiedCount > 0) {
-      console.log(`🔧 Unset slug:null from ${slugFixed.modifiedCount} DM/GROUP conversation(s)`)
-    }
-
   })
   .then(() => {
     const server = createServer(app)
     initInternalMessagingSocket(server, corsOrigin)
     server.listen(port, () => {
-      console.log(`API running on http://localhost:${port}`)
+      logger.info({ port, version: APP_VERSION }, 'API listening')
       // Start CRM automation scheduler (legacy)
       startScheduler()
       // Start new automation engine
@@ -315,6 +339,6 @@ mongoose
     })
   })
   .catch((err: unknown) => {
-    console.error('MongoDB connection error:', err)
+    logger.error({ err }, 'MongoDB connection error')
     process.exit(1)
   })

@@ -6,6 +6,7 @@
 import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const ARCHIVE_AFTER_DAYS = 30
 
@@ -47,7 +48,7 @@ const definition: AutomationDefinition = {
 
     const archivedCount = result.modifiedCount || 0
 
-    console.log(`[TICKET AUTO-ARCHIVE] ${archivedCount} ticket(s) archivé(s)`)
+    logger.info(`[TICKET AUTO-ARCHIVE] ${archivedCount} ticket(s) archivé(s)`)
 
     return {
       actionsExecuted: [`auto_archive:${archivedCount}_tickets`],

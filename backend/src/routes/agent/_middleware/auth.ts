@@ -8,6 +8,7 @@ import {
 } from '../../../lib/agent/tokens.js'
 import { hasAllScopes, missingScopes } from '../../../lib/agent/scopes.js'
 import { respondError } from './errors.js'
+import logger from '../../../lib/logger.js'
 
 const AUTH_SUCCESS_LOG_INTERVAL_MS = 15 * 60 * 1000
 
@@ -112,7 +113,7 @@ export default async function agentAuth(
       $inc: { totalRequests: 1 },
     }
   ).catch((err: unknown) => {
-    console.error('[agent-auth] failed to update lastUsed:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[agent-auth] failed to update lastUsed:')
   })
 
   next()
@@ -160,7 +161,7 @@ async function logAuthSuccess(
       },
     })
   } catch (err) {
-    console.error('[agent-auth] logAuthSuccess error:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[agent-auth] logAuthSuccess error:')
   }
 }
 
@@ -220,6 +221,6 @@ async function logAuthFail(req: Request, reason: string, tokenId?: string): Prom
       },
     })
   } catch (err) {
-    console.error('[agent-auth] logAuthFail error:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[agent-auth] logAuthFail error:')
   }
 }

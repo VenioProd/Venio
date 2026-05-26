@@ -26,6 +26,7 @@ import {
   sendTaskReminderEmail,
   sendBriefReminderEmail,
 } from './email.js'
+import logger from './logger.js'
 
 interface SchedulerResult {
   processed: number
@@ -147,7 +148,7 @@ export async function processColdLeads(): Promise<SchedulerResult> {
 
     return { processed: coldLeads.length, sent }
   } catch (err) {
-    console.error('Error processing cold leads:', err)
+    logger.error({ data: err }, 'Error processing cold leads:')
     return { processed: 0, sent: 0, error: (err as Error).message }
   }
 }
@@ -203,7 +204,7 @@ export async function processOverdueActions(): Promise<SchedulerResult> {
 
     return { processed: overdueLeads.length, sent }
   } catch (err) {
-    console.error('Error processing overdue actions:', err)
+    logger.error({ data: err }, 'Error processing overdue actions:')
     return { processed: 0, sent: 0, error: (err as Error).message }
   }
 }
@@ -269,7 +270,7 @@ export async function processEscalations(): Promise<EscalationResult> {
 
     return { processed: staleLeads.length, escalated }
   } catch (err) {
-    console.error('Error processing escalations:', err)
+    logger.error({ data: err }, 'Error processing escalations:')
     return { processed: 0, escalated: 0, error: (err as Error).message }
   }
 }
@@ -309,7 +310,7 @@ export async function processProposalReminders(): Promise<SchedulerResult> {
 
     return { processed: proposalLeads.length, sent }
   } catch (err) {
-    console.error('Error processing proposal reminders:', err)
+    logger.error({ data: err }, 'Error processing proposal reminders:')
     return { processed: 0, sent: 0, error: (err as Error).message }
   }
 }
@@ -360,7 +361,7 @@ export async function processWeeklyReport(): Promise<WeeklyReportResult> {
 
     return { sent: sent > 0, recipients: sent }
   } catch (err) {
-    console.error('Error processing weekly report:', err)
+    logger.error({ data: err }, 'Error processing weekly report:')
     return { sent: false, error: (err as Error).message }
   }
 }
@@ -396,7 +397,7 @@ export async function processOverdueTasks(): Promise<OverdueTasksResult> {
 
     return { processed: overdueTasks.length, notified }
   } catch (err) {
-    console.error('Error processing overdue tasks:', err)
+    logger.error({ data: err }, 'Error processing overdue tasks:')
     return { processed: 0, notified: 0, error: (err as Error).message }
   }
 }
@@ -449,7 +450,7 @@ export async function processInvoiceReminders(): Promise<InvoiceReminderResult> 
 
     return { processed: overdueInvoices.length, sent }
   } catch (err) {
-    console.error('Error processing invoice reminders:', err)
+    logger.error({ data: err }, 'Error processing invoice reminders:')
     return { processed: 0, sent: 0, error: (err as Error).message }
   }
 }
@@ -504,7 +505,7 @@ export async function processTaskDeadlineReminders(): Promise<TaskReminderResult
 
     return { processed: upcomingTasks.length, notified }
   } catch (err) {
-    console.error('Error processing task deadline reminders:', err)
+    logger.error({ data: err }, 'Error processing task deadline reminders:')
     return { processed: 0, notified: 0, error: (err as Error).message }
   }
 }
@@ -547,7 +548,7 @@ export async function processProjectDeadlineAlerts(): Promise<ProjectDeadlineRes
 
     return { processed: projects.length, notified }
   } catch (err) {
-    console.error('Error processing project deadline alerts:', err)
+    logger.error({ data: err }, 'Error processing project deadline alerts:')
     return { processed: 0, notified: 0, error: (err as Error).message }
   }
 }
@@ -600,7 +601,7 @@ export async function processBriefDeadlineReminders(): Promise<BriefReminderResu
 
     return { processed: briefs.length, notified }
   } catch (err) {
-    console.error('Error processing brief deadline reminders:', err)
+    logger.error({ data: err }, 'Error processing brief deadline reminders:')
     return { processed: 0, notified: 0, error: (err as Error).message }
   }
 }
@@ -664,7 +665,7 @@ export async function processClientHealthAutoUpdate(): Promise<ClientHealthResul
 
     return { processed: clients.length, updated }
   } catch (err) {
-    console.error('Error processing client health auto-update:', err)
+    logger.error({ data: err }, 'Error processing client health auto-update:')
     return { processed: 0, updated: 0, error: (err as Error).message }
   }
 }
@@ -687,7 +688,7 @@ export async function runScheduledJobs(): Promise<void> {
       // Check if already run today
       const today = now.toDateString()
       if (lastRunTimes.overdueActions !== today) {
-        console.log('[CRM Scheduler] Running daily overdue actions job...')
+        logger.info('[CRM Scheduler] Running daily overdue actions job...')
         await processOverdueActions()
         await processColdLeads()
         await processEscalations()
@@ -702,21 +703,21 @@ export async function runScheduledJobs(): Promise<void> {
 
       // Task deadline reminders (08:00)
       if (lastRunTimes.taskReminders !== today) {
-        console.log('[CRM Scheduler] Running task deadline reminders...')
+        logger.info('[CRM Scheduler] Running task deadline reminders...')
         await processTaskDeadlineReminders()
         lastRunTimes.taskReminders = today
       }
 
       // Project deadline alerts (08:00)
       if (lastRunTimes.projectDeadlines !== today) {
-        console.log('[CRM Scheduler] Running project deadline alerts...')
+        logger.info('[CRM Scheduler] Running project deadline alerts...')
         await processProjectDeadlineAlerts()
         lastRunTimes.projectDeadlines = today
       }
 
       // Brief deadline reminders (08:00)
       if (lastRunTimes.briefReminders !== today) {
-        console.log('[CRM Scheduler] Running brief deadline reminders...')
+        logger.info('[CRM Scheduler] Running brief deadline reminders...')
         await processBriefDeadlineReminders()
         lastRunTimes.briefReminders = today
       }
@@ -726,7 +727,7 @@ export async function runScheduledJobs(): Promise<void> {
     if (currentHour === 9 && currentMinute >= 0 && currentMinute < 5) {
       const today = now.toDateString()
       if (lastRunTimes.invoiceReminders !== today) {
-        console.log('[CRM Scheduler] Running invoice reminders...')
+        logger.info('[CRM Scheduler] Running invoice reminders...')
         await processInvoiceReminders()
         lastRunTimes.invoiceReminders = today
       }
@@ -741,7 +742,7 @@ export async function runScheduledJobs(): Promise<void> {
     ) {
       const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
       if (lastRunTimes.clientHealth !== thisWeek) {
-        console.log('[CRM Scheduler] Running client health auto-update...')
+        logger.info('[CRM Scheduler] Running client health auto-update...')
         await processClientHealthAutoUpdate()
         lastRunTimes.clientHealth = thisWeek
       }
@@ -757,13 +758,13 @@ export async function runScheduledJobs(): Promise<void> {
     ) {
       const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
       if (lastRunTimes.weeklyReport !== thisWeek) {
-        console.log('[CRM Scheduler] Running weekly report job...')
+        logger.info('[CRM Scheduler] Running weekly report job...')
         await processWeeklyReport()
         lastRunTimes.weeklyReport = thisWeek
       }
     }
   } catch (err) {
-    console.error('[CRM Scheduler] Error running scheduled jobs:', err)
+    logger.error({ data: err }, '[CRM Scheduler] Error running scheduled jobs:')
   }
 }
 
@@ -774,7 +775,7 @@ let schedulerInterval: ReturnType<typeof setInterval> | null = null
 
 export function startScheduler(): void {
   if (schedulerInterval) return
-  console.log('[CRM Scheduler] Starting scheduler...')
+  logger.info('[CRM Scheduler] Starting scheduler...')
   schedulerInterval = setInterval(runScheduledJobs, 60 * 1000) // Every minute
   // Run once immediately
   runScheduledJobs()
@@ -784,6 +785,6 @@ export function stopScheduler(): void {
   if (schedulerInterval) {
     clearInterval(schedulerInterval)
     schedulerInterval = null
-    console.log('[CRM Scheduler] Scheduler stopped')
+    logger.info('[CRM Scheduler] Scheduler stopped')
   }
 }

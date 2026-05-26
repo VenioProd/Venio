@@ -5,6 +5,7 @@
 import { getCronAutomations } from './registry.js'
 import { runAutomation, buildContext } from './engine.js'
 import type { AutomationDefinition } from './types.js'
+import logger from '../lib/logger.js'
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 const CHECK_INTERVAL_MS = 60_000 // 60 seconds
@@ -48,7 +49,7 @@ async function tick(): Promise<void> {
 
   if (dueJobs.length === 0) return
 
-  console.log(`[AUTOMATION SCHEDULER] ${dueJobs.length} job(s) due at ${now.toLocaleTimeString('fr-FR')}`)
+  logger.info(`[AUTOMATION SCHEDULER] ${dueJobs.length} job(s) due at ${now.toLocaleTimeString('fr-FR')}`)
 
   // Run all due jobs concurrently
   const results = await Promise.allSettled(
@@ -63,10 +64,10 @@ async function tick(): Promise<void> {
     if (r.status === 'fulfilled') {
       const { key, status } = r.value
       if (status !== 'SKIPPED') {
-        console.log(`[AUTOMATION SCHEDULER] ${key}: ${status}`)
+        logger.info(`[AUTOMATION SCHEDULER] ${key}: ${status}`)
       }
     } else {
-      console.error(`[AUTOMATION SCHEDULER] Unhandled error:`, r.reason)
+      logger.error({ data: r.reason }, `[AUTOMATION SCHEDULER] Unhandled error:`)
     }
   }
 }
@@ -76,15 +77,15 @@ async function tick(): Promise<void> {
  */
 export function startAutomationScheduler(): void {
   if (intervalId) {
-    console.warn('[AUTOMATION SCHEDULER] Already running')
+    logger.warn('[AUTOMATION SCHEDULER] Already running')
     return
   }
 
-  console.log('[AUTOMATION SCHEDULER] Starting (check every 60s)')
+  logger.info('[AUTOMATION SCHEDULER] Starting (check every 60s)')
   intervalId = setInterval(tick, CHECK_INTERVAL_MS)
 
   // Run once immediately
-  tick().catch((err) => console.error('[AUTOMATION SCHEDULER] Initial tick error:', err))
+  tick().catch((err) => logger.error({ data: err }, '[AUTOMATION SCHEDULER] Initial tick error:'))
 }
 
 /**
@@ -94,6 +95,6 @@ export function stopAutomationScheduler(): void {
   if (intervalId) {
     clearInterval(intervalId)
     intervalId = null
-    console.log('[AUTOMATION SCHEDULER] Stopped')
+    logger.info('[AUTOMATION SCHEDULER] Stopped')
   }
 }

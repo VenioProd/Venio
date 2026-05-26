@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'infra.mongodb_health_check',
@@ -53,9 +54,9 @@ const definition: AutomationDefinition = {
           objects: stats.objects,
           indexes: stats.indexes,
         }
-        console.log(`[MONGO HEALTH] Connected — ${stats.collections} collection(s), dataSize: ${Math.round((stats.dataSize || 0) / 1024 / 1024)}MB`)
+        logger.info(`[MONGO HEALTH] Connected — ${stats.collections} collection(s), dataSize: ${Math.round((stats.dataSize || 0) / 1024 / 1024)}MB`)
       } catch (err) {
-        console.warn(`[MONGO HEALTH] Connected but stats failed: ${(err as Error).message}`)
+        logger.warn(`[MONGO HEALTH] Connected but stats failed: ${(err as Error).message}`)
         dbStats = { error: (err as Error).message }
       }
     }
@@ -63,7 +64,7 @@ const definition: AutomationDefinition = {
     actionsExecuted.push(`mongo_health:state_${readyState}`)
 
     if (readyState !== 1) {
-      console.error(`[MONGO HEALTH] MongoDB is NOT connected (state: ${stateLabel})`)
+      logger.error(`[MONGO HEALTH] MongoDB is NOT connected (state: ${stateLabel})`)
 
       const admins = await User.find({
         role: 'SUPER_ADMIN',
@@ -81,7 +82,7 @@ const definition: AutomationDefinition = {
         recipientsNotified.push((admin._id as object).toString())
       }
     } else {
-      console.log(`[MONGO HEALTH] MongoDB health check passed — ${stateLabel}`)
+      logger.info(`[MONGO HEALTH] MongoDB health check passed — ${stateLabel}`)
     }
 
     return {

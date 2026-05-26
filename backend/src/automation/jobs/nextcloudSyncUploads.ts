@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { isNextcloudEnabled } from '../../lib/nextcloud.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'nextcloud.sync_uploads_from_backoffice',
@@ -56,7 +57,7 @@ const definition: AutomationDefinition = {
         // l'upload réel nécessite de lire le fichier depuis le stockage local.
         // and uploading via PUT to the WebDAV endpoint
 
-        console.log(`[NEXTCLOUD SYNC] Would sync: ${doc.originalName} → project ${(doc.project as { name?: string })?.name || doc.project}`)
+        logger.info(`[NEXTCLOUD SYNC] Would sync: ${doc.originalName} → project ${(doc.project as { name?: string })?.name || doc.project}`)
 
         // Mark as synced (placeholder — actual sync requires WebDAV PUT implementation)
         // doc.nextcloudSynced = true
@@ -67,7 +68,7 @@ const definition: AutomationDefinition = {
         actionsExecuted.push(`sync:doc:${doc._id}`)
       } catch (err) {
         errorCount++
-        console.error(`[NEXTCLOUD SYNC] Failed to sync ${doc.originalName}:`, (err as Error).message)
+        logger.error({ data: (err as Error).message }, `[NEXTCLOUD SYNC] Failed to sync ${doc.originalName}:`)
       }
     }
 

@@ -4,6 +4,7 @@ import Notification from '../models/Notification.js'
 import { sendPushToUser } from './webPush.js'
 import { shouldNotify } from './notificationPreferences.js'
 import { getIo } from '../realtime/ioSingleton.js'
+import logger from './logger.js'
 
 interface CreateNotificationParams {
   recipient: Types.ObjectId | string
@@ -66,7 +67,7 @@ export async function createNotification({ recipient, type, title, message, link
       unreadCount: typeof unreadCount === 'number' ? unreadCount : undefined,
     })
   }).catch((err) => {
-    console.warn('[notifications] push fail', { recipientId, err: err?.message })
+    logger.warn({ data: { recipientId, err: err?.message } }, '[notifications] push fail')
   })
 
   return notification

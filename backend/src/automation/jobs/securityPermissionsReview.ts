@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'security.permissions_review',
@@ -144,7 +145,7 @@ const definition: AutomationDefinition = {
       }
     }
 
-    console.log(`[SECURITY] Permissions review: ${issues.length} issue(s)`)
+    logger.info(`[SECURITY] Permissions review: ${issues.length} issue(s)`)
 
     return {
       actionsExecuted,

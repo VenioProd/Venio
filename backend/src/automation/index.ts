@@ -68,6 +68,7 @@ import { register as registerInternReportReminder } from './jobs/internReportRem
 
 import { startAutomationScheduler, stopAutomationScheduler } from './scheduler.js'
 import { getAllAutomations } from './registry.js'
+import logger from '../lib/logger.js'
 
 /**
  * Initialize the automation engine:
@@ -75,7 +76,7 @@ import { getAllAutomations } from './registry.js'
  * 2. Start the scheduler
  */
 export function initAutomationEngine(): void {
-  console.log('[AUTOMATION] Initializing automation engine...')
+  logger.info('[AUTOMATION] Initializing automation engine...')
 
   // ── Phase 1 — Quick wins ─────────────────────────────────
   registerTaskDeadlineReminders()
@@ -141,9 +142,9 @@ export function initAutomationEngine(): void {
   registerInternReportReminder()
 
   const registered = getAllAutomations()
-  console.log(`[AUTOMATION] ${registered.length} automation(s) registered:`)
+  logger.info(`[AUTOMATION] ${registered.length} automation(s) registered:`)
   for (const a of registered) {
-    console.log(`  → ${a.key} (${a.triggerType}${a.schedule ? ` @ ${a.schedule}` : ''})`)
+    logger.info(`  → ${a.key} (${a.triggerType}${a.schedule ? ` @ ${a.schedule}` : ''})`)
   }
 
   // ── Start scheduler ────────────────────────────────────

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express'
 import AgentToken from '../../../models/AgentToken.js'
 import AuditLog from '../../../models/AuditLog.js'
 import type { AuditAction } from '../../../types/enums.js'
+import logger from '../../../lib/logger.js'
 
 /**
  * Métadonnées d'audit que les handlers peuvent renseigner pour enrichir
@@ -128,9 +129,9 @@ async function logIfNeeded(req: Request, res: Response): Promise<void> {
       { _id: token.id },
       { $inc: { totalMutations: 1 } }
     ).catch((err: unknown) => {
-      console.error('[agent-audit] inc totalMutations failed:', (err as Error).message)
+      logger.error({ data: (err as Error).message }, '[agent-audit] inc totalMutations failed:')
     })
   } catch (err) {
-    console.error('[agent-audit] log failed:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[agent-audit] log failed:')
   }
 }

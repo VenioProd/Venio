@@ -7,6 +7,7 @@ import {
   type ChannelPreferences,
 } from '../lib/notificationPreferences.js'
 import type { NotificationType } from '../types/enums.js'
+import logger from '../lib/logger.js'
 
 const router = Router()
 
@@ -16,7 +17,7 @@ router.get('/', requireAuth, async (req, res) => {
     const prefs = await getPreferences(req.user!.id)
     return res.json({ preferences: prefs, types: NOTIFICATION_TYPES })
   } catch (err) {
-    console.error('[notif-prefs] get error', err)
+    logger.error({ data: err }, '[notif-prefs] get error')
     return res.status(500).json({ error: 'Erreur lecture préférences' })
   }
 })
@@ -45,7 +46,7 @@ router.patch('/', requireAuth, async (req, res) => {
     const merged = await setPreferences(req.user!.id, next)
     return res.json({ preferences: merged })
   } catch (err) {
-    console.error('[notif-prefs] patch error', err)
+    logger.error({ data: err }, '[notif-prefs] patch error')
     return res.status(500).json({ error: 'Erreur écriture préférences' })
   }
 })

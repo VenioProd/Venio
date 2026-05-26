@@ -1,6 +1,7 @@
 import type { Request } from 'express'
 import AuditLog from '../../models/AuditLog.js'
 import type { AuditAction } from '../../types/enums.js'
+import logger from '../logger.js'
 
 /**
  * Construit l'identification d'acteur à partir d'une requête Express.
@@ -113,6 +114,6 @@ export async function recordAudit(params: {
     })
   } catch (err) {
     // Audit append-only ne doit jamais bloquer le métier
-    console.error('recordAudit failed:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, 'recordAudit failed:')
   }
 }

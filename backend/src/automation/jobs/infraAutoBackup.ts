@@ -8,6 +8,7 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import { createBackup } from '../../lib/backup.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'infra.auto_backup',
@@ -35,10 +36,10 @@ const definition: AutomationDefinition = {
     const result = createBackup()
 
     if (result.success) {
-      console.log(`[INFRA BACKUP] Backup created successfully: ${result.path}`)
+      logger.info(`[INFRA BACKUP] Backup created successfully: ${result.path}`)
       actionsExecuted.push(`backup_success:${result.path}`)
     } else {
-      console.error(`[INFRA BACKUP] Backup failed: ${result.error}`)
+      logger.error(`[INFRA BACKUP] Backup failed: ${result.error}`)
       actionsExecuted.push(`backup_failed:${result.error}`)
 
       // Notify SUPER_ADMINs on failure
