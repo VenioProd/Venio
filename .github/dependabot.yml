@@ -1,0 +1,91 @@
+version: 2
+
+updates:
+  # Frontend (racine)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - deps
+      - frontend
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    # On groupe les updates non-breaking (patch + minor) pour réduire le bruit
+    groups:
+      frontend-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          # On veut voir les majors React/Vite à part
+          - react
+          - react-dom
+          - vite
+          - vitest
+          - typescript
+    ignore:
+      # Majors traités manuellement (breaking change check requis)
+      - dependency-name: react
+        update-types: ['version-update:semver-major']
+      - dependency-name: react-dom
+        update-types: ['version-update:semver-major']
+      - dependency-name: vite
+        update-types: ['version-update:semver-major']
+      - dependency-name: vitest
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+
+  # Backend
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - deps
+      - backend
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    groups:
+      backend-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          - mongoose
+          - typescript
+          - express
+    ignore:
+      - dependency-name: mongoose
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      - dependency-name: express
+        update-types: ['version-update:semver-major']
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - deps
+      - ci-cd
+    commit-message:
+      prefix: chore(ci)
+      include: scope
