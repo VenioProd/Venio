@@ -6,12 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:ionos": "vite build && node scripts/create-htaccess.js",
     "preview": "vite preview",
-    "postbuild": "node scripts/create-htaccess.js && node scripts/generate-sitemap.js",
+    "postbuild": "node scripts/generate-sitemap.js",
     "sitemap": "node scripts/generate-sitemap.js",
-    "deploy:check": "node scripts/prepare-deploy.js",
-    "deploy:ionos": "npm run build:ionos && npm run deploy:check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:frontend": "vitest run",

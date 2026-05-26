@@ -46,8 +46,7 @@ Le frontend proxy `/api/*` et `/socket.io/*` vers `VITE_API_PROXY_TARGET` (défa
 | Script | Effet |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm run build` | Build prod (`dist/`) + .htaccess + sitemap |
-| `npm run build:ionos` | Build + génération .htaccess explicite |
+| `npm run build` | Build prod (`dist/`) + sitemap |
 | `npm run test` / `npm run test:frontend` | Tests frontend uniquement |
 | `npm run test:backend` | `npm --prefix backend test` |
 | `npm run test:all` | Frontend puis backend |
@@ -76,7 +75,7 @@ Toutes les routes admin sensibles sont protégées par `<RequirePermission>` cô
 - [docs/api-agent.md](docs/api-agent.md) — API agent (Bearer + scopes + idempotency)
 - [docs/architecture/API_CONTRACTS.md](docs/architecture/API_CONTRACTS.md) — conventions d'API
 - [docs/operations/RUNBOOK.md](docs/operations/RUNBOOK.md) — exploitation
-- [docs/deploiement/](docs/deploiement/) — déploiement VPS / IONOS
+- [docs/deploiement/](docs/deploiement/) — déploiement VPS (Docker + GitHub Actions)
 - [docs/optimisation/](docs/optimisation/) — bundles, perf, SEO
 - [docs/accounting/](docs/accounting/), [docs/admin/](docs/admin/), [docs/projet/](docs/projet/) — modules
 
