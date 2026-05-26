@@ -982,7 +982,7 @@ router.delete('/:id/convention/:filename', requireAdmin, async (req: Request, re
 // ── Paramètres notifications rapports ──
 
 // GET /api/admin/interns/settings/report-notifs
-router.get('/settings/report-notifs', requireAdmin, async (req: Request, res: Response) => {
+router.get('/settings/report-notifs', requireAdmin, async (_req: Request, res: Response) => {
   try {
     const settings = await getInternSettings()
     const populated = await settings.populate('reportNotifRecipients', 'name email role')

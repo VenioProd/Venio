@@ -157,7 +157,7 @@ describe('Agent Accounting / entries', () => {
       totalCredit: 1200,
       createdBy: adminId,
     })
-    const e2 = await AccountingEntry.create({
+    await AccountingEntry.create({
       journal: journalId,
       journalCode: 'VE',
       fiscalYear: fyId,

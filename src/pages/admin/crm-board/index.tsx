@@ -25,6 +25,7 @@ import SchoolFormPanel from '../arrow-prospection/SchoolFormPanel'
 import SchoolDetailModal from '../arrow-prospection/SchoolDetailModal'
 import { EMPTY_FORM as EMPTY_SCHOOL_FORM } from '../arrow-prospection/constants'
 import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
+import { getErrorMessage } from '../../../lib/errors'
 
 const CrmBoard = () => {
   const { user } = useAuth()
@@ -117,8 +118,8 @@ const CrmBoard = () => {
       await load()
       setSection('arrow')
       await loadArrow()
-    } catch (err: any) {
-      alert(err.message || 'Erreur lors du transfert')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Erreur lors du transfert'))
     }
   }
 
@@ -131,8 +132,8 @@ const CrmBoard = () => {
       await load()
       setSection('arrow')
       await loadArrow()
-    } catch (err: any) {
-      alert(err.message || 'Erreur lors du transfert')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Erreur lors du transfert'))
     }
   }
 

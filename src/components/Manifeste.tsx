@@ -1,4 +1,3 @@
-import React from 'react'
 import './Manifeste.css'
 
 const Manifeste = () => {

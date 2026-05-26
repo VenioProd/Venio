@@ -1,4 +1,3 @@
-import React from 'react'
 import './GrainMicrodots.css'
 
 const GrainMicrodots = () => {

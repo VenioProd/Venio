@@ -30,7 +30,7 @@ const definition: AutomationDefinition = {
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Lead = mongoose.model('Lead')
-    const User = mongoose.model('User')
+
 
     const inactiveDays = (ctx.settings.config?.inactiveDays as number) || DEFAULT_INACTIVE_DAYS
     const threshold = new Date(ctx.now.getTime() - inactiveDays * 24 * 3600_000)

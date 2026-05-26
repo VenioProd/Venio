@@ -1,7 +1,7 @@
 /**
  * Format a number as currency for display (fr-FR style: 1 234,56)
  */
-export function formatCurrency(value: unknown, currency = 'EUR'): string {
+export function formatCurrency(value: unknown, _currency = 'EUR'): string {
   if (value === '' || value == null || Number.isNaN(Number(value))) return ''
   const n = Number(value)
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

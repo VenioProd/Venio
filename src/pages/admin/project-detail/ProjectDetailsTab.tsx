@@ -16,7 +16,6 @@ const BILLING_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', ISSU
 const deadlineDueAtDisplay = (dueAt: string): string => (dueAt ? toDateTimeLocal(dueAt) : '')
 
 const ProjectDetailsTab: React.FC<ProjectDetailsTabProps> = ({
-  project,
   form,
   setForm,
   admins,

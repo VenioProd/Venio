@@ -39,8 +39,6 @@ import UserAvatar from './UserAvatar'
 import { apiFetch } from '../lib/api'
 import './AdminSidebar.css'
 
-const LS_KEY = 'venio-admin-sidebar-collapsed'
-
 interface NavItem {
   to: string
   label: string

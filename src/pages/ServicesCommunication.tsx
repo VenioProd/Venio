@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import NeonDivider from '../components/NeonDivider'

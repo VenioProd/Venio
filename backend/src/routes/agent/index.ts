@@ -7,7 +7,7 @@ import {
   requestIdMiddleware,
   agentErrorHandler,
 } from './_middleware/errors.js'
-import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
+
 import { buildOpenApiSpec, extractRoutes } from '../../lib/agent/openapi.js'
 import crmRoutes from './crm.js'
 import projectsRoutes from './projects.js'

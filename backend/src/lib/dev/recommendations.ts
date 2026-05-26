@@ -128,11 +128,6 @@ function daysSince(date: Date | string | null | undefined): number {
   return Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000))
 }
 
-function matchesAny(value: string | null | undefined, patterns: RegExp[]): boolean {
-  if (!value) return false
-  return patterns.some((p) => p.test(value))
-}
-
 function labelsMatchAny(labels: string[] | undefined, patterns: RegExp[]): boolean {
   if (!labels || labels.length === 0) return false
   return labels.some((l) => patterns.some((p) => p.test(l)))

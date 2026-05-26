@@ -24,7 +24,8 @@ describe('buildInbox', () => {
     const userId = new mongoose.Types.ObjectId()
     const submitter = new mongoose.Types.ObjectId()
     const d1 = await Decision.create({ title: 'A', status: 'PENDING', priority: 'URGENTE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
-    const d2 = await Decision.create({ title: 'B', status: 'PENDING', priority: 'NORMALE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
+    await Decision.create({ title: 'B', status: 'PENDING', priority: 'NORMALE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
+
     // snooze d1 for 1h
     await InboxSnooze.create({ userId, itemType: 'decision', sourceId: d1._id, snoozedUntil: new Date(Date.now() + 3600 * 1000) })
 

@@ -56,7 +56,7 @@ router.post('/projects/:projectId/quotes', requirePermission(PERMISSIONS.MANAGE_
       return res.status(400).json({ error: 'Client not found' })
     }
 
-    const { value, formatted } = await getNextSequence('quoteNumber', {
+    const { formatted } = await getNextSequence('quoteNumber', {
       prefix: 'DEV-',
       padding: 4,
     })

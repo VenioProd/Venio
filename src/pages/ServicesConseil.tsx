@@ -1,4 +1,3 @@
-import React from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import NeonDivider from '../components/NeonDivider'
 import NeonCorners from '../components/NeonCorners'

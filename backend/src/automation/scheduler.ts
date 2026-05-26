@@ -4,7 +4,7 @@
 
 import { getCronAutomations } from './registry.js'
 import { runAutomation, buildContext } from './engine.js'
-import type { AutomationDefinition } from './types.js'
+
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 const CHECK_INTERVAL_MS = 60_000 // 60 seconds

@@ -1,5 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
-import mongoose from 'mongoose'
+
 import { body, param, validationResult } from 'express-validator'
 import ProjectTemplate from '../../models/ProjectTemplate.js'
 import User from '../../models/User.js'

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 // ── Test scheduler shouldRunNow logic ─────────────────────────
 // We re-implement the logic here since it's not exported, but we
@@ -114,7 +114,7 @@ import {
   getEventAutomations,
   listAutomationSummaries,
 } from '../automation/registry.js'
-import type { AutomationDefinition, AutomationContext } from '../automation/types.js'
+import type { AutomationDefinition } from '../automation/types.js'
 
 function createMockDefinition(overrides: Partial<AutomationDefinition> = {}): AutomationDefinition {
   const key = overrides.key || `test.mock_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

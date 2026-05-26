@@ -94,7 +94,7 @@ function sanitizeFolderName(name: string): string {
  * Build the WebDAV URL for a given path
  */
 function buildWebDavUrl(path: string): string {
-  const { url, user } = getConfig()
+  const { url } = getConfig()
   // Remove leading slash from path if present
   const cleanPath = path.startsWith('/') ? path.slice(1) : path
   // Encode each path segment separately to handle special characters

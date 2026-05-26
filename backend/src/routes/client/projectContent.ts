@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express'
+import express, { Request, Response } from 'express'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import ProjectSection from '../../models/ProjectSection.js'

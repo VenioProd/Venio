@@ -15,15 +15,6 @@ export interface INotificationPreferences {
   prefs: Record<NotificationType, ChannelPreferences>
 }
 
-const channelSchema = new mongoose.Schema<ChannelPreferences>(
-  {
-    inApp: { type: Boolean, default: true },
-    push: { type: Boolean, default: true },
-    email: { type: Boolean, default: true },
-  },
-  { _id: false }
-)
-
 const notificationPreferencesSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },

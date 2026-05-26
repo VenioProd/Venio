@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import { getErrorMessage } from '../../lib/errors'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
 const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation']
@@ -133,7 +134,7 @@ export default function InternalProjectList() {
   const [stepAssigneeInputs, setStepAssigneeInputs] = useState<Record<string, string>>({})
   const [deliverableInputs, setDeliverableInputs] = useState<Record<string, { title: string; description: string; assignedTo: string }>>({})
   const [expandedStep, setExpandedStep] = useState<string | null>(null)
-  const [stepDescInputs, setStepDescInputs] = useState<Record<string, string>>({})
+  // useState supprimé : stepDescInputs / setStepDescInputs jamais utilisés (cleanup TS noUnusedLocals)
 
   const [uploadingMission, setUploadingMission] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -232,8 +233,8 @@ export default function InternalProjectList() {
       setEditTarget(null)
       setForm({ ...emptyForm })
       load()
-    } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Erreur'), 'error')
     } finally { setSaving(false) }
   }
 
@@ -261,7 +262,7 @@ export default function InternalProjectList() {
       showToast('Projet supprimé', 'success')
       setDeleteTarget(null)
       load()
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const togglePole = (pole: string) => {
@@ -319,8 +320,8 @@ export default function InternalProjectList() {
       setShowMissionForm(false)
       setMissionForm({ projectId: '', title: '', description: '', assignedTo: [], dueDate: '' })
       showToast('Mission créée', 'success')
-    } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Erreur'), 'error')
     } finally {
       setSavingMission(false)
     }
@@ -1304,7 +1305,7 @@ export default function InternalProjectList() {
         const totalSteps = m.steps?.length ?? 0
         const delivDone = (m.deliverables || []).filter(d => d.done).length
         const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
-        const myParticipant = (m.participants || []).find(p => p.user?._id === user?._id)
+
 
         const Section = ({ icon, title, badge, children }: { icon: string; title: string; badge?: React.ReactNode; children: React.ReactNode }) => (
           <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>

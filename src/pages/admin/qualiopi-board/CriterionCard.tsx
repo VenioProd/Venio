@@ -37,7 +37,6 @@ interface CriterionCardProps {
 const CriterionCard: React.FC<CriterionCardProps> = ({
   criterion,
   index: ci,
-  totalCount,
   isExpanded,
   expandedIndicators,
   admins,
@@ -49,8 +48,6 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
   onSetEditTitle,
   onSaveEditCriterion,
   onCancelEdit,
-  onReorderCriterion,
-  onDeleteCriterion,
   onUpdateIndicator,
   onUpdateSubElement,
   onAddSubElement,
@@ -61,7 +58,6 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
   onDeleteIndicatorFile,
   onPreviewFile,
   onDownloadFile,
-  onConfirmDeleteCriterion,
   onConfirmDeleteSub,
 }) => {
   const progress = getProgress(criterion.indicators)

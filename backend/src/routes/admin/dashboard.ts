@@ -51,7 +51,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     })
 
     // Revenue this month (sum of budget.amount for projects created this month)
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
     const monthlyRevenue = await Project.aggregate([
       {
         $match: {

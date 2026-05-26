@@ -1,4 +1,3 @@
-import React from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import SEO from '../components/SEO'
 import './Legal.css'

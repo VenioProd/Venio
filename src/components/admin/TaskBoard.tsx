@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import { fetchTasks, createTask, updateTask, moveTask, deleteTask, fetchComments, addComment, deleteComment, uploadAttachment, downloadAttachment, deleteAttachment } from '../../services/adminTasks'
 import ConfirmModal from '../ConfirmModal'
-import type { Task, TaskStatus, TaskPriority, TaskComment, TaskAttachment } from '../../types/task.types'
+import type { Task, TaskStatus, TaskPriority, TaskComment } from '../../types/task.types'
 import type { AdminUser } from '../../types/crm.types'
 import '../../styles/task-board.css'
 

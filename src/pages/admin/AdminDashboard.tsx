@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
@@ -76,7 +76,7 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
 }
 
 const AdminDashboard = () => {
-  const { logout, user } = useAuth()
+  const { user } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
@@ -86,11 +86,11 @@ const AdminDashboard = () => {
   const [myInternalProjects, setMyInternalProjects] = useState<{ _id: string; name: string; entity: string; status: string; poles: string[] }[]>([])
   const [myMissions, setMyMissions] = useState<{ _id: string; title: string; description: string; status: string; dueDate: string | null; steps: { _id: string; title: string; done: boolean }[]; internalProject: { _id: string; name: string; entity: string } }[]>([])
 
-  const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
+
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
   const canViewProjects = hasPermission(user, PERMISSIONS.VIEW_PROJECTS)
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
-  const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
+
   const canViewMessaging = hasPermission(user, PERMISSIONS.VIEW_MESSAGING)
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 

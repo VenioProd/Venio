@@ -5,7 +5,7 @@
 
 import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
-import { dispatch, resolveRecipients } from '../dispatcher.js'
+
 import { sendTaskReminderEmail } from '../../lib/email.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
@@ -29,7 +29,7 @@ const definition: AutomationDefinition = {
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Task = mongoose.model('Task')
-    const User = mongoose.model('User')
+
 
     const now = ctx.now
     const in3days = new Date(now.getTime() + 3 * 24 * 3600_000)

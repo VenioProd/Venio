@@ -5,7 +5,7 @@ import CrmSettings from '../models/CrmSettings.js'
 import BillingDocument from '../models/BillingDocument.js'
 import Project from '../models/Project.js'
 import MissionBrief from '../models/MissionBrief.js'
-import { ADMIN_ROLES } from './permissions.js'
+
 import {
   getDaysSinceContact,
   getDaysOverdue,
@@ -21,7 +21,7 @@ import {
   sendEscalationEmail,
   sendProposalReminderEmail,
   sendWeeklyReportEmail,
-  sendTaskAssignedEmail,
+
   sendInvoiceReminderEmail,
   sendTaskReminderEmail,
   sendBriefReminderEmail,

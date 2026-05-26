@@ -40,7 +40,7 @@ export function getCronAutomations(): AutomationDefinition[] {
 /**
  * Get automations matching an event type.
  */
-export function getEventAutomations(eventType: string): AutomationDefinition[] {
+export function getEventAutomations(_eventType: string): AutomationDefinition[] {
   return getAllAutomations().filter(
     (a) => a.triggerType === 'event' || a.triggerType === 'status_change'
   )

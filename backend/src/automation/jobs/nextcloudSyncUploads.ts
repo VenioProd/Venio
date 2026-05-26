@@ -27,7 +27,7 @@ const definition: AutomationDefinition = {
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Document = mongoose.model('Document')
-    const Project = mongoose.model('Project')
+
 
     // Find documents uploaded in the last 24h that haven't been synced
     const yesterday = new Date(ctx.now.getTime() - 24 * 3600_000)

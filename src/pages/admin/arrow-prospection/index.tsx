@@ -8,9 +8,10 @@ import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.type
 import SchoolTable from './SchoolTable'
 import SchoolFormPanel from './SchoolFormPanel'
 import SchoolDetailModal from './SchoolDetailModal'
-import { ARROW_STATUSES, EMPTY_FORM, STATUS_MAP } from './constants'
+import { ARROW_STATUSES, EMPTY_FORM } from './constants'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import { getErrorMessage } from '../../../lib/errors'
 
 interface AdminUser { _id: string; name: string; email: string }
 
@@ -43,8 +44,8 @@ export default function ArrowProspection() {
       const data = await apiFetch<{ schools: ArrowSchool[]; admins: AdminUser[] }>('/api/admin/arrow-prospection')
       setSchools(data.schools)
       setAdmins(data.admins)
-    } catch (err: any) {
-      setError(err.message || 'Erreur chargement')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Erreur chargement'))
     } finally {
       setLoading(false)
     }
@@ -111,8 +112,8 @@ export default function ArrowProspection() {
       setShowForm(false)
       setEditing(null)
       await load()
-    } catch (err: any) {
-      setError(err.message || 'Erreur')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Erreur'))
     } finally {
       setSaving(false)
     }
@@ -123,8 +124,8 @@ export default function ArrowProspection() {
       await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'DELETE' })
       setDeleteConfirm(null)
       await load()
-    } catch (err: any) {
-      setError(err.message || 'Erreur suppression')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Erreur suppression'))
     }
   }
 

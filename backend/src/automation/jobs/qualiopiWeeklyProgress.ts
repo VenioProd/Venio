@@ -25,7 +25,7 @@ const definition: AutomationDefinition = {
 
   evaluate: async (ctx) => ctx.now.getDay() === 1,
 
-  execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
+  execute: async (_ctx: AutomationContext): Promise<AutomationResult> => {
     const QualiopiCriterion = mongoose.model('QualiopiCriterion')
     const User = mongoose.model('User')
 

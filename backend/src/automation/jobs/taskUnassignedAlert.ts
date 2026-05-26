@@ -25,7 +25,7 @@ const definition: AutomationDefinition = {
 
   evaluate: async () => true,
 
-  execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
+  execute: async (_ctx: AutomationContext): Promise<AutomationResult> => {
     const Task = mongoose.model('Task')
     const User = mongoose.model('User')
 

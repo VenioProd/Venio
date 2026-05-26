@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluatePulseRules, PulseContext, PulseCheck } from './pulseRules.js'
+import { evaluatePulseRules, PulseContext } from './pulseRules.js'
 
 const baseCtx: PulseContext = {
   monthlyCA: 45000,

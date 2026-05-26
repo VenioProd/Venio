@@ -1,4 +1,4 @@
-import type { Permission, User, UserRole } from '../types/auth.types'
+import type { User } from '../types/auth.types'
 
 export const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COMPTABLE', 'RH', 'COMMERCIAL', 'VIEWER', 'STAGIAIRE'] as const
 

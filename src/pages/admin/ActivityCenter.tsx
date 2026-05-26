@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchActivitySummary, type ActivitySummary } from '../../services/activityCenter'
 import '../espace-client/ClientPortal.css'

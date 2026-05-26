@@ -19,7 +19,6 @@ import {
 import {
   fetchDevActivity,
   fetchDevRoadmap,
-  PRIORITY_COLOR,
   PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
@@ -40,7 +39,7 @@ interface Props {
   refreshTick: number
 }
 
-const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Props) => {
+const DashboardView = ({ stats, setFilters, setView, refreshTick }: Props) => {
   const [activity, setActivity] = useState<DevActivityEntry[] | null>(null)
   const [loadingActivity, setLoadingActivity] = useState(true)
   const [roadmap, setRoadmap] = useState<DevRoadmapProject[] | null>(null)

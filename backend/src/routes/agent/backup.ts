@@ -26,7 +26,7 @@ router.get('/backup', requireScope('read:backup'), (_req: Request, res: Response
 router.post(
   '/backup/trigger',
   requireScope('manage:backup'),
-  (req: Request, res: Response, next: NextFunction) => {
+  (_req: Request, res: Response, next: NextFunction) => {
     try {
       const result = createBackup()
       if (!result.success) {

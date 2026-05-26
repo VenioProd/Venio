@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import './PublicQuestionnaire.css'
+import { getErrorMessage } from '../lib/errors'
 
 interface Question {
   type: 'rating' | 'text' | 'multiple_choice'
@@ -36,7 +37,7 @@ const PublicQuestionnaire = () => {
         return r.json()
       })
       .then((d) => setData(d))
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false))
   }, [token])
 
@@ -64,8 +65,8 @@ const PublicQuestionnaire = () => {
       const json = await res.json()
       if (!res.ok) throw new Error(json.message || 'Erreur')
       setSubmitted(true)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err))
     } finally {
       setSubmitting(false)
     }

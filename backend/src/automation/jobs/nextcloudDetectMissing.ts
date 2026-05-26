@@ -36,7 +36,7 @@ const definition: AutomationDefinition = {
 
   evaluate: async () => isNextcloudEnabled(),
 
-  execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
+  execute: async (_ctx: AutomationContext): Promise<AutomationResult> => {
     const User = mongoose.model('User')
     const Project = mongoose.model('Project')
 

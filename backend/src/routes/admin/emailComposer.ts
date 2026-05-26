@@ -2,8 +2,8 @@ import express, { Request, Response, NextFunction } from 'express'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
-import { requirePermission } from '../../middleware/role.js'
-import { PERMISSIONS } from '../../lib/permissions.js'
+
+
 import User from '../../models/User.js'
 import { getTransporter } from '../../lib/email/transport.js'
 import { emailLayout } from '../../lib/email/layout.js'
@@ -14,7 +14,7 @@ router.use(auth)
 router.use(requireAdmin)
 
 // GET /api/admin/email-composer/recipients — liste des destinataires disponibles
-router.get('/recipients', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/recipients', requireAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const [admins, clients] = await Promise.all([
       User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] }, isActive: { $ne: false } })

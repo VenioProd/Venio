@@ -470,7 +470,7 @@ export async function computeProjectCockpit(
   const match = { project: id }
   const now = Date.now()
   const day = 24 * 60 * 60 * 1000
-  const since7 = new Date(now - 7 * day)
+
   const since14 = new Date(now - 14 * day)
   const startOfToday = startOfDayUTC(new Date(now))
 

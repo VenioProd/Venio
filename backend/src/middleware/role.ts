@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import type { UserRole, Permission } from '../types/enums.js'
-import { hasPermission, hasPermissionResolved, isAdminRole } from '../lib/permissions.js'
+import { hasPermissionResolved, isAdminRole } from '../lib/permissions.js'
 import User from '../models/User.js'
 
 export default function requireRole(role: UserRole) {

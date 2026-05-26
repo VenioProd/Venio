@@ -1,5 +1,5 @@
 import React from 'react'
-import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
+import { CATEGORY_CONFIG, PRIORITY_CONFIG } from './types'
 import type { KpiData } from './types'
 
 interface TicketStatsProps {

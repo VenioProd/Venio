@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import { getErrorMessage } from '../../lib/errors'
 
 const STATUS_LABELS: Record<string, string> = {
   EN_COURS: 'En cours',
@@ -107,7 +108,7 @@ export default function InternalProjectDetail() {
       })
       setProject(data.project); setEditStatus(data.project.status)
       showToast('Statut mis à jour', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
     finally { setSavingStatus(false) }
   }
 
@@ -117,7 +118,7 @@ export default function InternalProjectDetail() {
       await apiFetch(`/api/admin/internal-projects/${project._id}`, { method: 'DELETE' })
       showToast('Projet supprimé', 'success')
       navigate('/admin/projets-internes')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleCreateMission = async (e: React.FormEvent) => {
@@ -139,7 +140,7 @@ export default function InternalProjectDetail() {
       setShowMissionForm(false)
       setMissionForm({ title: '', description: '', assignedTo: [], dueDate: '' })
       showToast('Mission créée', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
     finally { setSavingMission(false) }
   }
 
@@ -149,7 +150,7 @@ export default function InternalProjectDetail() {
         method: 'PATCH', body: JSON.stringify({ status }),
       })
       setMissions(m => m.map(x => x._id === missionId ? { ...x, status: data.mission.status } : x))
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleDeleteMission = async (missionId: string) => {
@@ -158,7 +159,7 @@ export default function InternalProjectDetail() {
       setMissions(m => m.filter(x => x._id !== missionId))
       if (selectedMission === missionId) setSelectedMission(null)
       showToast('Mission supprimée', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleToggleStep = async (missionId: string, mission: Mission, stepId: string) => {
@@ -168,7 +169,7 @@ export default function InternalProjectDetail() {
         method: 'PATCH', body: JSON.stringify({ steps: newSteps }),
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleAddStep = async (missionId: string, mission: Mission, title: string, assignedTo?: string) => {
@@ -182,7 +183,7 @@ export default function InternalProjectDetail() {
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
       setStepInputs(s => ({ ...s, [missionId]: '' }))
       setStepAssigneeInputs(s => ({ ...s, [missionId]: '' }))
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleDeleteStep = async (missionId: string, mission: Mission, stepId: string) => {
@@ -192,7 +193,7 @@ export default function InternalProjectDetail() {
         method: 'PATCH', body: JSON.stringify({ steps: newSteps }),
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleStepDescUpdate = async (missionId: string, mission: Mission, stepId: string, description: string) => {
@@ -212,7 +213,7 @@ export default function InternalProjectDetail() {
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
       showToast('Vérification demandée au Super Admin', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleValidateStep = async (missionId: string, stepId: string) => {
@@ -222,7 +223,7 @@ export default function InternalProjectDetail() {
       })
       setMissions(m => m.map(x => x._id === missionId ? data.mission : x))
       showToast('Étape validée', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const handleParticipantUpdate = async (missionId: string, userId: string, fields: { progress?: number; status?: string; blocked?: boolean; blockedReason?: string }) => {
@@ -292,7 +293,7 @@ export default function InternalProjectDetail() {
       const updated = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
       setMissions(updated.missions || [])
       showToast('Fichier ajouté', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
     finally { setUploadingFile(u => ({ ...u, [missionId]: false })) }
   }
 
@@ -301,7 +302,7 @@ export default function InternalProjectDetail() {
       await apiFetch(`/api/admin/internal-projects/${id}/missions/${missionId}/files/${fileId}`, { method: 'DELETE' })
       setMissions(m => m.map(x => x._id === missionId ? { ...x, files: x.files.filter(f => f._id !== fileId) } : x))
       showToast('Fichier supprimé', 'success')
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   if (loading) return (

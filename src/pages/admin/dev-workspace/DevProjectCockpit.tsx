@@ -63,7 +63,7 @@ import {
   type DevCockpitIssueRef,
   type DevGithubPullRequestRef,
   type DevIssuePriority,
-  type DevIssueStatus,
+  
   type DevIssueType,
   type DevProjectGithubConfig,
   type DevProjectIntelligence,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -79,7 +79,7 @@ const permissionLabels: Record<string, string> = {
 const allPermissions = Object.values(PERMISSIONS)
 
 const AdminNew = () => {
-  const navigate = useNavigate()
+
   const { user } = useAuth()
   const { showToast } = useToast()
   const [showPassword, setShowPassword] = useState(false)

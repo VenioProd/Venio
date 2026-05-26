@@ -19,7 +19,7 @@ import {
   updateMessage,
 } from '../../services/internalMessaging.js'
 import { requireScope } from './_middleware/auth.js'
-import { respondError, AgentApiError } from './_middleware/errors.js'
+import { respondError } from './_middleware/errors.js'
 import { loadAgentUserPayload } from './_middleware/asUser.js'
 
 /**

@@ -10,7 +10,7 @@ import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
 import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sendStepReviewRequestEmail } from '../../lib/email/templates/project.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
-import { createNotification } from '../../lib/notifications.js'
+
 import { notifySuperAdmins, notifyUsers } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()

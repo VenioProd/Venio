@@ -1,5 +1,5 @@
 import type { UserRole } from './enums.js'
-import type { IAgentToken } from './models/agent.js'
+
 
 export interface JwtPayload {
   id: string

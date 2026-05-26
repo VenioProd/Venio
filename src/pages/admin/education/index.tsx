@@ -14,7 +14,7 @@ import {
   searchEducation,
   studentDisplayName, formatDate, assignmentExportUrl,
   CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
+  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
   type EducationDashboard, type EducationClass, type EducationStudent,

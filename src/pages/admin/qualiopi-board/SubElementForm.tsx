@@ -1,7 +1,7 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { STATUS_CONFIG, STATUS_OPTIONS } from './types'
-import type { QualiopiSubElement, QualiopiFile } from './types'
+import type { QualiopiSubElement } from './types'
 
 interface SubElementFormProps {
   sub: QualiopiSubElement

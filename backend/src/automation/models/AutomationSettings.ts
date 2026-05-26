@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Document } from 'mongoose'
-import type { AutomationSettingsDoc, Channel } from '../types.js'
+import type { AutomationSettingsDoc } from '../types.js'
 
 export interface IAutomationSettings extends AutomationSettingsDoc, Document {}
 

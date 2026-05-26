@@ -1,4 +1,3 @@
-import React from 'react'
 import type { AutomationCategory } from './types'
 
 export const AUTOMATION_CATEGORIES: AutomationCategory[] = [

@@ -10,7 +10,7 @@ import '../AdminPortal.css'
 import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const MyReports = () => {
-  const { user } = useAuth()
+  useAuth() // ensure auth context is initialized for downstream fetches
   const { confirm, ConfirmDialog } = useConfirm()
 
   const [reports, setReports] = useState<ActivityReport[]>([])

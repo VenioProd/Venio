@@ -36,7 +36,7 @@ const definition: AutomationDefinition = {
     const User = mongoose.model('User')
     const Task = mongoose.model('Task')
     const Lead = mongoose.model('Lead')
-    const Project = mongoose.model('Project')
+
     const BillingDocument = mongoose.model('BillingDocument')
 
     const internalUsers = await User.find({

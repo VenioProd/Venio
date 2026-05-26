@@ -1,4 +1,3 @@
-import React from 'react'
 import PoleCard from './PoleCard'
 import './Poles.css'
 

@@ -1,5 +1,4 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
-import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import QualiopiQuestionnaire from '../../models/QualiopiQuestionnaire.js'
 import QualiopiCriterion from '../../models/QualiopiCriterion.js'
@@ -18,10 +17,6 @@ import { respondError } from './_middleware/errors.js'
  */
 
 const router = express.Router()
-
-function isValidObjectId(id: unknown): boolean {
-  return typeof id === 'string' && mongoose.isValidObjectId(id)
-}
 
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)

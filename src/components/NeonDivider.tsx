@@ -1,4 +1,3 @@
-import React from 'react'
 import './NeonDivider.css'
 
 interface NeonDividerProps {

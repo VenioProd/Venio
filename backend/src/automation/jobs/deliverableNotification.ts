@@ -30,7 +30,7 @@ const definition: AutomationDefinition = {
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const ProjectItem = mongoose.model('ProjectItem')
     const Project = mongoose.model('Project')
-    const User = mongoose.model('User')
+
 
     const itemId = ctx.meta!.itemId as string
     const projectId = ctx.meta!.projectId as string

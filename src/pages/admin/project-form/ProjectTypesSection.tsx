@@ -7,7 +7,6 @@ import {
 
 const ProjectTypesSection: React.FC<ProjectTypesSectionProps> = ({
   form,
-  setForm,
   serviceTypeInput,
   setServiceTypeInput,
   addServiceType,

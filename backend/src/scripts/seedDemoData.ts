@@ -89,7 +89,7 @@ const nowPlusDays = (days: number): Date => {
   return d
 }
 
-const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
+
 
 interface DemoLead {
   company: string

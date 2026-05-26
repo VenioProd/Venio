@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Document } from 'mongoose'
-import type { AutomationLogDoc, ExecutionStatus, TriggerType } from '../types.js'
+import type { AutomationLogDoc } from '../types.js'
 
 export interface IAutomationLog extends AutomationLogDoc, Document {}
 

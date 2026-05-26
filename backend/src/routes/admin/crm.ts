@@ -7,7 +7,7 @@ import Lead from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
 import CrmSettings from '../../models/CrmSettings.js'
-import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import {
   getRoundRobinAssignee,
@@ -558,7 +558,7 @@ function mapLeadSourceToClientSource(leadSource: string): string {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Get CRM settings
-router.get('/settings', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/settings', requirePermission(PERMISSIONS.MANAGE_CRM), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const settings = await CrmSettings.getSettings()
     return res.json({ settings })

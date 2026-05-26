@@ -76,7 +76,7 @@ describe('POST /api/admin/inbox/snooze', () => {
     await request(app).post('/api/admin/inbox/snooze')
       .send({ itemType: 'decision', sourceId, snoozedUntil: new Date(Date.now() + 1000).toISOString() })
       .expect(200)
-    const res2 = await request(app).post('/api/admin/inbox/snooze')
+
       .send({ itemType: 'decision', sourceId, snoozedUntil: new Date(Date.now() + 7200000).toISOString() })
       .expect(200)
     const InboxSnooze = (await import('../models/InboxSnooze.js')).default

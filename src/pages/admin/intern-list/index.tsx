@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { apiFetch, getToken } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
@@ -9,6 +9,7 @@ import InternKpi from '../../../components/admin/InternKpi'
 import InternDocuments from '../../../components/admin/InternDocuments'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import { getErrorMessage } from '../../../lib/errors'
 
 const InternList = () => {
   const { user } = useAuth()
@@ -49,11 +50,10 @@ const InternList = () => {
 
   // ── Rapports ──
   const [reports, setReports] = useState<ActivityReport[]>([])
-  const [myReports, setMyReports] = useState<ActivityReport[]>([])
-  const [showReportForm, setShowReportForm] = useState(false)
-  const [reportForm, setReportForm] = useState({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
-  const [reportFiles, setReportFiles] = useState<File[]>([])
-  const reportFileRef = useRef<HTMLInputElement>(null)
+  const [, setMyReports] = useState<ActivityReport[]>([])
+  // useState supprimés (jamais utilisés après suppression de _handleCreateReport):
+  // showReportForm, reportForm, reportFiles — cleanup TS noUnusedLocals
+
   const [expandedReport, setExpandedReport] = useState<string | null>(null)
 
   // ── Dashboard ──
@@ -72,7 +72,7 @@ const InternList = () => {
   const [notifSuccess, setNotifSuccess] = useState(false)
 
   // ── Intern identifie ──
-  const [myIntern, setMyIntern] = useState<Intern | null>(null)
+  const [, setMyIntern] = useState<Intern | null>(null)
 
   // ── Load data ──
   const loadInterns = useCallback(async () => {
@@ -165,8 +165,8 @@ const InternList = () => {
       })
       resetForm()
       loadInterns()
-    } catch (err: any) {
-      alert(err.message || 'Erreur')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Erreur'))
     } finally { setSubmitting(false) }
   }
 
@@ -211,8 +211,8 @@ const InternList = () => {
       })
       resetForm()
       loadInterns()
-    } catch (err: any) {
-      alert(err.message || 'Erreur')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Erreur'))
     } finally { setSubmitting(false) }
   }
 
@@ -260,33 +260,7 @@ const InternList = () => {
     }
   }
 
-  // ── Report CRUD ──
-  const handleCreateReport = async () => {
-    if (!reportForm.contenu) return
-    setSubmitting(true)
-    try {
-      const fd = new FormData()
-      fd.append('date', reportForm.date)
-      fd.append('contenu', reportForm.contenu)
-      if (reportForm.taches) {
-        const tachesArr = reportForm.taches.split('\n').filter((t) => t.trim())
-        fd.append('taches', JSON.stringify(tachesArr))
-      }
-      reportFiles.forEach((f) => fd.append('files', f))
-
-      await fetch('/api/admin/interns/reports', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd,
-      })
-
-      setReportForm({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
-      setReportFiles([])
-      setShowReportForm(false)
-      loadMyReports()
-      if (isAdmin) loadReports()
-    } catch { /* silent */ } finally { setSubmitting(false) }
-  }
+  // _handleCreateReport supprimé : jamais appelé (cleanup TS noUnusedLocals)
 
   const handleValidateReport = async (reportId: string, status: string, commentaire?: string) => {
     try {

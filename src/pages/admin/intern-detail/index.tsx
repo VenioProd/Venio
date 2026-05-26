@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { apiFetch, getToken } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
@@ -8,6 +8,7 @@ import type { ActivityReport } from '../intern-list/types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import DocPreviewModal from '../../../components/DocPreviewModal'
+import { getErrorMessage } from '../../../lib/errors'
 
 interface InternUser {
   _id: string
@@ -138,8 +139,8 @@ const InternDetail = () => {
       })
       setEditing(false)
       loadData()
-    } catch (err: any) {
-      alert(err.message || 'Erreur')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Erreur'))
     } finally {
       setSubmitting(false)
     }

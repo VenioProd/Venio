@@ -1,6 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import bcrypt from 'bcryptjs'
-import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
@@ -28,10 +27,6 @@ import { respondError } from './_middleware/errors.js'
 const router = express.Router()
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as const
-
-function isValidObjectId(id: unknown): boolean {
-  return typeof id === 'string' && mongoose.isValidObjectId(id)
-}
 
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)

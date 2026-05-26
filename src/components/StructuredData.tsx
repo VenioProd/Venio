@@ -1,11 +1,9 @@
-import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
 const StructuredData = ({ type = 'home' }) => {
-  const location = useLocation()
+  useLocation() // re-render on route change
   const siteUrl = 'https://venio.paris'
-  const currentUrl = `${siteUrl}${location.pathname}`
 
   const getStructuredData = () => {
     const baseOrganization = {

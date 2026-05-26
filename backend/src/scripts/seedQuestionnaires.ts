@@ -106,7 +106,7 @@ const DIFFICULTIES = [
   'Les exercices avances etaient challengeants mais formateurs.',
 ]
 
-const YES_NO_MAYBE = ['Oui', 'Oui', 'Oui', 'Oui', 'Oui', 'Oui', 'Oui', 'Non', 'Peut-etre', 'Peut-etre']
+
 
 async function seed() {
   const uri = process.env.MONGODB_URI

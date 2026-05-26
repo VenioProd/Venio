@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
+import { describe, it, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import express, { type Express, type Request, type Response, type NextFunction } from 'express'
 import mongoose from 'mongoose'

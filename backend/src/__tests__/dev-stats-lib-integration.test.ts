@@ -135,10 +135,10 @@ describe('computeOverview', () => {
   })
 
   it("sorts ACTIVE projects first, then by lastActivityAt desc", async () => {
-    const archived = await DevProject.create({
+    await DevProject.create({
       key: 'ARC', name: 'Archived', status: 'ARCHIVED', createdBy: systemUserId,
     })
-    const newer = await DevProject.create({
+    await DevProject.create({
       key: 'NEW', name: 'Newer', createdBy: systemUserId,
     })
     // Force ordering: bump VEN's updatedAt

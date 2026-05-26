@@ -1,5 +1,4 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
-import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import ArrowPilotage from '../../models/ArrowPilotage.js'
 import ArrowSchool from '../../models/ArrowSchool.js'
@@ -30,10 +29,6 @@ const SCHOOL_STATUSES = [
   'SIGNE',
   'NON_INTERESSE',
 ] as const
-
-function isValidObjectId(id: unknown): boolean {
-  return typeof id === 'string' && mongoose.isValidObjectId(id)
-}
 
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)

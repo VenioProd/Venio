@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { createNotification } from '../lib/notifications.js'
-import type { DispatchPayload, DispatchTarget, Channel } from './types.js'
+import type { DispatchPayload, DispatchTarget } from './types.js'
 
 /**
  * Dispatch notifications to all targets across their channels.

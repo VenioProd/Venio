@@ -20,13 +20,6 @@ interface SendResult {
   error?: string
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Super admin',
-  ADMIN: 'Contributeur',
-  RH: 'RH',
-  VIEWER: 'Lecture seule',
-}
-
 export default function EmailComposer() {
   const { showToast } = useToast()
 

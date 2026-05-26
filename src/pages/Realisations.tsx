@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import GradientMeshBackground from '../components/GradientMeshBackground'
 import NeonDivider from '../components/NeonDivider'
 import SEO from '../components/SEO'

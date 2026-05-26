@@ -106,15 +106,6 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
     })
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
   const getRoleBadge = (role: string) => {
     if (role === 'CLIENT') return 'Client'
     if (role === 'SUPER_ADMIN') return 'Super Admin'

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
@@ -11,9 +11,10 @@ import QualiopiStats from './QualiopiStats'
 import CriterionCard from './CriterionCard'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import { getErrorMessage } from '../../../lib/errors'
 
 const QualiopiBoard = () => {
-  const { user } = useAuth()
+  useAuth() // ensure auth context is initialized for downstream fetches
   const [criteria, setCriteria] = useState<QualiopiCriterion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,9 +42,9 @@ const QualiopiBoard = () => {
       } catch {
         setAdmins([])
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setError(err.message || 'Erreur lors du chargement')
+      setError(getErrorMessage(err, 'Erreur lors du chargement'))
     } finally {
       setLoading(false)
     }

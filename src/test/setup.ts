@@ -6,7 +6,7 @@ global.ResizeObserver = class ResizeObserver {
   constructor(cb: ResizeObserverCallback) {
     this.callback = cb
   }
-  observe(el: Element) {
+  observe(_el: Element) {
     // Simulate a 800x400 container so recharts renders SVG
     this.callback(
       [{ contentRect: { width: 800, height: 400 } } as ResizeObserverEntry],

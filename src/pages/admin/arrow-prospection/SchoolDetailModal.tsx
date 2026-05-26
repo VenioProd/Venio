@@ -28,7 +28,7 @@ const Section = React.forwardRef<HTMLDivElement, { title: string; children: Reac
   )
 )
 
-export default function SchoolDetailModal({ school, admins, focusSection, onClose, onSave, canManage }: Props) {
+export default function SchoolDetailModal({ school, focusSection, onClose, onSave, canManage }: Props) {
   const ecoleRef = useRef<HTMLDivElement>(null)
   const contactRef = useRef<HTMLDivElement>(null)
 

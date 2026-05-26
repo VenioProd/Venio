@@ -127,7 +127,6 @@ function ProjectsRedirect() {
 function App() {
   const location = useLocation()
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
-  const isAdminArea = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login'
   const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
 
   useEffect(() => {

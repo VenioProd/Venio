@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import { getErrorMessage } from '../../lib/errors'
 
 const CATEGORIES = ['Présentation', 'Charte graphique', 'RH', 'Juridique', 'Commercial', 'Formation', 'Autre']
 
@@ -154,8 +155,8 @@ export default function Resources() {
       setForm({ name: '', description: '', category: 'Autre' })
       setFile(null)
       load()
-    } catch (err: any) {
-      showToast(err.message || 'Erreur upload', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Erreur upload'), 'error')
     } finally { setUploading(false); setUploadProgress(0) }
   }
 
@@ -166,7 +167,7 @@ export default function Resources() {
       showToast('Ressource supprimée', 'success')
       setDeleteTarget(null)
       load()
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: unknown) { showToast(getErrorMessage(err, 'Erreur'), 'error') }
   }
 
   const filtered = resources.filter(r =>

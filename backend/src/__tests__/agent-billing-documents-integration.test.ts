@@ -17,7 +17,6 @@ import BillingDocument from '../models/BillingDocument.js'
 import Document from '../models/Document.js'
 
 let app: Express
-let clientId: string
 let projectId: string
 
 beforeAll(async () => {
@@ -46,7 +45,6 @@ beforeEach(async () => {
     name: 'Cl',
     role: 'CLIENT',
   })
-  clientId = String(client._id)
   const project = await Project.create({
     name: 'Test project',
     client: client._id,

@@ -3,7 +3,7 @@ import type {
   IAccountingDashboard,
   IAccountingEntry,
   IAccountingLine,
-  IAuditEntry,
+
   IAuditListResponse,
   IBalanceSheetData,
   IChartOfAccount,

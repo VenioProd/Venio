@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import FormField from '../../components/FormField'
 import { useFormValidation } from '../../hooks/useFormValidation'
@@ -43,7 +43,7 @@ interface ClientForm {
 }
 
 const ClientAccountNew = () => {
-  const navigate = useNavigate()
+
   const { showToast } = useToast()
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [showPassword, setShowPassword] = useState(false)

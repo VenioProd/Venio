@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import './PublicQuestionnaire.css'
+import { getErrorMessage } from '../lib/errors'
 
 interface Question {
   type: 'rating' | 'text' | 'multiple_choice'
@@ -80,8 +81,8 @@ const PublicQuestionnaireBuilder = () => {
 
       const data = await res.json()
       setCreated({ token: data.token })
-    } catch (err: any) {
-      setError(err.message || 'Erreur inattendue')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Erreur inattendue'))
     } finally {
       setSubmitting(false)
     }

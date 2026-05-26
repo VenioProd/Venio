@@ -31,10 +31,10 @@ const definition: AutomationDefinition = {
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Task = mongoose.model('Task')
     const User = mongoose.model('User')
-    const Project = mongoose.model('Project')
+
 
     const now = ctx.now
-    const escalationDate = new Date(now.getTime() - ESCALATION_THRESHOLD_DAYS * 24 * 3600_000)
+
 
     // Tasks overdue
     const overdueTasks = await Task.find({
