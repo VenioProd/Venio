@@ -37,198 +37,12 @@ import {
   type DevCiStatus,
   type IssueFilters,
 } from '../../../services/dev'
+import { PRIORITY_ICON, formatRelative, userInitial, ciStatusTone, type DeepLinkParams } from './helpers'
+import GithubLinkPanel from './GithubLinkPanel'
+import ProjectCreateModal from './ProjectCreateModal'
+import IssueDetailPanel from './IssueDetailPanel'
 import './DevWorkspace.css'
 
-const PRIORITY_ICON: Record<DevIssuePriority, string> = {
-  URGENT: '!!',
-  HIGH: '⏶',
-  MEDIUM: '=',
-  LOW: '⏷',
-  NO_PRIORITY: '·',
-}
-
-function formatRelative(date: string | null | undefined): string {
-  if (!date) return ''
-  const d = new Date(date)
-  const now = Date.now()
-  const diff = now - d.getTime()
-  const minute = 60_000
-  const hour = 60 * minute
-  const day = 24 * hour
-  if (diff < minute) return 'à l\'instant'
-  if (diff < hour) return `il y a ${Math.floor(diff / minute)} min`
-  if (diff < day) return `il y a ${Math.floor(diff / hour)} h`
-  if (diff < 7 * day) return `il y a ${Math.floor(diff / day)} j`
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-}
-
-function userInitial(u: { name?: string; email?: string } | null | undefined): string {
-  if (!u) return '?'
-  const name = u.name || u.email || ''
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
-}
-
-type DeepLinkParams = { issueId?: string; projectId?: string } & Record<string, string | undefined>
-
-const CI_STATUS_LABEL: Record<DevCiStatus, string> = {
-  PENDING: 'En attente',
-  RUNNING: 'En cours',
-  SUCCESS: 'Succès',
-  FAILURE: 'Échec',
-  UNKNOWN: 'Inconnu',
-}
-
-function ciStatusTone(status: DevCiStatus | null | undefined): 'ok' | 'warn' | 'fail' | 'neutral' {
-  if (status === 'SUCCESS') return 'ok'
-  if (status === 'PENDING' || status === 'RUNNING') return 'warn'
-  if (status === 'FAILURE') return 'fail'
-  return 'neutral'
-}
-
-interface GithubLinkPanelProps {
-  issue: DevIssue
-  canManage: boolean
-  onPatch: (patch: DevIssueGithubLink) => void
-  onClear: () => void
-}
-
-const GithubLinkPanel = ({ issue, canManage, onPatch, onClear }: GithubLinkPanelProps) => {
-  const link = issue.github
-  const isMerged = Boolean(link?.mergedAt)
-
-  if (!link && !canManage) return null
-  if (!link) {
-    return (
-      <div className="dev-detail-github empty">
-        <button
-          type="button"
-          className="dev-btn subtle"
-          onClick={() =>
-            onPatch({
-              repo: null,
-              prNumber: null,
-              prUrl: null,
-              branch: null,
-              commitSha: null,
-              ciStatus: null,
-              mergedAt: null,
-            })
-          }
-        >
-          <GitBranch size={12} /> Rattacher une PR / branche GitHub
-        </button>
-      </div>
-    )
-  }
-
-  const tone = ciStatusTone(link.ciStatus)
-  return (
-    <div className="dev-detail-github">
-      <div className="dev-detail-github-header">
-        <span className="dev-detail-github-title">
-          <GitPullRequest size={13} />
-          {isMerged ? 'PR mergée' : link.prNumber ? `PR #${link.prNumber}` : 'Lien GitHub'}
-        </span>
-        {link.ciStatus && (
-          <span className={`dev-detail-github-ci tone-${tone}`} title={CI_STATUS_LABEL[link.ciStatus] || link.ciStatus}>
-            {tone === 'ok' && <CheckCircle2 size={12} />}
-            {tone === 'fail' && <XCircle size={12} />}
-            {tone === 'warn' && <Activity size={12} />}
-            {CI_STATUS_LABEL[link.ciStatus] || link.ciStatus}
-          </span>
-        )}
-        {canManage && (
-          <button className="dev-detail-github-clear" type="button" onClick={onClear} title="Détacher">
-            <X size={11} />
-          </button>
-        )}
-      </div>
-      <div className="dev-detail-github-grid">
-        <label>
-          <span>Repo</span>
-          <input
-            disabled={!canManage}
-            defaultValue={link.repo ?? ''}
-            placeholder="org/repo"
-            onBlur={(e) => canManage && onPatch({ ...link, repo: e.target.value.trim() || null })}
-          />
-        </label>
-        <label>
-          <span>Branche</span>
-          <input
-            disabled={!canManage}
-            defaultValue={link.branch ?? ''}
-            placeholder="feature/…"
-            onBlur={(e) => canManage && onPatch({ ...link, branch: e.target.value.trim() || null })}
-          />
-        </label>
-        <label>
-          <span>PR</span>
-          <input
-            disabled={!canManage}
-            type="number"
-            min={1}
-            defaultValue={link.prNumber ?? ''}
-            onBlur={(e) =>
-              canManage &&
-              onPatch({
-                ...link,
-                prNumber: e.target.value ? Number(e.target.value) : null,
-              })
-            }
-          />
-        </label>
-        <label>
-          <span>URL PR</span>
-          <input
-            disabled={!canManage}
-            defaultValue={link.prUrl ?? ''}
-            placeholder="https://github.com/…/pull/123"
-            onBlur={(e) => canManage && onPatch({ ...link, prUrl: e.target.value.trim() || null })}
-          />
-        </label>
-        <label>
-          <span>CI</span>
-          <select
-            disabled={!canManage}
-            value={link.ciStatus ?? ''}
-            onChange={(e) =>
-              canManage && onPatch({ ...link, ciStatus: (e.target.value || null) as DevCiStatus | null })
-            }
-          >
-            <option value="">—</option>
-            <option value="PENDING">En attente</option>
-            <option value="RUNNING">En cours</option>
-            <option value="SUCCESS">Succès</option>
-            <option value="FAILURE">Échec</option>
-            <option value="UNKNOWN">Inconnu</option>
-          </select>
-        </label>
-        <label>
-          <span>Mergée</span>
-          <input
-            disabled={!canManage}
-            type="date"
-            value={link.mergedAt ? link.mergedAt.slice(0, 10) : ''}
-            onChange={(e) =>
-              canManage &&
-              onPatch({
-                ...link,
-                mergedAt: e.target.value || null,
-              })
-            }
-          />
-        </label>
-      </div>
-      {link.prUrl && (
-        <a className="dev-detail-github-link" href={link.prUrl} target="_blank" rel="noopener noreferrer">
-          {link.prUrl}
-        </a>
-      )}
-    </div>
-  )
-}
 
 const DevWorkspace = () => {
   const { user } = useAuth()
@@ -936,213 +750,32 @@ const DevWorkspace = () => {
         </div>
 
         {selectedIssue && (
-          <aside className="dev-detail">
-            <div className="dev-detail-header">
-              <span className="dev-detail-id">
-                {(typeof selectedIssue.project === 'object' ? selectedIssue.project.key : '')}-{selectedIssue.number}
-                {' '}· {selectedIssue.reporter?.name || selectedIssue.reporter?.email || ''}
-              </span>
-              <button className="dev-detail-close" onClick={handleCloseDetail} aria-label="Fermer">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="dev-detail-body">
-              <input
-                className="dev-detail-title-input"
-                value={selectedIssue.title}
-                disabled={!canManage}
-                onChange={(e) => setSelectedIssue((p) => (p ? { ...p, title: e.target.value } : p))}
-                onBlur={() => canManage && handlePatchIssue(selectedIssue._id, { title: selectedIssue.title })}
-              />
-
-              <div className="dev-detail-meta">
-                <span className="dev-detail-meta-label">Statut</span>
-                <span className="dev-detail-meta-value">
-                  <select
-                    disabled={!canManage}
-                    value={selectedIssue.status}
-                    onChange={(e) => handlePatchIssue(selectedIssue._id, { status: e.target.value as DevIssueStatus })}
-                  >
-                    {STATUS_ORDER.map((s) => (
-                      <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                    ))}
-                  </select>
-                </span>
-
-                <span className="dev-detail-meta-label">Priorité</span>
-                <span className="dev-detail-meta-value">
-                  <select
-                    disabled={!canManage}
-                    value={selectedIssue.priority}
-                    onChange={(e) => handlePatchIssue(selectedIssue._id, { priority: e.target.value as DevIssuePriority })}
-                  >
-                    {PRIORITY_ORDER.map((p) => (
-                      <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>
-                    ))}
-                  </select>
-                </span>
-
-                <span className="dev-detail-meta-label">Type</span>
-                <span className="dev-detail-meta-value">
-                  <select
-                    disabled={!canManage}
-                    value={selectedIssue.type}
-                    onChange={(e) => handlePatchIssue(selectedIssue._id, { type: e.target.value as DevIssueType })}
-                  >
-                    {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </span>
-
-                <span className="dev-detail-meta-label">Labels</span>
-                <span className="dev-detail-meta-value">
-                  <input
-                    disabled={!canManage}
-                    placeholder="virgules pour séparer"
-                    defaultValue={selectedIssue.labels.join(', ')}
-                    onBlur={(e) => {
-                      const labels = e.target.value
-                        .split(',')
-                        .map((l) => l.trim().toLowerCase())
-                        .filter(Boolean)
-                      handlePatchIssue(selectedIssue._id, { labels })
-                    }}
-                  />
-                </span>
-
-                <span className="dev-detail-meta-label">Échéance</span>
-                <span className="dev-detail-meta-value">
-                  <input
-                    type="date"
-                    disabled={!canManage}
-                    value={selectedIssue.dueDate ? selectedIssue.dueDate.slice(0, 10) : ''}
-                    onChange={(e) =>
-                      handlePatchIssue(selectedIssue._id, {
-                        dueDate: e.target.value || null,
-                      })
-                    }
-                  />
-                </span>
-
-                <span className="dev-detail-meta-label">Créée</span>
-                <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: '#94a3b8' }}>
-                  {formatRelative(selectedIssue.createdAt)}
-                </span>
-              </div>
-
-              <GithubLinkPanel
-                issue={selectedIssue}
-                canManage={canManage}
-                onPatch={(patch) => handlePatchIssue(selectedIssue._id, { github: patch })}
-                onClear={() => handlePatchIssue(selectedIssue._id, { github: null })}
-              />
-
-              <textarea
-                className="dev-detail-description"
-                placeholder="Description / contexte / liens GitHub…"
-                disabled={!canManage}
-                value={selectedIssue.description}
-                onChange={(e) => setSelectedIssue((p) => (p ? { ...p, description: e.target.value } : p))}
-                onBlur={() => canManage && handlePatchIssue(selectedIssue._id, { description: selectedIssue.description })}
-              />
-
-              <div className="dev-detail-section">Commentaires ({comments.length})</div>
-              <div className="dev-comments">
-                {comments.map((c) => (
-                  <div key={c._id} className="dev-comment">
-                    <div className="dev-comment-meta">
-                      <span>{c.author?.name || c.author?.email || 'Inconnu'} · {formatRelative(c.createdAt)}</span>
-                      {(canManage || c.author?._id === user?._id) && (
-                        <button className="dev-comment-delete" onClick={() => handleDeleteComment(c._id)}>
-                          supprimer
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
-                  </div>
-                ))}
-                {comments.length === 0 && (
-                  <div style={{ color: '#64748b', fontSize: 12.5 }}>Aucun commentaire</div>
-                )}
-              </div>
-
-              {canManage && (
-                <div className="dev-comment-form">
-                  <textarea
-                    placeholder="Ajouter un commentaire…"
-                    value={commentDraft}
-                    onChange={(e) => setCommentDraft(e.target.value)}
-                  />
-                  <div className="dev-comment-form-actions">
-                    <button className="dev-btn primary" onClick={handleAddComment} disabled={!commentDraft.trim()}>
-                      Commenter
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {canManage && (
-                <div className="dev-danger-zone">
-                  <button className="dev-danger-btn" onClick={() => handleDeleteIssue(selectedIssue._id)}>
-                    <Trash2 size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-                    Supprimer l'issue
-                  </button>
-                </div>
-              )}
-            </div>
-          </aside>
+          <IssueDetailPanel
+            issue={selectedIssue}
+            comments={comments}
+            user={user}
+            canManage={canManage}
+            commentDraft={commentDraft}
+            setCommentDraft={setCommentDraft}
+            setIssue={setSelectedIssue}
+            onPatch={handlePatchIssue}
+            onClose={handleCloseDetail}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+            onDeleteIssue={handleDeleteIssue}
+          />
         )}
       </div>
 
       {showProjectModal && (
-        <div className="dev-modal-overlay" role="dialog" aria-modal="true" onClick={() => setShowProjectModal(false)}>
-          <form className="dev-modal" onSubmit={handleCreateProject} onClick={(e) => e.stopPropagation()}>
-            <h2>Nouveau projet de développement</h2>
-            <div className="dev-modal-field">
-              <label>Clé (préfixe identifiant, 2-8 lettres majuscules) *</label>
-              <input
-                value={projectForm.key}
-                onChange={(e) => setProjectForm((f) => ({ ...f, key: e.target.value.toUpperCase() }))}
-                placeholder="ARROW, VEN…"
-                maxLength={8}
-                required
-              />
-            </div>
-            <div className="dev-modal-field">
-              <label>Nom *</label>
-              <input
-                value={projectForm.name}
-                onChange={(e) => setProjectForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Arrow SaaS, Site Venio…"
-                required
-              />
-            </div>
-            <div className="dev-modal-field">
-              <label>Description</label>
-              <textarea
-                value={projectForm.description}
-                onChange={(e) => setProjectForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="dev-modal-field">
-              <label>Couleur</label>
-              <input
-                type="color"
-                value={projectForm.color}
-                onChange={(e) => setProjectForm((f) => ({ ...f, color: e.target.value }))}
-              />
-            </div>
-            {projectError && (
-              <div style={{ color: '#fca5a5', fontSize: 12.5, marginTop: 6 }}>{projectError}</div>
-            )}
-            <div className="dev-modal-actions">
-              <button type="button" className="dev-btn subtle" onClick={() => setShowProjectModal(false)}>Annuler</button>
-              <button type="submit" className="dev-btn primary" disabled={savingProject}>
-                {savingProject ? 'Création…' : 'Créer le projet'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <ProjectCreateModal
+          form={projectForm}
+          setForm={setProjectForm}
+          error={projectError}
+          saving={savingProject}
+          onSubmit={handleCreateProject}
+          onClose={() => setShowProjectModal(false)}
+        />
       )}
     </div>
   )
