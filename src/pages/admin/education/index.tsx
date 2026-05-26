@@ -33,16 +33,11 @@ import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
 import { Building2, FileSearch, CalendarDays } from 'lucide-react'
 import './EducationWorkspace.css'
-import {
-  Kpi,
-  ClassesView,
-  ClassFormDrawer,
-  ClassDetailDrawer,
-  SessionsView,
-  AssignmentsView,
-  NotesView,
-  SearchModal,
-} from './parts'
+import { Kpi, ClassesView, ClassFormDrawer, ClassDetailDrawer } from './class-parts'
+import { SessionsView } from './session-parts'
+import { AssignmentsView } from './assignment-parts'
+import { NotesView } from './note-parts'
+import { SearchModal } from './search-parts'
 
 type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
 
