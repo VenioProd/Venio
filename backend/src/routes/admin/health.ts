@@ -30,7 +30,7 @@ router.get('/', async (_req: Request, res: Response) => {
     // dossier inexistant ou non accessible
   }
 
-  // TODO: exposer l'état réel quand l'engine fournit une API
+  // Exposer l'état réel des schedulers — voir issue #84.
   // Pour l'instant, ces schedulers sont démarrés au boot dans index.ts (startScheduler,
   // initAutomationEngine, startAutoLockScheduler) et n'exposent pas d'état observable.
   // On renvoie true pour indiquer qu'ils ont été initialisés au démarrage.

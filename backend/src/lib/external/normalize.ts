@@ -192,9 +192,8 @@ export function normalizePayload(rawEntry: unknown): NormalizedPayload {
 
   const currency = String(raw.currency || 'EUR').toUpperCase().trim()
   if (currency !== 'EUR') {
-    // MVP : multi-devises non supporté.
-    // TODO(v2) : accepter d'autres devises et stocker originalAmount/originalCurrency
-    // sur les lignes (conversion via taux du jour ou taux explicite côté payload).
+    // MVP : multi-devises non supporté. Voir issue #80 pour stocker
+    // originalAmount/originalCurrency et convertir via un taux du jour ou explicite.
     errors.push({
       field: 'currency',
       message: 'Multi-devises non supporté pour le MVP — utilisez EUR',

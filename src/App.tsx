@@ -470,7 +470,6 @@ function App() {
           <Route
             path="mes-rapports"
             element={
-              // TODO: permission dédiée si besoin
               <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
                 <MyReports />
               </RequirePermission>

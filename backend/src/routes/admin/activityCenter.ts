@@ -65,7 +65,7 @@ router.get('/', async (req: Request, res: Response) => {
         }
       }
     } catch {
-      // TODO: implémenter une version plus robuste si ce comptage devient coûteux
+      // Remplacer par un $aggregate si bottleneck (volume > 1000 projets) — voir issue #83
       unreadMessages = 0
     }
 
