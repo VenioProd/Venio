@@ -15,7 +15,9 @@
     "accounting:migrate-billing:dry": "tsx src/scripts/migrateExistingBilling.ts --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "keywords": [],
   "author": "",
@@ -42,6 +44,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.20.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -55,11 +58,13 @@
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^7.2.0",
     "@types/web-push": "^3.6.4",
+    "eslint": "^9.20.0",
     "mongodb-memory-server": "^11.1.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.22.0",
     "vitest": "^4.0.18"
   }
 }

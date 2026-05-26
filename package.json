@@ -17,7 +17,9 @@
     "test:frontend": "vitest run",
     "test:backend": "npm --prefix backend test",
     "test:all": "npm run test:frontend && npm run test:backend",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky",
+    "commitlint": "commitlint --edit"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -32,11 +34,14 @@
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.7.0",
+    "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",
