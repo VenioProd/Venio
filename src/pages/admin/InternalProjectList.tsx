@@ -11,6 +11,9 @@ import ArrowSectionEditorModal from './internal-project-list/ArrowSectionEditorM
 import ProjectFormDrawer from './internal-project-list/ProjectFormDrawer'
 import MissionDetailDrawer from './internal-project-list/MissionDetailDrawer'
 import MissionFormDrawer from './internal-project-list/MissionFormDrawer'
+import ArrowTab from './internal-project-list/ArrowTab'
+import MissionsTab from './internal-project-list/MissionsTab'
+import { InternalProjectListProvider } from './internal-project-list/Context'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
 const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation']
@@ -451,7 +454,22 @@ export default function InternalProjectList() {
     return { title, text }
   })
 
+  const ctx = {
+    viewTab, setViewTab,
+    projects, filtered, loading, filterStatus, setFilterStatus, filterEntity, setFilterEntity,
+    setDeleteTarget, setEditTarget, setForm, setShowForm,
+    missions, missionsLoading, setSelectedMission, setShowMissionForm, setMissionForm,
+    arrowPilotage, arrowScorecardStates, setArrowScorecardStates: () => {}, openArrowSectionEditor,
+    arrowActiveProjects, arrowMissions, arrowCompletedMissions, arrowBlockedMissions,
+    arrowAverageProgress, arrowMissionsByStatus, arrowUpcomingMissions,
+    arrowDecisions, arrowCadence,
+    selectedMission, handleMissionStatusUpdate, handleMissionProgressUpdate, handleMissionFileUpload, fileInputRefs, uploadingMission,
+    user, isSuperAdmin, isAdminRole: isSuperAdmin, admins,
+    navigate, formatDateTime: (d: string) => new Date(d).toLocaleString('fr-FR'),
+  }
+
   return (
+    <InternalProjectListProvider value={ctx}>
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
@@ -588,377 +606,10 @@ export default function InternalProjectList() {
       )}
 
       {/* ─── ARROW PILOTAGE TAB ─── */}
-      {viewTab === 'arrow' && (
-        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div className="portal-card" style={{ border: '1px solid rgba(139,92,246,0.18)', background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(14,165,233,0.04))' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ maxWidth: 680 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: '#c4b5fd' }}>Pilotage interne</span>
-                <h2 style={{ margin: '6px 0 8px', fontSize: 22, color: 'var(--text-primary)' }}>Arrow</h2>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-                  Suivre le cap, les avancées, les blocages et les apprentissages Arrow depuis les projets internes Venio.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  className="portal-button secondary"
-                  type="button"
-                  onClick={() => { setFilterEntity('Arrow'); setViewTab('projects') }}
-                >
-                  Voir les projets Arrow
-                </button>
-                <button
-                  className="portal-button"
-                  type="button"
-                  onClick={() => setShowMissionForm(true)}
-                >
-                  Créer une mission
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(140px, 1fr))', gap: 12 }}>
-            {[
-              { label: 'Projets actifs', value: arrowActiveProjects.length, color: '#c4b5fd' },
-              { label: 'Missions Arrow', value: arrowMissions.length, color: '#38bdf8' },
-              { label: 'Terminées', value: arrowCompletedMissions.length, color: '#6ee7b7' },
-              { label: 'Bloquées', value: arrowBlockedMissions.length, color: arrowBlockedMissions.length > 0 ? '#f87171' : '#a5b4cf' },
-            ].map(card => (
-              <button
-                key={card.label}
-                type="button"
-                className="portal-card"
-                onClick={() => {
-                  if (card.label === 'Projets actifs') { setFilterEntity('Arrow'); setFilterStatus('EN_COURS'); setViewTab('projects'); return }
-                  if (card.label === 'Terminées') { setFilterEntity('Arrow'); setFilterStatus('TERMINE'); setViewTab('projects'); return }
-                  setViewTab('missions')
-                }}
-                style={{ padding: 16, textAlign: 'left', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
-              >
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{card.label}</div>
-                <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.color }}>{card.value}</div>
-                <div style={{ fontSize: 11, color: 'rgba(165,180,207,0.45)', marginTop: 8 }}>Cliquer pour ouvrir</div>
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 18 }}>
-            <div className="portal-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Objectif de la semaine</h3>
-                  <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Ce qui doit guider les décisions et les tâches Arrow.</p>
-                </div>
-                <button type="button" onClick={() => openArrowSectionEditor('goals')} style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', background: 'rgba(56,189,248,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier · {arrowAverageProgress}% moyen</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {arrowPilotage.goals.map((goal, index) => (
-                  <button key={`${goal}-${index}`} type="button" onClick={() => openArrowSectionEditor('goals')} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 8, background: index === 0 ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${index === 0 ? 'rgba(139,92,246,0.22)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', textAlign: 'left' }}>
-                    <span style={{ width: 22, height: 22, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: index === 0 ? 'rgba(139,92,246,0.14)' : 'rgba(165,180,207,0.08)', color: index === 0 ? '#c4b5fd' : '#a5b4cf', fontSize: 12, fontWeight: 700 }}>{index + 1}</span>
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{goal}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="portal-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Scorecard</h3>
-                <button type="button" onClick={() => openArrowSectionEditor('scorecard')} style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', border: '1px solid rgba(196,181,253,0.25)', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
-              </div>
-              {arrowPilotage.scorecard.map((label, index) => {
-                const state = arrowScorecardStates[index] ?? false
-                return (
-                <div key={`${label}-${index}`} onClick={() => index === 0 ? setViewTab('projects') : index === 1 ? setViewTab('missions') : openArrowSectionEditor('scorecard')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{label}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, color: state ? '#6ee7b7' : '#fbbf24', background: state ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)', border: `1px solid ${state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}` }}>
-                    {state ? 'OK' : 'À cadrer'}
-                  </span>
-                </div>
-              )})}
-            </div>
-          </div>
-
-          <div className="portal-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Avancement opérationnel</h3>
-                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Lecture rapide des missions Arrow par statut.</p>
-              </div>
-              {missionsLoading && <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Chargement...</span>}
-            </div>
-            {arrowMissions.length === 0 ? (
-              <div style={{ padding: '26px 0', textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 12px' }}>Aucune mission Arrow pour l’instant.</p>
-                <button className="portal-button" type="button" onClick={() => setShowMissionForm(true)}>Créer la première mission</button>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 12 }}>
-                {arrowMissionsByStatus.map(column => (
-                  <div key={column.value} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: column.color }}>{column.label}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{column.missions.length}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {column.missions.slice(0, 4).map(m => (
-                        <button key={m._id} type="button" onClick={() => setSelectedMission(m._id)} style={{ width: '100%', textAlign: 'left', padding: '10px 11px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer' }}>
-                          <span style={{ display: 'block', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 5 }}>{m.title}</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                              <span style={{ display: 'block', height: '100%', width: `${m.progress ?? 0}%`, background: column.color }} />
-                            </span>
-                            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{m.progress ?? 0}%</span>
-                          </span>
-                        </button>
-                      ))}
-                      {column.missions.length === 0 && <span style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', padding: '8px 0' }}>Vide</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-            <div className="portal-card">
-              <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Prochaines actions</h3>
-              {arrowUpcomingMissions.length === 0 ? (
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Aucune action datée à suivre.</p>
-              ) : arrowUpcomingMissions.map(m => {
-                const isOverdue = m.dueDate && new Date(m.dueDate) < new Date()
-                return (
-                  <button key={m._id} type="button" onClick={() => setSelectedMission(m._id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 0', border: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-                    <span>
-                      <span style={{ display: 'block', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{m.title}</span>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{m.internalProject?.name}</span>
-                    </span>
-                    <span style={{ fontSize: 12, color: isOverdue ? '#f87171' : '#a5b4cf', whiteSpace: 'nowrap' }}>
-                      {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : 'Sans date'}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="portal-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Journal des décisions</h3>
-                <button type="button" onClick={() => openArrowSectionEditor('decisions')} style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', border: '1px solid rgba(196,181,253,0.25)', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {arrowDecisions.map((item, index) => (
-                  <button key={`${item.title}-${index}`} type="button" onClick={() => openArrowSectionEditor('decisions')} style={{ padding: '11px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd' }}>{item.title}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.date}</span>
-                    </div>
-                    <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>{item.decision}</p>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Responsable : {item.owner}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="portal-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Cadre de suivi</h3>
-              <button type="button" onClick={() => openArrowSectionEditor('cadence')} style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', background: 'rgba(56,189,248,0.08)', borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>Modifier</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>
-              {arrowCadence.map((item, index) => (
-                <button key={`${item.title}-${index}`} type="button" onClick={() => openArrowSectionEditor('cadence')} style={{ padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', marginBottom: 5 }}>{item.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{item.text}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {viewTab === 'arrow' && <ArrowTab />}
 
       {/* ─── MISSIONS TAB ─── */}
-      {viewTab === 'missions' && (
-        <div style={{ marginTop: 20 }}>
-
-          {/* Récap par assigné — super admin only */}
-          {isSuperAdmin && missions.length > 0 && (() => {
-            const byAssignee = new Map<string, { name: string; total: number; done: number; avgProgress: number; blockedCount: number; missions: Mission[] }>()
-            missions.forEach(m => {
-              (m.assignedTo || []).forEach(a => {
-                if (!byAssignee.has(a._id)) byAssignee.set(a._id, { name: a.name, total: 0, done: 0, avgProgress: 0, blockedCount: 0, missions: [] })
-                const entry = byAssignee.get(a._id)!
-                entry.total++
-                if (m.status === 'TERMINE') entry.done++
-                const participant = (m.participants || []).find(p => p.user?._id === a._id)
-                if (participant?.blocked) entry.blockedCount++
-                entry.missions.push(m)
-              })
-            })
-            byAssignee.forEach(entry => {
-              entry.avgProgress = Math.round(entry.missions.reduce((sum, m) => sum + (m.progress ?? 0), 0) / entry.missions.length)
-            })
-            return (
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-                {Array.from(byAssignee.entries()).map(([id, entry]) => (
-                  <div key={id} style={{ flex: '1 1 160px', minWidth: 160, padding: '14px 16px', borderRadius: 10, background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.04)' : 'rgba(255,255,255,0.03)', border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)', border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.35)' : 'rgba(165,180,207,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: entry.blockedCount > 0 ? '#f87171' : '#a5b4cf', flexShrink: 0 }}>
-                        {entry.name[0]?.toUpperCase()}
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{entry.name}</span>
-                      {entry.blockedCount > 0 && <span style={{ fontSize: 10, color: '#f87171', flexShrink: 0 }}>🚫</span>}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{entry.done}/{entry.total} terminées</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: entry.avgProgress === 100 ? '#6ee7b7' : '#38bdf8' }}>{entry.avgProgress}%</span>
-                    </div>
-                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                      <div style={{ height: '100%', borderRadius: 2, background: entry.avgProgress === 100 ? '#10b981' : '#38bdf8', width: `${entry.avgProgress}%`, transition: 'width .3s' }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          })()}
-
-          {missionsLoading ? (
-            <div className="portal-card"><p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p></div>
-          ) : missions.length === 0 ? (
-            <div className="portal-card">
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: 14 }}>
-                <div style={{ fontSize: 32, marginBottom: 10, opacity: .4 }}>◎</div>
-                Aucune mission pour l'instant
-              </div>
-            </div>
-          ) : (
-            <div className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    {(['Projet', 'Mission', ...(isSuperAdmin ? ['Assigné à'] : []), 'Statut', 'Progression', 'Fichiers', 'Deadline', '']).map((h, i) => (
-                      <th key={i} style={{ textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {missions.map(m => {
-                    const statusBg: Record<string,string> = { A_FAIRE:'rgba(234,179,8,0.12)', EN_COURS:'rgba(14,165,233,0.12)', TERMINE:'rgba(16,185,129,0.12)' }
-                    const statusBorder: Record<string,string> = { A_FAIRE:'rgba(234,179,8,0.3)', EN_COURS:'rgba(14,165,233,0.3)', TERMINE:'rgba(16,185,129,0.3)' }
-                    const statusColor: Record<string,string> = { A_FAIRE:'#fde047', EN_COURS:'#38bdf8', TERMINE:'#6ee7b7' }
-                    const statusLabel: Record<string,string> = { A_FAIRE:'À faire', EN_COURS:'En cours', TERMINE:'Terminée' }
-                    const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
-                    const doneCount = m.steps?.filter(s => s.done).length ?? 0
-                    const totalSteps = m.steps?.length ?? 0
-                    const reviewCount = (m.steps || []).filter(s => s.waitingReview && !s.done).length
-                    const isSelected = selectedMission === m._id
-                    return (
-                      <>
-                        <tr key={m._id}
-                          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.04)' : 'transparent', transition: 'background .15s' }}
-                          onClick={() => setSelectedMission(m._id)}
-                        >
-                          <td style={{ padding: '11px 14px' }}>
-                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>{m.internalProject?.name || '—'}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{m.internalProject?.entity}</div>
-                          </td>
-                          <td style={{ padding: '11px 14px', maxWidth: 220 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                              <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{m.title}</span>
-                              {reviewCount > 0 && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 6, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', color: '#fde047', whiteSpace: 'nowrap' }}>🔍 {reviewCount}</span>}
-                            </div>
-                            {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{m.description}</div>}
-                          </td>
-                          {isSuperAdmin && (
-                            <td style={{ padding: '11px 14px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                                {(m.assignedTo || []).map(a => (
-                                  <div key={a._id} title={a.name} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.15)', border: '1px solid rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#a5b4cf', flexShrink: 0 }}>
-                                      {a.name?.[0]?.toUpperCase()}
-                                    </div>
-                                    {(m.assignedTo || []).length === 1 && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.name}</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          )}
-                          <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: statusColor[m.status] || '#a5b4cf', background: statusBg[m.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${statusBorder[m.status] || 'rgba(255,255,255,0.1)'}`, whiteSpace: 'nowrap' }}>
-                                {statusLabel[m.status] || m.status}
-                              </span>
-                              {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).filter(v => v !== m.status).map(v => (
-                                <button key={v} type="button" onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, v)}
-                                  style={{ padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                                  {statusLabel[v]}
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                          <td style={{ padding: '11px 14px', minWidth: 120 }} onClick={e => e.stopPropagation()}>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                {totalSteps > 0 && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneCount}/{totalSteps} étapes</span>}
-                                <input
-                                  type="number" min={0} max={100}
-                                  defaultValue={m.progress ?? 0}
-                                  onBlur={e => {
-                                    const v = Math.min(100, Math.max(0, Number(e.target.value)))
-                                    e.target.value = String(v)
-                                    handleMissionProgressUpdate(m._id, m.internalProject?._id, v)
-                                  }}
-                                  onClick={e => e.stopPropagation()}
-                                  style={{ width: 44, fontSize: 13, fontWeight: 700, padding: '2px 4px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: (m.progress ?? 0) === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center', cursor: 'text', marginLeft: 'auto' }}
-                                  title="Cliquer pour modifier la progression (%)"
-                                />
-                                <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
-                              </div>
-                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: (m.progress ?? 0) === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {(m.files?.length ?? 0) > 0 && (
-                                <span style={{ fontSize: 13, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                  {m.files.length}
-                                </span>
-                              )}
-                              <input type="file" ref={el => { fileInputRefs.current[`col_${m._id}`] = el }} style={{ display: 'none' }}
-                                onChange={async e => { const file = e.target.files?.[0]; if (file) await handleMissionFileUpload(m._id, m.internalProject?._id, file); e.target.value = '' }} />
-                              <button type="button"
-                                onClick={e => { e.stopPropagation(); fileInputRefs.current[`col_${m._id}`]?.click() }}
-                                disabled={uploadingMission === m._id}
-                                title="Joindre un fichier"
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(165,180,207,0.2)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                {uploadingMission === m._id ? '...' : '+ Fichier'}
-                              </button>
-                            </div>
-                          </td>
-                          <td style={{ padding: '11px 14px' }}>
-                            <span style={{ fontSize: 13, color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontWeight: isOverdue ? 600 : 400 }}>
-                              {isOverdue && '⚠ '}{m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '11px 8px', textAlign: 'center' }}>
-                            <span style={{ fontSize: 12, color: '#38bdf8', opacity: .5 }}>›</span>
-                          </td>
-                        </tr>
-                      </>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+      {viewTab === 'missions' && <MissionsTab />}
 
       {/* ─── PROJECTS TAB ─── */}
       {viewTab === 'projects' && <div style={{ marginTop: 20 }}>
@@ -1116,5 +767,6 @@ export default function InternalProjectList() {
         onCancel={() => setDeleteTarget(null)}
       />
     </div>
+    </InternalProjectListProvider>
   )
 }
