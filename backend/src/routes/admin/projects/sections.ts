@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express'
-import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
-import ProjectSection from '../../models/ProjectSection.js'
-import Project from '../../models/Project.js'
-import { PERMISSIONS } from '../../lib/permissions.js'
+import auth from '../../../middleware/auth.js'
+import { requireAdmin, requirePermission } from '../../../middleware/role.js'
+import ProjectSection from '../../../models/ProjectSection.js'
+import Project from '../../../models/Project.js'
+import { PERMISSIONS } from '../../../lib/permissions.js'
 
 const router = express.Router()
 

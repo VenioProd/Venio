@@ -18,12 +18,11 @@ import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
 import adminClientRoutes from './routes/admin/clients/index.js'
 import adminAdminsRoutes from './routes/admin/admins.js'
-import adminProjectRoutes from './routes/admin/projects.js'
-import adminProjectSectionsRoutes from './routes/admin/projectSections.js'
-import adminProjectItemsRoutes from './routes/admin/projectItems.js'
+// Router parent qui consolide tous les sous-routers sous /api/admin/projects
+// (core, sections, items, tasks, messages) — avant ce refactor, 5 mounts distincts.
+import adminProjectsRouter from './routes/admin/projects/index.js'
 import adminBillingRoutes from './routes/admin/billing.js'
 import adminCrmRoutes from './routes/admin/crm.js'
-import adminTaskRoutes from './routes/admin/tasks/index.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
 import notificationPreferencesRoutes from './routes/notificationPreferences.js'
@@ -34,7 +33,6 @@ import adminSearchRoutes from './routes/admin/search.js'
 import adminTemplateRoutes from './routes/admin/templates.js'
 import adminAnalyticsRoutes from './routes/admin/analytics.js'
 import adminCalendarRoutes from './routes/admin/calendar.js'
-import adminMessageRoutes from './routes/admin/messages.js'
 import adminAuditRoutes from './routes/admin/audit.js'
 import adminTwoFactorRoutes from './routes/admin/twoFactor.js'
 import adminBackupRoutes from './routes/admin/backup.js'
@@ -189,12 +187,10 @@ app.use('/api/notification-preferences', notificationPreferencesRoutes)
 app.use('/api/admin/users', adminUserRoutes)
 app.use('/api/admin/clients', adminClientRoutes)
 app.use('/api/admin/admins', adminAdminsRoutes)
-app.use('/api/admin/projects', adminProjectRoutes)
-app.use('/api/admin/projects', adminProjectSectionsRoutes)
-app.use('/api/admin/projects', adminProjectItemsRoutes)
+// Un seul mount pour /api/admin/projects — voir routes/admin/projects/index.ts
+app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
-app.use('/api/admin/projects', adminTaskRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
 app.use('/api/admin/decisions', adminDecisionRoutes)
@@ -203,7 +199,6 @@ app.use('/api/admin/search', adminSearchRoutes)
 app.use('/api/admin/templates', adminTemplateRoutes)
 app.use('/api/admin/analytics', adminAnalyticsRoutes)
 app.use('/api/admin/calendar', adminCalendarRoutes)
-app.use('/api/admin/projects', adminMessageRoutes)
 app.use('/api/admin/audit', adminAuditRoutes)
 app.use('/api/admin/2fa', adminTwoFactorRoutes)
 app.use('/api/admin/backups', adminBackupRoutes)
