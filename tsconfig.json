@@ -14,13 +14,22 @@
     "jsx": "react-jsx",
 
     "strict": true,
+    // TODO enable noUnusedLocals after cleanup pass (80+ existing offenders,
+    // mostly stale `React` imports and dead helpers — out of scope here).
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    // noUnusedParameters is on: ~10 existing offenders to fix (prefix unused
+    // params with `_` or remove them). Worth the type-safety win.
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
     "allowJs": false,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src", "vite-env.d.ts"]
 }

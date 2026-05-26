@@ -1,6 +1,8 @@
 /// <reference types="vitest" />
+import path from 'path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -8,7 +10,15 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:3000'
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      visualizer({ filename: 'dist/stats.html', open: false, gzipSize: true, brotliSize: true }),
+    ],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+    },
     server: {
       port: 5501,
       host: '0.0.0.0',
@@ -25,6 +35,11 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    esbuild: {
+      // Drop `debugger` statements in prod. `console` not dropped yet because
+      // ~26 console.* calls remain (logger migration partial — see Ticket #32).
+      drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+    },
     build: {
       rollupOptions: {
         output: {
@@ -34,7 +49,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/react/')) return 'vendor-react'
             if (id.includes('node_modules/recharts')) return 'vendor-charts'
             if (id.includes('node_modules/jspdf')) return 'vendor-pdf'
-            if (id.includes('node_modules/html2canvas')) return 'vendor-canvas'
             if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
           },
         },

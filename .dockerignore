@@ -1,0 +1,12 @@
+node_modules
+backend/node_modules
+.git
+.github
+docs
+design-backup
+*.md
+!README.md
+.env*
+dist
+backend/dist
+.claude
