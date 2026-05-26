@@ -58,7 +58,7 @@ describe('theme accent tokens', () => {
       'src/components/Hero.css',
       'src/components/Navbar.css',
       'src/components/Footer.css',
-      'src/components/CTA.css',
+      'src/components/CTAFinal.css',
       'src/components/NeonDivider.css',
       'src/components/NeonCorners.css',
       'src/components/Breadcrumb.css',
