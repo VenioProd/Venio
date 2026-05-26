@@ -654,7 +654,7 @@ export default function InternalProjectList() {
                   </div>
                   <h3 className="client-card-name" style={{ marginBottom: 4 }}>{p.name}</h3>
                   {p.description && (
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'] }}>
                       {p.description}
                     </p>
                   )}

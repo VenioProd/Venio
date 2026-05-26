@@ -189,7 +189,7 @@ const InternDetail = () => {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert((err as any).error || 'Erreur upload')
+        alert((err as { error?: string }).error || 'Erreur upload')
         return
       }
       loadData()

@@ -110,9 +110,9 @@ const AdminDashboard = () => {
     // Load internal projects assigned to current user (fire-and-forget, doesn't block dashboard)
     apiFetch<{ projects: { _id: string; name: string; entity: string; status: string; poles: string[]; members: { _id: string }[] }[] }>('/api/admin/internal-projects')
       .then(d => {
-        const userId = (user as any)?._id || (user as any)?.id || ''
+        const userId = user?._id || ''
         const mine = (d.projects || []).filter(p =>
-          p.members?.some(m => m._id === userId || m === userId)
+          p.members?.some(m => m._id === userId || (m as unknown as string) === userId)
         )
         setMyInternalProjects(mine)
       })

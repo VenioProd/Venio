@@ -53,7 +53,7 @@ export default function EmailComposer() {
 
   useEffect(() => {
     apiFetch<{ admins: Recipient[]; clients: Recipient[] }>('/api/admin/email-composer/recipients')
-      .then(d => { setAdmins(d.admins || []); setFromEmail((d as any).fromEmail || '') })
+      .then(d => { setAdmins(d.admins || []); setFromEmail((d as { fromEmail?: string }).fromEmail || '') })
       .catch(() => {})
       .finally(() => setLoadingRecipients(false))
   }, [])
