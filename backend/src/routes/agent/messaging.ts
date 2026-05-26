@@ -354,7 +354,7 @@ router.post(
           const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
           const relPath = path.join(relDir, stored)
           const absPath = path.resolve(process.cwd(), relPath)
-          if (!absPath.startsWith(uploadsRoot())) {
+          if (!absPath.startsWith(uploadsRoot() + path.sep)) {
             await cleanup()
             return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
           }
@@ -413,7 +413,7 @@ router.get(
       const safeRoot = path.resolve(process.cwd(), 'uploads', 'agent', 'internal-messaging')
       const safeRootLegacy = path.resolve(process.cwd(), 'uploads', 'internal-messaging') // côté admin
       const filePath = path.resolve(process.cwd(), attachment.storagePath)
-      if (!filePath.startsWith(safeRoot) && !filePath.startsWith(safeRootLegacy)) {
+      if (!filePath.startsWith(safeRoot + path.sep) && !filePath.startsWith(safeRootLegacy + path.sep)) {
         return respondError(res, 403, 'ACCESS_DENIED', 'Accès refusé')
       }
       res.setHeader('Content-Type', attachment.mimeType)

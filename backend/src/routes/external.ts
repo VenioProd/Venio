@@ -243,9 +243,9 @@ async function authenticateSource(
       return
     }
 
-    // 8. Rate limit
+    // 8. Rate limit (store partagé Redis si REDIS_URL, sinon in-memory)
     const limit = Number(source.rateLimitPerMin || 60)
-    const rl = rateLimitConsume(String(source._id), limit)
+    const rl = await rateLimitConsume(String(source._id), limit)
     if (!rl.ok) {
       res.setHeader('Retry-After', String(rl.retryAfter))
       respondError(res, 429, 'RATE_LIMITED', 'Quota par minute dépassé')

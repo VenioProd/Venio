@@ -7,18 +7,17 @@ import { respondError } from './errors.js'
  * doit être disponible). Quota configurable par token via
  * AgentToken.rateLimitPerMin (défaut 120).
  *
- * Implémentation : sliding window in-memory (lib/external/rateLimit) — donc
- * mono-process. Si le backend scale en plusieurs instances, le quota
- * effectif est multiplié par le nombre d'instances. À migrer sur Redis
- * quand le besoin se présentera (TODO existant dans rateLimit.ts).
+ * Implémentation : store partagé Redis si REDIS_URL est défini, sinon
+ * fallback in-memory mono-process (lib/external/rateLimit) — un warning
+ * est émis au boot dans ce cas. Cf. lib/external/rateLimit.ts.
  *
  * Réponse 429 RATE_LIMITED + header `Retry-After: <secondes>`.
  */
-export default function agentRateLimit(
+export default async function agentRateLimit(
   req: Request,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const token = req.agentToken
   if (!token) {
     // Sans token attaché, on ne peut pas limiter par token — c'est un bug
@@ -28,7 +27,7 @@ export default function agentRateLimit(
     return
   }
   const limit = Math.max(1, Number(token.rateLimitPerMin) || 120)
-  const result = consume(`agent:${token.id}`, limit)
+  const result = await consume(`agent:${token.id}`, limit)
   if (!result.ok) {
     res.setHeader('Retry-After', String(result.retryAfter))
     respondError(res, 429, 'RATE_LIMITED', 'Quota par minute dépassé', {

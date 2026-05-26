@@ -20,30 +20,14 @@ import { generateProjectRecapPdf } from '../../lib/pdfProjectRecap.js'
 import ProjectSection from '../../models/ProjectSection.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { multerFileFilter, DEFAULT_UPLOAD_LIMIT_BYTES } from '../../lib/uploadConfig.js'
 
 const router = express.Router()
 
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-  'application/pdf',
-  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain', 'text/csv',
-  'application/zip', 'application/x-zip-compressed',
-  'application/json',
-])
-
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      cb(null, true)
-    } else {
-      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`))
-    }
-  },
+  limits: { fileSize: DEFAULT_UPLOAD_LIMIT_BYTES },
+  fileFilter: multerFileFilter,
 })
 
 router.use(auth)

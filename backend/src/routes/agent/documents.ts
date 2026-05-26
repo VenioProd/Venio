@@ -155,7 +155,7 @@ router.post(
       const absPath = path.resolve(process.cwd(), relPath)
 
       // Garde-fou contre path traversal (au cas où)
-      if (!absPath.startsWith(uploadsRoot())) {
+      if (!absPath.startsWith(uploadsRoot() + path.sep)) {
         return respondError(res, 400, 'INVALID_PATH', 'Path traversal détecté')
       }
 
@@ -245,7 +245,7 @@ router.delete(
       // Suppression DB d'abord (la source de vérité)
       await Document.deleteOne({ _id: doc._id })
       // Suppression du fichier physique : best-effort, dans uploads/ uniquement
-      if (absPath.startsWith(uploadsRoot())) {
+      if (absPath.startsWith(uploadsRoot() + path.sep)) {
         fs.unlink(absPath).catch(() => {
           // silencieux, fichier déjà absent
         })

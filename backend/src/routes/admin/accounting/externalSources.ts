@@ -247,9 +247,9 @@ router.patch(
       }
       await source.save()
 
-      // Si le quota a changé, on reset le compteur in-memory
+      // Si le quota a changé, on reset le compteur (Redis ou in-memory)
       if (body.rateLimitPerMin !== undefined) {
-        resetForSource(String(source._id))
+        await resetForSource(String(source._id))
       }
 
       const after = sanitizeSource(source.toObject())
@@ -298,7 +298,7 @@ router.delete(
       // On conserve les ExternalTransaction (10 ans), on supprime les rules.
       const rulesDeleted = await ClassificationRule.deleteMany({ source: source._id })
       await source.deleteOne()
-      resetForSource(String(source._id))
+      await resetForSource(String(source._id))
       AuditLog.create({
         userId: req.user?.id || null,
         email: req.user?.email || '',

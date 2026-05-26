@@ -9,13 +9,31 @@ import { body, validationResult } from 'express-validator'
 import { TOTP } from 'otpauth'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
+import PasswordResetToken from '../models/PasswordResetToken.js'
 import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
 
-// In-memory store for reset tokens (simple approach, clears on restart)
-export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000 // 1 heure
+
+function hashResetToken(rawToken: string): string {
+  return crypto.createHash('sha256').update(rawToken).digest('hex')
+}
+
+/**
+ * Persiste un nouveau reset token. Retourne le token CLAIR à inclure dans le
+ * mail ; en DB on ne stocke que son hash SHA-256 + une expiration.
+ */
+export async function createResetToken(userId: string): Promise<string> {
+  const rawToken = crypto.randomBytes(32).toString('hex')
+  await PasswordResetToken.create({
+    userId,
+    tokenHash: hashResetToken(rawToken),
+    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+  })
+  return rawToken
+}
 
 const avatarStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, avatarsDir),
@@ -45,7 +63,10 @@ const avatarUpload = multer({
 
 const router = express.Router()
 
-const MIN_PASSWORD_LENGTH = 6
+const MIN_PASSWORD_LENGTH = 12
+const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
+const PASSWORD_COMPLEXITY_MESSAGE =
+  'Le mot de passe doit contenir au moins 1 majuscule, 1 minuscule et 1 chiffre'
 
 function signToken(user: { _id: unknown; role: string; email: string; name: string }): string {
   return jwt.sign(
@@ -197,7 +218,11 @@ router.post(
   '/change-password',
   auth,
   body('currentPassword').notEmpty().withMessage('Mot de passe actuel requis'),
-  body('newPassword').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('newPassword')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`)
+    .matches(PASSWORD_COMPLEXITY_REGEX)
+    .withMessage(PASSWORD_COMPLEXITY_MESSAGE),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -231,10 +256,18 @@ router.post(
 )
 
 // POST /api/auth/bootstrap-admin
+// En production, le endpoint est désactivé dès qu'un SUPER_ADMIN existe (404).
+// Le check + create est atomique via findOneAndUpdate(upsert) côté Mongo,
+// et l'index partiel unique_super_admin sur User garantit l'unicité au cas où
+// deux requêtes concurrentes traversent la condition simultanément.
 router.post(
   '/bootstrap-admin',
   body('email').isEmail().withMessage('Email invalide'),
-  body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`)
+    .matches(PASSWORD_COMPLEXITY_REGEX)
+    .withMessage(PASSWORD_COMPLEXITY_MESSAGE),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -243,20 +276,45 @@ router.post(
         return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
       }
 
-      const existingAdmin = await User.exists({ role: { $in: ADMIN_ROLES } })
-      if (existingAdmin) {
-        return res.status(403).json({ error: 'Admin already exists' })
+      const isProd = process.env.NODE_ENV === 'production'
+      if (isProd) {
+        const existing = await User.exists({ role: 'SUPER_ADMIN' })
+        if (existing) {
+          return res.status(404).json({ error: 'Not found' })
+        }
       }
 
       const { email, password, name } = req.body
-
+      const normalizedEmail = (email as string).toLowerCase().trim()
       const passwordHash = await bcrypt.hash(password, 10)
-      const admin = await User.create({
-        email: email.toLowerCase().trim(),
-        passwordHash,
-        role: 'SUPER_ADMIN',
-        name,
-      })
+
+      let admin
+      try {
+        admin = await User.findOneAndUpdate(
+          { role: { $in: ADMIN_ROLES } },
+          {
+            $setOnInsert: {
+              email: normalizedEmail,
+              passwordHash,
+              role: 'SUPER_ADMIN',
+              name,
+            },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+      } catch (err: unknown) {
+        // Collision sur l'index partiel unique_super_admin : un SUPER_ADMIN existe.
+        if ((err as { code?: number })?.code === 11000) {
+          return res.status(403).json({ error: 'Admin already exists' })
+        }
+        throw err
+      }
+
+      // Si le findOneAndUpdate a trouvé un admin existant (autre que celui qu'on
+      // vient d'insérer), refuser : le bootstrap est un opérateur one-shot.
+      if (!admin || admin.email !== normalizedEmail) {
+        return res.status(403).json({ error: 'Admin already exists' })
+      }
 
       const token = signToken(admin)
       return res.status(201).json({ token })
@@ -285,17 +343,8 @@ router.post(
         return res.json({ message: 'Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.' })
       }
 
-      // Generate reset token
-      const token = crypto.randomBytes(32).toString('hex')
-      resetTokens.set(token, {
-        userId: user._id.toString(),
-        expiresAt: Date.now() + 3600000, // 1 hour
-      })
-
-      // Clean expired tokens
-      for (const [key, val] of resetTokens) {
-        if (val.expiresAt < Date.now()) resetTokens.delete(key)
-      }
+      // Generate reset token (persisted hashed, with TTL Mongo)
+      const token = await createResetToken(user._id.toString())
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
       const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
@@ -318,7 +367,11 @@ router.post(
 router.post(
   '/reset-password',
   body('token').notEmpty().withMessage('Token requis'),
-  body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`)
+    .matches(PASSWORD_COMPLEXITY_REGEX)
+    .withMessage(PASSWORD_COMPLEXITY_MESSAGE),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -327,16 +380,17 @@ router.post(
       }
 
       const { token, password } = req.body
-      const entry = resetTokens.get(token)
+      const tokenHash = hashResetToken(String(token))
+      const entry = await PasswordResetToken.findOne({ tokenHash })
 
-      if (!entry || entry.expiresAt < Date.now()) {
-        resetTokens.delete(token)
+      if (!entry || entry.expiresAt.getTime() < Date.now()) {
+        if (entry) await entry.deleteOne().catch(() => {})
         return res.status(400).json({ error: 'Lien de reinitialisation expire ou invalide.' })
       }
 
       const user = await User.findById(entry.userId)
       if (!user) {
-        resetTokens.delete(token)
+        await entry.deleteOne().catch(() => {})
         return res.status(400).json({ error: 'Utilisateur introuvable.' })
       }
 
@@ -344,7 +398,8 @@ router.post(
       user.passwordChangedAt = new Date()
       await user.save()
 
-      resetTokens.delete(token)
+      // Invalidation immédiate du token consommé (en plus du TTL).
+      await entry.deleteOne().catch(() => {})
 
       AuditLog.create({
         userId: user._id,

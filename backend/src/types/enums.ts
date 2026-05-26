@@ -95,6 +95,8 @@ export type AuditAction =
   // ── API Agent (Bearer + scopes) ──
   | 'AGENT_TOKEN_CREATE' | 'AGENT_TOKEN_UPDATE' | 'AGENT_TOKEN_REVOKE'
   | 'AGENT_AUTH_SUCCESS' | 'AGENT_AUTH_FAIL' | 'AGENT_API_MUTATION'
+  // ── Admin sécurité ──
+  | 'ADMIN_IMPERSONATION'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

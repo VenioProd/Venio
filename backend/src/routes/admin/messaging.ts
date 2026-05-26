@@ -20,6 +20,7 @@ import {
   toggleReaction,
   updateMessage,
 } from '../../services/internalMessaging.js'
+import { multerFileFilter } from '../../lib/uploadConfig.js'
 
 const router = express.Router()
 
@@ -29,6 +30,7 @@ fs.mkdirSync(uploadDir, { recursive: true })
 const upload = multer({
   dest: uploadDir,
   limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+  fileFilter: multerFileFilter,
 })
 
 router.use(auth)
@@ -186,7 +188,7 @@ router.get('/messages/:messageId/attachments/:index/download', async (req: Reque
 
     const safeRoot = path.resolve(process.cwd(), 'uploads', 'internal-messaging')
     const filePath = path.resolve(process.cwd(), attachment.storagePath)
-    if (!filePath.startsWith(safeRoot)) {
+    if (!filePath.startsWith(safeRoot + path.sep)) {
       return res.status(403).json({ error: 'Access denied' })
     }
     return res.download(filePath, attachment.originalName)

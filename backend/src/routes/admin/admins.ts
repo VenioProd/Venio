@@ -6,11 +6,12 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireAnyPermission, requirePermission } from '../../middleware/role.js'
 import User from '../../models/User.js'
+import AuditLog from '../../models/AuditLog.js'
 import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
 import type { AdminRole } from '../../types/enums.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import { sendAdminCredentials, sendPasswordResetEmail } from '../../lib/email.js'
-import { resetTokens } from '../auth.js'
+import { createResetToken } from '../auth.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
@@ -66,13 +67,6 @@ router.post(
     if (nextRole === 'SUPER_ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    if (nextRole === 'SUPER_ADMIN') {
-      const superAdminCount = await countSuperAdmins()
-      if (superAdminCount > 0) {
-        return res.status(409).json({ error: 'Super admin already exists' })
-      }
-    }
-
     // Fine-grained permission overrides (SUPER_ADMIN only)
     const allPermValues = Object.values(PERMISSIONS) as string[]
     let grantedPermissions: string[] = []
@@ -87,15 +81,28 @@ router.post(
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
-    const user = await User.create({
-      email: normalizedEmail,
-      passwordHash,
-      role: nextRole,
-      name,
-      jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
-      grantedPermissions,
-      deniedPermissions,
-    })
+    let user
+    try {
+      // Unicité du SUPER_ADMIN garantie par l'index partiel "unique_super_admin"
+      // déclaré dans models/User.ts. Plus de TOCTOU possible.
+      user = await User.create({
+        email: normalizedEmail,
+        passwordHash,
+        role: nextRole,
+        name,
+        jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
+        grantedPermissions,
+        deniedPermissions,
+      })
+    } catch (err: unknown) {
+      if ((err as { code?: number })?.code === 11000) {
+        if (nextRole === 'SUPER_ADMIN') {
+          return res.status(409).json({ error: 'Super admin already exists' })
+        }
+        return res.status(409).json({ error: 'Email already exists' })
+      }
+      throw err
+    }
 
     // Trigger internal user onboarding
     triggerAutomations(
@@ -358,11 +365,7 @@ router.post('/:userId/reset-link', requirePermission(PERMISSIONS.MANAGE_ADMINS),
       return res.status(404).json({ error: 'Utilisateur introuvable' })
     }
 
-    const token = crypto.randomBytes(32).toString('hex')
-    resetTokens.set(token, {
-      userId: user._id.toString(),
-      expiresAt: Date.now() + 3600000, // 1 hour
-    })
+    const token = await createResetToken(user._id.toString())
 
     const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
     const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
@@ -420,6 +423,23 @@ router.post('/impersonate/:userId', requirePermission(PERMISSIONS.MANAGE_ADMINS)
     if (!target) {
       return res.status(404).json({ error: 'Utilisateur introuvable' })
     }
+
+    // Audit AVANT la génération du token : si l'écriture échoue, on n'émet
+    // pas de session impersonée non tracée. Le log capture la raison fournie
+    // par l'opérateur (champ libre côté requête) pour traçabilité Qualiopi.
+    await AuditLog.create({
+      userId: req.user!.id,
+      email: req.user!.email,
+      action: 'ADMIN_IMPERSONATION',
+      ip: (req.headers['x-forwarded-for'] as string) || req.ip || '',
+      userAgent: req.get('user-agent') || '',
+      metadata: {
+        targetUserId: String(target._id),
+        targetEmail: target.email,
+        targetRole: target.role,
+        reason: typeof req.body?.reason === 'string' ? req.body.reason : undefined,
+      },
+    })
 
     const token = jwt.sign(
       { id: target._id, role: target.role, email: target.email, name: target.name },

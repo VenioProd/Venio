@@ -29,10 +29,11 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
       await document.save()
     }
 
-    // Prevent path traversal attacks
+    // Prevent path traversal attacks.
+    // Le séparateur final est INDISPENSABLE : sinon /var/uploads-evil/foo passe.
     const uploadsDir = path.resolve(process.cwd(), 'uploads')
     const filePath = path.resolve(process.cwd(), document.storagePath)
-    if (!filePath.startsWith(uploadsDir)) {
+    if (!filePath.startsWith(uploadsDir + path.sep)) {
       return res.status(403).json({ error: 'Access denied' })
     }
     return res.download(filePath, document.originalName)

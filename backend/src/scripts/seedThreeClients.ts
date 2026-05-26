@@ -6,6 +6,12 @@ import Project from '../models/Project.js'
 
 dotenv.config()
 
+// Garde-fou : interdit toute exécution sur l'environnement de production.
+if (process.env.NODE_ENV === 'production') {
+  console.error('Seed scripts forbidden in production')
+  process.exit(1)
+}
+
 const MONGO_URI = process.env.MONGODB_URI
 
 if (!MONGO_URI) {

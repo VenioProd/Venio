@@ -48,7 +48,7 @@ const uploadConvention = multer({ storage: conventionStorage, limits: { fileSize
 // Serve uploaded files (pas d'auth — noms de fichiers non devinables)
 router.get('/reports/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(uploadsDir, req.params.filename as string)
-  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
+  if (!filePath.startsWith(uploadsDir + path.sep)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
   res.sendFile(filePath)
 })
@@ -56,7 +56,7 @@ router.get('/reports/files/:filename', (req: Request, res: Response) => {
 // Serve convention files
 router.get('/conventions/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(conventionsDir, req.params.filename as string)
-  if (!filePath.startsWith(conventionsDir)) return res.status(403).json({ error: 'Access denied' })
+  if (!filePath.startsWith(conventionsDir + path.sep)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
   res.sendFile(filePath)
 })

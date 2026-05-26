@@ -1,0 +1,81 @@
+name: Deploy to VPS via Docker
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and deploy on VPS
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
+            set -e
+            PROJECT_DIR="/opt/docker/openclaw/config/workspace/projects/venio"
+
+            # Recreer le dossier si necessaire
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "Dossier projet introuvable, re-clonage..."
+              mkdir -p "$(dirname $PROJECT_DIR)"
+              rm -rf "$PROJECT_DIR"
+              git clone https://github.com/raphaelbentv/Venio.git "$PROJECT_DIR"
+            fi
+
+            cd "$PROJECT_DIR"
+
+            # Sauvegarder le .env existant
+            if [ -f .env ]; then
+              cp .env .env.backup
+            fi
+
+            echo "Pull du code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Restaurer le .env apres le reset
+            if [ -f .env.backup ]; then
+              mv .env.backup .env
+            fi
+
+            # Builder la nouvelle image PENDANT que l'ancien container tourne
+            echo "Build de la nouvelle image (l'ancien container reste en ligne)..."
+            if ! docker compose -f docker-compose.prod.yml build --no-cache; then
+              echo "Build echoue, l'ancien container reste en ligne"
+              exit 1
+            fi
+
+            # Swap rapide : down + up (quelques secondes de coupure max)
+            echo "Swap du container..."
+            docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+            docker stop venio-app 2>/dev/null || true
+            docker rm venio-app 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Deploiement termine"
+          DEPLOY
+
+      - name: Verify site
+        run: |
+          sleep 20
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.paris)
+          if [ "$STATUS" = "200" ]; then
+            echo "Site en ligne sur https://venio.paris (HTTP $STATUS)"
+          else
+            echo "Le site a repondu avec HTTP $STATUS"
+          fi

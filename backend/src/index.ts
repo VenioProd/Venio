@@ -70,26 +70,40 @@ import User from './models/User.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
+import { requireEnv } from './lib/requireEnv.js'
 
 dotenv.config()
 
+// Fail-fast on missing required env vars (JWT_SECRET, MONGODB_URI,
+// ENCRYPTION_KEY). The JWT_SECRET length check below is kept as an
+// additional constraint.
+requireEnv()
+
 const app = express()
 const port = process.env.PORT || 3000
-const mongoUri = process.env.MONGODB_URI
+// requireEnv() au-dessus garantit la présence de MONGODB_URI. Cast safe.
+const mongoUri = process.env.MONGODB_URI as string
 const isProd = process.env.NODE_ENV === 'production'
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5001'
 
-if (!mongoUri) {
-  throw new Error('MONGODB_URI is required')
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  console.error('JWT_SECRET too short (require ≥ 32 chars)')
+  process.exit(1)
 }
 
 // Security headers
+// Note CSP : `'unsafe-inline'` retiré du scriptSrc pour limiter le risque XSS.
+// `styleSrc` garde `'unsafe-inline'` car Tailwind/Mui injectent encore des
+// styles inline en runtime ; à terme migrer aussi vers une stratégie nonce.
+// TODO(csp-nonce) : générer un nonce par requête (middleware) et l'injecter
+// dans `index.html` côté SSR/template, puis remplacer `'unsafe-inline'` côté
+// styleSrc par `'nonce-<value>'`.
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: isProd ? {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],

@@ -1,6 +1,21 @@
 // ─────────────────────────────────────────────────────────────
 // AES-256-GCM encryption for sensitive data (ToolAccess, etc.)
 // ─────────────────────────────────────────────────────────────
+//
+// TODO(key-rotation) : actuellement une seule clé ENCRYPTION_KEY est utilisée
+// pour chiffrer ET déchiffrer. Pour permettre la rotation sans tout
+// re-chiffrer immédiatement, on prévoit la stratégie suivante :
+//
+//   1. Format de cipher prefixé par un keyId court (ex. "v1:" puis IV + tag
+//      + ciphertext). `decrypt()` lit le prefix, sélectionne la bonne clé
+//      dans un keyring (ex. `ENCRYPTION_KEY_V1`, `ENCRYPTION_KEY_V2`).
+//   2. `encrypt()` utilise toujours la clé "active" (`ENCRYPTION_KEY_ACTIVE`
+//      ou un alias). Les anciens ciphertexts restent lisibles tant que leur
+//      clé est encore présente dans le keyring.
+//   3. Migration progressive : un job de fond rechiffre les valeurs lues à
+//      la volée vers la clé active, puis on supprime l'ancienne clé.
+//
+// Cette refacto n'est pas faite ici (impact transverse), seulement documentée.
 
 import crypto from 'crypto'
 

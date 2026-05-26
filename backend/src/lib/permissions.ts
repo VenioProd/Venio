@@ -180,7 +180,10 @@ export function getPermissionsForRole(role: UserRole): Permission[] {
 }
 
 export function resolvePermissions(role: UserRole, grantedPermissions: string[], deniedPermissions: string[]): Permission[] {
-  if (role === 'SUPER_ADMIN' || role === 'AGENT') return Object.values(PERMISSIONS) as Permission[]
+  // Seul SUPER_ADMIN dispose d'un bypass implicite vers toutes les permissions.
+  // Les AGENTs n'héritent d'aucune permission par rôle : leur accès est contrôlé
+  // exclusivement par les scopes de leur AgentToken via agent/_middleware/auth.ts.
+  if (role === 'SUPER_ADMIN') return Object.values(PERMISSIONS) as Permission[]
   const base = new Set(getPermissionsForRole(role))
   for (const p of grantedPermissions) base.add(p as Permission)
   for (const p of deniedPermissions) base.delete(p as Permission)
@@ -188,7 +191,8 @@ export function resolvePermissions(role: UserRole, grantedPermissions: string[],
 }
 
 export function hasPermissionResolved(role: UserRole, permission: Permission, grantedPermissions: string[], deniedPermissions: string[]): boolean {
-  if (role === 'SUPER_ADMIN' || role === 'AGENT') return true
+  // Cf. resolvePermissions : seul SUPER_ADMIN bénéficie du bypass.
+  if (role === 'SUPER_ADMIN') return true
   const perms = resolvePermissions(role, grantedPermissions, deniedPermissions)
   return perms.includes(permission)
 }

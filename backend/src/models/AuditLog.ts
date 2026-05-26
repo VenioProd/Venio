@@ -29,6 +29,8 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         // ── API Agent ──
         'AGENT_TOKEN_CREATE', 'AGENT_TOKEN_UPDATE', 'AGENT_TOKEN_REVOKE',
         'AGENT_AUTH_SUCCESS', 'AGENT_AUTH_FAIL', 'AGENT_API_MUTATION',
+        // ── Admin sécurité ──
+        'ADMIN_IMPERSONATION',
       ],
     },
     ip: { type: String, default: '' },

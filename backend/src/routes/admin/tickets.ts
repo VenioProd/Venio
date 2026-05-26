@@ -29,7 +29,7 @@ const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 // Serve uploaded files
 router.get('/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(uploadsDir, req.params.filename as string)
-  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
+  if (!filePath.startsWith(uploadsDir + path.sep)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
   res.sendFile(filePath)
 })

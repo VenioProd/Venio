@@ -8,6 +8,7 @@ import { requireAdmin, requireSuperAdmin } from '../../middleware/role.js'
 import Decision from '../../models/Decision.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import { multerFileFilter, DEFAULT_UPLOAD_LIMIT_BYTES } from '../../lib/uploadConfig.js'
 
 const router = express.Router()
 router.use(auth)
@@ -18,7 +19,8 @@ fs.mkdirSync(uploadDir, { recursive: true })
 
 const upload = multer({
   dest: uploadDir,
-  limits: { fileSize: 20 * 1024 * 1024, files: 5 },
+  limits: { fileSize: DEFAULT_UPLOAD_LIMIT_BYTES, files: 5 },
+  fileFilter: multerFileFilter,
 })
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -163,7 +165,7 @@ router.get('/:id/attachments/:index/download', async (req: Request, res: Respons
 
     const safeRoot = path.resolve(process.cwd(), 'uploads', 'decisions')
     const filePath = path.resolve(process.cwd(), attachment.storagePath)
-    if (!filePath.startsWith(safeRoot)) return res.status(403).json({ error: 'Access denied' })
+    if (!filePath.startsWith(safeRoot + path.sep)) return res.status(403).json({ error: 'Access denied' })
 
     return res.download(filePath, attachment.originalName)
   } catch (err) {

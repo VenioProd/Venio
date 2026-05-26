@@ -12,6 +12,12 @@
  */
 
 import 'dotenv/config'
+
+if (process.env.NODE_ENV !== 'production' || process.env.ALLOW_CLEANUP !== 'YES_I_KNOW') {
+  console.error('Refusing to run: requires NODE_ENV=production and ALLOW_CLEANUP=YES_I_KNOW')
+  process.exit(1)
+}
+
 import mongoose from 'mongoose'
 import fs from 'fs'
 import path from 'path'

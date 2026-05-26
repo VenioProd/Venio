@@ -94,4 +94,17 @@ userSchema.index({ role: 1, status: 1 })
 userSchema.index({ ownerAdminId: 1, updatedAt: -1 })
 userSchema.index({ name: 'text', companyName: 'text', email: 'text' })
 
+// Garantit qu'un seul SUPER_ADMIN peut exister à l'échelle de la collection.
+// Combiné au findOneAndUpdate(upsert) en bootstrap-admin, supprime tout TOCTOU :
+// même en cas de double POST simultané, Mongo retournera un duplicate key error
+// pour le second insert et la cohérence sera préservée.
+userSchema.index(
+  { role: 1 },
+  {
+    name: 'unique_super_admin',
+    unique: true,
+    partialFilterExpression: { role: 'SUPER_ADMIN' },
+  }
+)
+
 export default mongoose.model<IUser>('User', userSchema)

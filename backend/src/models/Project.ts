@@ -53,4 +53,10 @@ const projectSchema = new mongoose.Schema<IProject>(
   { timestamps: true }
 )
 
+// Couvre les requêtes les plus fréquentes : liste par client, filtre archivés,
+// projets assignés à un membre.
+projectSchema.index({ client: 1, updatedAt: -1 })
+projectSchema.index({ isArchived: 1, updatedAt: -1 })
+projectSchema.index({ assignedTo: 1 })
+
 export default mongoose.model<IProject>('Project', projectSchema)

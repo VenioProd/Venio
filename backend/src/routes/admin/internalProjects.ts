@@ -12,6 +12,7 @@ import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sen
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins, notifyUsers } from '../../lib/notifyHelpers.js'
+import { multerFileFilter, setDownloadHeaders } from '../../lib/uploadConfig.js'
 
 const router = express.Router()
 router.use(auth)
@@ -29,7 +30,11 @@ const missionStorage = multer.diskStorage({
     cb(null, `${unique}${ext}`)
   },
 })
-const missionUpload = multer({ storage: missionStorage, limits: { fileSize: 50 * 1024 * 1024 } }) // 50MB
+const missionUpload = multer({
+  storage: missionStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: multerFileFilter,
+})
 
 // Resolve whether the current user can see a project (admin always yes, intern only if member by pole or direct)
 async function canAccess(userId: string, userRole: string, project: any): Promise<boolean> {
@@ -516,9 +521,12 @@ router.get('/:projectId/missions/:missionId/files/:fileId', async (req: Request,
     if (!file) return res.status(404).json({ error: 'Fichier introuvable' })
 
     const filePath = path.resolve(file.storagePath)
+    if (!filePath.startsWith(missionUploadsDir + path.sep)) {
+      return res.status(403).json({ error: 'Chemin de fichier invalide' })
+    }
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
 
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`)
+    setDownloadHeaders(res, file.originalName)
     res.setHeader('Content-Type', file.mimeType)
     return res.sendFile(filePath)
   } catch (err) { return next(err) }

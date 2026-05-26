@@ -23,38 +23,39 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-// GET /api/projects/task-progress-all — résumé avancement tâches pour tous les projets du client
+// GET /api/projects/task-progress-all — résumé avancement tâches pour tous les projets du client.
+// Optimisé en un seul aggregate sur Task (groupé par projet), au lieu d'un
+// fetch complet de toutes les tâches puis comptage en mémoire.
 router.get('/task-progress-all', async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'CLIENT') {
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const projects = await Project.find({ client: req.user!.id }).select('_id')
-    const projectIds = projects.map(p => p._id)
+    const projects = await Project.find({ client: req.user!.id }).select('_id').lean()
+    const projectIds = projects.map((p) => p._id)
 
-    const tasks = await Task.find({ project: { $in: projectIds } }).select('project status')
+    const grouped = projectIds.length
+      ? await Task.aggregate<{ _id: unknown; total: number; done: number }>([
+          { $match: { project: { $in: projectIds } } },
+          {
+            $group: {
+              _id: '$project',
+              total: { $sum: 1 },
+              done: { $sum: { $cond: [{ $eq: ['$status', 'TERMINE'] }, 1, 0] } },
+            },
+          },
+        ])
+      : []
 
-    const progressMap: Record<string, { total: number; done: number }> = {}
-    for (const pid of projectIds) {
-      progressMap[pid.toString()] = { total: 0, done: 0 }
-    }
-    for (const t of tasks) {
-      const key = t.project.toString()
-      if (progressMap[key]) {
-        progressMap[key].total++
-        if (t.status === 'TERMINE') progressMap[key].done++
-      }
-    }
-
-    // Build result: { projectId: { total, done, percent } }
     const result: Record<string, { total: number; done: number; percent: number }> = {}
-    for (const [pid, val] of Object.entries(progressMap)) {
-      result[pid] = {
-        total: val.total,
-        done: val.done,
-        percent: val.total > 0 ? Math.round((val.done / val.total) * 100) : 0,
-      }
+    for (const pid of projectIds) {
+      result[String(pid)] = { total: 0, done: 0, percent: 0 }
+    }
+    for (const g of grouped) {
+      const key = String(g._id)
+      const percent = g.total > 0 ? Math.round((g.done / g.total) * 100) : 0
+      result[key] = { total: g.total, done: g.done, percent }
     }
 
     return res.json({ progress: result })

@@ -19,4 +19,6 @@ const documentSchema = new mongoose.Schema<IDocument>(
   { timestamps: false }
 )
 
+documentSchema.index({ project: 1, uploadedAt: -1 })
+
 export default mongoose.model<IDocument>('Document', documentSchema)

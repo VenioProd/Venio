@@ -14,6 +14,16 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
+
+    // Les agents système ne doivent JAMAIS s'authentifier via ce middleware.
+    // Ils utilisent obligatoirement agent/_middleware/auth.ts (bearer AgentToken
+    // avec scopes). Refus explicite ici pour éviter qu'un JWT forgé/abusé avec
+    // role=AGENT ne court-circuite le contrôle de scopes.
+    if (payload.role === 'AGENT') {
+      res.status(401).json({ error: 'Agent tokens are not accepted on this endpoint' })
+      return
+    }
+
     req.user = payload
 
     // Bloquer les clients archivés même si leur token est encore valide

@@ -9,6 +9,7 @@ import User from '../../models/User.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { sendResourcePublishedEmail } from '../../lib/email/templates/project.js'
 import { notifyInternalAdmins } from '../../lib/notifyHelpers.js'
+import { multerFileFilter, setDownloadHeaders } from '../../lib/uploadConfig.js'
 
 const router = express.Router()
 router.use(auth)
@@ -26,7 +27,11 @@ const storage = multer.diskStorage({
     cb(null, `${unique}${ext}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }) // 100MB
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  fileFilter: multerFileFilter,
+})
 
 // GET / — list all resources
 router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
@@ -43,16 +48,20 @@ router.get('/categories', (_req: Request, res: Response) => {
   res.json({ categories: RESOURCE_CATEGORIES })
 })
 
-// GET /:id/download — serve the file
+// GET /:id/download — serve the file (always as attachment, never inline)
 router.get('/:id/download', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resource = await CompanyResource.findById(req.params.id)
     if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
 
     const filePath = path.resolve(resource.storagePath)
+    // Garde-fou anti path-traversal : la storagePath doit pointer dans uploadsDir.
+    if (!filePath.startsWith(uploadsDir + path.sep)) {
+      return res.status(403).json({ error: 'Chemin de fichier invalide' })
+    }
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable sur le serveur' })
 
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resource.originalName)}"`)
+    setDownloadHeaders(res, resource.originalName)
     res.setHeader('Content-Type', resource.mimeType)
     return res.sendFile(filePath)
   } catch (err) { return next(err) }
