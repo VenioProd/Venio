@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { useConfirm } from '../../../hooks/useConfirm'
+import { useConfirm } from '@/hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
-import { useAuth } from '../../../context/AuthContext'
+import { apiFetch, getToken } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { Ticket, KpiData } from './types'
 import TicketCard from './TicketCard'
@@ -11,7 +11,7 @@ import TicketStats from './TicketStats'
 import TicketFilters from './TicketFilters'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
-import DocPreviewModal from '../../../components/DocPreviewModal'
+import DocPreviewModal from '@/components/DocPreviewModal'
 
 const TicketList = () => {
   const { user } = useAuth()

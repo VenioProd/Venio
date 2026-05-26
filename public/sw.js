@@ -1,7 +1,7 @@
 /* eslint-env serviceworker */
 /* global self, caches, clients, fetch */
 
-const CACHE_NAME = 'venio-v2'
+const CACHE_NAME = 'venio-v3'
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -33,16 +33,37 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/')) return
 
+  // Documents (HTML) — network-first to avoid serving stale shells after a
+  // deploy. Cached copy is used only when offline.
+  if (request.destination === 'document') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
+          return response
+        })
+        .catch(() => caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 })))
+    )
+    return
+  }
+
+  // Hashed assets (JS/CSS/img) — cache-first, fallback to network.
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-        }
-        return response
-      })
-      .catch(() => caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 })))
+    caches.match(request).then((cached) => {
+      if (cached) return cached
+      return fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
+          return response
+        })
+        .catch(() => new Response('Offline', { status: 503 }))
+    })
   )
 })
 

@@ -1,8 +1,8 @@
 import React from 'react'
 import type { OverviewTabProps } from './types'
 import { STATUS_OPTIONS, HEALTH_OPTIONS } from './types'
-import { CRM_SERVICE_TYPES } from '../../../lib/formatUtils'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import { CRM_SERVICE_TYPES } from '@/lib/formatUtils'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
   client,

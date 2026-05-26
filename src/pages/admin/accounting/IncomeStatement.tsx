@@ -4,13 +4,13 @@ import {
   getIncomeStatement,
   listFiscalYears,
   downloadReportCsv,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IFiscalYear,
   IIncomeGroup,
   IIncomeLine,
   IIncomeStatementData,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

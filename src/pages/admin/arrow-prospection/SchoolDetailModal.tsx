@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
+import type { ArrowSchool, ArrowSchoolFormData } from '@/types/arrow.types'
 import { ARROW_SCHOOL_TYPES, STATUS_MAP, TEMPERATURE_MAP } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }
@@ -28,7 +28,7 @@ const Section = React.forwardRef<HTMLDivElement, { title: string; children: Reac
   )
 )
 
-export default function SchoolDetailModal({ school, admins, focusSection, onClose, onSave, canManage }: Props) {
+export default function SchoolDetailModal({ school, admins: _admins, focusSection, onClose, onSave, canManage }: Props) {
   const ecoleRef = useRef<HTMLDivElement>(null)
   const contactRef = useRef<HTMLDivElement>(null)
 

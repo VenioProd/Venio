@@ -423,7 +423,7 @@
   transform: scaleX(0);
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .contact-grid {
     grid-template-columns: 1fr;
     gap: 40px;

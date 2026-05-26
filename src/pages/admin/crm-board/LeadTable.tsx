@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import LeadFilters from './LeadFilters'
 import LeadTableRow from './LeadTableRow'
-import type { Lead, AdminUser, CrmStatusConfig } from '../../../types/crm.types'
+import type { Lead, AdminUser, CrmStatusConfig } from '@/types/crm.types'
 
 interface LeadTableProps {
   groupedLeads: (CrmStatusConfig & { leads: Lead[] })[]

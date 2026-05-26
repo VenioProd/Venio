@@ -4,9 +4,9 @@ import {
   createClassificationRule,
   updateClassificationRule,
   deleteClassificationRule,
-} from '../../../../services/accounting'
-import type { ClassificationRulePayload } from '../../../../services/accounting'
-import type { IClassificationRule } from '../../../../types/accounting'
+} from '@/services/accounting'
+import type { ClassificationRulePayload } from '@/services/accounting'
+import type { IClassificationRule } from '@/types/accounting'
 import type { RuleForm } from './types'
 import { formatDateTime, RULE_TYPE_OPTIONS, EMPTY_RULE, parseTagsInput, tagsToInput } from './helpers'
 

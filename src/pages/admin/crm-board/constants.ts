@@ -1,4 +1,4 @@
-import type { CrmStatusConfig, Lead, LeadAlert } from '../../../types/crm.types'
+import type { CrmStatusConfig, Lead, LeadAlert } from '@/types/crm.types'
 
 export const CRM_STATUSES = [
   { key: 'LEAD', label: 'Lead', color: '#6366f1' },

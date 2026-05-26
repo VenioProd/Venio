@@ -5,8 +5,8 @@ import {
   updateExternalSource,
   deleteExternalSource,
   rotateExternalSourceKey,
-} from '../../../../services/accounting'
-import type { ExternalSourceStatus, IRotateKeyResult } from '../../../../types/accounting'
+} from '@/services/accounting'
+import type { ExternalSourceStatus, IRotateKeyResult } from '@/types/accounting'
 import { TABS, type TabId } from './types'
 import { STATUS_LABELS, statusBadgeClass } from './helpers'
 import { useExternalSource } from './useExternalSource'

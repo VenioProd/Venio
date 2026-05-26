@@ -1,8 +1,8 @@
 import React from 'react'
 import { CATEGORY_CONFIG, STATUS_CONFIG, formatDate, formatFileSize, isImage } from './types'
 import type { Ticket, TicketFile } from './types'
-import { apiFetch } from '../../../lib/api'
-import UserAvatar from '../../../components/UserAvatar'
+import { apiFetch } from '@/lib/api'
+import UserAvatar from '@/components/UserAvatar'
 
 interface TicketCardProps {
   ticket: Ticket

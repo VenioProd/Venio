@@ -1,7 +1,7 @@
 import React from 'react'
 import type { ProjectBudgetSectionProps } from './types'
-import { formatCurrency, parseCurrency } from '../../../lib/formatUtils'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import { formatCurrency, parseCurrency } from '@/lib/formatUtils'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const ProjectBudgetSection: React.FC<ProjectBudgetSectionProps> = ({ form, setForm }) => (
   <div className="project-form-section">

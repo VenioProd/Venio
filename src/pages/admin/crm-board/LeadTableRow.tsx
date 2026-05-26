@@ -1,6 +1,6 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import type { Lead, AdminUser } from '../../../types/crm.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import type { Lead, AdminUser } from '@/types/crm.types'
 import { CRM_STATUSES, CRM_PRIORITIES, CRM_TEMPERATURES, PRIORITY_MAP, TEMPERATURE_MAP, getLeadAlerts } from './constants'
 
 interface LeadTableRowProps {

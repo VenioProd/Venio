@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Plus, X, Trash2, RefreshCw } from 'lucide-react'
-import { useAuth } from '../../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../../lib/permissions'
-import { useConfirm } from '../../../../hooks/useConfirm'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import { useConfirm } from '@/hooks/useConfirm'
 import {
   listDevIssues,
   createDevIssue,
@@ -26,7 +26,7 @@ import {
   type DevIssuePriority,
   type DevIssueType,
   type IssueFilters,
-} from '../../../../services/dev'
+} from '@/services/dev'
 import { Avatar, PriorityIcon, StatusGlyph, formatRelative } from '../shared'
 
 interface Props {

@@ -17,8 +17,8 @@ import type {
   DevIssuePriority,
   DevIssueType,
   UserRef,
-} from '../../../services/dev'
-import { STATUS_COLOR, PRIORITY_COLOR } from '../../../services/dev'
+} from '@/services/dev'
+import { STATUS_COLOR, PRIORITY_COLOR } from '@/services/dev'
 
 export type StatusIcon = React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string; className?: string }>
 

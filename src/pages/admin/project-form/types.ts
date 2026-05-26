@@ -1,6 +1,6 @@
-import type { AdminUser } from '../../../types/crm.types'
-import type { User } from '../../../types/auth.types'
-import type { ProjectTemplate } from '../../../types/template.types'
+import type { AdminUser } from '@/types/crm.types'
+import type { User } from '@/types/auth.types'
+import type { ProjectTemplate } from '@/types/template.types'
 
 export interface ProjectFormData {
   clientId: string

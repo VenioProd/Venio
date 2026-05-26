@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
-import { downloadFec, listFiscalYears } from '../../../services/accounting'
-import type { IFiscalYear } from '../../../types/accounting'
+import { downloadFec, listFiscalYears } from '@/services/accounting'
+import type { IFiscalYear } from '@/types/accounting'
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'

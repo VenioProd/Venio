@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import { listEntries, listJournals, bulkValidateEntries } from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { IAccountingEntry, IJournal } from '../../../types/accounting'
+import { listEntries, listJournals, bulkValidateEntries } from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { IAccountingEntry, IJournal } from '@/types/accounting'
 
 const STATUSES = ['', 'DRAFT', 'VALIDATED', 'LOCKED']
 const SOURCES = ['', 'MANUAL', 'BILLING', 'PAYMENT', 'EXTERNAL']

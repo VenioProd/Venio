@@ -1,7 +1,7 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import { CRM_SERVICE_TYPES, toDateTimeLocal } from '../../../lib/formatUtils'
-import type { LeadFormData, AdminUser } from '../../../types/crm.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import { CRM_SERVICE_TYPES, toDateTimeLocal } from '@/lib/formatUtils'
+import type { LeadFormData, AdminUser } from '@/types/crm.types'
 import { CRM_STATUSES, CRM_SOURCES, CRM_TEMPERATURES, EMPTY_FORM } from './constants'
 
 interface LeadFormPanelProps {

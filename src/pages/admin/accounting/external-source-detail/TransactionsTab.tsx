@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { IExternalTransaction } from '../../../../types/accounting'
+import type { IExternalTransaction } from '@/types/accounting'
 import type { TxFilters } from './types'
 import { formatDateTime, TRANSACTION_STATUSES, txStatusClass } from './helpers'
-import { replayExternalTransaction } from '../../../../services/accounting'
+import { replayExternalTransaction } from '@/services/accounting'
 
 interface TransactionsTabProps {
   transactions: IExternalTransaction[]

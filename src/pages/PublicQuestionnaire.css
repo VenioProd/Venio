@@ -326,7 +326,7 @@
 /* ── Public Questionnaire Builder (pqb-*) ── */
 
 .pqb-form {
-  max-width: 720px;
+  max-width: 768px;
 }
 
 .pqb-textarea {

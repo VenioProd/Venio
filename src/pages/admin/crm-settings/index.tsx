@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { AdminUser } from '../../../types/crm.types'
+import { apiFetch } from '@/lib/api'
+import { logger } from '@/lib/logger'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { AdminUser } from '@/types/crm.types'
 import type { CrmSettingsData, CrmSettingsMessage } from './types'
 import AssignmentSection from './AssignmentSection'
 import QualificationSection from './QualificationSection'
@@ -38,7 +39,7 @@ export default function CrmSettings() {
       setSettings(settingsRes.settings || null)
       setAdmins(adminsRes.admins || [])
     } catch (err: unknown) {
-      console.error('Error fetching CRM settings:', err)
+      logger.error('Error fetching CRM settings:', err)
       setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' })
     } finally {
       setLoading(false)

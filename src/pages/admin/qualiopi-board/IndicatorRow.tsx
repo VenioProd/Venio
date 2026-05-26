@@ -1,5 +1,5 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import CustomSelect from '@/components/admin/CustomSelect'
 import { STATUS_CONFIG, STATUS_OPTIONS, getSubProgress } from './types'
 import type { QualiopiIndicator, QualiopiFile } from './types'
 import SubElementForm from './SubElementForm'

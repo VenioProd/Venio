@@ -1,5 +1,5 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import CustomSelect from '@/components/admin/CustomSelect'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG } from './types'
 
 interface TicketFiltersProps {

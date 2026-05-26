@@ -1,7 +1,11 @@
 /**
  * Format a number as currency for display (fr-FR style: 1 234,56)
+ *
+ * The `_currency` parameter is part of the public signature for forward-compat
+ * (e.g. ISO code switching) but the current implementation always renders with
+ * the fr-FR locale and the symbol is added by the caller.
  */
-export function formatCurrency(value: unknown, currency = 'EUR'): string {
+export function formatCurrency(value: unknown, _currency = 'EUR'): string {
   if (value === '' || value == null || Number.isNaN(Number(value))) return ''
   const n = Number(value)
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

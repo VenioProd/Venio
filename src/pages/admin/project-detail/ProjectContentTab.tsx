@@ -1,6 +1,6 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import FileDropZone from '../../../components/admin/FileDropZone'
+import CustomSelect from '@/components/admin/CustomSelect'
+import FileDropZone from '@/components/admin/FileDropZone'
 import type { ProjectContentTabProps } from './types'
 
 function isImageMime(mime?: string): boolean {

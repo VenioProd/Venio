@@ -1,6 +1,6 @@
 import React from 'react'
 import type { ProjectInfoSectionProps } from './types'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const ProjectInfoSection: React.FC<ProjectInfoSectionProps> = ({ form, setForm, clients }) => (
   <div className="project-form-section">

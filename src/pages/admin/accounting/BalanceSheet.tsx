@@ -4,12 +4,12 @@ import {
   getBalanceSheet,
   listFiscalYears,
   downloadReportCsv,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IBalanceSheetData,
   IBalanceSheetLine,
   IFiscalYear,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

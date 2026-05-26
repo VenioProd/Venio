@@ -1,6 +1,6 @@
-import type { QualiopiStatus, QualiopiIndicator, QualiopiSubElement } from '../../../types/qualiopi.types'
+import type { QualiopiStatus, QualiopiIndicator, QualiopiSubElement } from '@/types/qualiopi.types'
 
-export type { QualiopiCriterion, QualiopiIndicator, QualiopiSubElement, QualiopiStatus, QualiopiFile } from '../../../types/qualiopi.types'
+export type { QualiopiCriterion, QualiopiIndicator, QualiopiSubElement, QualiopiStatus, QualiopiFile } from '@/types/qualiopi.types'
 
 export const STATUS_CONFIG: Record<QualiopiStatus, { label: string; color: string; bg: string }> = {
   A_FAIRE: { label: 'A faire', color: '#94a3b8', bg: '#010104' },

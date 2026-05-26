@@ -3,11 +3,11 @@ import type { ProjectTypesSectionProps } from './types'
 import {
   SUGGESTIONS_SERVICE_TYPES,
   SUGGESTIONS_DELIVERABLE_TYPES,
-} from '../../../lib/formatUtils'
+} from '@/lib/formatUtils'
 
 const ProjectTypesSection: React.FC<ProjectTypesSectionProps> = ({
   form,
-  setForm,
+  setForm: _setForm,
   serviceTypeInput,
   setServiceTypeInput,
   addServiceType,

@@ -1,8 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
-import type { Lead, AdminUser } from '../../../types/crm.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/formatUtils'
+import type { Lead, AdminUser } from '@/types/crm.types'
 import { CRM_STATUSES, CRM_TEMPERATURES, TEMPERATURE_MAP } from './constants'
 
 interface LeadDetailModalProps {

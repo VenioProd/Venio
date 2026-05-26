@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import AccountingLayout from './AccountingLayout'
-import { listJournals, createJournal, updateJournal } from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { IJournal, JournalType } from '../../../types/accounting'
+import { listJournals, createJournal, updateJournal } from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { IJournal, JournalType } from '@/types/accounting'
 
 const TYPES: { value: JournalType; label: string }[] = [
   { value: 'VENTE', label: 'Ventes' },

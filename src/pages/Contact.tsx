@@ -131,40 +131,50 @@ const Contact = () => {
               <h2>Formulaire</h2>
               <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-row">
-                  <input 
-                    type="text" 
+                  <label htmlFor="contact-prenom" className="sr-only">Prénom</label>
+                  <input
+                    id="contact-prenom"
+                    type="text"
                     name="prenom"
-                    placeholder="Prénom" 
+                    placeholder="Prénom"
                     value={formData.prenom}
                     onChange={handleChange}
-                    required 
+                    required
                   />
-                  <input 
-                    type="text" 
+                  <label htmlFor="contact-nom" className="sr-only">Nom</label>
+                  <input
+                    id="contact-nom"
+                    type="text"
                     name="nom"
-                    placeholder="Nom" 
+                    placeholder="Nom"
                     value={formData.nom}
                     onChange={handleChange}
-                    required 
+                    required
                   />
                 </div>
-                <input 
-                  type="email" 
+                <label htmlFor="contact-email" className="sr-only">Email</label>
+                <input
+                  id="contact-email"
+                  type="email"
                   name="email"
-                  placeholder="Email" 
+                  placeholder="Email"
                   value={formData.email}
                   onChange={handleChange}
-                  required 
+                  required
                 />
-                <input 
-                  type="text" 
+                <label htmlFor="contact-entreprise" className="sr-only">Entreprise</label>
+                <input
+                  id="contact-entreprise"
+                  type="text"
                   name="entreprise"
-                  placeholder="Entreprise" 
+                  placeholder="Entreprise"
                   value={formData.entreprise}
                   onChange={handleChange}
                 />
-                <select 
-                  className="form-select" 
+                <label htmlFor="contact-sujet" className="sr-only">Sujet</label>
+                <select
+                  id="contact-sujet"
+                  className="form-select"
                   name="sujet"
                   value={formData.sujet}
                   onChange={handleChange}
@@ -176,7 +186,9 @@ const Contact = () => {
                   <option value="Conseil Stratégique">Conseil Stratégique</option>
                   <option value="Autre">Autre</option>
                 </select>
+                <label htmlFor="contact-message" className="sr-only">Message</label>
                 <textarea
+                  id="contact-message"
                   placeholder="Message"
                   name="message"
                   value={formData.message}
@@ -186,7 +198,7 @@ const Contact = () => {
                 ></textarea>
                 <MathCaptcha onVerify={setCaptchaVerified} />
                 {formStatus && (
-                  <p style={{ color: formStatus.type === 'success' ? '#22c55e' : '#ef4444', fontSize: '14px', margin: '8px 0' }}>
+                  <p style={{ color: formStatus.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)', fontSize: '14px', margin: '8px 0' }}>
                     {formStatus.message}
                   </p>
                 )}

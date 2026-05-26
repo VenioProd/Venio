@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { getToken } from '../../lib/api'
+import { logger } from '../../lib/logger'
 import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types/task.types'
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
@@ -115,7 +116,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
       if (fileRef.current) fileRef.current.value = ''
       onRefresh?.()
     } catch (err) {
-      console.error('Erreur upload:', err)
+      logger.error('Erreur upload:', err)
     } finally {
       setUploading(false)
     }

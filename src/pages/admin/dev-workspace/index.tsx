@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Activity, CheckCircle2, ChevronDown, ChevronUp, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import { useConfirm } from '../../../hooks/useConfirm'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import { useConfirm } from '@/hooks/useConfirm'
 import {
   listDevProjects,
   listDevIssues,
@@ -36,7 +36,7 @@ import {
   type DevIssueGithubLink,
   type DevCiStatus,
   type IssueFilters,
-} from '../../../services/dev'
+} from '@/services/dev'
 import './DevWorkspace.css'
 
 const PRIORITY_ICON: Record<DevIssuePriority, string> = {

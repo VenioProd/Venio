@@ -7,7 +7,7 @@ import {
   type DevProject,
   type DevProjectDetail,
   type IssueFilters,
-} from '../../../../services/dev'
+} from '@/services/dev'
 import { Avatar, formatRelative, StatusGlyph } from '../shared'
 
 interface Props {

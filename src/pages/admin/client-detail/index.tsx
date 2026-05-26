@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
-import { useTabState } from '../../../hooks/useTabState'
-import { useAuth } from '../../../context/AuthContext'
-import { useToast } from '../../../context/ToastContext'
+import { apiFetch } from '@/lib/api'
+import { useTabState } from '@/hooks/useTabState'
+import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastContext'
 import {
   archiveAdminClient,
   createAdminClientContact,
@@ -22,9 +22,9 @@ import {
   updateAdminClient,
   deleteAdminClientContact,
   deleteAdminClientNote,
-} from '../../../services/adminClients'
-import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '../../../types/client.types'
-import type { Project } from '../../../types/project.types'
+} from '@/services/adminClients'
+import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '@/types/client.types'
+import type { Project } from '@/types/project.types'
 import type { NoteOrActivity } from './types'
 import { TABS } from './types'
 import OverviewTab from './OverviewTab'

@@ -6,9 +6,9 @@ import {
   SUGGESTIONS_SERVICE_TYPES,
   SUGGESTIONS_DELIVERABLE_TYPES,
   SUGGESTIONS_TAGS,
-} from '../../../lib/formatUtils'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import { getToken } from '../../../lib/api'
+} from '@/lib/formatUtils'
+import CustomSelect from '@/components/admin/CustomSelect'
+import { getToken } from '@/lib/api'
 import type { ProjectDetailsTabProps } from './types'
 
 const BILLING_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', ISSUED: 'Émis', SENT: 'Envoyé', ACCEPTED: 'Accepté', PAID: 'Payé', CANCELLED: 'Annulé' }
@@ -16,7 +16,7 @@ const BILLING_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', ISSU
 const deadlineDueAtDisplay = (dueAt: string): string => (dueAt ? toDateTimeLocal(dueAt) : '')
 
 const ProjectDetailsTab: React.FC<ProjectDetailsTabProps> = ({
-  project,
+  project: _project,
   form,
   setForm,
   admins,

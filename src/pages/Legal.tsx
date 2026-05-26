@@ -1,6 +1,5 @@
 import React from 'react'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import NeonDivider from '../components/NeonDivider'
+import LegalPage from '../components/LegalPage'
 import SEO from '../components/SEO'
 import './Legal.css'
 
@@ -12,15 +11,7 @@ const Legal = () => {
         description="Mentions légales du site Venio. Informations sur l'éditeur, l'hébergeur et les données personnelles."
         noindex={true}
       />
-      <GradientMeshBackground />
-      <div className="legal-page">
-        <section className="legal-hero">
-          <h1>MENTIONS LÉGALES</h1>
-        </section>
-
-        <NeonDivider />
-
-        <section className="legal-content">
+      <LegalPage title="MENTIONS LÉGALES">
           <div className="legal-section">
             <h2>Informations légales</h2>
             <p>
@@ -137,8 +128,7 @@ const Legal = () => {
               relatif à leur interprétation et/ou à leur exécution relève des tribunaux compétents de Paris.
             </p>
           </div>
-        </section>
-      </div>
+      </LegalPage>
     </>
   )
 }

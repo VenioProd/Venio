@@ -6,12 +6,12 @@ import {
   listLetteredLines,
   letterLines,
   unletterCode,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IChartOfAccount,
   ILetteredData,
   IUnletteredData,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

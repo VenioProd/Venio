@@ -1,7 +1,7 @@
 import React from 'react'
 import LeadCard from './LeadCard'
 import { STATUS_MAP } from './constants'
-import type { Lead, PipelineColumn as PipelineColumnType, AdminUser } from '../../../types/crm.types'
+import type { Lead, PipelineColumn as PipelineColumnType, AdminUser } from '@/types/crm.types'
 
 interface PipelineColumnProps {
   column: PipelineColumnType

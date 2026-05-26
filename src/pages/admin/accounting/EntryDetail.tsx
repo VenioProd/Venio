@@ -6,14 +6,14 @@ import {
   validateEntry,
   deleteEntry,
   listAuditLogForEntity,
-} from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+} from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import type {
   IAccountingEntry,
   IAccountingLine,
   IAuditEntry,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EntryDetail = () => {
   const { id } = useParams<{ id: string }>()

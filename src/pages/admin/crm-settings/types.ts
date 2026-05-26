@@ -1,4 +1,4 @@
-import type { AdminUser } from '../../../types/crm.types'
+import type { AdminUser } from '@/types/crm.types'
 
 export interface CrmSettingsMessage {
   type: string

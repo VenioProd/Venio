@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, formatDate, formatFileSize, isImage } from './types'
 import type { Ticket, TicketFile } from './types'
-import UserAvatar from '../../../components/UserAvatar'
+import UserAvatar from '@/components/UserAvatar'
 
 interface TicketDetailProps {
   ticket: Ticket

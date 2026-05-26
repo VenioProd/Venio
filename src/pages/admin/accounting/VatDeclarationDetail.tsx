@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import { getVatDeclaration, submitVatDeclaration } from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { IVatDeclaration, IVatRateBreakdown } from '../../../types/accounting'
+import { getVatDeclaration, submitVatDeclaration } from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { IVatDeclaration, IVatRateBreakdown } from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

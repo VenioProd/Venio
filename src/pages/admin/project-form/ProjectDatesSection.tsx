@@ -1,6 +1,6 @@
 import React from 'react'
 import type { ProjectDatesSectionProps } from './types'
-import { toDateTimeLocal } from '../../../lib/formatUtils'
+import { toDateTimeLocal } from '@/lib/formatUtils'
 
 const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm }) => {
   const addDeadline = () => {

@@ -6,12 +6,12 @@ import {
   listAccounts,
   listFiscalYears,
   downloadReportCsv,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IChartOfAccount,
   IFiscalYear,
   IGeneralLedgerData,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

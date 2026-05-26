@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAuth } from '../../../context/AuthContext'
-import { deleteMessage, downloadMessageAttachment, editMessage, toggleReaction } from '../../../services/messaging'
-import type { InternalMessage, InternalMessageAttachment } from '../../../types/messaging.types'
+import { useAuth } from '@/context/AuthContext'
+import { deleteMessage, downloadMessageAttachment, editMessage, toggleReaction } from '@/services/messaging'
+import type { InternalMessage, InternalMessageAttachment } from '@/types/messaging.types'
 import PromptModal from '../../PromptModal'
 import AttachmentLightbox from './AttachmentLightbox'
 

@@ -6,7 +6,7 @@ import { isAdminRole } from '../lib/permissions'
 import NotificationBell from './admin/NotificationBell'
 import TicketFab from './admin/TicketFab'
 import ThemeToggle from './ThemeToggle'
-import LanguageSwitch from './LanguageSwitch'
+// TODO: réactiver LanguageSwitch une fois useTranslation câblé sur toutes les pages
 import './Navbar.css'
 
 const Navbar = () => {
@@ -116,7 +116,6 @@ const Navbar = () => {
 
           {showNotifBell && <NotificationBell />}
           {showNotifBell && <ThemeToggle />}
-          <LanguageSwitch />
         </div>
         
         <button 
@@ -176,7 +175,6 @@ const Navbar = () => {
           <div className="mobile-menu-bottom">
             {showNotifBell && <NotificationBell onNavigate={closeMobileMenu} />}
             {showNotifBell && <ThemeToggle />}
-            <LanguageSwitch />
           </div>
         </div>
       </div>

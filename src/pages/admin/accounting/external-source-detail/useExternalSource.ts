@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   getExternalSource,
   listExternalTransactions,
-} from '../../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IExternalSource,
   IExternalTransaction,
-} from '../../../../types/accounting'
+} from '@/types/accounting'
 import type { InfoForm, TxFilters } from './types'
 
 interface UseExternalSourceReturn {

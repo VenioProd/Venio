@@ -7,7 +7,7 @@ import {
   refreshAppleCalendar,
   type AppleCalendarEvent,
   type AppleCalendarPayload,
-} from '../../../services/educationCalendar'
+} from '@/services/educationCalendar'
 
 type Mode = 'week' | 'month'
 

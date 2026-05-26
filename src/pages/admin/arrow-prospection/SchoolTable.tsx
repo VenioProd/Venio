@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import type { ArrowRelance, ArrowSchool } from '../../../types/arrow.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import type { ArrowRelance, ArrowSchool } from '@/types/arrow.types'
 import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES, EMPTY_RELANCE } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }

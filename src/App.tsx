@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
+import { Routes, Route, Navigate, ScrollRestoration, useLocation, useParams } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ToastContainer from './components/ToastContainer'
@@ -131,10 +131,6 @@ function App() {
   const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [location.pathname])
-
-  useEffect(() => {
     document.body.classList.add('gpu-off')
     localStorage.setItem('gpu-mode', 'false')
     return () => {
@@ -149,6 +145,7 @@ function App() {
     <NotificationProvider>
     <ToastProvider>
       {!isPublicQuestionnaire && !isPortal && <Navbar />}
+      <ScrollRestoration />
       <Suspense fallback={null}>
       <Routes>
         {/* Site vitrine */}

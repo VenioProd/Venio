@@ -3339,7 +3339,7 @@ a.portal-button {
 }
 
 .crm-modal-wide {
-  max-width: 720px;
+  max-width: 768px;
 }
 
 .crm-modal-header {
@@ -4410,7 +4410,7 @@ a.portal-button {
   border: 1px solid #ff0080;
   border-radius: 14px;
   width: 90vw;
-  max-width: 1000px;
+  max-width: 1024px;
   height: 85vh;
   display: flex;
   flex-direction: column;
@@ -4855,7 +4855,7 @@ a.portal-button {
   transition: width 0.3s ease;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1024px) {
   .qualiopi-kanban {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -5970,7 +5970,7 @@ a.portal-button {
   transform: scale(0.95);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .ticket-fab-tickets {
     bottom: 20px;
     left: 20px;
@@ -6077,7 +6077,7 @@ a.portal-button {
   box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .ticket-fab {
     bottom: 20px;
     right: 20px;
@@ -7910,7 +7910,7 @@ a.portal-button {
   gap: 12px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .decision-card-layout {
     flex-direction: column;
     gap: 10px;

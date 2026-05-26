@@ -54,7 +54,7 @@
 }
 
 .apropos-content {
-  max-width: 1000px;
+  max-width: 1024px;
   margin: 0 auto;
   padding: 0 20px 120px;
 }
@@ -378,7 +378,7 @@
   transform: translateY(3px);
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .piliers {
     grid-template-columns: 1fr;
     gap: 30px;

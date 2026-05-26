@@ -1,6 +1,6 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import type { AdminUser } from '../../../types/crm.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import type { AdminUser } from '@/types/crm.types'
 import { CRM_STATUSES, CRM_PRIORITIES } from './constants'
 
 interface LeadFiltersProps {

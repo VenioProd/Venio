@@ -171,7 +171,7 @@ export default function InternKpi() {
             <button key={s || 'all'} onClick={() => setFilterStatus(s)}
               style={{
                 padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: filterStatus === s ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
+                background: filterStatus === s ? 'var(--color-info)' : 'rgba(255,255,255,0.06)',
                 color: filterStatus === s ? '#fff' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s',
               }}>
               {s === 'ACTIF' ? 'Actifs' : s === 'TERMINE' ? 'Termines' : 'Tous'}
@@ -181,7 +181,7 @@ export default function InternKpi() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={handleExportCsv} style={{
             padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#0ea5e9',
+            border: '1px solid rgba(var(--color-info-rgb), 0.3)', background: 'rgba(var(--color-info-rgb), 0.08)', color: 'var(--color-info)',
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: -2 }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -203,11 +203,11 @@ export default function InternKpi() {
       {/* Stats globales */}
       <div className="ticket-stats" style={{ marginBottom: 20 }}>
         <div className="ticket-stat-card">
-          <span style={{ color: '#0ea5e9', fontWeight: 700, fontSize: 22 }}>{totalInterns}</span>
+          <span style={{ color: 'var(--color-info)', fontWeight: 700, fontSize: 22 }}>{totalInterns}</span>
           <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Stagiaires</span>
         </div>
         <div className="ticket-stat-card">
-          <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 22 }}>{totalReportsAll}</span>
+          <span style={{ color: 'var(--color-success)', fontWeight: 700, fontSize: 22 }}>{totalReportsAll}</span>
           <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Rapports total</span>
         </div>
         <div className="ticket-stat-card">
@@ -215,12 +215,12 @@ export default function InternKpi() {
           <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Validation moy.</span>
         </div>
         <div className="ticket-stat-card">
-          <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 22 }}>{avgRegularite}%</span>
+          <span style={{ color: 'var(--color-warning)', fontWeight: 700, fontSize: 22 }}>{avgRegularite}%</span>
           <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Regularite moy.</span>
         </div>
         {alertCount > 0 && (
-          <div className="ticket-stat-card" style={{ borderColor: '#ef4444' }}>
-            <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 22 }}>{alertCount}</span>
+          <div className="ticket-stat-card" style={{ borderColor: 'var(--color-danger)' }}>
+            <span style={{ color: 'var(--color-danger)', fontWeight: 700, fontSize: 22 }}>{alertCount}</span>
             <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Alertes inactivite</span>
           </div>
         )}
@@ -234,8 +234,8 @@ export default function InternKpi() {
             {data.map((d) => {
               const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
               const avatarColor = colors[d.intern.name.charCodeAt(0) % colors.length]
-              const valColor = d.kpis.validationRate >= 80 ? '#22c55e' : d.kpis.validationRate >= 50 ? '#f59e0b' : '#ef4444'
-              const regColor = d.kpis.regularite >= 70 ? '#22c55e' : d.kpis.regularite >= 40 ? '#f59e0b' : '#ef4444'
+              const valColor = d.kpis.validationRate >= 80 ? 'var(--color-success)' : d.kpis.validationRate >= 50 ? 'var(--color-warning)' : 'var(--color-danger)'
+              const regColor = d.kpis.regularite >= 70 ? 'var(--color-success)' : d.kpis.regularite >= 40 ? 'var(--color-warning)' : 'var(--color-danger)'
               return (
                 <div key={d.intern._id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12, alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -317,10 +317,10 @@ export default function InternKpi() {
                     </td>
                     <td style={{ padding: '12px 8px', color: 'rgba(255,255,255,0.7)' }}>{d.intern.poste}</td>
                     <td style={{ padding: '12px 8px', color: '#fff', fontWeight: 600 }}>{k.totalReports}</td>
-                    <td style={{ padding: '12px 8px', color: '#22c55e', fontWeight: 600 }}>{k.validated}</td>
-                    <td style={{ padding: '12px 8px', color: k.pending > 0 ? '#f59e0b' : 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{k.pending}</td>
+                    <td style={{ padding: '12px 8px', color: 'var(--color-success)', fontWeight: 600 }}>{k.validated}</td>
+                    <td style={{ padding: '12px 8px', color: k.pending > 0 ? 'var(--color-warning)' : 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{k.pending}</td>
                     <td style={{ padding: '12px 8px' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: (k.validationRate >= 80 ? '#22c55e' : k.validationRate >= 50 ? '#f59e0b' : '#ef4444') + '22', color: k.validationRate >= 80 ? '#22c55e' : k.validationRate >= 50 ? '#f59e0b' : '#ef4444' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: k.validationRate >= 80 ? 'rgba(var(--color-success-rgb), 0.13)' : k.validationRate >= 50 ? 'rgba(var(--color-warning-rgb), 0.13)' : 'rgba(var(--color-danger-rgb), 0.13)', color: k.validationRate >= 80 ? 'var(--color-success)' : k.validationRate >= 50 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
                         {k.validationRate}%
                       </span>
                     </td>
@@ -328,24 +328,24 @@ export default function InternKpi() {
                     <td style={{ padding: '12px 8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${k.regularite}%`, borderRadius: 2, background: k.regularite >= 70 ? '#22c55e' : k.regularite >= 40 ? '#f59e0b' : '#ef4444' }} />
+                          <div style={{ height: '100%', width: `${k.regularite}%`, borderRadius: 2, background: k.regularite >= 70 ? 'var(--color-success)' : k.regularite >= 40 ? 'var(--color-warning)' : 'var(--color-danger)' }} />
                         </div>
-                        <span style={{ color: k.regularite >= 70 ? '#22c55e' : k.regularite >= 40 ? '#f59e0b' : '#ef4444', fontSize: 11, fontWeight: 600 }}>{k.regularite}%</span>
+                        <span style={{ color: k.regularite >= 70 ? 'var(--color-success)' : k.regularite >= 40 ? 'var(--color-warning)' : 'var(--color-danger)', fontSize: 11, fontWeight: 600 }}>{k.regularite}%</span>
                       </div>
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       {alertLevel === 'danger' && (
-                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: '#ef444422', color: '#ef4444' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: 'rgba(var(--color-danger-rgb), 0.13)', color: 'var(--color-danger)' }}>
                           {k.daysSinceLastReport}j
                         </span>
                       )}
                       {alertLevel === 'warning' && (
-                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: '#f59e0b22', color: '#f59e0b' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: 'rgba(var(--color-warning-rgb), 0.13)', color: 'var(--color-warning)' }}>
                           {k.daysSinceLastReport}j
                         </span>
                       )}
                       {alertLevel === 'ok' && (
-                        <span style={{ color: '#22c55e', fontSize: 12 }}>
+                        <span style={{ color: 'var(--color-success)', fontSize: 12 }}>
                           {k.daysSinceLastReport === 0 ? "Auj." : `${k.daysSinceLastReport}j`}
                         </span>
                       )}
@@ -354,7 +354,7 @@ export default function InternKpi() {
                     <td style={{ padding: '12px 8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 50, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${k.progress}%`, borderRadius: 2, background: k.progress >= 90 ? '#ef4444' : k.progress >= 70 ? '#f59e0b' : '#0ea5e9' }} />
+                          <div style={{ height: '100%', width: `${k.progress}%`, borderRadius: 2, background: k.progress >= 90 ? 'var(--color-danger)' : k.progress >= 70 ? 'var(--color-warning)' : 'var(--color-info)' }} />
                         </div>
                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{k.progress}%</span>
                       </div>
@@ -373,11 +373,11 @@ export default function InternKpi() {
               <div className="portal-card" style={{ marginTop: 8, marginBottom: 16 }}>
                 <div style={{ padding: '16px 20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <h4 style={{ margin: 0, color: '#0ea5e9', fontSize: 14 }}>
+                    <h4 style={{ margin: 0, color: 'var(--color-info)', fontSize: 14 }}>
                       Detail hebdomadaire — {d.intern.name}
                     </h4>
                     <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/stagiaires/${d.intern._id}`) }}
-                      style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#0ea5e9' }}>
+                      style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(var(--color-info-rgb), 0.3)', background: 'rgba(var(--color-info-rgb), 0.08)', color: 'var(--color-info)' }}>
                       Voir fiche
                     </button>
                   </div>
@@ -401,8 +401,8 @@ export default function InternKpi() {
                           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', height: 80, marginBottom: 8 }}>
                             <div style={{
                               width: 28, height: barHeight, borderRadius: '4px 4px 0 0',
-                              background: w.reports === 0 ? 'rgba(255,255,255,0.06)' : w.validated === w.reports ? '#22c55e44' : '#0ea5e944',
-                              border: w.reports > 0 ? `1px solid ${w.validated === w.reports ? '#22c55e' : '#0ea5e9'}` : 'none',
+                              background: w.reports === 0 ? 'rgba(255,255,255,0.06)' : w.validated === w.reports ? 'rgba(var(--color-success-rgb), 0.27)' : 'rgba(var(--color-info-rgb), 0.27)',
+                              border: w.reports > 0 ? `1px solid ${w.validated === w.reports ? 'var(--color-success)' : 'var(--color-info)'}` : 'none',
                               transition: 'height 0.3s',
                             }} />
                           </div>

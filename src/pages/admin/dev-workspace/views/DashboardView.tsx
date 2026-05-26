@@ -29,7 +29,7 @@ import {
   type DevRoadmapProject,
   type DevStats,
   type IssueFilters,
-} from '../../../../services/dev'
+} from '@/services/dev'
 import { Avatar, formatRelative, PriorityIcon, StatusGlyph } from '../shared'
 
 interface Props {
@@ -40,7 +40,7 @@ interface Props {
   refreshTick: number
 }
 
-const DashboardView = ({ stats, projects, setFilters, setView, refreshTick }: Props) => {
+const DashboardView = ({ stats, projects: _projects, setFilters, setView, refreshTick }: Props) => {
   const [activity, setActivity] = useState<DevActivityEntry[] | null>(null)
   const [loadingActivity, setLoadingActivity] = useState(true)
   const [roadmap, setRoadmap] = useState<DevRoadmapProject[] | null>(null)

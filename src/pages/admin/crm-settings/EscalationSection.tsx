@@ -1,7 +1,7 @@
 import React from 'react'
 import type { SectionProps } from './types'
 import { AUTOMATION_CATEGORIES } from './constants'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const EscalationSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting, admins = [] }) => (
   <section className="crm-settings-section">

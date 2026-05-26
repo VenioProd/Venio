@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { io, type Socket } from 'socket.io-client'
 import { fetchNotifications as fetchNotificationsApi, fetchUnreadCount, markAsRead as markAsReadApi, markAllAsRead as markAllAsReadApi } from '../services/notifications'
 import { syncAppBadge } from '../lib/appBadge'
+import { getToken } from '../lib/api'
 import { useAuth } from './AuthContext'
 import { isAdminRole } from '../lib/permissions'
 import type { AppNotification } from '../types/notification.types'
@@ -43,7 +44,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Socket : écoute notification:new pour un refresh instantané de la cloche
   useEffect(() => {
     if (!isAdmin || !user) return
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) return
 
     const socket = io('/', {
@@ -75,7 +76,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     refresh()
-    intervalRef.current = setInterval(refresh, POLL_INTERVAL)
+    // Le socket pousse déjà les nouvelles notifs en temps réel ; le polling
+    // ne sert que de filet quand la connexion socket est tombée.
+    intervalRef.current = setInterval(() => {
+      if (!socketRef.current?.connected) {
+        refresh()
+      }
+    }, POLL_INTERVAL)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }

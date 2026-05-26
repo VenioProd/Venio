@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import PromptModal from '../../PromptModal'
-import type { InternalConversation, MessagingUser } from '../../../types/messaging.types'
+import type { InternalConversation, MessagingUser } from '@/types/messaging.types'
 
 interface ConversationSidebarProps {
   conversations: InternalConversation[]

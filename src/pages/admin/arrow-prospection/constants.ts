@@ -1,4 +1,4 @@
-import type { ArrowSchoolFormData } from '../../../types/arrow.types'
+import type { ArrowSchoolFormData } from '@/types/arrow.types'
 
 export const ARROW_STATUSES = [
   { key: 'A_PROSPECTER', label: 'À prospecter', color: '#6366f1' },

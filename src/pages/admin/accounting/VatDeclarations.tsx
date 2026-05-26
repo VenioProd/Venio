@@ -6,11 +6,11 @@ import {
   listVatDeclarations,
   createVatDeclaration,
   deleteVatDeclaration,
-} from '../../../services/accounting'
-import type { CreateVatDeclarationPayload } from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { IVatDeclaration, IVatPreview, VatType } from '../../../types/accounting'
+} from '@/services/accounting'
+import type { CreateVatDeclarationPayload } from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { IVatDeclaration, IVatPreview, VatType } from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

@@ -256,7 +256,7 @@
   font-weight: 800;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .projets-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1180,7 +1180,7 @@
   letter-spacing: 0.5px;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .projets-grid {
     grid-template-columns: 1fr;
   }

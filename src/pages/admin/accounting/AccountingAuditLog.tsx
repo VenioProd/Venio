@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import { listAuditLog } from '../../../services/accounting'
-import type { IAuditEntry } from '../../../types/accounting'
+import { listAuditLog } from '@/services/accounting'
+import type { IAuditEntry } from '@/types/accounting'
 
 function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'

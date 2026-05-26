@@ -6,10 +6,10 @@ import {
   createAccount,
   updateAccount,
   deactivateAccount,
-} from '../../../services/accounting'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { AccountType, IChartOfAccount } from '../../../types/accounting'
+} from '@/services/accounting'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { AccountType, IChartOfAccount } from '@/types/accounting'
 
 const TYPES: AccountType[] = ['ACTIF', 'PASSIF', 'CHARGE', 'PRODUIT', 'CAPITAUX', 'SPECIAL']
 

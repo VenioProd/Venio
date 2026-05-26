@@ -1,7 +1,7 @@
 import React from 'react'
 import type { ProjectManagementSectionProps } from './types'
-import { SUGGESTIONS_TAGS } from '../../../lib/formatUtils'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import { SUGGESTIONS_TAGS } from '@/lib/formatUtils'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const ProjectManagementSection: React.FC<ProjectManagementSectionProps> = ({
   form,

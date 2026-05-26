@@ -6,8 +6,8 @@ import {
   listJournals,
   listAccounts,
   createEntry,
-} from '../../../services/accounting'
-import type { IChartOfAccount, IJournal } from '../../../types/accounting'
+} from '@/services/accounting'
+import type { IChartOfAccount, IJournal } from '@/types/accounting'
 
 interface LineInput {
   account: string

@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { useConfirm } from '../../../hooks/useConfirm'
+import { useConfirm } from '@/hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
-import { useAuth } from '../../../context/AuthContext'
-import QualiopiQuestionnaires from '../../../components/admin/QualiopiQuestionnaires'
+import { apiFetch, getToken } from '@/lib/api'
+import { logger } from '@/lib/logger'
+import { useAuth } from '@/context/AuthContext'
+import QualiopiQuestionnaires from '@/components/admin/QualiopiQuestionnaires'
 import { CRITERIA_COLORS, getProgress } from './types'
 import type { QualiopiCriterion, QualiopiStatus } from './types'
 import QualiopiStats from './QualiopiStats'
@@ -42,7 +43,7 @@ const QualiopiBoard = () => {
         setAdmins([])
       }
     } catch (err: any) {
-      console.error(err)
+      logger.error(err)
       setError(err.message || 'Erreur lors du chargement')
     } finally {
       setLoading(false)
@@ -74,7 +75,7 @@ const QualiopiBoard = () => {
         body: JSON.stringify(patch),
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const updateSubElement = async (criterionId: string, indicatorId: string, subId: string, patch: Record<string, unknown>) => {
@@ -84,7 +85,7 @@ const QualiopiBoard = () => {
         body: JSON.stringify(patch),
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const addSubElement = async (criterionId: string, indicatorId: string) => {
@@ -94,7 +95,7 @@ const QualiopiBoard = () => {
         body: JSON.stringify({ title: 'Nouveau sous-element' }),
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const deleteSubElement = async (criterionId: string, indicatorId: string, subId: string) => {
@@ -103,7 +104,7 @@ const QualiopiBoard = () => {
         method: 'DELETE',
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const uploadFile = async (criterionId: string, indicatorId: string, subId: string, file: File) => {
@@ -119,7 +120,7 @@ const QualiopiBoard = () => {
       if (!res.ok) throw new Error('Upload failed')
       const updated = await res.json()
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const downloadFile = async (fileId: string, fileName: string) => {
@@ -136,7 +137,7 @@ const QualiopiBoard = () => {
       a.download = fileName
       a.click()
       URL.revokeObjectURL(url)
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const previewFile = async (fileId: string, fileName: string, mimeType: string) => {
@@ -149,7 +150,7 @@ const QualiopiBoard = () => {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       setPreview({ url, name: fileName, mime: mimeType })
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const closePreview = () => {
@@ -164,14 +165,14 @@ const QualiopiBoard = () => {
         body: JSON.stringify(patch),
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const deleteCriterion = async (criterionId: string) => {
     try {
       await apiFetch(`/api/admin/qualiopi/criteria/${criterionId}`, { method: 'DELETE' })
       setCriteria((prev) => prev.filter((c) => c._id !== criterionId))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const reorderCriterion = async (criterionId: string, direction: 'up' | 'down') => {
@@ -181,7 +182,7 @@ const QualiopiBoard = () => {
         body: JSON.stringify({ criterionId, direction }),
       })
       setCriteria(all)
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const startEditCriterion = (criterion: QualiopiCriterion) => {
@@ -202,7 +203,7 @@ const QualiopiBoard = () => {
         method: 'DELETE',
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const uploadIndicatorFile = async (criterionId: string, indicatorId: string, file: File) => {
@@ -218,7 +219,7 @@ const QualiopiBoard = () => {
       if (!res.ok) throw new Error('Upload failed')
       const updated = await res.json()
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   const deleteIndicatorFile = async (criterionId: string, indicatorId: string, fileId: string) => {
@@ -227,7 +228,7 @@ const QualiopiBoard = () => {
         method: 'DELETE',
       })
       setCriteria((prev) => prev.map((c) => c._id === updated._id ? updated : c))
-    } catch (err) { console.error(err) }
+    } catch (err) { logger.error(err) }
   }
 
   // Global progress

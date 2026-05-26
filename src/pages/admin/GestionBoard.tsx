@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
+import { logger } from '../../lib/logger'
 import { fetchAllTasks } from '../../services/gestion'
 import { updateTask, moveTask } from '../../services/adminTasks'
 import type { Task, TaskStatus, TaskPriority } from '../../types/task.types'
@@ -59,7 +60,7 @@ export default function GestionBoard() {
       const data = await fetchAllTasks(selectedProject || undefined)
       setTasks(data)
     } catch (err) {
-      console.error('Erreur chargement taches:', err)
+      logger.error('Erreur chargement taches:', err)
     } finally {
       setLoading(false)
     }
@@ -112,7 +113,7 @@ export default function GestionBoard() {
       await updateTask(projectId, taskId, data as any)
       await loadTasks()
     } catch (err) {
-      console.error('Erreur mise a jour:', err)
+      logger.error('Erreur mise a jour:', err)
     }
   }
 
@@ -121,7 +122,7 @@ export default function GestionBoard() {
       await moveTask(projectId, taskId, status, order)
       await loadTasks()
     } catch (err) {
-      console.error('Erreur deplacement:', err)
+      logger.error('Erreur deplacement:', err)
     }
   }
 

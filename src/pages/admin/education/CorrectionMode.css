@@ -268,7 +268,7 @@
 .edu-correction-snippet-form { display: flex; flex-direction: column; gap: 6px; }
 .edu-correction-snippet-add { justify-content: center; font-size: 12.5px; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .edu-correction-body { grid-template-columns: 240px 1fr; }
   .edu-correction-side {
     grid-column: 1 / -1;
@@ -279,7 +279,7 @@
   }
   .edu-correction-side-block { min-width: 260px; }
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .edu-correction-body { grid-template-columns: 1fr; }
   .edu-correction-list { max-height: 260px; }
 }
@@ -291,7 +291,7 @@
   gap: 8px;
   margin-bottom: 16px;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .edu-search-advanced-filters { grid-template-columns: 1fr 1fr; }
 }
 

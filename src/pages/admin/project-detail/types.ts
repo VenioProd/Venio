@@ -1,6 +1,6 @@
-import type { Project, ProjectDocument, ProjectUpdate, ProjectSection, ProjectItem } from '../../../types/project.types'
-import type { BillingDocument } from '../../../types/client.types'
-import type { AdminUser } from '../../../types/crm.types'
+import type { Project, ProjectDocument, ProjectUpdate, ProjectSection, ProjectItem } from '@/types/project.types'
+import type { BillingDocument } from '@/types/client.types'
+import type { AdminUser } from '@/types/crm.types'
 
 export interface ProjectFormState {
   name: string

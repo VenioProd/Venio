@@ -68,9 +68,10 @@ import {
   type DevProjectGithubConfig,
   type DevProjectIntelligence,
   type DevLargeFilesSnapshot,
-} from '../../../services/dev'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+} from '@/services/dev'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
 
@@ -734,7 +735,7 @@ const DevProjectCockpit = () => {
         totals: data.code.totals,
       })
     } catch (e) {
-      console.error('[intelligence] load failed', e)
+      logger.error('[intelligence] load failed', e)
     } finally {
       setIntelLoading(false)
     }
@@ -748,7 +749,7 @@ const DevProjectCockpit = () => {
       setLargeFiles(snap)
       setLargeNextIn(60)
     } catch (e) {
-      console.error('[large-files] refresh failed', e)
+      logger.error('[large-files] refresh failed', e)
     } finally {
       setLargeLoading(false)
     }

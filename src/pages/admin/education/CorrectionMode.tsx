@@ -8,7 +8,7 @@ import {
   ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_KIND_LABEL, SUBMISSION_STATUS_LABEL,
   type EducationAssignment, type EducationSubmission, type EducationSubmissionStatus,
   type RubricCriterion, type SubmissionBulkUpdate,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-30 — Mode correction groupée.

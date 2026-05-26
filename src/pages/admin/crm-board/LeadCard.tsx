@@ -1,6 +1,6 @@
 import React from 'react'
-import CustomSelect from '../../../components/admin/CustomSelect'
-import type { Lead, AdminUser } from '../../../types/crm.types'
+import CustomSelect from '@/components/admin/CustomSelect'
+import type { Lead, AdminUser } from '@/types/crm.types'
 import { getLeadAlerts } from './constants'
 
 interface LeadCardProps {

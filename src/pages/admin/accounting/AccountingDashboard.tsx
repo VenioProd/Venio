@@ -17,13 +17,13 @@ import {
   getAccountingDashboard,
   getAccountingSettings,
   listEntries,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IAccountingDashboard,
   IAccountingEntry,
   ICompanySettings,
   IDashboardKpi,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 // ---- Formatters ----
 const EUR_COMPACT = new Intl.NumberFormat('fr-FR', {

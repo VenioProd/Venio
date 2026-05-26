@@ -12,7 +12,7 @@ import {
   type AttendanceState,
   type EducationSession,
   type EducationSessionStatus,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-27 — Détail de séance.

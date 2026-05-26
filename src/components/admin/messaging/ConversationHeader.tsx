@@ -1,4 +1,4 @@
-import type { InternalConversation } from '../../../types/messaging.types'
+import type { InternalConversation } from '@/types/messaging.types'
 
 interface ConversationHeaderProps {
   conversation: InternalConversation | null

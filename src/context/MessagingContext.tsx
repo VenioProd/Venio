@@ -43,6 +43,13 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<Record<string, string>>({})
   const socketRef = useRef<Socket | null>(null)
+  const activeConversationIdRef = useRef<string | null>(null)
+
+  // Track activeConversationId in a ref so socket handlers (created once) can
+  // read the latest value without depending on it.
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId
+  }, [activeConversationId])
 
   const refreshConversations = useCallback(async () => {
     const data = await fetchConversationsApi()
@@ -81,6 +88,8 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
     loadMessages(activeConversationId).then(() => markRead(activeConversationId)).catch(() => {})
   }, [activeConversationId, loadMessages, markRead])
 
+  // Create the socket once per token; do NOT recreate when activeConversationId
+  // changes (that caused full reconnects on every tab switch).
   useEffect(() => {
     const token = getToken()
     if (!token) return
@@ -94,27 +103,28 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
     socket.on('connect', () => setConnected(true))
     socket.on('disconnect', () => setConnected(false))
     socket.on('message:created', ({ message }: { message: InternalMessage }) => {
+      const activeId = activeConversationIdRef.current
       setConversations((prev) => prev.map((conversation) => (
         conversation._id === message.conversation
           ? {
               ...conversation,
               lastMessage: message,
               lastMessageAt: message.createdAt,
-              unreadCount: message.conversation === activeConversationId ? 0 : conversation.unreadCount + 1,
+              unreadCount: message.conversation === activeId ? 0 : conversation.unreadCount + 1,
             }
           : conversation
       )))
-      if (message.conversation === activeConversationId) {
+      if (message.conversation === activeId) {
         setMessages((prev) => mergeMessage(prev, message))
         markConversationReadApi(message.conversation).catch(() => {})
       }
     })
     socket.on('typing:start', ({ conversationId, userId, name }: { conversationId: string; userId: string; name: string }) => {
-      if (conversationId !== activeConversationId) return
+      if (conversationId !== activeConversationIdRef.current) return
       setTypingUsers((prev) => ({ ...prev, [userId]: name }))
     })
     socket.on('typing:stop', ({ conversationId, userId }: { conversationId: string; userId: string }) => {
-      if (conversationId !== activeConversationId) return
+      if (conversationId !== activeConversationIdRef.current) return
       setTypingUsers((prev) => {
         const next = { ...prev }
         delete next[userId]
@@ -125,6 +135,17 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
     return () => {
       socket.disconnect()
       socketRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Emit join/leave on the existing socket when the active conversation changes.
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!socket || !activeConversationId) return
+    socket.emit('conversation:join', { conversationId: activeConversationId })
+    return () => {
+      socket.emit('conversation:leave', { conversationId: activeConversationId })
     }
   }, [activeConversationId])
 

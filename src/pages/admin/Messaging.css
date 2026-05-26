@@ -2506,7 +2506,7 @@
 .attachment-download-btn:hover { opacity: 0.85; }
 
 /* ── Responsive mobile attachment preview ───────────────────────────── */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .attachment-modal {
     width: calc(100% - 16px);
     max-height: calc(100vh - 32px);

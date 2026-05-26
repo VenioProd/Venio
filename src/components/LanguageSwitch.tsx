@@ -20,6 +20,7 @@ const buttonStyle: React.CSSProperties = {
   padding: 0,
 }
 
+// TODO: réactiver une fois useTranslation câblé sur toutes les pages
 const LanguageSwitch = () => {
   const { locale, setLocale } = useI18n()
 

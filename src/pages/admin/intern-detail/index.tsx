@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
-import { useAuth } from '../../../context/AuthContext'
-import { useConfirm } from '../../../hooks/useConfirm'
+import { apiFetch, getToken } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
+import { useConfirm } from '@/hooks/useConfirm'
 import { REPORT_STATUS_CONFIG, STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage } from '../intern-list/types'
 import type { ActivityReport } from '../intern-list/types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
-import DocPreviewModal from '../../../components/DocPreviewModal'
+import DocPreviewModal from '@/components/DocPreviewModal'
 
 interface InternUser {
   _id: string

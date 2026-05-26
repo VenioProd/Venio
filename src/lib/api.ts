@@ -31,10 +31,12 @@ function handleAuth401(path: string): void {
   if (path.includes('/auth/login')) return
   setToken(null)
   const currentPath = window.location.pathname
-  if (currentPath.startsWith('/admin')) {
-    window.location.href = '/admin/login'
-  } else if (currentPath.startsWith('/espace-client')) {
-    window.location.href = '/espace-client/login'
+  if (currentPath.startsWith('/admin') || currentPath.startsWith('/espace-client')) {
+    // Émet un event custom au lieu d'un hard reload. AuthContext écoute
+    // et déclenche une navigation React (préserve l'état SPA et le cache).
+    window.dispatchEvent(new CustomEvent('auth:unauthorized', {
+      detail: { scope: currentPath.startsWith('/admin') ? 'admin' : 'client' },
+    }))
   }
 }
 

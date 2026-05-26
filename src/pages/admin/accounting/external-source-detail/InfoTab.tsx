@@ -1,4 +1,4 @@
-import type { IExternalSource } from '../../../../types/accounting'
+import type { IExternalSource } from '@/types/accounting'
 import type { InfoForm } from './types'
 import { formatDateTime } from './helpers'
 

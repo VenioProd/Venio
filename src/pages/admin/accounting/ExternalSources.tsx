@@ -5,12 +5,12 @@ import {
   listExternalSources,
   createExternalSource,
   updateExternalSource,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   ExternalSourceStatus,
   IExternalSource,
   IExternalSourceCreateResult,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'

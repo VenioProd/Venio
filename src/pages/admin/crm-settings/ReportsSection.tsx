@@ -1,7 +1,7 @@
 import React from 'react'
 import type { SectionProps } from './types'
 import { AUTOMATION_CATEGORIES } from './constants'
-import CustomSelect from '../../../components/admin/CustomSelect'
+import CustomSelect from '@/components/admin/CustomSelect'
 
 const ReportsSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting, handleRecipientsChange }) => (
   <section className="crm-settings-section">

@@ -1,5 +1,5 @@
 import React from 'react'
-import GradientMeshBackground from '../components/GradientMeshBackground'
+import LegalPage from '../components/LegalPage'
 import SEO from '../components/SEO'
 import './Legal.css'
 
@@ -11,13 +11,7 @@ const Confidentialite = () => {
         description="Politique de confidentialite de Venio. Traitement des donnees personnelles conforme au RGPD."
         noindex={true}
       />
-      <GradientMeshBackground />
-      <div className="legal-page">
-        <section className="legal-hero">
-          <h1>POLITIQUE DE CONFIDENTIALITE</h1>
-        </section>
-
-        <section className="legal-content">
+      <LegalPage title="POLITIQUE DE CONFIDENTIALITE">
           <div className="legal-section">
             <h2>Responsable du traitement</h2>
             <p>
@@ -129,8 +123,7 @@ const Confidentialite = () => {
               La version en vigueur est celle accessible sur le site venio.paris. Derniere mise a jour : mars 2026.
             </p>
           </div>
-        </section>
-      </div>
+      </LegalPage>
     </>
   )
 }

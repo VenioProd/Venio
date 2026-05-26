@@ -5,11 +5,11 @@ import {
   listEntries,
   listExternalSources,
   bulkValidateEntries,
-} from '../../../services/accounting'
+} from '@/services/accounting'
 import type {
   IAccountingEntry,
   IExternalSource,
-} from '../../../types/accounting'
+} from '@/types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',

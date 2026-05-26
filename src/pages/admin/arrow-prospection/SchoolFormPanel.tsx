@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
+import type { ArrowSchool, ArrowSchoolFormData } from '@/types/arrow.types'
 import { ARROW_STATUSES, ARROW_SCHOOL_TYPES, ARROW_TEMPERATURES, ARROW_SOURCES } from './constants'
 
 interface AdminUser { _id: string; name: string; email: string }

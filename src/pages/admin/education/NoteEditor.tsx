@@ -8,7 +8,7 @@ import {
   formatRelative,
   type EducationNote, type NoteBlock, type NoteBlockType,
   type NoteLinkType, type EducationTemplate,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-28 — Block editor type Notion.

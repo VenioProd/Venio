@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useToast } from '../../../context/ToastContext'
-import { uploadMessageAttachments } from '../../../services/messaging'
-import { getEmojiSuggestions, type EmojiSuggestion } from '../../../lib/emojiShortcodes'
-import type { MessagingUser } from '../../../types/messaging.types'
+import { useToast } from '@/context/ToastContext'
+import { uploadMessageAttachments } from '@/services/messaging'
+import { getEmojiSuggestions, type EmojiSuggestion } from '@/lib/emojiShortcodes'
+import type { MessagingUser } from '@/types/messaging.types'
 
 interface MessageComposerProps {
   conversationId: string | null

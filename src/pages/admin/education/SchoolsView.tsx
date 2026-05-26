@@ -3,7 +3,7 @@ import { Building2, ChevronRight, RefreshCw } from 'lucide-react'
 import {
   listEducationBySchool,
   type SchoolBucket,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-32 — Fiches école légères.

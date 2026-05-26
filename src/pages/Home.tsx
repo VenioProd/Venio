@@ -4,8 +4,7 @@ import Hero from '../components/Hero'
 import Manifeste from '../components/Manifeste'
 import ServicesCore from '../components/ServicesCore'
 import CTAFinal from '../components/CTAFinal'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import ParallaxDecorations from '../components/ParallaxDecorations'
+import Decorations from '../components/Decorations'
 import NeonDivider from '../components/NeonDivider'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
@@ -20,8 +19,7 @@ const Home = () => {
         keywords="agence digitale, développement web, communication, branding, stratégie digitale, Paris"
       />
       <StructuredData type="home" />
-      <GradientMeshBackground />
-      <ParallaxDecorations />
+      <Decorations variant="hero" />
       <Hero />
       <NeonDivider />
       <Manifeste />

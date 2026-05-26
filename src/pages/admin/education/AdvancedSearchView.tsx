@@ -6,7 +6,7 @@ import {
   studentDisplayName, formatDate,
   type AdvancedSearchEntity, type AdvancedSearchResult, type SearchFacets,
   type EducationAssignmentKind,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-33 — Recherche pédagogique avancée.

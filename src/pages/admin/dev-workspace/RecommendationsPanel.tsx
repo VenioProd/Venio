@@ -18,7 +18,7 @@ import {
   type DevRecommendationSection,
   type DevRecommendationSource,
   type DevRecommendationsPayload,
-} from '../../../services/dev'
+} from '@/services/dev'
 import './RecommendationsPanel.css'
 
 const SECTION_META: Record<

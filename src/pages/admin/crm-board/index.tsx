@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
-import { exportToCsv } from '../../../lib/exportCsv'
-import { useAuth } from '../../../context/AuthContext'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import ConfirmModal from '../../../components/ConfirmModal'
-import type { Lead, LeadFormData, PipelineColumn, AdminUser, CrmStatusConfig } from '../../../types/crm.types'
+import { apiFetch } from '@/lib/api'
+import { exportToCsv } from '@/lib/exportCsv'
+import { useAuth } from '@/context/AuthContext'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import ConfirmModal from '@/components/ConfirmModal'
+import type { Lead, LeadFormData, PipelineColumn, AdminUser, CrmStatusConfig } from '@/types/crm.types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -24,7 +24,7 @@ import SchoolTable from '../arrow-prospection/SchoolTable'
 import SchoolFormPanel from '../arrow-prospection/SchoolFormPanel'
 import SchoolDetailModal from '../arrow-prospection/SchoolDetailModal'
 import { EMPTY_FORM as EMPTY_SCHOOL_FORM } from '../arrow-prospection/constants'
-import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
+import type { ArrowSchool, ArrowSchoolFormData } from '@/types/arrow.types'
 
 const CrmBoard = () => {
   const { user } = useAuth()

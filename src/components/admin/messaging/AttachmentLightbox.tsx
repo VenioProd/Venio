@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { downloadMessageAttachment } from '../../../services/messaging'
-import type { InternalMessageAttachment } from '../../../types/messaging.types'
+import { downloadMessageAttachment } from '@/services/messaging'
+import type { InternalMessageAttachment } from '@/types/messaging.types'
 
 interface AttachmentLightboxProps {
   messageId: string | null

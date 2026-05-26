@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
+import PageHeader from '../../components/PageHeader'
 import '../espace-client/ClientPortal.css'
 
 const AdminLogin = () => {
@@ -56,26 +57,32 @@ const AdminLogin = () => {
   return (
     <div className="portal-container">
       <div className="portal-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '8px' }}>Connexion Admin</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
-          {needs2FA ? 'Entrez le code de votre application d\'authentification' : 'Accès réservé aux administrateurs'}
-        </p>
+        <PageHeader
+          title="Connexion Admin"
+          subtitle={needs2FA ? "Entrez le code de votre application d'authentification" : 'Accès réservé aux administrateurs'}
+        />
         <form onSubmit={handleSubmit} className="portal-list">
           {!needs2FA ? (
             <>
+              <label htmlFor="admin-login-email" className="sr-only">Email</label>
               <input
+                id="admin-login-email"
                 className="portal-input"
                 type="email"
                 placeholder="Email"
+                autoComplete="email"
                 value={form.email}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: event.target.value })}
                 required
               />
               <div style={{ position: 'relative' }}>
+                <label htmlFor="admin-login-password" className="sr-only">Mot de passe</label>
                 <input
+                  id="admin-login-password"
                   className="portal-input"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mot de passe"
+                  autoComplete="current-password"
                   value={form.password}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
                   required
@@ -104,18 +111,22 @@ const AdminLogin = () => {
               </div>
             </>
           ) : (
-            <input
-              className="portal-input"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="Code 2FA (6 chiffres)"
-              value={totpCode}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
-              required
-              autoFocus
-            />
+            <>
+              <label htmlFor="admin-login-totp" className="sr-only">Code 2FA</label>
+              <input
+                id="admin-login-totp"
+                className="portal-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="Code 2FA (6 chiffres)"
+                value={totpCode}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                required
+                autoFocus
+              />
+            </>
           )}
           {error && <div className="admin-error">{error}</div>}
           <button className="portal-button" type="submit" disabled={loading}>
@@ -141,7 +152,7 @@ const AdminLogin = () => {
               </button>
             </p>
           )}
-          {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+          {success && <p style={{ color: 'var(--color-success)', fontSize: '14px' }}>{success}</p>}
         </form>
 
         {forgotMode && (
@@ -161,16 +172,19 @@ const AdminLogin = () => {
             }
           }} className="portal-list" style={{ marginTop: 24 }}>
             <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Mot de passe oublie</h2>
+            <label htmlFor="admin-forgot-email" className="sr-only">Votre email</label>
             <input
+              id="admin-forgot-email"
               className="portal-input"
               type="email"
               placeholder="Votre email"
+              autoComplete="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
             />
             {error && <div className="admin-error">{error}</div>}
-            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            {success && <p style={{ color: 'var(--color-success)', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? 'Envoi...' : 'Envoyer le lien'}
             </button>
@@ -202,17 +216,20 @@ const AdminLogin = () => {
             }
           }} className="portal-list" style={{ marginTop: 24 }}>
             <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Nouveau mot de passe</h2>
+            <label htmlFor="admin-reset-new-password" className="sr-only">Nouveau mot de passe</label>
             <input
+              id="admin-reset-new-password"
               className="portal-input"
               type="password"
               placeholder="Nouveau mot de passe (6 caracteres min.)"
+              autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={6}
             />
             {error && <div className="admin-error">{error}</div>}
-            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            {success && <p style={{ color: 'var(--color-success)', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? 'Reinitialisation...' : 'Reinitialiser'}
             </button>

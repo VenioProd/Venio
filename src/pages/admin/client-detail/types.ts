@@ -1,5 +1,5 @@
-import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '../../../types/client.types'
-import type { Project } from '../../../types/project.types'
+import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '@/types/client.types'
+import type { Project } from '@/types/project.types'
 
 export interface NoteOrActivity {
   _id: string

@@ -7,7 +7,7 @@ import {
   ASSIGNMENT_STATUS_LABEL,
   SESSION_STATUS_LABEL,
   type EducationDashboard,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-27 — Cockpit intervenant multi-écoles.

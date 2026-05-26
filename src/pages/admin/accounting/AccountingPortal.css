@@ -374,7 +374,7 @@
   border-color: rgba(248, 113, 113, 0.5);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .accounting-shell {
     padding: 20px 14px;
   }

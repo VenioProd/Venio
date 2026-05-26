@@ -6,7 +6,7 @@
 }
 
 .cta-final-container {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   gap: 20px;
@@ -35,63 +35,14 @@
   );
 }
 
-.cta-final-btn-primary {
-  background: var(--bg-card);
-  color: var(--primary);
-  border: 3px solid var(--primary);
-  box-shadow: 
-    12px 12px 24px var(--neumorphism-dark),
-    -6px -6px 12px var(--neumorphism-light),
-    inset -4px -4px 8px rgba(0, 0, 0, 0.3),
-    inset 4px 4px 8px rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-}
-
-.cta-final-btn-primary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--primary);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.4s;
-  z-index: -1;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 20px) 0,
-    100% 20px,
-    100% 100%,
-    20px 100%,
-    0 calc(100% - 20px)
-  );
-}
-
-.cta-final-btn-primary:hover {
-  color: #000;
-  box-shadow: 
-    6px 6px 12px var(--neumorphism-dark),
-    -3px -3px 6px var(--neumorphism-light),
-    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.02);
-  transform: translateY(-5px);
-}
-
-.cta-final-btn-primary:hover::before {
-  transform: scaleX(1);
-}
-
-.cta-final-btn-primary:active {
-  box-shadow: 
-    inset 6px 6px 12px var(--neumorphism-dark),
-    inset -4px -4px 8px var(--neumorphism-light);
-  transform: translateY(3px);
-}
-
+/* Shared base styling for all CTA buttons (ticket #28). Primary and outline
+   variants only override what's visually different — see modifiers below. */
+.cta-final-btn-primary,
 .cta-final-btn-outline {
   background: var(--bg-card);
   color: var(--primary);
   border: 3px solid var(--primary);
-  box-shadow: 
+  box-shadow:
     12px 12px 24px var(--neumorphism-dark),
     -6px -6px 12px var(--neumorphism-light),
     inset -4px -4px 8px rgba(0, 0, 0, 0.3),
@@ -99,6 +50,7 @@
   backdrop-filter: blur(10px);
 }
 
+.cta-final-btn-primary::before,
 .cta-final-btn-outline::before {
   content: '';
   position: absolute;
@@ -118,9 +70,10 @@
   );
 }
 
+.cta-final-btn-primary:hover,
 .cta-final-btn-outline:hover {
   color: #000;
-  box-shadow: 
+  box-shadow:
     6px 6px 12px var(--neumorphism-dark),
     -3px -3px 6px var(--neumorphism-light),
     inset 4px 4px 8px rgba(0, 0, 0, 0.4),
@@ -128,15 +81,24 @@
   transform: translateY(-5px);
 }
 
+.cta-final-btn-primary:hover::before,
 .cta-final-btn-outline:hover::before {
   transform: scaleX(1);
 }
 
+.cta-final-btn-primary:active,
 .cta-final-btn-outline:active {
-  box-shadow: 
+  box-shadow:
     inset 6px 6px 12px var(--neumorphism-dark),
     inset -4px -4px 8px var(--neumorphism-light);
   transform: translateY(3px);
+}
+
+/* Outline modifier — transparent surface, border in current text color */
+.cta-final-btn-outline {
+  background: transparent;
+  border: 2px solid currentColor;
+  backdrop-filter: none;
 }
 
 @media (max-width: 768px) {

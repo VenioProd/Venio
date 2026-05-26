@@ -1,4 +1,4 @@
-import type { ExternalSourceStatus, ExternalTransactionStatus } from '../../../../types/accounting'
+import type { ExternalSourceStatus, ExternalTransactionStatus } from '@/types/accounting'
 
 export function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'

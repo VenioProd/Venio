@@ -5,7 +5,7 @@ import {
   TEMPLATE_KIND_LABEL,
   type EducationTemplate, type EducationTemplateKind,
   type NoteBlock,
-} from '../../../services/education'
+} from '@/services/education'
 
 /**
  * VENIO-29 — Templates pédagogiques réutilisables.
