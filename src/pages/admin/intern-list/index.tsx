@@ -9,6 +9,10 @@ import InternKpi from '../../../components/admin/InternKpi'
 import InternDocuments from '../../../components/admin/InternDocuments'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import ParametresTab from './ParametresTab'
+import ReportBody from './ReportBody'
+import DashboardTab from './DashboardTab'
+import ReportsTab from './ReportsTab'
 
 const InternList = () => {
   const { user } = useAuth()
@@ -401,231 +405,19 @@ const InternList = () => {
 
       {/* ═══ TAB: Tableau de bord ═══ */}
       {effectiveTab === 'dashboard' && isAdmin && (
-        <>
-          {/* Rappels manuels + logs — toujours visible */}
-          {!dashboardLoading && (
-            <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Rappels de rapport</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>Automatique tous les jours à 09h00 sur les jours de présence</span>
-                </div>
-                {isSuperAdmin && (
-                  <button
-                    onClick={async () => {
-                      setSendingReminders(true)
-                      setReminderResult(null)
-                      try {
-                        const res = await apiFetch<{ recipientsNotified: string[]; details?: any }>('/api/admin/interns/send-reminders', { method: 'POST' })
-                        setReminderResult({ sent: res.recipientsNotified?.length || 0, details: res.details })
-                        loadDashboard()
-                      } catch { /* silent */ } finally { setSendingReminders(false) }
-                    }}
-                    disabled={sendingReminders}
-                    style={{ padding: '7px 16px', borderRadius: 7, background: '#0ea5e9', color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', opacity: sendingReminders ? 0.6 : 1 }}
-                  >
-                    {sendingReminders ? 'Envoi...' : 'Envoyer maintenant'}
-                  </button>
-                )}
-              </div>
-              {reminderResult && (
-                <div style={{ padding: '10px 20px', background: reminderResult.sent > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(255,200,0,0.08)', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
-                  <span style={{ color: reminderResult.sent > 0 ? '#22c55e' : '#fbbf24', fontWeight: 600 }}>
-                    {reminderResult.sent === 0 ? 'Aucun rappel envoyé' : `${reminderResult.sent} rappel(s) envoyé(s)`}
-                  </span>
-                  {reminderResult.details && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 10, fontSize: 11 }}>
-                      {reminderResult.details.totalInterns} stagiaire(s) actif(s) · jour: {reminderResult.details.today}
-                      {reminderResult.details.errors?.length > 0 && ` · erreurs: ${reminderResult.details.errors.join(', ')}`}
-                    </span>
-                  )}
-                </div>
-              )}
-              {reminderLogs.length === 0 ? (
-                <div style={{ padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>Aucune activité enregistrée</div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                      {['Date', 'Statut', 'Rappels envoyés', 'Destinataires'].map((h) => (
-                        <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reminderLogs.map((log: any) => (
-                      <tr key={log._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                          {new Date(log.startedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td style={{ padding: '10px 16px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: log.status === 'SUCCESS' ? 'rgba(34,197,94,0.1)' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.1)', color: log.status === 'SUCCESS' ? '#22c55e' : log.status === 'SKIPPED' ? 'rgba(255,255,255,0.4)' : '#ef4444' }}>
-                            {log.status === 'SUCCESS' ? 'Succès' : log.status === 'SKIPPED' ? 'Ignoré' : 'Erreur'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: '#fff', fontWeight: 600 }}>
-                          {log.actionsExecuted?.length || 0}
-                        </td>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 280 }}>
-                          {log.recipientsNotified?.join(', ') || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-
-          {dashboardLoading ? (
-            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
-          ) : dashboard.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre actif</p>
-          ) : (
-            <>
-            {/* Tableau récap activité */}
-            <div className="portal-card" style={{ marginTop: 16, marginBottom: 20, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Dernières connexions</span>
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    {['Stagiaire', 'Poste', 'Jours présence', 'Dernière connexion', 'Dernier rapport'].map((h) => (
-                      <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboard.map((item: any) => {
-                    const { intern: di, stats: ds } = item
-                    const loginAt = (di.userId as any)?.lastLoginAt
-                    const daysSinceLogin = loginAt ? Math.floor((Date.now() - new Date(loginAt).getTime()) / 86400000) : null
-                    const loginColor = daysSinceLogin === null ? 'rgba(255,255,255,0.3)' : daysSinceLogin === 0 ? '#22c55e' : daysSinceLogin <= 1 ? '#0ea5e9' : daysSinceLogin <= 3 ? '#f59e0b' : '#ef4444'
-                    const reportColor = ds.daysSinceLastReport === null ? 'rgba(255,255,255,0.3)' : ds.daysSinceLastReport <= 1 ? '#22c55e' : ds.daysSinceLastReport <= 3 ? '#f59e0b' : '#ef4444'
-                    const jours = (di.joursPresence as string[] | undefined) || []
-                    const joursAbrev: Record<string, string> = { lundi: 'Lu', mardi: 'Ma', mercredi: 'Me', jeudi: 'Je', vendredi: 'Ve', samedi: 'Sa', dimanche: 'Di' }
-                    return (
-                      <tr key={di._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }} onClick={() => navigate(`/admin/stagiaires/${di._id}`)}>
-                        <td style={{ padding: '10px 16px' }}>
-                          <span style={{ color: '#fff', fontWeight: 500, fontSize: 13 }}>{(di.userId as any)?.name}</span>
-                          <span style={{ display: 'inline-block', marginLeft: 7, padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 600, background: di.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: di.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
-                            {di.type === 'ALTERNANT' ? 'Alt' : 'St'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}</td>
-                        <td style={{ padding: '10px 16px' }}>
-                          <div style={{ display: 'flex', gap: 3 }}>
-                            {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j) => (
-                              <span key={j} style={{ fontSize: 10, fontWeight: 600, padding: '2px 4px', borderRadius: 3, background: jours.includes(j) ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', color: jours.includes(j) ? '#0ea5e9' : 'rgba(255,255,255,0.2)' }}>
-                                {joursAbrev[j]}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 16px' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: loginColor }}>
-                            {loginAt ? (daysSinceLogin === 0 ? "Aujourd'hui" : daysSinceLogin === 1 ? 'Hier' : `il y a ${daysSinceLogin}j`) : 'Jamais'}
-                          </span>
-                          {loginAt && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{new Date(loginAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
-                        </td>
-                        <td style={{ padding: '10px 16px' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: reportColor }}>
-                            {ds.lastActivity ? (ds.daysSinceLastReport === 0 ? "Aujourd'hui" : ds.daysSinceLastReport === 1 ? 'Hier' : `il y a ${ds.daysSinceLastReport}j`) : 'Aucun rapport'}
-                          </span>
-                          {ds.lastActivity && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{formatDate(ds.lastActivity)}</div>}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {/* Cartes détaillées */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-              {dashboard.map((item: any) => {
-                const { intern: di, stats: ds } = item
-                const alertLevel = ds.daysSinceLastReport === null ? 'none' : ds.daysSinceLastReport > 3 ? 'danger' : ds.daysSinceLastReport > 1 ? 'warning' : 'ok'
-                const alertColors = { none: 'rgba(255,255,255,0.2)', danger: '#ef4444', warning: '#f59e0b', ok: '#22c55e' }
-                const alertColor = alertColors[alertLevel]
-                const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
-                const avatarColor = colors[(di.userId?.name || '').charCodeAt(0) % colors.length]
-
-                return (
-                  <div
-                    key={di._id}
-                    className="portal-card"
-                    style={{ cursor: 'pointer', borderLeft: `3px solid ${alertColor}`, transition: 'transform 0.15s' }}
-                    onClick={() => navigate(`/admin/stagiaires/${di._id}`)}
-                  >
-                    <div style={{ padding: '16px 20px' }}>
-                      {/* Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: avatarColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: avatarColor, fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
-                          {(di.userId?.name || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{di.userId?.name}</span>
-                            <span style={{ padding: '1px 7px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: di.type === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: di.type === 'ALTERNANT' ? '#a855f7' : '#0ea5e9' }}>
-                              {di.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
-                            </span>
-                          </div>
-                          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}{di.departement ? ` — ${di.departement}` : ''}</div>
-                        </div>
-                        {alertLevel === 'danger' && (
-                          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#ef444422', color: '#ef4444' }}>
-                            INACTIF {ds.daysSinceLastReport}j
-                          </span>
-                        )}
-                        {alertLevel === 'warning' && (
-                          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#f59e0b22', color: '#f59e0b' }}>
-                            {ds.daysSinceLastReport}j sans rapport
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Stats mini */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
-                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
-                          <div style={{ color: '#0ea5e9', fontWeight: 700, fontSize: 18 }}>{ds.reportsThisWeek}</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Cette semaine</div>
-                        </div>
-                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
-                          <div style={{ color: '#8b5cf6', fontWeight: 700, fontSize: 18 }}>{ds.validationRate}%</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Validation</div>
-                        </div>
-                        <div style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }}>
-                          <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 18 }}>{ds.totalReports}</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Total rapports</div>
-                        </div>
-                      </div>
-
-                      {/* Barre de progression */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Stage : {ds.progress}%</span>
-                          <span style={{ color: ds.daysRemaining <= 7 ? '#ef4444' : ds.daysRemaining <= 30 ? '#f59e0b' : 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-                            {ds.daysRemaining > 0 ? `${ds.daysRemaining}j restants` : 'Termine'}
-                          </span>
-                        </div>
-                        <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
-                          <div style={{ height: '100%', borderRadius: 2, width: `${ds.progress}%`, background: ds.progress >= 90 ? '#ef4444' : ds.progress >= 70 ? '#f59e0b' : '#0ea5e9', transition: 'width 0.5s' }} />
-                        </div>
-                      </div>
-
-                      {/* Derniere activite */}
-                      <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-                        Derniere activite : {ds.lastActivity ? formatDate(ds.lastActivity) : 'Aucune'}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            </>
-          )}
-        </>
+        <DashboardTab
+          dashboard={dashboard}
+          dashboardLoading={dashboardLoading}
+          reminderResult={reminderResult}
+          setReminderResult={setReminderResult}
+          sendingReminders={sendingReminders}
+          setSendingReminders={setSendingReminders}
+          reminderLogs={reminderLogs}
+          interns={interns}
+          isSuperAdmin={isSuperAdmin}
+          loadDashboard={loadDashboard}
+          navigate={navigate}
+        />
       )}
 
       {/* ═══ TAB: Stagiaires ═══ */}
@@ -914,222 +706,26 @@ const InternList = () => {
       )}
 
       {/* ═══ TAB: Tous les rapports (admin) ═══ */}
-      {effectiveTab === 'rapports' && isAdmin && (() => {
-        // Regrouper les rapports par personne
-        const grouped: Record<string, { name: string; reports: ActivityReport[] }> = {}
-        reports.forEach((r) => {
-          const uid = r.userId?._id || 'unknown'
-          if (!grouped[uid]) grouped[uid] = { name: r.userId?.name || 'Inconnu', reports: [] }
-          grouped[uid].reports.push(r)
-        })
-        const people = Object.entries(grouped).sort((a, b) => a[1].name.localeCompare(b[1].name))
-        const colors = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899']
-        const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
-
-        // Kanban columns
-        const kanbanCols: { key: string; label: string; color: string }[] = [
-          { key: 'SOUMIS', label: 'Soumis', color: '#0ea5e9' },
-          { key: 'BROUILLON', label: 'Brouillon', color: '#f59e0b' },
-          { key: 'VALIDE', label: 'Valide', color: '#22c55e' },
-        ]
-
-        return (
-          <>
-            {/* Toggle vue */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 20 }}>
-              <button
-                onClick={() => setReportView('liste')}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-                  background: reportView === 'liste' ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
-                  color: reportView === 'liste' ? '#fff' : 'rgba(255,255,255,0.5)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: -2 }}>
-                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-                Liste
-              </button>
-              <button
-                onClick={() => setReportView('kanban')}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-                  background: reportView === 'kanban' ? '#0ea5e9' : 'rgba(255,255,255,0.06)',
-                  color: reportView === 'kanban' ? '#fff' : 'rgba(255,255,255,0.5)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: -2 }}>
-                  <rect x="3" y="3" width="5" height="18" rx="1" /><rect x="10" y="3" width="5" height="12" rx="1" /><rect x="17" y="3" width="5" height="15" rx="1" />
-                </svg>
-                Kanban
-              </button>
-            </div>
-
-            {reports.length === 0 && (
-              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun rapport d'activite</p>
-            )}
-
-            {/* ── VUE LISTE (par personne) ── */}
-            {reportView === 'liste' && (
-              <div className="ticket-list">
-                {people.map(([uid, { name, reports: personReports }]) => {
-                  const validated = personReports.filter((r) => r.status === 'VALIDE').length
-                  const total = personReports.length
-                  const isPersonExpanded = expandedIntern === `reports-${uid}`
-                  const color = getColor(name)
-
-                  return (
-                    <div key={uid} style={{ marginBottom: 16 }}>
-                      <div
-                        className="ticket-card"
-                        style={{ borderLeft: `3px solid ${color}`, cursor: 'pointer' }}
-                        onClick={() => setExpandedIntern(isPersonExpanded ? null : `reports-${uid}`)}
-                      >
-                        <div className="ticket-card-header">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontWeight: 700, fontSize: 14 }}>
-                              {name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{ color: '#fff', fontWeight: 600 }}>{name}</div>
-                              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                                {total} rapport{total > 1 ? 's' : ''} — {validated} valide{validated > 1 ? 's' : ''}
-                              </div>
-                            </div>
-                          </div>
-                          <span style={{ color: 'rgba(255,255,255,0.3)', transform: isPersonExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
-                        </div>
-                      </div>
-
-                      {isPersonExpanded && (
-                        <div style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {personReports.map((report) => {
-                            const expanded = expandedReport === report._id
-                            const sCfg = REPORT_STATUS_CONFIG[report.status]
-                            return (
-                              <div key={report._id} className="ticket-card" style={{ borderLeft: `3px solid ${sCfg.color}` }}>
-                                <div className="ticket-card-header" onClick={() => setExpandedReport(expanded ? null : report._id)} style={{ cursor: 'pointer' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                                    <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
-                                    {report.taches.length > 0 && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{report.taches.length} tache(s)</span>}
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    {report.attachments.length > 0 && (
-                                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>📎 {report.attachments.length}</span>
-                                    )}
-                                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: sCfg.color + '22', color: sCfg.color }}>
-                                      {sCfg.label}
-                                    </span>
-                                    <span style={{ color: 'rgba(255,255,255,0.3)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
-                                  </div>
-                                </div>
-                                {expanded && renderReportBody(report, true)}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* ── VUE KANBAN (par statut) ── */}
-            {reportView === 'kanban' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 20, alignItems: 'flex-start', width: '100%' }}>
-                {kanbanCols.map((col) => {
-                  const colReports = reports.filter((r) => r.status === col.key)
-                  return (
-                    <div
-                      key={col.key}
-                      style={{
-                        background: dragOverCol === col.key ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                        borderRadius: 10,
-                        border: dragOverCol === col.key ? `1px solid ${col.color}44` : '1px solid rgba(255,255,255,0.06)',
-                        overflow: 'hidden',
-                        transition: 'background 0.2s, border-color 0.2s',
-                      }}
-                      onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.key) }}
-                      onDragLeave={() => setDragOverCol(null)}
-                      onDrop={async (e) => {
-                        e.preventDefault()
-                        setDragOverCol(null)
-                        if (draggedReportId) {
-                          const report = reports.find((r) => r._id === draggedReportId)
-                          if (report && report.status !== col.key) {
-                            await handleValidateReport(draggedReportId, col.key)
-                          }
-                          setDraggedReportId(null)
-                        }
-                      }}
-                    >
-                      {/* Header colonne */}
-                      <div style={{ padding: '14px 16px', borderBottom: '2px solid ' + col.color, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ color: col.color, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
-                        <span style={{ background: col.color + '22', color: col.color, padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 700 }}>{colReports.length}</span>
-                      </div>
-
-                      {/* Cartes */}
-                      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
-                        {colReports.length === 0 && (
-                          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>Aucun rapport</p>
-                        )}
-                        {colReports.map((report) => {
-                          const expanded = expandedReport === report._id
-                          const color = getColor(report.userId?.name || '')
-                          return (
-                            <div
-                              key={report._id}
-                              draggable
-                              onDragStart={() => setDraggedReportId(report._id)}
-                              onDragEnd={() => { setDraggedReportId(null); setDragOverCol(null) }}
-                              style={{
-                                background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
-                                cursor: 'grab', transition: 'border-color 0.2s, opacity 0.2s',
-                                opacity: draggedReportId === report._id ? 0.5 : 1,
-                              }}
-                              onClick={() => setExpandedReport(expanded ? null : report._id)}
-                            >
-                              <div style={{ padding: '14px 16px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                                    {(report.userId?.name || '?').charAt(0).toUpperCase()}
-                                  </div>
-                                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{report.userId?.name || 'Inconnu'}</span>
-                                </div>
-                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '0 0 10px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
-                                  {report.contenu}
-                                </p>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{formatDate(report.date)}</span>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    {report.attachments.length > 0 && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>📎 {report.attachments.length}</span>}
-                                    {report.taches.length > 0 && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{report.taches.length} tache(s)</span>}
-                                  </div>
-                                </div>
-                                {report.commentaireAdmin && (
-                                  <div style={{ marginTop: 6, padding: '4px 8px', borderRadius: 4, background: 'rgba(139,92,246,0.08)', borderLeft: '2px solid #8b5cf6' }}>
-                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{report.commentaireAdmin.length > 60 ? report.commentaireAdmin.slice(0, 60) + '...' : report.commentaireAdmin}</span>
-                                  </div>
-                                )}
-                              </div>
-                              {expanded && renderReportBody(report, true)}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )
-      })()}
+      {effectiveTab === 'rapports' && isAdmin && (
+        <ReportsTab
+          reports={reports}
+          reportView={reportView}
+          setReportView={setReportView}
+          expandedReport={expandedReport}
+          setExpandedReport={setExpandedReport}
+          draggedReportId={draggedReportId}
+          setDraggedReportId={setDraggedReportId}
+          dragOverCol={dragOverCol}
+          setDragOverCol={setDragOverCol}
+          expandedIntern={expandedIntern}
+          setExpandedIntern={setExpandedIntern}
+          isAdmin={isAdmin}
+          handleValidateReport={handleValidateReport}
+          handleDeleteReport={handleDeleteReport}
+          setCommentText={setCommentText}
+          setCommentModal={setCommentModal}
+        />
+      )}
 
       {/* ═══ TAB: KPIs ═══ */}
       {effectiveTab === 'kpis' && isAdmin && <InternKpi />}
@@ -1138,155 +734,23 @@ const InternList = () => {
       {effectiveTab === 'documents' && isAdmin && <InternDocuments />}
 
       {/* ═══ TAB: Paramètres ═══ */}
-      {effectiveTab === 'parametres' && isSuperAdmin && (() => {
-        const allAdminUsers = admins.filter((a) => a.role === 'SUPER_ADMIN' || a.role === 'RH' || a.role === 'ADMIN')
-        const selectedIds = new Set(notifRecipients.map((r) => r._id))
-
-        const toggle = (id: string) => {
-          setNotifRecipients((prev) =>
-            prev.find((r) => r._id === id)
-              ? prev.filter((r) => r._id !== id)
-              : [...prev, admins.find((a) => a._id === id) as any]
-          )
-        }
-
-        const save = async () => {
-          setNotifSaving(true)
-          setNotifSuccess(false)
-          try {
-            await apiFetch('/api/admin/interns/settings/report-notifs', {
-              method: 'PATCH',
-              body: JSON.stringify({ recipientIds: Array.from(selectedIds) }),
-            })
-            setNotifSuccess(true)
-            setTimeout(() => setNotifSuccess(false), 3000)
-          } catch { /* silent */ } finally { setNotifSaving(false) }
-        }
-
-        return (
-          <div className="portal-card" style={{ maxWidth: 600, marginTop: 24 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Notifications — rapports d'activité</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
-              Choisissez qui reçoit un email et une notification quand un membre soumet un rapport.
-              Si aucun destinataire n'est sélectionné, seuls les Super Admins sont notifiés.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-              {allAdminUsers.map((a) => (
-                <label key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '10px 14px', borderRadius: 10, background: selectedIds.has(a._id) ? 'rgba(14,165,233,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selectedIds.has(a._id) ? 'rgba(14,165,233,0.4)' : 'rgba(255,255,255,0.08)'}`, transition: 'all 0.15s' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(a._id)}
-                    onChange={() => toggle(a._id)}
-                    style={{ accentColor: '#0ea5e9', width: 16, height: 16 }}
-                  />
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{a.name}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{a.role === 'SUPER_ADMIN' ? 'Super Admin' : a.role}</span>
-                </label>
-              ))}
-            </div>
-            {notifSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 12 }}>Enregistré</p>}
-            <button className="portal-button" onClick={save} disabled={notifSaving} style={{ alignSelf: 'flex-start' }}>
-              {notifSaving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-          </div>
-        )
-      })()}
+      {effectiveTab === 'parametres' && isSuperAdmin && (
+        <ParametresTab
+          admins={admins}
+          notifRecipients={notifRecipients}
+          setNotifRecipients={setNotifRecipients}
+          notifSaving={notifSaving}
+          setNotifSaving={setNotifSaving}
+          notifSuccess={notifSuccess}
+          setNotifSuccess={setNotifSuccess}
+        />
+      )}
 
       {/* Mes rapports supprime — page separee /admin/mes-rapports */}
     </div>
   )
 
   // ── Render report body ──
-  function renderReportBody(report: ActivityReport, showAdminActions: boolean) {
-    return (
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* Contenu */}
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: '4px 0 0', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{report.contenu}</p>
-        </div>
-
-        {/* Taches */}
-        {report.taches.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Taches realisees</span>
-            <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
-              {report.taches.map((t, i) => (
-                <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>{t}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Pieces jointes */}
-        {report.attachments.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-              {report.attachments.map((f, i) => (
-                <a
-                  key={i}
-                  href={`/api/admin/interns/reports/files/${f.filename}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Commentaire admin */}
-        {report.commentaireAdmin && (
-          <div style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(139,92,246,0.08)', marginBottom: 12, borderLeft: '3px solid #8b5cf6' }}>
-            <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
-          </div>
-        )}
-
-        {/* Validation info */}
-        {report.status === 'VALIDE' && report.validePar && (
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
-            Valide par {report.validePar.name}{report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
-          </div>
-        )}
-
-        {/* Actions admin */}
-        {showAdminActions && isAdmin && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {report.status !== 'VALIDE' && (
-              <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => handleValidateReport(report._id, 'VALIDE')}>
-                Valider
-              </button>
-            )}
-            {report.status === 'VALIDE' && (
-              <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => handleValidateReport(report._id, 'SOUMIS')}>
-                Annuler validation
-              </button>
-            )}
-            <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => {
-              setCommentText(report.commentaireAdmin || '')
-              setCommentModal({ reportId: report._id, status: report.status })
-            }}>
-              Commenter
-            </button>
-          </div>
-        )}
-
-        {/* Actions stagiaire (supprimer si pas valide) */}
-        {!showAdminActions && report.status !== 'VALIDE' && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ticket-back-btn" style={{ fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteReport(report._id)}>
-              Supprimer
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
 }
 
 export default InternList
