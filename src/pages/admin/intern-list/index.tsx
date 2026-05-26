@@ -9,6 +9,8 @@ import InternKpi from '../../../components/admin/InternKpi'
 import InternDocuments from '../../../components/admin/InternDocuments'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import ParametresTab from './ParametresTab'
+import ReportBody from './ReportBody'
 
 const InternList = () => {
   const { user } = useAuth()
@@ -1026,7 +1028,7 @@ const InternList = () => {
                                     <span style={{ color: 'rgba(255,255,255,0.3)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
                                   </div>
                                 </div>
-                                {expanded && renderReportBody(report, true)}
+                                {expanded && (<ReportBody report={report} showAdminActions={true} isAdmin={isAdmin} onValidate={handleValidateReport} onOpenComment={(rid, st, current) => { setCommentText(current); setCommentModal({reportId: rid, status: st}) }} onDelete={handleDeleteReport} />)}
                               </div>
                             )
                           })}
@@ -1117,7 +1119,7 @@ const InternList = () => {
                                   </div>
                                 )}
                               </div>
-                              {expanded && renderReportBody(report, true)}
+                              {expanded && (<ReportBody report={report} showAdminActions={true} isAdmin={isAdmin} onValidate={handleValidateReport} onOpenComment={(rid, st, current) => { setCommentText(current); setCommentModal({reportId: rid, status: st}) }} onDelete={handleDeleteReport} />)}
                             </div>
                           )
                         })}
@@ -1138,155 +1140,23 @@ const InternList = () => {
       {effectiveTab === 'documents' && isAdmin && <InternDocuments />}
 
       {/* ═══ TAB: Paramètres ═══ */}
-      {effectiveTab === 'parametres' && isSuperAdmin && (() => {
-        const allAdminUsers = admins.filter((a) => a.role === 'SUPER_ADMIN' || a.role === 'RH' || a.role === 'ADMIN')
-        const selectedIds = new Set(notifRecipients.map((r) => r._id))
-
-        const toggle = (id: string) => {
-          setNotifRecipients((prev) =>
-            prev.find((r) => r._id === id)
-              ? prev.filter((r) => r._id !== id)
-              : [...prev, admins.find((a) => a._id === id) as any]
-          )
-        }
-
-        const save = async () => {
-          setNotifSaving(true)
-          setNotifSuccess(false)
-          try {
-            await apiFetch('/api/admin/interns/settings/report-notifs', {
-              method: 'PATCH',
-              body: JSON.stringify({ recipientIds: Array.from(selectedIds) }),
-            })
-            setNotifSuccess(true)
-            setTimeout(() => setNotifSuccess(false), 3000)
-          } catch { /* silent */ } finally { setNotifSaving(false) }
-        }
-
-        return (
-          <div className="portal-card" style={{ maxWidth: 600, marginTop: 24 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Notifications — rapports d'activité</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
-              Choisissez qui reçoit un email et une notification quand un membre soumet un rapport.
-              Si aucun destinataire n'est sélectionné, seuls les Super Admins sont notifiés.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-              {allAdminUsers.map((a) => (
-                <label key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '10px 14px', borderRadius: 10, background: selectedIds.has(a._id) ? 'rgba(14,165,233,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selectedIds.has(a._id) ? 'rgba(14,165,233,0.4)' : 'rgba(255,255,255,0.08)'}`, transition: 'all 0.15s' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(a._id)}
-                    onChange={() => toggle(a._id)}
-                    style={{ accentColor: '#0ea5e9', width: 16, height: 16 }}
-                  />
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{a.name}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{a.role === 'SUPER_ADMIN' ? 'Super Admin' : a.role}</span>
-                </label>
-              ))}
-            </div>
-            {notifSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 12 }}>Enregistré</p>}
-            <button className="portal-button" onClick={save} disabled={notifSaving} style={{ alignSelf: 'flex-start' }}>
-              {notifSaving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-          </div>
-        )
-      })()}
+      {effectiveTab === 'parametres' && isSuperAdmin && (
+        <ParametresTab
+          admins={admins}
+          notifRecipients={notifRecipients}
+          setNotifRecipients={setNotifRecipients}
+          notifSaving={notifSaving}
+          setNotifSaving={setNotifSaving}
+          notifSuccess={notifSuccess}
+          setNotifSuccess={setNotifSuccess}
+        />
+      )}
 
       {/* Mes rapports supprime — page separee /admin/mes-rapports */}
     </div>
   )
 
   // ── Render report body ──
-  function renderReportBody(report: ActivityReport, showAdminActions: boolean) {
-    return (
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* Contenu */}
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: '4px 0 0', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{report.contenu}</p>
-        </div>
-
-        {/* Taches */}
-        {report.taches.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Taches realisees</span>
-            <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
-              {report.taches.map((t, i) => (
-                <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>{t}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Pieces jointes */}
-        {report.attachments.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-              {report.attachments.map((f, i) => (
-                <a
-                  key={i}
-                  href={`/api/admin/interns/reports/files/${f.filename}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Commentaire admin */}
-        {report.commentaireAdmin && (
-          <div style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(139,92,246,0.08)', marginBottom: 12, borderLeft: '3px solid #8b5cf6' }}>
-            <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
-          </div>
-        )}
-
-        {/* Validation info */}
-        {report.status === 'VALIDE' && report.validePar && (
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
-            Valide par {report.validePar.name}{report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
-          </div>
-        )}
-
-        {/* Actions admin */}
-        {showAdminActions && isAdmin && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {report.status !== 'VALIDE' && (
-              <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => handleValidateReport(report._id, 'VALIDE')}>
-                Valider
-              </button>
-            )}
-            {report.status === 'VALIDE' && (
-              <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => handleValidateReport(report._id, 'SOUMIS')}>
-                Annuler validation
-              </button>
-            )}
-            <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => {
-              setCommentText(report.commentaireAdmin || '')
-              setCommentModal({ reportId: report._id, status: report.status })
-            }}>
-              Commenter
-            </button>
-          </div>
-        )}
-
-        {/* Actions stagiaire (supprimer si pas valide) */}
-        {!showAdminActions && report.status !== 'VALIDE' && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ticket-back-btn" style={{ fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteReport(report._id)}>
-              Supprimer
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
 }
 
 export default InternList
