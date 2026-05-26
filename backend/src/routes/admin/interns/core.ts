@@ -4,19 +4,16 @@ import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
-import Intern from '../../models/Intern.js'
-import ActivityReport from '../../models/ActivityReport.js'
-import User from '../../models/User.js'
-import { createNotification } from '../../lib/notifications.js'
-import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
-import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../lib/nextcloud.js'
-import { sendInternReportEmail, sendReportValidatedEmail } from '../../lib/email/templates/report.js'
-import { sendAdminCredentials } from '../../lib/email.js'
-import { getInternSettings } from '../../models/InternSettings.js'
-import { getRecentLogs } from '../../automation/models/AutomationLog.js'
-import { countWorkingDaysSince } from '../../lib/workingDays.js'
+import auth from '../../../middleware/auth.js'
+import { requireAdmin } from '../../../middleware/role.js'
+import Intern from '../../../models/Intern.js'
+import ActivityReport from '../../../models/ActivityReport.js'
+import User from '../../../models/User.js'
+import { createNotification } from '../../../lib/notifications.js'
+import { notifySuperAdmins } from '../../../lib/notifyHelpers.js'
+import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../../lib/nextcloud.js'
+import { sendAdminCredentials } from '../../../lib/email.js'
+import { countWorkingDaysSince } from '../../../lib/workingDays.js'
 
 const router = express.Router()
 
@@ -27,14 +24,6 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 const conventionsDir = path.resolve('uploads/conventions')
 if (!fs.existsSync(conventionsDir)) fs.mkdirSync(conventionsDir, { recursive: true })
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safeName}`)
-  },
-})
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
 const conventionStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, conventionsDir),
@@ -46,12 +35,6 @@ const conventionStorage = multer.diskStorage({
 const uploadConvention = multer({ storage: conventionStorage, limits: { fileSize: 20 * 1024 * 1024 } })
 
 // Serve uploaded files (pas d'auth — noms de fichiers non devinables)
-router.get('/reports/files/:filename', (req: Request, res: Response) => {
-  const filePath = path.resolve(uploadsDir, req.params.filename as string)
-  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  res.sendFile(filePath)
-})
 
 // Serve convention files
 router.get('/conventions/files/:filename', (req: Request, res: Response) => {
@@ -648,280 +631,6 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
   }
 })
 
-// ═══════════════════════════════════════════════════
-// PARTIE 2 — Rapports d'activite (stagiaires + admins)
-// ═══════════════════════════════════════════════════
-
-// GET /api/admin/interns/reports/all — tous les rapports (admin)
-router.get('/reports/all', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const { internId, date, status } = req.query
-    const filter: Record<string, unknown> = {}
-    if (status) filter.status = status
-    if (date) {
-      const d = new Date(date as string)
-      filter.date = {
-        $gte: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
-        $lt: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
-      }
-    }
-
-    if (internId) {
-      filter.internId = internId
-    } else {
-      // Restreindre aux vrais stagiaires/alternants (exclut les admins auto-créés)
-      const stagiaires = await User.find({ role: 'STAGIAIRE' }).select('_id')
-      const stagiaireIds = stagiaires.map((u) => u._id)
-      const validInterns = await Intern.find({ userId: { $in: stagiaireIds } }).select('_id')
-      filter.internId = { $in: validInterns.map((i) => i._id) }
-    }
-
-    const reports = await ActivityReport.find(filter)
-      .populate('userId', 'name email')
-      .populate('validePar', 'name')
-      .sort({ date: -1, createdAt: -1 })
-    res.json(reports)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// GET /api/admin/interns/reports/mine — mes rapports (stagiaires uniquement)
-router.get('/reports/mine', async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-
-    // Chercher la fiche intern existante
-    let intern = await Intern.findOne({ userId: user.id })
-
-    // Créer automatiquement une fiche uniquement pour les STAGIAIRE
-    if (!intern) {
-      if (user.role !== 'STAGIAIRE') {
-        return res.json([])
-      }
-      intern = await Intern.create({
-        userId: user.id,
-        poste: 'Stagiaire',
-        dateDebut: new Date(),
-        dateFin: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-        createdBy: user.id,
-      })
-    }
-
-    const reports = await ActivityReport.find({ internId: intern._id })
-      .populate('validePar', 'name')
-      .sort({ date: -1 })
-    res.json(reports)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// POST /api/admin/interns/reports — creer un rapport (le stagiaire ou un admin)
-router.post('/reports', upload.array('files', 10), async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    const { date, contenu, taches } = req.body
-    if (!contenu) return res.status(400).json({ error: 'Le contenu est requis' })
-
-    // Trouver ou creer la fiche intern
-    let intern = await Intern.findOne({ userId: user.id })
-
-    // Si admin, il peut creer pour un stagiaire specifique via internId
-    if (!intern && req.body.internId) {
-      intern = await Intern.findById(req.body.internId)
-    }
-
-    // Auto-creation pour les admins sans fiche
-    if (!intern) {
-      intern = await Intern.create({
-        userId: user.id,
-        poste: user.role || 'Admin',
-        dateDebut: new Date(),
-        dateFin: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-        createdBy: user.id,
-      })
-    }
-
-    const reportDate = date ? new Date(date) : new Date()
-
-    const files = (req.files as Express.Multer.File[]) || []
-    const attachments = files.map((f) => ({
-      filename: f.filename,
-      originalName: f.originalname,
-      mimetype: f.mimetype,
-      size: f.size,
-    }))
-
-    let parsedTaches: string[] = []
-    if (taches) {
-      try { parsedTaches = JSON.parse(taches) } catch { parsedTaches = [taches] }
-    }
-
-    const report = await ActivityReport.create({
-      internId: intern._id,
-      userId: user.id,
-      date: reportDate,
-      contenu,
-      taches: parsedTaches,
-      attachments,
-    })
-
-    // Notifier les destinataires configurés (ou SUPER_ADMIN par défaut)
-    const internSettings = await getInternSettings()
-    const recipientIds: string[] = internSettings.reportNotifRecipients.map((id: any) => id.toString())
-    let recipients: { _id: any; email: string }[] = []
-    if (recipientIds.length > 0) {
-      recipients = await User.find({ _id: { $in: recipientIds }, isActive: { $ne: false } }).select('_id email')
-    } else {
-      recipients = await User.find({ role: 'SUPER_ADMIN', isActive: { $ne: false } }).select('_id email')
-    }
-    const emailRecipients: string[] = []
-    for (const recipient of recipients) {
-      if (recipient._id.toString() === user.id) continue
-      createNotification({
-        recipient: recipient._id,
-        type: 'INTERN_REPORT_SUBMITTED',
-        title: `Nouveau rapport d'activite`,
-        message: `${user.name} a soumis un rapport pour le ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
-        link: '/admin/stagiaires',
-      }).catch(() => {})
-      if (recipient.email) emailRecipients.push(recipient.email)
-    }
-    if (emailRecipients.length > 0) {
-      sendInternReportEmail({
-        to: emailRecipients,
-        internName: user.name,
-        internType: (intern.type || 'STAGIAIRE') as 'STAGIAIRE' | 'ALTERNANT',
-        reportDate: new Date(reportDate).toLocaleDateString('fr-FR'),
-        poste: intern.poste,
-        contenu,
-        tachesCount: parsedTaches.length,
-        attachmentsCount: attachments.length,
-      }).catch(() => {})
-    }
-
-    files.forEach(f => syncUploadToNextcloud(f, 'rapports', intern._id.toString()))
-
-    res.status(201).json(report)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// PATCH /api/admin/interns/reports/:id — modifier un rapport
-router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    const report = await ActivityReport.findById(req.params.id)
-    if (!report) return res.status(404).json({ error: 'Rapport introuvable' })
-
-    const isOwner = report.userId.toString() === user.id
-    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Non autorise' })
-
-    // Le stagiaire peut modifier si pas encore valide
-    if (isOwner && !isAdmin && report.status === 'VALIDE') {
-      return res.status(403).json({ error: 'Rapport deja valide, modification interdite' })
-    }
-
-    const { contenu, taches, status, commentaireAdmin } = req.body
-
-    if (contenu !== undefined) report.contenu = contenu
-    if (taches !== undefined) {
-      try { report.taches = JSON.parse(taches) } catch { report.taches = [taches] }
-    }
-
-    // Admin peut valider ou commenter
-    if (isAdmin) {
-      if (status !== undefined) {
-        report.status = status
-        if (status === 'VALIDE') {
-          report.validePar = user.id
-          report.valideAt = new Date()
-          // Notifier et emailer l'auteur que son rapport a ete valide
-          if (report.userId.toString() !== user.id) {
-            createNotification({
-              recipient: report.userId,
-              type: 'INTERN_REPORT_UPDATED',
-              title: 'Rapport valide',
-              message: `${user.name} a valide votre rapport du ${new Date(report.date).toLocaleDateString('fr-FR')}`,
-              link: '/admin/mes-rapports',
-            }).catch(() => {})
-            const reportAuthor = await User.findById(report.userId).select('email name')
-            if (reportAuthor?.email) {
-              const authorIntern = await Intern.findOne({ userId: report.userId }).select('type')
-              sendReportValidatedEmail({
-                to: reportAuthor.email,
-                internName: reportAuthor.name,
-                internType: (authorIntern?.type || 'STAGIAIRE') as 'STAGIAIRE' | 'ALTERNANT',
-                reportDate: new Date(report.date).toLocaleDateString('fr-FR'),
-                adminName: user.name,
-                commentaire: commentaireAdmin,
-              }).catch(() => {})
-            }
-          }
-        }
-      }
-      if (commentaireAdmin !== undefined) {
-        report.commentaireAdmin = commentaireAdmin
-        // Notifier l'auteur du commentaire
-        if (commentaireAdmin && report.userId.toString() !== user.id) {
-          createNotification({
-            recipient: report.userId,
-            type: 'INTERN_REPORT_UPDATED',
-            title: 'Commentaire sur votre rapport',
-            message: `${user.name} a commente votre rapport du ${new Date(report.date).toLocaleDateString('fr-FR')}`,
-            link: '/admin/mes-rapports',
-          }).catch(() => {})
-        }
-      }
-    }
-
-    // Ajout de nouveaux fichiers
-    const files = (req.files as Express.Multer.File[]) || []
-    if (files.length > 0) {
-      const newAttachments = files.map((f) => ({
-        filename: f.filename,
-        originalName: f.originalname,
-        mimetype: f.mimetype,
-        size: f.size,
-      }))
-      report.attachments.push(...newAttachments)
-    }
-
-    await report.save()
-    res.json(report)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// DELETE /api/admin/interns/reports/:id — supprimer un rapport
-router.delete('/reports/:id', async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    const report = await ActivityReport.findById(req.params.id)
-    if (!report) return res.status(404).json({ error: 'Rapport introuvable' })
-
-    const isOwner = report.userId.toString() === user.id
-    const isAdmin = user.role === 'SUPER_ADMIN'
-
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Non autorise' })
-
-    // Supprimer les fichiers
-    for (const f of report.attachments) {
-      const filePath = path.join(uploadsDir, f.filename)
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-    }
-
-    await ActivityReport.findByIdAndDelete(req.params.id)
-    res.json({ ok: true })
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
 
 // POST /api/admin/interns/:id/convention — ajouter une convention
 router.post('/:id/convention', requireAdmin, uploadConvention.single('file'), async (req: Request, res: Response) => {
@@ -979,81 +688,5 @@ router.delete('/:id/convention/:filename', requireAdmin, async (req: Request, re
   }
 })
 
-// ── Paramètres notifications rapports ──
-
-// GET /api/admin/interns/settings/report-notifs
-router.get('/settings/report-notifs', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const settings = await getInternSettings()
-    const populated = await settings.populate('reportNotifRecipients', 'name email role')
-    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// PATCH /api/admin/interns/settings/report-notifs
-router.patch('/settings/report-notifs', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
-    const { recipientIds } = req.body
-    if (!Array.isArray(recipientIds)) return res.status(400).json({ error: 'recipientIds requis' })
-    const settings = await getInternSettings()
-    settings.reportNotifRecipients = recipientIds
-    await settings.save()
-    const populated = await settings.populate('reportNotifRecipients', 'name email role')
-    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// POST /api/admin/interns/send-reminders — déclencher manuellement les rappels (bypass idempotency)
-router.post('/send-reminders', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Non autorisé' })
-    const { buildContext } = await import('../../automation/engine.js')
-    const { getAutomation } = await import('../../automation/registry.js')
-    const { createExecutionLog } = await import('../../automation/models/AutomationLog.js')
-    const definition = getAutomation('intern.report_reminder')
-    if (!definition) return res.status(404).json({ error: 'Automation introuvable' })
-    // Use a unique key with timestamp to bypass the daily idempotency lock
-    const ctx = { ...buildContext(), dateKey: `manual:${Date.now()}` }
-    const startedAt = new Date()
-    const result = await definition.execute(ctx)
-    await createExecutionLog({
-      automationKey: definition.key,
-      executionType: 'cron',
-      triggerSource: 'manual_trigger',
-      idempotencyKey: ctx.dateKey,
-      status: 'SUCCESS',
-      startedAt,
-      finishedAt: new Date(),
-      durationMs: Date.now() - startedAt.getTime(),
-      actionsExecuted: result.actionsExecuted,
-      recipientsNotified: result.recipientsNotified,
-    })
-    res.json({
-      success: true,
-      actionsExecuted: result.actionsExecuted,
-      recipientsNotified: result.recipientsNotified,
-      details: result.details,
-    })
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// GET /api/admin/interns/reminder-logs — logs des rappels envoyés
-router.get('/reminder-logs', requireAdmin, async (_req: Request, res: Response) => {
-  try {
-    const logs = await getRecentLogs('intern.report_reminder', 30)
-    res.json({ logs })
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
 
 export default router
