@@ -4,6 +4,7 @@ import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import ProjectSection from '../../../models/ProjectSection.js'
 import Project from '../../../models/Project.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
+import logger from '../../../lib/logger.js'
 
 const router = express.Router()
 
@@ -26,7 +27,7 @@ router.get('/:projectId/sections', requirePermission(PERMISSIONS.VIEW_CONTENT), 
 
     res.json({ sections })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -64,7 +65,7 @@ router.post('/:projectId/sections', requirePermission(PERMISSIONS.EDIT_CONTENT),
 
     res.status(201).json({ section })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -94,7 +95,7 @@ router.patch('/:projectId/sections/:sectionId', requirePermission(PERMISSIONS.ED
 
     res.json({ section })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -117,7 +118,7 @@ router.delete('/:projectId/sections/:sectionId', requirePermission(PERMISSIONS.E
 
     res.json({ message: 'Section supprimée' })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })

@@ -8,6 +8,7 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import { isNextcloudEnabled } from '../../lib/nextcloud.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 function sanitizeName(name: string): string {
   return name
@@ -142,11 +143,11 @@ const definition: AutomationDefinition = {
         recipientsNotified.push(admin._id.toString())
       }
 
-      console.warn(`[NEXTCLOUD DETECT] ${totalMissing} missing structure(s):`)
-      for (const c of missingClients) console.warn(`  Client: ${c}`)
-      for (const p of missingProjects) console.warn(`  Project: ${p}`)
+      logger.warn(`[NEXTCLOUD DETECT] ${totalMissing} missing structure(s):`)
+      for (const c of missingClients) logger.warn(`  Client: ${c}`)
+      for (const p of missingProjects) logger.warn(`  Project: ${p}`)
     } else {
-      console.log('[NEXTCLOUD DETECT] All structures present ✓')
+      logger.info('[NEXTCLOUD DETECT] All structures present ✓')
     }
 
     return {

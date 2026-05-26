@@ -11,6 +11,7 @@ import { createClientFolders, getClientCloudInfo } from '../../../lib/nextcloud.
 import { ok, error, parsePagination, normalizeClientPayload, ensureClient, logActivity } from './helpers.js'
 import { createNotification } from '../../../lib/notifications.js'
 import { notifySuperAdmins } from '../../../lib/notifyHelpers.js'
+import logger from '../../../lib/logger.js'
 
 const router = express.Router()
 
@@ -140,7 +141,7 @@ router.post(
 
     // Create Nextcloud folders for the client (fire-and-forget)
     createClientFolders(client.companyName || client.name, client._id.toString()).catch((err: Error) => {
-      console.error('[Nextcloud] Error creating client folders:', err.message || err)
+      logger.error({ data: err.message || err }, '[Nextcloud] Error creating client folders:')
     })
 
     // Trigger client onboarding sequence

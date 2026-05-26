@@ -14,6 +14,7 @@ import { notifySuperAdmins } from '../../../lib/notifyHelpers.js'
 import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../../lib/nextcloud.js'
 import { sendAdminCredentials } from '../../../lib/email.js'
 import { countWorkingDaysSince } from '../../../lib/workingDays.js'
+import logger from '../../../lib/logger.js'
 
 const router = express.Router()
 
@@ -477,7 +478,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
         nextcloudPassword: ncResult.password,
       })
     } else if (!ncResult.success && ncResult.error && !ncResult.error.includes('non configurés')) {
-      console.warn(`[Nextcloud] Provisioning échoué pour ${name}: ${ncResult.error}`)
+      logger.warn(`[Nextcloud] Provisioning échoué pour ${name}: ${ncResult.error}`)
     }
 
     const populated = await Intern.findById(intern._id)

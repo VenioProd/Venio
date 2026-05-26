@@ -6,6 +6,7 @@
 import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'task.auto_archive',
@@ -40,7 +41,7 @@ const definition: AutomationDefinition = {
 
     const archivedCount = result.modifiedCount || 0
 
-    console.log(`[TASK AUTO ARCHIVE] ${archivedCount} tâche(s) archivée(s) (terminées depuis 60j+)`)
+    logger.info(`[TASK AUTO ARCHIVE] ${archivedCount} tâche(s) archivée(s) (terminées depuis 60j+)`)
 
     return {
       actionsExecuted: [`auto_archive:${archivedCount}_tasks`],

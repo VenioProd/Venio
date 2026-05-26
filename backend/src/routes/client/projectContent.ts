@@ -4,6 +4,7 @@ import auth from '../../middleware/auth.js'
 import ProjectSection from '../../models/ProjectSection.js'
 import ProjectItem from '../../models/ProjectItem.js'
 import Project from '../../models/Project.js'
+import logger from '../../lib/logger.js'
 
 const router = express.Router()
 
@@ -38,7 +39,7 @@ router.get('/:projectId/sections', async (req: Request, res: Response) => {
 
     res.json({ sections })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -88,7 +89,7 @@ router.get('/:projectId/items', async (req: Request, res: Response) => {
 
     res.json({ items: sanitizedItems })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -138,7 +139,7 @@ router.get('/:projectId/items/:itemId', async (req: Request, res: Response) => {
 
     res.json({ item: itemObj })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -187,7 +188,7 @@ router.get('/:projectId/items/:itemId/download', async (req: Request, res: Respo
 
     res.download(item.file.storagePath, item.file.originalName)
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })

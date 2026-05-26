@@ -4,6 +4,7 @@ import fsp from 'fs/promises'
 import path from 'path'
 import CompanySettings from '../models/CompanySettings.js'
 import { buildFacturXMinimum } from './facturx.js'
+import logger from './logger.js'
 
 const PAGE_MARGIN = 40
 const COL_DESC_X = PAGE_MARGIN
@@ -491,7 +492,7 @@ export async function generateBillingPdf(
         })
       } catch (err) {
         // L'embed Factur-X ne doit pas casser la génération du PDF visuel.
-        console.error('Factur-X embed failed:', (err as Error).message)
+        logger.error({ data: (err as Error).message }, 'Factur-X embed failed:')
       }
     }
 

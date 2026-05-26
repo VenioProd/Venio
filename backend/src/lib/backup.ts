@@ -1,6 +1,7 @@
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import logger from './logger.js'
 
 const BACKUP_DIR = process.env.BACKUP_DIR || path.join(process.cwd(), 'backups')
 const MAX_BACKUPS = parseInt(process.env.MAX_BACKUPS || '7', 10)
@@ -44,10 +45,10 @@ export function createBackup(): BackupResult {
     // Cleanup old backups (keep MAX_BACKUPS most recent)
     cleanupOldBackups()
 
-    console.log(`[Backup] MongoDB backup created: ${backupPath}`)
+    logger.info(`[Backup] MongoDB backup created: ${backupPath}`)
     return { success: true, path: backupPath }
   } catch (err) {
-    console.error('[Backup] Failed to create MongoDB backup:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[Backup] Failed to create MongoDB backup:')
     return { success: false, error: (err as Error).message }
   }
 }
@@ -71,10 +72,10 @@ function cleanupOldBackups(): void {
     // Remove entries beyond the limit
     for (let i = MAX_BACKUPS; i < entries.length; i++) {
       fs.rmSync(entries[i].fullPath, { recursive: true, force: true })
-      console.log(`[Backup] Removed old backup: ${entries[i].name}`)
+      logger.info(`[Backup] Removed old backup: ${entries[i].name}`)
     }
   } catch (err) {
-    console.error('[Backup] Error cleaning up old backups:', (err as Error).message)
+    logger.error({ data: (err as Error).message }, '[Backup] Error cleaning up old backups:')
   }
 }
 

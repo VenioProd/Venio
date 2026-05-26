@@ -6,6 +6,7 @@
 import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const definition: AutomationDefinition = {
   key: 'analytics.weekly_snapshot',
@@ -85,7 +86,7 @@ const definition: AutomationDefinition = {
       weekKey: ctx.weekKey,
     }
 
-    console.log(`[ANALYTICS SNAPSHOT] Weekly KPIs:`, JSON.stringify(metrics, null, 2))
+    logger.info({ data: JSON.stringify(metrics, null, 2) }, `[ANALYTICS SNAPSHOT] Weekly KPIs:`)
 
     return {
       actionsExecuted: ['weekly_snapshot_collected'],

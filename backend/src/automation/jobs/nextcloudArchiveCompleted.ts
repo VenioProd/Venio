@@ -8,6 +8,7 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import { isNextcloudEnabled, createFolder } from '../../lib/nextcloud.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const ARCHIVE_AFTER_DAYS = 30
 
@@ -129,9 +130,9 @@ const definition: AutomationDefinition = {
       }
     }
 
-    console.log(`[NEXTCLOUD ARCHIVE] ${movedProjects.length} projet(s) archivé(s)`)
+    logger.info(`[NEXTCLOUD ARCHIVE] ${movedProjects.length} projet(s) archivé(s)`)
     if (errors.length > 0) {
-      console.warn(`[NEXTCLOUD ARCHIVE] ${errors.length} erreur(s):`, errors)
+      logger.warn({ data: errors }, `[NEXTCLOUD ARCHIVE] ${errors.length} erreur(s):`)
     }
 
     // Notify SUPER_ADMINs if projects were moved

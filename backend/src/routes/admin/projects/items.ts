@@ -9,6 +9,7 @@ import Project from '../../../models/Project.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { triggerAutomations } from '../../../automation/trigger.js'
 import { createNotification } from '../../../lib/notifications.js'
+import logger from '../../../lib/logger.js'
 
 const router = express.Router()
 
@@ -79,7 +80,7 @@ router.get('/:projectId/items', requirePermission(PERMISSIONS.VIEW_CONTENT), asy
 
     res.json({ items })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -165,7 +166,7 @@ router.post('/:projectId/items', requirePermission(PERMISSIONS.EDIT_CONTENT), up
 
     res.status(201).json({ item })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -235,7 +236,7 @@ router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CON
 
     res.json({ item })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -263,7 +264,7 @@ router.delete('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CO
 
     res.json({ message: 'Item supprimé' })
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -292,7 +293,7 @@ router.get('/:projectId/items/:itemId/download', requirePermission(PERMISSIONS.V
 
     res.download(item.file.storagePath, item.file.originalName)
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
@@ -313,7 +314,7 @@ router.get('/:projectId/items/:itemId/preview', requirePermission(PERMISSIONS.VI
     const stream = fs.createReadStream(item.file.storagePath)
     stream.pipe(res)
   } catch (err) {
-    console.error(err)
+    logger.error(err)
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })

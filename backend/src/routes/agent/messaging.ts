@@ -21,6 +21,7 @@ import {
 import { requireScope } from './_middleware/auth.js'
 import { respondError, AgentApiError } from './_middleware/errors.js'
 import { loadAgentUserPayload } from './_middleware/asUser.js'
+import logger from '../../lib/logger.js'
 
 /**
  * Routes agent pour la messagerie interne (InternalConversation /
@@ -330,7 +331,7 @@ router.post(
       const cleanup = async () => {
         await Promise.all(
           writtenPaths.map((p) =>
-            fs.unlink(p).catch((e) => console.warn('[attachments] cleanup failed:', p, (e as Error).message))
+            fs.unlink(p).catch((e) => logger.warn({ data: [p, (e as Error).message] }, '[attachments] cleanup failed:'))
           )
         )
       }

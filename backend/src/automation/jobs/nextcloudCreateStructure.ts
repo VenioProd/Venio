@@ -8,6 +8,7 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import { createFolder, isNextcloudEnabled } from '../../lib/nextcloud.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const PROJECT_SUBFOLDERS = [
   'Livrables',
@@ -98,7 +99,7 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     if (errors.length > 0) {
-      console.warn(`[NEXTCLOUD] Structure creation had ${errors.length} error(s) for project ${project.name}`)
+      logger.warn(`[NEXTCLOUD] Structure creation had ${errors.length} error(s) for project ${project.name}`)
     }
 
     // Notify manager

@@ -17,6 +17,7 @@ import { generateAgentToken } from '../../lib/agent/tokens.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
+import logger from '../../lib/logger.js'
 
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
@@ -169,7 +170,7 @@ router.post(
         })
       } catch (err) {
         await User.deleteOne({ _id: agentUser._id }).catch((e) =>
-          console.warn('[agent-token-create] rollback failed:', (e as Error).message)
+          logger.warn({ data: (e as Error).message }, '[agent-token-create] rollback failed:')
         )
         return next(err)
       }
@@ -187,7 +188,7 @@ router.post(
           role: 'AGENT',
         })
       } catch (err) {
-        console.warn('[agent-token-create] ensureGeneralChannel failed:', (err as Error).message)
+        logger.warn({ data: (err as Error).message }, '[agent-token-create] ensureGeneralChannel failed:')
       }
 
       void recordAudit({
@@ -318,7 +319,7 @@ router.patch(
         await User.updateOne(
           { _id: token.userId },
           { $set: { name: token.name } }
-        ).catch((err) => console.warn('[agent-token-patch] user rename failed:', (err as Error).message))
+        ).catch((err) => logger.warn({ data: (err as Error).message }, '[agent-token-patch] user rename failed:'))
       }
 
       void recordAudit({
@@ -384,7 +385,7 @@ router.post(
         await User.updateOne(
           { _id: token.userId },
           { $set: { isActive: false, name: `[Révoqué] ${token.name}` } }
-        ).catch((err) => console.warn('[agent-token-revoke] user deactivate failed:', (err as Error).message))
+        ).catch((err) => logger.warn({ data: (err as Error).message }, '[agent-token-revoke] user deactivate failed:'))
       }
 
       void recordAudit({

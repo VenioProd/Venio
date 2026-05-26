@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto'
+import logger from './logger.js'
 
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
@@ -11,7 +12,7 @@ const AUTH_TAG_LENGTH = 16
 /**
  * Get the encryption key from environment.
  * Must be a 64-char hex string (32 bytes).
- * Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ * Generate one with: node -e "logger.info(require('crypto').randomBytes(32).toString('hex'))"
  */
 function getKey(): Buffer {
   const hex = process.env.ENCRYPTION_KEY

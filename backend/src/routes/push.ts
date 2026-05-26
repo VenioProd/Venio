@@ -2,6 +2,7 @@ import { Router } from 'express'
 import requireAuth from '../middleware/auth.js'
 import PushSubscription from '../models/PushSubscription.js'
 import { getVapidPublicKey } from '../lib/webPush.js'
+import logger from '../lib/logger.js'
 
 const router = Router()
 
@@ -42,7 +43,7 @@ router.post('/subscriptions', requireAuth, async (req, res) => {
 
     return res.json({ subscription: { id: subscription._id } })
   } catch (err) {
-    console.error('[push] subscribe error', err)
+    logger.error({ data: err }, '[push] subscribe error')
     return res.status(500).json({ error: 'Erreur enregistrement subscription' })
   }
 })
@@ -58,7 +59,7 @@ router.delete('/subscriptions', requireAuth, async (req, res) => {
     await PushSubscription.deleteOne({ endpoint, user: req.user!.id })
     return res.json({ success: true })
   } catch (err) {
-    console.error('[push] unsubscribe error', err)
+    logger.error({ data: err }, '[push] unsubscribe error')
     return res.status(500).json({ error: 'Erreur suppression subscription' })
   }
 })
@@ -73,7 +74,7 @@ router.get('/subscriptions/me', requireAuth, async (req, res) => {
       .lean()
     return res.json({ subscriptions: subs })
   } catch (err) {
-    console.error('[push] list error', err)
+    logger.error({ data: err }, '[push] list error')
     return res.status(500).json({ error: 'Erreur listage subscriptions' })
   }
 })

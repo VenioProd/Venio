@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH']
 
@@ -81,7 +82,7 @@ const definition: AutomationDefinition = {
     }
 
     actionsExecuted.push(`internal_setup:${userId}:${userRole}`)
-    console.log(`[ONBOARDING] Internal user setup completed for ${userName} (${userRole})`)
+    logger.info(`[ONBOARDING] Internal user setup completed for ${userName} (${userRole})`)
 
     return {
       actionsExecuted,

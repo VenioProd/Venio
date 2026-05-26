@@ -5,6 +5,7 @@
 
 import { getAutomation } from './registry.js'
 import { runAutomation, buildContext } from './engine.js'
+import logger from '../lib/logger.js'
 
 /**
  * Trigger one or more event-driven automations in the background.
@@ -19,13 +20,13 @@ export function triggerAutomations(
   for (const key of keys) {
     const automation = getAutomation(key)
     if (!automation) {
-      console.warn(`[AUTOMATION TRIGGER] Unknown automation: ${key}`)
+      logger.warn(`[AUTOMATION TRIGGER] Unknown automation: ${key}`)
       continue
     }
 
     // Fire-and-forget
     runAutomation(automation, ctx).catch((err) => {
-      console.error(`[AUTOMATION TRIGGER] ${key} failed:`, (err as Error).message)
+      logger.error({ data: (err as Error).message }, `[AUTOMATION TRIGGER] ${key} failed:`)
     })
   }
 }

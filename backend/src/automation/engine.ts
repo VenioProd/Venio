@@ -12,6 +12,7 @@ import type {
   AutomationResult,
   ExecutionStatus,
 } from './types.js'
+import logger from '../lib/logger.js'
 
 /**
  * Run a single automation with full lifecycle:
@@ -141,7 +142,7 @@ export async function runAutomation(
       retryCount,
     })
 
-    console.error(`[AUTOMATION] ${definition.key} ${finalStatus}: ${errorMessage}`)
+    logger.error(`[AUTOMATION] ${definition.key} ${finalStatus}: ${errorMessage}`)
     return { status: finalStatus, error: errorMessage }
   }
 }

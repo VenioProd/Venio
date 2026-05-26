@@ -4,6 +4,7 @@
 
 import { createNotification } from '../lib/notifications.js'
 import type { DispatchPayload, DispatchTarget, Channel } from './types.js'
+import logger from '../lib/logger.js'
 
 /**
  * Dispatch notifications to all targets across their channels.
@@ -32,16 +33,13 @@ export async function dispatch(payload: DispatchPayload): Promise<string[]> {
         // This is a fallback for generic notifications
         notified.push(target.userId)
       } else if (target.channel === 'system_log') {
-        console.log(
+        logger.info(
           `[AUTOMATION] ${payload.automationKey}: ${payload.title} → ${target.name || target.userId}`
         )
         notified.push(target.userId)
       }
     } catch (err) {
-      console.error(
-        `[AUTOMATION] dispatch failed for ${target.userId} on ${target.channel}:`,
-        (err as Error).message
-      )
+      logger.error({ data: (err as Error).message }, `[AUTOMATION] dispatch failed for ${target.userId} on ${target.channel}:`)
     }
   }
 

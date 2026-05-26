@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import logger from '../../lib/logger.js'
 
 interface IntegrityIssue {
   category: string
@@ -172,12 +173,12 @@ const definition: AutomationDefinition = {
 
     // System log
     if (issues.length > 0) {
-      console.warn(`[DATA INTEGRITY] ${issues.length} issue(s) found:`)
+      logger.warn(`[DATA INTEGRITY] ${issues.length} issue(s) found:`)
       for (const issue of issues) {
-        console.warn(`  [${issue.severity}] ${issue.category}: ${issue.description}`)
+        logger.warn(`  [${issue.severity}] ${issue.category}: ${issue.description}`)
       }
     } else {
-      console.log('[DATA INTEGRITY] All checks passed ✓')
+      logger.info('[DATA INTEGRITY] All checks passed ✓')
     }
 
     return {
