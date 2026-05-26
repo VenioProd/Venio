@@ -51,7 +51,7 @@ const IGNORE_DIRS = new Set([
   'node_modules', 'dist', 'build', 'coverage', '.git', '.next', '.nuxt', '.cache', '.parcel-cache',
   '.turbo', '.vercel', '.netlify', '.idea', '.vscode', '.svelte-kit', 'out', 'tmp', 'temp', '.tmp',
   '__pycache__', '.pytest_cache', 'venv', '.venv', 'env', 'logs', 'public/build',
-  'storybook-static', 'design-backup', 'fonts', 'uploads',
+  'storybook-static', 'fonts', 'uploads',
 ])
 
 // Files / patterns we treat as binary, lockfiles, generated. Keyed by base name or extension.

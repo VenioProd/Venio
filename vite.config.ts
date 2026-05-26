@@ -34,7 +34,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/react/')) return 'vendor-react'
             if (id.includes('node_modules/recharts')) return 'vendor-charts'
             if (id.includes('node_modules/jspdf')) return 'vendor-pdf'
-            if (id.includes('node_modules/html2canvas')) return 'vendor-canvas'
             if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
           },
         },
