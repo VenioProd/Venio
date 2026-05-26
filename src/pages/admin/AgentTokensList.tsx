@@ -21,78 +21,16 @@ import './AdminPortal.css'
  * Cf. docs/api-agent.md pour la spec complète.
  */
 
-interface UserRef {
-  _id: string
-  email?: string
-  name?: string
-}
-
-interface AgentToken {
-  _id: string
-  name: string
-  prefix: string
-  scopes: string[]
-  rateLimitPerMin: number
-  status: 'ACTIVE' | 'REVOKED'
-  expiresAt: string | null
-  lastUsedAt: string | null
-  lastUsedIp?: string
-  totalRequests: number
-  totalMutations: number
-  createdBy: UserRef | null
-  revokedBy: UserRef | null
-  revokedAt: string | null
-  notes: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface AgentAuthLogEvent {
-  _id: string
-  action: 'AGENT_AUTH_SUCCESS' | 'AGENT_AUTH_FAIL'
-  ip?: string
-  userAgent?: string
-  metadata?: {
-    reason?: string
-    path?: string
-    method?: string
-    tokenName?: string
-    tokenPrefix?: string
-  }
-  createdAt: string
-}
-
-interface ScopesCatalog {
-  scopes: string[]
-  adminWildcard: string
-}
-
-interface FormState {
-  name: string
-  scopes: string[]
-  rateLimitPerMin: number
-  expiresAt: string
-  notes: string
-}
-
-const emptyForm: FormState = {
-  name: '',
-  scopes: [],
-  rateLimitPerMin: 120,
-  expiresAt: '',
-  notes: '',
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  try {
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
-  } catch {
-    return '—'
-  }
-}
+import {
+  emptyForm,
+  formatDate,
+  type AgentAuthLogEvent,
+  type AgentToken,
+  type FormState,
+  type ScopesCatalog,
+} from './agent-tokens/types'
+import SecretRevealModal from './agent-tokens/SecretRevealModal'
+import AuthLogModal from './agent-tokens/AuthLogModal'
 
 const AgentTokensList: React.FC = () => {
   const { showToast } = useToast()
@@ -699,67 +637,13 @@ const AgentTokensList: React.FC = () => {
 
       {/* Modal de révélation du secret (création réussie) */}
       {revealedSecret && (
-        <div
-          className="confirm-modal-overlay"
-          onClick={() => setRevealedSecret(null)}
-        >
-          <div
-            className="confirm-modal"
-            style={{ maxWidth: 640, width: '100%' }}
-            onClick={(e) => e.stopPropagation()}
-            role="alertdialog"
-            aria-modal="true"
-          >
-            <div className="confirm-modal__header">
-              <h2 className="confirm-modal__title">🔑 Token créé : {revealedTokenName}</h2>
-            </div>
-            <div className="confirm-modal__body">
-              <p
-                style={{
-                  color: '#f59e0b',
-                  fontWeight: 500,
-                  background: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
-                  padding: '10px 12px',
-                  borderRadius: 6,
-                }}
-              >
-                ⚠️ Ce secret ne sera plus jamais affiché. Copiez-le maintenant et stockez-le
-                dans un gestionnaire de secrets (1Password, Bitwarden…).
-              </p>
-              <div
-                style={{
-                  marginTop: 16,
-                  padding: 12,
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: 6,
-                  fontFamily: 'monospace',
-                  wordBreak: 'break-all',
-                  fontSize: '0.9rem',
-                }}
-              >
-                {revealedSecret}
-              </div>
-              <button
-                type="button"
-                onClick={copySecret}
-                className="portal-button"
-                style={{ marginTop: 12, width: '100%' }}
-              >
-                {copied ? '✓ Copié' : '📋 Copier le secret'}
-              </button>
-            </div>
-            <div className="confirm-modal__footer">
-              <button
-                type="button"
-                className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
-                onClick={() => setRevealedSecret(null)}
-              >
-                J'ai copié, fermer
-              </button>
-            </div>
-          </div>
-        </div>
+        <SecretRevealModal
+          secret={revealedSecret}
+          tokenName={revealedTokenName}
+          copied={copied}
+          onCopy={copySecret}
+          onClose={() => setRevealedSecret(null)}
+        />
       )}
 
       {/* Confirmation révocation */}
@@ -779,107 +663,12 @@ const AgentTokensList: React.FC = () => {
       />
 
       {authLogToken && (
-        <div className="confirm-modal-overlay" onClick={() => setAuthLogToken(null)}>
-          <div
-            className="confirm-modal"
-            style={{ maxWidth: 760, width: '100%' }}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="confirm-modal__header">
-              <h2 className="confirm-modal__title">Journal token : {authLogToken.name}</h2>
-              <button
-                type="button"
-                className="confirm-modal__close"
-                onClick={() => setAuthLogToken(null)}
-                aria-label="Fermer"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="confirm-modal__body">
-              <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
-                Connexions réussies/refusées liées au préfixe {authLogToken.prefix}…
-              </p>
-              {authLogLoading ? (
-                <p style={{ color: 'var(--text-secondary)' }}>Chargement…</p>
-              ) : authLogEvents.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>
-                  Aucun événement de connexion enregistré pour ce token.
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
-                  {authLogEvents.map((event) => {
-                    const success = event.action === 'AGENT_AUTH_SUCCESS'
-                    return (
-                      <div
-                        key={event._id}
-                        style={{
-                          border: `1px solid ${success ? 'rgba(16,185,129,0.28)' : 'rgba(248,113,113,0.32)'}`,
-                          borderRadius: 8,
-                          padding: 12,
-                          background: 'rgba(255,255,255,0.03)',
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            gap: 12,
-                            flexWrap: 'wrap',
-                            marginBottom: 6,
-                          }}
-                        >
-                          <strong style={{ color: success ? '#6ee7b7' : '#f87171' }}>
-                            {success ? 'Connexion réussie' : 'Connexion refusée'}
-                          </strong>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                            {formatDate(event.createdAt)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: 'grid',
-                            gap: 4,
-                            color: 'var(--text-secondary)',
-                            fontSize: '0.85rem',
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          <span>
-                            <strong>Route :</strong> {event.metadata?.method || '—'}{' '}
-                            {event.metadata?.path || '—'}
-                          </span>
-                          <span>
-                            <strong>IP :</strong> {event.ip || '—'}
-                          </span>
-                          {event.metadata?.reason && (
-                            <span>
-                              <strong>Raison :</strong> {event.metadata.reason}
-                            </span>
-                          )}
-                          <span style={{ wordBreak: 'break-word' }}>
-                            <strong>User-agent :</strong> {event.userAgent || '—'}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="confirm-modal__footer">
-              <button
-                type="button"
-                className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
-                onClick={() => setAuthLogToken(null)}
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
+        <AuthLogModal
+          token={authLogToken}
+          events={authLogEvents}
+          loading={authLogLoading}
+          onClose={() => setAuthLogToken(null)}
+        />
       )}
     </div>
   )
