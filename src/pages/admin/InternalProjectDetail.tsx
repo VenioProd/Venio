@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
@@ -59,6 +59,19 @@ export default function InternalProjectDetail() {
 
   const [deliverableInputs, setDeliverableInputs] = useState<Record<string, { title: string; description: string; assignedTo: string }>>({})
   const [selectedMission, setSelectedMission] = useState<string | null>(null)
+
+  // Vue tableau (façon Monday) — toggle + tri + filtres
+  const [missionView, setMissionView] = useState<'cards' | 'table'>('table')
+  type SortKey = 'title' | 'status' | 'progress' | 'dueDate' | 'steps' | 'assignee'
+  const [sortKey, setSortKey] = useState<SortKey>('dueDate')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'A_FAIRE' | 'EN_COURS' | 'TERMINE'>('ALL')
+  const [filterAssignee, setFilterAssignee] = useState<string>('ALL')
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortKey(key); setSortDir('asc') }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -286,6 +299,362 @@ export default function InternalProjectDetail() {
 
   const sc = STATUS_COLORS[project.status] || STATUS_COLORS.ARCHIVE
 
+  const STATUS_RANK: Record<string, number> = { A_FAIRE: 0, EN_COURS: 1, TERMINE: 2 }
+  const displayMissions = missions
+    .filter(m => filterStatus === 'ALL' || m.status === filterStatus)
+    .filter(m => filterAssignee === 'ALL' || (m.assignedTo || []).some(a => a._id === filterAssignee))
+    .slice()
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      switch (sortKey) {
+        case 'title': return a.title.localeCompare(b.title) * dir
+        case 'status': return ((STATUS_RANK[a.status] ?? 0) - (STATUS_RANK[b.status] ?? 0)) * dir
+        case 'progress': return ((a.progress ?? 0) - (b.progress ?? 0)) * dir
+        case 'steps': {
+          const ra = (a.steps?.length ?? 0) ? (a.steps.filter(s => s.done).length / a.steps.length) : 0
+          const rb = (b.steps?.length ?? 0) ? (b.steps.filter(s => s.done).length / b.steps.length) : 0
+          return (ra - rb) * dir
+        }
+        case 'assignee': {
+          const na = (a.assignedTo || [])[0]?.name || ''
+          const nb = (b.assignedTo || [])[0]?.name || ''
+          return na.localeCompare(nb) * dir
+        }
+        case 'dueDate': {
+          const ta = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+          const tb = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+          return (ta - tb) * dir
+        }
+        default: return 0
+      }
+    })
+
+  const sortArrow = (key: SortKey) => sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
+
+  const renderMissionDetail = (m: Mission) => {
+    const doneSteps = m.steps?.filter(s => s.done).length ?? 0
+    const totalSteps = m.steps?.length ?? 0
+    const delivDone = (m.deliverables || []).filter(d => d.done).length
+    return (
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+
+        {/* Progression globale */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', minWidth: 130 }}>📊 Progression globale</span>
+          <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
+            <div style={{ height: '100%', borderRadius: 4, background: m.progress === 100 ? 'linear-gradient(90deg,#10b981,#6ee7b7)' : 'linear-gradient(90deg,#0ea5e9,#38bdf8)', width: `${m.progress ?? 0}%`, transition: 'width .4s' }} />
+          </div>
+          {isSuperAdmin ? (
+            <input type="number" min={0} max={100} defaultValue={m.progress ?? 0} key={`${m._id}-${m.progress}`}
+              onBlur={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); e.target.value = String(v); handleProgressUpdate(m._id, v) }}
+              style={{ width: 48, fontSize: 13, fontWeight: 700, padding: '2px 5px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center' }} />
+          ) : (
+            <span style={{ fontSize: 14, fontWeight: 700, color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 36, textAlign: 'right' }}>{m.progress ?? 0}</span>
+          )}
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>%</span>
+        </div>
+
+        {/* Participants — suivi individuel */}
+        {(m.participants || []).length > 0 && (() => {
+          const avgP = Math.round((m.participants || []).reduce((s, p) => s + (p.progress ?? 0), 0) / m.participants.length)
+          const blockedCount = (m.participants || []).filter(p => p.blocked).length
+          return (
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>👥 Avancement par membre</span>
+                {blockedCount > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>🚫 {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}</span>}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(m.participants || []).map(p => {
+                  const canEdit = isSuperAdmin || p.user?._id === user?._id
+                  const mySteps = (m.steps || []).filter(s => s.assignedTo === p.user?._id)
+                  const myStepsDone = mySteps.filter(s => s.done).length
+                  const commonSteps = (m.steps || []).filter(s => !s.assignedTo)
+                  const commonDone = commonSteps.filter(s => s.done).length
+                  const myDelivs = (m.deliverables || []).filter(d => d.assignedTo === p.user?._id)
+                  const myDelivsDone = myDelivs.filter(d => d.done).length
+                  const isBehind = m.participants.length > 1 && (avgP - (p.progress ?? 0)) >= 30
+                  const avatarColor = p.blocked ? '#f87171' : p.status === 'TERMINE' ? '#6ee7b7' : p.user?._id === user?._id ? '#38bdf8' : '#a5b4cf'
+                  const cardBorder = p.blocked ? 'rgba(248,113,113,0.25)' : isBehind ? 'rgba(251,191,36,0.2)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.05)'
+                  const cardBg = p.blocked ? 'rgba(248,113,113,0.04)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.05)' : 'rgba(255,255,255,0.02)'
+                  const barColor = p.blocked ? '#f87171' : p.progress === 100 ? '#10b981' : '#38bdf8'
+                  return (
+                    <div key={p._id} style={{ borderRadius: 8, background: cardBg, border: `1px solid ${cardBorder}`, overflow: 'hidden' }}>
+                      <div style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: p.blocked ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)', border: `1.5px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(165,180,207,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: avatarColor, flexShrink: 0 }}>
+                            {p.blocked ? '🚫' : p.user?.name?.[0]?.toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{p.user?.name}</span>
+                          {p.user?._id === user?._id && <span style={{ fontSize: 10, color: '#38bdf8', background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: 8, padding: '1px 6px' }}>Moi</span>}
+                          {p.blocked
+                            ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 8, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontWeight: 600 }}>🚫 Bloqué</span>
+                            : <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 10, color: MSC[p.status] || '#a5b4cf', background: MSBg[p.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${MSBo[p.status] || 'rgba(255,255,255,0.1)'}` }}>{MSL[p.status] || p.status}</span>
+                          }
+                          {isBehind && !p.blocked && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24' }}>⚠ En retard</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+                          <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
+                            <div style={{ height: '100%', borderRadius: 3, background: barColor, width: `${p.progress ?? 0}%`, transition: 'width .3s' }} />
+                          </div>
+                          {canEdit ? (
+                            <input type="number" min={0} max={100} defaultValue={p.progress ?? 0} key={`${p._id}-${p.progress}`}
+                              onBlur={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); e.target.value = String(v); handleParticipantUpdate(m._id, p.user?._id, { progress: v }) }}
+                              style={{ width: 42, fontSize: 12, fontWeight: 700, padding: '2px 4px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center' }} />
+                          ) : (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 26, textAlign: 'right' }}>{p.progress ?? 0}</span>
+                          )}
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>%</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: canEdit ? 6 : 0 }}>
+                          {mySteps.length > 0 && <span style={{ fontSize: 11, color: myStepsDone === mySteps.length ? '#6ee7b7' : 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>✅ {myStepsDone}/{mySteps.length} étapes</span>}
+                          {commonSteps.length > 0 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>{commonDone}/{commonSteps.length} communes</span>}
+                          {myDelivs.length > 0 && <span style={{ fontSize: 11, color: myDelivsDone === myDelivs.length ? '#c4b5fd' : 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>📦 {myDelivsDone}/{myDelivs.length} livrables</span>}
+                        </div>
+                        {canEdit && (
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).map(v => (
+                              <button key={v} type="button" onClick={() => handleParticipantUpdate(m._id, p.user?._id, { status: v })}
+                                style={{ padding: '2px 8px', borderRadius: 10, border: `1px solid ${p.status === v ? MSBo[v] : 'rgba(255,255,255,0.08)'}`, background: p.status === v ? MSBg[v] : 'transparent', color: p.status === v ? MSC[v] : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', fontWeight: p.status === v ? 600 : 400, transition: 'all .15s' }}>
+                                {MSL[v]}
+                              </button>
+                            ))}
+                            <button type="button" onClick={() => handleParticipantUpdate(m._id, p.user?._id, { blocked: !p.blocked, blockedReason: p.blocked ? '' : p.blockedReason })}
+                              style={{ padding: '2px 8px', borderRadius: 10, border: `1px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.2)'}`, background: p.blocked ? 'rgba(248,113,113,0.12)' : 'transparent', color: p.blocked ? '#f87171' : 'rgba(248,113,113,0.5)', fontSize: 11, cursor: 'pointer', marginLeft: 'auto', transition: 'all .15s' }}>
+                              {p.blocked ? '🚫 Débloquer' : '🚫 Bloquer'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {p.blocked && (
+                        <div style={{ padding: '7px 12px 10px', borderTop: '1px solid rgba(248,113,113,0.15)', background: 'rgba(248,113,113,0.03)' }}>
+                          {canEdit ? (
+                            <textarea defaultValue={p.blockedReason || ''} key={`br-${p._id}-${p.blockedReason}`}
+                              onBlur={e => handleParticipantUpdate(m._id, p.user?._id, { blockedReason: e.target.value })}
+                              placeholder="Décris le blocage…" rows={2}
+                              style={{ width: '100%', fontSize: 11, padding: '5px 8px', borderRadius: 5, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', resize: 'vertical', lineHeight: 1.5, boxSizing: 'border-box' }} />
+                          ) : p.blockedReason ? (
+                            <p style={{ fontSize: 11, color: '#f87171', margin: 0, lineHeight: 1.5 }}>"{p.blockedReason}"</p>
+                          ) : (
+                            <p style={{ fontSize: 11, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}>Aucune raison précisée</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Étapes */}
+        {(m.steps?.length > 0 || isSuperAdmin) && (
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>✅ Étapes</span>
+              {totalSteps > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#6ee7b7' }}>{doneSteps}/{totalSteps}</span>}
+            </div>
+            {totalSteps > 0 && (
+              <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', marginBottom: 8 }}>
+                <div style={{ height: '100%', borderRadius: 2, background: '#10b981', width: `${Math.round((doneSteps / totalSteps) * 100)}%`, transition: 'width .3s' }} />
+              </div>
+            )}
+            {m.steps.map(step => {
+              const stepAssignee = step.assignedTo ? (m.assignedTo || []).find(a => a._id === step.assignedTo) : null
+              const isOpen = expandedStep === step._id
+              return (
+                <div key={step._id} style={{ marginBottom: 5, borderRadius: 7, background: step.done ? 'rgba(16,185,129,0.04)' : step.waitingReview ? 'rgba(234,179,8,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${step.done ? 'rgba(16,185,129,0.15)' : step.waitingReview ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer' }} onClick={() => setExpandedStep(isOpen ? null : step._id)}>
+                    <input type="checkbox" checked={step.done}
+                      onChange={e => { e.stopPropagation(); !step.waitingReview && handleToggleStep(m._id, m, step._id) }}
+                      onClick={e => e.stopPropagation()}
+                      disabled={step.waitingReview}
+                      style={{ cursor: step.waitingReview ? 'default' : 'pointer', width: 14, height: 14, accentColor: '#10b981', flexShrink: 0 }} />
+                    {stepAssignee && (
+                      <div title={stepAssignee.name} style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#38bdf8', flexShrink: 0 }}>
+                        {stepAssignee.name[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span style={{ fontSize: 12, flex: 1, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.title}</span>
+                    {step.description && <span style={{ fontSize: 10, opacity: .5 }}>📝</span>}
+                    {step.waitingReview && !step.done && (
+                      <span style={{ fontSize: 10, color: '#fde047', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 8, padding: '1px 5px' }}>En attente</span>
+                    )}
+                    {/* Request review — assigned member, not SA */}
+                    {!step.done && !step.waitingReview && !isSuperAdmin && (
+                      <button type="button" onClick={e => { e.stopPropagation(); handleRequestReview(m._id, step._id) }}
+                        style={{ padding: '2px 7px', borderRadius: 7, border: '1px solid rgba(234,179,8,0.3)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: '#fde047' }}>
+                        Vérification
+                      </button>
+                    )}
+                    {/* Validate — SA only */}
+                    {step.waitingReview && !step.done && isSuperAdmin && (
+                      <button type="button" onClick={e => { e.stopPropagation(); handleValidateStep(m._id, step._id) }}
+                        style={{ padding: '2px 7px', borderRadius: 7, border: '1px solid rgba(16,185,129,0.3)', fontSize: 10, cursor: 'pointer', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', fontWeight: 600 }}>
+                        ✓ Valider
+                      </button>
+                    )}
+                    {isSuperAdmin && (
+                      <button type="button" onClick={e => { e.stopPropagation(); handleDeleteStep(m._id, m, step._id) }}
+                        style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', fontSize: 11, padding: '0 2px' }}>✕</button>
+                    )}
+                    <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: .4, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', display: 'inline-block' }}>▾</span>
+                  </div>
+                  {isOpen && (
+                    <div style={{ padding: '0 10px 8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <textarea
+                        defaultValue={step.description || ''}
+                        key={`desc-${step._id}`}
+                        onBlur={e => handleStepDescUpdate(m._id, m, step._id, e.target.value)}
+                        placeholder="Ajouter des détails, notes, contexte…"
+                        rows={3}
+                        style={{ width: '100%', marginTop: 7, fontSize: 12, padding: '6px 9px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-primary)', resize: 'vertical', lineHeight: 1.5, boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {isSuperAdmin && (
+              <div style={{ marginTop: 8 }}>
+                {(m.assignedTo || []).length > 1 && (
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                    <button type="button" onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: '' }))}
+                      style={{ padding: '2px 7px', borderRadius: 9, border: `1px solid ${!stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.35)' : 'rgba(255,255,255,0.07)'}`, background: !stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.08)' : 'transparent', color: !stepAssigneeInputs[m._id] ? '#a5b4cf' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Tous</button>
+                    {(m.assignedTo || []).map(a => (
+                      <button key={a._id} type="button" onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: s[m._id] === a._id ? '' : a._id }))}
+                        style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 9, border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.07)'}`, background: stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.1)' : 'transparent', color: stepAssigneeInputs[m._id] === a._id ? '#38bdf8' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
+                        {a.name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <input className="portal-input" value={stepInputs[m._id] || ''} onChange={e => setStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter' && stepInputs[m._id]?.trim()) handleAddStep(m._id, m, stepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
+                    placeholder="Nouvelle étape… (Entrée)" style={{ fontSize: 12, padding: '5px 9px', flex: 1 }} />
+                  <button type="button" onClick={() => { if (stepInputs[m._id]?.trim()) handleAddStep(m._id, m, stepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
+                    style={{ padding: '5px 10px', borderRadius: 5, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 14, cursor: 'pointer' }}>+</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Livrables attendus */}
+        {((m.deliverables || []).length > 0 || isSuperAdmin) && (
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>📦 Livrables attendus</span>
+              {(m.deliverables || []).length > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#c4b5fd' }}>{delivDone}/{(m.deliverables || []).length}</span>}
+            </div>
+            {(m.deliverables || []).length === 0
+              ? <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.3)', margin: '0 0 8px' }}>Aucun livrable défini</p>
+              : (m.deliverables || []).map(d => {
+                  const da = d.assignedTo ? (m.assignedTo || []).find(a => a._id === d.assignedTo) : null
+                  return (
+                    <div key={d._id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6, padding: '8px 10px', borderRadius: 7, background: d.done ? 'rgba(139,92,246,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${d.done ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.05)'}` }}>
+                      <input type="checkbox" checked={d.done} onChange={() => handleDeliverableToggle(m._id, m, d._id)}
+                        style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#8b5cf6', flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          {da && <div title={da.name} style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#c4b5fd', flexShrink: 0 }}>{da.name[0]?.toUpperCase()}</div>}
+                          <span style={{ fontSize: 12, color: d.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: d.done ? 'line-through' : 'none', fontWeight: 500 }}>{d.title}</span>
+                        </div>
+                        {d.description && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.4 }}>{d.description}</p>}
+                      </div>
+                      {isSuperAdmin && <button type="button" onClick={() => handleDeliverableDelete(m._id, m, d._id)} style={{ fontSize: 10, padding: '2px 5px', borderRadius: 4, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.05)', color: '#f87171', cursor: 'pointer', flexShrink: 0 }}>✕</button>}
+                    </div>
+                  )
+                })
+            }
+            {isSuperAdmin && (
+              <div style={{ marginTop: 6 }}>
+                {(m.assignedTo || []).length > 1 && (
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                    <button type="button" onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: '' } }))}
+                      style={{ padding: '2px 7px', borderRadius: 9, border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.07)'}`, background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.08)' : 'transparent', color: !deliverableInputs[m._id]?.assignedTo ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Tous</button>
+                    {(m.assignedTo || []).map(a => (
+                      <button key={a._id} type="button" onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: s[m._id]?.assignedTo === a._id ? '' : a._id } }))}
+                        style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 9, border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.07)'}`, background: deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.1)' : 'transparent', color: deliverableInputs[m._id]?.assignedTo === a._id ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
+                        {a.name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <input className="portal-input" value={deliverableInputs[m._id]?.title || ''} onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { description: '', assignedTo: '' }), title: e.target.value } }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleDeliverableAdd(m._id, m) }}
+                    placeholder="Livrable attendu…" style={{ fontSize: 12, padding: '5px 9px', flex: 1 }} />
+                  <button type="button" onClick={() => handleDeliverableAdd(m._id, m)}
+                    style={{ padding: '5px 10px', borderRadius: 5, border: '1px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.08)', color: '#c4b5fd', fontSize: 14, cursor: 'pointer' }}>+</button>
+                </div>
+                <input className="portal-input" value={deliverableInputs[m._id]?.description || ''} onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', assignedTo: '' }), description: e.target.value } }))}
+                  placeholder="Description optionnelle" style={{ fontSize: 11, padding: '4px 9px', width: '100%', marginTop: 4, boxSizing: 'border-box' }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Fichiers */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 8 }}>📎 Fichiers ({m.files?.length || 0})</div>
+          {m.files?.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+              {m.files.map(f => (
+                <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: 13 }}>{f.mimeType.includes('pdf') ? '📄' : f.mimeType.startsWith('image/') ? '🖼️' : '📁'}</span>
+                  <button type="button" onClick={async () => {
+                    const token = getToken() || ''
+                    const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`, { headers: { Authorization: `Bearer ${token}` } })
+                    const blob = await resp.blob()
+                    const url = URL.createObjectURL(blob)
+                    window.open(url, '_blank')
+                    setTimeout(() => URL.revokeObjectURL(url), 5000)
+                  }} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: 12, padding: 0, flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.originalName}
+                  </button>
+                  <span style={{ fontSize: 10, color: 'var(--text-secondary)', flexShrink: 0 }}>{(f.size / 1024).toFixed(0)} Ko</span>
+                  <button type="button" onClick={() => handleDeleteFile(m._id, f._id)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.4)', cursor: 'pointer', fontSize: 11, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <input type="file" ref={el => { fileInputRefs.current[m._id] = el }} style={{ display: 'none' }}
+            disabled={uploadingFile[m._id]}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadFile(m._id, f); e.target.value = '' }} />
+          <button type="button" onClick={() => fileInputRefs.current[m._id]?.click()} disabled={uploadingFile[m._id]}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 11px', borderRadius: 7, border: '1px solid rgba(165,180,207,0.18)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {uploadingFile[m._id] ? 'Envoi...' : 'Joindre un fichier'}
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '12px 16px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          {Object.entries(MSL).filter(([v]) => v !== m.status).map(([v, l]) => (
+            <button key={v} type="button" onClick={() => handleMissionStatus(m._id, v)}
+              style={{ padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)' }}>
+              {l}
+            </button>
+          ))}
+          {isSuperAdmin && (
+            <button type="button" onClick={() => handleDeleteMission(m._id)}
+              style={{ padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(248,113,113,0.3)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: '#f87171', marginLeft: 'auto' }}>
+              Supprimer
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="portal-container">
       <div className="portal-card">
@@ -365,15 +734,29 @@ export default function InternalProjectDetail() {
       {/* ─── TAB: MISSIONS ─── */}
       {activeTab === 'missions' && (
         <div className="portal-card" style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Missions ({missions.length})</h2>
-            {isAdminRole && (
-              <button type="button" onClick={() => setShowMissionForm(f => !f)}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.08)', color: '#6ee7b7', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Nouvelle mission
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Toggle vue Tableau / Cartes */}
+              <div style={{ display: 'flex', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                {([['table', 'Tableau'], ['cards', 'Cartes']] as const).map(([v, label]) => (
+                  <button key={v} type="button" onClick={() => setMissionView(v)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', border: 'none', background: missionView === v ? 'rgba(14,165,233,0.14)' : 'transparent', color: missionView === v ? '#38bdf8' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}>
+                    {v === 'table'
+                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                      : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {isAdminRole && (
+                <button type="button" onClick={() => setShowMissionForm(f => !f)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.08)', color: '#6ee7b7', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Nouvelle mission
+                </button>
+              )}
+            </div>
           </div>
 
           {isAdminRole && showMissionForm && (
@@ -396,377 +779,178 @@ export default function InternalProjectDetail() {
             </div>
           ) : (
             <div>
-              {missions.map(m => {
-                const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
-                const doneSteps = m.steps?.filter(s => s.done).length ?? 0
-                const totalSteps = m.steps?.length ?? 0
-                const delivDone = (m.deliverables || []).filter(d => d.done).length
-                const isExpanded = selectedMission === m._id
-                const reviewingSteps = (m.steps || []).filter(s => s.waitingReview && !s.done).length
+              {/* Barre de filtres */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {([['ALL', 'Toutes'], ['A_FAIRE', 'À faire'], ['EN_COURS', 'En cours'], ['TERMINE', 'Terminées']] as const).map(([v, label]) => {
+                    const active = filterStatus === v
+                    const col = v === 'ALL' ? '#a5b4cf' : MSC[v]
+                    return (
+                      <button key={v} type="button" onClick={() => setFilterStatus(v)}
+                        style={{ padding: '4px 11px', borderRadius: 16, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${active ? (v === 'ALL' ? 'rgba(165,180,207,0.4)' : MSBo[v]) : 'rgba(255,255,255,0.08)'}`, background: active ? (v === 'ALL' ? 'rgba(165,180,207,0.1)' : MSBg[v]) : 'transparent', color: active ? col : 'var(--text-secondary)', transition: 'all .15s' }}>
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+                <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
+                  style={{ padding: '5px 10px', borderRadius: 8, fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <option value="ALL">Tous les membres</option>
+                  {project.members.map(mem => <option key={mem._id} value={mem._id}>{mem.name}</option>)}
+                </select>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{displayMissions.length} / {missions.length} mission{missions.length > 1 ? 's' : ''}</span>
+              </div>
 
-                return (
-                  <div key={m._id} style={{ marginBottom: 10, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: `1px solid ${isExpanded ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)'}`, overflow: 'hidden', transition: 'border-color .15s' }}>
-                    {/* Mission header row */}
-                    <div style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 12, justifyContent: 'space-between' }}
-                      onClick={() => setSelectedMission(isExpanded ? null : m._id)}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 5 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, color: MSC[m.status], background: MSBg[m.status], border: `1px solid ${MSBo[m.status]}` }}>
-                            {MSL[m.status]}
-                          </span>
-                          {isOverdue && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>⚠ En retard</span>}
-                          {reviewingSteps > 0 && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', color: '#fde047' }}>🔍 {reviewingSteps} en review</span>}
-                          {m.dueDate && <span style={{ fontSize: 11, color: isOverdue ? '#f87171' : 'var(--text-secondary)' }}>· {new Date(m.dueDate).toLocaleDateString('fr-FR')}</span>}
-                        </div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 3 }}>{m.title}</div>
-                        {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{m.description}</div>}
-                        {/* Assignees */}
-                        {(m.assignedTo || []).length > 0 && (
-                          <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
-                            {(m.assignedTo || []).map(a => (
-                              <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 10, background: 'rgba(165,180,207,0.08)', border: '1px solid rgba(165,180,207,0.15)' }}>
-                                <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#a5b4cf' }}>{a.name[0]?.toUpperCase()}</div>
-                                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                        {/* Mini progress */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                            <div style={{ height: '100%', borderRadius: 2, background: m.progress === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 26 }}>{m.progress ?? 0}%</span>
-                        </div>
-                        {totalSteps > 0 && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{doneSteps}/{totalSteps} étapes</span>}
-                        <span style={{ fontSize: 11, color: '#38bdf8', opacity: .5, transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform .2s', display: 'inline-block' }}>›</span>
-                      </div>
-                    </div>
-
-                    {/* Expanded detail */}
-                    {isExpanded && (
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-
-                        {/* Progression globale */}
-                        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', minWidth: 130 }}>📊 Progression globale</span>
-                          <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
-                            <div style={{ height: '100%', borderRadius: 4, background: m.progress === 100 ? 'linear-gradient(90deg,#10b981,#6ee7b7)' : 'linear-gradient(90deg,#0ea5e9,#38bdf8)', width: `${m.progress ?? 0}%`, transition: 'width .4s' }} />
-                          </div>
-                          {isSuperAdmin ? (
-                            <input type="number" min={0} max={100} defaultValue={m.progress ?? 0} key={`${m._id}-${m.progress}`}
-                              onBlur={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); e.target.value = String(v); handleProgressUpdate(m._id, v) }}
-                              style={{ width: 48, fontSize: 13, fontWeight: 700, padding: '2px 5px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center' }} />
-                          ) : (
-                            <span style={{ fontSize: 14, fontWeight: 700, color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 36, textAlign: 'right' }}>{m.progress ?? 0}</span>
-                          )}
-                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>%</span>
-                        </div>
-
-                        {/* Participants — suivi individuel */}
-                        {(m.participants || []).length > 0 && (() => {
-                          const avgP = Math.round((m.participants || []).reduce((s, p) => s + (p.progress ?? 0), 0) / m.participants.length)
-                          const blockedCount = (m.participants || []).filter(p => p.blocked).length
-                          return (
-                            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>👥 Avancement par membre</span>
-                                {blockedCount > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>🚫 {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}</span>}
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {(m.participants || []).map(p => {
-                                  const canEdit = isSuperAdmin || p.user?._id === user?._id
-                                  const mySteps = (m.steps || []).filter(s => s.assignedTo === p.user?._id)
-                                  const myStepsDone = mySteps.filter(s => s.done).length
-                                  const commonSteps = (m.steps || []).filter(s => !s.assignedTo)
-                                  const commonDone = commonSteps.filter(s => s.done).length
-                                  const myDelivs = (m.deliverables || []).filter(d => d.assignedTo === p.user?._id)
-                                  const myDelivsDone = myDelivs.filter(d => d.done).length
-                                  const isBehind = m.participants.length > 1 && (avgP - (p.progress ?? 0)) >= 30
-                                  const avatarColor = p.blocked ? '#f87171' : p.status === 'TERMINE' ? '#6ee7b7' : p.user?._id === user?._id ? '#38bdf8' : '#a5b4cf'
-                                  const cardBorder = p.blocked ? 'rgba(248,113,113,0.25)' : isBehind ? 'rgba(251,191,36,0.2)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.05)'
-                                  const cardBg = p.blocked ? 'rgba(248,113,113,0.04)' : p.user?._id === user?._id ? 'rgba(14,165,233,0.05)' : 'rgba(255,255,255,0.02)'
-                                  const barColor = p.blocked ? '#f87171' : p.progress === 100 ? '#10b981' : '#38bdf8'
-                                  return (
-                                    <div key={p._id} style={{ borderRadius: 8, background: cardBg, border: `1px solid ${cardBorder}`, overflow: 'hidden' }}>
-                                      <div style={{ padding: '10px 12px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
-                                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: p.blocked ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)', border: `1.5px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(165,180,207,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: avatarColor, flexShrink: 0 }}>
-                                            {p.blocked ? '🚫' : p.user?.name?.[0]?.toUpperCase()}
-                                          </div>
-                                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{p.user?.name}</span>
-                                          {p.user?._id === user?._id && <span style={{ fontSize: 10, color: '#38bdf8', background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: 8, padding: '1px 6px' }}>Moi</span>}
-                                          {p.blocked
-                                            ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 8, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontWeight: 600 }}>🚫 Bloqué</span>
-                                            : <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 10, color: MSC[p.status] || '#a5b4cf', background: MSBg[p.status] || 'rgba(255,255,255,0.05)', border: `1px solid ${MSBo[p.status] || 'rgba(255,255,255,0.1)'}` }}>{MSL[p.status] || p.status}</span>
-                                          }
-                                          {isBehind && !p.blocked && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24' }}>⚠ En retard</span>}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-                                          <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
-                                            <div style={{ height: '100%', borderRadius: 3, background: barColor, width: `${p.progress ?? 0}%`, transition: 'width .3s' }} />
-                                          </div>
-                                          {canEdit ? (
-                                            <input type="number" min={0} max={100} defaultValue={p.progress ?? 0} key={`${p._id}-${p.progress}`}
-                                              onBlur={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); e.target.value = String(v); handleParticipantUpdate(m._id, p.user?._id, { progress: v }) }}
-                                              style={{ width: 42, fontSize: 12, fontWeight: 700, padding: '2px 4px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', textAlign: 'center' }} />
-                                          ) : (
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: p.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 26, textAlign: 'right' }}>{p.progress ?? 0}</span>
-                                          )}
-                                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>%</span>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: canEdit ? 6 : 0 }}>
-                                          {mySteps.length > 0 && <span style={{ fontSize: 11, color: myStepsDone === mySteps.length ? '#6ee7b7' : 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>✅ {myStepsDone}/{mySteps.length} étapes</span>}
-                                          {commonSteps.length > 0 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>{commonDone}/{commonSteps.length} communes</span>}
-                                          {myDelivs.length > 0 && <span style={{ fontSize: 11, color: myDelivsDone === myDelivs.length ? '#c4b5fd' : 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px', border: '1px solid rgba(255,255,255,0.06)' }}>📦 {myDelivsDone}/{myDelivs.length} livrables</span>}
-                                        </div>
-                                        {canEdit && (
-                                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                                            {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const).map(v => (
-                                              <button key={v} type="button" onClick={() => handleParticipantUpdate(m._id, p.user?._id, { status: v })}
-                                                style={{ padding: '2px 8px', borderRadius: 10, border: `1px solid ${p.status === v ? MSBo[v] : 'rgba(255,255,255,0.08)'}`, background: p.status === v ? MSBg[v] : 'transparent', color: p.status === v ? MSC[v] : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', fontWeight: p.status === v ? 600 : 400, transition: 'all .15s' }}>
-                                                {MSL[v]}
-                                              </button>
-                                            ))}
-                                            <button type="button" onClick={() => handleParticipantUpdate(m._id, p.user?._id, { blocked: !p.blocked, blockedReason: p.blocked ? '' : p.blockedReason })}
-                                              style={{ padding: '2px 8px', borderRadius: 10, border: `1px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.2)'}`, background: p.blocked ? 'rgba(248,113,113,0.12)' : 'transparent', color: p.blocked ? '#f87171' : 'rgba(248,113,113,0.5)', fontSize: 11, cursor: 'pointer', marginLeft: 'auto', transition: 'all .15s' }}>
-                                              {p.blocked ? '🚫 Débloquer' : '🚫 Bloquer'}
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {p.blocked && (
-                                        <div style={{ padding: '7px 12px 10px', borderTop: '1px solid rgba(248,113,113,0.15)', background: 'rgba(248,113,113,0.03)' }}>
-                                          {canEdit ? (
-                                            <textarea defaultValue={p.blockedReason || ''} key={`br-${p._id}-${p.blockedReason}`}
-                                              onBlur={e => handleParticipantUpdate(m._id, p.user?._id, { blockedReason: e.target.value })}
-                                              placeholder="Décris le blocage…" rows={2}
-                                              style={{ width: '100%', fontSize: 11, padding: '5px 8px', borderRadius: 5, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', resize: 'vertical', lineHeight: 1.5, boxSizing: 'border-box' }} />
-                                          ) : p.blockedReason ? (
-                                            <p style={{ fontSize: 11, color: '#f87171', margin: 0, lineHeight: 1.5 }}>"{p.blockedReason}"</p>
-                                          ) : (
-                                            <p style={{ fontSize: 11, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}>Aucune raison précisée</p>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )
-                        })()}
-
-                        {/* Étapes */}
-                        {(m.steps?.length > 0 || isSuperAdmin) && (
-                          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>✅ Étapes</span>
-                              {totalSteps > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#6ee7b7' }}>{doneSteps}/{totalSteps}</span>}
-                            </div>
-                            {totalSteps > 0 && (
-                              <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', marginBottom: 8 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: '#10b981', width: `${Math.round((doneSteps / totalSteps) * 100)}%`, transition: 'width .3s' }} />
-                              </div>
-                            )}
-                            {m.steps.map(step => {
-                              const stepAssignee = step.assignedTo ? (m.assignedTo || []).find(a => a._id === step.assignedTo) : null
-                              const isOpen = expandedStep === step._id
-                              return (
-                                <div key={step._id} style={{ marginBottom: 5, borderRadius: 7, background: step.done ? 'rgba(16,185,129,0.04)' : step.waitingReview ? 'rgba(234,179,8,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${step.done ? 'rgba(16,185,129,0.15)' : step.waitingReview ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer' }} onClick={() => setExpandedStep(isOpen ? null : step._id)}>
-                                    <input type="checkbox" checked={step.done}
-                                      onChange={e => { e.stopPropagation(); !step.waitingReview && handleToggleStep(m._id, m, step._id) }}
-                                      onClick={e => e.stopPropagation()}
-                                      disabled={step.waitingReview}
-                                      style={{ cursor: step.waitingReview ? 'default' : 'pointer', width: 14, height: 14, accentColor: '#10b981', flexShrink: 0 }} />
-                                    {stepAssignee && (
-                                      <div title={stepAssignee.name} style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#38bdf8', flexShrink: 0 }}>
-                                        {stepAssignee.name[0]?.toUpperCase()}
-                                      </div>
-                                    )}
-                                    <span style={{ fontSize: 12, flex: 1, color: step.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.title}</span>
-                                    {step.description && <span style={{ fontSize: 10, opacity: .5 }}>📝</span>}
-                                    {step.waitingReview && !step.done && (
-                                      <span style={{ fontSize: 10, color: '#fde047', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 8, padding: '1px 5px' }}>En attente</span>
-                                    )}
-                                    {/* Request review — assigned member, not SA */}
-                                    {!step.done && !step.waitingReview && !isSuperAdmin && (
-                                      <button type="button" onClick={e => { e.stopPropagation(); handleRequestReview(m._id, step._id) }}
-                                        style={{ padding: '2px 7px', borderRadius: 7, border: '1px solid rgba(234,179,8,0.3)', fontSize: 10, cursor: 'pointer', background: 'transparent', color: '#fde047' }}>
-                                        Vérification
-                                      </button>
-                                    )}
-                                    {/* Validate — SA only */}
-                                    {step.waitingReview && !step.done && isSuperAdmin && (
-                                      <button type="button" onClick={e => { e.stopPropagation(); handleValidateStep(m._id, step._id) }}
-                                        style={{ padding: '2px 7px', borderRadius: 7, border: '1px solid rgba(16,185,129,0.3)', fontSize: 10, cursor: 'pointer', background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', fontWeight: 600 }}>
-                                        ✓ Valider
-                                      </button>
-                                    )}
-                                    {isSuperAdmin && (
-                                      <button type="button" onClick={e => { e.stopPropagation(); handleDeleteStep(m._id, m, step._id) }}
-                                        style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', fontSize: 11, padding: '0 2px' }}>✕</button>
-                                    )}
-                                    <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: .4, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', display: 'inline-block' }}>▾</span>
-                                  </div>
-                                  {isOpen && (
-                                    <div style={{ padding: '0 10px 8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                                      <textarea
-                                        defaultValue={step.description || ''}
-                                        key={`desc-${step._id}`}
-                                        onBlur={e => handleStepDescUpdate(m._id, m, step._id, e.target.value)}
-                                        placeholder="Ajouter des détails, notes, contexte…"
-                                        rows={3}
-                                        style={{ width: '100%', marginTop: 7, fontSize: 12, padding: '6px 9px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-primary)', resize: 'vertical', lineHeight: 1.5, boxSizing: 'border-box' }}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              )
-                            })}
-                            {isSuperAdmin && (
-                              <div style={{ marginTop: 8 }}>
-                                {(m.assignedTo || []).length > 1 && (
-                                  <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
-                                    <button type="button" onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: '' }))}
-                                      style={{ padding: '2px 7px', borderRadius: 9, border: `1px solid ${!stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.35)' : 'rgba(255,255,255,0.07)'}`, background: !stepAssigneeInputs[m._id] ? 'rgba(165,180,207,0.08)' : 'transparent', color: !stepAssigneeInputs[m._id] ? '#a5b4cf' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Tous</button>
-                                    {(m.assignedTo || []).map(a => (
-                                      <button key={a._id} type="button" onClick={() => setStepAssigneeInputs(s => ({ ...s, [m._id]: s[m._id] === a._id ? '' : a._id }))}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 9, border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.07)'}`, background: stepAssigneeInputs[m._id] === a._id ? 'rgba(56,189,248,0.1)' : 'transparent', color: stepAssigneeInputs[m._id] === a._id ? '#38bdf8' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
-                                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
-                                        {a.name.split(' ')[0]}
-                                      </button>
+              {displayMissions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-secondary)', fontSize: 13 }}>
+                  Aucune mission ne correspond aux filtres
+                </div>
+              ) : missionView === 'table' ? (
+                /* ─── Vue tableau (façon Monday) ─── */
+                <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        {([['title', 'Mission'], ['status', 'Statut'], ['assignee', 'Assignés'], ['progress', 'Progression'], ['steps', 'Étapes']] as const).map(([key, label]) => (
+                          <th key={key} onClick={() => toggleSort(key)}
+                            style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: sortKey === key ? '#38bdf8' : 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {label}{sortArrow(key)}
+                          </th>
+                        ))}
+                        <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Livrables</th>
+                        <th onClick={() => toggleSort('dueDate')}
+                          style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: sortKey === 'dueDate' ? '#38bdf8' : 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          Deadline{sortArrow('dueDate')}
+                        </th>
+                        <th style={{ width: 28, borderBottom: '1px solid rgba(255,255,255,0.08)' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayMissions.map(m => {
+                        const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
+                        const doneSteps = m.steps?.filter(s => s.done).length ?? 0
+                        const totalSteps = m.steps?.length ?? 0
+                        const delivTotal = (m.deliverables || []).length
+                        const delivDone = (m.deliverables || []).filter(d => d.done).length
+                        const reviewingSteps = (m.steps || []).filter(s => s.waitingReview && !s.done).length
+                        const isExpanded = selectedMission === m._id
+                        return (
+                          <Fragment key={m._id}>
+                            <tr onClick={() => setSelectedMission(isExpanded ? null : m._id)}
+                              style={{ cursor: 'pointer', borderBottom: isExpanded ? 'none' : '1px solid rgba(255,255,255,0.05)', background: isExpanded ? 'rgba(56,189,248,0.06)' : isOverdue ? 'rgba(248,113,113,0.04)' : 'transparent', transition: 'background .12s' }}>
+                              <td style={{ padding: '10px 14px', maxWidth: 320 }}>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: m.description ? 2 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                                {m.description && <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{m.description}</div>}
+                                {reviewingSteps > 0 && <span style={{ display: 'inline-block', marginTop: 3, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', color: '#fde047' }}>🔍 {reviewingSteps} en review</span>}
+                              </td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 12, color: MSC[m.status], background: MSBg[m.status], border: `1px solid ${MSBo[m.status]}` }}>{MSL[m.status]}</span>
+                              </td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                                {(m.assignedTo || []).length === 0 ? (
+                                  <span style={{ fontSize: 11, color: 'rgba(165,180,207,0.4)' }}>—</span>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    {(m.assignedTo || []).slice(0, 4).map((a, i) => (
+                                      <div key={a._id} title={a.name} style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(165,180,207,0.18)', border: '1.5px solid var(--bg-secondary, #0b1220)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#a5b4cf', marginLeft: i === 0 ? 0 : -7 }}>{a.name[0]?.toUpperCase()}</div>
                                     ))}
+                                    {(m.assignedTo || []).length > 4 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 5 }}>+{(m.assignedTo || []).length - 4}</span>}
                                   </div>
                                 )}
-                                <div style={{ display: 'flex', gap: 5 }}>
-                                  <input className="portal-input" value={stepInputs[m._id] || ''} onChange={e => setStepInputs(s => ({ ...s, [m._id]: e.target.value }))}
-                                    onKeyDown={e => { if (e.key === 'Enter' && stepInputs[m._id]?.trim()) handleAddStep(m._id, m, stepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
-                                    placeholder="Nouvelle étape… (Entrée)" style={{ fontSize: 12, padding: '5px 9px', flex: 1 }} />
-                                  <button type="button" onClick={() => { if (stepInputs[m._id]?.trim()) handleAddStep(m._id, m, stepInputs[m._id].trim(), stepAssigneeInputs[m._id] || undefined) }}
-                                    style={{ padding: '5px 10px', borderRadius: 5, border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)', color: '#38bdf8', fontSize: 14, cursor: 'pointer' }}>+</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Livrables attendus */}
-                        {((m.deliverables || []).length > 0 || isSuperAdmin) && (
-                          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)' }}>📦 Livrables attendus</span>
-                              {(m.deliverables || []).length > 0 && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 8, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#c4b5fd' }}>{delivDone}/{(m.deliverables || []).length}</span>}
-                            </div>
-                            {(m.deliverables || []).length === 0
-                              ? <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.3)', margin: '0 0 8px' }}>Aucun livrable défini</p>
-                              : (m.deliverables || []).map(d => {
-                                  const da = d.assignedTo ? (m.assignedTo || []).find(a => a._id === d.assignedTo) : null
-                                  return (
-                                    <div key={d._id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6, padding: '8px 10px', borderRadius: 7, background: d.done ? 'rgba(139,92,246,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${d.done ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.05)'}` }}>
-                                      <input type="checkbox" checked={d.done} onChange={() => handleDeliverableToggle(m._id, m, d._id)}
-                                        style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#8b5cf6', flexShrink: 0, marginTop: 2 }} />
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                          {da && <div title={da.name} style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#c4b5fd', flexShrink: 0 }}>{da.name[0]?.toUpperCase()}</div>}
-                                          <span style={{ fontSize: 12, color: d.done ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: d.done ? 'line-through' : 'none', fontWeight: 500 }}>{d.title}</span>
-                                        </div>
-                                        {d.description && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.4 }}>{d.description}</p>}
-                                      </div>
-                                      {isSuperAdmin && <button type="button" onClick={() => handleDeliverableDelete(m._id, m, d._id)} style={{ fontSize: 10, padding: '2px 5px', borderRadius: 4, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.05)', color: '#f87171', cursor: 'pointer', flexShrink: 0 }}>✕</button>}
-                                    </div>
-                                  )
-                                })
-                            }
-                            {isSuperAdmin && (
-                              <div style={{ marginTop: 6 }}>
-                                {(m.assignedTo || []).length > 1 && (
-                                  <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
-                                    <button type="button" onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: '' } }))}
-                                      style={{ padding: '2px 7px', borderRadius: 9, border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.07)'}`, background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(139,92,246,0.08)' : 'transparent', color: !deliverableInputs[m._id]?.assignedTo ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Tous</button>
-                                    {(m.assignedTo || []).map(a => (
-                                      <button key={a._id} type="button" onClick={() => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', description: '' }), assignedTo: s[m._id]?.assignedTo === a._id ? '' : a._id } }))}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 9, border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.07)'}`, background: deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(139,92,246,0.1)' : 'transparent', color: deliverableInputs[m._id]?.assignedTo === a._id ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
-                                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(165,180,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 700 }}>{a.name[0]?.toUpperCase()}</div>
-                                        {a.name.split(' ')[0]}
-                                      </button>
-                                    ))}
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120 }}>
+                                  <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                                    <div style={{ height: '100%', borderRadius: 3, background: m.progress === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
                                   </div>
-                                )}
-                                <div style={{ display: 'flex', gap: 5 }}>
-                                  <input className="portal-input" value={deliverableInputs[m._id]?.title || ''} onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { description: '', assignedTo: '' }), title: e.target.value } }))}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleDeliverableAdd(m._id, m) }}
-                                    placeholder="Livrable attendu…" style={{ fontSize: 12, padding: '5px 9px', flex: 1 }} />
-                                  <button type="button" onClick={() => handleDeliverableAdd(m._id, m)}
-                                    style={{ padding: '5px 10px', borderRadius: 5, border: '1px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.08)', color: '#c4b5fd', fontSize: 14, cursor: 'pointer' }}>+</button>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 32, textAlign: 'right' }}>{m.progress ?? 0}%</span>
                                 </div>
-                                <input className="portal-input" value={deliverableInputs[m._id]?.description || ''} onChange={e => setDeliverableInputs(s => ({ ...s, [m._id]: { ...(s[m._id] || { title: '', assignedTo: '' }), description: e.target.value } }))}
-                                  placeholder="Description optionnelle" style={{ fontSize: 11, padding: '4px 9px', width: '100%', marginTop: 4, boxSizing: 'border-box' }} />
+                              </td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: totalSteps > 0 && doneSteps === totalSteps ? '#6ee7b7' : 'var(--text-secondary)', fontSize: 12 }}>
+                                {totalSteps > 0 ? `${doneSteps}/${totalSteps}` : '—'}
+                              </td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: delivTotal > 0 && delivDone === delivTotal ? '#c4b5fd' : 'var(--text-secondary)', fontSize: 12 }}>
+                                {delivTotal > 0 ? `${delivDone}/${delivTotal}` : '—'}
+                              </td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: 12, color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontWeight: isOverdue ? 600 : 400 }}>
+                                {m.dueDate ? <>{isOverdue && '⚠ '}{new Date(m.dueDate).toLocaleDateString('fr-FR')}</> : '—'}
+                              </td>
+                              <td style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', opacity: .5 }}>
+                                <span style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }}>›</span>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(56,189,248,0.04)' }}>
+                                <td colSpan={8} style={{ padding: 0 }}>
+                                  {renderMissionDetail(m)}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* ─── Vue cartes ─── */
+                <div>
+                  {displayMissions.map(m => {
+                    const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
+                    const doneSteps = m.steps?.filter(s => s.done).length ?? 0
+                    const totalSteps = m.steps?.length ?? 0
+                    const isExpanded = selectedMission === m._id
+                    const reviewingSteps = (m.steps || []).filter(s => s.waitingReview && !s.done).length
+
+                    return (
+                      <div key={m._id} style={{ marginBottom: 10, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: `1px solid ${isExpanded ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)'}`, overflow: 'hidden', transition: 'border-color .15s' }}>
+                        {/* Mission header row */}
+                        <div style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 12, justifyContent: 'space-between' }}
+                          onClick={() => setSelectedMission(isExpanded ? null : m._id)}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 5 }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, color: MSC[m.status], background: MSBg[m.status], border: `1px solid ${MSBo[m.status]}` }}>
+                                {MSL[m.status]}
+                              </span>
+                              {isOverdue && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>⚠ En retard</span>}
+                              {reviewingSteps > 0 && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', color: '#fde047' }}>🔍 {reviewingSteps} en review</span>}
+                              {m.dueDate && <span style={{ fontSize: 11, color: isOverdue ? '#f87171' : 'var(--text-secondary)' }}>· {new Date(m.dueDate).toLocaleDateString('fr-FR')}</span>}
+                            </div>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 3 }}>{m.title}</div>
+                            {m.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{m.description}</div>}
+                            {/* Assignees */}
+                            {(m.assignedTo || []).length > 0 && (
+                              <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+                                {(m.assignedTo || []).map(a => (
+                                  <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 10, background: 'rgba(165,180,207,0.08)', border: '1px solid rgba(165,180,207,0.15)' }}>
+                                    <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(165,180,207,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#a5b4cf' }}>{a.name[0]?.toUpperCase()}</div>
+                                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.name}</span>
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </div>
-                        )}
-
-                        {/* Fichiers */}
-                        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--text-secondary)', marginBottom: 8 }}>📎 Fichiers ({m.files?.length || 0})</div>
-                          {m.files?.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                              {m.files.map(f => (
-                                <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <span style={{ fontSize: 13 }}>{f.mimeType.includes('pdf') ? '📄' : f.mimeType.startsWith('image/') ? '🖼️' : '📁'}</span>
-                                  <button type="button" onClick={async () => {
-                                    const token = getToken() || ''
-                                    const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`, { headers: { Authorization: `Bearer ${token}` } })
-                                    const blob = await resp.blob()
-                                    const url = URL.createObjectURL(blob)
-                                    window.open(url, '_blank')
-                                    setTimeout(() => URL.revokeObjectURL(url), 5000)
-                                  }} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: 12, padding: 0, flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {f.originalName}
-                                  </button>
-                                  <span style={{ fontSize: 10, color: 'var(--text-secondary)', flexShrink: 0 }}>{(f.size / 1024).toFixed(0)} Ko</span>
-                                  <button type="button" onClick={() => handleDeleteFile(m._id, f._id)}
-                                    style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,0.4)', cursor: 'pointer', fontSize: 11, padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                </div>
-                              ))}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                            {/* Mini progress */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: m.progress === 100 ? '#10b981' : '#38bdf8', width: `${m.progress ?? 0}%`, transition: 'width .3s' }} />
+                              </div>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: m.progress === 100 ? '#6ee7b7' : '#38bdf8', minWidth: 26 }}>{m.progress ?? 0}%</span>
                             </div>
-                          )}
-                          <input type="file" ref={el => { fileInputRefs.current[m._id] = el }} style={{ display: 'none' }}
-                            disabled={uploadingFile[m._id]}
-                            onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadFile(m._id, f); e.target.value = '' }} />
-                          <button type="button" onClick={() => fileInputRefs.current[m._id]?.click()} disabled={uploadingFile[m._id]}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 11px', borderRadius: 7, border: '1px solid rgba(165,180,207,0.18)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            {uploadingFile[m._id] ? 'Envoi...' : 'Joindre un fichier'}
-                          </button>
+                            {totalSteps > 0 && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{doneSteps}/{totalSteps} étapes</span>}
+                            <span style={{ fontSize: 11, color: '#38bdf8', opacity: .5, transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform .2s', display: 'inline-block' }}>›</span>
+                          </div>
                         </div>
 
-                        {/* Actions */}
-                        <div style={{ padding: '12px 16px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                          {Object.entries(MSL).filter(([v]) => v !== m.status).map(([v, l]) => (
-                            <button key={v} type="button" onClick={() => handleMissionStatus(m._id, v)}
-                              style={{ padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: 'var(--text-secondary)' }}>
-                              {l}
-                            </button>
-                          ))}
-                          {isSuperAdmin && (
-                            <button type="button" onClick={() => handleDeleteMission(m._id)}
-                              style={{ padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(248,113,113,0.3)', fontSize: 12, cursor: 'pointer', background: 'transparent', color: '#f87171', marginLeft: 'auto' }}>
-                              Supprimer
-                            </button>
-                          )}
-                        </div>
+                        {/* Expanded detail */}
+                        {isExpanded && renderMissionDetail(m)}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+              )}
+
               <div style={{ marginTop: 10, textAlign: 'right' }}>
                 <Link to="/admin/gestion?view=missions" style={{ fontSize: 12, color: '#0ea5e9', textDecoration: 'none' }}>
                   Voir toutes les missions dans Gestion →
