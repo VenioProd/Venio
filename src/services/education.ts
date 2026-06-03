@@ -8,22 +8,48 @@ export type EducationSessionStatus = 'PLANIFIEE' | 'EN_COURS' | 'TERMINEE' | 'AN
 export type AttendanceState = 'PRESENT' | 'ABSENT' | 'RETARD' | 'EXCUSE' | 'NON_RENSEIGNE'
 export type EducationAssignmentStatus = 'DRAFT' | 'OUVERT' | 'EN_CORRECTION' | 'CLOS' | 'ARCHIVE'
 export type EducationAssignmentKind = 'DEVOIR' | 'PROJET' | 'EXPOSE' | 'QCM' | 'EXAMEN' | 'AUTRE'
-export type EducationSubmissionStatus =
-  | 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
+export type EducationSubmissionStatus = 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
 
 export type NoteBlockType =
-  | 'heading' | 'paragraph' | 'checklist' | 'bullet' | 'numbered'
-  | 'quote' | 'callout' | 'code' | 'divider' | 'link'
+  | 'heading'
+  | 'paragraph'
+  | 'checklist'
+  | 'bullet'
+  | 'numbered'
+  | 'quote'
+  | 'callout'
+  | 'code'
+  | 'divider'
+  | 'link'
+  | 'mention'
+  | 'subpage'
+
+export type ClassPropertyType = 'text' | 'number' | 'date' | 'select' | 'url' | 'checkbox'
+
+export interface EducationClassProperty {
+  id: string
+  label: string
+  type: ClassPropertyType
+  value: string
+}
 
 export type NoteLinkType = 'class' | 'session' | 'assignment' | 'student'
 
 export type EducationDocumentParentType =
-  | 'class' | 'session' | 'assignment' | 'submission' | 'student' | 'note' | 'standalone'
+  | 'class'
+  | 'session'
+  | 'assignment'
+  | 'submission'
+  | 'student'
+  | 'note'
+  | 'standalone'
 
 export interface EducationClass {
   _id: string
   owner: string
   name: string
+  emoji: string
+  cover: string
   school: string
   level: string
   program: string
@@ -33,6 +59,8 @@ export interface EducationClass {
   status: EducationClassStatus
   color: string
   tags: string[]
+  properties: EducationClassProperty[]
+  homeNote: string | null
   notes: string
   deletedAt: string | null
   createdAt: string
@@ -142,6 +170,7 @@ export interface EducationNote {
   markdown: string
   links: { type: NoteLinkType; refId: string }[]
   tags: string[]
+  parentNote: string | null
   pinned: boolean
   archived: boolean
   createdAt: string
@@ -274,8 +303,16 @@ export const SUBMISSION_STATUS_LABEL: Record<EducationSubmissionStatus, string> 
 }
 
 export const CLASS_COLOR_PALETTE = [
-  '#22C55E', '#0EA5E9', '#A855F7', '#F59E0B', '#EF4444',
-  '#10B981', '#8B5CF6', '#EC4899', '#F97316', '#14B8A6',
+  '#22C55E',
+  '#0EA5E9',
+  '#A855F7',
+  '#F59E0B',
+  '#EF4444',
+  '#10B981',
+  '#8B5CF6',
+  '#EC4899',
+  '#F97316',
+  '#14B8A6',
 ]
 
 // ─── API calls ──────────────────────────────────────────────────────────────
@@ -290,14 +327,22 @@ export async function fetchDashboard(params: { school?: string } = {}): Promise<
 }
 
 // Classes
-export async function listClasses(params: { status?: string; search?: string } = {}): Promise<{ classes: EducationClass[]; total: number }> {
+export async function listClasses(
+  params: { status?: string; search?: string } = {},
+): Promise<{ classes: EducationClass[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.status) qs.set('status', params.status)
   if (params.search) qs.set('search', params.search)
   return await apiFetch(`${base}/classes${qs.toString() ? '?' + qs.toString() : ''}`)
 }
 
-export async function getClass(id: string): Promise<{ class: EducationClass; stats: { studentCount: number; sessionCount: number; assignmentCount: number; openAssignments: number }; nextSession: EducationSession | null }> {
+export async function getClass(
+  id: string,
+): Promise<{
+  class: EducationClass
+  stats: { studentCount: number; sessionCount: number; assignmentCount: number; openAssignments: number }
+  nextSession: EducationSession | null
+}> {
   return await apiFetch(`${base}/classes/${id}`)
 }
 
@@ -313,8 +358,15 @@ export async function deleteClass(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/classes/${id}`, { method: 'DELETE' })
 }
 
+/** Page racine (canvas de blocs) de la classe — créée à la volée côté serveur. */
+export async function getClassHome(classId: string): Promise<{ note: EducationNote }> {
+  return await apiFetch(`${base}/classes/${classId}/home`)
+}
+
 // Students
-export async function listStudents(params: { classId?: string; status?: string; search?: string } = {}): Promise<{ students: EducationStudent[]; total: number }> {
+export async function listStudents(
+  params: { classId?: string; status?: string; search?: string } = {},
+): Promise<{ students: EducationStudent[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.classId) qs.set('classId', params.classId)
   if (params.status) qs.set('status', params.status)
@@ -322,18 +374,26 @@ export async function listStudents(params: { classId?: string; status?: string; 
   return await apiFetch(`${base}/students${qs.toString() ? '?' + qs.toString() : ''}`)
 }
 
-export async function createStudent(data: Partial<EducationStudent> & { classId: string; lastName: string }): Promise<{ student: EducationStudent }> {
+export async function createStudent(
+  data: Partial<EducationStudent> & { classId: string; lastName: string },
+): Promise<{ student: EducationStudent }> {
   return await apiFetch(`${base}/students`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function importStudentsCsv(classId: string, csv: string): Promise<{ inserted: number; students: EducationStudent[] }> {
+export async function importStudentsCsv(
+  classId: string,
+  csv: string,
+): Promise<{ inserted: number; students: EducationStudent[] }> {
   return await apiFetch(`${base}/students/import`, {
     method: 'POST',
     body: JSON.stringify({ classId, csv }),
   })
 }
 
-export async function updateStudent(id: string, data: Partial<EducationStudent>): Promise<{ student: EducationStudent }> {
+export async function updateStudent(
+  id: string,
+  data: Partial<EducationStudent>,
+): Promise<{ student: EducationStudent }> {
   return await apiFetch(`${base}/students/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
@@ -342,7 +402,9 @@ export async function deleteStudent(id: string): Promise<{ success: true }> {
 }
 
 // Sessions
-export async function listSessions(params: { classId?: string; from?: string; to?: string; status?: string } = {}): Promise<{ sessions: EducationSession[]; total: number }> {
+export async function listSessions(
+  params: { classId?: string; from?: string; to?: string; status?: string } = {},
+): Promise<{ sessions: EducationSession[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.classId) qs.set('classId', params.classId)
   if (params.from) qs.set('from', params.from)
@@ -355,11 +417,16 @@ export async function getSession(id: string): Promise<{ session: EducationSessio
   return await apiFetch(`${base}/sessions/${id}`)
 }
 
-export async function createSession(data: Partial<EducationSession> & { classId: string; title: string; date: string }): Promise<{ session: EducationSession }> {
+export async function createSession(
+  data: Partial<EducationSession> & { classId: string; title: string; date: string },
+): Promise<{ session: EducationSession }> {
   return await apiFetch(`${base}/sessions`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function updateSession(id: string, data: Partial<EducationSession>): Promise<{ session: EducationSession }> {
+export async function updateSession(
+  id: string,
+  data: Partial<EducationSession>,
+): Promise<{ session: EducationSession }> {
   return await apiFetch(`${base}/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
@@ -367,7 +434,10 @@ export async function deleteSession(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/sessions/${id}`, { method: 'DELETE' })
 }
 
-export async function updateAttendance(id: string, attendance: Array<{ studentId: string; state: AttendanceState; comment?: string }>): Promise<{ session: EducationSession }> {
+export async function updateAttendance(
+  id: string,
+  attendance: Array<{ studentId: string; state: AttendanceState; comment?: string }>,
+): Promise<{ session: EducationSession }> {
   return await apiFetch(`${base}/sessions/${id}/attendance`, {
     method: 'PATCH',
     body: JSON.stringify({ attendance }),
@@ -375,7 +445,9 @@ export async function updateAttendance(id: string, attendance: Array<{ studentId
 }
 
 // Assignments
-export async function listAssignments(params: { classId?: string; status?: string; kind?: string; search?: string } = {}): Promise<{ assignments: EducationAssignment[]; total: number }> {
+export async function listAssignments(
+  params: { classId?: string; status?: string; kind?: string; search?: string } = {},
+): Promise<{ assignments: EducationAssignment[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.classId) qs.set('classId', params.classId)
   if (params.status) qs.set('status', params.status)
@@ -392,11 +464,16 @@ export async function getAssignment(id: string): Promise<{
   return await apiFetch(`${base}/assignments/${id}`)
 }
 
-export async function createAssignment(data: Partial<EducationAssignment> & { classId: string; title: string }): Promise<{ assignment: EducationAssignment }> {
+export async function createAssignment(
+  data: Partial<EducationAssignment> & { classId: string; title: string },
+): Promise<{ assignment: EducationAssignment }> {
   return await apiFetch(`${base}/assignments`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function updateAssignment(id: string, data: Partial<EducationAssignment>): Promise<{ assignment: EducationAssignment }> {
+export async function updateAssignment(
+  id: string,
+  data: Partial<EducationAssignment>,
+): Promise<{ assignment: EducationAssignment }> {
   return await apiFetch(`${base}/assignments/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
@@ -404,7 +481,11 @@ export async function deleteAssignment(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/assignments/${id}`, { method: 'DELETE' })
 }
 
-export async function updateSubmission(assignmentId: string, studentId: string, data: Partial<EducationSubmission>): Promise<{ submission: EducationSubmission }> {
+export async function updateSubmission(
+  assignmentId: string,
+  studentId: string,
+  data: Partial<EducationSubmission>,
+): Promise<{ submission: EducationSubmission }> {
   return await apiFetch(`${base}/assignments/${assignmentId}/submissions/${studentId}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -438,14 +519,29 @@ export function sessionExportUrl(sessionId: string): string {
 }
 
 // Notes
-export async function listNotes(params: { archived?: boolean; pinned?: boolean; linkType?: NoteLinkType; linkId?: string; search?: string } = {}): Promise<{ notes: EducationNote[]; total: number }> {
+export async function listNotes(
+  params: {
+    archived?: boolean
+    pinned?: boolean
+    linkType?: NoteLinkType
+    linkId?: string
+    search?: string
+    parent?: string
+  } = {},
+): Promise<{ notes: EducationNote[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.archived !== undefined) qs.set('archived', String(params.archived))
   if (params.pinned !== undefined) qs.set('pinned', String(params.pinned))
   if (params.linkType) qs.set('linkType', params.linkType)
   if (params.linkId) qs.set('linkId', params.linkId)
   if (params.search) qs.set('search', params.search)
+  if (params.parent) qs.set('parent', params.parent)
   return await apiFetch(`${base}/notes${qs.toString() ? '?' + qs.toString() : ''}`)
+}
+
+/** Sous-pages directes d'une note (arborescence). */
+export async function listChildPages(parentId: string): Promise<{ notes: EducationNote[]; total: number }> {
+  return await listNotes({ parent: parentId, archived: false })
 }
 
 export async function getNote(id: string): Promise<{ note: EducationNote }> {
@@ -472,7 +568,9 @@ export const TEMPLATE_KIND_LABEL: Record<EducationTemplateKind, string> = {
   class: 'Classe',
 }
 
-export async function listTemplates(params: { kind?: EducationTemplateKind } = {}): Promise<{ templates: EducationTemplate[]; total: number }> {
+export async function listTemplates(
+  params: { kind?: EducationTemplateKind } = {},
+): Promise<{ templates: EducationTemplate[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.kind) qs.set('kind', params.kind)
   return await apiFetch(`${base}/templates${qs.toString() ? '?' + qs.toString() : ''}`)
@@ -482,7 +580,10 @@ export async function createTemplate(data: Partial<EducationTemplate>): Promise<
   return await apiFetch(`${base}/templates`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function updateTemplate(id: string, data: Partial<EducationTemplate>): Promise<{ template: EducationTemplate }> {
+export async function updateTemplate(
+  id: string,
+  data: Partial<EducationTemplate>,
+): Promise<{ template: EducationTemplate }> {
   return await apiFetch(`${base}/templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
@@ -497,14 +598,16 @@ export async function listLinkedNotes(linkType: NoteLinkType, linkId: string): P
 }
 
 // Search
-export async function searchEducation(q: string): Promise<{ results: {
-  classes: EducationClass[]
-  students: EducationStudent[]
-  sessions: EducationSession[]
-  assignments: EducationAssignment[]
-  notes: EducationNote[]
-  documents: EducationDocument[]
-} }> {
+export async function searchEducation(q: string): Promise<{
+  results: {
+    classes: EducationClass[]
+    students: EducationStudent[]
+    sessions: EducationSession[]
+    assignments: EducationAssignment[]
+    notes: EducationNote[]
+    documents: EducationDocument[]
+  }
+}> {
   return await apiFetch(`${base}/search?q=${encodeURIComponent(q)}`)
 }
 

@@ -1,25 +1,61 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
+  GraduationCap,
+  BookOpen,
+  Calendar as CalIcon,
+  ClipboardList,
+  FileText,
+  Plus,
+  Search,
+  X,
+  Trash2,
+  Upload,
+  ChevronRight,
+  Menu,
+  Sparkles,
 } from 'lucide-react'
 import {
   fetchDashboard,
-  listClasses, getClass, createClass, updateClass, deleteClass,
-  listStudents, createStudent, importStudentsCsv, deleteStudent,
-  listSessions, createSession,
-  listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
-  listNotes, createNote, updateNote, deleteNote,
+  listClasses,
+  getClass,
+  createClass,
+  updateClass,
+  deleteClass,
+  listStudents,
+  createStudent,
+  importStudentsCsv,
+  deleteStudent,
+  listSessions,
+  createSession,
+  listAssignments,
+  getAssignment,
+  createAssignment,
+  updateAssignment,
+  updateSubmission,
+  listNotes,
+  createNote,
+  updateNote,
+  deleteNote,
   listTemplates,
   searchEducation,
-  studentDisplayName, formatDate, assignmentExportUrl,
-  CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
+  studentDisplayName,
+  formatDate,
+  assignmentExportUrl,
+  CLASS_STATUS_LABEL,
+  SESSION_STATUS_LABEL,
+  ASSIGNMENT_STATUS_LABEL,
+  ASSIGNMENT_STATUS_COLOR,
+  ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
-  type EducationDashboard, type EducationClass, type EducationStudent,
-  type EducationSession, type EducationAssignment, type EducationSubmission,
-  type EducationNote, type NoteBlock,
+  type EducationDashboard,
+  type EducationClass,
+  type EducationStudent,
+  type EducationSession,
+  type EducationAssignment,
+  type EducationSubmission,
+  type EducationNote,
+  type NoteBlock,
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
@@ -33,13 +69,24 @@ import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
 import { Building2, FileSearch, CalendarDays } from 'lucide-react'
 import './EducationWorkspace.css'
-import { Kpi, ClassesView, ClassFormDrawer, ClassDetailDrawer } from './class-parts'
+import { Kpi, ClassesView, ClassFormDrawer } from './class-parts'
+import { ClassWorkspace } from './ClassWorkspace'
 import { SessionsView } from './session-parts'
 import { AssignmentsView } from './assignment-parts'
 import { NotesView } from './note-parts'
 import { SearchModal } from './search-parts'
 
-type View = 'dashboard' | 'classes' | 'sessions' | 'assignments' | 'notes' | 'templates' | 'search' | 'advanced-search' | 'schools' | 'calendar'
+type View =
+  | 'dashboard'
+  | 'classes'
+  | 'sessions'
+  | 'assignments'
+  | 'notes'
+  | 'templates'
+  | 'search'
+  | 'advanced-search'
+  | 'schools'
+  | 'calendar'
 
 export default function EducationWorkspace() {
   const [view, setView] = useState<View>('dashboard')
@@ -125,12 +172,7 @@ export default function EducationWorkspace() {
           <Menu size={16} /> Menu
         </button>
         <div className="edu-mobile-bar-title">Espace pédagogique</div>
-        <button
-          type="button"
-          className="edu-mobile-burger"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Rechercher"
-        >
+        <button type="button" className="edu-mobile-burger" onClick={() => setSearchOpen(true)} aria-label="Rechercher">
           <Search size={16} />
         </button>
       </div>
@@ -144,20 +186,32 @@ export default function EducationWorkspace() {
 
       <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
         <h3>Espace pédagogique</h3>
-        <button className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => selectView('dashboard')}>
+        <button
+          className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`}
+          onClick={() => selectView('dashboard')}
+        >
           <GraduationCap size={15} /> Cockpit
         </button>
         <button className={`edu-side-item ${view === 'classes' ? 'active' : ''}`} onClick={() => selectView('classes')}>
           <BookOpen size={15} /> Classes
           <span className="edu-side-badge">{classes.filter((c) => c.status === 'ACTIVE').length}</span>
         </button>
-        <button className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`} onClick={() => selectView('sessions')}>
+        <button
+          className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`}
+          onClick={() => selectView('sessions')}
+        >
           <CalIcon size={15} /> Séances
         </button>
-        <button className={`edu-side-item ${view === 'calendar' ? 'active' : ''}`} onClick={() => selectView('calendar')}>
+        <button
+          className={`edu-side-item ${view === 'calendar' ? 'active' : ''}`}
+          onClick={() => selectView('calendar')}
+        >
           <CalendarDays size={15} /> Calendrier Apple
         </button>
-        <button className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`} onClick={() => selectView('assignments')}>
+        <button
+          className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`}
+          onClick={() => selectView('assignments')}
+        >
           <ClipboardList size={15} /> Devoirs & projets
           {dashboard && dashboard.counters.toGrade > 0 && (
             <span className="edu-side-badge">{dashboard.counters.toGrade}</span>
@@ -166,17 +220,29 @@ export default function EducationWorkspace() {
         <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => selectView('notes')}>
           <FileText size={15} /> Notes
         </button>
-        <button className={`edu-side-item ${view === 'templates' ? 'active' : ''}`} onClick={() => selectView('templates')}>
+        <button
+          className={`edu-side-item ${view === 'templates' ? 'active' : ''}`}
+          onClick={() => selectView('templates')}
+        >
           <Sparkles size={15} /> Templates
           {templates.length > 0 && <span className="edu-side-badge">{templates.length}</span>}
         </button>
         <button className={`edu-side-item ${view === 'schools' ? 'active' : ''}`} onClick={() => selectView('schools')}>
           <Building2 size={15} /> Écoles
         </button>
-        <button className={`edu-side-item ${view === 'advanced-search' ? 'active' : ''}`} onClick={() => selectView('advanced-search')}>
+        <button
+          className={`edu-side-item ${view === 'advanced-search' ? 'active' : ''}`}
+          onClick={() => selectView('advanced-search')}
+        >
           <FileSearch size={15} /> Recherche avancée
         </button>
-        <button className="edu-side-item" onClick={() => { setSearchOpen(true); setSidebarOpen(false) }}>
+        <button
+          className="edu-side-item"
+          onClick={() => {
+            setSearchOpen(true)
+            setSidebarOpen(false)
+          }}
+        >
           <Search size={15} /> Quickfind
           <span className="edu-side-badge">⌘K</span>
         </button>
@@ -188,7 +254,10 @@ export default function EducationWorkspace() {
               <button
                 key={c._id}
                 className="edu-side-item"
-                onClick={() => { setSelectedClassId(c._id); selectView('classes') }}
+                onClick={() => {
+                  setSelectedClassId(c._id)
+                  selectView('classes')
+                }}
               >
                 <span className="edu-side-dot" style={{ background: c.color }} />
                 {c.name}
@@ -199,65 +268,94 @@ export default function EducationWorkspace() {
       </aside>
 
       <main className="edu-main">
-        {classesError && (
-          <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
-            {classesError}
-            <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refreshClasses}>Réessayer</button>
-          </div>
-        )}
-        {view === 'dashboard' && (
-          <DashboardView
-            dashboard={dashboard}
-            selectedSchool={school}
-            onChangeSchool={setSchool}
-            onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }}
-            onCreateClass={() => setShowCreateClass(true)}
-            reloadError={dashboardError}
-            onReload={refreshDashboard}
+        {selectedClassId ? (
+          <ClassWorkspace
+            classId={selectedClassId}
+            onClose={() => setSelectedClassId(null)}
+            onChanged={async () => {
+              await Promise.all([refreshClasses(), refreshDashboard()])
+            }}
+            templates={templates}
+            onTemplatesChanged={refreshTemplates}
           />
-        )}
-        {view === 'classes' && (
-          <ClassesView
-            classes={classes}
-            onCreate={() => setShowCreateClass(true)}
-            onOpen={(id) => setSelectedClassId(id)}
-            onRefresh={refreshClasses}
-          />
-        )}
-        {view === 'sessions' && (
-          <SessionsView
-            classes={classes}
-            incomingOpenId={pendingSessionId}
-            onCloseIncomingOpen={() => setPendingSessionId(null)}
-          />
-        )}
-        {view === 'calendar' && (
-          <CalendarView />
-        )}
-        {view === 'assignments' && (
-          <AssignmentsView
-            classes={classes}
-            onChanged={refreshDashboard}
-            incomingOpenId={pendingAssignmentId}
-            onCloseIncomingOpen={() => setPendingAssignmentId(null)}
-            onStartCorrection={(id) => setCorrectionAssignmentId(id)}
-          />
-        )}
-        {view === 'notes' && (
-          <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
-        )}
-        {view === 'templates' && (
-          <TemplatesView />
-        )}
-        {view === 'schools' && (
-          <SchoolsView onOpenClass={(id) => { setSelectedClassId(id); selectView('classes') }} />
-        )}
-        {view === 'advanced-search' && (
-          <AdvancedSearchView
-            onPickClass={(id) => { setSelectedClassId(id); selectView('classes') }}
-            onPickAssignment={(id) => { setPendingAssignmentId(id); selectView('assignments') }}
-            onPickSession={(id) => { setPendingSessionId(id); selectView('sessions') }}
-          />
+        ) : (
+          <>
+            {classesError && (
+              <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
+                {classesError}
+                <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refreshClasses}>
+                  Réessayer
+                </button>
+              </div>
+            )}
+            {view === 'dashboard' && (
+              <DashboardView
+                dashboard={dashboard}
+                selectedSchool={school}
+                onChangeSchool={setSchool}
+                onOpenClass={(id) => {
+                  setSelectedClassId(id)
+                  selectView('classes')
+                }}
+                onCreateClass={() => setShowCreateClass(true)}
+                reloadError={dashboardError}
+                onReload={refreshDashboard}
+              />
+            )}
+            {view === 'classes' && (
+              <ClassesView
+                classes={classes}
+                onCreate={() => setShowCreateClass(true)}
+                onOpen={(id) => setSelectedClassId(id)}
+                onRefresh={refreshClasses}
+              />
+            )}
+            {view === 'sessions' && (
+              <SessionsView
+                classes={classes}
+                incomingOpenId={pendingSessionId}
+                onCloseIncomingOpen={() => setPendingSessionId(null)}
+              />
+            )}
+            {view === 'calendar' && <CalendarView />}
+            {view === 'assignments' && (
+              <AssignmentsView
+                classes={classes}
+                onChanged={refreshDashboard}
+                incomingOpenId={pendingAssignmentId}
+                onCloseIncomingOpen={() => setPendingAssignmentId(null)}
+                onStartCorrection={(id) => setCorrectionAssignmentId(id)}
+              />
+            )}
+            {view === 'notes' && (
+              <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
+            )}
+            {view === 'templates' && <TemplatesView />}
+            {view === 'schools' && (
+              <SchoolsView
+                onOpenClass={(id) => {
+                  setSelectedClassId(id)
+                  selectView('classes')
+                }}
+              />
+            )}
+            {view === 'advanced-search' && (
+              <AdvancedSearchView
+                onPickClass={(id) => {
+                  setSelectedClassId(id)
+                  selectView('classes')
+                }}
+                onPickAssignment={(id) => {
+                  setPendingAssignmentId(id)
+                  selectView('assignments')
+                }}
+                onPickSession={(id) => {
+                  setPendingSessionId(id)
+                  selectView('sessions')
+                }}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -272,20 +370,14 @@ export default function EducationWorkspace() {
         />
       )}
 
-      {selectedClassId && (
-        <ClassDetailDrawer
-          classId={selectedClassId}
-          onClose={() => setSelectedClassId(null)}
-          onChanged={async () => { await Promise.all([refreshClasses(), refreshDashboard()]) }}
-          templates={templates}
-          onTemplatesChanged={refreshTemplates}
-        />
-      )}
-
       {searchOpen && (
         <SearchModal
           onClose={() => setSearchOpen(false)}
-          onPickClass={(id) => { setSelectedClassId(id); setSearchOpen(false); setView('classes') }}
+          onPickClass={(id) => {
+            setSelectedClassId(id)
+            setSearchOpen(false)
+            setView('classes')
+          }}
         />
       )}
 
@@ -293,7 +385,9 @@ export default function EducationWorkspace() {
         <CorrectionMode
           assignmentId={correctionAssignmentId}
           onClose={() => setCorrectionAssignmentId(null)}
-          onSaved={() => { refreshDashboard() }}
+          onSaved={() => {
+            refreshDashboard()
+          }}
         />
       )}
     </div>
