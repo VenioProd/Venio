@@ -1,13 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Pin, Archive, Trash2, Plus, GripVertical,
-  Type, Heading1, Heading2, Heading3, ListChecks, List, ListOrdered,
-  Quote, Code, Lightbulb, Minus, Link2, FileText, ChevronRight, Sparkles,
+  Pin,
+  Archive,
+  Trash2,
+  Plus,
+  GripVertical,
+  Type,
+  Heading1,
+  Heading2,
+  Heading3,
+  ListChecks,
+  List,
+  ListOrdered,
+  Quote,
+  Code,
+  Lightbulb,
+  Minus,
+  Link2,
+  FileText,
+  ChevronRight,
+  Sparkles,
+  AtSign,
 } from 'lucide-react'
 import {
   formatRelative,
-  type EducationNote, type NoteBlock, type NoteBlockType,
-  type NoteLinkType, type EducationTemplate,
+  searchEducation,
+  studentDisplayName,
+  type EducationNote,
+  type NoteBlock,
+  type NoteBlockType,
+  type NoteLinkType,
+  type EducationTemplate,
 } from '../../../services/education'
 
 /**
@@ -29,6 +52,15 @@ export interface NoteEditorProps {
   templates?: EducationTemplate[]
   onApplyTemplate?: (template: EducationTemplate) => void
   backlinks?: BacklinkEntry[]
+  /** Masque l'en-tête interne (titre/épingle/archive) — utile quand la page
+   *  parente fournit déjà son propre titre (ex. page de classe). */
+  hideHeader?: boolean
+  /** Crée une sous-page enfant et renvoie sa référence (arborescence). */
+  onCreateSubpage?: () => Promise<{ id: string; title: string; emoji?: string } | null>
+  /** Ouvre une sous-page existante (navigation dans l'arbre). */
+  onOpenSubpage?: (childId: string) => void
+  /** Ouvre l'entité référencée par une mention (étudiant/séance/devoir/classe). */
+  onOpenMention?: (refType: NoteLinkType, refId: string) => void
 }
 
 export interface BacklinkEntry {
@@ -49,19 +81,72 @@ interface BlockTypeDescriptor {
 }
 
 const BLOCK_TYPES: BlockTypeDescriptor[] = [
-  { type: 'paragraph', label: 'Texte',     hint: 'Paragraphe simple',         icon: Type,        keywords: ['p', 'texte', 'paragraph'] },
-  { type: 'heading',   label: 'Titre H1',  hint: 'Section principale',        icon: Heading1,    keywords: ['h1', 'titre'], level: 1 },
-  { type: 'heading',   label: 'Titre H2',  hint: 'Sous-section',              icon: Heading2,    keywords: ['h2', 'sous-titre'], level: 2 },
-  { type: 'heading',   label: 'Titre H3',  hint: 'Petit titre',               icon: Heading3,    keywords: ['h3'], level: 3 },
-  { type: 'checklist', label: 'À faire',   hint: 'Case à cocher',             icon: ListChecks,  keywords: ['todo', 'tache', 'check', 'cocher'] },
-  { type: 'bullet',    label: 'Liste',     hint: 'Liste à puces',             icon: List,        keywords: ['liste', 'puces', 'bullet'] },
-  { type: 'numbered',  label: 'Numéro',    hint: 'Liste numérotée',           icon: ListOrdered, keywords: ['numero', 'ordered'] },
-  { type: 'quote',     label: 'Citation',  hint: 'Bloc de citation',          icon: Quote,       keywords: ['quote', 'citation'] },
-  { type: 'callout',   label: 'Encadré',   hint: 'Astuce ou attention',       icon: Lightbulb,   keywords: ['callout', 'encadre', 'tip'] },
-  { type: 'code',      label: 'Code',      hint: 'Bloc de code monospace',    icon: Code,        keywords: ['code'] },
-  { type: 'divider',   label: 'Séparateur',hint: 'Trait horizontal',          icon: Minus,       keywords: ['divider', 'hr', 'separateur'] },
-  { type: 'link',      label: 'Lien',      hint: 'URL en clair',              icon: Link2,       keywords: ['link', 'url', 'lien'] },
+  { type: 'paragraph', label: 'Texte', hint: 'Paragraphe simple', icon: Type, keywords: ['p', 'texte', 'paragraph'] },
+  {
+    type: 'heading',
+    label: 'Titre H1',
+    hint: 'Section principale',
+    icon: Heading1,
+    keywords: ['h1', 'titre'],
+    level: 1,
+  },
+  {
+    type: 'heading',
+    label: 'Titre H2',
+    hint: 'Sous-section',
+    icon: Heading2,
+    keywords: ['h2', 'sous-titre'],
+    level: 2,
+  },
+  { type: 'heading', label: 'Titre H3', hint: 'Petit titre', icon: Heading3, keywords: ['h3'], level: 3 },
+  {
+    type: 'checklist',
+    label: 'À faire',
+    hint: 'Case à cocher',
+    icon: ListChecks,
+    keywords: ['todo', 'tache', 'check', 'cocher'],
+  },
+  { type: 'bullet', label: 'Liste', hint: 'Liste à puces', icon: List, keywords: ['liste', 'puces', 'bullet'] },
+  { type: 'numbered', label: 'Numéro', hint: 'Liste numérotée', icon: ListOrdered, keywords: ['numero', 'ordered'] },
+  { type: 'quote', label: 'Citation', hint: 'Bloc de citation', icon: Quote, keywords: ['quote', 'citation'] },
+  {
+    type: 'callout',
+    label: 'Encadré',
+    hint: 'Astuce ou attention',
+    icon: Lightbulb,
+    keywords: ['callout', 'encadre', 'tip'],
+  },
+  { type: 'code', label: 'Code', hint: 'Bloc de code monospace', icon: Code, keywords: ['code'] },
+  {
+    type: 'divider',
+    label: 'Séparateur',
+    hint: 'Trait horizontal',
+    icon: Minus,
+    keywords: ['divider', 'hr', 'separateur'],
+  },
+  { type: 'link', label: 'Lien', hint: 'URL en clair', icon: Link2, keywords: ['link', 'url', 'lien'] },
+  {
+    type: 'subpage',
+    label: 'Sous-page',
+    hint: 'Page enfant imbriquée',
+    icon: FileText,
+    keywords: ['page', 'sous-page', 'subpage', 'enfant'],
+  },
+  {
+    type: 'mention',
+    label: 'Mention',
+    hint: 'Lien vers étudiant/séance…',
+    icon: AtSign,
+    keywords: ['mention', 'lien', 'reference', 'arobase', '@'],
+  },
 ]
+
+export interface MentionOption {
+  refType: NoteLinkType
+  refId: string
+  label: string
+  kind: string
+}
 
 function descriptorFor(b: NoteBlock): BlockTypeDescriptor {
   if (b.type === 'heading') {
@@ -71,18 +156,22 @@ function descriptorFor(b: NoteBlock): BlockTypeDescriptor {
   return BLOCK_TYPES.find((t) => t.type === b.type) ?? BLOCK_TYPES[0]
 }
 
-function makeBlockId() { return Math.random().toString(36).slice(2, 10) }
+function makeBlockId() {
+  return Math.random().toString(36).slice(2, 10)
+}
 
 function emptyBlock(type: NoteBlockType = 'paragraph', level = 1): NoteBlock {
   return { id: makeBlockId(), type, text: '', checked: false, level, meta: {} }
 }
 
 /** Tente d'interpréter un raccourci markdown en début de ligne. */
-function detectMarkdownShortcut(text: string): { match: string; type: NoteBlockType; level?: number; checked?: boolean } | null {
+function detectMarkdownShortcut(
+  text: string,
+): { match: string; type: NoteBlockType; level?: number; checked?: boolean } | null {
   const trimmed = text.replace(/ /g, ' ')
-  if (trimmed === '# ')      return { match: trimmed, type: 'heading', level: 1 }
-  if (trimmed === '## ')     return { match: trimmed, type: 'heading', level: 2 }
-  if (trimmed === '### ')    return { match: trimmed, type: 'heading', level: 3 }
+  if (trimmed === '# ') return { match: trimmed, type: 'heading', level: 1 }
+  if (trimmed === '## ') return { match: trimmed, type: 'heading', level: 2 }
+  if (trimmed === '### ') return { match: trimmed, type: 'heading', level: 3 }
   if (trimmed === '- [] ' || trimmed === '- [ ] ' || trimmed === '[] ' || trimmed === '[ ] ') {
     return { match: trimmed, type: 'checklist', checked: false }
   }
@@ -91,22 +180,45 @@ function detectMarkdownShortcut(text: string): { match: string; type: NoteBlockT
   }
   if (trimmed === '- ' || trimmed === '* ') return { match: trimmed, type: 'bullet' }
   if (trimmed === '1. ' || trimmed === '1) ') return { match: trimmed, type: 'numbered' }
-  if (trimmed === '> ')      return { match: trimmed, type: 'quote' }
+  if (trimmed === '> ') return { match: trimmed, type: 'quote' }
   if (trimmed === '``` ' || trimmed === '```\n') return { match: trimmed, type: 'code' }
   if (trimmed === '--- ' || trimmed === '---\n') return { match: trimmed, type: 'divider' }
   if (trimmed === '/!\\ ' || trimmed === '!! ') return { match: trimmed, type: 'callout' }
   return null
 }
 
-export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplate, backlinks }: NoteEditorProps) {
+export function NoteEditor({
+  note,
+  onChange,
+  onDelete,
+  templates,
+  onApplyTemplate,
+  backlinks,
+  hideHeader,
+  onCreateSubpage,
+  onOpenSubpage,
+  onOpenMention,
+}: NoteEditorProps) {
   const [slashFor, setSlashFor] = useState<{ idx: number; query: string } | null>(null)
+  const [mentionFor, setMentionFor] = useState<{ idx: number } | null>(null)
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [showTemplates, setShowTemplates] = useState(false)
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
 
-  function update(patch: Partial<EducationNote>) { onChange({ ...note, ...patch }) }
+  function pickMention(idx: number, opt: MentionOption) {
+    updateBlock(idx, {
+      type: 'mention',
+      text: opt.label,
+      meta: { refType: opt.refType, refId: opt.refId, label: opt.label, kind: opt.kind },
+    })
+    setMentionFor(null)
+  }
+
+  function update(patch: Partial<EducationNote>) {
+    onChange({ ...note, ...patch })
+  }
   function updateBlock(idx: number, patch: Partial<NoteBlock>) {
-    const blocks = note.blocks.map((b, i) => i === idx ? { ...b, ...patch } : b)
+    const blocks = note.blocks.map((b, i) => (i === idx ? { ...b, ...patch } : b))
     update({ blocks })
   }
   function setBlockType(idx: number, type: NoteBlockType, level?: number) {
@@ -166,9 +278,21 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
       setSlashFor({ idx, query: '' })
       return
     }
+    // Mention : `@` au début d'un bloc vide ouvre le sélecteur d'entité.
+    if (e.key === '@' && b.text === '') {
+      e.preventDefault()
+      setMentionFor({ idx })
+      return
+    }
     if (slashFor && slashFor.idx === idx) {
-      if (e.key === 'Escape') { setSlashFor(null); return }
-      if (e.key === 'Backspace' && slashFor.query === '') { setSlashFor(null); return }
+      if (e.key === 'Escape') {
+        setSlashFor(null)
+        return
+      }
+      if (e.key === 'Backspace' && slashFor.query === '') {
+        setSlashFor(null)
+        return
+      }
       if (e.key.length === 1) {
         setSlashFor({ idx, query: slashFor.query + e.key })
         e.preventDefault()
@@ -220,57 +344,95 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
     }
   }
 
-  function pickFromSlash(descriptor: BlockTypeDescriptor) {
+  async function pickFromSlash(descriptor: BlockTypeDescriptor) {
     if (!slashFor) return
-    setBlockType(slashFor.idx, descriptor.type, descriptor.level)
+    const idx = slashFor.idx
     setSlashFor(null)
+    // Sous-page : on crée la page enfant à la volée et on transforme le bloc
+    // en carte de lien (non éditable comme un textarea).
+    if (descriptor.type === 'subpage') {
+      if (!onCreateSubpage) return
+      const child = await onCreateSubpage()
+      if (!child) return
+      updateBlock(idx, {
+        type: 'subpage',
+        text: child.title,
+        meta: { childId: child.id, label: child.title, emoji: child.emoji || '' },
+      })
+      return
+    }
+    // Mention : on n'écrit pas le bloc tout de suite, on ouvre le sélecteur.
+    if (descriptor.type === 'mention') {
+      setMentionFor({ idx })
+      return
+    }
+    setBlockType(idx, descriptor.type, descriptor.level)
   }
 
   // Quand on change d'active block, on resize tous les textareas (au mount aussi).
   useEffect(() => {
-    Object.values(textareaRefs.current).forEach((el) => { if (el) autoresize(el) })
+    Object.values(textareaRefs.current).forEach((el) => {
+      if (el) autoresize(el)
+    })
   }, [note.blocks])
 
   const filteredSlashOptions = useMemo(() => {
     if (!slashFor) return BLOCK_TYPES
     const q = slashFor.query.toLowerCase().trim()
     if (!q) return BLOCK_TYPES
-    return BLOCK_TYPES.filter((t) =>
-      t.label.toLowerCase().includes(q) ||
-      t.keywords.some((k) => k.includes(q))
-    )
+    return BLOCK_TYPES.filter((t) => t.label.toLowerCase().includes(q) || t.keywords.some((k) => k.includes(q)))
   }, [slashFor])
 
   return (
     <div>
-      <div className="edu-row between" style={{ marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
-        <input
-          className="edu-note-title"
-          value={note.title}
-          placeholder="Sans titre"
-          onChange={(e) => update({ title: e.target.value })}
-        />
-        <div className="edu-row" style={{ gap: 4 }}>
-          {templates && templates.length > 0 && (
-            <button
-              className="edu-btn-icon"
-              title="Insérer depuis un template"
-              onClick={() => setShowTemplates((v) => !v)}
-              aria-expanded={showTemplates}
-            >
-              <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
-            </button>
-          )}
-          <button className="edu-btn-icon" title="Épingler" onClick={() => update({ pinned: !note.pinned })}>
-            <Pin size={16} color={note.pinned ? '#22C55E' : undefined} />
+      {!hideHeader && (
+        <>
+          <div className="edu-row between" style={{ marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+            <input
+              className="edu-note-title"
+              value={note.title}
+              placeholder="Sans titre"
+              onChange={(e) => update({ title: e.target.value })}
+            />
+            <div className="edu-row" style={{ gap: 4 }}>
+              {templates && templates.length > 0 && (
+                <button
+                  className="edu-btn-icon"
+                  title="Insérer depuis un template"
+                  onClick={() => setShowTemplates((v) => !v)}
+                  aria-expanded={showTemplates}
+                >
+                  <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
+                </button>
+              )}
+              <button className="edu-btn-icon" title="Épingler" onClick={() => update({ pinned: !note.pinned })}>
+                <Pin size={16} color={note.pinned ? '#22C55E' : undefined} />
+              </button>
+              <button className="edu-btn-icon" title="Archiver" onClick={() => update({ archived: !note.archived })}>
+                <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
+              </button>
+              <button className="edu-btn-icon" title="Supprimer" onClick={onDelete}>
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="edu-note-meta">Mis à jour {formatRelative(note.updatedAt)}</div>
+        </>
+      )}
+
+      {/* Le bouton « template » reste accessible même en-tête masqué. */}
+      {hideHeader && templates && templates.length > 0 && (
+        <div className="edu-row" style={{ justifyContent: 'flex-end', marginBottom: 4 }}>
+          <button
+            className="edu-btn-icon"
+            title="Insérer depuis un template"
+            onClick={() => setShowTemplates((v) => !v)}
+            aria-expanded={showTemplates}
+          >
+            <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
           </button>
-          <button className="edu-btn-icon" title="Archiver" onClick={() => update({ archived: !note.archived })}>
-            <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
-          </button>
-          <button className="edu-btn-icon" title="Supprimer" onClick={onDelete}><Trash2 size={16} /></button>
         </div>
-      </div>
-      <div className="edu-note-meta">Mis à jour {formatRelative(note.updatedAt)}</div>
+      )}
 
       {showTemplates && templates && (
         <TemplatePicker
@@ -290,7 +452,9 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
             key={b.id}
             className={`edu-block ${draggingIdx === i ? 'is-dragging' : ''}`}
             draggable={false}
-            onDragOver={(e) => { if (draggingIdx !== null) e.preventDefault() }}
+            onDragOver={(e) => {
+              if (draggingIdx !== null) e.preventDefault()
+            }}
             onDrop={(e) => {
               e.preventDefault()
               if (draggingIdx === null) return
@@ -335,16 +499,54 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
 
             {b.type === 'divider' ? (
               <div className="edu-block-divider" aria-hidden />
+            ) : b.type === 'subpage' ? (
+              <button
+                type="button"
+                className="edu-block-subpage"
+                onClick={() => {
+                  const cid = b.meta?.childId
+                  if (cid && onOpenSubpage) onOpenSubpage(String(cid))
+                }}
+                title="Ouvrir la sous-page"
+              >
+                <span className="edu-block-subpage-icon">
+                  {b.meta?.emoji ? String(b.meta.emoji) : <FileText size={15} />}
+                </span>
+                <span className="edu-block-subpage-title">{String(b.meta?.label || b.text || 'Sans titre')}</span>
+                <ChevronRight size={14} className="edu-block-subpage-caret" />
+              </button>
+            ) : b.type === 'mention' ? (
+              <button
+                type="button"
+                className="edu-block-mention"
+                onClick={() => {
+                  const rt = b.meta?.refType
+                  const ri = b.meta?.refId
+                  if (rt && ri && onOpenMention) onOpenMention(String(rt) as NoteLinkType, String(ri))
+                }}
+                title="Ouvrir la référence"
+              >
+                <AtSign size={13} className="edu-block-mention-icon" />
+                {b.meta?.kind ? <span className="edu-block-mention-kind">{String(b.meta.kind)}</span> : null}
+                <span className="edu-block-mention-label">{String(b.meta?.label || b.text || 'Référence')}</span>
+              </button>
             ) : (
               <div className="edu-block-input-wrap">
                 <textarea
-                  ref={(el) => { textareaRefs.current[b.id] = el }}
+                  ref={(el) => {
+                    textareaRefs.current[b.id] = el
+                  }}
                   className={`edu-block-input ${b.type === 'heading' ? `heading-${Math.min(Math.max(b.level || 1, 1), 3)}` : b.type === 'code' ? 'code' : b.type === 'quote' ? 'quote' : b.type === 'callout' ? 'callout' : b.type === 'checklist' && b.checked ? 'checked' : ''}`}
                   value={b.text}
                   placeholder={placeholderFor(b)}
-                  onChange={(e) => { onBlockChange(i, e.target.value); autoresize(e.currentTarget) }}
+                  onChange={(e) => {
+                    onBlockChange(i, e.target.value)
+                    autoresize(e.currentTarget)
+                  }}
                   onKeyDown={(e) => onBlockKeyDown(e, i)}
-                  onFocus={() => { /* No-op, but keep focus stable */ }}
+                  onFocus={() => {
+                    /* No-op, but keep focus stable */
+                  }}
                   rows={1}
                   spellCheck
                 />
@@ -355,6 +557,9 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
                     onPick={pickFromSlash}
                     onClose={() => setSlashFor(null)}
                   />
+                )}
+                {mentionFor && mentionFor.idx === i && (
+                  <MentionMenu onPick={(opt) => pickMention(i, opt)} onClose={() => setMentionFor(null)} />
                 )}
               </div>
             )}
@@ -373,15 +578,24 @@ export function NoteEditor({ note, onChange, onDelete, templates, onApplyTemplat
 
 function placeholderFor(b: NoteBlock): string {
   switch (b.type) {
-    case 'heading':   return b.level === 1 ? 'Titre…' : b.level === 2 ? 'Sous-titre…' : 'Petit titre…'
-    case 'checklist': return 'À faire…'
-    case 'bullet':    return 'Élément de liste…'
-    case 'numbered':  return 'Élément numéroté…'
-    case 'quote':     return 'Citation…'
-    case 'callout':   return 'Astuce, attention, idée…'
-    case 'code':      return 'Code…'
-    case 'link':      return 'URL ou texte de lien…'
-    default:          return "Écris quelque chose, ou tape « / » pour les commandes…"
+    case 'heading':
+      return b.level === 1 ? 'Titre…' : b.level === 2 ? 'Sous-titre…' : 'Petit titre…'
+    case 'checklist':
+      return 'À faire…'
+    case 'bullet':
+      return 'Élément de liste…'
+    case 'numbered':
+      return 'Élément numéroté…'
+    case 'quote':
+      return 'Citation…'
+    case 'callout':
+      return 'Astuce, attention, idée…'
+    case 'code':
+      return 'Code…'
+    case 'link':
+      return 'URL ou texte de lien…'
+    default:
+      return 'Écris quelque chose, ou tape « / » pour les commandes…'
   }
 }
 
@@ -394,18 +608,31 @@ interface SlashMenuProps {
 
 function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
   const [active, setActive] = useState(0)
-  useEffect(() => { setActive(0) }, [query])
+  useEffect(() => {
+    setActive(0)
+  }, [query])
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
       if (e.key === 'Enter') {
         e.preventDefault()
         const opt = options[active]
         if (opt) onPick(opt)
         return
       }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => Math.min(i + 1, options.length - 1)); return }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); return }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setActive((i) => Math.min(i + 1, options.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setActive((i) => Math.max(i - 1, 0))
+        return
+      }
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
@@ -430,7 +657,9 @@ function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
             onClick={() => onPick(opt)}
             type="button"
           >
-            <span className="edu-slash-icon"><Icon size={14} /></span>
+            <span className="edu-slash-icon">
+              <Icon size={14} />
+            </span>
             <span className="edu-slash-label">{opt.label}</span>
             <span className="edu-slash-hint">{opt.hint}</span>
           </button>
@@ -440,7 +669,139 @@ function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
   )
 }
 
-function TemplatePicker({ templates, onPick }: { templates: EducationTemplate[]; onPick: (t: EducationTemplate) => void }) {
+interface MentionMenuProps {
+  onPick: (opt: MentionOption) => void
+  onClose: () => void
+}
+
+function MentionMenu({ onPick, onClose }: MentionMenuProps) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<MentionOption[]>([])
+  const [active, setActive] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    const query = q.trim()
+    if (query.length < 1) {
+      setResults([])
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    const t = setTimeout(async () => {
+      try {
+        const r = await searchEducation(query)
+        if (cancelled) return
+        const opts: MentionOption[] = [
+          ...r.results.students
+            .slice(0, 5)
+            .map((s) => ({
+              refType: 'student' as NoteLinkType,
+              refId: s._id,
+              label: studentDisplayName(s),
+              kind: 'Étudiant',
+            })),
+          ...r.results.sessions
+            .slice(0, 5)
+            .map((s) => ({ refType: 'session' as NoteLinkType, refId: s._id, label: s.title, kind: 'Séance' })),
+          ...r.results.assignments
+            .slice(0, 5)
+            .map((a) => ({ refType: 'assignment' as NoteLinkType, refId: a._id, label: a.title, kind: 'Devoir' })),
+          ...r.results.classes
+            .slice(0, 5)
+            .map((c) => ({ refType: 'class' as NoteLinkType, refId: c._id, label: c.name, kind: 'Classe' })),
+        ]
+        setResults(opts)
+        setActive(0)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 220)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [q])
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onClose()
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActive((i) => Math.min(i + 1, results.length - 1))
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActive((i) => Math.max(i - 1, 0))
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const opt = results[active]
+      if (opt) onPick(opt)
+      return
+    }
+  }
+
+  return (
+    <div className="edu-slash-menu edu-mention-menu" role="dialog" aria-label="Mentionner une entité">
+      <input
+        ref={inputRef}
+        className="edu-mention-input"
+        value={q}
+        placeholder="Mentionner un étudiant, une séance, un devoir…"
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={() => {
+          /* fermeture via Échap/clic ; on garde au blur pour laisser cliquer une option */
+        }}
+      />
+      {q.trim().length < 1 ? (
+        <div className="edu-slash-empty">Tape pour rechercher…</div>
+      ) : loading ? (
+        <div className="edu-slash-empty">Recherche…</div>
+      ) : results.length === 0 ? (
+        <div className="edu-slash-empty">Aucun résultat pour « {q.trim()} »</div>
+      ) : (
+        results.map((opt, idx) => (
+          <button
+            key={`${opt.refType}-${opt.refId}`}
+            className={`edu-slash-item ${idx === active ? 'active' : ''}`}
+            onMouseEnter={() => setActive(idx)}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              onPick(opt)
+            }}
+            type="button"
+          >
+            <span className="edu-mention-kind">{opt.kind}</span>
+            <span className="edu-slash-label" style={{ fontWeight: 500 }}>
+              {opt.label}
+            </span>
+          </button>
+        ))
+      )}
+    </div>
+  )
+}
+
+function TemplatePicker({
+  templates,
+  onPick,
+}: {
+  templates: EducationTemplate[]
+  onPick: (t: EducationTemplate) => void
+}) {
   if (templates.length === 0) {
     return (
       <div className="edu-template-picker">
@@ -469,12 +830,7 @@ function BacklinksPanel({ backlinks }: { backlinks?: BacklinkEntry[] }) {
   if (list.length === 0) return null
   return (
     <div className="edu-backlinks">
-      <button
-        type="button"
-        className="edu-backlinks-toggle"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
+      <button type="button" className="edu-backlinks-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <ChevronRight size={12} className={`edu-backlinks-caret ${open ? 'open' : ''}`} />
         <FileText size={12} />
         {list.length} lien{list.length > 1 ? 's' : ''} dans cette note
@@ -502,17 +858,23 @@ function BacklinksPanel({ backlinks }: { backlinks?: BacklinkEntry[] }) {
 
 function kindLabel(t: NoteLinkType): string {
   switch (t) {
-    case 'class':      return 'Classe'
-    case 'session':    return 'Séance'
-    case 'assignment': return 'Devoir'
-    case 'student':    return 'Étudiant'
+    case 'class':
+      return 'Classe'
+    case 'session':
+      return 'Séance'
+    case 'assignment':
+      return 'Devoir'
+    case 'student':
+      return 'Étudiant'
   }
 }
 
 /* Petit utilitaire callback pour évite de garder un closure stale dans les setTimeout. */
 export function useStableCallback<T extends (...args: never[]) => unknown>(cb: T): T {
   const ref = useRef(cb)
-  useEffect(() => { ref.current = cb })
+  useEffect(() => {
+    ref.current = cb
+  })
   return useCallback(((...args: Parameters<T>) => ref.current(...args)) as T, [])
 }
 

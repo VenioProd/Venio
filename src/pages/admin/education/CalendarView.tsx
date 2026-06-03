@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Apple, MapPin, Clock, AlertTriangle,
-} from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Apple, MapPin, Clock, AlertTriangle } from 'lucide-react'
 import {
   fetchAppleCalendar,
   refreshAppleCalendar,
@@ -14,8 +12,18 @@ type Mode = 'week' | 'month'
 const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const DAY_NAMES_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const MONTH_NAMES = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+  'Janvier',
+  'Février',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Août',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Décembre',
 ]
 
 function startOfWeek(d: Date): Date {
@@ -100,37 +108,42 @@ export function CalendarView() {
 
   const { from, to } = useMemo(() => computeRange(mode, anchor), [mode, anchor])
 
-  const load = useCallback(async (opts: { refresh?: boolean } = {}) => {
-    if (opts.refresh) setRefreshing(true)
-    else setLoading(true)
-    setError(null)
-    setUnconfigured(false)
-    try {
-      const data = await fetchAppleCalendar({ from, to, refresh: opts.refresh })
-      setPayload(data)
-    } catch (err) {
-      const e = err as { status?: number; message?: string; data?: { configured?: boolean } }
-      if (e.status === 503 || e.data?.configured === false) {
-        setUnconfigured(true)
-        setPayload(null)
-      } else {
-        setError(e.message || 'Impossible de charger le calendrier Apple.')
+  const load = useCallback(
+    async (opts: { refresh?: boolean } = {}) => {
+      if (opts.refresh) setRefreshing(true)
+      else setLoading(true)
+      setError(null)
+      setUnconfigured(false)
+      try {
+        const data = await fetchAppleCalendar({ from, to, refresh: opts.refresh })
+        setPayload(data)
+      } catch (err) {
+        const e = err as { status?: number; message?: string; data?: { configured?: boolean } }
+        if (e.status === 503 || e.data?.configured === false) {
+          setUnconfigured(true)
+          setPayload(null)
+        } else {
+          setError(e.message || 'Impossible de charger le calendrier Apple.')
+        }
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
       }
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [from, to])
+    },
+    [from, to],
+  )
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const eventsByDay = useMemo(() => groupEventsByDay(payload?.events || []), [payload])
 
   function goPrev() {
-    setAnchor((prev) => mode === 'week' ? addDays(prev, -7) : new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+    setAnchor((prev) => (mode === 'week' ? addDays(prev, -7) : new Date(prev.getFullYear(), prev.getMonth() - 1, 1)))
   }
   function goNext() {
-    setAnchor((prev) => mode === 'week' ? addDays(prev, 7) : new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+    setAnchor((prev) => (mode === 'week' ? addDays(prev, 7) : new Date(prev.getFullYear(), prev.getMonth() + 1, 1)))
   }
   function goToday() {
     setAnchor(new Date())
@@ -165,11 +178,19 @@ export function CalendarView() {
     <div className="edu-cal">
       <div className="edu-row between edu-cal-toolbar">
         <div>
-          <h1 className="edu-h1"><CalendarDays size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />Calendrier pédagogique</h1>
+          <h1 className="edu-h1">
+            <CalendarDays size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+            Calendrier pédagogique
+          </h1>
           <p className="edu-sub">
             Lecture seule depuis Apple Calendar (iCloud). Cache 15 min.
             {payload?.fetchedAt && (
-              <> · Dernier sync : <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{new Date(payload.fetchedAt).toLocaleString('fr-FR')}</strong>
+              <>
+                {' '}
+                · Dernier sync :{' '}
+                <strong style={{ color: 'rgba(255,255,255,0.75)' }}>
+                  {new Date(payload.fetchedAt).toLocaleString('fr-FR')}
+                </strong>
                 {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>(cache)</span>}
               </>
             )}
@@ -197,9 +218,15 @@ export function CalendarView() {
       </div>
 
       <div className="edu-row edu-cal-nav">
-        <button className="edu-btn-icon" onClick={goPrev} aria-label="Précédent"><ChevronLeft size={16} /></button>
-        <button className="edu-btn ghost" onClick={goToday}>Aujourd'hui</button>
-        <button className="edu-btn-icon" onClick={goNext} aria-label="Suivant"><ChevronRight size={16} /></button>
+        <button className="edu-btn-icon" onClick={goPrev} aria-label="Précédent">
+          <ChevronLeft size={16} />
+        </button>
+        <button className="edu-btn ghost" onClick={goToday}>
+          Aujourd'hui
+        </button>
+        <button className="edu-btn-icon" onClick={goNext} aria-label="Suivant">
+          <ChevronRight size={16} />
+        </button>
         <div className="edu-cal-label">{headerLabel}</div>
       </div>
 
@@ -209,7 +236,8 @@ export function CalendarView() {
           <div>
             <div style={{ fontWeight: 600 }}>Calendrier Apple non configuré côté serveur.</div>
             <div style={{ opacity: 0.75, fontSize: 13 }}>
-              Définir la variable d'environnement <code>EDUCATION_APPLE_CALENDAR_ICS_URL</code> avec le lien iCloud public de partage.
+              Définir la variable d'environnement <code>EDUCATION_APPLE_CALENDAR_ICS_URL</code> avec le lien iCloud
+              public de partage.
             </div>
           </div>
         </div>
@@ -222,19 +250,25 @@ export function CalendarView() {
             <div style={{ fontWeight: 600 }}>Erreur de chargement</div>
             <div style={{ opacity: 0.85, fontSize: 13 }}>{error}</div>
           </div>
-          <button className="edu-btn ghost" onClick={() => load()}>Réessayer</button>
+          <button className="edu-btn ghost" onClick={() => load()}>
+            Réessayer
+          </button>
         </div>
       )}
 
       {loading && !payload && (
-        <div className="edu-cal-state" aria-busy="true">Chargement du calendrier…</div>
+        <div className="edu-cal-state" aria-busy="true">
+          Chargement du calendrier…
+        </div>
       )}
 
       {payload && !error && (
         <>
-          {mode === 'week'
-            ? <WeekGrid weekStart={startOfWeek(anchor)} eventsByDay={eventsByDay} onPick={setSelectedEvent} />
-            : <MonthGrid anchor={anchor} eventsByDay={eventsByDay} onPick={setSelectedEvent} />}
+          {mode === 'week' ? (
+            <WeekGrid weekStart={startOfWeek(anchor)} eventsByDay={eventsByDay} onPick={setSelectedEvent} />
+          ) : (
+            <MonthGrid anchor={anchor} eventsByDay={eventsByDay} onPick={setSelectedEvent} />
+          )}
 
           <UpcomingList events={payload.events} />
         </>
@@ -270,8 +304,14 @@ function endOfWeekInclusive(d: Date): Date {
 // ───────────────────────────── Vue semaine ─────────────────────────────────
 
 function WeekGrid({
-  weekStart, eventsByDay, onPick,
-}: { weekStart: Date; eventsByDay: Map<string, AppleCalendarEvent[]>; onPick: (ev: AppleCalendarEvent) => void }) {
+  weekStart,
+  eventsByDay,
+  onPick,
+}: {
+  weekStart: Date
+  eventsByDay: Map<string, AppleCalendarEvent[]>
+  onPick: (ev: AppleCalendarEvent) => void
+}) {
   const today = new Date()
   const days: Date[] = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return (
@@ -295,11 +335,13 @@ function WeekGrid({
                   style={{ borderLeftColor: eventColor(ev) }}
                   onClick={() => onPick(ev)}
                 >
-                  <div className="edu-cal-event-time">
-                    {ev.allDay ? 'Journée' : formatTime(ev.start)}
-                  </div>
+                  <div className="edu-cal-event-time">{ev.allDay ? 'Journée' : formatTime(ev.start)}</div>
                   <div className="edu-cal-event-title">{ev.title}</div>
-                  {ev.location && <div className="edu-cal-event-meta"><MapPin size={11} /> {ev.location}</div>}
+                  {ev.location && (
+                    <div className="edu-cal-event-meta">
+                      <MapPin size={11} /> {ev.location}
+                    </div>
+                  )}
                   {ev.school && <span className="edu-cal-event-school">{ev.school}</span>}
                 </button>
               ))}
@@ -314,8 +356,14 @@ function WeekGrid({
 // ───────────────────────────── Vue mois ────────────────────────────────────
 
 function MonthGrid({
-  anchor, eventsByDay, onPick,
-}: { anchor: Date; eventsByDay: Map<string, AppleCalendarEvent[]>; onPick: (ev: AppleCalendarEvent) => void }) {
+  anchor,
+  eventsByDay,
+  onPick,
+}: {
+  anchor: Date
+  eventsByDay: Map<string, AppleCalendarEvent[]>
+  onPick: (ev: AppleCalendarEvent) => void
+}) {
   const ms = startOfMonth(anchor)
   const gridStart = startOfWeek(ms)
   const today = new Date()
@@ -323,7 +371,9 @@ function MonthGrid({
   return (
     <div className="edu-cal-month">
       <div className="edu-cal-month-head">
-        {DAY_NAMES_SHORT.map((d) => (<div key={d}>{d}</div>))}
+        {DAY_NAMES_SHORT.map((d) => (
+          <div key={d}>{d}</div>
+        ))}
       </div>
       <div className="edu-cal-month-body">
         {cells.map((day) => {
@@ -332,10 +382,7 @@ function MonthGrid({
           const inMonth = day.getMonth() === anchor.getMonth()
           const isToday = sameDay(day, today)
           return (
-            <div
-              key={key}
-              className={`edu-cal-month-cell ${inMonth ? '' : 'is-out'} ${isToday ? 'is-today' : ''}`}
-            >
+            <div key={key} className={`edu-cal-month-cell ${inMonth ? '' : 'is-out'} ${isToday ? 'is-today' : ''}`}>
               <div className="edu-cal-month-day">{day.getDate()}</div>
               <div className="edu-cal-month-events">
                 {dayEvents.slice(0, 3).map((ev) => (
@@ -349,9 +396,7 @@ function MonthGrid({
                     <span className="edu-cal-event-title">{ev.title}</span>
                   </button>
                 ))}
-                {dayEvents.length > 3 && (
-                  <div className="edu-cal-event-more">+{dayEvents.length - 3} de plus</div>
-                )}
+                {dayEvents.length > 3 && <div className="edu-cal-event-more">+{dayEvents.length - 3} de plus</div>}
               </div>
             </div>
           )
@@ -365,9 +410,7 @@ function MonthGrid({
 
 function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
   const now = Date.now()
-  const upcoming = events
-    .filter((e) => new Date(e.end).getTime() >= now)
-    .slice(0, 8)
+  const upcoming = events.filter((e) => new Date(e.end).getTime() >= now).slice(0, 8)
   if (upcoming.length === 0) {
     return (
       <div className="edu-cal-upcoming">
@@ -392,8 +435,17 @@ function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
                 {new Date(ev.start).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}
                 {' · '}
                 {formatRange(ev.start, ev.end, ev.allDay)}
-                {ev.location && <> · <MapPin size={12} /> {ev.location}</>}
-                {ev.school && <span className="edu-cal-event-school" style={{ marginLeft: 6 }}>{ev.school}</span>}
+                {ev.location && (
+                  <>
+                    {' '}
+                    · <MapPin size={12} /> {ev.location}
+                  </>
+                )}
+                {ev.school && (
+                  <span className="edu-cal-event-school" style={{ marginLeft: 6 }}>
+                    {ev.school}
+                  </span>
+                )}
               </div>
             </div>
             <Apple size={12} aria-label="Apple Calendar" style={{ opacity: 0.4 }} />
@@ -415,20 +467,26 @@ function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: (
       <div className="edu-drawer">
         <div className="edu-drawer-head">
           <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>{event.title || '(Sans titre)'}</h2>
+            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+              {event.title || '(Sans titre)'}
+            </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
               <Apple size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Apple Calendar
               {event.status && ` · ${event.status.toLowerCase()}`}
             </div>
           </div>
-          <button className="edu-btn ghost" onClick={onClose}>Fermer</button>
+          <button className="edu-btn ghost" onClick={onClose}>
+            Fermer
+          </button>
         </div>
         <div className="edu-drawer-body">
           <div className="edu-form-group">
             <label>Quand</label>
             <div>{dayLabel}</div>
-            <div style={{ marginTop: 4 }}>{formatRange(event.start, event.end, event.allDay)} · {durationLabel(event.durationMin)}</div>
+            <div style={{ marginTop: 4 }}>
+              {formatRange(event.start, event.end, event.allDay)} · {durationLabel(event.durationMin)}
+            </div>
           </div>
           {event.location && (
             <div className="edu-form-group">
@@ -454,7 +512,9 @@ function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: (
           {event.url && (
             <div className="edu-form-group">
               <label>Lien</label>
-              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: '#0EA5E9' }}>{event.url}</a>
+              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: '#0EA5E9' }}>
+                {event.url}
+              </a>
             </div>
           )}
         </div>
@@ -587,7 +647,14 @@ function CalendarStyles() {
       @media (max-width: 900px) {
         .edu-cal-week { grid-template-columns: 1fr; }
         .edu-cal-week-col { min-height: auto; }
-        .edu-cal-month-cell { min-height: 70px; }
+        /* Vue mois : 7 colonnes à ~45px sur téléphone = illisible. On laisse
+           la grille à sa largeur naturelle (min 44px/colonne) et on rend le
+           mois défilable horizontalement, cellules cliquables conservées. */
+        .edu-cal-month { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .edu-cal-month-head,
+        .edu-cal-month-body { min-width: 560px; }
+        .edu-cal-month-cell { min-height: 64px; }
+        .edu-cal-toolbar .edu-cal-label { margin-left: 0; width: 100%; }
       }
     `}</style>
   )

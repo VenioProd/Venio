@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose'
 
 export const NOTE_LINK_TYPES = ['class', 'session', 'assignment', 'student'] as const
-export type NoteLinkType = typeof NOTE_LINK_TYPES[number]
+export type NoteLinkType = (typeof NOTE_LINK_TYPES)[number]
 
 /**
  * Block-light editor. Chaque note contient une liste de blocs typés.
@@ -19,8 +19,14 @@ export const NOTE_BLOCK_TYPES = [
   'code',
   'divider',
   'link',
+  // Bloc « mention/embed » : référence vivante vers une entité pédagogique.
+  // meta = { refType: 'class'|'session'|'assignment'|'student', refId, label }
+  'mention',
+  // Bloc « sous-page » : lien vers une note enfant (arborescence Notion).
+  // meta = { childId, label, emoji }
+  'subpage',
 ] as const
-export type NoteBlockType = typeof NOTE_BLOCK_TYPES[number]
+export type NoteBlockType = (typeof NOTE_BLOCK_TYPES)[number]
 
 export interface INoteBlock {
   id: string
@@ -45,6 +51,8 @@ export interface IEducationNote {
   markdown: string
   links: INoteLink[]
   tags: string[]
+  /** Note parente (arborescence de sous-pages). null = page de premier niveau. */
+  parentNote: mongoose.Types.ObjectId | null
   pinned: boolean
   archived: boolean
   deletedAt: Date | null
@@ -82,11 +90,12 @@ const schema = new Schema<IEducationNote>(
       default: [],
     },
     tags: { type: [String], default: [] },
+    parentNote: { type: Schema.Types.ObjectId, ref: 'EducationNote', default: null, index: true },
     pinned: { type: Boolean, default: false, index: true },
     archived: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null, index: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 schema.index({ owner: 1, archived: 1, pinned: -1, updatedAt: -1, deletedAt: 1 })
