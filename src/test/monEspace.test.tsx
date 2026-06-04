@@ -7,7 +7,14 @@ vi.mock('../services/workspace', () => ({
   saveLayout: vi.fn().mockResolvedValue({ widgets: [], shortcuts: [], dailyGoal: null }),
   getOverview: vi.fn().mockResolvedValue({ kpis: [], overdue: [], week: [], pinned: [], activity: [] }),
   getTasks: vi.fn().mockResolvedValue([]),
+  createTask: vi.fn(),
+  updateTask: vi.fn(),
+  deleteTask: vi.fn(),
   getNotes: vi.fn().mockResolvedValue([]),
+  createNote: vi.fn(),
+  updateNote: vi.fn(),
+  deleteNote: vi.fn(),
+  convertIdea: vi.fn(),
 }))
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({ user: { name: 'Raphaël', role: 'COMMERCIAL' } }),

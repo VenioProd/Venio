@@ -3,6 +3,7 @@ import { Settings, Check } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import BentoGrid from './BentoGrid'
 import { renderWidget } from './widgets'
+import { OverviewProvider } from './widgets/OverviewWidgets'
 import { WIDGET_KEYS, WIDGET_LABELS, defaultLayoutWidgets, type WidgetKey } from './widgets/registry'
 import { getLayout, saveLayout } from '../../../services/workspace'
 import type { WidgetConfig } from '../../../types/workspace.types'
@@ -64,12 +65,14 @@ export default function MonEspace() {
         </div>
       )}
 
-      <BentoGrid
-        widgets={widgets}
-        editing={editing}
-        onChange={persist}
-        renderWidget={(key) => renderWidget(key as WidgetKey)}
-      />
+      <OverviewProvider>
+        <BentoGrid
+          widgets={widgets}
+          editing={editing}
+          onChange={persist}
+          renderWidget={(key) => renderWidget(key as WidgetKey)}
+        />
+      </OverviewProvider>
     </div>
   )
 }
