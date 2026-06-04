@@ -1,9 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { ClockWidget, PomodoroWidget, GoalWidget, ShortcutsWidget } from '../pages/admin/mon-espace/widgets/AmbianceWidgets'
+import {
+  ClockWidget,
+  PomodoroWidget,
+  GoalWidget,
+  ShortcutsWidget,
+} from '../pages/admin/mon-espace/widgets/AmbianceWidgets'
 
-vi.mock('../services/workspace', () => ({ saveLayout: vi.fn().mockResolvedValue({}) }))
+vi.mock('../services/workspace', () => ({
+  saveLayout: vi.fn().mockResolvedValue({}),
+  getLayout: vi.fn().mockResolvedValue({ widgets: [], shortcuts: [], dailyGoal: null }),
+}))
 
 describe('Ambiance widgets', () => {
   it('ClockWidget affiche une heure', () => {
@@ -24,7 +32,11 @@ describe('Ambiance widgets', () => {
     expect((input as HTMLInputElement).value).toBe('Finir le devis')
   })
   it('ShortcutsWidget affiche des liens par défaut', () => {
-    render(<MemoryRouter><ShortcutsWidget /></MemoryRouter>)
+    render(
+      <MemoryRouter>
+        <ShortcutsWidget />
+      </MemoryRouter>,
+    )
     expect(screen.getAllByRole('link').length).toBeGreaterThan(0)
   })
 })
