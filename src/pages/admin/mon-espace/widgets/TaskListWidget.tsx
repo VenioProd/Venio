@@ -30,13 +30,16 @@ export default function TaskListWidget({ mode }: { mode: Mode }) {
 
   const add = async () => {
     if (!draft.trim()) return
-    const created = await createTask({ title: draft.trim(), status: MODE_STATUS[mode] ?? 'A_FAIRE' })
-    setTasks((t) => [{ ...created, source: 'PERSONAL' }, ...t])
-    setDraft('')
+    try {
+      const created = await createTask({ title: draft.trim(), status: MODE_STATUS[mode] ?? 'A_FAIRE' })
+      setTasks((t) => [{ ...created, source: 'PERSONAL' }, ...t])
+      setDraft('')
+    } catch { /* ignore */ }
   }
 
   const advance = async (task: PersonalTask) => {
     if (task.source === 'PROJECT') return
+    if (task.status === 'TERMINE') return
     const next: PersonalTaskStatus = task.status === 'A_FAIRE' ? 'EN_COURS' : 'TERMINE'
     await updateTask(task._id, { status: next })
     load()

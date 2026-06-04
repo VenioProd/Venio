@@ -13,10 +13,12 @@ export default function PostItWall() {
 
   const add = async () => {
     const color = COLORS[notes.length % COLORS.length]
-    const created = await createNote({ type: 'POSTIT', content: 'Nouveau pense-bête', color })
-    setNotes((n) => [...n, created])
+    try {
+      const created = await createNote({ type: 'POSTIT', content: 'Nouveau pense-bête', color })
+      setNotes((n) => [...n, created])
+    } catch { /* ignore */ }
   }
-  const edit = async (id: string, content: string) => { await updateNote(id, { content }) }
+  const edit = (id: string, content: string) => { updateNote(id, { content }).catch(() => {}) }
   const remove = async (id: string) => { await deleteNote(id); setNotes((n) => n.filter((x) => x._id !== id)) }
 
   return (
