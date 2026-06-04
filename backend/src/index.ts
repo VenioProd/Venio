@@ -66,6 +66,7 @@ import agentRoutes from './routes/agent/index.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
 import adminHealthRoutes from './routes/admin/health.js'
 import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
+import adminWorkspaceRoutes from './routes/admin/workspace.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
@@ -252,6 +253,7 @@ app.use('/api/admin/billing', adminBillingRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
+app.use('/api/admin/workspace', adminWorkspaceRoutes)
 app.use('/api/admin/decisions', adminDecisionRoutes)
 app.use('/api/admin/inbox', adminInboxRoutes)
 app.use('/api/admin/search', adminSearchRoutes)
