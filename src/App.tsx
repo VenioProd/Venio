@@ -96,6 +96,7 @@ const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProj
 const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
 const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
 const EducationWorkspace = lazy(() => import('./pages/admin/education'))
+const MonEspace = lazy(() => import('./pages/admin/mon-espace'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -193,9 +194,10 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<DashboardByRole />} />
+          <Route index element={<MonEspace />} />
+          <Route path="dashboard" element={<DashboardByRole />} />
           <Route path="decisions" element={<DecisionsList />} />
-          <Route path="mon-espace" element={<AdminDashboard />} />
+          <Route path="mon-espace" element={<MonEspace />} />
           <Route path="profil" element={<AdminProfile />} />
 
           {/* Clients */}
