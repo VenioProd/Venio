@@ -154,3 +154,9 @@ export type TicketStatus = 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
 export type InternalConversationType = 'CHANNEL' | 'DM' | 'GROUP'
 export type InternalConversationVisibility = 'PUBLIC' | 'PRIVATE'
 export type InternalConversationRole = 'OWNER' | 'MEMBER'
+
+// ─── Personal Workspace ───
+export type PersonalTaskStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
+export type PersonalTaskPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
+export type WorkspaceNoteType = 'NOTE' | 'POSTIT' | 'DRAFT' | 'IDEA'
+export type WorkspaceNoteStatus = 'NEW' | 'CONVERTED'

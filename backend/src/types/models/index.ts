@@ -100,3 +100,15 @@ export type {
   IInternalMessageReaction,
   IInternalMessage,
 } from './messaging.js'
+
+export type {
+  PersonalTaskStatus,
+  PersonalTaskPriority,
+  WorkspaceNoteType,
+  WorkspaceNoteStatus,
+  IWorkspaceWidget,
+  IWorkspaceShortcut,
+  IWorkspaceLayout,
+  IPersonalTask,
+  IWorkspaceNote,
+} from './workspace.js'
