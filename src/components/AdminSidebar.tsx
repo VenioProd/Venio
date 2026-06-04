@@ -6,6 +6,7 @@ import { useMessaging } from '../context/MessagingContext'
 import { hasPermission, PERMISSIONS } from '../lib/permissions'
 import {
   LayoutDashboard,
+  BarChart3,
   Users,
   Target,
   FolderKanban,
@@ -59,7 +60,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Principal',
     items: [
-      { to: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+      { to: '/admin', label: 'Mon espace', icon: LayoutDashboard, end: true },
+      { to: '/admin/dashboard', label: 'Vue business', icon: BarChart3 },
       { to: '/admin/messages', label: 'Messages', icon: MessageSquare, perm: PERMISSIONS.VIEW_MESSAGING },
       { to: '/admin/comptes-clients', label: 'Clients', icon: Users, perm: PERMISSIONS.MANAGE_CLIENTS },
       { to: '/admin/crm', label: 'CRM', icon: Target, perm: PERMISSIONS.VIEW_CRM },
