@@ -3,12 +3,8 @@ import agentAuth, { requireScope } from './_middleware/auth.js'
 import agentRateLimit from './_middleware/rateLimit.js'
 import agentIdempotency from './_middleware/idempotency.js'
 import agentAudit from './_middleware/audit.js'
-import {
-  requestIdMiddleware,
-  agentErrorHandler,
-} from './_middleware/errors.js'
-import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
-import { buildOpenApiSpec, extractRoutes } from '../../lib/agent/openapi.js'
+import { requestIdMiddleware, agentErrorHandler } from './_middleware/errors.js'
+import { buildOpenApiSpec, extractRoutes, type AgentMountedRouter } from '../../lib/agent/openapi.js'
 import crmRoutes from './crm.js'
 import projectsRoutes from './projects.js'
 import templatesRoutes from './templates.js'
@@ -131,6 +127,7 @@ router.use('/', auditRoutes)
 router.use('/', automationsRoutes)
 router.use('/', backupRoutes)
 router.use('/', usersRoutes)
+;(messagingRoutes as AgentMountedRouter).agentMountPath = '/messaging'
 router.use('/messaging', messagingRoutes)
 router.use('/', devRoutes)
 

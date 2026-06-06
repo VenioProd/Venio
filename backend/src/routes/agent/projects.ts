@@ -69,11 +69,7 @@ async function getDefaultAdminId(res: Response): Promise<string | null> {
   return String(admin._id)
 }
 
-function parseSort(
-  raw: unknown,
-  fallback: Record<string, 1 | -1>,
-  whitelist: string[]
-): Record<string, 1 | -1> {
+function parseSort(raw: unknown, fallback: Record<string, 1 | -1>, whitelist: string[]): Record<string, 1 | -1> {
   if (typeof raw !== 'string' || !raw) return fallback
   const desc = raw.startsWith('-')
   const field = desc ? raw.slice(1) : raw
@@ -89,11 +85,12 @@ router.get('/projects', requireScope('read:projects'), async (req: Request, res:
   try {
     const pag = parsePagination(req)
     const filter: Record<string, unknown> = {}
+    const andFilters: Record<string, unknown>[] = []
 
     if (req.query.archived === 'true') {
       filter.isArchived = true
     } else if (req.query.archived === 'false' || req.query.archived === undefined) {
-      filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
+      andFilters.push({ $or: [{ isArchived: false }, { isArchived: { $exists: false } }] })
     }
     if (typeof req.query.status === 'string' && (PROJECT_STATUSES as readonly string[]).includes(req.query.status)) {
       filter.status = req.query.status
@@ -109,8 +106,9 @@ router.get('/projects', requireScope('read:projects'), async (req: Request, res:
     }
     if (typeof req.query.q === 'string' && req.query.q.trim()) {
       const regex = new RegExp(req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-      filter.$or = [{ name: regex }, { description: regex }, { projectNumber: regex }]
+      andFilters.push({ $or: [{ name: regex }, { description: regex }, { projectNumber: regex }] })
     }
+    if (andFilters.length > 0) filter.$and = andFilters
 
     const sort = parseSort(req.query.sort, { updatedAt: -1 }, [
       'createdAt',
@@ -154,16 +152,22 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
   '/projects',
   requireScope('write:projects'),
   body('name').isString().trim().isLength({ min: 1 }).withMessage('Le nom est requis'),
-  body('client').custom((v) => isValidObjectId(v)).withMessage('client (ObjectId du User) requis'),
-  body('status').optional().isIn(PROJECT_STATUSES as unknown as string[]),
-  body('priority').optional().isIn(PRIORITIES as unknown as string[]),
+  body('client')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('client (ObjectId du User) requis'),
+  body('status')
+    .optional()
+    .isIn(PROJECT_STATUSES as unknown as string[]),
+  body('priority')
+    .optional()
+    .isIn(PRIORITIES as unknown as string[]),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
@@ -187,7 +191,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -218,7 +222,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -252,7 +256,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -266,14 +270,12 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
-      const items = await ProjectSection.find({ project: req.params.id })
-        .sort({ order: 1, createdAt: 1 })
-        .lean()
+      const items = await ProjectSection.find({ project: req.params.id }).sort({ order: 1, createdAt: 1 }).lean()
       res.json({ items })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -307,7 +309,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -343,7 +345,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -373,7 +375,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -398,14 +400,12 @@ router.get(
       if (typeof req.query.type === 'string' && (ITEM_TYPES as readonly string[]).includes(req.query.type)) {
         filter.type = req.query.type
       }
-      const items = await ProjectItem.find(filter)
-        .sort({ section: 1, order: 1, createdAt: 1 })
-        .lean()
+      const items = await ProjectItem.find(filter).sort({ section: 1, order: 1, createdAt: 1 }).lean()
       res.json({ items })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -413,7 +413,9 @@ router.post(
   requireScope('write:projects'),
   param('id').isMongoId(),
   body('title').isString().trim().isLength({ min: 1 }).withMessage('title requis'),
-  body('type').isIn(ITEM_TYPES as unknown as string[]).withMessage(`type requis (${ITEM_TYPES.join(', ')})`),
+  body('type')
+    .isIn(ITEM_TYPES as unknown as string[])
+    .withMessage(`type requis (${ITEM_TYPES.join(', ')})`),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
@@ -425,7 +427,7 @@ router.post(
           res,
           400,
           'FILE_UPLOAD_NOT_SUPPORTED',
-          "L'upload de fichier via cet endpoint n'est pas supporté. Utiliser /documents (à venir au lot 5)."
+          "L'upload de fichier via cet endpoint n'est pas supporté. Utiliser /documents (à venir au lot 5).",
         )
       }
       // Section optionnelle, mais doit appartenir au projet si fournie
@@ -468,7 +470,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -489,7 +491,7 @@ router.patch(
           res,
           400,
           'FILE_UPLOAD_NOT_SUPPORTED',
-          "L'upload de fichier via cet endpoint n'est pas supporté. Utiliser /documents."
+          "L'upload de fichier via cet endpoint n'est pas supporté. Utiliser /documents.",
         )
       }
       const before = item.toObject()
@@ -530,7 +532,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -558,7 +560,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -587,7 +589,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -619,7 +621,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────

@@ -3,12 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import Task from '../models/Task.js'
@@ -128,6 +123,26 @@ describe('Agent Tasks', () => {
       .set('Authorization', `Bearer ${plainSecret}`)
     expect(r.body.total).toBe(1)
     expect(r.body.items[0].title).toBe('A')
+  })
+
+  it('keeps archived tasks excluded when q is also provided', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:tasks'])
+    await Task.create([
+      { project: projectId, title: 'Needle active', status: 'A_FAIRE', createdBy: adminId },
+      {
+        project: projectId,
+        title: 'Needle archived',
+        status: 'A_FAIRE',
+        createdBy: adminId,
+        isArchived: true,
+      },
+    ])
+
+    const r = await request(app).get('/api/v1/agent/tasks?q=Needle').set('Authorization', `Bearer ${plainSecret}`)
+
+    expect(r.status).toBe(200)
+    expect(r.body.total).toBe(1)
+    expect(r.body.items[0].title).toBe('Needle active')
   })
 })
 
@@ -328,9 +343,7 @@ describe('Agent Calendar', () => {
 
   it('returns 400 when start/end missing', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:calendar'])
-    const res = await request(app)
-      .get('/api/v1/agent/calendar/events')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/calendar/events').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(400)
   })
 })

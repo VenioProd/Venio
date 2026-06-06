@@ -63,8 +63,8 @@ Comportement :
 
 - À l'entrée du handler, `findOne({ tokenId, key })`.
 - Si trouvé :
-  - `requestHash` identique (sha256 du body) → **rejouer** la réponse stockée (mêmes status + body).
-  - `requestHash` différent → `409 IDEMPOTENCY_CONFLICT`.
+  - même méthode + même chemin + `requestHash` identique (sha256 du body) → **rejouer** la réponse stockée (mêmes status + body).
+  - méthode, chemin ou `requestHash` différent → `409 IDEMPOTENCY_CONFLICT`.
 - Sinon : exécuter, puis stocker `{ status, body }` avec TTL Mongo 24h (`expireAfterSeconds`).
 
 Modèle séparé `AgentIdempotencyKey` avec index unique `(tokenId, key)`.

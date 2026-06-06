@@ -3,11 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import { setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import { createTestApp, getAgentRouter } from './helpers/agentTestApp.js'
-import {
-  extractRoutes,
-  expressToOpenApiPath,
-  buildOpenApiSpec,
-} from '../lib/agent/openapi.js'
+import { extractRoutes, expressToOpenApiPath, buildOpenApiSpec } from '../lib/agent/openapi.js'
 import { AGENT_SCOPES, ADMIN_WILDCARD_SCOPE } from '../lib/agent/scopes.js'
 
 /**
@@ -151,9 +147,7 @@ describe('Agent OpenAPI / coverage by module', () => {
 describe('Agent OpenAPI / buildOpenApiSpec unit tests', () => {
   it('converts Express path params to OpenAPI format', () => {
     expect(expressToOpenApiPath('/clients/:id')).toBe('/clients/{id}')
-    expect(expressToOpenApiPath('/clients/:id/contacts/:contactId')).toBe(
-      '/clients/{id}/contacts/{contactId}'
-    )
+    expect(expressToOpenApiPath('/clients/:id/contacts/:contactId')).toBe('/clients/{id}/contacts/{contactId}')
     expect(expressToOpenApiPath('/no-params')).toBe('/no-params')
   })
 
@@ -167,7 +161,7 @@ describe('Agent OpenAPI / buildOpenApiSpec unit tests', () => {
     const s = buildOpenApiSpec([{ method: 'GET', path: '/foo/:bar' }]) as Record<string, unknown>
     const paths = s.paths as Record<string, Record<string, Record<string, unknown>>>
     const op = paths['/foo/{bar}']!.get
-    expect((op?.parameters as Array<{ name: string; in: string }>)).toEqual([
+    expect(op?.parameters as Array<{ name: string; in: string }>).toEqual([
       { name: 'bar', in: 'path', required: true, schema: { type: 'string' } },
     ])
   })
@@ -176,7 +170,7 @@ describe('Agent OpenAPI / buildOpenApiSpec unit tests', () => {
     const s = buildOpenApiSpec([{ method: 'GET', path: '/openapi.json' }]) as Record<string, unknown>
     const paths = s.paths as Record<string, Record<string, Record<string, unknown>>>
     const op = paths['/openapi.json']!.get
-    expect(op?.security).toBeUndefined()
+    expect(op?.security).toEqual([])
   })
 
   it('marks other paths as Bearer-protected', () => {
@@ -194,5 +188,11 @@ describe('Agent OpenAPI / buildOpenApiSpec unit tests', () => {
     expect(responses['400']).toBeDefined()
     expect(responses['409']).toBeDefined()
     expect(responses['201']).toBeDefined()
+  })
+
+  it('preserves mount prefixes such as /messaging in generated paths', async () => {
+    const paths = spec.paths as Record<string, unknown>
+    expect(paths['/messaging/conversations']).toBeDefined()
+    expect(paths['/conversations']).toBeUndefined()
   })
 })

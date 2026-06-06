@@ -26,6 +26,10 @@ export interface ExtractedRoute {
   path: string // ex "/clients/:id"
 }
 
+export type AgentMountedRouter = Router & {
+  agentMountPath?: string
+}
+
 /**
  * Parcourt récursivement la stack Express pour extraire toutes les routes
  * définies. Fonctionne pour les routes directes ET les sous-routeurs montés.
@@ -44,11 +48,12 @@ export function extractRoutes(router: Router, basePath = ''): ExtractedRoute[] {
       }
     } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
       // Sous-routeur monté avec router.use(prefix, subRouter).
-      // Le préfixe est encodé dans layer.regexp. On essaie de reverse-engineer
-      // un éventuel préfixe simple ; si la regex correspond juste à "/" on
-      // garde basePath inchangé.
-      const subBase = extractPrefixFromRegexp(layer.regexp) || ''
-      out.push(...extractRoutes(layer.handle as Router, basePath + subBase))
+      // Express 5 ne garde plus toujours le préfixe dans une propriété
+      // introspectable ; les routeurs montés hors racine peuvent donc poser
+      // explicitement `agentMountPath`.
+      const mounted = layer.handle as AgentMountedRouter
+      const subBase = mounted.agentMountPath || extractPrefixFromRegexp(layer.regexp) || ''
+      out.push(...extractRoutes(mounted, basePath + subBase))
     }
   }
   return out
@@ -113,7 +118,7 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
       operationId,
       summary: makeSummary(method, r.path),
       ...(pathParams.length > 0 ? { parameters: pathParams } : {}),
-      ...(isPublic ? {} : { security: [{ BearerAuth: [] }] }),
+      security: isPublic ? [] : [{ BearerAuth: [] }],
       ...(isMutation && !isPublic
         ? {
             requestBody: {
@@ -170,8 +175,8 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
       title: 'Venio Agent API',
       version: '1.0.0',
       description:
-        "API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). " +
-        "Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.",
+        'API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). ' +
+        'Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.',
     },
     servers: [{ url: '/api/v1/agent' }],
     components: {

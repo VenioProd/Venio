@@ -3,12 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import ProjectSection from '../models/ProjectSection.js'
@@ -78,9 +73,7 @@ describe('Agent Projects / CRUD project', () => {
       { name: 'A', client: clientId },
       { name: 'B', client: clientId, isArchived: true },
     ])
-    const res = await request(app)
-      .get('/api/v1/agent/projects')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/projects').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(1)
     expect(res.body.items[0].name).toBe('A')
@@ -90,6 +83,20 @@ describe('Agent Projects / CRUD project', () => {
       .set('Authorization', `Bearer ${plainSecret}`)
     expect(allRes.body.total).toBe(1)
     expect(allRes.body.items[0].name).toBe('B')
+  })
+
+  it('keeps archived projects excluded when q is also provided', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:projects'])
+    await Project.create([
+      { name: 'Apollo', description: 'search needle', client: clientId },
+      { name: 'Archived Apollo', description: 'search needle', client: clientId, isArchived: true },
+    ])
+
+    const res = await request(app).get('/api/v1/agent/projects?q=needle').set('Authorization', `Bearer ${plainSecret}`)
+
+    expect(res.status).toBe(200)
+    expect(res.body.total).toBe(1)
+    expect(res.body.items[0].name).toBe('Apollo')
   })
 
   it('PATCH updates fields and archive', async () => {

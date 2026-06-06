@@ -25,11 +25,7 @@ const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
  *
  * À monter APRÈS agentAuth (req.agentToken requis).
  */
-export default async function agentIdempotency(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export default async function agentIdempotency(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!MUTATION_METHODS.has(req.method.toUpperCase())) {
     next()
     return
@@ -45,12 +41,7 @@ export default async function agentIdempotency(
   const rawKey = req.headers['idempotency-key']
   const key = Array.isArray(rawKey) ? rawKey[0] : rawKey
   if (!key) {
-    respondError(
-      res,
-      400,
-      'MISSING_IDEMPOTENCY_KEY',
-      'Header Idempotency-Key requis sur POST/PATCH/PUT/DELETE'
-    )
+    respondError(res, 400, 'MISSING_IDEMPOTENCY_KEY', 'Header Idempotency-Key requis sur POST/PATCH/PUT/DELETE')
     return
   }
   if (!isValidIdempotencyKey(key)) {
@@ -58,12 +49,14 @@ export default async function agentIdempotency(
       res,
       400,
       'INVALID_IDEMPOTENCY_KEY',
-      'Idempotency-Key invalide (lettres, chiffres, tirets, 8-255 chars)'
+      'Idempotency-Key invalide (lettres, chiffres, tirets, 8-255 chars)',
     )
     return
   }
 
   const requestHash = computeRequestHash(req.body)
+  const method = req.method.toUpperCase()
+  const path = req.originalUrl.split('?')[0] || req.path
 
   let existing
   try {
@@ -78,17 +71,11 @@ export default async function agentIdempotency(
   }
 
   if (existing) {
-    if (existing.requestHash !== requestHash) {
-      respondError(
-        res,
-        409,
-        'IDEMPOTENCY_CONFLICT',
-        'Idempotency-Key déjà utilisée avec un body différent',
-        {
-          previousMethod: existing.method,
-          previousPath: existing.path,
-        }
-      )
+    if (existing.method !== method || existing.path !== path || existing.requestHash !== requestHash) {
+      respondError(res, 409, 'IDEMPOTENCY_CONFLICT', 'Idempotency-Key déjà utilisée avec un body différent', {
+        previousMethod: existing.method,
+        previousPath: existing.path,
+      })
       return
     }
     // Rejouer la réponse stockée
@@ -98,8 +85,6 @@ export default async function agentIdempotency(
 
   // Wrap res.json pour capturer la réponse et la persister après envoi.
   const tokenObjId = new mongoose.Types.ObjectId(token.id)
-  const method = req.method.toUpperCase()
-  const path = req.originalUrl.split('?')[0] || req.path
 
   const originalJson = res.json.bind(res)
   res.json = function wrappedJson(body: unknown): Response {

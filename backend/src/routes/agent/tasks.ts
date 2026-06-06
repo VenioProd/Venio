@@ -21,15 +21,7 @@ import { respondError } from './_middleware/errors.js'
 
 const router = express.Router()
 
-const TASK_STATUSES = [
-  'A_FAIRE',
-  'EN_COURS',
-  'EN_REVIEW',
-  'TERMINE',
-  'VALIDE',
-  'NON_VALIDE',
-  'A_MODIFIER',
-] as const
+const TASK_STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE', 'VALIDE', 'NON_VALIDE', 'A_MODIFIER'] as const
 const PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const
 
 function isValidObjectId(id: unknown): boolean {
@@ -62,6 +54,7 @@ router.get('/tasks', requireScope('read:tasks'), async (req: Request, res: Respo
   try {
     const pag = parsePagination(req)
     const filter: Record<string, unknown> = {}
+    const andFilters: Record<string, unknown>[] = []
     if (typeof req.query.project === 'string' && isValidObjectId(req.query.project)) {
       filter.project = req.query.project
     }
@@ -77,12 +70,13 @@ router.get('/tasks', requireScope('read:tasks'), async (req: Request, res: Respo
     if (req.query.archived === 'true') {
       filter.isArchived = true
     } else if (req.query.archived === 'false' || req.query.archived === undefined) {
-      filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
+      andFilters.push({ $or: [{ isArchived: false }, { isArchived: { $exists: false } }] })
     }
     if (typeof req.query.q === 'string' && req.query.q.trim()) {
       const regex = new RegExp(req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-      filter.$or = [{ title: regex }, { description: regex }]
+      andFilters.push({ $or: [{ title: regex }, { description: regex }] })
     }
+    if (andFilters.length > 0) filter.$and = andFilters
 
     const [items, total] = await Promise.all([
       Task.find(filter)
@@ -108,25 +102,28 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
-      const t = await Task.findById(req.params.id)
-        .populate('assignee', 'name email')
-        .populate('project', 'name')
-        .lean()
+      const t = await Task.findById(req.params.id).populate('assignee', 'name email').populate('project', 'name').lean()
       if (!t) return respondError(res, 404, 'NOT_FOUND', 'Task introuvable')
       res.json(t)
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
   '/tasks',
   requireScope('write:tasks'),
-  body('project').custom((v) => isValidObjectId(v)).withMessage('project (ObjectId) requis'),
+  body('project')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('project (ObjectId) requis'),
   body('title').isString().trim().isLength({ min: 1 }).withMessage('title requis'),
-  body('priority').optional().isIn(PRIORITIES as unknown as string[]),
-  body('status').optional().isIn(TASK_STATUSES as unknown as string[]),
+  body('priority')
+    .optional()
+    .isIn(PRIORITIES as unknown as string[]),
+  body('status')
+    .optional()
+    .isIn(TASK_STATUSES as unknown as string[]),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -135,9 +132,7 @@ router.post(
       const createdBy = await getDefaultAdminId(res)
       if (!createdBy) return
       const assignee =
-        typeof req.body.assignee === 'string' && isValidObjectId(req.body.assignee)
-          ? req.body.assignee
-          : null
+        typeof req.body.assignee === 'string' && isValidObjectId(req.body.assignee) ? req.body.assignee : null
       const task = await Task.create({
         project: req.body.project,
         title: String(req.body.title).trim(),
@@ -153,8 +148,7 @@ router.post(
         assignee,
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
         startDate: req.body.startDate ? new Date(req.body.startDate) : null,
-        estimatedDuration:
-          typeof req.body.estimatedDuration === 'number' ? req.body.estimatedDuration : null,
+        estimatedDuration: typeof req.body.estimatedDuration === 'number' ? req.body.estimatedDuration : null,
         progress: typeof req.body.progress === 'number' ? Math.max(0, Math.min(100, req.body.progress)) : 0,
         tags: Array.isArray(req.body.tags) ? req.body.tags.map((t: unknown) => String(t)) : [],
         order: typeof req.body.order === 'number' ? req.body.order : 0,
@@ -171,7 +165,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -232,7 +226,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -257,7 +251,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -279,7 +273,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -313,7 +307,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -340,7 +334,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router
