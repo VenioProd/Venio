@@ -31,20 +31,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   fetchDevProjectCockpit,
   fetchDevProjectIntelligence,
@@ -71,6 +58,8 @@ import {
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+// Import via le barrel pour charger dashboard.css (style financial timeline).
+import { FinancialChart } from '../../../components/dashboard'
 import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
 
@@ -79,7 +68,6 @@ import {
   GithubIcon,
   IssueRow,
   ActivityRow,
-  VelocityTooltip,
   PieTooltip,
   BarTooltip,
   GithubPanel,
@@ -97,6 +85,9 @@ const HEALTH_META: Record<
   at_risk: { label: 'At risk', tone: 'warn', icon: AlertTriangle },
   blocked: { label: 'Blocked', tone: 'fail', icon: ShieldAlert },
 }
+
+// Format JJ/MM pour l'axe temporel du chart vélocité.
+const shortDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
 
 const DevProjectCockpit = () => {
   const { projectId } = useParams<{ projectId: string }>()
@@ -274,15 +265,6 @@ const DevProjectCockpit = () => {
     return (Object.entries(cockpit.byType) as [DevIssueType, number][])
       .filter(([, v]) => v > 0)
       .map(([k, v]) => ({ key: k, name: TYPE_LABEL[k], value: v, color: TYPE_COLOR[k] }))
-  }, [cockpit])
-
-  const velocityData = useMemo(() => {
-    if (!cockpit) return []
-    return cockpit.velocity.days.map((d) => ({
-      date: d.date.slice(5), // MM-DD
-      completed: d.completed,
-      created: d.created,
-    }))
   }, [cockpit])
 
   if (!projectId) return <div className="cockpit-loading">Identifiant de projet manquant.</div>
@@ -630,41 +612,15 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-row">
           <div className="cockpit-card">
-            <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Vélocité 14 jours</span>
-              <span className="cockpit-card-meta">
-                {velocity.velocityPerDay14d.toFixed(1)}/j · {velocity.completed14d} terminées
-              </span>
-            </div>
-            <div className="cockpit-chart" style={{ height: 200 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={velocityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={1}
-                  />
-                  <YAxis
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <Tooltip content={<VelocityTooltip />} cursor={{ stroke: 'rgba(148,163,184,0.18)' }} />
-                  <Line type="monotone" dataKey="created" stroke="#7c5cff" strokeWidth={1.5} dot={false} />
-                  <Line
-                    type="monotone"
-                    dataKey="completed"
-                    stroke="#10b981"
-                    strokeWidth={1.8}
-                    dot={{ r: 2, fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {/* Vélocité en style financial timeline (A8) : terminées en aire cyan
+               + volume, créées en série secondaire pointillée. */}
+            <FinancialChart
+              data={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.completed, volume: d.created }))}
+              secondarySeries={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.created }))}
+              label="Vélocité 14 jours"
+              currentValue={`${velocity.completed14d} terminées · ${velocity.velocityPerDay14d.toFixed(1)}/j`}
+              height={220}
+            />
             {velocity.avgCompletionDays !== null && (
               <div className="cockpit-card-foot">
                 <Activity size={11} /> Temps moyen de résolution : <strong>{velocity.avgCompletionDays} j</strong>

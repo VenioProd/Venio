@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Activity,
@@ -58,16 +58,25 @@ import GithubLinkPanel from './GithubLinkPanel'
 import ProjectCreateModal from './ProjectCreateModal'
 import IssueDetailPanel from './IssueDetailPanel'
 import { ReviewQueue } from './ReviewQueue'
+import CommandPalette from './CommandPalette'
 import './DevWorkspace.css'
 
 // Persistance des filtres & préférences d'affichage (A4).
 const FILTERS_KEY = 'dev-workspace-prefs-v1'
 
+const QUICK_VIEW_VALUES = ['today', 'all', 'mine', 'urgent', 'blocked', 'review', 'backlog'] as const
+type QuickView = (typeof QUICK_VIEW_VALUES)[number]
+
+// Tri client des issues (A7).
+const SORT_VALUES = ['activity', 'created', 'priority', 'due'] as const
+type SortBy = (typeof SORT_VALUES)[number]
+
 type DevWorkspacePrefs = {
   filters?: IssueFilters
   groupBy?: 'status' | 'priority' | 'none'
   viewMode?: 'list' | 'kanban'
-  quickView?: 'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'
+  quickView?: QuickView
+  sortBy?: SortBy
 }
 
 function readPrefs(): DevWorkspacePrefs {
@@ -77,8 +86,6 @@ function readPrefs(): DevWorkspacePrefs {
     return {}
   }
 }
-
-const QUICK_VIEW_VALUES = ['all', 'mine', 'urgent', 'blocked', 'review', 'backlog'] as const
 
 const DevWorkspace = () => {
   const { user } = useAuth()
@@ -117,13 +124,20 @@ const DevWorkspace = () => {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() =>
     readPrefs().viewMode === 'kanban' ? 'kanban' : 'list',
   )
-  const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>(() => {
+  const [quickView, setQuickView] = useState<QuickView>(() => {
     const q = readPrefs().quickView
     return q && QUICK_VIEW_VALUES.includes(q) ? q : 'all'
   })
+  // Tri des issues (A7), persisté avec les autres préférences.
+  const [sortBy, setSortBy] = useState<SortBy>(() => {
+    const s = readPrefs().sortBy
+    return s && SORT_VALUES.includes(s) ? s : 'activity'
+  })
   const [showAllProjects, setShowAllProjects] = useState(false)
   const [showReviewQueue, setShowReviewQueue] = useState(false)
+  const [showPalette, setShowPalette] = useState(false)
   const [dragOverCol, setDragOverCol] = useState<DevIssueStatus | null>(null)
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
   // Sélection multiple + bulk actions (A2).
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -261,17 +275,51 @@ const DevWorkspace = () => {
   // Persistance des filtres + préférences d'affichage.
   useEffect(() => {
     try {
-      localStorage.setItem(FILTERS_KEY, JSON.stringify({ filters, groupBy, viewMode, quickView }))
+      localStorage.setItem(FILTERS_KEY, JSON.stringify({ filters, groupBy, viewMode, quickView, sortBy }))
     } catch {
       /* quota */
     }
-  }, [filters, groupBy, viewMode, quickView])
+  }, [filters, groupBy, viewMode, quickView, sortBy])
 
   // La sélection multiple ne survit pas à un changement de filtres.
   useEffect(() => {
     setSelectedIds(new Set())
     setLastClickedId(null)
   }, [filters])
+
+  // Raccourcis clavier globaux (A6) : ⌘K palette, c créer, / recherche, v vue.
+  useEffect(() => {
+    const overlayOpen = showReviewQueue || showProjectModal
+    const onKeyDown = (e: KeyboardEvent) => {
+      // ⌘K / Ctrl+K : toggle palette (sauf si un autre overlay est déjà ouvert).
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        if (overlayOpen) return
+        e.preventDefault()
+        setShowPalette((v) => !v)
+        return
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      // Ignorés si focus dans un champ ou si un overlay est ouvert (palette comprise).
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return
+      if (overlayOpen || showPalette) return
+      if (e.key === 'c') {
+        if (canManage && projects.length > 0) {
+          e.preventDefault()
+          setShowQuickCreate(true)
+        }
+      } else if (e.key === '/') {
+        e.preventDefault()
+        searchRef.current?.focus()
+      } else if (e.key === 'v') {
+        e.preventDefault()
+        setViewMode((v) => (v === 'list' ? 'kanban' : 'list'))
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showPalette, showReviewQueue, showProjectModal, canManage, projects.length])
 
   const applyQuickView = (view: typeof quickView) => {
     setQuickView(view)
@@ -399,27 +447,92 @@ const DevWorkspace = () => {
     }
   }
 
+  // Tri client (A7) — appliqué aux groupes de la vue liste et aux colonnes kanban.
+  const sortIssues = useCallback(
+    (list: DevIssue[]) => {
+      const ts = (d: string) => new Date(d).getTime()
+      return [...list].sort((a, b) => {
+        switch (sortBy) {
+          case 'created':
+            return ts(b.createdAt) - ts(a.createdAt)
+          case 'priority':
+            return PRIORITY_ORDER.indexOf(a.priority) - PRIORITY_ORDER.indexOf(b.priority)
+          case 'due': {
+            // Échéance croissante, issues sans échéance en dernier.
+            const da = a.dueDate ? ts(a.dueDate) : Infinity
+            const db = b.dueDate ? ts(b.dueDate) : Infinity
+            return da - db
+          }
+          default:
+            return ts(b.updatedAt) - ts(a.updatedAt)
+        }
+      })
+    },
+    [sortBy],
+  )
+
   // Group issues for display
   const grouped = useMemo(() => {
-    if (groupBy === 'none') return [{ key: 'Toutes', issues, count: issues.length }]
+    if (groupBy === 'none') return [{ key: 'Toutes', issues: sortIssues(issues), count: issues.length }]
     if (groupBy === 'priority') {
-      return PRIORITY_ORDER.map((p) => ({
-        key: PRIORITY_LABEL[p],
-        color: PRIORITY_COLOR[p],
-        issues: issues.filter((i) => i.priority === p),
-        count: issues.filter((i) => i.priority === p).length,
-      })).filter((g) => g.count > 0)
+      return PRIORITY_ORDER.map((p) => {
+        const list = sortIssues(issues.filter((i) => i.priority === p))
+        return { key: PRIORITY_LABEL[p], color: PRIORITY_COLOR[p], issues: list, count: list.length }
+      }).filter((g) => g.count > 0)
     }
-    return STATUS_ORDER.map((s) => ({
-      key: STATUS_LABEL[s],
-      color: STATUS_COLOR[s],
-      issues: issues.filter((i) => i.status === s),
-      count: issues.filter((i) => i.status === s).length,
-    })).filter((g) => g.count > 0)
-  }, [issues, groupBy])
+    return STATUS_ORDER.map((s) => {
+      const list = sortIssues(issues.filter((i) => i.status === s))
+      return { key: STATUS_LABEL[s], color: STATUS_COLOR[s], issues: list, count: list.length }
+    }).filter((g) => g.count > 0)
+  }, [issues, groupBy, sortIssues])
+
+  // Vue « Ma journée » (A5) : 3 groupes calculés client, ordre fixe, vides masqués.
+  // Une issue n'apparaît que dans son premier groupe éligible.
+  const todayGroups = useMemo(() => {
+    if (quickView !== 'today') return []
+    // eslint-disable-next-line react-hooks/purity -- les retards se jugent à l'instant du calcul (recalculé à chaque refetch)
+    const now = Date.now()
+    const ts = (d: string) => new Date(d).getTime()
+    const used = new Set<string>()
+    const claim = (list: DevIssue[]) => {
+      list.forEach((i) => used.add(i._id))
+      return list
+    }
+    const review = claim(
+      issues.filter((i) => i.status === 'IN_REVIEW').sort((a, b) => ts(a.updatedAt) - ts(b.updatedAt)),
+    )
+    const urgent = claim(
+      issues
+        .filter(
+          (i) =>
+            !used.has(i._id) &&
+            i.status !== 'DONE' &&
+            i.status !== 'CANCELLED' &&
+            (i.priority === 'URGENT' || (i.dueDate !== null && ts(i.dueDate) < now)),
+        )
+        .sort((a, b) => {
+          // Échéance la plus proche d'abord (sans échéance en dernier), puis priorité.
+          const da = a.dueDate ? ts(a.dueDate) : Infinity
+          const db = b.dueDate ? ts(b.dueDate) : Infinity
+          if (da !== db) return da - db
+          return PRIORITY_ORDER.indexOf(a.priority) - PRIORITY_ORDER.indexOf(b.priority)
+        }),
+    )
+    const inProgress = issues
+      .filter((i) => !used.has(i._id) && i.status === 'IN_PROGRESS')
+      .sort((a, b) => ts(b.updatedAt) - ts(a.updatedAt))
+    return [
+      { key: 'À valider', color: '#8b5cf6', issues: review, count: review.length, reviewShortcut: true },
+      { key: 'Urgentes & en retard', color: '#ef4444', issues: urgent, count: urgent.length, reviewShortcut: false },
+      { key: 'En cours', color: '#eab308', issues: inProgress, count: inProgress.length, reviewShortcut: false },
+    ].filter((g) => g.count > 0)
+  }, [issues, quickView])
 
   // Ordre plat des issues visibles (pour la sélection par plage avec Shift).
-  const visibleFlat = useMemo(() => grouped.flatMap((g) => g.issues), [grouped])
+  const visibleFlat = useMemo(
+    () => (quickView === 'today' ? todayGroups.flatMap((g) => g.issues) : grouped.flatMap((g) => g.issues)),
+    [grouped, todayGroups, quickView],
+  )
 
   const toggleSelect = (id: string, shift: boolean) => {
     setSelectedIds((prev) => {
@@ -670,6 +783,7 @@ const DevWorkspace = () => {
       <div className="dev-quick-views">
         {(
           [
+            ['today', 'Ma journée'],
             ['all', 'Toutes ouvertes'],
             ['mine', 'Mes issues'],
             ['urgent', 'Urgentes'],
@@ -709,6 +823,7 @@ const DevWorkspace = () => {
 
       <div className="dev-toolbar">
         <input
+          ref={searchRef}
           className="dev-search"
           placeholder="Rechercher (titre, identifiant)…"
           value={filters.q || ''}
@@ -794,6 +909,17 @@ const DevWorkspace = () => {
           <option value="priority">Groupé par priorité</option>
           <option value="none">Pas de groupe</option>
         </select>
+        <select
+          className="dev-select"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortBy)}
+          title="Tri des issues"
+        >
+          <option value="activity">Tri : activité</option>
+          <option value="created">Tri : création</option>
+          <option value="priority">Tri : priorité</option>
+          <option value="due">Tri : échéance</option>
+        </select>
       </div>
 
       <div className={`dev-body${selectedIssue ? ' with-detail' : ''}`}>
@@ -872,7 +998,7 @@ const DevWorkspace = () => {
           ) : viewMode === 'kanban' ? (
             <div className="dev-kanban">
               {STATUS_ORDER.filter((s) => s !== 'CANCELLED').map((status) => {
-                const colIssues = issues.filter((i) => i.status === status)
+                const colIssues = sortIssues(issues.filter((i) => i.status === status))
                 return (
                   <div
                     key={status}
@@ -956,6 +1082,26 @@ const DevWorkspace = () => {
                 )
               })}
             </div>
+          ) : quickView === 'today' ? (
+            // Vue « Ma journée » : 3 groupes client à accent couleur (A5).
+            todayGroups.length === 0 ? (
+              <div className="dev-empty">Rien à traiter aujourd'hui 🎉</div>
+            ) : (
+              todayGroups.map((group) => (
+                <div key={group.key}>
+                  <div className="dev-list-group-header dev-today-group" style={{ color: group.color }}>
+                    {group.key}
+                    <span className="dev-list-group-count">{group.count}</span>
+                    {group.reviewShortcut && (
+                      <button type="button" className="dev-today-review-link" onClick={() => setShowReviewQueue(true)}>
+                        → Ouvrir la file de revue
+                      </button>
+                    )}
+                  </div>
+                  {group.issues.map(renderRow)}
+                </div>
+              ))
+            )
           ) : (
             grouped.map((group) => (
               <div key={group.key}>
@@ -1045,6 +1191,21 @@ const DevWorkspace = () => {
             </>
           )}
         </div>
+      )}
+
+      {showPalette && (
+        <CommandPalette
+          issues={issues}
+          projects={projects}
+          canCreate={canManage && projects.length > 0}
+          onClose={() => setShowPalette(false)}
+          onSelectIssue={handleSelectIssue}
+          onNewIssue={() => setShowQuickCreate(true)}
+          onOpenReviewQueue={() => setShowReviewQueue(true)}
+          onToggleViewMode={() => setViewMode((v) => (v === 'list' ? 'kanban' : 'list'))}
+          onShowToday={() => applyQuickView('today')}
+          onOpenCockpit={(id) => navigate(`/admin/dev/projects/${id}`)}
+        />
       )}
 
       {showReviewQueue && (
