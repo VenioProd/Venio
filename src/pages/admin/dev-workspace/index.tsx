@@ -87,6 +87,16 @@ function readPrefs(): DevWorkspacePrefs {
   }
 }
 
+// Suppression différée avec undo (A9) : l'appel API réel est retardé de 6 s.
+const UNDO_DELETE_DELAY_MS = 6000
+
+type PendingDelete = { issue: DevIssue; timer: ReturnType<typeof setTimeout> }
+
+function issueIdentifier(issue: DevIssue) {
+  const project = typeof issue.project === 'object' ? issue.project : null
+  return project ? `${project.key}-${issue.number}` : issue.identifier
+}
+
 const DevWorkspace = () => {
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
@@ -153,6 +163,12 @@ const DevWorkspace = () => {
   const [projectError, setProjectError] = useState<string | null>(null)
   const [savingProject, setSavingProject] = useState(false)
 
+  // Suppression différée avec undo (A9). La ref évite les closures périmées
+  // (timer setTimeout + flush au démontage).
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const pendingDeleteRef = useRef<PendingDelete | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   const [showQuickCreate, setShowQuickCreate] = useState(false)
   const [quickCreate, setQuickCreate] = useState<{
     title: string
@@ -179,7 +195,10 @@ const DevWorkspace = () => {
     setLoading(true)
     try {
       const data = await listDevIssues(filters)
-      setIssues(data.issues)
+      // Un refetch pendant la fenêtre d'undo ne doit pas faire réapparaître
+      // l'issue en attente de suppression (elle n'est pas encore supprimée côté serveur).
+      const pendingId = pendingDeleteRef.current?.issue._id
+      setIssues(pendingId ? data.issues.filter((i) => i._id !== pendingId) : data.issues)
     } catch (e) {
       console.error(e)
     } finally {
@@ -386,17 +405,69 @@ const DevWorkspace = () => {
     }
   }
 
-  const handleDeleteIssue = async (id: string) => {
-    if (!(await confirm({ message: 'Supprimer définitivement cette issue ?', title: 'Suppression' }))) return
+  // Suppression différée (A9) : exécute réellement la suppression en attente.
+  // En cas d'échec API, l'issue est réinsérée dans la liste + bannière d'erreur.
+  const flushDelete = useCallback(async () => {
+    const pending = pendingDeleteRef.current
+    if (!pending) return
+    clearTimeout(pending.timer)
+    pendingDeleteRef.current = null
+    setPendingDelete(null)
     try {
-      await deleteDevIssue(id)
-      setIssues((prev) => prev.filter((i) => i._id !== id))
-      if (selectedIssue?._id === id) handleCloseDetail()
+      await deleteDevIssue(pending.issue._id)
       Promise.all([loadStats(), loadOverview()])
     } catch (err) {
       console.error(err)
+      setIssues((prev) => (prev.some((i) => i._id === pending.issue._id) ? prev : [...prev, pending.issue]))
+      setDeleteError(`Échec de la suppression de ${issueIdentifier(pending.issue)} — issue restaurée`)
     }
+  }, [loadStats, loadOverview])
+
+  const undoDelete = () => {
+    const pending = pendingDeleteRef.current
+    if (!pending) return
+    clearTimeout(pending.timer)
+    pendingDeleteRef.current = null
+    setPendingDelete(null)
+    // L'ordre exact n'a pas besoin d'être préservé : le tri/groupement la replace.
+    setIssues((prev) => (prev.some((i) => i._id === pending.issue._id) ? prev : [...prev, pending.issue]))
   }
+
+  const handleDeleteIssue = async (id: string) => {
+    if (!(await confirm({ message: 'Supprimer définitivement cette issue ?', title: 'Suppression' }))) return
+    const issue = issues.find((i) => i._id === id)
+    if (!issue) return
+    // Une seule suppression en attente à la fois : flush immédiat de la précédente.
+    if (pendingDeleteRef.current) await flushDelete()
+    setDeleteError(null)
+    // Retrait optimiste : l'appel API réel part dans 6 s (sauf undo).
+    setIssues((prev) => prev.filter((i) => i._id !== id))
+    setSelectedIds((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    if (selectedIssue?._id === id) handleCloseDetail()
+    const timer = setTimeout(() => {
+      void flushDelete()
+    }, UNDO_DELETE_DELAY_MS)
+    const pending: PendingDelete = { issue, timer }
+    pendingDeleteRef.current = pending
+    setPendingDelete(pending)
+  }
+
+  // Au démontage : si une suppression est encore en attente, on l'exécute
+  // immédiatement (via la ref, pour éviter une closure périmée).
+  useEffect(() => {
+    return () => {
+      const pending = pendingDeleteRef.current
+      if (!pending) return
+      clearTimeout(pending.timer)
+      pendingDeleteRef.current = null
+      deleteDevIssue(pending.issue._id).catch((err) => console.error(err))
+    }
+  }, [])
 
   const handleAddComment = async () => {
     if (!commentDraft.trim() || !selectedIssue) return
@@ -1190,6 +1261,41 @@ const DevWorkspace = () => {
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {/* Toast undo (A9) : même zone que la bulk bar ; décalé au-dessus si elle est visible. */}
+      {pendingDelete && (
+        <div
+          className={'dev-undo-toast' + (selectedIds.size > 0 || bulkError ? ' lift-1' : '')}
+          role="status"
+          aria-live="polite"
+        >
+          <span>Issue {issueIdentifier(pendingDelete.issue)} supprimée</span>
+          <button type="button" className="dev-undo-toast-btn" onClick={undoDelete}>
+            Annuler
+          </button>
+        </div>
+      )}
+
+      {deleteError && (
+        <div
+          className={
+            'dev-undo-toast error' +
+            (selectedIds.size > 0 || bulkError
+              ? pendingDelete
+                ? ' lift-2'
+                : ' lift-1'
+              : pendingDelete
+                ? ' lift-1'
+                : '')
+          }
+          role="alert"
+        >
+          <span>{deleteError}</span>
+          <button type="button" className="dev-undo-toast-btn" onClick={() => setDeleteError(null)} title="Fermer">
+            <X size={12} />
+          </button>
         </div>
       )}
 

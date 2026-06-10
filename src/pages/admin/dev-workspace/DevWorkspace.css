@@ -2687,3 +2687,54 @@
   text-decoration: underline;
   color: #ddd6fe;
 }
+
+/* ── Toast undo suppression (A9) ───────────────────────────────────────── */
+.dev-undo-toast {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #141a2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 70;
+  font-size: 12.5px;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+/* Décalages quand la bulk bar (et/ou le toast undo) occupe déjà la zone. */
+.dev-undo-toast.lift-1 {
+  bottom: 76px;
+}
+.dev-undo-toast.lift-2 {
+  bottom: 134px;
+}
+.dev-undo-toast.error {
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+.dev-undo-toast-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(124, 92, 255, 0.5);
+  background: rgba(124, 92, 255, 0.14);
+  color: #a78bfa;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.dev-undo-toast-btn:hover {
+  background: rgba(124, 92, 255, 0.28);
+  color: #c4b5fd;
+}
