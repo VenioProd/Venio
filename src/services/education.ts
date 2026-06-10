@@ -336,9 +336,7 @@ export async function listClasses(
   return await apiFetch(`${base}/classes${qs.toString() ? '?' + qs.toString() : ''}`)
 }
 
-export async function getClass(
-  id: string,
-): Promise<{
+export async function getClass(id: string): Promise<{
   class: EducationClass
   stats: { studentCount: number; sessionCount: number; assignmentCount: number; openAssignments: number }
   nextSession: EducationSession | null
@@ -678,6 +676,14 @@ export async function listEducationBySchool(): Promise<{ schools: SchoolBucket[]
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Cycle de présence un-tap : NON_RENSEIGNE démarre à PRESENT, puis rotation. */
+const ATTENDANCE_CYCLE: AttendanceState[] = ['PRESENT', 'RETARD', 'ABSENT', 'EXCUSE']
+
+export function nextAttendanceState(current: AttendanceState): AttendanceState {
+  const idx = ATTENDANCE_CYCLE.indexOf(current)
+  return ATTENDANCE_CYCLE[(idx + 1) % ATTENDANCE_CYCLE.length] ?? 'PRESENT'
+}
 
 export function studentDisplayName(s: EducationStudent | { firstName?: string; lastName?: string }): string {
   const last = (s.lastName || '').toUpperCase()

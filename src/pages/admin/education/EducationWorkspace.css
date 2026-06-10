@@ -425,6 +425,19 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* Drag-and-drop kanban devoirs */
+.edu-kanban-col.drag-over {
+  outline: 2px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.edu-kanban-card[draggable='true'] {
+  cursor: grab;
+}
+.edu-kanban-card[draggable='true']:active {
+  cursor: grabbing;
+}
+
 /* ─── Notes — éditeur léger ──────────────────────────────────────────── */
 .edu-notes-layout {
   display: grid;

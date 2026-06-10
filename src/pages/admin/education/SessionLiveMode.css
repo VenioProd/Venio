@@ -1,0 +1,124 @@
+/* ─── Mode Séance live — présence un-tap ─────────────────────────────── */
+.edu-live-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0b0e13;
+  z-index: 1100; /* au-dessus du drawer (101) et des modes existants */
+  display: flex;
+  flex-direction: column;
+  color: var(--admin-text, #e5e7eb);
+}
+
+.edu-live-loading {
+  margin: auto;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+
+.edu-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  flex-wrap: wrap;
+}
+.edu-live-head-info {
+  min-width: 0;
+}
+.edu-live-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.edu-live-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  flex-wrap: wrap;
+}
+.edu-live-chrono {
+  font-weight: 600;
+  color: #86efac;
+}
+.edu-live-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.edu-live-counters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.edu-live-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px 24px;
+}
+
+/* Grille de cartes étudiant — gros targets tactiles. */
+.edu-live-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+.edu-live-card {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
+  text-align: left;
+  color: inherit;
+}
+.edu-live-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.edu-live-card:active {
+  transform: scale(0.97);
+}
+.edu-live-card.pending {
+  border-style: dashed;
+}
+.edu-live-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.edu-live-card-state {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.edu-live-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
