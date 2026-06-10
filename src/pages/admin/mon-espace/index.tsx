@@ -4,7 +4,13 @@ import { useAuth } from '../../../context/AuthContext'
 import BentoGrid from './BentoGrid'
 import { renderWidget } from './widgets'
 import { OverviewProvider } from './widgets/OverviewWidgets'
-import { WIDGET_KEYS, WIDGET_LABELS, defaultLayoutWidgets, type WidgetKey } from './widgets/registry'
+import {
+  WIDGET_KEYS,
+  WIDGET_LABELS,
+  defaultLayoutWidgets,
+  mergeLayoutWidgets,
+  type WidgetKey,
+} from './widgets/registry'
 import { getLayout, saveLayout } from '../../../services/workspace'
 import type { WidgetConfig } from '../../../types/workspace.types'
 import './MonEspace.css'
@@ -27,11 +33,16 @@ export default function MonEspace() {
     getLayout()
       .then((layout) => {
         if (cancelled) return
-        setWidgets(layout.widgets.length ? layout.widgets : defaultLayoutWidgets())
+        // Merge minimal : les clés du registry absentes du layout sauvegardé sont ajoutées en fin.
+        setWidgets(layout.widgets.length ? mergeLayoutWidgets(layout.widgets) : defaultLayoutWidgets())
       })
       .catch(() => setWidgets(defaultLayoutWidgets()))
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const persist = useCallback((next: WidgetConfig[]) => {
@@ -45,14 +56,29 @@ export default function MonEspace() {
 
   const disabledKeys = WIDGET_KEYS.filter((k) => !widgets.find((w) => w.key === k && w.enabled))
 
-  if (loading) return <div className="mon-espace"><p className="subtitle">Chargement…</p></div>
+  if (loading)
+    return (
+      <div className="mon-espace">
+        <p className="subtitle">Chargement…</p>
+      </div>
+    )
 
   return (
     <div className="mon-espace">
       <div className="mon-espace__header">
-        <h1 className="mon-espace__hello">{greeting()} {user?.name} 👋</h1>
+        <h1 className="mon-espace__hello">
+          {greeting()} {user?.name} 👋
+        </h1>
         <button className="btn-secondary" onClick={() => setEditing((e) => !e)}>
-          {editing ? <><Check size={16} /> Terminer</> : <><Settings size={16} /> Personnaliser</>}
+          {editing ? (
+            <>
+              <Check size={16} /> Terminer
+            </>
+          ) : (
+            <>
+              <Settings size={16} /> Personnaliser
+            </>
+          )}
         </button>
       </div>
 
@@ -60,7 +86,9 @@ export default function MonEspace() {
         <div className="mon-espace__drawer">
           <span className="label">Ajouter un widget :</span>
           {disabledKeys.map((k) => (
-            <button key={k} className="chip" onClick={() => enableWidget(k)}>+ {WIDGET_LABELS[k]}</button>
+            <button key={k} className="chip" onClick={() => enableWidget(k)}>
+              + {WIDGET_LABELS[k]}
+            </button>
           ))}
         </div>
       )}
