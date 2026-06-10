@@ -50,7 +50,9 @@
   font-weight: 500;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
 
 .dev-tab:hover {
@@ -86,8 +88,12 @@
 
 /* ── Spin (status IN_PROGRESS icon) ── */
 @keyframes dev-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .dev-spin {
   animation: dev-spin 1.8s linear infinite;
@@ -149,12 +155,24 @@
   opacity: 0.7;
 }
 
-.dev-kpi.tone-slate { --kpi-color: #94a3b8; }
-.dev-kpi.tone-amber { --kpi-color: #facc15; }
-.dev-kpi.tone-emerald { --kpi-color: #10b981; }
-.dev-kpi.tone-violet { --kpi-color: #7c5cff; }
-.dev-kpi.tone-rose { --kpi-color: #ef4444; }
-.dev-kpi.tone-cyan { --kpi-color: #06b6d4; }
+.dev-kpi.tone-slate {
+  --kpi-color: #94a3b8;
+}
+.dev-kpi.tone-amber {
+  --kpi-color: #facc15;
+}
+.dev-kpi.tone-emerald {
+  --kpi-color: #10b981;
+}
+.dev-kpi.tone-violet {
+  --kpi-color: #7c5cff;
+}
+.dev-kpi.tone-rose {
+  --kpi-color: #ef4444;
+}
+.dev-kpi.tone-cyan {
+  --kpi-color: #06b6d4;
+}
 
 .dev-kpi-top {
   display: inline-flex;
@@ -360,7 +378,9 @@
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 7px;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 
 .dev-mini-project:hover {
@@ -554,7 +574,10 @@
   gap: 8px;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.12s ease, transform 0.12s ease, background 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    transform 0.12s ease,
+    background 0.12s ease;
 }
 
 .dev-project-card:hover {
@@ -970,6 +993,18 @@
   border-color: rgba(148, 163, 184, 0.4);
 }
 
+/* Bouton « À valider » — accent violet IN_REVIEW (#a78bfa). */
+.dev-btn.review {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+}
+
+.dev-btn.review:hover {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: rgba(167, 139, 250, 0.65);
+}
+
 .dev-overview {
   display: grid;
   gap: 10px;
@@ -1217,10 +1252,14 @@
   font-size: 12.5px;
   cursor: pointer;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
-    linear-gradient(135deg, #94a3b8 50%, transparent 50%);
-  background-position: calc(100% - 14px) calc(50% - 2px), calc(100% - 9px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -1269,7 +1308,7 @@
 
 .dev-row {
   display: grid;
-  grid-template-columns: 22px 92px 56px 1fr auto auto auto auto;
+  grid-template-columns: 18px 22px 92px 56px 1fr auto auto auto auto;
   gap: 10px;
   align-items: center;
   padding: 8px 20px;
@@ -1285,6 +1324,13 @@
 
 .dev-row.selected {
   background: rgba(124, 92, 255, 0.12);
+}
+
+.dev-row-check {
+  width: 14px;
+  height: 14px;
+  accent-color: #7c5cff;
+  cursor: pointer;
 }
 
 .dev-row-priority {
@@ -1831,7 +1877,7 @@
   }
 
   .dev-row {
-    grid-template-columns: 16px 56px 1fr auto auto;
+    grid-template-columns: 18px 16px 56px 1fr auto auto;
   }
   .dev-row .dev-row-type,
   .dev-row .dev-row-labels,
@@ -1879,10 +1925,22 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.dev-detail-github-ci.tone-ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
-.dev-detail-github-ci.tone-warn { background: rgba(250, 204, 21, 0.18); color: #facc15; }
-.dev-detail-github-ci.tone-fail { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
-.dev-detail-github-ci.tone-neutral { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+.dev-detail-github-ci.tone-ok {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+.dev-detail-github-ci.tone-warn {
+  background: rgba(250, 204, 21, 0.18);
+  color: #facc15;
+}
+.dev-detail-github-ci.tone-fail {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+}
+.dev-detail-github-ci.tone-neutral {
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}
 .dev-detail-github-clear {
   margin-left: auto;
   background: transparent;
@@ -1890,7 +1948,9 @@
   color: #64748b;
   cursor: pointer;
 }
-.dev-detail-github-clear:hover { color: #fca5a5; }
+.dev-detail-github-clear:hover {
+  color: #fca5a5;
+}
 .dev-detail-github-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1926,7 +1986,9 @@
   font-size: 12px;
   word-break: break-all;
 }
-.dev-detail-github-link:hover { text-decoration: underline; }
+.dev-detail-github-link:hover {
+  text-decoration: underline;
+}
 
 /* ── Quick views & view mode toggle (Phase 3 V2) ────────────────────────── */
 .dev-quick-views {
@@ -2115,10 +2177,72 @@
   justify-content: center;
 }
 
+/* ── Drag-and-drop kanban (A3) ── */
+.dev-kanban-col.drag-over {
+  outline: 2px dashed var(--col-color, #7c5cff);
+  outline-offset: -2px;
+  background: rgba(124, 92, 255, 0.05);
+}
+
+.dev-kanban-card[draggable='true'] {
+  cursor: grab;
+}
+
+.dev-kanban-card[draggable='true']:active {
+  cursor: grabbing;
+}
+
+/* ── Barre d'actions bulk (A2) ── */
+.dev-bulk-bar {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #141a2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 60;
+}
+
+.dev-bulk-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.dev-bulk-error {
+  font-size: 12.5px;
+  color: #fca5a5;
+}
+
+.dev-bulk-label-input {
+  width: 110px;
+  padding: 7px 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12.5px;
+}
+
+.dev-bulk-label-input:focus {
+  outline: none;
+  border-color: rgba(124, 92, 255, 0.6);
+}
+
 /* ── KPI interactive (Résolues clickable etc.) ── */
 .dev-kpi.interactive {
   cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 .dev-kpi.interactive:hover {
   border-color: color-mix(in srgb, var(--kpi-color, #7c5cff) 55%, transparent);
@@ -2154,7 +2278,9 @@
   border-radius: 7px;
   font-size: 12.5px;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 .dev-active-row:hover {
   border-color: rgba(124, 92, 255, 0.4);

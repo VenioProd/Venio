@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { Activity, CheckCircle2, ChevronDown, ChevronUp, CircleDot, GitBranch, GitPullRequest, Layers3, Plus, RefreshCw, Target, Trash2, X, XCircle } from 'lucide-react'
+import {
+  Activity,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  CircleDot,
+  GitBranch,
+  GitPullRequest,
+  Layers3,
+  Plus,
+  RefreshCw,
+  Target,
+  Trash2,
+  X,
+  XCircle,
+} from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
@@ -41,8 +57,28 @@ import { PRIORITY_ICON, formatRelative, userInitial, ciStatusTone, type DeepLink
 import GithubLinkPanel from './GithubLinkPanel'
 import ProjectCreateModal from './ProjectCreateModal'
 import IssueDetailPanel from './IssueDetailPanel'
+import { ReviewQueue } from './ReviewQueue'
 import './DevWorkspace.css'
 
+// Persistance des filtres & préférences d'affichage (A4).
+const FILTERS_KEY = 'dev-workspace-prefs-v1'
+
+type DevWorkspacePrefs = {
+  filters?: IssueFilters
+  groupBy?: 'status' | 'priority' | 'none'
+  viewMode?: 'list' | 'kanban'
+  quickView?: 'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'
+}
+
+function readPrefs(): DevWorkspacePrefs {
+  try {
+    return JSON.parse(localStorage.getItem(FILTERS_KEY) || '{}') as DevWorkspacePrefs
+  } catch {
+    return {}
+  }
+}
+
+const QUICK_VIEW_VALUES = ['all', 'mine', 'urgent', 'blocked', 'review', 'backlog'] as const
 
 const DevWorkspace = () => {
   const { user } = useAuth()
@@ -62,17 +98,41 @@ const DevWorkspace = () => {
   const [stats, setStats] = useState<DevStats | null>(null)
 
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<IssueFilters>({
-    status: 'open',
-    project: deepProjectId,
+  // Init paresseuse depuis localStorage ; le deep link ?project= garde la priorité.
+  const [filters, setFilters] = useState<IssueFilters>(() => {
+    try {
+      const stored = readPrefs()
+      return { status: 'open', ...stored.filters, project: deepProjectId ?? stored.filters?.project }
+    } catch {
+      return { status: 'open', project: deepProjectId }
+    }
   })
   const [selectedIssue, setSelectedIssue] = useState<DevIssue | null>(null)
   const [comments, setComments] = useState<DevIssueComment[]>([])
   const [commentDraft, setCommentDraft] = useState('')
-  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'none'>('status')
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
-  const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>('all')
+  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'none'>(() => {
+    const g = readPrefs().groupBy
+    return g === 'priority' || g === 'none' ? g : 'status'
+  })
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() =>
+    readPrefs().viewMode === 'kanban' ? 'kanban' : 'list',
+  )
+  const [quickView, setQuickView] = useState<'all' | 'mine' | 'urgent' | 'blocked' | 'review' | 'backlog'>(() => {
+    const q = readPrefs().quickView
+    return q && QUICK_VIEW_VALUES.includes(q) ? q : 'all'
+  })
   const [showAllProjects, setShowAllProjects] = useState(false)
+  const [showReviewQueue, setShowReviewQueue] = useState(false)
+  const [dragOverCol, setDragOverCol] = useState<DevIssueStatus | null>(null)
+
+  // Sélection multiple + bulk actions (A2).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
+  const [bulkStatus, setBulkStatus] = useState<'' | DevIssueStatus>('')
+  const [bulkPriority, setBulkPriority] = useState<'' | DevIssuePriority>('')
+  const [bulkLabel, setBulkLabel] = useState('')
+  const [bulkApplying, setBulkApplying] = useState(false)
+  const [bulkError, setBulkError] = useState<string | null>(null)
 
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projectForm, setProjectForm] = useState({ key: '', name: '', description: '', color: '#7c5cff' })
@@ -131,22 +191,33 @@ const DevWorkspace = () => {
     }
   }, [])
 
-  useEffect(() => { loadProjects() }, [loadProjects])
-  useEffect(() => { loadIssues() }, [loadIssues])
-  useEffect(() => { loadStats() }, [loadStats])
-  useEffect(() => { loadOverview() }, [loadOverview])
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+  useEffect(() => {
+    loadIssues()
+  }, [loadIssues])
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
+  useEffect(() => {
+    loadOverview()
+  }, [loadOverview])
 
-  const loadIssueDetail = useCallback(async (id: string) => {
-    try {
-      const data = await getDevIssue(id)
-      setSelectedIssue(data.issue)
-      setComments(data.comments)
-    } catch (e) {
-      console.error(e)
-      // Deep link to an issue that no longer exists: bounce back to workspace root.
-      if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev', { replace: true })
-    }
-  }, [location.pathname, navigate])
+  const loadIssueDetail = useCallback(
+    async (id: string) => {
+      try {
+        const data = await getDevIssue(id)
+        setSelectedIssue(data.issue)
+        setComments(data.comments)
+      } catch (e) {
+        console.error(e)
+        // Deep link to an issue that no longer exists: bounce back to workspace root.
+        if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev', { replace: true })
+      }
+    },
+    [location.pathname, navigate],
+  )
 
   const handleSelectIssue = (issue: DevIssue) => {
     setSelectedIssue(issue)
@@ -186,6 +257,21 @@ const DevWorkspace = () => {
       setFilters((f) => ({ ...f, project: deepProjectId }))
     }
   }, [deepProjectId, filters.project])
+
+  // Persistance des filtres + préférences d'affichage.
+  useEffect(() => {
+    try {
+      localStorage.setItem(FILTERS_KEY, JSON.stringify({ filters, groupBy, viewMode, quickView }))
+    } catch {
+      /* quota */
+    }
+  }, [filters, groupBy, viewMode, quickView])
+
+  // La sélection multiple ne survit pas à un changement de filtres.
+  useEffect(() => {
+    setSelectedIds(new Set())
+    setLastClickedId(null)
+  }, [filters])
 
   const applyQuickView = (view: typeof quickView) => {
     setQuickView(view)
@@ -332,6 +418,60 @@ const DevWorkspace = () => {
     })).filter((g) => g.count > 0)
   }, [issues, groupBy])
 
+  // Ordre plat des issues visibles (pour la sélection par plage avec Shift).
+  const visibleFlat = useMemo(() => grouped.flatMap((g) => g.issues), [grouped])
+
+  const toggleSelect = (id: string, shift: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (shift && lastClickedId) {
+        const ids = visibleFlat.map((i) => i._id)
+        const a = ids.indexOf(lastClickedId)
+        const b = ids.indexOf(id)
+        if (a !== -1 && b !== -1) {
+          const [from, to] = a < b ? [a, b] : [b, a]
+          for (let i = from; i <= to; i++) next.add(ids[i]!)
+          return next
+        }
+      }
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    setLastClickedId(id)
+  }
+
+  const applyBulk = async () => {
+    const label = bulkLabel.trim()
+    if ((!bulkStatus && !bulkPriority && !label) || selectedIds.size === 0 || bulkApplying) return
+    setBulkApplying(true)
+    setBulkError(null)
+    const patchFor = (id: string) => {
+      const issue = issues.find((i) => i._id === id)
+      const patch: Partial<Pick<DevIssue, 'status' | 'priority' | 'labels'>> = {}
+      if (bulkStatus) patch.status = bulkStatus
+      if (bulkPriority) patch.priority = bulkPriority
+      if (label && issue) patch.labels = Array.from(new Set([...issue.labels, label]))
+      return patch
+    }
+    try {
+      const results = await Promise.allSettled([...selectedIds].map((id) => updateDevIssue(id, patchFor(id))))
+      const failed = results.filter((r) => r.status === 'rejected').length
+      if (failed > 0) {
+        console.error(`Bulk : ${failed} mise(s) à jour en échec`, results)
+        setBulkError(`${failed} mise(s) à jour en échec`)
+      }
+      await Promise.all([loadIssues(), loadStats(), loadOverview()])
+    } finally {
+      setSelectedIds(new Set())
+      setLastClickedId(null)
+      setBulkStatus('')
+      setBulkPriority('')
+      setBulkLabel('')
+      setBulkApplying(false)
+    }
+  }
+
   const projectOverview = useMemo(() => {
     if (!overview) return []
     return [...overview.projects]
@@ -366,6 +506,13 @@ const DevWorkspace = () => {
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleSelectIssue(issue)}
       >
+        <input
+          type="checkbox"
+          className="dev-row-check"
+          checked={selectedIds.has(issue._id)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => toggleSelect(issue._id, (e.nativeEvent as MouseEvent).shiftKey)}
+        />
         <span
           className="dev-row-priority"
           title={PRIORITY_LABEL[issue.priority]}
@@ -373,15 +520,15 @@ const DevWorkspace = () => {
         >
           {PRIORITY_ICON[issue.priority]}
         </span>
-        <span className="dev-row-identifier">
-          {project ? `${project.key}-${issue.number}` : issue.identifier}
-        </span>
+        <span className="dev-row-identifier">{project ? `${project.key}-${issue.number}` : issue.identifier}</span>
         <span
           className="dev-row-status"
           style={{ color: STATUS_COLOR[issue.status] }}
           title={STATUS_LABEL[issue.status]}
         >
-          <span className={`dev-row-status-dot${issue.status === 'DONE' || issue.status === 'CANCELLED' ? ' filled' : ''}`} />
+          <span
+            className={`dev-row-status-dot${issue.status === 'DONE' || issue.status === 'CANCELLED' ? ' filled' : ''}`}
+          />
         </span>
         <span className="dev-row-title">{issue.title}</span>
         <span className="dev-row-type" style={{ ['--type-color' as never]: TYPE_COLOR[issue.type] }}>
@@ -389,7 +536,9 @@ const DevWorkspace = () => {
         </span>
         <span className="dev-row-labels">
           {issue.labels.slice(0, 2).map((l) => (
-            <span key={l} className="dev-row-label">{l}</span>
+            <span key={l} className="dev-row-label">
+              {l}
+            </span>
           ))}
           {issue.labels.length > 2 && <span className="dev-row-label">+{issue.labels.length - 2}</span>}
         </span>
@@ -411,12 +560,19 @@ const DevWorkspace = () => {
       <div className="dev-header">
         <div className="dev-header-left">
           <h1 className="dev-title">Suivi développement</h1>
-          <span className="dev-subtitle">{stats?.totalProjects ?? 0} projet(s) · {stats?.open ?? 0} issue(s) ouverte(s)</span>
+          <span className="dev-subtitle">
+            {stats?.totalProjects ?? 0} projet(s) · {stats?.open ?? 0} issue(s) ouverte(s)
+          </span>
         </div>
         <div className="dev-header-actions">
           <button className="dev-btn subtle" onClick={loadIssues} title="Rafraîchir">
             <RefreshCw size={13} />
           </button>
+          {(stats?.byStatus?.IN_REVIEW ?? 0) > 0 && (
+            <button className="dev-btn review" onClick={() => setShowReviewQueue(true)} title="Ouvrir la file de revue">
+              <Check size={13} /> À valider ({stats!.byStatus.IN_REVIEW})
+            </button>
+          )}
           {canManage && (
             <>
               <button className="dev-btn subtle" onClick={() => setShowProjectModal(true)}>
@@ -426,7 +582,7 @@ const DevWorkspace = () => {
                 className="dev-btn primary"
                 onClick={() => setShowQuickCreate((s) => !s)}
                 disabled={projects.length === 0}
-                title={projects.length === 0 ? 'Créez d\'abord un projet' : undefined}
+                title={projects.length === 0 ? "Créez d'abord un projet" : undefined}
               >
                 <Plus size={13} /> Nouvelle issue
               </button>
@@ -449,10 +605,18 @@ const DevWorkspace = () => {
               </div>
             </div>
             <div className="dev-command-metrics">
-              <span><Layers3 size={14} /> {stats.totalProjects} projets</span>
-              <span><CircleDot size={14} /> {stats.open} ouvertes</span>
-              <span><Activity size={14} /> {stats.byStatus.IN_PROGRESS + stats.byStatus.IN_REVIEW} actives</span>
-              <span><Target size={14} /> {stats.completedRecent} finies / 14j</span>
+              <span>
+                <Layers3 size={14} /> {stats.totalProjects} projets
+              </span>
+              <span>
+                <CircleDot size={14} /> {stats.open} ouvertes
+              </span>
+              <span>
+                <Activity size={14} /> {stats.byStatus.IN_PROGRESS + stats.byStatus.IN_REVIEW} actives
+              </span>
+              <span>
+                <Target size={14} /> {stats.completedRecent} finies / 14j
+              </span>
             </div>
           </section>
 
@@ -462,41 +626,41 @@ const DevWorkspace = () => {
                 <span>Projets récents</span>
                 <small>Triés par dernière modification, du plus récent au plus ancien</small>
                 {projectOverview.length > 6 && (
-                  <button
-                    type="button"
-                    className="dev-project-toggle"
-                    onClick={() => setShowAllProjects((v) => !v)}
-                  >
+                  <button type="button" className="dev-project-toggle" onClick={() => setShowAllProjects((v) => !v)}>
                     {showAllProjects ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     {showAllProjects ? 'Réduire' : `Voir les ${projectOverview.length} projets`}
                   </button>
                 )}
               </div>
               <div className={'dev-project-strip' + (showAllProjects ? ' expanded' : '')}>
-                {visibleProjectOverview.map(({ project, total, done, active, urgent, blocked, percent, lastActivityAt }) => (
-                  <button
-                    key={project._id}
-                    type="button"
-                    className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
-                    onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
-                    style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
-                    title="Ouvrir le cockpit du projet"
-                  >
-                    <span className="dev-project-card-key">{project.key}</span>
-                    <strong>{project.name}</strong>
-                    <span className="dev-project-card-meta">
-                      {done}/{total} terminées · {active} actives
-                    </span>
-                    <span className="dev-project-card-activity">Mis à jour {formatRelative(lastActivityAt)}</span>
-                    <span className="dev-project-progress"><span style={{ width: percent + '%' }} /></span>
-                    <span className="dev-project-card-footer">
-                      <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
-                      <span className={blocked ? 'warn' : ''}>
-                        {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
+                {visibleProjectOverview.map(
+                  ({ project, total, done, active, urgent, blocked, percent, lastActivityAt }) => (
+                    <button
+                      key={project._id}
+                      type="button"
+                      className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
+                      onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
+                      style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
+                      title="Ouvrir le cockpit du projet"
+                    >
+                      <span className="dev-project-card-key">{project.key}</span>
+                      <strong>{project.name}</strong>
+                      <span className="dev-project-card-meta">
+                        {done}/{total} terminées · {active} actives
                       </span>
-                    </span>
-                  </button>
-                ))}
+                      <span className="dev-project-card-activity">Mis à jour {formatRelative(lastActivityAt)}</span>
+                      <span className="dev-project-progress">
+                        <span style={{ width: percent + '%' }} />
+                      </span>
+                      <span className="dev-project-card-footer">
+                        <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
+                        <span className={blocked ? 'warn' : ''}>
+                          {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
+                        </span>
+                      </span>
+                    </button>
+                  ),
+                )}
               </div>
             </section>
           )}
@@ -504,14 +668,16 @@ const DevWorkspace = () => {
       )}
 
       <div className="dev-quick-views">
-        {([
-          ['all', 'Toutes ouvertes'],
-          ['mine', 'Mes issues'],
-          ['urgent', 'Urgentes'],
-          ['blocked', 'Bloquées'],
-          ['review', 'En revue'],
-          ['backlog', 'Backlog'],
-        ] as Array<[typeof quickView, string]>).map(([key, label]) => (
+        {(
+          [
+            ['all', 'Toutes ouvertes'],
+            ['mine', 'Mes issues'],
+            ['urgent', 'Urgentes'],
+            ['blocked', 'Bloquées'],
+            ['review', 'En revue'],
+            ['backlog', 'Backlog'],
+          ] as Array<[typeof quickView, string]>
+        ).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -558,7 +724,9 @@ const DevWorkspace = () => {
         >
           <option value="all">Tous projets</option>
           {projects.map((p) => (
-            <option key={p._id} value={p._id}>{p.key} · {p.name}</option>
+            <option key={p._id} value={p._id}>
+              {p.key} · {p.name}
+            </option>
           ))}
         </select>
         {filters.project && (
@@ -579,7 +747,9 @@ const DevWorkspace = () => {
           <option value="open">Ouvertes</option>
           <option value="all">Toutes</option>
           {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            <option key={s} value={s}>
+              {STATUS_LABEL[s]}
+            </option>
           ))}
         </select>
         <select
@@ -589,7 +759,9 @@ const DevWorkspace = () => {
         >
           <option value="all">Toutes priorités</option>
           {PRIORITY_ORDER.map((p) => (
-            <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>
+            <option key={p} value={p}>
+              {PRIORITY_LABEL[p]}
+            </option>
           ))}
         </select>
         <select
@@ -599,7 +771,9 @@ const DevWorkspace = () => {
         >
           <option value="all">Tous types</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
         <select
@@ -631,7 +805,9 @@ const DevWorkspace = () => {
                 onChange={(e) => setQuickCreate((q) => ({ ...q, project: e.target.value }))}
               >
                 {projects.map((p) => (
-                  <option key={p._id} value={p._id}>{p.key}</option>
+                  <option key={p._id} value={p._id}>
+                    {p.key}
+                  </option>
                 ))}
               </select>
               <input
@@ -645,24 +821,38 @@ const DevWorkspace = () => {
                 value={quickCreate.type}
                 onChange={(e) => setQuickCreate((q) => ({ ...q, type: e.target.value as DevIssueType }))}
               >
-                {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {Object.entries(TYPE_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
               </select>
               <select
                 value={quickCreate.priority}
                 onChange={(e) => setQuickCreate((q) => ({ ...q, priority: e.target.value as DevIssuePriority }))}
               >
-                {PRIORITY_ORDER.map((p) => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
+                {PRIORITY_ORDER.map((p) => (
+                  <option key={p} value={p}>
+                    {PRIORITY_LABEL[p]}
+                  </option>
+                ))}
               </select>
               <select
                 value={quickCreate.status}
                 onChange={(e) => setQuickCreate((q) => ({ ...q, status: e.target.value as DevIssueStatus }))}
               >
-                {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                {STATUS_ORDER.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </option>
+                ))}
               </select>
               <button type="submit" className="dev-btn primary" disabled={creating || !quickCreate.title.trim()}>
                 {creating ? '…' : 'Créer'}
               </button>
-              <button type="button" className="dev-btn subtle" onClick={() => setShowQuickCreate(false)}>Annuler</button>
+              <button type="button" className="dev-btn subtle" onClick={() => setShowQuickCreate(false)}>
+                Annuler
+              </button>
             </form>
           )}
 
@@ -684,7 +874,24 @@ const DevWorkspace = () => {
               {STATUS_ORDER.filter((s) => s !== 'CANCELLED').map((status) => {
                 const colIssues = issues.filter((i) => i.status === status)
                 return (
-                  <div key={status} className="dev-kanban-col">
+                  <div
+                    key={status}
+                    className={'dev-kanban-col' + (dragOverCol === status ? ' drag-over' : '')}
+                    style={{ ['--col-color' as never]: STATUS_COLOR[status] }}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                      setDragOverCol(status)
+                    }}
+                    onDragLeave={() => setDragOverCol((c) => (c === status ? null : c))}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setDragOverCol(null)
+                      const id = e.dataTransfer.getData('text/plain')
+                      const dropped = issues.find((i) => i._id === id)
+                      if (id && dropped && dropped.status !== status) handlePatchIssue(id, { status })
+                    }}
+                  >
                     <header
                       className="dev-kanban-col-header"
                       style={{ ['--col-color' as never]: STATUS_COLOR[status] }}
@@ -706,6 +913,11 @@ const DevWorkspace = () => {
                               className={'dev-kanban-card' + (selectedIssue?._id === issue._id ? ' selected' : '')}
                               onClick={() => handleSelectIssue(issue)}
                               style={{ ['--prio-color' as never]: PRIORITY_COLOR[issue.priority] }}
+                              draggable={canManage}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', issue._id)
+                                e.dataTransfer.effectAllowed = 'move'
+                              }}
                             >
                               <div className="dev-kanban-card-top">
                                 <span className="dev-kanban-card-id">
@@ -715,14 +927,22 @@ const DevWorkspace = () => {
                               </div>
                               <div className="dev-kanban-card-title">{issue.title}</div>
                               <div className="dev-kanban-card-meta">
-                                <span className="dev-kanban-card-type" style={{ ['--type-color' as never]: TYPE_COLOR[issue.type] }}>
+                                <span
+                                  className="dev-kanban-card-type"
+                                  style={{ ['--type-color' as never]: TYPE_COLOR[issue.type] }}
+                                >
                                   {TYPE_LABEL[issue.type]}
                                 </span>
                                 {issue.labels.slice(0, 2).map((l) => (
-                                  <span key={l} className="dev-kanban-card-label">{l}</span>
+                                  <span key={l} className="dev-kanban-card-label">
+                                    {l}
+                                  </span>
                                 ))}
                                 {issue.assignee && (
-                                  <span className="dev-kanban-card-assignee" title={issue.assignee.name || issue.assignee.email}>
+                                  <span
+                                    className="dev-kanban-card-assignee"
+                                    title={issue.assignee.name || issue.assignee.email}
+                                  >
                                     {userInitial(issue.assignee)}
                                   </span>
                                 )}
@@ -766,6 +986,78 @@ const DevWorkspace = () => {
           />
         )}
       </div>
+
+      {(selectedIds.size > 0 || bulkError) && (
+        <div className="dev-bulk-bar">
+          {bulkError ? (
+            <>
+              <span className="dev-bulk-error">{bulkError}</span>
+              <button className="dev-btn subtle" onClick={() => setBulkError(null)} title="Fermer">
+                <X size={12} />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="dev-bulk-count">{selectedIds.size} sélectionnée(s)</span>
+              <select
+                className="dev-select"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value as '' | DevIssueStatus)}
+              >
+                <option value="">Statut…</option>
+                {STATUS_ORDER.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="dev-select"
+                value={bulkPriority}
+                onChange={(e) => setBulkPriority(e.target.value as '' | DevIssuePriority)}
+              >
+                <option value="">Priorité…</option>
+                {PRIORITY_ORDER.map((p) => (
+                  <option key={p} value={p}>
+                    {PRIORITY_LABEL[p]}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="dev-bulk-label-input"
+                placeholder="+ label"
+                value={bulkLabel}
+                onChange={(e) => setBulkLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void applyBulk()
+                }}
+              />
+              <button
+                className="dev-btn primary"
+                onClick={() => void applyBulk()}
+                disabled={bulkApplying || (!bulkStatus && !bulkPriority && !bulkLabel.trim())}
+              >
+                {bulkApplying ? '…' : 'Appliquer'}
+              </button>
+              <button className="dev-btn subtle" onClick={() => setSelectedIds(new Set())} title="Vider la sélection">
+                <X size={12} />
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {showReviewQueue && (
+        <ReviewQueue
+          projects={projects}
+          onClose={() => setShowReviewQueue(false)}
+          onChanged={() => {
+            loadIssues()
+            loadStats()
+            loadOverview()
+          }}
+        />
+      )}
 
       {showProjectModal && (
         <ProjectCreateModal
