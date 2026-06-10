@@ -88,6 +88,7 @@ export function SessionsTab({
 }: {
   classId: string
   onChanged: () => void
+  /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer. */
   templates?: EducationTemplate[]
 }) {
   const [sessions, setSessions] = useState<EducationSession[]>([])
@@ -156,7 +157,7 @@ export function SessionsTab({
       {showCreate && (
         <SessionForm
           classId={classId}
-          templates={templates}
+          templates={templates?.filter((t) => t.kind === 'session')}
           onClose={() => setShowCreate(false)}
           onSaved={async () => {
             setShowCreate(false)
@@ -168,6 +169,7 @@ export function SessionsTab({
       {openSessionId && (
         <SessionDetailDrawer
           sessionId={openSessionId}
+          templates={templates}
           onClose={() => setOpenSessionId(null)}
           onChanged={async () => {
             await refresh()
@@ -183,6 +185,7 @@ export function SessionForm({
   classId,
   classes,
   templates,
+  defaultDate,
   onClose,
   onSaved,
 }: {
@@ -191,15 +194,18 @@ export function SessionForm({
   classes?: EducationClass[]
   /** Templates kind="session", filtrés par l'appelant. */
   templates?: EducationTemplate[]
+  /** Date initiale au format datetime-local (ex. enchaînement post-séance : +7 jours). */
+  defaultDate?: string
   onClose: () => void
-  onSaved: () => void
+  /** Reçoit la séance créée (utilisé par PostSessionFlow pour l'afficher). */
+  onSaved: (created?: EducationSession) => void
 }) {
   const [classChoice, setClassChoice] = useState(classId ?? '')
   const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
     title: '',
     theme: '',
-    date: new Date().toISOString().slice(0, 16),
+    date: defaultDate ?? new Date().toISOString().slice(0, 16),
     durationMin: 120,
     location: '',
     agenda: '',
@@ -334,7 +340,7 @@ export function SessionForm({
             onClick={async () => {
               setSaving(true)
               try {
-                await createSession({
+                const r = await createSession({
                   classId: classChoice,
                   title: form.title,
                   theme: form.theme,
@@ -344,7 +350,7 @@ export function SessionForm({
                   agenda: form.agenda,
                   objectives: form.objectives,
                 })
-                onSaved()
+                onSaved(r.session)
               } finally {
                 setSaving(false)
               }
@@ -373,6 +379,7 @@ export function SessionsView({
   classes: EducationClass[]
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
+  /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer/live. */
   templates?: EducationTemplate[]
 }) {
   const [filterClass, setFilterClass] = useState<string>('')
@@ -502,7 +509,7 @@ export function SessionsView({
         <SessionForm
           classId={filterClass || undefined}
           classes={classes}
-          templates={templates}
+          templates={templates?.filter((t) => t.kind === 'session')}
           onClose={() => setShowCreate(false)}
           onSaved={() => {
             setShowCreate(false)
@@ -513,6 +520,7 @@ export function SessionsView({
       {openSessionId && (
         <SessionDetailDrawer
           sessionId={openSessionId}
+          templates={templates}
           onClose={() => setOpenSessionId(null)}
           onChanged={refreshSessions}
         />
@@ -520,6 +528,7 @@ export function SessionsView({
       {liveId && (
         <SessionLiveMode
           sessionId={liveId}
+          templates={templates}
           onClose={() => {
             setLiveId(null)
             refreshSessions()

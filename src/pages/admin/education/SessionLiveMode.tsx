@@ -12,7 +12,9 @@ import {
   type AttendanceEntry,
   type AttendanceState,
   type EducationSession,
+  type EducationTemplate,
 } from '../../../services/education'
+import { PostSessionFlow } from './PostSessionFlow'
 import './SessionLiveMode.css'
 
 /**
@@ -30,10 +32,13 @@ function attendanceStudentId(a: AttendanceEntry): string {
 
 export function SessionLiveMode({
   sessionId,
+  templates,
   onClose,
   onChanged,
 }: {
   sessionId: string
+  /** Templates tous kinds, pour l'enchaînement post-séance. */
+  templates?: EducationTemplate[]
   onClose: () => void
   onChanged: () => void
 }) {
@@ -43,6 +48,7 @@ export function SessionLiveMode({
   const [error, setError] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [ending, setEnding] = useState(false)
+  const [postFlowOpen, setPostFlowOpen] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -77,16 +83,17 @@ export function SessionLiveMode({
     return () => clearInterval(t)
   }, [])
 
-  // Escape ferme (sauf focus dans la textarea de recap).
+  // Escape ferme (sauf focus dans la textarea de recap, ou flow post-séance ouvert).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
+      if (postFlowOpen) return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, postFlowOpen])
 
   // Autosave debouncé du recap (même pattern que SessionDetailDrawer).
   useEffect(() => {
@@ -181,10 +188,13 @@ export function SessionLiveMode({
     setEnding(true)
     try {
       await updateSession(session._id, { status: 'TERMINEE' })
+      setSession((s) => (s ? { ...s, status: 'TERMINEE' } : s))
       onChanged()
-      onClose()
+      // Enchaînement post-séance au lieu de fermer ; sa fermeture appelle onClose.
+      setPostFlowOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de terminer la séance')
+    } finally {
       setEnding(false)
     }
   }
@@ -309,6 +319,10 @@ export function SessionLiveMode({
           <Flag size={14} /> {ending ? 'Clôture…' : 'Terminer la séance'}
         </button>
       </div>
+
+      {postFlowOpen && (
+        <PostSessionFlow session={session} templates={templates ?? []} onClose={onClose} onChanged={onChanged} />
+      )}
     </div>
   )
 }

@@ -88,19 +88,57 @@ type View =
   | 'schools'
   | 'calendar'
 
+/* ─── Reprise du dernier contexte (VENIO-75) ───────────────────────────── */
+
+const CONTEXT_KEY = 'edu-workspace-context-v1'
+
+/** Vues restaurables ('search' exclue : c'est une modale, pas une vue). */
+const RESTORABLE_VIEWS: View[] = [
+  'dashboard',
+  'classes',
+  'sessions',
+  'assignments',
+  'notes',
+  'templates',
+  'advanced-search',
+  'schools',
+  'calendar',
+]
+
+type WorkspaceContext = { view: View; selectedClassId: string | null; school: string }
+
+/** Contexte persisté, validé champ par champ (fallback : cockpit, rien de sélectionné). */
+function loadContext(): WorkspaceContext {
+  const fallback: WorkspaceContext = { view: 'dashboard', selectedClassId: null, school: '' }
+  try {
+    const raw = localStorage.getItem(CONTEXT_KEY)
+    if (!raw) return fallback
+    const p = JSON.parse(raw) as Partial<WorkspaceContext>
+    return {
+      view: RESTORABLE_VIEWS.includes(p.view as View) ? (p.view as View) : 'dashboard',
+      // Revalidé après chargement des classes (remis à null s'il n'existe plus).
+      selectedClassId: typeof p.selectedClassId === 'string' ? p.selectedClassId : null,
+      school: typeof p.school === 'string' ? p.school : '',
+    }
+  } catch {
+    return fallback
+  }
+}
+
 export default function EducationWorkspace() {
-  const [view, setView] = useState<View>('dashboard')
+  const [view, setView] = useState<View>(() => loadContext().view)
   const [dashboard, setDashboard] = useState<EducationDashboard | null>(null)
   const [classes, setClasses] = useState<EducationClass[]>([])
+  const [classesLoaded, setClassesLoaded] = useState(false)
   const [templates, setTemplates] = useState<EducationTemplate[]>([])
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(() => loadContext().selectedClassId)
   const [showCreateClass, setShowCreateClass] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [correctionAssignmentId, setCorrectionAssignmentId] = useState<string | null>(null)
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null)
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [school, setSchool] = useState<string>('')
+  const [school, setSchool] = useState<string>(() => loadContext().school)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [classesError, setClassesError] = useState<string | null>(null)
 
@@ -118,6 +156,7 @@ export default function EducationWorkspace() {
     try {
       const r = await listClasses()
       setClasses(r.classes)
+      setClassesLoaded(true)
       setClassesError(null)
     } catch (err) {
       setClassesError(err instanceof Error ? err.message : 'Impossible de charger les classes')
@@ -139,6 +178,21 @@ export default function EducationWorkspace() {
     refreshClasses()
     refreshTemplates()
   }, [refreshDashboard, refreshClasses, refreshTemplates])
+
+  // Persistance du contexte courant (vue, classe ouverte, école filtrée).
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONTEXT_KEY, JSON.stringify({ view, selectedClassId, school }))
+    } catch {
+      // Stockage indisponible (quota, navigation privée) : non bloquant.
+    }
+  }, [view, selectedClassId, school])
+
+  // Invalide la classe restaurée si elle n'existe plus après chargement.
+  useEffect(() => {
+    if (!classesLoaded || !selectedClassId) return
+    if (!classes.some((c) => c._id === selectedClassId)) setSelectedClassId(null)
+  }, [classesLoaded, classes, selectedClassId])
 
   // Cmd+K → search
   useEffect(() => {
@@ -313,7 +367,8 @@ export default function EducationWorkspace() {
             {view === 'sessions' && (
               <SessionsView
                 classes={classes}
-                templates={templates.filter((t) => t.kind === 'session')}
+                /* tous kinds : SessionsView filtre pour le form et transmet tout au drawer/live */
+                templates={templates}
                 incomingOpenId={pendingSessionId}
                 onCloseIncomingOpen={() => setPendingSessionId(null)}
               />

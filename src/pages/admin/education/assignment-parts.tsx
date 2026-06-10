@@ -250,7 +250,8 @@ export function AssignmentForm({
   /** Templates kind="assignment", filtrés par l'appelant. */
   templates?: EducationTemplate[]
   onClose: () => void
-  onSaved: () => void
+  /** Reçoit le devoir créé (utilisé par PostSessionFlow pour l'afficher). */
+  onSaved: (created?: EducationAssignment) => void
 }) {
   const [classChoice, setClassChoice] = useState(classId ?? '')
   const [templateId, setTemplateId] = useState('')
@@ -420,7 +421,7 @@ export function AssignmentForm({
             onClick={async () => {
               setSaving(true)
               try {
-                await createAssignment({
+                const r = await createAssignment({
                   classId: classChoice,
                   title: form.title,
                   kind: form.kind,
@@ -432,7 +433,7 @@ export function AssignmentForm({
                   rubric: form.rubric,
                   expectedDeliverables: form.expectedDeliverables,
                 })
-                onSaved()
+                onSaved(r.assignment)
               } finally {
                 setSaving(false)
               }

@@ -12,9 +12,11 @@ import {
   type AttendanceState,
   type EducationSession,
   type EducationSessionStatus,
+  type EducationTemplate,
 } from '../../../services/education'
 import { SessionLiveMode } from './SessionLiveMode'
 import { DocumentsPanel } from './DocumentsPanel'
+import { PostSessionFlow } from './PostSessionFlow'
 
 /**
  * VENIO-27 — Détail de séance.
@@ -28,10 +30,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export function SessionDetailDrawer({
   sessionId,
+  templates,
   onClose,
   onChanged,
 }: {
   sessionId: string
+  /** Templates tous kinds, pour le mode séance et l'enchaînement post-séance. */
+  templates?: EducationTemplate[]
   onClose: () => void
   onChanged: () => void
 }) {
@@ -42,6 +47,9 @@ export function SessionDetailDrawer({
   const [liveOpen, setLiveOpen] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [error, setError] = useState<string | null>(null)
+  // Mini-bannière + modale d'enchaînement post-séance (passage en TERMINEE).
+  const [postBanner, setPostBanner] = useState(false)
+  const [postFlowOpen, setPostFlowOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -113,6 +121,7 @@ export function SessionDetailDrawer({
       await updateSession(session!._id, { status: next })
       setSaveState('saved')
       setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
+      if (next === 'TERMINEE') setPostBanner(true)
       onChanged()
     } catch (err) {
       setSaveState('error')
@@ -170,6 +179,24 @@ export function SessionDetailDrawer({
                 }}
               >
                 Recharger
+              </button>
+            </div>
+          )}
+
+          {postBanner && (
+            <div className="edu-postflow-banner" role="status">
+              <span style={{ flex: 1 }}>Lancer l'enchaînement post-séance ?</span>
+              <button
+                className="edu-btn"
+                onClick={() => {
+                  setPostBanner(false)
+                  setPostFlowOpen(true)
+                }}
+              >
+                Lancer
+              </button>
+              <button className="edu-btn ghost" onClick={() => setPostBanner(false)}>
+                Ignorer
               </button>
             </div>
           )}
@@ -270,8 +297,20 @@ export function SessionDetailDrawer({
       {liveOpen && (
         <SessionLiveMode
           sessionId={session._id}
+          templates={templates}
           onClose={() => {
             setLiveOpen(false)
+            refresh()
+          }}
+          onChanged={onChanged}
+        />
+      )}
+      {postFlowOpen && (
+        <PostSessionFlow
+          session={session}
+          templates={templates ?? []}
+          onClose={() => {
+            setPostFlowOpen(false)
             refresh()
           }}
           onChanged={onChanged}
