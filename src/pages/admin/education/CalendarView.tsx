@@ -1,11 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Apple, MapPin, Clock, AlertTriangle } from 'lucide-react'
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Apple,
+  MapPin,
+  Clock,
+  AlertTriangle,
+  Plus,
+  X,
+} from 'lucide-react'
 import {
   fetchAppleCalendar,
   refreshAppleCalendar,
   type AppleCalendarEvent,
   type AppleCalendarPayload,
 } from '../../../services/educationCalendar'
+import {
+  createSession,
+  listSessions,
+  formatDate,
+  type EducationClass,
+  type EducationSession,
+} from '../../../services/education'
+import { SessionDetailDrawer } from './SessionDetailDrawer'
 
 type Mode = 'week' | 'month'
 
@@ -96,7 +115,7 @@ function groupEventsByDay(events: AppleCalendarEvent[]): Map<string, AppleCalend
   return map
 }
 
-export function CalendarView() {
+export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
   const [mode, setMode] = useState<Mode>('week')
   const [anchor, setAnchor] = useState<Date>(() => new Date())
   const [payload, setPayload] = useState<AppleCalendarPayload | null>(null)
@@ -105,6 +124,10 @@ export function CalendarView() {
   const [error, setError] = useState<string | null>(null)
   const [unconfigured, setUnconfigured] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<AppleCalendarEvent | null>(null)
+  // Création de séance depuis un événement Apple (B4).
+  const [createFor, setCreateFor] = useState<AppleCalendarEvent | null>(null)
+  const [createdSession, setCreatedSession] = useState<EducationSession | null>(null)
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null)
 
   const { from, to } = useMemo(() => computeRange(mode, anchor), [mode, anchor])
 
@@ -262,6 +285,26 @@ export function CalendarView() {
         </div>
       )}
 
+      {createdSession && (
+        <div className="edu-cal-state edu-cal-state-success" role="status">
+          <div style={{ flex: 1 }}>
+            Séance « <strong>{createdSession.title}</strong> » créée ({formatDate(createdSession.date, true)}).
+          </div>
+          <button
+            className="edu-btn"
+            onClick={() => {
+              setOpenSessionId(createdSession._id)
+              setCreatedSession(null)
+            }}
+          >
+            Ouvrir
+          </button>
+          <button className="edu-btn-icon" onClick={() => setCreatedSession(null)} aria-label="Fermer la notification">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {payload && !error && (
         <>
           {mode === 'week' ? (
@@ -274,7 +317,36 @@ export function CalendarView() {
         </>
       )}
 
-      {selectedEvent && <EventDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && (
+        <EventDrawer
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onCreateSession={() => setCreateFor(selectedEvent)}
+        />
+      )}
+
+      {createFor && (
+        <CreateSessionModal
+          event={createFor}
+          classes={classes}
+          onClose={() => setCreateFor(null)}
+          onCreated={(session) => {
+            setCreateFor(null)
+            setSelectedEvent(null)
+            setCreatedSession(session)
+          }}
+        />
+      )}
+
+      {openSessionId && (
+        <SessionDetailDrawer
+          sessionId={openSessionId}
+          onClose={() => setOpenSessionId(null)}
+          onChanged={() => {
+            /* le calendrier Apple est en lecture seule, rien à rafraîchir ici */
+          }}
+        />
+      )}
 
       <CalendarStyles />
     </div>
@@ -458,7 +530,15 @@ function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
 
 // ───────────────────────────── Détail événement ────────────────────────────
 
-function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: () => void }) {
+function EventDrawer({
+  event,
+  onClose,
+  onCreateSession,
+}: {
+  event: AppleCalendarEvent
+  onClose: () => void
+  onCreateSession: () => void
+}) {
   const start = new Date(event.start)
   const dayLabel = `${DAY_NAMES_LONG[(start.getDay() + 6) % 7]} ${start.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
   return (
@@ -476,9 +556,18 @@ function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: (
               {event.status && ` · ${event.status.toLowerCase()}`}
             </div>
           </div>
-          <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
-          </button>
+          <div className="edu-row" style={{ gap: 6 }}>
+            <button
+              className="edu-btn"
+              onClick={onCreateSession}
+              title="Créer une séance pédagogique depuis cet événement"
+            >
+              <Plus size={14} /> Créer la séance
+            </button>
+            <button className="edu-btn ghost" onClick={onClose}>
+              Fermer
+            </button>
+          </div>
         </div>
         <div className="edu-drawer-body">
           <div className="edu-form-group">
@@ -523,6 +612,201 @@ function EventDrawer({ event, onClose }: { event: AppleCalendarEvent; onClose: (
   )
 }
 
+// ───────────────────────────── Création de séance (B4) ─────────────────────
+
+/** Normalisation pour matching insensible casse/accents. */
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+/** Devine la classe depuis classLabel/school de l'événement (sinon null). */
+function guessClassId(ev: AppleCalendarEvent, classes: EducationClass[]): string | null {
+  const label = ev.classLabel ? norm(ev.classLabel) : ''
+  if (label) {
+    const exact = classes.find((c) => norm(c.name) === label)
+    if (exact) return exact._id
+    const partial = classes.find((c) => norm(c.name).includes(label) || label.includes(norm(c.name)))
+    if (partial) return partial._id
+  }
+  const school = ev.school ? norm(ev.school) : ''
+  if (school) {
+    const matches = classes.filter((c) => (c.school && norm(c.school) === school) || norm(c.name).includes(school))
+    if (matches.length === 1) return matches[0]._id
+  }
+  return null
+}
+
+/** ISO → valeur d'un input datetime-local (heure locale). */
+function toLocalInputValue(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function CreateSessionModal({
+  event,
+  classes,
+  onClose,
+  onCreated,
+}: {
+  event: AppleCalendarEvent
+  classes: EducationClass[]
+  onClose: () => void
+  onCreated: (session: EducationSession) => void
+}) {
+  // Durée = (end − start) en minutes, défaut 120 (journée entière incluse).
+  const initialDuration = (() => {
+    if (event.allDay) return 120
+    const diff = Math.round((new Date(event.end).getTime() - new Date(event.start).getTime()) / 60_000)
+    return diff > 0 ? diff : 120
+  })()
+
+  const [classId, setClassId] = useState<string>(() => guessClassId(event, classes) ?? '')
+  const [title, setTitle] = useState(event.title || 'Séance')
+  const [date, setDate] = useState(() => toLocalInputValue(event.start))
+  const [durationMin, setDurationMin] = useState(initialDuration)
+  const [location, setLocation] = useState(event.location || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  // Garde anti-doublon : séance existante à ±1h pour la classe → confirmation explicite.
+  const [duplicate, setDuplicate] = useState<EducationSession | null>(null)
+
+  async function submit(force = false) {
+    if (!classId || !title.trim() || !date) return
+    setSaving(true)
+    setError(null)
+    try {
+      if (!force) {
+        const start = new Date(date)
+        const r = await listSessions({
+          classId,
+          from: new Date(start.getTime() - 3_600_000).toISOString(),
+          to: new Date(start.getTime() + 3_600_000).toISOString(),
+        })
+        if (r.sessions.length > 0) {
+          setDuplicate(r.sessions[0])
+          setSaving(false)
+          return
+        }
+      }
+      const r = await createSession({
+        classId,
+        title: title.trim(),
+        date: new Date(date).toISOString(),
+        durationMin,
+        location,
+      })
+      onCreated(r.session)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de créer la séance')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="edu-drawer-backdrop" onClick={onClose} />
+      <div className="edu-drawer" style={{ width: 'min(520px, 92vw)' }}>
+        <div className="edu-drawer-head">
+          <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+            Créer la séance
+          </h2>
+          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="edu-drawer-body">
+          {error && (
+            <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
+              {error}
+            </div>
+          )}
+          <div className="edu-form-group">
+            <label>Classe *</label>
+            <select className="edu-select" value={classId} onChange={(e) => setClassId(e.target.value)} autoFocus>
+              <option value="">Choisir une classe…</option>
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {(event.classLabel || event.school) && !classId && (
+              <p className="edu-sub" style={{ marginTop: 4 }}>
+                Aucune classe ne correspond à « {event.classLabel || event.school} » — choisis-la manuellement.
+              </p>
+            )}
+          </div>
+          <div className="edu-form-group">
+            <label>Titre</label>
+            <input className="edu-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="edu-grid-2">
+            <div className="edu-form-group">
+              <label>Date & heure</label>
+              <input
+                type="datetime-local"
+                className="edu-input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="edu-form-group">
+              <label>Durée (min)</label>
+              <input
+                type="number"
+                className="edu-input"
+                value={durationMin}
+                onChange={(e) => setDurationMin(Number(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+          <div className="edu-form-group">
+            <label>Lieu</label>
+            <input className="edu-input" value={location} onChange={(e) => setLocation(e.target.value)} />
+          </div>
+
+          {duplicate && (
+            <div className="edu-cal-state edu-cal-state-warn" role="alert">
+              <AlertTriangle size={16} />
+              <div style={{ fontSize: 12.5 }}>
+                Une séance existe déjà à ±1 h pour cette classe :{' '}
+                <strong>
+                  {duplicate.title} — {formatDate(duplicate.date, true)}
+                </strong>
+                . Créer quand même ?
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="edu-drawer-foot">
+          <button className="edu-btn ghost" onClick={onClose}>
+            Annuler
+          </button>
+          {duplicate ? (
+            <button className="edu-btn" disabled={saving} onClick={() => submit(true)}>
+              {saving ? 'Création…' : 'Créer quand même'}
+            </button>
+          ) : (
+            <button
+              className="edu-btn"
+              disabled={!classId || !title.trim() || !date || saving}
+              onClick={() => submit(false)}
+            >
+              {saving ? 'Création…' : 'Créer la séance'}
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ───────────────────────────── Styles inline scopés ────────────────────────
 // Les autres vues de l'espace pédagogique injectent leur CSS via
 // EducationWorkspace.css. Pour rester atomique et éviter de toucher au
@@ -550,6 +834,8 @@ function CalendarStyles() {
         border: 1px solid rgba(255,255,255,0.08);
       }
       .edu-cal-state-error { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
+      .edu-cal-state-success { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+      .edu-cal-state-warn { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); margin-top: 4px; }
 
       .edu-cal-week {
         display: grid;

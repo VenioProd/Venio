@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { X, ChevronDown, ChevronRight } from 'lucide-react'
+import { X, ChevronDown, ChevronRight, Play } from 'lucide-react'
 import {
   ATTENDANCE_COLOR,
   ATTENDANCE_LABEL,
@@ -12,7 +12,11 @@ import {
   type AttendanceState,
   type EducationSession,
   type EducationSessionStatus,
+  type EducationTemplate,
 } from '../../../services/education'
+import { SessionLiveMode } from './SessionLiveMode'
+import { DocumentsPanel } from './DocumentsPanel'
+import { PostSessionFlow } from './PostSessionFlow'
 
 /**
  * VENIO-27 — Détail de séance.
@@ -26,10 +30,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export function SessionDetailDrawer({
   sessionId,
+  templates,
   onClose,
   onChanged,
 }: {
   sessionId: string
+  /** Templates tous kinds, pour le mode séance et l'enchaînement post-séance. */
+  templates?: EducationTemplate[]
   onClose: () => void
   onChanged: () => void
 }) {
@@ -37,8 +44,12 @@ export function SessionDetailDrawer({
   const [recap, setRecap] = useState('')
   const [status, setStatus] = useState<EducationSessionStatus>('PLANIFIEE')
   const [attendanceOpen, setAttendanceOpen] = useState(false)
+  const [liveOpen, setLiveOpen] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [error, setError] = useState<string | null>(null)
+  // Mini-bannière + modale d'enchaînement post-séance (passage en TERMINEE).
+  const [postBanner, setPostBanner] = useState(false)
+  const [postFlowOpen, setPostFlowOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -51,7 +62,9 @@ export function SessionDetailDrawer({
     }
   }, [sessionId])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   // Autosave debouncé du recap.
   useEffect(() => {
@@ -78,12 +91,18 @@ export function SessionDetailDrawer({
         <div className="edu-drawer-backdrop" onClick={onClose} />
         <div className="edu-drawer">
           <div className="edu-drawer-head">
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>Séance</h2>
-            <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
+            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+              Séance
+            </h2>
+            <button className="edu-btn-icon" onClick={onClose}>
+              <X size={18} />
+            </button>
           </div>
           <div className="edu-drawer-body">
             {error ? (
-              <div className="edu-banner-error" role="alert">{error}</div>
+              <div className="edu-banner-error" role="alert">
+                {error}
+              </div>
             ) : (
               <p className="edu-sub">Chargement…</p>
             )}
@@ -102,6 +121,7 @@ export function SessionDetailDrawer({
       await updateSession(session!._id, { status: next })
       setSaveState('saved')
       setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
+      if (next === 'TERMINEE') setPostBanner(true)
       onChanged()
     } catch (err) {
       setSaveState('error')
@@ -115,20 +135,35 @@ export function SessionDetailDrawer({
       <div className="edu-drawer">
         <div className="edu-drawer-head">
           <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>{session.title}</h2>
+            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+              {session.title}
+            </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(session.date, true)}</div>
           </div>
           <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <SaveIndicator state={saveState} />
+            <button
+              className="edu-btn"
+              onClick={() => setLiveOpen(true)}
+              title="Ouvrir le mode séance (présence un-tap)"
+            >
+              <Play size={14} /> Mode séance
+            </button>
             <select
               className="edu-select"
               style={{ width: 'auto' }}
               value={status}
               onChange={(e) => saveStatus(e.target.value as EducationSessionStatus)}
             >
-              {Object.entries(SESSION_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(SESSION_STATUS_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
             </select>
-            <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
+            <button className="edu-btn-icon" onClick={onClose}>
+              <X size={18} />
+            </button>
           </div>
         </div>
         <div className="edu-drawer-body">
@@ -138,9 +173,30 @@ export function SessionDetailDrawer({
               <button
                 className="edu-btn ghost"
                 style={{ marginLeft: 12 }}
-                onClick={() => { setError(null); refresh() }}
+                onClick={() => {
+                  setError(null)
+                  refresh()
+                }}
               >
                 Recharger
+              </button>
+            </div>
+          )}
+
+          {postBanner && (
+            <div className="edu-postflow-banner" role="status">
+              <span style={{ flex: 1 }}>Lancer l'enchaînement post-séance ?</span>
+              <button
+                className="edu-btn"
+                onClick={() => {
+                  setPostBanner(false)
+                  setPostFlowOpen(true)
+                }}
+              >
+                Lancer
+              </button>
+              <button className="edu-btn ghost" onClick={() => setPostBanner(false)}>
+                Ignorer
               </button>
             </div>
           )}
@@ -164,7 +220,9 @@ export function SessionDetailDrawer({
           >
             {attendanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span>Présence (note légère)</span>
-            <span className="edu-side-badge">{attendanceFilled} / {session.attendance.length}</span>
+            <span className="edu-side-badge">
+              {attendanceFilled} / {session.attendance.length}
+            </span>
           </button>
           {attendanceOpen && (
             <div style={{ marginTop: 10 }}>
@@ -175,7 +233,12 @@ export function SessionDetailDrawer({
                 <div className="edu-empty">Aucun étudiant inscrit dans la classe.</div>
               ) : (
                 <table className="edu-table">
-                  <thead><tr><th>Étudiant</th><th>État</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Étudiant</th>
+                      <th>État</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {session.attendance.map((a) => {
                       const stu = typeof a.studentId === 'string' ? null : a.studentId
@@ -191,7 +254,9 @@ export function SessionDetailDrawer({
                               onChange={async (e) => {
                                 setSaveState('saving')
                                 try {
-                                  await updateAttendance(session._id, [{ studentId, state: e.target.value as AttendanceState }])
+                                  await updateAttendance(session._id, [
+                                    { studentId, state: e.target.value as AttendanceState },
+                                  ])
                                   await refresh()
                                   setSaveState('saved')
                                   setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
@@ -201,7 +266,11 @@ export function SessionDetailDrawer({
                                 }
                               }}
                             >
-                              {Object.entries(ATTENDANCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                              {Object.entries(ATTENDANCE_LABEL).map(([k, v]) => (
+                                <option key={k} value={k}>
+                                  {v}
+                                </option>
+                              ))}
                             </select>
                           </td>
                         </tr>
@@ -212,11 +281,41 @@ export function SessionDetailDrawer({
               )}
             </div>
           )}
+
+          {/* Supports de séance (documents uploadés) */}
+          <h2 className="edu-h2" style={{ marginTop: 18 }}>
+            Supports
+          </h2>
+          <DocumentsPanel parentType="session" parentId={session._id} />
         </div>
         <div className="edu-drawer-foot">
-          <button className="edu-btn ghost" onClick={onClose}>Fermer</button>
+          <button className="edu-btn ghost" onClick={onClose}>
+            Fermer
+          </button>
         </div>
       </div>
+      {liveOpen && (
+        <SessionLiveMode
+          sessionId={session._id}
+          templates={templates}
+          onClose={() => {
+            setLiveOpen(false)
+            refresh()
+          }}
+          onChanged={onChanged}
+        />
+      )}
+      {postFlowOpen && (
+        <PostSessionFlow
+          session={session}
+          templates={templates ?? []}
+          onClose={() => {
+            setPostFlowOpen(false)
+            refresh()
+          }}
+          onChanged={onChanged}
+        />
+      )}
     </>
   )
 }

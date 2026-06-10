@@ -7,37 +7,90 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import {
-  GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
+  GraduationCap,
+  BookOpen,
+  Calendar as CalIcon,
+  ClipboardList,
+  FileText,
+  Plus,
+  Search,
+  X,
+  Trash2,
+  Upload,
+  ChevronRight,
+  Menu,
+  Sparkles,
 } from 'lucide-react'
 import {
   fetchDashboard,
-  listClasses, getClass, createClass, updateClass, deleteClass,
-  listStudents, createStudent, importStudentsCsv, deleteStudent,
-  listSessions, createSession,
-  listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
-  listNotes, createNote, updateNote, deleteNote,
+  listClasses,
+  getClass,
+  createClass,
+  updateClass,
+  deleteClass,
+  listStudents,
+  createStudent,
+  importStudentsCsv,
+  deleteStudent,
+  listSessions,
+  createSession,
+  listAssignments,
+  getAssignment,
+  createAssignment,
+  updateAssignment,
+  updateSubmission,
+  listNotes,
+  createNote,
+  updateNote,
+  deleteNote,
   listTemplates,
   searchEducation,
-  studentDisplayName, formatDate, assignmentExportUrl,
-  CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
+  studentDisplayName,
+  formatDate,
+  assignmentExportUrl,
+  CLASS_STATUS_LABEL,
+  SESSION_STATUS_LABEL,
+  ASSIGNMENT_STATUS_LABEL,
+  ASSIGNMENT_STATUS_COLOR,
+  ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
-  type EducationDashboard, type EducationClass, type EducationStudent,
-  type EducationSession, type EducationAssignment, type EducationSubmission,
-  type EducationNote, type NoteBlock,
+  type EducationDashboard,
+  type EducationClass,
+  type EducationStudent,
+  type EducationSession,
+  type EducationAssignment,
+  type EducationSubmission,
+  type EducationNote,
+  type NoteBlock,
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { SessionLiveMode } from './SessionLiveMode'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
-export function SessionsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
+/** Vrai si la date tombe aujourd'hui (heure locale). */
+function isToday(date: string): boolean {
+  const d = new Date(date)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
+export function SessionsTab({
+  classId,
+  onChanged,
+  templates,
+}: {
+  classId: string
+  onChanged: () => void
+  /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer. */
+  templates?: EducationTemplate[]
+}) {
   const [sessions, setSessions] = useState<EducationSession[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [openSessionId, setOpenSessionId] = useState<string | null>(null)
@@ -46,13 +99,19 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
     const r = await listSessions({ classId })
     setSessions(r.sessions)
   }, [classId])
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   return (
     <div>
       <div className="edu-row between" style={{ marginBottom: 12 }}>
-        <strong>{sessions.length} séance{sessions.length > 1 ? 's' : ''}</strong>
-        <button className="edu-btn" onClick={() => setShowCreate(true)}><Plus size={14} /> Nouvelle séance</button>
+        <strong>
+          {sessions.length} séance{sessions.length > 1 ? 's' : ''}
+        </strong>
+        <button className="edu-btn" onClick={() => setShowCreate(true)}>
+          <Plus size={14} /> Nouvelle séance
+        </button>
       </div>
 
       {sessions.length === 0 ? (
@@ -60,7 +119,13 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
       ) : (
         <table className="edu-table">
           <thead>
-            <tr><th>Date</th><th>Séance</th><th>Statut</th><th>Présence</th><th></th></tr>
+            <tr>
+              <th>Date</th>
+              <th>Séance</th>
+              <th>Statut</th>
+              <th>Présence</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
             {sessions.map((s) => {
@@ -73,9 +138,15 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
                     <strong>{s.title}</strong>
                     {s.theme && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)' }}>{s.theme}</div>}
                   </td>
-                  <td><span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span></td>
-                  <td>{present} / {total}</td>
-                  <td><ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.4)' }} /></td>
+                  <td>
+                    <span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span>
+                  </td>
+                  <td>
+                    {present} / {total}
+                  </td>
+                  <td>
+                    <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                  </td>
                 </tr>
               )
             })}
@@ -84,83 +155,209 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
       )}
 
       {showCreate && (
-        <SessionForm classId={classId} onClose={() => setShowCreate(false)} onSaved={async () => { setShowCreate(false); await refresh(); onChanged() }} />
+        <SessionForm
+          classId={classId}
+          templates={templates?.filter((t) => t.kind === 'session')}
+          onClose={() => setShowCreate(false)}
+          onSaved={async () => {
+            setShowCreate(false)
+            await refresh()
+            onChanged()
+          }}
+        />
       )}
       {openSessionId && (
         <SessionDetailDrawer
           sessionId={openSessionId}
+          templates={templates}
           onClose={() => setOpenSessionId(null)}
-          onChanged={async () => { await refresh(); onChanged() }}
+          onChanged={async () => {
+            await refresh()
+            onChanged()
+          }}
         />
       )}
     </div>
   )
 }
 
-
-export function SessionForm({ classId, onClose, onSaved }: { classId: string; onClose: () => void; onSaved: () => void }) {
+export function SessionForm({
+  classId,
+  classes,
+  templates,
+  defaultDate,
+  onClose,
+  onSaved,
+}: {
+  /** Si absent, un select de classe obligatoire est affiché (utiliser `classes`). */
+  classId?: string
+  classes?: EducationClass[]
+  /** Templates kind="session", filtrés par l'appelant. */
+  templates?: EducationTemplate[]
+  /** Date initiale au format datetime-local (ex. enchaînement post-séance : +7 jours). */
+  defaultDate?: string
+  onClose: () => void
+  /** Reçoit la séance créée (utilisé par PostSessionFlow pour l'afficher). */
+  onSaved: (created?: EducationSession) => void
+}) {
+  const [classChoice, setClassChoice] = useState(classId ?? '')
+  const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
     title: '',
     theme: '',
-    date: new Date().toISOString().slice(0, 16),
+    date: defaultDate ?? new Date().toISOString().slice(0, 16),
     durationMin: 120,
     location: '',
     agenda: '',
+    objectives: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // Pré-remplit le form depuis template.body (champs reconnus, le reste ignoré).
+  function applyTemplate(id: string) {
+    setTemplateId(id)
+    const t = templates?.find((x) => x._id === id)
+    if (!t) return
+    const b = t.body as Record<string, unknown>
+    setForm((f) => ({
+      ...f,
+      title: typeof b.title === 'string' ? b.title : f.title,
+      theme: typeof b.theme === 'string' ? b.theme : f.theme,
+      agenda: typeof b.agenda === 'string' ? b.agenda : f.agenda,
+      durationMin: typeof b.durationMin === 'number' ? b.durationMin : f.durationMin,
+      location: typeof b.location === 'string' ? b.location : f.location,
+      objectives: Array.isArray(b.objectives)
+        ? (b.objectives as unknown[]).filter((o): o is string => typeof o === 'string')
+        : f.objectives,
+    }))
+  }
+
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
       <div className="edu-drawer" style={{ width: 'min(560px, 92vw)' }}>
         <div className="edu-drawer-head">
-          <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>Nouvelle séance</h2>
-          <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
+          <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+            Nouvelle séance
+          </h2>
+          <button className="edu-btn-icon" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
         <div className="edu-drawer-body">
+          {templates && templates.length > 0 && (
+            <div className="edu-form-group">
+              <label>Partir d'un template…</label>
+              <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {templates.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!classId && (
+            <div className="edu-form-group">
+              <label>Classe *</label>
+              <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
+                <option value="">Choisir une classe…</option>
+                {(classes ?? []).map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="edu-form-group">
             <label>Titre</label>
-            <input className="edu-input" autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <input
+              className="edu-input"
+              autoFocus
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
               <label>Date & heure</label>
-              <input type="datetime-local" className="edu-input" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              <input
+                type="datetime-local"
+                className="edu-input"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
             </div>
             <div className="edu-form-group">
               <label>Durée (min)</label>
-              <input type="number" className="edu-input" value={form.durationMin} onChange={(e) => setForm({ ...form, durationMin: Number(e.target.value) || 0 })} />
+              <input
+                type="number"
+                className="edu-input"
+                value={form.durationMin}
+                onChange={(e) => setForm({ ...form, durationMin: Number(e.target.value) || 0 })}
+              />
             </div>
           </div>
           <div className="edu-form-group">
             <label>Thème</label>
-            <input className="edu-input" value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} />
+            <input
+              className="edu-input"
+              value={form.theme}
+              onChange={(e) => setForm({ ...form, theme: e.target.value })}
+            />
           </div>
           <div className="edu-form-group">
             <label>Lieu</label>
-            <input className="edu-input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <input
+              className="edu-input"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
           </div>
           <div className="edu-form-group">
             <label>Déroulé</label>
-            <textarea className="edu-textarea" value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} />
+            <textarea
+              className="edu-textarea"
+              value={form.agenda}
+              onChange={(e) => setForm({ ...form, agenda: e.target.value })}
+            />
           </div>
+          {form.objectives.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Objectifs du template : {form.objectives.join(' · ')}
+            </p>
+          )}
         </div>
         <div className="edu-drawer-foot">
-          <button className="edu-btn ghost" onClick={onClose}>Annuler</button>
-          <button className="edu-btn" disabled={!form.title.trim() || !form.date || saving} onClick={async () => {
-            setSaving(true)
-            try {
-              await createSession({
-                classId,
-                title: form.title,
-                theme: form.theme,
-                date: new Date(form.date).toISOString(),
-                durationMin: form.durationMin,
-                location: form.location,
-                agenda: form.agenda,
-              })
-              onSaved()
-            } finally { setSaving(false) }
-          }}>{saving ? 'Création…' : 'Créer la séance'}</button>
+          <button className="edu-btn ghost" onClick={onClose}>
+            Annuler
+          </button>
+          <button
+            className="edu-btn"
+            disabled={!form.title.trim() || !form.date || !classChoice || saving}
+            onClick={async () => {
+              setSaving(true)
+              try {
+                const r = await createSession({
+                  classId: classChoice,
+                  title: form.title,
+                  theme: form.theme,
+                  date: new Date(form.date).toISOString(),
+                  durationMin: form.durationMin,
+                  location: form.location,
+                  agenda: form.agenda,
+                  objectives: form.objectives,
+                })
+                onSaved(r.session)
+              } finally {
+                setSaving(false)
+              }
+            }}
+          >
+            {saving ? 'Création…' : 'Créer la séance'}
+          </button>
         </div>
       </div>
     </>
@@ -174,24 +371,36 @@ export function SessionForm({ classId, onClose, onSaved }: { classId: string; on
 /* ─── Assignments tab (kanban) ─────────────────────────────────────────── */
 
 export function SessionsView({
-  classes, incomingOpenId, onCloseIncomingOpen,
+  classes,
+  incomingOpenId,
+  onCloseIncomingOpen,
+  templates,
 }: {
   classes: EducationClass[]
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
+  /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer/live. */
+  templates?: EducationTemplate[]
 }) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationSession[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openSessionId, setOpenSessionId] = useState<string | null>(null)
+  const [liveId, setLiveId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
 
   const refreshSessions = useCallback(() => {
     listSessions(filterClass ? { classId: filterClass } : {})
-      .then((r) => { setItems(r.sessions); setError(null) })
+      .then((r) => {
+        setItems(r.sessions)
+        setError(null)
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Impossible de charger les séances'))
   }, [filterClass])
 
-  useEffect(() => { refreshSessions() }, [refreshSessions])
+  useEffect(() => {
+    refreshSessions()
+  }, [refreshSessions])
 
   useEffect(() => {
     if (incomingOpenId) {
@@ -202,54 +411,131 @@ export function SessionsView({
 
   return (
     <>
-    <div>
-      <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <h1 className="edu-h1">Séances</h1>
-        <select className="edu-select" style={{ width: 220 }} value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
-          <option value="">Toutes les classes</option>
-          {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-        </select>
-      </div>
-      {error && (
-        <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>{error}</div>
-      )}
-      <p className="edu-sub">{items.length} séance{items.length > 1 ? 's' : ''}</p>
-      {items.length === 0 ? (
-        <div className="edu-empty">
-          <div className="edu-empty-icon">📅</div>
-          <div>{filterClass ? 'Aucune séance pour cette classe.' : 'Aucune séance encore.'}</div>
-          <div className="edu-empty-sub">Les séances apparaîtront ici dès qu'elles sont planifiées depuis une classe.</div>
+      <div>
+        <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <h1 className="edu-h1">Séances</h1>
+          <div className="edu-row" style={{ gap: 8 }}>
+            <select
+              className="edu-select"
+              style={{ width: 220 }}
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+            >
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button className="edu-btn" onClick={() => setShowCreate(true)}>
+              <Plus size={14} /> Nouvelle séance
+            </button>
+          </div>
         </div>
-      ) : (
-        <table className="edu-table">
-          <thead>
-            <tr><th>Date</th><th>Classe</th><th>Séance</th><th>Statut</th><th>Présence</th></tr>
-          </thead>
-          <tbody>
-            {items.map((s) => {
-              const cls = typeof s.classId === 'string' ? null : s.classId
-              const present = s.attendance.filter((a) => a.state === 'PRESENT').length
-              return (
-                <tr key={s._id} onClick={() => setOpenSessionId(s._id)} style={{ cursor: 'pointer' }}>
-                  <td>{formatDate(s.date, true)}</td>
-                  <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
-                  <td>{s.title}</td>
-                  <td><span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span></td>
-                  <td>{present} / {s.attendance.length}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        {error && (
+          <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
+            {error}
+          </div>
+        )}
+        <p className="edu-sub">
+          {items.length} séance{items.length > 1 ? 's' : ''}
+        </p>
+        {items.length === 0 ? (
+          <div className="edu-empty">
+            <div className="edu-empty-icon">📅</div>
+            <div>{filterClass ? 'Aucune séance pour cette classe.' : 'Aucune séance encore.'}</div>
+            <div className="edu-empty-sub">
+              Les séances apparaîtront ici dès qu'elles sont planifiées depuis une classe.
+            </div>
+          </div>
+        ) : (
+          <table className="edu-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Classe</th>
+                <th>Séance</th>
+                <th>Statut</th>
+                <th>Présence</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((s) => {
+                const cls = typeof s.classId === 'string' ? null : s.classId
+                const present = s.attendance.filter((a) => a.state === 'PRESENT').length
+                const liveable = isToday(s.date) && s.status !== 'TERMINEE' && s.status !== 'ANNULEE'
+                return (
+                  <tr key={s._id} onClick={() => setOpenSessionId(s._id)} style={{ cursor: 'pointer' }}>
+                    <td>{formatDate(s.date, true)}</td>
+                    <td>
+                      {cls && (
+                        <span className="edu-pill">
+                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          {cls.name}
+                        </span>
+                      )}
+                    </td>
+                    <td>{s.title}</td>
+                    <td>
+                      <span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span>
+                    </td>
+                    <td>
+                      {present} / {s.attendance.length}
+                    </td>
+                    <td>
+                      {liveable && (
+                        <button
+                          className="edu-btn"
+                          title="Ouvrir le mode séance (présence un-tap)"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setLiveId(s._id)
+                          }}
+                        >
+                          ▶ Live
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+      {showCreate && (
+        <SessionForm
+          classId={filterClass || undefined}
+          classes={classes}
+          templates={templates?.filter((t) => t.kind === 'session')}
+          onClose={() => setShowCreate(false)}
+          onSaved={() => {
+            setShowCreate(false)
+            refreshSessions()
+          }}
+        />
       )}
-    </div>
-    {openSessionId && (
-      <SessionDetailDrawer
-        sessionId={openSessionId}
-        onClose={() => setOpenSessionId(null)}
-        onChanged={refreshSessions}
-      />
-    )}
+      {openSessionId && (
+        <SessionDetailDrawer
+          sessionId={openSessionId}
+          templates={templates}
+          onClose={() => setOpenSessionId(null)}
+          onChanged={refreshSessions}
+        />
+      )}
+      {liveId && (
+        <SessionLiveMode
+          sessionId={liveId}
+          templates={templates}
+          onClose={() => {
+            setLiveId(null)
+            refreshSessions()
+          }}
+          onChanged={refreshSessions}
+        />
+      )}
     </>
   )
 }

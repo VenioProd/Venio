@@ -7,26 +7,62 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import {
-  GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
+  GraduationCap,
+  BookOpen,
+  Calendar as CalIcon,
+  ClipboardList,
+  FileText,
+  Plus,
+  Search,
+  X,
+  Trash2,
+  Upload,
+  ChevronRight,
+  Menu,
+  Sparkles,
 } from 'lucide-react'
 import {
   fetchDashboard,
-  listClasses, getClass, createClass, updateClass, deleteClass,
-  listStudents, createStudent, importStudentsCsv, deleteStudent,
-  listSessions, createSession,
-  listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
-  listNotes, createNote, updateNote, deleteNote,
+  listClasses,
+  getClass,
+  createClass,
+  updateClass,
+  deleteClass,
+  listStudents,
+  createStudent,
+  importStudentsCsv,
+  deleteStudent,
+  listSessions,
+  createSession,
+  listAssignments,
+  getAssignment,
+  createAssignment,
+  updateAssignment,
+  updateSubmission,
+  listNotes,
+  createNote,
+  updateNote,
+  deleteNote,
   listTemplates,
   searchEducation,
-  studentDisplayName, formatDate, assignmentExportUrl,
-  CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
+  studentDisplayName,
+  formatDate,
+  assignmentExportUrl,
+  CLASS_STATUS_LABEL,
+  SESSION_STATUS_LABEL,
+  ASSIGNMENT_STATUS_LABEL,
+  ASSIGNMENT_STATUS_COLOR,
+  ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
-  type EducationDashboard, type EducationClass, type EducationStudent,
-  type EducationSession, type EducationAssignment, type EducationSubmission,
-  type EducationNote, type NoteBlock,
+  type EducationDashboard,
+  type EducationClass,
+  type EducationStudent,
+  type EducationSession,
+  type EducationAssignment,
+  type EducationSubmission,
+  type EducationNote,
+  type NoteBlock,
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
@@ -34,11 +70,115 @@ import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 import { Kpi } from './class-parts'
+import { DocumentsPanel } from './DocumentsPanel'
+import type { RubricCriterion } from '../../../services/education'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
-export function AssignmentsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
+const KANBAN_COLS: { status: EducationAssignmentStatus; label: string }[] = [
+  { status: 'DRAFT', label: 'Brouillon' },
+  { status: 'OUVERT', label: 'Ouvert' },
+  { status: 'EN_CORRECTION', label: 'En correction' },
+  { status: 'CLOS', label: 'Clos' },
+]
+
+/**
+ * Kanban devoirs partagé (AssignmentsTab + AssignmentsView) avec drag-and-drop
+ * HTML5 natif : déplacement optimiste, rollback si l'API échoue.
+ */
+function AssignmentKanban({
+  items,
+  onOpen,
+  onMoved,
+  showClassDot,
+}: {
+  items: EducationAssignment[]
+  onOpen: (id: string) => void
+  onMoved: () => void
+  showClassDot?: boolean
+}) {
+  const [dragOver, setDragOver] = useState<EducationAssignmentStatus | null>(null)
+  const [local, setLocal] = useState(items)
+  useEffect(() => setLocal(items), [items])
+
+  async function drop(status: EducationAssignmentStatus, id: string) {
+    const a = local.find((x) => x._id === id)
+    if (!a || a.status === status) return
+    // Optimiste : la carte change de colonne immédiatement.
+    setLocal((prev) => prev.map((x) => (x._id === id ? { ...x, status } : x)))
+    try {
+      await updateAssignment(id, { status })
+      onMoved()
+    } catch {
+      setLocal(items) // rollback
+    }
+  }
+
+  return (
+    <div className="edu-kanban">
+      {KANBAN_COLS.map((col) => {
+        const list = local.filter((i) => i.status === col.status)
+        return (
+          <div
+            key={col.status}
+            className={`edu-kanban-col${dragOver === col.status ? ' drag-over' : ''}`}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = 'move'
+              setDragOver(col.status)
+            }}
+            onDragLeave={() => setDragOver((c) => (c === col.status ? null : c))}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragOver(null)
+              const id = e.dataTransfer.getData('text/plain')
+              if (id) drop(col.status, id)
+            }}
+          >
+            <div className="edu-kanban-col-head">
+              <span>{col.label}</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
+            </div>
+            {list.length === 0 && <div className="edu-kanban-empty">—</div>}
+            {list.map((a) => {
+              const cls = showClassDot && typeof a.classId !== 'string' ? a.classId : null
+              return (
+                <div
+                  key={a._id}
+                  className="edu-kanban-card"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', a._id)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onClick={() => onOpen(a._id)}
+                >
+                  <div className="edu-kanban-card-title">{a.title}</div>
+                  <div className="edu-kanban-card-meta">
+                    {cls && <span style={{ color: cls.color }}>● </span>}
+                    {ASSIGNMENT_KIND_LABEL[a.kind]}
+                    {a.deadline && ` · ${formatDate(a.deadline)}`}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export function AssignmentsTab({
+  classId,
+  onChanged,
+  templates,
+}: {
+  classId: string
+  onChanged: () => void
+  templates?: EducationTemplate[]
+}) {
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -47,133 +187,271 @@ export function AssignmentsTab({ classId, onChanged }: { classId: string; onChan
     const r = await listAssignments({ classId })
     setItems(r.assignments)
   }, [classId])
-  useEffect(() => { refresh() }, [refresh])
-
-  const cols: { status: EducationAssignmentStatus; label: string }[] = [
-    { status: 'DRAFT', label: 'Brouillon' },
-    { status: 'OUVERT', label: 'Ouvert' },
-    { status: 'EN_CORRECTION', label: 'En correction' },
-    { status: 'CLOS', label: 'Clos' },
-  ]
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   return (
     <div>
       <div className="edu-row between" style={{ marginBottom: 12 }}>
-        <strong>{items.length} devoir{items.length > 1 ? 's' : ''}</strong>
-        <button className="edu-btn" onClick={() => setShowCreate(true)}><Plus size={14} /> Nouveau devoir</button>
+        <strong>
+          {items.length} devoir{items.length > 1 ? 's' : ''}
+        </strong>
+        <button className="edu-btn" onClick={() => setShowCreate(true)}>
+          <Plus size={14} /> Nouveau devoir
+        </button>
       </div>
 
-      <div className="edu-kanban">
-        {cols.map((col) => {
-          const list = items.filter((i) => i.status === col.status)
-          return (
-            <div key={col.status} className="edu-kanban-col">
-              <div className="edu-kanban-col-head">
-                <span>{col.label}</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
-              </div>
-              {list.map((a) => (
-                <div key={a._id} className="edu-kanban-card" onClick={() => setOpenId(a._id)}>
-                  <div className="edu-kanban-card-title">{a.title}</div>
-                  <div className="edu-kanban-card-meta">
-                    {ASSIGNMENT_KIND_LABEL[a.kind]}
-                    {a.deadline && ` · ${formatDate(a.deadline)}`}
-                  </div>
-                </div>
-              ))}
-              {list.length === 0 && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '12px 0' }}>—</div>}
-            </div>
-          )
-        })}
-      </div>
+      <AssignmentKanban
+        items={items}
+        onOpen={setOpenId}
+        onMoved={async () => {
+          await refresh()
+          onChanged()
+        }}
+      />
 
       {showCreate && (
-        <AssignmentForm classId={classId} onClose={() => setShowCreate(false)} onSaved={async () => { setShowCreate(false); await refresh(); onChanged() }} />
+        <AssignmentForm
+          classId={classId}
+          templates={templates}
+          onClose={() => setShowCreate(false)}
+          onSaved={async () => {
+            setShowCreate(false)
+            await refresh()
+            onChanged()
+          }}
+        />
       )}
       {openId && (
-        <AssignmentDetailDrawer assignmentId={openId} onClose={() => setOpenId(null)} onChanged={async () => { await refresh(); onChanged() }} />
+        <AssignmentDetailDrawer
+          assignmentId={openId}
+          onClose={() => setOpenId(null)}
+          onChanged={async () => {
+            await refresh()
+            onChanged()
+          }}
+        />
       )}
     </div>
   )
 }
 
-
-export function AssignmentForm({ classId, onClose, onSaved }: { classId: string; onClose: () => void; onSaved: () => void }) {
+export function AssignmentForm({
+  classId,
+  classes,
+  templates,
+  onClose,
+  onSaved,
+}: {
+  /** Si absent, un select de classe obligatoire est affiché (utiliser `classes`). */
+  classId?: string
+  classes?: EducationClass[]
+  /** Templates kind="assignment", filtrés par l'appelant. */
+  templates?: EducationTemplate[]
+  onClose: () => void
+  /** Reçoit le devoir créé (utilisé par PostSessionFlow pour l'afficher). */
+  onSaved: (created?: EducationAssignment) => void
+}) {
+  const [classChoice, setClassChoice] = useState(classId ?? '')
+  const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
-    title: '', kind: 'DEVOIR' as EducationAssignment['kind'],
-    instructions: '', deadline: '', maxGrade: 20, weight: 1,
+    title: '',
+    kind: 'DEVOIR' as EducationAssignment['kind'],
+    instructions: '',
+    deadline: '',
+    maxGrade: 20,
+    weight: 1,
     status: 'OUVERT' as EducationAssignmentStatus,
+    rubric: [] as RubricCriterion[],
+    expectedDeliverables: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // Pré-remplit le form depuis template.body (champs reconnus, le reste ignoré).
+  function applyTemplate(id: string) {
+    setTemplateId(id)
+    const t = templates?.find((x) => x._id === id)
+    if (!t) return
+    const b = t.body as Record<string, unknown>
+    const kinds = Object.keys(ASSIGNMENT_KIND_LABEL)
+    setForm((f) => ({
+      ...f,
+      title: typeof b.title === 'string' ? b.title : f.title,
+      kind: typeof b.kind === 'string' && kinds.includes(b.kind) ? (b.kind as EducationAssignment['kind']) : f.kind,
+      instructions: typeof b.instructions === 'string' ? b.instructions : f.instructions,
+      maxGrade: typeof b.maxGrade === 'number' ? b.maxGrade : f.maxGrade,
+      weight: typeof b.weight === 'number' ? b.weight : f.weight,
+      rubric: Array.isArray(b.rubric)
+        ? (b.rubric as unknown[]).filter(
+            (r): r is RubricCriterion =>
+              !!r && typeof r === 'object' && typeof (r as RubricCriterion).label === 'string',
+          )
+        : f.rubric,
+      expectedDeliverables: Array.isArray(b.expectedDeliverables)
+        ? (b.expectedDeliverables as unknown[]).filter((d): d is string => typeof d === 'string')
+        : f.expectedDeliverables,
+    }))
+  }
+
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
       <div className="edu-drawer" style={{ width: 'min(560px, 92vw)' }}>
         <div className="edu-drawer-head">
-          <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>Nouveau devoir</h2>
-          <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
+          <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+            Nouveau devoir
+          </h2>
+          <button className="edu-btn-icon" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
         <div className="edu-drawer-body">
+          {templates && templates.length > 0 && (
+            <div className="edu-form-group">
+              <label>Partir d'un template…</label>
+              <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {templates.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!classId && (
+            <div className="edu-form-group">
+              <label>Classe *</label>
+              <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
+                <option value="">Choisir une classe…</option>
+                {(classes ?? []).map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="edu-form-group">
             <label>Titre</label>
-            <input className="edu-input" autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <input
+              className="edu-input"
+              autoFocus
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
               <label>Type</label>
-              <select className="edu-select" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as EducationAssignment['kind'] })}>
-                {Object.entries(ASSIGNMENT_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <select
+                className="edu-select"
+                value={form.kind}
+                onChange={(e) => setForm({ ...form, kind: e.target.value as EducationAssignment['kind'] })}
+              >
+                {Object.entries(ASSIGNMENT_KIND_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="edu-form-group">
               <label>Statut</label>
-              <select className="edu-select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as EducationAssignmentStatus })}>
-                {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <select
+                className="edu-select"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as EducationAssignmentStatus })}
+              >
+                {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
               <label>Échéance</label>
-              <input type="datetime-local" className="edu-input" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+              <input
+                type="datetime-local"
+                className="edu-input"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              />
             </div>
             <div className="edu-form-group">
               <label>Note max</label>
-              <input type="number" className="edu-input" value={form.maxGrade} onChange={(e) => setForm({ ...form, maxGrade: Number(e.target.value) })} />
+              <input
+                type="number"
+                className="edu-input"
+                value={form.maxGrade}
+                onChange={(e) => setForm({ ...form, maxGrade: Number(e.target.value) })}
+              />
             </div>
           </div>
           <div className="edu-form-group">
             <label>Consignes</label>
-            <textarea className="edu-textarea" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+            <textarea
+              className="edu-textarea"
+              value={form.instructions}
+              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+            />
           </div>
+          {form.rubric.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Barème du template : {form.rubric.map((r) => `${r.label} (${r.max})`).join(' · ')}
+            </p>
+          )}
+          {form.expectedDeliverables.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Livrables attendus : {form.expectedDeliverables.join(' · ')}
+            </p>
+          )}
         </div>
         <div className="edu-drawer-foot">
-          <button className="edu-btn ghost" onClick={onClose}>Annuler</button>
-          <button className="edu-btn" disabled={!form.title.trim() || saving} onClick={async () => {
-            setSaving(true)
-            try {
-              await createAssignment({
-                classId,
-                title: form.title,
-                kind: form.kind,
-                status: form.status,
-                instructions: form.instructions,
-                deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
-                maxGrade: form.maxGrade,
-                weight: form.weight,
-              })
-              onSaved()
-            } finally { setSaving(false) }
-          }}>{saving ? 'Création…' : 'Créer'}</button>
+          <button className="edu-btn ghost" onClick={onClose}>
+            Annuler
+          </button>
+          <button
+            className="edu-btn"
+            disabled={!form.title.trim() || !classChoice || saving}
+            onClick={async () => {
+              setSaving(true)
+              try {
+                const r = await createAssignment({
+                  classId: classChoice,
+                  title: form.title,
+                  kind: form.kind,
+                  status: form.status,
+                  instructions: form.instructions,
+                  deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+                  maxGrade: form.maxGrade,
+                  weight: form.weight,
+                  rubric: form.rubric,
+                  expectedDeliverables: form.expectedDeliverables,
+                })
+                onSaved(r.assignment)
+              } finally {
+                setSaving(false)
+              }
+            }}
+          >
+            {saving ? 'Création…' : 'Créer'}
+          </button>
         </div>
       </div>
     </>
   )
 }
 
-
 export function AssignmentDetailDrawer({
-  assignmentId, onClose, onChanged, onStartCorrection,
+  assignmentId,
+  onClose,
+  onChanged,
+  onStartCorrection,
 }: {
   assignmentId: string
   onClose: () => void
@@ -189,7 +467,9 @@ export function AssignmentDetailDrawer({
   const refresh = useCallback(async () => {
     setData(await getAssignment(assignmentId))
   }, [assignmentId])
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   if (!data) return null
   const { assignment, submissions, stats } = data
@@ -200,7 +480,9 @@ export function AssignmentDetailDrawer({
       <div className="edu-drawer">
         <div className="edu-drawer-head">
           <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>{assignment.title}</h2>
+            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+              {assignment.title}
+            </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
               {ASSIGNMENT_KIND_LABEL[assignment.kind]}
               {assignment.deadline && ` · échéance ${formatDate(assignment.deadline)}`}
@@ -213,23 +495,37 @@ export function AssignmentDetailDrawer({
               value={assignment.status}
               onChange={async (e) => {
                 await updateAssignment(assignmentId, { status: e.target.value as EducationAssignmentStatus })
-                await refresh(); onChanged()
+                await refresh()
+                onChanged()
               }}
             >
-              {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
             </select>
             {onStartCorrection && (
-              <button className="edu-btn" onClick={() => onStartCorrection(assignmentId)} title="Ouvrir le mode correction groupée">
+              <button
+                className="edu-btn"
+                onClick={() => onStartCorrection(assignmentId)}
+                title="Ouvrir le mode correction groupée"
+              >
                 Mode correction
               </button>
             )}
             <a
               className="edu-btn ghost"
               href={assignmentExportUrl(assignmentId)}
-              target="_blank" rel="noopener"
+              target="_blank"
+              rel="noopener noreferrer"
               title="Exporter les corrections en CSV"
-            >Export CSV</a>
-            <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>
+            >
+              Export CSV
+            </a>
+            <button className="edu-btn-icon" onClick={onClose}>
+              <X size={18} />
+            </button>
           </div>
         </div>
         <div className="edu-drawer-body">
@@ -243,9 +539,24 @@ export function AssignmentDetailDrawer({
           {assignment.instructions && (
             <>
               <h2 className="edu-h2">Consignes</h2>
-              <div style={{ whiteSpace: 'pre-wrap', fontSize: 13.5, color: 'rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8 }}>{assignment.instructions}</div>
+              <div
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  fontSize: 13.5,
+                  color: 'rgba(255,255,255,0.85)',
+                  background: 'rgba(255,255,255,0.03)',
+                  padding: 12,
+                  borderRadius: 8,
+                }}
+              >
+                {assignment.instructions}
+              </div>
             </>
           )}
+
+          {/* Pièces jointes (documents uploadés) */}
+          <h2 className="edu-h2">Pièces jointes</h2>
+          <DocumentsPanel parentType="assignment" parentId={assignmentId} />
 
           <h2 className="edu-h2">Suivi par étudiant</h2>
           {submissions.length === 0 ? (
@@ -255,7 +566,12 @@ export function AssignmentDetailDrawer({
           ) : (
             <table className="edu-table">
               <thead>
-                <tr><th>Étudiant</th><th>Statut</th><th>Note</th><th>Feedback</th></tr>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Statut</th>
+                  <th>Note</th>
+                  <th>Feedback</th>
+                </tr>
               </thead>
               <tbody>
                 {submissions.map((s) => {
@@ -270,11 +586,17 @@ export function AssignmentDetailDrawer({
                           value={s.status}
                           onChange={async (e) => {
                             const studentId = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
-                            await updateSubmission(assignmentId, studentId, { status: e.target.value as EducationSubmission['status'] })
+                            await updateSubmission(assignmentId, studentId, {
+                              status: e.target.value as EducationSubmission['status'],
+                            })
                             await refresh()
                           }}
                         >
-                          {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => (
+                            <option key={k} value={k}>
+                              {v}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td>
@@ -289,8 +611,12 @@ export function AssignmentDetailDrawer({
                           onChange={async (e) => {
                             const studentId = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
                             const v = e.target.value === '' ? null : Number(e.target.value)
-                            await updateSubmission(assignmentId, studentId, { grade: v, status: v != null ? 'CORRIGE' : s.status })
-                            await refresh(); onChanged()
+                            await updateSubmission(assignmentId, studentId, {
+                              grade: v,
+                              status: v != null ? 'CORRIGE' : s.status,
+                            })
+                            await refresh()
+                            onChanged()
                           }}
                         />
                       </td>
@@ -325,17 +651,24 @@ export function AssignmentDetailDrawer({
 /* ─── Notes tab ────────────────────────────────────────────────────────── */
 
 export function AssignmentsView({
-  classes, onChanged, incomingOpenId, onCloseIncomingOpen, onStartCorrection,
+  classes,
+  onChanged,
+  incomingOpenId,
+  onCloseIncomingOpen,
+  onStartCorrection,
+  templates,
 }: {
   classes: EducationClass[]
   onChanged: () => void
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
   onStartCorrection?: (id: string) => void
+  templates?: EducationTemplate[]
 }) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
   useEffect(() => {
     if (incomingOpenId) {
       setOpenId(incomingOpenId)
@@ -348,67 +681,76 @@ export function AssignmentsView({
     setItems(r.assignments)
   }, [filterClass])
 
-  useEffect(() => { refresh() }, [refresh])
-
-  const cols: { status: EducationAssignmentStatus; label: string }[] = [
-    { status: 'DRAFT', label: 'Brouillon' },
-    { status: 'OUVERT', label: 'Ouvert' },
-    { status: 'EN_CORRECTION', label: 'En correction' },
-    { status: 'CLOS', label: 'Clos' },
-  ]
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   return (
     <div>
       <div className="edu-row between">
         <h1 className="edu-h1">Devoirs & projets</h1>
-        <select className="edu-select" style={{ width: 220 }} value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
-          <option value="">Toutes les classes</option>
-          {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-        </select>
+        <div className="edu-row" style={{ gap: 8 }}>
+          <select
+            className="edu-select"
+            style={{ width: 220 }}
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+          >
+            <option value="">Toutes les classes</option>
+            {classes.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button className="edu-btn" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> Nouveau devoir
+          </button>
+        </div>
       </div>
-      <p className="edu-sub">{items.length} devoir{items.length > 1 ? 's' : ''}</p>
+      <p className="edu-sub">
+        {items.length} devoir{items.length > 1 ? 's' : ''}
+      </p>
       {items.length === 0 ? (
         <div className="edu-empty">
           <div className="edu-empty-icon">📋</div>
           <div>{filterClass ? 'Aucun devoir pour cette classe.' : 'Aucun devoir encore.'}</div>
-          <div className="edu-empty-sub">Crée un devoir depuis l'onglet « Devoirs » d'une classe pour démarrer le kanban.</div>
+          <div className="edu-empty-sub">
+            Crée un devoir depuis l'onglet « Devoirs » d'une classe pour démarrer le kanban.
+          </div>
         </div>
       ) : (
-        <div className="edu-kanban">
-          {cols.map((col) => {
-            const list = items.filter((i) => i.status === col.status)
-            return (
-              <div key={col.status} className="edu-kanban-col">
-                <div className="edu-kanban-col-head">
-                  <span>{col.label}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
-                </div>
-                {list.length === 0 && (
-                  <div className="edu-kanban-empty">—</div>
-                )}
-                {list.map((a) => {
-                  const cls = typeof a.classId === 'string' ? null : a.classId
-                  return (
-                    <div key={a._id} className="edu-kanban-card" onClick={() => setOpenId(a._id)}>
-                      <div className="edu-kanban-card-title">{a.title}</div>
-                      <div className="edu-kanban-card-meta">
-                        {cls && <span style={{ color: cls.color }}>● </span>}
-                        {ASSIGNMENT_KIND_LABEL[a.kind]}
-                        {a.deadline && ` · ${formatDate(a.deadline)}`}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          })}
-        </div>
+        <AssignmentKanban
+          items={items}
+          onOpen={setOpenId}
+          onMoved={async () => {
+            await refresh()
+            onChanged()
+          }}
+          showClassDot
+        />
+      )}
+      {showCreate && (
+        <AssignmentForm
+          classId={filterClass || undefined}
+          classes={classes}
+          templates={templates}
+          onClose={() => setShowCreate(false)}
+          onSaved={async () => {
+            setShowCreate(false)
+            await refresh()
+            onChanged()
+          }}
+        />
       )}
       {openId && (
         <AssignmentDetailDrawer
           assignmentId={openId}
           onClose={() => setOpenId(null)}
-          onChanged={async () => { await refresh(); onChanged() }}
+          onChanged={async () => {
+            await refresh()
+            onChanged()
+          }}
           onStartCorrection={onStartCorrection}
         />
       )}

@@ -31,20 +31,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   fetchDevProjectCockpit,
   fetchDevProjectIntelligence,
@@ -71,21 +58,16 @@ import {
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+// Import via le barrel pour charger dashboard.css (style financial timeline).
+import { FinancialChart } from '../../../components/dashboard'
 import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
 
-import {
-  formatBytes,
-  formatNumber,
-  formatRelative,
-  formatShortDate,
-  userInitial,
-} from './cockpit/helpers'
+import { formatBytes, formatNumber, formatRelative, formatShortDate, userInitial } from './cockpit/helpers'
 import {
   GithubIcon,
   IssueRow,
   ActivityRow,
-  VelocityTooltip,
   PieTooltip,
   BarTooltip,
   GithubPanel,
@@ -95,11 +77,17 @@ import {
   RelativeTime,
 } from './cockpit/parts'
 
-const HEALTH_META: Record<DevCockpit['health'], { label: string; tone: 'ok' | 'warn' | 'fail'; icon: typeof Sparkles }> = {
+const HEALTH_META: Record<
+  DevCockpit['health'],
+  { label: string; tone: 'ok' | 'warn' | 'fail'; icon: typeof Sparkles }
+> = {
   on_track: { label: 'On track', tone: 'ok', icon: Sparkles },
   at_risk: { label: 'At risk', tone: 'warn', icon: AlertTriangle },
   blocked: { label: 'Blocked', tone: 'fail', icon: ShieldAlert },
 }
+
+// Format JJ/MM pour l'axe temporel du chart vélocité.
+const shortDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
 
 const DevProjectCockpit = () => {
   const { projectId } = useParams<{ projectId: string }>()
@@ -138,51 +126,63 @@ const DevProjectCockpit = () => {
     }
   }, [projectId])
 
-  const loadIntel = useCallback(async (refresh = false) => {
-    if (!projectId) return
-    setIntelLoading(true)
-    try {
-      const data = await fetchDevProjectIntelligence(projectId, { refresh })
-      setIntel(data)
-      // Seed the dedicated large-files snapshot from the same payload.
-      setLargeFiles({
-        projectId: data.projectId,
-        available: data.code.available,
-        source: data.code.source,
-        scannedAt: data.code.scannedAt,
-        durationMs: data.code.durationMs,
-        reason: data.code.reason,
-        largeFiles: data.code.largeFiles,
-        totals: data.code.totals,
-      })
-    } catch (e) {
-      console.error('[intelligence] load failed', e)
-    } finally {
-      setIntelLoading(false)
-    }
-  }, [projectId])
+  const loadIntel = useCallback(
+    async (refresh = false) => {
+      if (!projectId) return
+      setIntelLoading(true)
+      try {
+        const data = await fetchDevProjectIntelligence(projectId, { refresh })
+        setIntel(data)
+        // Seed the dedicated large-files snapshot from the same payload.
+        setLargeFiles({
+          projectId: data.projectId,
+          available: data.code.available,
+          source: data.code.source,
+          scannedAt: data.code.scannedAt,
+          durationMs: data.code.durationMs,
+          reason: data.code.reason,
+          largeFiles: data.code.largeFiles,
+          totals: data.code.totals,
+        })
+      } catch (e) {
+        console.error('[intelligence] load failed', e)
+      } finally {
+        setIntelLoading(false)
+      }
+    },
+    [projectId],
+  )
 
-  const refreshLargeFiles = useCallback(async (force = false) => {
-    if (!projectId) return
-    setLargeLoading(true)
-    try {
-      const snap = await fetchDevProjectLargeFiles(projectId, { refresh: force })
-      setLargeFiles(snap)
-      setLargeNextIn(60)
-    } catch (e) {
-      console.error('[large-files] refresh failed', e)
-    } finally {
-      setLargeLoading(false)
-    }
-  }, [projectId])
+  const refreshLargeFiles = useCallback(
+    async (force = false) => {
+      if (!projectId) return
+      setLargeLoading(true)
+      try {
+        const snap = await fetchDevProjectLargeFiles(projectId, { refresh: force })
+        setLargeFiles(snap)
+        setLargeNextIn(60)
+      } catch (e) {
+        console.error('[large-files] refresh failed', e)
+      } finally {
+        setLargeLoading(false)
+      }
+    },
+    [projectId],
+  )
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { loadIntel() }, [loadIntel])
+  useEffect(() => {
+    load()
+  }, [load])
+  useEffect(() => {
+    loadIntel()
+  }, [loadIntel])
 
   // Auto-refresh large files every 60s. The hook also drives a countdown so the
   // user can see the list is "alive".
   const refreshLargeRef = useRef(refreshLargeFiles)
-  useEffect(() => { refreshLargeRef.current = refreshLargeFiles }, [refreshLargeFiles])
+  useEffect(() => {
+    refreshLargeRef.current = refreshLargeFiles
+  }, [refreshLargeFiles])
   useEffect(() => {
     if (!projectId) return
     const tick = setInterval(() => {
@@ -197,20 +197,25 @@ const DevProjectCockpit = () => {
     return () => clearInterval(tick)
   }, [projectId])
 
-  const openIssue = useCallback((id: string) => {
-    navigate(`/admin/dev/issues/${id}`)
-  }, [navigate])
+  const openIssue = useCallback(
+    (id: string) => {
+      navigate(`/admin/dev/issues/${id}`)
+    },
+    [navigate],
+  )
 
   const beginGhEdit = useCallback(() => {
-    setGhDraft(intel?.github
-      ? {
-          owner: intel.github.owner,
-          repo: intel.github.repo,
-          defaultBranch: intel.github.defaultBranch,
-          htmlUrl: intel.github.htmlUrl,
-          repoPath: intel.github.repoPath,
-        }
-      : { owner: null, repo: null, defaultBranch: null, htmlUrl: null, repoPath: null })
+    setGhDraft(
+      intel?.github
+        ? {
+            owner: intel.github.owner,
+            repo: intel.github.repo,
+            defaultBranch: intel.github.defaultBranch,
+            htmlUrl: intel.github.htmlUrl,
+            repoPath: intel.github.repoPath,
+          }
+        : { owner: null, repo: null, defaultBranch: null, htmlUrl: null, repoPath: null },
+    )
     setGhError(null)
     setGhEditing(true)
   }, [intel])
@@ -232,7 +237,7 @@ const DevProjectCockpit = () => {
       await loadIntel(true)
       await refreshLargeFiles(true)
     } catch (e) {
-      setGhError(e instanceof Error ? e.message : 'Erreur lors de l\'enregistrement')
+      setGhError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
     } finally {
       setGhSaving(false)
     }
@@ -262,23 +267,17 @@ const DevProjectCockpit = () => {
       .map(([k, v]) => ({ key: k, name: TYPE_LABEL[k], value: v, color: TYPE_COLOR[k] }))
   }, [cockpit])
 
-  const velocityData = useMemo(() => {
-    if (!cockpit) return []
-    return cockpit.velocity.days.map((d) => ({
-      date: d.date.slice(5), // MM-DD
-      completed: d.completed,
-      created: d.created,
-    }))
-  }, [cockpit])
-
   if (!projectId) return <div className="cockpit-loading">Identifiant de projet manquant.</div>
   if (loading && !cockpit) return <div className="cockpit-loading">Chargement du cockpit…</div>
-  if (error) return (
-    <div className="cockpit-error">
-      <AlertOctagon size={16} /> {error}
-      <button className="cockpit-btn" onClick={load}>Réessayer</button>
-    </div>
-  )
+  if (error)
+    return (
+      <div className="cockpit-error">
+        <AlertOctagon size={16} /> {error}
+        <button className="cockpit-btn" onClick={load}>
+          Réessayer
+        </button>
+      </div>
+    )
   if (!cockpit) return <div className="cockpit-loading">Aucune donnée.</div>
 
   const { project, counts, progress, health, velocity } = cockpit
@@ -293,7 +292,10 @@ const DevProjectCockpit = () => {
           </button>
           <div className="cockpit-header-id">
             <span className="cockpit-project-key">{project.key}</span>
-            <span className="cockpit-project-status" data-tone={project.status === 'ACTIVE' ? 'ok' : project.status === 'PAUSED' ? 'warn' : 'neutral'}>
+            <span
+              className="cockpit-project-status"
+              data-tone={project.status === 'ACTIVE' ? 'ok' : project.status === 'PAUSED' ? 'warn' : 'neutral'}
+            >
               {project.status}
             </span>
           </div>
@@ -303,7 +305,7 @@ const DevProjectCockpit = () => {
           <button className="cockpit-btn subtle" onClick={load} title="Rafraîchir">
             <RefreshCw size={12} /> Rafraîchir
           </button>
-          <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev/projects/${project._id}/issues`)} disabled>
+          <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev?project=${project._id}`)}>
             <ListChecks size={12} /> Voir les issues
           </button>
           <button
@@ -339,27 +341,39 @@ const DevProjectCockpit = () => {
           </div>
         </div>
         <div className={`cockpit-kpi-card${counts.blocked ? ' tone-fail' : ''}`}>
-          <div className="cockpit-kpi-label"><ShieldAlert size={12} /> Bloquées</div>
+          <div className="cockpit-kpi-label">
+            <ShieldAlert size={12} /> Bloquées
+          </div>
           <div className="cockpit-kpi-value">{counts.blocked}</div>
           <div className="cockpit-kpi-sub">à débloquer en priorité</div>
         </div>
         <div className={`cockpit-kpi-card${counts.urgent ? ' tone-warn' : ''}`}>
-          <div className="cockpit-kpi-label"><Flame size={12} /> Urgentes</div>
+          <div className="cockpit-kpi-label">
+            <Flame size={12} /> Urgentes
+          </div>
           <div className="cockpit-kpi-value">{counts.urgent}</div>
           <div className="cockpit-kpi-sub">à traiter</div>
         </div>
         <div className={`cockpit-kpi-card${counts.overdue ? ' tone-fail' : ''}`}>
-          <div className="cockpit-kpi-label"><Clock size={12} /> En retard</div>
+          <div className="cockpit-kpi-label">
+            <Clock size={12} /> En retard
+          </div>
           <div className="cockpit-kpi-value">{counts.overdue}</div>
           <div className="cockpit-kpi-sub">échéances dépassées</div>
         </div>
         <div className="cockpit-kpi-card">
-          <div className="cockpit-kpi-label"><Hash size={12} /> Issues</div>
+          <div className="cockpit-kpi-label">
+            <Hash size={12} /> Issues
+          </div>
           <div className="cockpit-kpi-value">{counts.total}</div>
-          <div className="cockpit-kpi-sub">{counts.open} ouvertes · {counts.done} terminées</div>
+          <div className="cockpit-kpi-sub">
+            {counts.open} ouvertes · {counts.done} terminées
+          </div>
         </div>
         <div className="cockpit-kpi-card">
-          <div className="cockpit-kpi-label"><Target size={12} /> Récent</div>
+          <div className="cockpit-kpi-label">
+            <Target size={12} /> Récent
+          </div>
           <div className="cockpit-kpi-value">{velocity.completed7d}</div>
           <div className="cockpit-kpi-sub">terminées sur 7 j</div>
         </div>
@@ -369,7 +383,9 @@ const DevProjectCockpit = () => {
       <section className="cockpit-row triple">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><ShieldAlert size={11} /> Bloquées</span>
+            <span className="cockpit-card-kicker">
+              <ShieldAlert size={11} /> Bloquées
+            </span>
             <span className="cockpit-card-meta">{cockpit.blockers.length}</span>
           </div>
           {cockpit.blockers.length === 0 ? (
@@ -381,7 +397,9 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><Flame size={11} /> Urgentes</span>
+            <span className="cockpit-card-kicker">
+              <Flame size={11} /> Urgentes
+            </span>
             <span className="cockpit-card-meta">{cockpit.urgent.length}</span>
           </div>
           {cockpit.urgent.length === 0 ? (
@@ -393,7 +411,9 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><Clock size={11} /> En retard</span>
+            <span className="cockpit-card-kicker">
+              <Clock size={11} /> En retard
+            </span>
             <span className="cockpit-card-meta">{cockpit.overdue.length}</span>
           </div>
           {cockpit.overdue.length === 0 ? (
@@ -451,7 +471,9 @@ const DevProjectCockpit = () => {
       <section className="cockpit-row">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><CalendarClock size={11} /> Prochaine action</span>
+            <span className="cockpit-card-kicker">
+              <CalendarClock size={11} /> Prochaine action
+            </span>
             <span className="cockpit-card-meta">{cockpit.nextDue.length} échéance(s) à venir</span>
           </div>
           {cockpit.nextDue.length === 0 ? (
@@ -464,9 +486,7 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card cockpit-status">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">Où ça en est</span>
-            <span className="cockpit-card-meta">
-              dernière activité {formatRelative(cockpit.lastActivityAt)}
-            </span>
+            <span className="cockpit-card-meta">dernière activité {formatRelative(cockpit.lastActivityAt)}</span>
           </div>
           <ul className="cockpit-status-list">
             <li>
@@ -500,9 +520,7 @@ const DevProjectCockpit = () => {
                 <CheckCircle2 size={11} /> Backlog vidé : aucune issue ouverte.
               </li>
             )}
-            {counts.total === 0 && (
-              <li>Aucune issue pour ce projet. Créez-en une depuis le workspace.</li>
-            )}
+            {counts.total === 0 && <li>Aucune issue pour ce projet. Créez-en une depuis le workspace.</li>}
           </ul>
         </div>
       </section>
@@ -511,7 +529,9 @@ const DevProjectCockpit = () => {
       <section className="cockpit-row">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><Users size={11} /> Charge par assigné</span>
+            <span className="cockpit-card-kicker">
+              <Users size={11} /> Charge par assigné
+            </span>
             <span className="cockpit-card-meta">{cockpit.assignees.length} entrée(s)</span>
           </div>
           {cockpit.assignees.length === 0 ? (
@@ -519,7 +539,12 @@ const DevProjectCockpit = () => {
           ) : (
             <table className="cockpit-assignees">
               <thead>
-                <tr><th>Membre</th><th>Ouvertes</th><th>Urgent</th><th>Terminé</th></tr>
+                <tr>
+                  <th>Membre</th>
+                  <th>Ouvertes</th>
+                  <th>Urgent</th>
+                  <th>Terminé</th>
+                </tr>
               </thead>
               <tbody>
                 {cockpit.assignees.map((row, idx) => (
@@ -540,7 +565,9 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><CheckCircle2 size={11} /> Récemment terminées</span>
+            <span className="cockpit-card-kicker">
+              <CheckCircle2 size={11} /> Récemment terminées
+            </span>
             <span className="cockpit-card-meta">{cockpit.recentlyDone.length}</span>
           </div>
           {cockpit.recentlyDone.length === 0 ? (
@@ -555,7 +582,9 @@ const DevProjectCockpit = () => {
       <section className="cockpit-row cockpit-row-single">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker"><Activity size={11} /> Activité récente</span>
+            <span className="cockpit-card-kicker">
+              <Activity size={11} /> Activité récente
+            </span>
             <span className="cockpit-card-meta">{cockpit.activity.length} événement(s)</span>
           </div>
           {cockpit.activity.length === 0 ? (
@@ -583,24 +612,15 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-row">
           <div className="cockpit-card">
-            <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Vélocité 14 jours</span>
-              <span className="cockpit-card-meta">
-                {velocity.velocityPerDay14d.toFixed(1)}/j · {velocity.completed14d} terminées
-              </span>
-            </div>
-            <div className="cockpit-chart" style={{ height: 200 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={velocityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} interval={1} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip content={<VelocityTooltip />} cursor={{ stroke: 'rgba(148,163,184,0.18)' }} />
-                  <Line type="monotone" dataKey="created" stroke="#7c5cff" strokeWidth={1.5} dot={false} />
-                  <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={1.8} dot={{ r: 2, fill: '#10b981' }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {/* Vélocité en style financial timeline (A8) : terminées en aire cyan
+               + volume, créées en série secondaire pointillée. */}
+            <FinancialChart
+              data={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.completed, volume: d.created }))}
+              secondarySeries={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.created }))}
+              label="Vélocité 14 jours"
+              currentValue={`${velocity.completed14d} terminées · ${velocity.velocityPerDay14d.toFixed(1)}/j`}
+              height={220}
+            />
             {velocity.avgCompletionDays !== null && (
               <div className="cockpit-card-foot">
                 <Activity size={11} /> Temps moyen de résolution : <strong>{velocity.avgCompletionDays} j</strong>
@@ -621,7 +641,15 @@ const DevProjectCockpit = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Tooltip content={<PieTooltip />} />
-                      <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} stroke="none" paddingAngle={2}>
+                      <Pie
+                        data={statusData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={45}
+                        outerRadius={75}
+                        stroke="none"
+                        paddingAngle={2}
+                      >
                         {statusData.map((d) => (
                           <Cell key={d.key} fill={d.color} />
                         ))}
@@ -657,7 +685,12 @@ const DevProjectCockpit = () => {
                   <BarChart data={priorityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
                     <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                       {priorityData.map((d) => (
@@ -682,8 +715,21 @@ const DevProjectCockpit = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={typeData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} layout="vertical">
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
+                    <XAxis
+                      type="number"
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={70}
+                    />
                     <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                       {typeData.map((d) => (
@@ -717,7 +763,6 @@ const DevProjectCockpit = () => {
           </div>
         )}
       </section>
-
     </div>
   )
 }

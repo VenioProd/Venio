@@ -425,6 +425,19 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* Drag-and-drop kanban devoirs */
+.edu-kanban-col.drag-over {
+  outline: 2px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.edu-kanban-card[draggable='true'] {
+  cursor: grab;
+}
+.edu-kanban-card[draggable='true']:active {
+  cursor: grabbing;
+}
+
 /* ─── Notes — éditeur léger ──────────────────────────────────────────── */
 .edu-notes-layout {
   display: grid;
@@ -1642,4 +1655,147 @@
 }
 .edu-mention-menu .edu-mention-kind {
   margin-right: 2px;
+}
+
+/* ─── Documents (supports de séance, pièces jointes devoir) ─────────────── */
+.edu-docs {
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.edu-docs.is-over {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.06);
+}
+.edu-docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edu-docs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+.edu-docs-icon {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+.edu-docs-info {
+  flex: 1;
+  min-width: 0;
+}
+.edu-docs-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.edu-docs-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.edu-docs-empty {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 10px 6px;
+  text-align: center;
+}
+.edu-docs-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.edu-docs-hint {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.edu-spin {
+  animation: edu-spin-kf 1s linear infinite;
+}
+@keyframes edu-spin-kf {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Enchaînement post-séance (PostSessionFlow) ─────────────────────── */
+.edu-postflow-backdrop {
+  z-index: 1200; /* au-dessus du mode live (1100) */
+}
+.edu-postflow {
+  width: min(860px, 96vw);
+  z-index: 1201;
+}
+.edu-postflow-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.edu-postflow-step {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.edu-postflow-step:last-child {
+  border-bottom: none;
+}
+.edu-postflow-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+}
+.edu-postflow-badge.done {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+.edu-postflow-step-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.edu-postflow-done-note {
+  font-size: 12.5px;
+  color: #22c55e;
+}
+/* Couche des forms imbriqués (AssignmentForm / SessionForm), au-dessus de la modale. */
+.edu-postflow-form-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+}
+/* Mini-bannière « Lancer l'enchaînement post-séance ? » dans le drawer de séance. */
+.edu-postflow-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
 }

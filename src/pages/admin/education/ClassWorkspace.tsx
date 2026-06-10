@@ -419,6 +419,8 @@ export function ClassWorkspace({
             {tab === 'sessions' && (
               <SessionsTab
                 classId={classId}
+                /* tous kinds : SessionsTab filtre pour le form et transmet tout au drawer */
+                templates={templates}
                 onChanged={() => {
                   refreshMeta()
                   onChanged()
@@ -428,6 +430,7 @@ export function ClassWorkspace({
             {tab === 'assignments' && (
               <AssignmentsTab
                 classId={classId}
+                templates={templates?.filter((t) => t.kind === 'assignment')}
                 onChanged={() => {
                   refreshMeta()
                   onChanged()
