@@ -14,6 +14,7 @@ import {
   type EducationSessionStatus,
 } from '../../../services/education'
 import { SessionLiveMode } from './SessionLiveMode'
+import { DocumentsPanel } from './DocumentsPanel'
 
 /**
  * VENIO-27 — Détail de séance.
@@ -253,6 +254,12 @@ export function SessionDetailDrawer({
               )}
             </div>
           )}
+
+          {/* Supports de séance (documents uploadés) */}
+          <h2 className="edu-h2" style={{ marginTop: 18 }}>
+            Supports
+          </h2>
+          <DocumentsPanel parentType="session" parentId={session._id} />
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>

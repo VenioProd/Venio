@@ -419,6 +419,7 @@ export function ClassWorkspace({
             {tab === 'sessions' && (
               <SessionsTab
                 classId={classId}
+                templates={templates?.filter((t) => t.kind === 'session')}
                 onChanged={() => {
                   refreshMeta()
                   onChanged()
@@ -428,6 +429,7 @@ export function ClassWorkspace({
             {tab === 'assignments' && (
               <AssignmentsTab
                 classId={classId}
+                templates={templates?.filter((t) => t.kind === 'assignment')}
                 onChanged={() => {
                   refreshMeta()
                   onChanged()

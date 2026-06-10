@@ -1,4 +1,4 @@
-import { apiFetch } from '../lib/api'
+import { apiFetch, apiUpload } from '../lib/api'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -716,4 +716,47 @@ export function formatDate(date: string | null | undefined, withTime = false): s
     return d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
   }
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ─── Documents ───────────────────────────────────────────────────────────────
+// Ajoutés en fin de fichier : ce module est importé en lecture par mon-espace,
+// ne pas réorganiser l'existant ci-dessus.
+
+export async function listDocuments(
+  params: { parentType?: EducationDocumentParentType; parentId?: string } = {},
+): Promise<{ documents: EducationDocument[]; total: number }> {
+  const qs = new URLSearchParams()
+  if (params.parentType) qs.set('parentType', params.parentType)
+  if (params.parentId) qs.set('parentId', params.parentId)
+  return await apiFetch(`${base}/documents${qs.toString() ? '?' + qs.toString() : ''}`)
+}
+
+/** Upload multipart (champ `file` + metadata) — apiUpload laisse le navigateur fixer le boundary. */
+export async function uploadDocument(
+  file: File,
+  meta: { parentType: EducationDocumentParentType; parentId: string; title?: string },
+): Promise<{ document: EducationDocument }> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('parentType', meta.parentType)
+  fd.append('parentId', meta.parentId)
+  if (meta.title) fd.append('title', meta.title)
+  return await apiUpload(`${base}/documents`, fd)
+}
+
+/** URL de téléchargement (route protégée Bearer : à consommer via apiDownload côté UI). */
+export function documentDownloadUrl(id: string): string {
+  return `${base}/documents/${id}/download`
+}
+
+export async function deleteDocument(id: string): Promise<{ success: true }> {
+  return await apiFetch(`${base}/documents/${id}`, { method: 'DELETE' })
+}
+
+/** Taille de fichier lisible (o, Ko, Mo). */
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (!bytes || bytes <= 0) return '—'
+  if (bytes < 1024) return `${bytes} o`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} Ko`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
 }

@@ -313,14 +313,16 @@ export default function EducationWorkspace() {
             {view === 'sessions' && (
               <SessionsView
                 classes={classes}
+                templates={templates.filter((t) => t.kind === 'session')}
                 incomingOpenId={pendingSessionId}
                 onCloseIncomingOpen={() => setPendingSessionId(null)}
               />
             )}
-            {view === 'calendar' && <CalendarView />}
+            {view === 'calendar' && <CalendarView classes={classes} />}
             {view === 'assignments' && (
               <AssignmentsView
                 classes={classes}
+                templates={templates.filter((t) => t.kind === 'assignment')}
                 onChanged={refreshDashboard}
                 incomingOpenId={pendingAssignmentId}
                 onCloseIncomingOpen={() => setPendingAssignmentId(null)}

@@ -70,6 +70,8 @@ import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 import { Kpi } from './class-parts'
+import { DocumentsPanel } from './DocumentsPanel'
+import type { RubricCriterion } from '../../../services/education'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
@@ -168,7 +170,15 @@ function AssignmentKanban({
   )
 }
 
-export function AssignmentsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
+export function AssignmentsTab({
+  classId,
+  onChanged,
+  templates,
+}: {
+  classId: string
+  onChanged: () => void
+  templates?: EducationTemplate[]
+}) {
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -204,6 +214,7 @@ export function AssignmentsTab({ classId, onChanged }: { classId: string; onChan
       {showCreate && (
         <AssignmentForm
           classId={classId}
+          templates={templates}
           onClose={() => setShowCreate(false)}
           onSaved={async () => {
             setShowCreate(false)
@@ -228,13 +239,21 @@ export function AssignmentsTab({ classId, onChanged }: { classId: string; onChan
 
 export function AssignmentForm({
   classId,
+  classes,
+  templates,
   onClose,
   onSaved,
 }: {
-  classId: string
+  /** Si absent, un select de classe obligatoire est affiché (utiliser `classes`). */
+  classId?: string
+  classes?: EducationClass[]
+  /** Templates kind="assignment", filtrés par l'appelant. */
+  templates?: EducationTemplate[]
   onClose: () => void
   onSaved: () => void
 }) {
+  const [classChoice, setClassChoice] = useState(classId ?? '')
+  const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
     title: '',
     kind: 'DEVOIR' as EducationAssignment['kind'],
@@ -243,8 +262,37 @@ export function AssignmentForm({
     maxGrade: 20,
     weight: 1,
     status: 'OUVERT' as EducationAssignmentStatus,
+    rubric: [] as RubricCriterion[],
+    expectedDeliverables: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // Pré-remplit le form depuis template.body (champs reconnus, le reste ignoré).
+  function applyTemplate(id: string) {
+    setTemplateId(id)
+    const t = templates?.find((x) => x._id === id)
+    if (!t) return
+    const b = t.body as Record<string, unknown>
+    const kinds = Object.keys(ASSIGNMENT_KIND_LABEL)
+    setForm((f) => ({
+      ...f,
+      title: typeof b.title === 'string' ? b.title : f.title,
+      kind: typeof b.kind === 'string' && kinds.includes(b.kind) ? (b.kind as EducationAssignment['kind']) : f.kind,
+      instructions: typeof b.instructions === 'string' ? b.instructions : f.instructions,
+      maxGrade: typeof b.maxGrade === 'number' ? b.maxGrade : f.maxGrade,
+      weight: typeof b.weight === 'number' ? b.weight : f.weight,
+      rubric: Array.isArray(b.rubric)
+        ? (b.rubric as unknown[]).filter(
+            (r): r is RubricCriterion =>
+              !!r && typeof r === 'object' && typeof (r as RubricCriterion).label === 'string',
+          )
+        : f.rubric,
+      expectedDeliverables: Array.isArray(b.expectedDeliverables)
+        ? (b.expectedDeliverables as unknown[]).filter((d): d is string => typeof d === 'string')
+        : f.expectedDeliverables,
+    }))
+  }
+
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
@@ -258,6 +306,32 @@ export function AssignmentForm({
           </button>
         </div>
         <div className="edu-drawer-body">
+          {templates && templates.length > 0 && (
+            <div className="edu-form-group">
+              <label>Partir d'un template…</label>
+              <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {templates.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!classId && (
+            <div className="edu-form-group">
+              <label>Classe *</label>
+              <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
+                <option value="">Choisir une classe…</option>
+                {(classes ?? []).map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="edu-form-group">
             <label>Titre</label>
             <input
@@ -325,6 +399,16 @@ export function AssignmentForm({
               onChange={(e) => setForm({ ...form, instructions: e.target.value })}
             />
           </div>
+          {form.rubric.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Barème du template : {form.rubric.map((r) => `${r.label} (${r.max})`).join(' · ')}
+            </p>
+          )}
+          {form.expectedDeliverables.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Livrables attendus : {form.expectedDeliverables.join(' · ')}
+            </p>
+          )}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
@@ -332,12 +416,12 @@ export function AssignmentForm({
           </button>
           <button
             className="edu-btn"
-            disabled={!form.title.trim() || saving}
+            disabled={!form.title.trim() || !classChoice || saving}
             onClick={async () => {
               setSaving(true)
               try {
                 await createAssignment({
-                  classId,
+                  classId: classChoice,
                   title: form.title,
                   kind: form.kind,
                   status: form.status,
@@ -345,6 +429,8 @@ export function AssignmentForm({
                   deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
                   maxGrade: form.maxGrade,
                   weight: form.weight,
+                  rubric: form.rubric,
+                  expectedDeliverables: form.expectedDeliverables,
                 })
                 onSaved()
               } finally {
@@ -467,6 +553,10 @@ export function AssignmentDetailDrawer({
             </>
           )}
 
+          {/* Pièces jointes (documents uploadés) */}
+          <h2 className="edu-h2">Pièces jointes</h2>
+          <DocumentsPanel parentType="assignment" parentId={assignmentId} />
+
           <h2 className="edu-h2">Suivi par étudiant</h2>
           {submissions.length === 0 ? (
             <div className="edu-empty">
@@ -565,16 +655,19 @@ export function AssignmentsView({
   incomingOpenId,
   onCloseIncomingOpen,
   onStartCorrection,
+  templates,
 }: {
   classes: EducationClass[]
   onChanged: () => void
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
   onStartCorrection?: (id: string) => void
+  templates?: EducationTemplate[]
 }) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
   useEffect(() => {
     if (incomingOpenId) {
       setOpenId(incomingOpenId)
@@ -595,19 +688,24 @@ export function AssignmentsView({
     <div>
       <div className="edu-row between">
         <h1 className="edu-h1">Devoirs & projets</h1>
-        <select
-          className="edu-select"
-          style={{ width: 220 }}
-          value={filterClass}
-          onChange={(e) => setFilterClass(e.target.value)}
-        >
-          <option value="">Toutes les classes</option>
-          {classes.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="edu-row" style={{ gap: 8 }}>
+          <select
+            className="edu-select"
+            style={{ width: 220 }}
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+          >
+            <option value="">Toutes les classes</option>
+            {classes.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button className="edu-btn" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> Nouveau devoir
+          </button>
+        </div>
       </div>
       <p className="edu-sub">
         {items.length} devoir{items.length > 1 ? 's' : ''}
@@ -629,6 +727,19 @@ export function AssignmentsView({
             onChanged()
           }}
           showClassDot
+        />
+      )}
+      {showCreate && (
+        <AssignmentForm
+          classId={filterClass || undefined}
+          classes={classes}
+          templates={templates}
+          onClose={() => setShowCreate(false)}
+          onSaved={async () => {
+            setShowCreate(false)
+            await refresh()
+            onChanged()
+          }}
         />
       )}
       {openId && (

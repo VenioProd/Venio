@@ -81,7 +81,15 @@ function isToday(date: string): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
 }
 
-export function SessionsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
+export function SessionsTab({
+  classId,
+  onChanged,
+  templates,
+}: {
+  classId: string
+  onChanged: () => void
+  templates?: EducationTemplate[]
+}) {
   const [sessions, setSessions] = useState<EducationSession[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [openSessionId, setOpenSessionId] = useState<string | null>(null)
@@ -148,6 +156,7 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
       {showCreate && (
         <SessionForm
           classId={classId}
+          templates={templates}
           onClose={() => setShowCreate(false)}
           onSaved={async () => {
             setShowCreate(false)
@@ -172,13 +181,21 @@ export function SessionsTab({ classId, onChanged }: { classId: string; onChanged
 
 export function SessionForm({
   classId,
+  classes,
+  templates,
   onClose,
   onSaved,
 }: {
-  classId: string
+  /** Si absent, un select de classe obligatoire est affiché (utiliser `classes`). */
+  classId?: string
+  classes?: EducationClass[]
+  /** Templates kind="session", filtrés par l'appelant. */
+  templates?: EducationTemplate[]
   onClose: () => void
   onSaved: () => void
 }) {
+  const [classChoice, setClassChoice] = useState(classId ?? '')
+  const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
     title: '',
     theme: '',
@@ -186,8 +203,29 @@ export function SessionForm({
     durationMin: 120,
     location: '',
     agenda: '',
+    objectives: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // Pré-remplit le form depuis template.body (champs reconnus, le reste ignoré).
+  function applyTemplate(id: string) {
+    setTemplateId(id)
+    const t = templates?.find((x) => x._id === id)
+    if (!t) return
+    const b = t.body as Record<string, unknown>
+    setForm((f) => ({
+      ...f,
+      title: typeof b.title === 'string' ? b.title : f.title,
+      theme: typeof b.theme === 'string' ? b.theme : f.theme,
+      agenda: typeof b.agenda === 'string' ? b.agenda : f.agenda,
+      durationMin: typeof b.durationMin === 'number' ? b.durationMin : f.durationMin,
+      location: typeof b.location === 'string' ? b.location : f.location,
+      objectives: Array.isArray(b.objectives)
+        ? (b.objectives as unknown[]).filter((o): o is string => typeof o === 'string')
+        : f.objectives,
+    }))
+  }
+
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
@@ -201,6 +239,32 @@ export function SessionForm({
           </button>
         </div>
         <div className="edu-drawer-body">
+          {templates && templates.length > 0 && (
+            <div className="edu-form-group">
+              <label>Partir d'un template…</label>
+              <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {templates.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!classId && (
+            <div className="edu-form-group">
+              <label>Classe *</label>
+              <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
+                <option value="">Choisir une classe…</option>
+                {(classes ?? []).map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="edu-form-group">
             <label>Titre</label>
             <input
@@ -254,6 +318,11 @@ export function SessionForm({
               onChange={(e) => setForm({ ...form, agenda: e.target.value })}
             />
           </div>
+          {form.objectives.length > 0 && (
+            <p className="edu-sub" style={{ marginTop: 4 }}>
+              Objectifs du template : {form.objectives.join(' · ')}
+            </p>
+          )}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
@@ -261,18 +330,19 @@ export function SessionForm({
           </button>
           <button
             className="edu-btn"
-            disabled={!form.title.trim() || !form.date || saving}
+            disabled={!form.title.trim() || !form.date || !classChoice || saving}
             onClick={async () => {
               setSaving(true)
               try {
                 await createSession({
-                  classId,
+                  classId: classChoice,
                   title: form.title,
                   theme: form.theme,
                   date: new Date(form.date).toISOString(),
                   durationMin: form.durationMin,
                   location: form.location,
                   agenda: form.agenda,
+                  objectives: form.objectives,
                 })
                 onSaved()
               } finally {
@@ -298,16 +368,19 @@ export function SessionsView({
   classes,
   incomingOpenId,
   onCloseIncomingOpen,
+  templates,
 }: {
   classes: EducationClass[]
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
+  templates?: EducationTemplate[]
 }) {
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationSession[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openSessionId, setOpenSessionId] = useState<string | null>(null)
   const [liveId, setLiveId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
 
   const refreshSessions = useCallback(() => {
     listSessions(filterClass ? { classId: filterClass } : {})
@@ -334,19 +407,24 @@ export function SessionsView({
       <div>
         <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
           <h1 className="edu-h1">Séances</h1>
-          <select
-            className="edu-select"
-            style={{ width: 220 }}
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-          >
-            <option value="">Toutes les classes</option>
-            {classes.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="edu-row" style={{ gap: 8 }}>
+            <select
+              className="edu-select"
+              style={{ width: 220 }}
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+            >
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button className="edu-btn" onClick={() => setShowCreate(true)}>
+              <Plus size={14} /> Nouvelle séance
+            </button>
+          </div>
         </div>
         {error && (
           <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
@@ -420,6 +498,18 @@ export function SessionsView({
           </table>
         )}
       </div>
+      {showCreate && (
+        <SessionForm
+          classId={filterClass || undefined}
+          classes={classes}
+          templates={templates}
+          onClose={() => setShowCreate(false)}
+          onSaved={() => {
+            setShowCreate(false)
+            refreshSessions()
+          }}
+        />
+      )}
       {openSessionId && (
         <SessionDetailDrawer
           sessionId={openSessionId}

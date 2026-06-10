@@ -1656,3 +1656,78 @@
 .edu-mention-menu .edu-mention-kind {
   margin-right: 2px;
 }
+
+/* ─── Documents (supports de séance, pièces jointes devoir) ─────────────── */
+.edu-docs {
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.edu-docs.is-over {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.06);
+}
+.edu-docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edu-docs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+.edu-docs-icon {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+.edu-docs-info {
+  flex: 1;
+  min-width: 0;
+}
+.edu-docs-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.edu-docs-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.edu-docs-empty {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 10px 6px;
+  text-align: center;
+}
+.edu-docs-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.edu-docs-hint {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.edu-spin {
+  animation: edu-spin-kf 1s linear infinite;
+}
+@keyframes edu-spin-kf {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
