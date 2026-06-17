@@ -90,6 +90,8 @@ const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
+const SubsidiaryList = lazy(() => import('./pages/admin/SubsidiaryList'))
+const SubsidiaryDetail = lazy(() => import('./pages/admin/SubsidiaryDetail'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
@@ -145,514 +147,530 @@ function App() {
 
   return (
     <I18nProvider>
-    <ThemeProvider>
-    <ThemeSync />
-    <NotificationProvider>
-    <ToastProvider>
-      {!isPublicQuestionnaire && !isPortal && <Navbar />}
-      <Suspense fallback={null}>
-      <Routes>
-        {/* Site vitrine */}
-        <Route path="/" element={<Home />} />
-        <Route path="/services/communication" element={<ServicesCommunication />} />
-        <Route path="/services/developpement" element={<ServicesDeveloppement />} />
-        <Route path="/services/conseil" element={<ServicesConseil />} />
-        <Route path="/poles" element={<PolesPage />} />
-        <Route path="/realisations" element={<Realisations />} />
-        <Route path="/a-propos" element={<APropos />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/legal" element={<Legal />} />
-        <Route path="/cgu" element={<CGU />} />
-        <Route path="/cgv" element={<CGV />} />
-        <Route path="/confidentialite" element={<Confidentialite />} />
-        <Route path="/questionnaire/creer/:token" element={<PublicQuestionnaireBuilder />} />
-        <Route path="/questionnaire/:token" element={<PublicQuestionnaire />} />
+      <ThemeProvider>
+        <ThemeSync />
+        <NotificationProvider>
+          <ToastProvider>
+            {!isPublicQuestionnaire && !isPortal && <Navbar />}
+            <Suspense fallback={null}>
+              <Routes>
+                {/* Site vitrine */}
+                <Route path="/" element={<Home />} />
+                <Route path="/services/communication" element={<ServicesCommunication />} />
+                <Route path="/services/developpement" element={<ServicesDeveloppement />} />
+                <Route path="/services/conseil" element={<ServicesConseil />} />
+                <Route path="/poles" element={<PolesPage />} />
+                <Route path="/realisations" element={<Realisations />} />
+                <Route path="/a-propos" element={<APropos />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/legal" element={<Legal />} />
+                <Route path="/cgu" element={<CGU />} />
+                <Route path="/cgv" element={<CGV />} />
+                <Route path="/confidentialite" element={<Confidentialite />} />
+                <Route path="/questionnaire/creer/:token" element={<PublicQuestionnaireBuilder />} />
+                <Route path="/questionnaire/:token" element={<PublicQuestionnaire />} />
 
-        {/* Espace client */}
-        <Route path="/espace-client/login" element={<ClientLogin />} />
-        <Route
-          path="/espace-client"
-          element={
-            <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
-              <ClientShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ClientDashboard />} />
-          <Route path="guide" element={<ClientGuide />} />
-          <Route path="profil" element={<ClientProfile />} />
-          <Route path="projets/:id" element={<ClientProjectDetail />} />
-        </Route>
+                {/* Espace client */}
+                <Route path="/espace-client/login" element={<ClientLogin />} />
+                <Route
+                  path="/espace-client"
+                  element={
+                    <ProtectedRoute role="CLIENT" redirectTo="/espace-client/login">
+                      <ClientShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<ClientDashboard />} />
+                  <Route path="guide" element={<ClientGuide />} />
+                  <Route path="profil" element={<ClientProfile />} />
+                  <Route path="projets/:id" element={<ClientProjectDetail />} />
+                </Route>
 
-        {/* Admin */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
-              <AdminShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<MonEspace />} />
-          <Route path="dashboard" element={<DashboardByRole />} />
-          <Route path="decisions" element={<DecisionsList />} />
-          <Route path="mon-espace" element={<MonEspace />} />
-          <Route path="profil" element={<AdminProfile />} />
+                {/* Admin */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+                      <AdminShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<MonEspace />} />
+                  <Route path="dashboard" element={<DashboardByRole />} />
+                  <Route path="decisions" element={<DecisionsList />} />
+                  <Route path="mon-espace" element={<MonEspace />} />
+                  <Route path="profil" element={<AdminProfile />} />
 
-          {/* Clients */}
-          <Route
-            path="comptes-clients"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
-                <ClientAccountList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptes-clients/nouveau"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
-                <ClientAccountNew />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptes-clients/:userId"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
-                <ClientAccountDetail />
-              </RequirePermission>
-            }
-          />
+                  {/* Clients */}
+                  <Route
+                    path="comptes-clients"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
+                        <ClientAccountList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptes-clients/nouveau"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
+                        <ClientAccountNew />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptes-clients/:userId"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
+                        <ClientAccountDetail />
+                      </RequirePermission>
+                    }
+                  />
 
-          {/* Admins */}
-          <Route
-            path="comptes-admin"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <AdminList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptes-admin/nouveau"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <AdminNew />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptes-admin/:userId"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <AdminEdit />
-              </RequirePermission>
-            }
-          />
+                  {/* Admins */}
+                  <Route
+                    path="comptes-admin"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <AdminList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptes-admin/nouveau"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <AdminNew />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptes-admin/:userId"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <AdminEdit />
+                      </RequirePermission>
+                    }
+                  />
 
-          {/* Agents API (tokens PAT pour Kuro et intégrations externes) */}
-          <Route
-            path="agents"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <AgentTokensList />
-              </RequirePermission>
-            }
-          />
+                  {/* Agents API (tokens PAT pour Kuro et intégrations externes) */}
+                  <Route
+                    path="agents"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <AgentTokensList />
+                      </RequirePermission>
+                    }
+                  />
 
-          {/* System health & activity center */}
-          <Route
-            path="health"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <SystemHealth />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="centre-activite"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <ActivityCenter />
-              </RequirePermission>
-            }
-          />
+                  {/* System health & activity center */}
+                  <Route
+                    path="health"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <SystemHealth />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="centre-activite"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <ActivityCenter />
+                      </RequirePermission>
+                    }
+                  />
 
-          {/* Projets */}
-          <Route
-            path="projets/nouveau"
-            element={
-              <RequirePermission permission={PERMISSIONS.EDIT_PROJECTS} redirectTo="/admin">
-                <ProjectForm />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="projets/:id"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <AdminProjectDetail />
-              </RequirePermission>
-            }
-          />
-          {/* Redirects: /admin/projects/* → /admin/projets/* */}
-          <Route path="projects/:id" element={<ProjectsRedirect />} />
-          <Route path="projects" element={<Navigate to="/admin/gestion" replace />} />
+                  {/* Projets */}
+                  <Route
+                    path="projets/nouveau"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.EDIT_PROJECTS} redirectTo="/admin">
+                        <ProjectForm />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="projets/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <AdminProjectDetail />
+                      </RequirePermission>
+                    }
+                  />
+                  {/* Redirects: /admin/projects/* → /admin/projets/* */}
+                  <Route path="projects/:id" element={<ProjectsRedirect />} />
+                  <Route path="projects" element={<Navigate to="/admin/gestion" replace />} />
 
-          <Route
-            path="analytics"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <Analytics />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="calendrier"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <Calendar />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="templates"
-            element={
-              <RequirePermission permission={PERMISSIONS.EDIT_PROJECTS} redirectTo="/admin">
-                <TemplateList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="crm"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                <CrmBoard />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="crm/settings"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_CRM} redirectTo="/admin/crm">
-                <CrmSettings />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="audit"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <AuditLog />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="qualiopi"
-            element={
-              <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                <QualiopiBoard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="tickets"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_TICKETS} redirectTo="/admin">
-                <TicketList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="dev"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
-                <DevWorkspace />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="dev/issues/:issueId"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
-                <DevWorkspace />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="dev/projects/:projectId"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
-                <DevProjectCockpit />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="education"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_EDUCATION} redirectTo="/admin">
-                <EducationWorkspace />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="acces-outils"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                <ToolAccessList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="gestion"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <GestionBoard />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="messages"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_MESSAGING} redirectTo="/admin">
-                <Messaging />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="stagiaires"
-            element={
-              <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                <InternList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="stagiaires/:id"
-            element={
-              <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                <InternDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="projets-internes"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <InternalProjectList />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="projets-internes/:id"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <InternalProjectDetail />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="ressources"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_CONTENT} redirectTo="/admin">
-                <Resources />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="arrow-prospection"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                <ArrowProspection />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="mes-rapports"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                <MyReports />
-              </RequirePermission>
-            }
-          />
-          {/* Intentionnellement non protégé: accessible à tout admin authentifié (ProtectedRoute parent suffit) */}
-          <Route path="guide" element={<AdminGuide />} />
-          <Route
-            path="emails"
-            element={
-              <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                <EmailComposer />
-              </ProtectedRoute>
-            }
-          />
+                  <Route
+                    path="analytics"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <Analytics />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="calendrier"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <Calendar />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="templates"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.EDIT_PROJECTS} redirectTo="/admin">
+                        <TemplateList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="crm"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
+                        <CrmBoard />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="crm/settings"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_CRM} redirectTo="/admin/crm">
+                        <CrmSettings />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="audit"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <AuditLog />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="qualiopi"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
+                        <QualiopiBoard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="tickets"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_TICKETS} redirectTo="/admin">
+                        <TicketList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="dev"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                        <DevWorkspace />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="dev/issues/:issueId"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                        <DevWorkspace />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="dev/projects/:projectId"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
+                        <DevProjectCockpit />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="education"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_EDUCATION} redirectTo="/admin">
+                        <EducationWorkspace />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="acces-outils"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
+                        <ToolAccessList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="gestion"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <GestionBoard />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="messages"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_MESSAGING} redirectTo="/admin">
+                        <Messaging />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="stagiaires"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
+                        <InternList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="stagiaires/:id"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
+                        <InternDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="projets-internes"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <InternalProjectList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="projets-internes/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <InternalProjectDetail />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="ressources"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_CONTENT} redirectTo="/admin">
+                        <Resources />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="arrow-prospection"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
+                        <ArrowProspection />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="filiales"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin">
+                        <SubsidiaryList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="filiales/:id"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin">
+                        <SubsidiaryDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="mes-rapports"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                        <MyReports />
+                      </RequirePermission>
+                    }
+                  />
+                  {/* Intentionnellement non protégé: accessible à tout admin authentifié (ProtectedRoute parent suffit) */}
+                  <Route path="guide" element={<AdminGuide />} />
+                  <Route
+                    path="emails"
+                    element={
+                      <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
+                        <EmailComposer />
+                      </ProtectedRoute>
+                    }
+                  />
 
-          {/* Comptabilité */}
-          <Route
-            path="comptabilite"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <AccountingDashboard />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/parametres"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
-                <AccountingSettings />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/plan-comptable"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <ChartOfAccounts />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/journaux"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <AccountingJournals />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/ecritures"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <AccountingEntries />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/ecritures/nouvelle"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
-                <AccountingEntryForm />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/ecritures/:id"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <AccountingEntryDetail />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/grand-livre"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <GeneralLedger />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/balance"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <TrialBalance />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/bilan"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <BalanceSheet />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/resultat"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <IncomeStatement />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/tva"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
-                <VatDeclarations />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/tva/:id"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
-                <VatDeclarationDetail />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/fec"
-            element={
-              <RequirePermission permission={PERMISSIONS.EXPORT_FEC} redirectTo="/admin">
-                <FecExport />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/lettrage"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
-                <Lettrage />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/sources-externes"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
-                <ExternalSources />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/sources-externes/:id"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
-                <ExternalSourceDetail />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/file-attente"
-            element={
-              <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
-                <DraftQueue />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="comptabilite/audit"
-            element={
-              <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
-                <AccountingAuditLog />
-              </RequirePermission>
-            }
-          />
-        </Route>
-      </Routes>
-      </Suspense>
-      {!isPublicQuestionnaire && !isPortal && <Footer />}
-      <CookieConsent />
-      <ToastContainer />
-      <Suspense fallback={null}>
-        <SearchModal />
-      </Suspense>
-    </ToastProvider>
-    </NotificationProvider>
-    </ThemeProvider>
+                  {/* Comptabilité */}
+                  <Route
+                    path="comptabilite"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <AccountingDashboard />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/parametres"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
+                        <AccountingSettings />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/plan-comptable"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <ChartOfAccounts />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/journaux"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <AccountingJournals />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/ecritures"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <AccountingEntries />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/ecritures/nouvelle"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin/comptabilite">
+                        <AccountingEntryForm />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/ecritures/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <AccountingEntryDetail />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/grand-livre"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <GeneralLedger />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/balance"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <TrialBalance />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/bilan"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <BalanceSheet />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/resultat"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <IncomeStatement />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/tva"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
+                        <VatDeclarations />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/tva/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_VAT} redirectTo="/admin">
+                        <VatDeclarationDetail />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/fec"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.EXPORT_FEC} redirectTo="/admin">
+                        <FecExport />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/lettrage"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
+                        <Lettrage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/sources-externes"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
+                        <ExternalSources />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/sources-externes/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SOURCES} redirectTo="/admin">
+                        <ExternalSourceDetail />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/file-attente"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.MANAGE_ACCOUNTING} redirectTo="/admin">
+                        <DraftQueue />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="comptabilite/audit"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                        <AccountingAuditLog />
+                      </RequirePermission>
+                    }
+                  />
+                </Route>
+              </Routes>
+            </Suspense>
+            {!isPublicQuestionnaire && !isPortal && <Footer />}
+            <CookieConsent />
+            <ToastContainer />
+            <Suspense fallback={null}>
+              <SearchModal />
+            </Suspense>
+          </ToastProvider>
+        </NotificationProvider>
+      </ThemeProvider>
     </I18nProvider>
   )
 }

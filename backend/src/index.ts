@@ -55,6 +55,7 @@ import adminEmailComposerRoutes from './routes/admin/emailComposer.js'
 import adminInternalProjectRoutes from './routes/admin/internalProjects.js'
 import adminArrowPilotageRoutes from './routes/admin/arrowPilotage.js'
 import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
+import adminSubsidiaryRoutes from './routes/admin/subsidiaries.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
@@ -97,29 +98,27 @@ if (!mongoUri) {
 // au chantier #6 : seuls des <script src="..."> dans index.html). Les CDN
 // utilisés (three.js, vanta) sont explicitement listés. Si Sentry est activé,
 // son origine est ajoutée à connectSrc.
-const sentryIngest = process.env.SENTRY_DSN
-  ? new URL(process.env.SENTRY_DSN).origin
-  : null
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: isProd ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        'https://cdnjs.cloudflare.com',
-        'https://cdn.jsdelivr.net',
-      ],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "https://api.emailjs.com", ...(sentryIngest ? [sentryIngest] : [])],
-      frameSrc: ["'self'", "blob:"],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-    },
-  } : false,
-}))
+const sentryIngest = process.env.SENTRY_DSN ? new URL(process.env.SENTRY_DSN).origin : null
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: isProd
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'", 'https://api.emailjs.com', ...(sentryIngest ? [sentryIngest] : [])],
+            frameSrc: ["'self'", 'blob:'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+          },
+        }
+      : false,
+  }),
+)
 
 // Force HTTPS in production
 if (isProd) {
@@ -139,17 +138,19 @@ app.use(
   cors({
     origin: corsOrigin,
     credentials: true,
-  })
+  }),
 )
 
 // Global rate limit: 200 requests per minute per IP
-app.use(rateLimit({
-  windowMs: 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Trop de requêtes, veuillez réessayer dans un instant.' },
-}))
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes, veuillez réessayer dans un instant.' },
+  }),
+)
 
 // Routes des sources externes (Arrow, ecom-bcg, etc.).
 // IMPORTANT : ce router est monté AVANT express.json() car la vérification
@@ -166,21 +167,23 @@ app.use(express.json({ limit: '2mb' }))
 
 // Logging requêtes — pino-http (remplace morgan)
 import type { IncomingMessage, ServerResponse } from 'http'
-app.use(pinoHttp({
-  logger,
-  customLogLevel: function (_req: IncomingMessage, res: ServerResponse, err?: Error) {
-    if (err || res.statusCode >= 500) return 'error'
-    if (res.statusCode >= 400) return 'warn'
-    return 'info'
-  },
-  // En prod : volumes élevés → on évite de logger les health checks et assets statiques
-  autoLogging: {
-    ignore: (req: IncomingMessage) => {
-      const url = req.url ?? ''
-      return url === '/api/health' || url.startsWith('/api/avatars/') || url.startsWith('/assets/')
+app.use(
+  pinoHttp({
+    logger,
+    customLogLevel: function (_req: IncomingMessage, res: ServerResponse, err?: Error) {
+      if (err || res.statusCode >= 500) return 'error'
+      if (res.statusCode >= 400) return 'warn'
+      return 'info'
     },
-  },
-}))
+    // En prod : volumes élevés → on évite de logger les health checks et assets statiques
+    autoLogging: {
+      ignore: (req: IncomingMessage) => {
+        const url = req.url ?? ''
+        return url === '/api/health' || url.startsWith('/api/avatars/') || url.startsWith('/assets/')
+      },
+    },
+  }),
+)
 
 // Healthcheck applicatif — ping Mongo + version. Non bloquant (Mongo down → status: degraded).
 app.get('/api/health', async (_req: Request, res: Response) => {
@@ -276,6 +279,7 @@ app.use('/api/admin/email-composer', adminEmailComposerRoutes)
 app.use('/api/admin/internal-projects', adminInternalProjectRoutes)
 app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
 app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
+app.use('/api/admin/subsidiaries', adminSubsidiaryRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
@@ -315,7 +319,7 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
   logger.error({ err, status }, 'Unhandled request error')
 
   res.status(status).json({
-    error: status >= 500 && isProd ? 'Erreur interne du serveur' : (err.message || 'Server error'),
+    error: status >= 500 && isProd ? 'Erreur interne du serveur' : err.message || 'Server error',
     ...(status === 400 && err.errors ? { errors: err.errors } : {}),
   })
 })
