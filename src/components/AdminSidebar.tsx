@@ -26,6 +26,7 @@ import {
   FolderGit2,
   GitBranch,
   Crosshair,
+  Building2,
   ShieldCheck,
   Bot,
   ClipboardCheck,
@@ -79,7 +80,13 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/ressources', label: 'Ressources', icon: BookOpen },
       { to: '/admin/acces-outils', label: 'Accès outils', icon: KeyRound },
       { to: '/admin/mes-rapports', label: 'Mes rapports', icon: BarChart2 },
-      { to: '/admin/analytics', label: 'Analytics', icon: TrendingUp, perm: PERMISSIONS.MANAGE_CRM, roles: ['SUPER_ADMIN'] },
+      {
+        to: '/admin/analytics',
+        label: 'Analytics',
+        icon: TrendingUp,
+        perm: PERMISSIONS.MANAGE_CRM,
+        roles: ['SUPER_ADMIN'],
+      },
     ],
   },
   {
@@ -90,13 +97,26 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/audit', label: 'Audit', icon: Shield, perm: PERMISSIONS.MANAGE_ADMINS, roles: ['SUPER_ADMIN'] },
       { to: '/admin/projets-internes', label: 'Projets internes', icon: FolderGit2 },
       { to: '/admin/dev', label: 'Dev workspace', icon: GitBranch, perm: PERMISSIONS.VIEW_DEV },
-      { to: '/admin/education', label: 'Pédagogie', icon: GraduationCap, perm: PERMISSIONS.VIEW_EDUCATION, roles: ['SUPER_ADMIN'] },
+      {
+        to: '/admin/education',
+        label: 'Pédagogie',
+        icon: GraduationCap,
+        perm: PERMISSIONS.VIEW_EDUCATION,
+        roles: ['SUPER_ADMIN'],
+      },
     ],
   },
   {
     label: 'Croissance',
     items: [
-      { to: '/admin/arrow-prospection', label: 'Arrow prospection', icon: Crosshair, perm: PERMISSIONS.MANAGE_CRM, roles: ['SUPER_ADMIN'] },
+      { to: '/admin/filiales', label: 'Filiales', icon: Building2, roles: ['SUPER_ADMIN'] },
+      {
+        to: '/admin/arrow-prospection',
+        label: 'Arrow prospection',
+        icon: Crosshair,
+        perm: PERMISSIONS.MANAGE_CRM,
+        roles: ['SUPER_ADMIN'],
+      },
     ],
   },
   {
@@ -129,10 +149,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   const navigate = useNavigate()
   const location = useLocation()
 
-  const unreadTotal = useMemo(
-    () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
-    [conversations]
-  )
+  const unreadTotal = useMemo(() => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0), [conversations])
 
   const [pendingDecisionsCount, setPendingDecisionsCount] = useState(0)
 
@@ -167,7 +184,9 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   // Escape ferme le drawer
   useEffect(() => {
     if (!drawerOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDrawerClose?.() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onDrawerClose?.()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [drawerOpen, onDrawerClose])
@@ -177,9 +196,10 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
     navigate('/admin/login')
   }
 
-  const visibleSections = NAV_SECTIONS
-    .map((s) => ({ ...s, items: s.items.filter((i) => isItemVisible(i, user)) }))
-    .filter((s) => s.items.length > 0)
+  const visibleSections = NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((i) => isItemVisible(i, user)),
+  })).filter((s) => s.items.length > 0)
 
   const navSections = (
     <>
@@ -242,7 +262,12 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
         </nav>
 
         <div className="admin-sb-user">
-          <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
+          <UserAvatar
+            name={user?.name || user?.email || '?'}
+            avatarUrl={user?.avatarUrl}
+            className="admin-sb-avatar"
+            size={28}
+          />
           <div className="admin-sb-user-info">
             <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
             <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
@@ -259,17 +284,11 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
             <User size={15} aria-hidden />
             <span className="admin-sb-label">Mon profil</span>
           </button>
-          <button
-            type="button"
-            className="admin-sb-footer-btn danger"
-            title="Se déconnecter"
-            onClick={handleLogout}
-          >
+          <button type="button" className="admin-sb-footer-btn danger" title="Se déconnecter" onClick={handleLogout}>
             <LogOut size={15} aria-hidden />
             <span className="admin-sb-label">Déconnexion</span>
           </button>
         </div>
-
       </aside>
 
       {/* ---- Drawer mobile (portal) ---- */}
@@ -283,12 +302,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                   <span className="admin-sb-logo">V</span>
                   <span className="admin-sb-brand-name">Venio Admin</span>
                 </div>
-                <button
-                  type="button"
-                  className="admin-sb-drawer-close"
-                  onClick={onDrawerClose}
-                  aria-label="Fermer"
-                >
+                <button type="button" className="admin-sb-drawer-close" onClick={onDrawerClose} aria-label="Fermer">
                   <X size={18} />
                 </button>
               </div>
@@ -297,7 +311,12 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
               </nav>
               <div className="admin-sb-drawer-footer">
                 <div className="admin-sb-user">
-                  <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="admin-sb-avatar" size={28} />
+                  <UserAvatar
+                    name={user?.name || user?.email || '?'}
+                    avatarUrl={user?.avatarUrl}
+                    className="admin-sb-avatar"
+                    size={28}
+                  />
                   <div className="admin-sb-user-info">
                     <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
                     <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
@@ -306,7 +325,10 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                 <button
                   type="button"
                   className="admin-sb-footer-btn"
-                  onClick={() => { onDrawerClose?.(); navigate('/admin/profil') }}
+                  onClick={() => {
+                    onDrawerClose?.()
+                    navigate('/admin/profil')
+                  }}
                 >
                   <User size={15} aria-hidden />
                   <span>Mon profil</span>
@@ -318,7 +340,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
               </div>
             </aside>
           </>,
-          document.body
+          document.body,
         )}
     </>
   )
