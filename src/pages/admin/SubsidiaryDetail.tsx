@@ -20,6 +20,20 @@ import {
   FileText,
   BookOpen,
   Paperclip,
+  GitFork,
+  Globe,
+  FlaskConical,
+  BarChart3,
+  Server,
+  Network,
+  GitBranch,
+  Palette,
+  FolderOpen,
+  Mail,
+  Phone,
+  KeyRound,
+  Info,
+  Copy,
 } from 'lucide-react'
 import { apiFetch, ApiError } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
@@ -28,6 +42,9 @@ import ConfirmModal from '../../components/ConfirmModal'
 import { DashKpiCard } from '../../components/dashboard'
 import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
 import SubsidiaryDocuments from './subsidiaries/SubsidiaryDocuments'
+import SubsidiaryCredentials from './subsidiaries/SubsidiaryCredentials'
+import { LINK_TYPE_LABELS } from '../../types/subsidiary.types'
+import type { SubsidiaryLinkType } from '../../types/subsidiary.types'
 import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
 import { STATUS_LABELS, STATUS_COLORS, HEALTH_COLORS, HEALTH_LABELS } from '../../types/subsidiary.types'
 import '../espace-client/ClientPortal.css'
@@ -159,6 +176,165 @@ function DossierTab({
   )
 }
 
+function linkIcon(type: SubsidiaryLinkType) {
+  const map: Record<SubsidiaryLinkType, ReactNode> = {
+    repo: <GitFork size={16} />,
+    production: <Globe size={16} />,
+    staging: <FlaskConical size={16} />,
+    analytics: <BarChart3 size={16} />,
+    hosting: <Server size={16} />,
+    dns: <Network size={16} />,
+    ci: <GitBranch size={16} />,
+    design: <Palette size={16} />,
+    docs: <FileText size={16} />,
+    drive: <FolderOpen size={16} />,
+    other: <Link2 size={16} />,
+  }
+  return map[type] || <Link2 size={16} />
+}
+
+function ContexteTab({
+  sub,
+  accent,
+  onCredsChange,
+}: {
+  sub: Subsidiary
+  accent: string
+  onCredsChange: (creds: Subsidiary['credentials']) => void
+}) {
+  const links = sub.links || []
+  const infos = sub.infos || []
+  const contacts = sub.contacts || []
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      {/* Liens & accès */}
+      <div className="sub-dossier-card">
+        <h2 className="sub-dossier-title">
+          <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
+            <Link2 size={16} />
+          </span>
+          Liens & accès
+        </h2>
+        {links.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {links.map((l, i) => (
+              <a
+                key={i}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                className="sub-resource"
+                style={{ ['--sub-accent' as string]: accent }}
+              >
+                <span style={{ color: accent, display: 'inline-flex' }}>{linkIcon(l.type)}</span>
+                {l.label || LINK_TYPE_LABELS[l.type]}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="sub-dossier-empty">Aucun lien. Ajoute le repo GitHub, la prod, le staging, l’hébergement…</p>
+        )}
+      </div>
+
+      {/* Infos */}
+      <div className="sub-dossier-card">
+        <h2 className="sub-dossier-title">
+          <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
+            <Info size={16} />
+          </span>
+          Infos
+        </h2>
+        {infos.length > 0 ? (
+          <div className="sub-infos">
+            {infos.map((info, i) => (
+              <div key={i} className="sub-info-row">
+                <span className="sub-info-key">{info.label}</span>
+                <span className="sub-info-val">
+                  <code>{info.value}</code>
+                  {info.value && (
+                    <button type="button" className="sub-icon-btn" onClick={() => copy(info.value)} title="Copier">
+                      <Copy size={12} />
+                    </button>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="sub-dossier-empty">Aucune info. Ajoute SIRET, banque, stack, abonnements…</p>
+        )}
+      </div>
+
+      {/* Contacts */}
+      <div className="sub-dossier-card">
+        <h2 className="sub-dossier-title">
+          <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
+            <Users size={16} />
+          </span>
+          Contacts
+        </h2>
+        {contacts.length > 0 ? (
+          <div className="sub-contacts">
+            {contacts.map((c, i) => (
+              <div key={i} className="sub-contact">
+                <div className="sub-contact__name">
+                  {c.name}
+                  {c.role && <span className="sub-contact__role">{c.role}</span>}
+                </div>
+                <div className="sub-contact__lines">
+                  {c.email && (
+                    <a href={`mailto:${c.email}`} className="sub-contact__line">
+                      <Mail size={12} /> {c.email}
+                    </a>
+                  )}
+                  {c.phone && (
+                    <a href={`tel:${c.phone}`} className="sub-contact__line">
+                      <Phone size={12} /> {c.phone}
+                    </a>
+                  )}
+                </div>
+                {c.notes && <div className="sub-contact__notes">{c.notes}</div>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="sub-dossier-empty">
+            Aucun contact. Ajoute qui fait quoi (lead dev, designer, support, prestataires).
+          </p>
+        )}
+      </div>
+
+      {/* Coffre d'identifiants */}
+      <div className="sub-dossier-card">
+        <h2 className="sub-dossier-title">
+          <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
+            <KeyRound size={16} />
+          </span>
+          Identifiants
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>
+            · chiffrés au repos · super-admin
+          </span>
+        </h2>
+        <SubsidiaryCredentials
+          subsidiaryId={sub._id}
+          credentials={sub.credentials || []}
+          accent={accent}
+          onChange={onCredsChange}
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function SubsidiaryDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -170,7 +346,7 @@ export default function SubsidiaryDetail() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [tab, setTab] = useState<'synthese' | 'dossier'>('synthese')
+  const [tab, setTab] = useState<'synthese' | 'dossier' | 'contexte'>('synthese')
 
   const load = useCallback(() => {
     if (!id) return
@@ -335,6 +511,13 @@ export default function SubsidiaryDetail() {
           onClick={() => setTab('dossier')}
         >
           Dossier
+        </button>
+        <button
+          type="button"
+          className={`admin-tab${tab === 'contexte' ? ' active' : ''}`}
+          onClick={() => setTab('contexte')}
+        >
+          Contexte & accès
         </button>
       </div>
 
@@ -564,6 +747,14 @@ export default function SubsidiaryDetail() {
           sub={sub}
           accent={accent}
           onDocsChange={(documents) => setSub((s) => (s ? { ...s, documents } : s))}
+        />
+      )}
+
+      {tab === 'contexte' && (
+        <ContexteTab
+          sub={sub}
+          accent={accent}
+          onCredsChange={(credentials) => setSub((s) => (s ? { ...s, credentials } : s))}
         />
       )}
 

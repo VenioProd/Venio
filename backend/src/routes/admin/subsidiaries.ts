@@ -4,9 +4,16 @@ import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import { requireSuperAdmin } from '../../middleware/role.js'
-import Subsidiary, { SUBSIDIARY_STATUSES, SUBSIDIARY_HEALTHS, DOCUMENT_CATEGORIES } from '../../models/Subsidiary.js'
+import Subsidiary, {
+  SUBSIDIARY_STATUSES,
+  SUBSIDIARY_HEALTHS,
+  DOCUMENT_CATEGORIES,
+  LINK_TYPES,
+  CREDENTIAL_CATEGORIES,
+} from '../../models/Subsidiary.js'
 import InternalProject, { ENTITIES } from '../../models/InternalProject.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { encryptSecret, decryptSecret } from '../../lib/secretBox.js'
 
 const router = express.Router()
 router.use(auth)
@@ -58,6 +65,9 @@ const EDITABLE_FIELDS = [
   'businessModel',
   'businessPlan',
   'sections',
+  'links',
+  'infos',
+  'contacts',
   'accentColor',
   'lead',
   'foundedYear',
@@ -65,7 +75,6 @@ const EDITABLE_FIELDS = [
   'team',
   'kpis',
   'objective',
-  'links',
   'alerts',
   'tags',
   'order',
@@ -96,9 +105,28 @@ async function aggregateProjects(linkedEntity: string) {
   return { projects, counts: { active, total } }
 }
 
+/** Retire les secrets chiffrés et expose seulement un drapeau hasSecret. */
+function sanitizeCredentials(creds: any[] = []): any[] {
+  return creds.map((c) => {
+    const { secretEnc, ...rest } = c
+    return { ...rest, hasSecret: Boolean(secretEnc) }
+  })
+}
+
+/** Nettoie une filiale (lean) avant de la renvoyer : credentials sans secret. */
+function sanitizeSubsidiary<T extends { credentials?: any[] }>(s: T): T {
+  return { ...s, credentials: sanitizeCredentials(s.credentials) }
+}
+
 // GET /meta — listes pour les formulaires (statuts, santé, entités liables)
 router.get('/meta', (_req: Request, res: Response) => {
-  res.json({ statuses: SUBSIDIARY_STATUSES, healths: SUBSIDIARY_HEALTHS, entities: ENTITIES })
+  res.json({
+    statuses: SUBSIDIARY_STATUSES,
+    healths: SUBSIDIARY_HEALTHS,
+    entities: ENTITIES,
+    linkTypes: LINK_TYPES,
+    credentialCategories: CREDENTIAL_CATEGORIES,
+  })
 })
 
 // GET / — liste des filiales (vue annuaire) avec agrégats légers
@@ -116,7 +144,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       subsidiaries.map(async (s) => {
         const { counts } = await aggregateProjects(s.linkedEntity)
         const headcount = s.team?.length || 0 || s.kpis?.headcount || 0
-        return { ...s, projectCounts: counts, headcount }
+        return { ...sanitizeSubsidiary(s), projectCounts: counts, headcount }
       }),
     )
 
@@ -136,7 +164,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
 
     const { projects, counts } = await aggregateProjects(subsidiary.linkedEntity)
-    return res.json({ subsidiary: { ...subsidiary, linkedProjects: projects, projectCounts: counts } })
+    return res.json({
+      subsidiary: { ...sanitizeSubsidiary(subsidiary), linkedProjects: projects, projectCounts: counts },
+    })
   } catch (err) {
     return next(err)
   }
@@ -155,7 +185,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const populated = await Subsidiary.findById(subsidiary._id)
       .populate('lead', 'name email')
       .populate('team', 'name email')
-    return res.status(201).json({ subsidiary: populated })
+      .lean()
+    return res.status(201).json({ subsidiary: populated ? sanitizeSubsidiary(populated) : null })
   } catch (err) {
     return next(err)
   }
@@ -176,7 +207,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const populated = await Subsidiary.findById(subsidiary._id)
       .populate('lead', 'name email')
       .populate('team', 'name email role')
-    return res.json({ subsidiary: populated })
+      .lean()
+    return res.json({ subsidiary: populated ? sanitizeSubsidiary(populated) : null })
   } catch (err) {
     return next(err)
   }
@@ -270,6 +302,86 @@ router.delete('/:id/documents/:docId', async (req: Request, res: Response, next:
     subsidiary.documents.splice(idx, 1)
     await subsidiary.save()
     return res.json({ documents: subsidiary.documents })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// ── COFFRE D'IDENTIFIANTS ─────────────────────────────────────────────────────
+// Le secret est chiffré au repos ; il n'est renvoyé en clair que via /reveal.
+
+// POST /:id/credentials — ajouter un identifiant
+router.post('/:id/credentials', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+
+    const { category, label, username, secret, url, notes } = req.body
+    if (!label?.trim()) return res.status(400).json({ error: 'Le libellé est requis' })
+
+    subsidiary.credentials.push({
+      category: CREDENTIAL_CATEGORIES.includes(category) ? category : 'admin',
+      label: label.trim(),
+      username: (username || '').trim(),
+      secretEnc: secret ? encryptSecret(String(secret)) : '',
+      url: (url || '').trim(),
+      notes: (notes || '').trim(),
+    })
+    await subsidiary.save()
+    return res
+      .status(201)
+      .json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// PATCH /:id/credentials/:credId — mettre à jour (secret réécrit seulement si fourni)
+router.patch('/:id/credentials/:credId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    const cred = subsidiary.credentials.find((c) => (c as any)._id?.toString() === req.params.credId)
+    if (!cred) return res.status(404).json({ error: 'Identifiant introuvable' })
+
+    const { category, label, username, secret, url, notes } = req.body
+    if (category !== undefined && CREDENTIAL_CATEGORIES.includes(category)) cred.category = category
+    if (label !== undefined) cred.label = String(label).trim()
+    if (username !== undefined) cred.username = String(username).trim()
+    if (url !== undefined) cred.url = String(url).trim()
+    if (notes !== undefined) cred.notes = String(notes).trim()
+    if (secret !== undefined && secret !== '') cred.secretEnc = encryptSecret(String(secret))
+
+    await subsidiary.save()
+    return res.json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /:id/credentials/:credId
+router.delete('/:id/credentials/:credId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    const idx = subsidiary.credentials.findIndex((c) => (c as any)._id?.toString() === req.params.credId)
+    if (idx === -1) return res.status(404).json({ error: 'Identifiant introuvable' })
+    subsidiary.credentials.splice(idx, 1)
+    await subsidiary.save()
+    return res.json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// GET /:id/credentials/:credId/reveal — déchiffrer et renvoyer le secret
+router.get('/:id/credentials/:credId/reveal', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id).lean()
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    const cred = (subsidiary.credentials || []).find((c: any) => c._id?.toString() === req.params.credId)
+    if (!cred) return res.status(404).json({ error: 'Identifiant introuvable' })
+    return res.json({ secret: decryptSecret((cred as any).secretEnc || '') })
   } catch (err) {
     return next(err)
   }

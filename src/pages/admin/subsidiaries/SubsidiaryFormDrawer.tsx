@@ -3,7 +3,7 @@ import { Plus, X } from 'lucide-react'
 import { apiFetch, ApiError } from '../../../lib/api'
 import { useToast } from '../../../context/ToastContext'
 import type { Subsidiary, SubsidiaryPerson } from '../../../types/subsidiary.types'
-import { STATUS_LABELS, HEALTH_LABELS } from '../../../types/subsidiary.types'
+import { STATUS_LABELS, HEALTH_LABELS, LINK_TYPE_LABELS } from '../../../types/subsidiary.types'
 
 interface FormState {
   name: string
@@ -34,7 +34,9 @@ interface FormState {
   businessModel: string
   businessPlan: string
   sections: { title: string; content: string }[]
-  links: { label: string; url: string }[]
+  links: { type: string; label: string; url: string }[]
+  infos: { label: string; value: string }[]
+  contacts: { name: string; role: string; email: string; phone: string; notes: string }[]
   alerts: { label: string; level: string }[]
   tags: string
 }
@@ -69,7 +71,11 @@ function toForm(s: Subsidiary | null): FormState {
     businessModel: s?.businessModel ?? '',
     businessPlan: s?.businessPlan ?? '',
     sections: s?.sections?.length ? s.sections.map((x) => ({ title: x.title, content: x.content })) : [],
-    links: s?.links?.length ? s.links.map((l) => ({ label: l.label, url: l.url })) : [],
+    links: s?.links?.length ? s.links.map((l) => ({ type: l.type || 'other', label: l.label, url: l.url })) : [],
+    infos: s?.infos?.length ? s.infos.map((x) => ({ label: x.label, value: x.value })) : [],
+    contacts: s?.contacts?.length
+      ? s.contacts.map((c) => ({ name: c.name, role: c.role, email: c.email, phone: c.phone, notes: c.notes }))
+      : [],
     alerts: s?.alerts?.length ? s.alerts.map((a) => ({ label: a.label, level: a.level })) : [],
     tags: (s?.tags ?? []).join(', '),
   }
@@ -135,6 +141,8 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         unit: form.objUnit.trim(),
       },
       links: form.links.filter((l) => l.label.trim() && l.url.trim()),
+      infos: form.infos.filter((x) => x.label.trim() || x.value.trim()),
+      contacts: form.contacts.filter((c) => c.name.trim()),
       alerts: form.alerts.filter((a) => a.label.trim()),
       tags: form.tags
         .split(',')
@@ -522,13 +530,30 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Ressources / liens
+          Liens & accès
         </h3>
         {form.links.map((l, i) => (
           <div className="sub-repeat-row" key={i}>
+            <select
+              className="portal-input"
+              style={{ flex: '0 0 150px' }}
+              value={l.type}
+              onChange={(e) =>
+                set(
+                  'links',
+                  form.links.map((x, j) => (j === i ? { ...x, type: e.target.value } : x)),
+                )
+              }
+            >
+              {Object.entries(LINK_TYPE_LABELS).map(([v, lbl]) => (
+                <option key={v} value={v}>
+                  {lbl}
+                </option>
+              ))}
+            </select>
             <input
               className="portal-input"
-              style={{ flex: '0 0 140px' }}
+              style={{ flex: '0 0 130px' }}
               placeholder="Libellé"
               value={l.label}
               onChange={(e) =>
@@ -567,9 +592,142 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         <button
           type="button"
           className="sub-icon-btn"
-          onClick={() => set('links', [...form.links, { label: '', url: '' }])}
+          onClick={() => set('links', [...form.links, { type: 'repo', label: '', url: '' }])}
         >
           <Plus size={14} /> Ajouter un lien
+        </button>
+
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
+          Infos (clé → valeur)
+        </h3>
+        {form.infos.map((info, i) => (
+          <div className="sub-repeat-row" key={i}>
+            <input
+              className="portal-input"
+              style={{ flex: '0 0 180px' }}
+              placeholder="Clé (ex : SIRET, Banque, Stack)"
+              value={info.label}
+              onChange={(e) =>
+                set(
+                  'infos',
+                  form.infos.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
+                )
+              }
+            />
+            <input
+              className="portal-input"
+              style={{ flex: 1 }}
+              placeholder="Valeur"
+              value={info.value}
+              onChange={(e) =>
+                set(
+                  'infos',
+                  form.infos.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+                )
+              }
+            />
+            <button
+              type="button"
+              className="sub-icon-btn"
+              onClick={() =>
+                set(
+                  'infos',
+                  form.infos.filter((_, j) => j !== i),
+                )
+              }
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="sub-icon-btn"
+          onClick={() => set('infos', [...form.infos, { label: '', value: '' }])}
+        >
+          <Plus size={14} /> Ajouter une info
+        </button>
+
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
+          Contacts
+        </h3>
+        {form.contacts.map((c, i) => (
+          <div
+            key={i}
+            style={{ border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, marginBottom: 10 }}
+          >
+            <div className="sub-repeat-row" style={{ marginBottom: 8 }}>
+              <input
+                className="portal-input"
+                style={{ flex: 1 }}
+                placeholder="Nom"
+                value={c.name}
+                onChange={(e) =>
+                  set(
+                    'contacts',
+                    form.contacts.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)),
+                  )
+                }
+              />
+              <input
+                className="portal-input"
+                style={{ flex: 1 }}
+                placeholder="Rôle"
+                value={c.role}
+                onChange={(e) =>
+                  set(
+                    'contacts',
+                    form.contacts.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)),
+                  )
+                }
+              />
+              <button
+                type="button"
+                className="sub-icon-btn"
+                onClick={() =>
+                  set(
+                    'contacts',
+                    form.contacts.filter((_, j) => j !== i),
+                  )
+                }
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="sub-repeat-row" style={{ marginBottom: 0 }}>
+              <input
+                className="portal-input"
+                style={{ flex: 1 }}
+                placeholder="Email"
+                value={c.email}
+                onChange={(e) =>
+                  set(
+                    'contacts',
+                    form.contacts.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)),
+                  )
+                }
+              />
+              <input
+                className="portal-input"
+                style={{ flex: 1 }}
+                placeholder="Téléphone"
+                value={c.phone}
+                onChange={(e) =>
+                  set(
+                    'contacts',
+                    form.contacts.map((x, j) => (j === i ? { ...x, phone: e.target.value } : x)),
+                  )
+                }
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="sub-icon-btn"
+          onClick={() => set('contacts', [...form.contacts, { name: '', role: '', email: '', phone: '', notes: '' }])}
+        >
+          <Plus size={14} /> Ajouter un contact
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>

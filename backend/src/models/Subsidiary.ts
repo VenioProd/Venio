@@ -13,10 +13,55 @@ export const SUBSIDIARY_HEALTHS = ['GOOD', 'WATCH', 'RISK'] as const
 export type SubsidiaryStatus = (typeof SUBSIDIARY_STATUSES)[number]
 export type SubsidiaryHealth = (typeof SUBSIDIARY_HEALTHS)[number]
 
+export const LINK_TYPES = [
+  'repo',
+  'production',
+  'staging',
+  'analytics',
+  'hosting',
+  'dns',
+  'ci',
+  'design',
+  'docs',
+  'drive',
+  'other',
+] as const
+export type SubsidiaryLinkType = (typeof LINK_TYPES)[number]
+
 export interface ISubsidiaryLink {
+  type: SubsidiaryLinkType
   label: string
   url: string
   icon?: string
+}
+
+/** Paire libre clé → valeur (SIRET, banque, stack, abonnement…). */
+export interface ISubsidiaryInfo {
+  label: string
+  value: string
+}
+
+/** Contact clé rattaché à la filiale. */
+export interface ISubsidiaryContact {
+  name: string
+  role: string
+  email: string
+  phone: string
+  notes: string
+}
+
+export const CREDENTIAL_CATEGORIES = ['admin', 'service', 'api', 'db', 'other'] as const
+export type SubsidiaryCredentialCategory = (typeof CREDENTIAL_CATEGORIES)[number]
+
+/** Identifiant stocké dans le coffre — le secret est chiffré au repos. */
+export interface ISubsidiaryCredential {
+  category: SubsidiaryCredentialCategory
+  label: string
+  username: string
+  /** Secret chiffré (AES-GCM). Jamais renvoyé tel quel : voir route /reveal. */
+  secretEnc: string
+  url: string
+  notes: string
 }
 
 export interface ISubsidiaryAlert {
@@ -78,6 +123,9 @@ export interface ISubsidiary {
   businessPlan: string
   sections: ISubsidiarySection[]
   documents: ISubsidiaryDocument[]
+  infos: ISubsidiaryInfo[]
+  contacts: ISubsidiaryContact[]
+  credentials: ISubsidiaryCredential[]
   accentColor: string
   lead: mongoose.Types.ObjectId | null
   foundedYear: number | null
@@ -98,11 +146,43 @@ export interface ISubsidiary {
 
 const linkSchema = new mongoose.Schema<ISubsidiaryLink>(
   {
+    type: { type: String, enum: LINK_TYPES, default: 'other' },
     label: { type: String, required: true },
     url: { type: String, required: true },
     icon: { type: String, default: '' },
   },
   { _id: false },
+)
+
+const infoSchema = new mongoose.Schema<ISubsidiaryInfo>(
+  {
+    label: { type: String, required: true },
+    value: { type: String, default: '' },
+  },
+  { _id: true },
+)
+
+const contactSchema = new mongoose.Schema<ISubsidiaryContact>(
+  {
+    name: { type: String, required: true },
+    role: { type: String, default: '' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    notes: { type: String, default: '' },
+  },
+  { _id: true },
+)
+
+const credentialSchema = new mongoose.Schema<ISubsidiaryCredential>(
+  {
+    category: { type: String, enum: CREDENTIAL_CATEGORIES, default: 'admin' },
+    label: { type: String, required: true },
+    username: { type: String, default: '' },
+    secretEnc: { type: String, default: '' },
+    url: { type: String, default: '' },
+    notes: { type: String, default: '' },
+  },
+  { _id: true },
 )
 
 const sectionSchema = new mongoose.Schema<ISubsidiarySection>(
@@ -150,6 +230,9 @@ const schema = new mongoose.Schema<ISubsidiary>(
     businessPlan: { type: String, default: '' },
     sections: { type: [sectionSchema], default: [] },
     documents: { type: [documentSchema], default: [] },
+    infos: { type: [infoSchema], default: [] },
+    contacts: { type: [contactSchema], default: [] },
+    credentials: { type: [credentialSchema], default: [] },
     accentColor: { type: String, default: '#0ea5e9' },
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     foundedYear: { type: Number, default: null },

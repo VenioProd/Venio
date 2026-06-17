@@ -8,10 +8,52 @@ export interface SubsidiaryPerson {
   role?: string
 }
 
+export type SubsidiaryLinkType =
+  | 'repo'
+  | 'production'
+  | 'staging'
+  | 'analytics'
+  | 'hosting'
+  | 'dns'
+  | 'ci'
+  | 'design'
+  | 'docs'
+  | 'drive'
+  | 'other'
+
 export interface SubsidiaryLink {
+  type: SubsidiaryLinkType
   label: string
   url: string
   icon?: string
+}
+
+export interface SubsidiaryInfo {
+  _id?: string
+  label: string
+  value: string
+}
+
+export interface SubsidiaryContact {
+  _id?: string
+  name: string
+  role: string
+  email: string
+  phone: string
+  notes: string
+}
+
+export type SubsidiaryCredentialCategory = 'admin' | 'service' | 'api' | 'db' | 'other'
+
+/** Identifiant renvoyé par l'API — sans le secret (hasSecret indique sa présence). */
+export interface SubsidiaryCredential {
+  _id: string
+  category: SubsidiaryCredentialCategory
+  label: string
+  username: string
+  url: string
+  notes: string
+  hasSecret: boolean
 }
 
 export interface SubsidiaryAlert {
@@ -77,6 +119,9 @@ export interface Subsidiary {
   businessPlan: string
   sections: SubsidiarySection[]
   documents: SubsidiaryDocument[]
+  infos: SubsidiaryInfo[]
+  contacts: SubsidiaryContact[]
+  credentials: SubsidiaryCredential[]
   accentColor: string
   lead: SubsidiaryPerson | null
   foundedYear: number | null
@@ -94,6 +139,28 @@ export interface Subsidiary {
   linkedProjects?: LinkedProject[]
   createdAt: string
   updatedAt: string
+}
+
+export const LINK_TYPE_LABELS: Record<SubsidiaryLinkType, string> = {
+  repo: 'Repo GitHub',
+  production: 'Production',
+  staging: 'Staging',
+  analytics: 'Analytics',
+  hosting: 'Hébergement',
+  dns: 'DNS / domaine',
+  ci: 'CI / CD',
+  design: 'Design',
+  docs: 'Documentation',
+  drive: 'Drive / fichiers',
+  other: 'Autre lien',
+}
+
+export const CREDENTIAL_CATEGORY_LABELS: Record<SubsidiaryCredentialCategory, string> = {
+  admin: 'Admin',
+  service: 'Compte de service',
+  api: 'Clé API',
+  db: 'Base de données',
+  other: 'Autre',
 }
 
 export const STATUS_LABELS: Record<SubsidiaryStatus, string> = {
