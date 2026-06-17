@@ -4,8 +4,7 @@
   background:
     radial-gradient(circle at 14% 18%, var(--client-shell-bg-glow-1), transparent 34%),
     radial-gradient(circle at 85% 72%, var(--client-shell-bg-glow-2), transparent 36%),
-    radial-gradient(circle at 50% 100%, var(--client-shell-bg-glow-3), transparent 55%),
-    var(--client-shell-bg-base);
+    radial-gradient(circle at 50% 100%, var(--client-shell-bg-glow-3), transparent 55%), var(--client-shell-bg-base);
 }
 
 .client-shell-body {
@@ -89,5 +88,80 @@
 
   .client-shell-main {
     padding: 20px 16px 48px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLIENT BOTTOM TAB BAR — navigation mobile
+   ═══════════════════════════════════════════════════════ */
+
+.client-mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 201;
+  background: rgba(5, 7, 13, 0.98);
+  border-top: 1px solid rgba(var(--primary-rgb), 0.15);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.55);
+}
+
+.client-mobile-tab {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 4px;
+  min-height: 54px;
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.client-mobile-tab.active {
+  color: var(--primary);
+}
+
+.client-mobile-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 0 6px rgba(var(--primary-rgb), 0.6);
+}
+
+@media (max-width: 768px) {
+  .client-mobile-nav {
+    display: flex;
+  }
+
+  /* Dégagement bas pour que le contenu ne passe pas sous la nav */
+  .client-shell-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Le burger topbar est remplacé par la bottom nav */
+  .client-shell-burger {
+    display: none;
   }
 }
