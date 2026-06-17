@@ -3,10 +3,7 @@ import agentAuth, { requireScope } from './_middleware/auth.js'
 import agentRateLimit from './_middleware/rateLimit.js'
 import agentIdempotency from './_middleware/idempotency.js'
 import agentAudit from './_middleware/audit.js'
-import {
-  requestIdMiddleware,
-  agentErrorHandler,
-} from './_middleware/errors.js'
+import { requestIdMiddleware, agentErrorHandler } from './_middleware/errors.js'
 import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
 import { buildOpenApiSpec, extractRoutes } from '../../lib/agent/openapi.js'
 import crmRoutes from './crm.js'
@@ -33,6 +30,7 @@ import backupRoutes from './backup.js'
 import usersRoutes from './users.js'
 import messagingRoutes from './messaging.js'
 import devRoutes from './dev.js'
+import subsidiariesRoutes from './subsidiaries.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -133,6 +131,7 @@ router.use('/', backupRoutes)
 router.use('/', usersRoutes)
 router.use('/messaging', messagingRoutes)
 router.use('/', devRoutes)
+router.use('/', subsidiariesRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.

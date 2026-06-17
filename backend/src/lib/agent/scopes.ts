@@ -17,48 +17,74 @@ export const ADMIN_WILDCARD_SCOPE = 'admin:*'
 
 export const AGENT_SCOPES = [
   // Core métier
-  'read:crm', 'write:crm',
-  'read:projects', 'write:projects',
-  'read:billing', 'write:billing',
-  'read:documents', 'write:documents',
+  'read:crm',
+  'write:crm',
+  'read:projects',
+  'write:projects',
+  'read:billing',
+  'write:billing',
+  'read:documents',
+  'write:documents',
 
   // Comptabilité : lecture seule en V1
   'read:accounting',
 
   // Collaboration
-  'read:tasks', 'write:tasks',
-  'read:tickets', 'write:tickets',
-  'read:messages', 'write:messages',
-  'read:internal-messaging', 'write:internal-messaging',
-  'read:notifications', 'write:notifications',
-  'read:calendar', 'write:calendar',
+  'read:tasks',
+  'write:tasks',
+  'read:tickets',
+  'write:tickets',
+  'read:messages',
+  'write:messages',
+  'read:internal-messaging',
+  'write:internal-messaging',
+  'read:notifications',
+  'write:notifications',
+  'read:calendar',
+  'write:calendar',
 
   // Formation
-  'read:qualiopi', 'write:qualiopi',
-  'read:interns', 'write:interns',
+  'read:qualiopi',
+  'write:qualiopi',
+  'read:interns',
+  'write:interns',
 
   // Ressources / configuration entreprise
-  'read:toolaccess', 'write:toolaccess',
-  'read:resources', 'write:resources',
-  'read:gestion', 'write:gestion',
-  'read:arrow', 'write:arrow',
+  'read:toolaccess',
+  'write:toolaccess',
+  'read:resources',
+  'write:resources',
+  'read:gestion',
+  'write:gestion',
+  'read:arrow',
+  'write:arrow',
 
   // Reporting / observabilité (lecture seule par nature)
   'read:analytics',
   'read:audit',
 
   // Automation engine V2
-  'read:automations', 'write:automations', 'trigger:automations',
+  'read:automations',
+  'write:automations',
+  'trigger:automations',
 
   // Sensibles
-  'read:backup', 'manage:backup',
-  'read:2fa', 'manage:2fa',
+  'read:backup',
+  'manage:backup',
+  'read:2fa',
+  'manage:2fa',
 
   // Users (admin)
-  'read:users', 'write:users',
+  'read:users',
+  'write:users',
 
   // Dev workspace (suivi développement type Linear)
-  'read:dev', 'write:dev',
+  'read:dev',
+  'write:dev',
+
+  // Filiales (business internes — contexte, dossier, liens, infos, contacts)
+  'read:subsidiaries',
+  'write:subsidiaries',
 
   // Super-scope
   ADMIN_WILDCARD_SCOPE,
