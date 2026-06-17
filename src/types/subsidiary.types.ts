@@ -37,6 +37,11 @@ export interface SubsidiaryObjective {
   unit: string
 }
 
+export interface SubsidiarySection {
+  title: string
+  content: string
+}
+
 export interface LinkedProject {
   _id: string
   name: string
@@ -54,6 +59,11 @@ export interface Subsidiary {
   status: SubsidiaryStatus
   health: SubsidiaryHealth
   description: string
+  productDescription: string
+  serviceDescription: string
+  businessModel: string
+  businessPlan: string
+  sections: SubsidiarySection[]
   accentColor: string
   lead: SubsidiaryPerson | null
   foundedYear: number | null

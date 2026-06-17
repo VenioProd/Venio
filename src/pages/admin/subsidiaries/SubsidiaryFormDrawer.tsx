@@ -29,6 +29,11 @@ interface FormState {
   objCurrent: string
   objTarget: string
   objUnit: string
+  productDescription: string
+  serviceDescription: string
+  businessModel: string
+  businessPlan: string
+  sections: { title: string; content: string }[]
   links: { label: string; url: string }[]
   alerts: { label: string; level: string }[]
   tags: string
@@ -59,6 +64,11 @@ function toForm(s: Subsidiary | null): FormState {
     objCurrent: String(s?.objective?.current ?? ''),
     objTarget: String(s?.objective?.target ?? ''),
     objUnit: s?.objective?.unit ?? '',
+    productDescription: s?.productDescription ?? '',
+    serviceDescription: s?.serviceDescription ?? '',
+    businessModel: s?.businessModel ?? '',
+    businessPlan: s?.businessPlan ?? '',
+    sections: s?.sections?.length ? s.sections.map((x) => ({ title: x.title, content: x.content })) : [],
     links: s?.links?.length ? s.links.map((l) => ({ label: l.label, url: l.url })) : [],
     alerts: s?.alerts?.length ? s.alerts.map((a) => ({ label: a.label, level: a.level })) : [],
     tags: (s?.tags ?? []).join(', '),
@@ -99,6 +109,11 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
       health: form.health,
       accentColor: form.accentColor,
       description: form.description.trim(),
+      productDescription: form.productDescription.trim(),
+      serviceDescription: form.serviceDescription.trim(),
+      businessModel: form.businessModel.trim(),
+      businessPlan: form.businessPlan.trim(),
+      sections: form.sections.filter((x) => x.title.trim() || x.content.trim()),
       lead: form.lead || null,
       foundedYear: form.foundedYear ? num(form.foundedYear) : null,
       linkedEntity: form.linkedEntity,
@@ -398,6 +413,113 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
         </div>
+
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
+          Dossier — comprendre & suivre l’activité
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div>
+            <label className="portal-label">Description du produit</label>
+            <textarea
+              className="portal-input"
+              rows={4}
+              style={{ resize: 'vertical' }}
+              value={form.productDescription}
+              onChange={(e) => set('productDescription', e.target.value)}
+              placeholder="Ce que fait le produit, ses fonctionnalités clés, son positionnement…"
+            />
+          </div>
+          <div>
+            <label className="portal-label">Description du service</label>
+            <textarea
+              className="portal-input"
+              rows={4}
+              style={{ resize: 'vertical' }}
+              value={form.serviceDescription}
+              onChange={(e) => set('serviceDescription', e.target.value)}
+              placeholder="Prestations, accompagnement, livrables, modalités…"
+            />
+          </div>
+          <div>
+            <label className="portal-label">Business model</label>
+            <textarea
+              className="portal-input"
+              rows={4}
+              style={{ resize: 'vertical' }}
+              value={form.businessModel}
+              onChange={(e) => set('businessModel', e.target.value)}
+              placeholder="Sources de revenus, pricing, marges, canaux d’acquisition…"
+            />
+          </div>
+          <div>
+            <label className="portal-label">Business plan</label>
+            <textarea
+              className="portal-input"
+              rows={4}
+              style={{ resize: 'vertical' }}
+              value={form.businessPlan}
+              onChange={(e) => set('businessPlan', e.target.value)}
+              placeholder="Vision, jalons, projections, besoins de financement…"
+            />
+          </div>
+        </div>
+
+        <h4 style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', marginTop: 16, marginBottom: 8 }}>
+          Sections libres
+        </h4>
+        {form.sections.map((sec, i) => (
+          <div
+            key={i}
+            style={{ border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, marginBottom: 10 }}
+          >
+            <div className="sub-repeat-row" style={{ marginBottom: 8 }}>
+              <input
+                className="portal-input"
+                style={{ flex: 1 }}
+                placeholder="Titre de la section (ex : Concurrence, Roadmap, Risques)"
+                value={sec.title}
+                onChange={(e) =>
+                  set(
+                    'sections',
+                    form.sections.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)),
+                  )
+                }
+              />
+              <button
+                type="button"
+                className="sub-icon-btn"
+                onClick={() =>
+                  set(
+                    'sections',
+                    form.sections.filter((_, j) => j !== i),
+                  )
+                }
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <textarea
+              className="portal-input"
+              rows={4}
+              style={{ resize: 'vertical' }}
+              placeholder="Contenu…"
+              value={sec.content}
+              onChange={(e) =>
+                set(
+                  'sections',
+                  form.sections.map((x, j) => (j === i ? { ...x, content: e.target.value } : x)),
+                )
+              }
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          className="sub-icon-btn"
+          onClick={() => set('sections', [...form.sections, { title: '', content: '' }])}
+        >
+          <Plus size={14} /> Ajouter une section
+        </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
           Ressources / liens

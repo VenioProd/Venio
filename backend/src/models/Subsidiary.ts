@@ -42,6 +42,12 @@ export interface ISubsidiaryObjective {
   unit: string
 }
 
+/** Section libre du dossier (ex. « Roadmap », « Concurrence », « Risques »). */
+export interface ISubsidiarySection {
+  title: string
+  content: string
+}
+
 export interface ISubsidiary {
   name: string
   slug: string
@@ -50,6 +56,12 @@ export interface ISubsidiary {
   status: SubsidiaryStatus
   health: SubsidiaryHealth
   description: string
+  /** Dossier — descriptions longues pour comprendre et suivre l'activité. */
+  productDescription: string
+  serviceDescription: string
+  businessModel: string
+  businessPlan: string
+  sections: ISubsidiarySection[]
   accentColor: string
   lead: mongoose.Types.ObjectId | null
   foundedYear: number | null
@@ -77,6 +89,14 @@ const linkSchema = new mongoose.Schema<ISubsidiaryLink>(
   { _id: false },
 )
 
+const sectionSchema = new mongoose.Schema<ISubsidiarySection>(
+  {
+    title: { type: String, required: true },
+    content: { type: String, default: '' },
+  },
+  { _id: false },
+)
+
 const alertSchema = new mongoose.Schema<ISubsidiaryAlert>(
   {
     label: { type: String, required: true },
@@ -94,6 +114,11 @@ const schema = new mongoose.Schema<ISubsidiary>(
     status: { type: String, enum: SUBSIDIARY_STATUSES, default: 'INCUBATION' },
     health: { type: String, enum: SUBSIDIARY_HEALTHS, default: 'WATCH' },
     description: { type: String, default: '' },
+    productDescription: { type: String, default: '' },
+    serviceDescription: { type: String, default: '' },
+    businessModel: { type: String, default: '' },
+    businessPlan: { type: String, default: '' },
+    sections: { type: [sectionSchema], default: [] },
     accentColor: { type: String, default: '#0ea5e9' },
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     foundedYear: { type: Number, default: null },
