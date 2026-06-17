@@ -63,15 +63,7 @@ const isConfigured = (): boolean => {
 let hasLoggedWarning = false
 
 // Subfolders to create for each client
-const CLIENT_SUBFOLDERS: string[] = [
-  'Contrats',
-  'Devis',
-  'Factures',
-  'Livrables',
-  'Communication',
-  'Briefs',
-  'Assets',
-]
+const CLIENT_SUBFOLDERS: string[] = ['Contrats', 'Devis', 'Factures', 'Livrables', 'Communication', 'Briefs', 'Assets']
 
 /**
  * Sanitize a folder name to prevent path traversal and invalid characters
@@ -79,17 +71,19 @@ const CLIENT_SUBFOLDERS: string[] = [
 function sanitizeFolderName(name: string): string {
   if (!name || typeof name !== 'string') return ''
 
-  return name
-    .trim()
-    // Remove path separators and traversal attempts
-    .replace(/[/\\]/g, '-')
-    .replace(/\.\./g, '')
-    // Remove characters that are problematic in URLs or file systems
-    .replace(/[<>:"|?*]/g, '')
-    // Collapse multiple dashes/spaces
-    .replace(/--+/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return (
+    name
+      .trim()
+      // Remove path separators and traversal attempts
+      .replace(/[/\\]/g, '-')
+      .replace(/\.\./g, '')
+      // Remove characters that are problematic in URLs or file systems
+      .replace(/[<>:"|?*]/g, '')
+      // Collapse multiple dashes/spaces
+      .replace(/--+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
 }
 
 /**
@@ -162,10 +156,15 @@ export async function createFolder(path: string): Promise<FolderResult> {
  * Create the full folder structure for a new client
  * Creates: {NEXTCLOUD_BASE_PATH}/{clientName}/ and all subfolders
  */
-export async function createClientFolders(clientName: string, clientId: string | null = null): Promise<ClientFoldersResult> {
+export async function createClientFolders(
+  clientName: string,
+  clientId: string | null = null,
+): Promise<ClientFoldersResult> {
   if (!isConfigured()) {
     if (!hasLoggedWarning) {
-      logger.warn('[Nextcloud] Skipping folder creation — not configured. Set NEXTCLOUD_URL, NEXTCLOUD_USER, and NEXTCLOUD_APP_PASSWORD to enable.')
+      logger.warn(
+        '[Nextcloud] Skipping folder creation — not configured. Set NEXTCLOUD_URL, NEXTCLOUD_USER, and NEXTCLOUD_APP_PASSWORD to enable.',
+      )
       hasLoggedWarning = true
     }
     return { success: false, error: 'Nextcloud not configured' }
@@ -181,9 +180,7 @@ export async function createClientFolders(clientName: string, clientId: string |
   }
 
   const { basePath: configBasePath } = getConfig()
-  const basePath = configBasePath.endsWith('/')
-    ? configBasePath.slice(0, -1)
-    : configBasePath
+  const basePath = configBasePath.endsWith('/') ? configBasePath.slice(0, -1) : configBasePath
 
   const clientPath = `${basePath}/${folderName}`
   const created: string[] = []
@@ -341,18 +338,30 @@ export function generateNextcloudPassword(): string {
   pwd += digits[Math.floor(Math.random() * digits.length)]
   pwd += specials[Math.floor(Math.random() * specials.length)]
   for (let i = 4; i < 12; i++) pwd += all[Math.floor(Math.random() * all.length)]
-  return pwd.split('').sort(() => Math.random() - 0.5).join('')
+  return pwd
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('')
 }
 
-async function createNcUser(username: string, password: string, email: string, displayName: string): Promise<{ ok: boolean; error?: string }> {
+async function createNcUser(
+  username: string,
+  password: string,
+  email: string,
+  displayName: string,
+): Promise<{ ok: boolean; error?: string }> {
   const body = new URLSearchParams({ userid: username, password, email, displayName })
   try {
     const res = await fetch(`${getNcUrl()}/ocs/v1.php/cloud/users?format=json`, {
       method: 'POST',
-      headers: { Authorization: adminAuthHeader(), 'OCS-APIRequest': 'true', 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: adminAuthHeader(),
+        'OCS-APIRequest': 'true',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: body.toString(),
     })
-    const data = await res.json() as any
+    const data = (await res.json()) as any
     if (data?.ocs?.meta?.statuscode === 100) return { ok: true }
     return { ok: false, error: data?.ocs?.meta?.message || 'Erreur Nextcloud' }
   } catch (err) {
@@ -362,7 +371,7 @@ async function createNcUser(username: string, password: string, email: string, d
 
 async function createInternFolders(username: string, password: string): Promise<void> {
   const auth = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
-  await new Promise(r => setTimeout(r, 1500)) // attendre init du home directory
+  await new Promise((r) => setTimeout(r, 1500)) // attendre init du home directory
   for (const folder of ['Documents', 'Livrables', 'Briefs']) {
     await fetch(`${getNcUrl()}/remote.php/dav/files/${username}/${folder}`, {
       method: 'MKCOL',
@@ -419,18 +428,20 @@ export type UploadType =
   | 'stagiaires'
   | 'rapports'
   | 'conventions'
+  | 'filiales'
 
 const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
-  'taches':           'Tâches',
-  'projets':          'Projets',
-  'tickets':          'Tickets',
-  'facturation':      'Facturation',
-  'ressources':       'Ressources',
-  'qualiopi':         'Qualiopi',
+  taches: 'Tâches',
+  projets: 'Projets',
+  tickets: 'Tickets',
+  facturation: 'Facturation',
+  ressources: 'Ressources',
+  qualiopi: 'Qualiopi',
   'projets-internes': 'Projets-Internes',
-  'stagiaires':       'Stagiaires',
-  'rapports':         'Rapports',
-  'conventions':      'Conventions',
+  stagiaires: 'Stagiaires',
+  rapports: 'Rapports',
+  conventions: 'Conventions',
+  filiales: 'Filiales',
 }
 
 /**
@@ -492,9 +503,11 @@ export function syncUploadToNextcloud(
   const subPath = id ? `${baseUploadPath}/${folder}/${id}` : `${baseUploadPath}/${folder}`
   const destPath = `${subPath}/${sanitizeFolderName(file.originalname) || 'fichier'}`
 
-  uploadFileToNextcloud(file.path, destPath).then(result => {
-    if (!result.success) {
-      logger.warn(`[Nextcloud] Upload échoué (${type}/${id}): ${result.error}`)
-    }
-  }).catch(() => {})
+  uploadFileToNextcloud(file.path, destPath)
+    .then((result) => {
+      if (!result.success) {
+        logger.warn(`[Nextcloud] Upload échoué (${type}/${id}): ${result.error}`)
+      }
+    })
+    .catch(() => {})
 }

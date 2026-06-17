@@ -19,6 +19,7 @@ import {
   Coins,
   FileText,
   BookOpen,
+  Paperclip,
 } from 'lucide-react'
 import { apiFetch, ApiError } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
@@ -26,6 +27,7 @@ import { SkeletonRow } from '../../components/Skeleton'
 import ConfirmModal from '../../components/ConfirmModal'
 import { DashKpiCard } from '../../components/dashboard'
 import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
+import SubsidiaryDocuments from './subsidiaries/SubsidiaryDocuments'
 import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
 import { STATUS_LABELS, STATUS_COLORS, HEALTH_COLORS, HEALTH_LABELS } from '../../types/subsidiary.types'
 import '../espace-client/ClientPortal.css'
@@ -57,57 +59,83 @@ const initials = (name: string) => name?.trim().slice(0, 2).toUpperCase() || '?'
 const formatEUR = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0)
 
-/** Bloc documentaire — titre + contenu texte (sauts de ligne préservés). */
+/** Bloc documentaire — titre, contenu texte (sauts de ligne préservés) + pièces jointes. */
 function DossierBlock({
   icon,
   title,
   content,
   accent,
+  children,
+  hideEmptyHint,
 }: {
   icon: ReactNode
   title: string
   content: string
   accent: string
+  children?: ReactNode
+  hideEmptyHint?: boolean
 }) {
+  const has = content && content.trim()
   return (
-    <div className="portal-card" style={{ marginTop: 14 }}>
-      <h2 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: accent, display: 'inline-flex' }}>{icon}</span> {title}
+    <div className="sub-dossier-card">
+      <h2 className="sub-dossier-title">
+        <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
+          {icon}
+        </span>
+        {title}
       </h2>
-      <div style={{ whiteSpace: 'pre-wrap', fontSize: 13.5, lineHeight: 1.65, color: 'var(--text-secondary)' }}>
-        {content}
-      </div>
+      {has ? (
+        <div className="sub-prose">{content}</div>
+      ) : !hideEmptyHint ? (
+        <p className="sub-dossier-empty">Aucune description — clique sur « Éditer » pour la renseigner.</p>
+      ) : null}
+      {children}
     </div>
   )
 }
 
-function DossierTab({ sub, accent }: { sub: Subsidiary; accent: string }) {
+function DossierTab({
+  sub,
+  accent,
+  onDocsChange,
+}: {
+  sub: Subsidiary
+  accent: string
+  onDocsChange: (docs: Subsidiary['documents']) => void
+}) {
+  const docs = sub.documents || []
   const blocks = [
-    { key: 'product', icon: <Package size={16} />, title: 'Description du produit', content: sub.productDescription },
-    { key: 'service', icon: <Wrench size={16} />, title: 'Description du service', content: sub.serviceDescription },
-    { key: 'model', icon: <Coins size={16} />, title: 'Business model', content: sub.businessModel },
-    { key: 'plan', icon: <FileText size={16} />, title: 'Business plan', content: sub.businessPlan },
-  ].filter((b) => b.content && b.content.trim())
-
+    {
+      key: 'product' as const,
+      icon: <Package size={16} />,
+      title: 'Description du produit',
+      content: sub.productDescription,
+    },
+    {
+      key: 'service' as const,
+      icon: <Wrench size={16} />,
+      title: 'Description du service',
+      content: sub.serviceDescription,
+    },
+    { key: 'businessModel' as const, icon: <Coins size={16} />, title: 'Business model', content: sub.businessModel },
+    { key: 'businessPlan' as const, icon: <FileText size={16} />, title: 'Business plan', content: sub.businessPlan },
+  ]
   const sections = (sub.sections || []).filter((s) => (s.title && s.title.trim()) || (s.content && s.content.trim()))
 
-  if (blocks.length === 0 && sections.length === 0) {
-    return (
-      <div className="admin-empty-state" style={{ marginTop: 24 }}>
-        <BookOpen size={30} className="admin-empty-state-icon" />
-        <p className="admin-empty-state-text">
-          Dossier vide. Clique sur « Éditer » pour renseigner le produit, le service, le business model, le business
-          plan et toute autre info utile au suivi.
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ marginTop: 6 }}>
+    <div style={{ marginTop: 8 }}>
       {blocks.map((b) => (
-        <DossierBlock key={b.key} icon={b.icon} title={b.title} content={b.content} accent={accent} />
+        <DossierBlock key={b.key} icon={b.icon} title={b.title} content={b.content} accent={accent}>
+          <SubsidiaryDocuments
+            subsidiaryId={sub._id}
+            category={b.key}
+            documents={docs}
+            accent={accent}
+            onChange={onDocsChange}
+          />
+        </DossierBlock>
       ))}
+
       {sections.map((s, i) => (
         <DossierBlock
           key={`sec-${i}`}
@@ -117,6 +145,16 @@ function DossierTab({ sub, accent }: { sub: Subsidiary; accent: string }) {
           accent={accent}
         />
       ))}
+
+      <DossierBlock icon={<Paperclip size={16} />} title="Documents généraux" content="" accent={accent} hideEmptyHint>
+        <SubsidiaryDocuments
+          subsidiaryId={sub._id}
+          category="general"
+          documents={docs}
+          accent={accent}
+          onChange={onDocsChange}
+        />
+      </DossierBlock>
     </div>
   )
 }
@@ -195,7 +233,10 @@ export default function SubsidiaryDetail() {
   const k = sub.kpis
 
   return (
-    <div className="portal-container">
+    <div
+      className="portal-container"
+      style={{ ['--sub-accent' as string]: accent, ['--sub-accent-rgb' as string]: accentRgb }}
+    >
       <Link
         to="/admin/filiales"
         style={{
@@ -212,7 +253,7 @@ export default function SubsidiaryDetail() {
       </Link>
 
       {/* En-tête */}
-      <div className="portal-card" style={{ ['--sub-accent' as string]: accent }}>
+      <div className="portal-card sub-detail-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <div className="sub-logo" style={{ width: 52, height: 52, fontSize: 20, background: accent }}>
             {initials(sub.name)}
@@ -518,7 +559,13 @@ export default function SubsidiaryDetail() {
         </>
       )}
 
-      {tab === 'dossier' && <DossierTab sub={sub} accent={accent} />}
+      {tab === 'dossier' && (
+        <DossierTab
+          sub={sub}
+          accent={accent}
+          onDocsChange={(documents) => setSub((s) => (s ? { ...s, documents } : s))}
+        />
+      )}
 
       {sub.tags && sub.tags.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 18 }}>

@@ -42,6 +42,18 @@ export interface SubsidiarySection {
   content: string
 }
 
+export type SubsidiaryDocumentCategory = 'product' | 'service' | 'businessModel' | 'businessPlan' | 'general'
+
+export interface SubsidiaryDocument {
+  _id: string
+  category: SubsidiaryDocumentCategory
+  label: string
+  originalName: string
+  mimeType: string
+  size: number
+  uploadedAt: string
+}
+
 export interface LinkedProject {
   _id: string
   name: string
@@ -64,6 +76,7 @@ export interface Subsidiary {
   businessModel: string
   businessPlan: string
   sections: SubsidiarySection[]
+  documents: SubsidiaryDocument[]
   accentColor: string
   lead: SubsidiaryPerson | null
   foundedYear: number | null

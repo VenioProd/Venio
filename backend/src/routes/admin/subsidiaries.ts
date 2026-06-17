@@ -1,12 +1,29 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import { requireSuperAdmin } from '../../middleware/role.js'
-import Subsidiary, { SUBSIDIARY_STATUSES, SUBSIDIARY_HEALTHS } from '../../models/Subsidiary.js'
+import Subsidiary, { SUBSIDIARY_STATUSES, SUBSIDIARY_HEALTHS, DOCUMENT_CATEGORIES } from '../../models/Subsidiary.js'
 import InternalProject, { ENTITIES } from '../../models/InternalProject.js'
+import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 
 const router = express.Router()
 router.use(auth)
 router.use(requireSuperAdmin)
+
+// Dossier d'upload pour les pièces jointes des filiales
+const subsidiaryUploadsDir = path.resolve('uploads/subsidiary-docs')
+if (!fs.existsSync(subsidiaryUploadsDir)) fs.mkdirSync(subsidiaryUploadsDir, { recursive: true })
+
+const docStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, subsidiaryUploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    cb(null, `${unique}${path.extname(file.originalname)}`)
+  },
+})
+const docUpload = multer({ storage: docStorage, limits: { fileSize: 50 * 1024 * 1024 } }) // 50 Mo
 
 function slugify(input: string): string {
   return input
@@ -170,8 +187,89 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const subsidiary = await Subsidiary.findById(req.params.id)
     if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    // Nettoyage des fichiers physiques
+    for (const doc of subsidiary.documents) {
+      if (doc.storagePath && fs.existsSync(doc.storagePath)) {
+        try {
+          fs.unlinkSync(doc.storagePath)
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     await subsidiary.deleteOne()
     return res.json({ success: true })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// ── DOCUMENTS ───────────────────────────────────────────────────────────────
+
+// POST /:id/documents — uploader un fichier rattaché à une partie du dossier
+router.post('/:id/documents', docUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) {
+      fs.unlinkSync(req.file.path)
+      return res.status(404).json({ error: 'Filiale introuvable' })
+    }
+    const category = DOCUMENT_CATEGORIES.includes(req.body.category) ? req.body.category : 'general'
+    subsidiary.documents.push({
+      category,
+      label: (req.body.label || '').trim(),
+      originalName: req.file.originalname,
+      storagePath: req.file.path,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      uploadedBy: req.user!.id as any,
+      uploadedAt: new Date(),
+    })
+    await subsidiary.save()
+    syncUploadToNextcloud(req.file, 'filiales', String(subsidiary._id))
+    return res.status(201).json({ documents: subsidiary.documents })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// GET /:id/documents/:docId — télécharger / visualiser un fichier
+router.get('/:id/documents/:docId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    const doc = subsidiary.documents.find((d) => (d as any)._id?.toString() === req.params.docId)
+    if (!doc) return res.status(404).json({ error: 'Document introuvable' })
+    const filePath = path.resolve(doc.storagePath)
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(doc.originalName)}`)
+    res.setHeader('Content-Type', doc.mimeType)
+    // dotfiles: 'allow' — le chemin peut contenir un segment commençant par « . »
+    return res.sendFile(filePath, { dotfiles: 'allow' })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /:id/documents/:docId
+router.delete('/:id/documents/:docId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    const idx = subsidiary.documents.findIndex((d) => (d as any)._id?.toString() === req.params.docId)
+    if (idx === -1) return res.status(404).json({ error: 'Document introuvable' })
+    const doc = subsidiary.documents[idx]
+    if (doc.storagePath && fs.existsSync(doc.storagePath)) {
+      try {
+        fs.unlinkSync(doc.storagePath)
+      } catch {
+        /* ignore */
+      }
+    }
+    subsidiary.documents.splice(idx, 1)
+    await subsidiary.save()
+    return res.json({ documents: subsidiary.documents })
   } catch (err) {
     return next(err)
   }

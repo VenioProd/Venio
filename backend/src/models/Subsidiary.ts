@@ -48,6 +48,21 @@ export interface ISubsidiarySection {
   content: string
 }
 
+/** Catégories de pièces jointes — rattachées à une partie du dossier. */
+export const DOCUMENT_CATEGORIES = ['product', 'service', 'businessModel', 'businessPlan', 'general'] as const
+export type SubsidiaryDocumentCategory = (typeof DOCUMENT_CATEGORIES)[number]
+
+export interface ISubsidiaryDocument {
+  category: SubsidiaryDocumentCategory
+  label: string
+  originalName: string
+  storagePath: string
+  mimeType: string
+  size: number
+  uploadedBy: mongoose.Types.ObjectId
+  uploadedAt: Date
+}
+
 export interface ISubsidiary {
   name: string
   slug: string
@@ -62,6 +77,7 @@ export interface ISubsidiary {
   businessModel: string
   businessPlan: string
   sections: ISubsidiarySection[]
+  documents: ISubsidiaryDocument[]
   accentColor: string
   lead: mongoose.Types.ObjectId | null
   foundedYear: number | null
@@ -97,6 +113,20 @@ const sectionSchema = new mongoose.Schema<ISubsidiarySection>(
   { _id: false },
 )
 
+const documentSchema = new mongoose.Schema<ISubsidiaryDocument>(
+  {
+    category: { type: String, enum: DOCUMENT_CATEGORIES, default: 'general' },
+    label: { type: String, default: '' },
+    originalName: { type: String, required: true },
+    storagePath: { type: String, required: true },
+    mimeType: { type: String, default: 'application/octet-stream' },
+    size: { type: Number, default: 0 },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    uploadedAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+)
+
 const alertSchema = new mongoose.Schema<ISubsidiaryAlert>(
   {
     label: { type: String, required: true },
@@ -119,6 +149,7 @@ const schema = new mongoose.Schema<ISubsidiary>(
     businessModel: { type: String, default: '' },
     businessPlan: { type: String, default: '' },
     sections: { type: [sectionSchema], default: [] },
+    documents: { type: [documentSchema], default: [] },
     accentColor: { type: String, default: '#0ea5e9' },
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     foundedYear: { type: Number, default: null },
