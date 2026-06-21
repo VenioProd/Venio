@@ -37,6 +37,7 @@ const Home = lazy(() => import('./pages/Home'))
 const ServicesCommunication = lazy(() => import('./pages/ServicesCommunication'))
 const ServicesDeveloppement = lazy(() => import('./pages/ServicesDeveloppement'))
 const ServicesConseil = lazy(() => import('./pages/ServicesConseil'))
+const ServicesSites = lazy(() => import('./pages/ServicesSites'))
 const PolesPage = lazy(() => import('./pages/PolesPage'))
 const Realisations = lazy(() => import('./pages/Realisations'))
 const APropos = lazy(() => import('./pages/APropos'))
@@ -159,6 +160,7 @@ function App() {
                 <Route path="/services/communication" element={<ServicesCommunication />} />
                 <Route path="/services/developpement" element={<ServicesDeveloppement />} />
                 <Route path="/services/conseil" element={<ServicesConseil />} />
+                <Route path="/services/sites" element={<ServicesSites />} />
                 <Route path="/poles" element={<PolesPage />} />
                 <Route path="/realisations" element={<Realisations />} />
                 <Route path="/a-propos" element={<APropos />} />
