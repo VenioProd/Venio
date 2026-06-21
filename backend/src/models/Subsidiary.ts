@@ -127,6 +127,7 @@ export interface ISubsidiary {
   contacts: ISubsidiaryContact[]
   credentials: ISubsidiaryCredential[]
   accentColor: string
+  logoUrl?: string
   lead: mongoose.Types.ObjectId | null
   foundedYear: number | null
   /** Nom d'entité projets internes (InternalProject.entity) pour l'agrégation auto. */
@@ -234,6 +235,7 @@ const schema = new mongoose.Schema<ISubsidiary>(
     contacts: { type: [contactSchema], default: [] },
     credentials: { type: [credentialSchema], default: [] },
     accentColor: { type: String, default: '#0ea5e9' },
+    logoUrl: { type: String, default: '' },
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     foundedYear: { type: Number, default: null },
     linkedEntity: { type: String, default: '' },

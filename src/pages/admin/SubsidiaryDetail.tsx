@@ -431,8 +431,11 @@ export default function SubsidiaryDetail() {
       {/* En-tête */}
       <div className="portal-card sub-detail-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div className="sub-logo" style={{ width: 52, height: 52, fontSize: 20, background: accent }}>
-            {initials(sub.name)}
+          <div
+            className="sub-logo"
+            style={{ width: 52, height: 52, fontSize: 20, background: sub.logoUrl ? 'transparent' : accent }}
+          >
+            {sub.logoUrl ? <img src={sub.logoUrl} alt={sub.name} className="sub-logo__img" /> : initials(sub.name)}
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

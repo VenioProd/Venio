@@ -170,8 +170,8 @@ export default function SubsidiaryList() {
                 <div className="sub-card__band" />
                 <div className="sub-card__body">
                   <div className="sub-card__head">
-                    <div className="sub-logo" style={{ background: s.accentColor }}>
-                      {initials(s.name)}
+                    <div className="sub-logo" style={{ background: s.logoUrl ? 'transparent' : s.accentColor }}>
+                      {s.logoUrl ? <img src={s.logoUrl} alt={s.name} className="sub-logo__img" /> : initials(s.name)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="sub-card__title">{s.name}</div>

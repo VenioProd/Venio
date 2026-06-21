@@ -88,6 +88,13 @@
   flex-shrink: 0;
   color: #fff;
   box-shadow: 0 6px 16px -6px rgba(var(--sub-accent-rgb, 14, 165, 233), 0.7);
+  overflow: hidden;
+}
+.sub-logo__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
 }
 .sub-card__title {
   font-size: 15.5px;
