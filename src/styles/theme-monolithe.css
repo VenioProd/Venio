@@ -77,3 +77,33 @@ html.theme-monolithe .gradient-mesh-bg,
 html.theme-monolithe .parallax-decorations {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════
+   Couche de cohérence — pages publiques héritées
+   (le gros du skin passe déjà par les tokens ci-dessus ;
+   ici on retire les décorations néon résiduelles)
+   ═══════════════════════════════════════════ */
+
+/* Séparateurs / coins néon décoratifs → supprimés (brutalisme net) */
+html.theme-monolithe .neon-divider,
+html.theme-monolithe .neon-corners {
+  display: none !important;
+}
+
+/* Aucun glow de titre résiduel sur le public */
+html.theme-monolithe h1,
+html.theme-monolithe h2,
+html.theme-monolithe h3,
+html.theme-monolithe h4,
+html.theme-monolithe .hero-title,
+html.theme-monolithe .services-hero h1,
+html.theme-monolithe .section-title,
+html.theme-monolithe .manifeste-text {
+  text-shadow: none !important;
+}
+
+/* Navbar : fond plein + filet net, sans halo */
+html.theme-monolithe .navbar {
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: none !important;
+}
