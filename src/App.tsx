@@ -138,6 +138,15 @@ function App() {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
+  // Thème Monolithe : scopé au site public (hors portail & questionnaire).
+  useEffect(() => {
+    const isPublicSite = !isPortal && !isPublicQuestionnaire
+    document.documentElement.classList.toggle('theme-monolithe', isPublicSite)
+    return () => {
+      document.documentElement.classList.remove('theme-monolithe')
+    }
+  }, [isPortal, isPublicQuestionnaire])
+
   useEffect(() => {
     document.body.classList.add('gpu-off')
     localStorage.setItem('gpu-mode', 'false')

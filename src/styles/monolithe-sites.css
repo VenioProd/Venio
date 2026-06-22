@@ -1,0 +1,281 @@
+/* ═══════════════════════════════════════════
+   Page /services/sites — Monolithe (scopé .ms-page)
+   + overrides brutalistes de SitesPricingTable
+   (structure/texte du composant inchangés — tests OK).
+   ═══════════════════════════════════════════ */
+
+.ms-page {
+  --ms-sp-xs: clamp(8px, 1vw, 12px);
+  --ms-sp-s: clamp(12px, 2vw, 20px);
+  --ms-sp-m: clamp(20px, 3vw, 32px);
+  --ms-sp-l: clamp(32px, 5vw, 64px);
+  --ms-sp-xl: clamp(64px, 8vw, 120px);
+  --ms-gutter: clamp(16px, 3vw, 48px);
+  --ms-max: 1400px;
+  --ms-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.ms-page .ms-container {
+  width: 100%;
+  max-width: var(--ms-max);
+  margin: 0 auto;
+  padding: 0 var(--ms-gutter);
+}
+.ms-page section {
+  border-top: 1px solid var(--border-color);
+}
+.ms-page .ms-hero {
+  border-top: none;
+}
+
+.ms-page .ms-kicker {
+  font-size: clamp(11px, 1.1vw, 13px);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* HERO */
+.ms-page .ms-hero {
+  padding: calc(var(--ms-sp-xl) + 40px) 0 var(--ms-sp-xl);
+}
+.ms-page .ms-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--ms-sp-m);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ms-page .ms-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--primary);
+}
+.ms-page .ms-hero h1 {
+  font-size: clamp(48px, 12vw, 180px);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  margin-bottom: var(--ms-sp-m);
+}
+.ms-page .ms-hero-sub {
+  font-size: clamp(16px, 2vw, 24px);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--ms-sp-s);
+  max-width: 22ch;
+}
+.ms-page .ms-hero-offer {
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 50ch;
+  line-height: 1.55;
+}
+.ms-page .ms-hero-offer b {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+/* PROBLÈME — deux colonnes éditoriales */
+.ms-page .ms-block {
+  padding: var(--ms-sp-xl) 0;
+}
+.ms-page .ms-twocol {
+  display: grid;
+  grid-template-columns: clamp(120px, 22vw, 280px) 1fr;
+  gap: var(--ms-sp-l);
+  align-items: start;
+}
+.ms-page .ms-prose h2 {
+  font-size: clamp(24px, 3.2vw, 44px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: var(--ms-sp-m);
+  max-width: 18ch;
+}
+.ms-page .ms-prose p {
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 62ch;
+  margin-bottom: var(--ms-sp-s);
+}
+.ms-page .ms-prose p b {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+/* OFFRE / paliers */
+.ms-page .ms-offer {
+  padding: var(--ms-sp-xl) 0;
+}
+.ms-page .ms-offer-headline {
+  font-size: clamp(28px, 4.5vw, 64px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  margin: var(--ms-sp-s) 0 var(--ms-sp-m);
+}
+.ms-page .ms-offer-intro {
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 60ch;
+  line-height: 1.6;
+  margin-bottom: var(--ms-sp-l);
+}
+
+/* CTA */
+.ms-page .ms-cta {
+  padding: var(--ms-sp-xl) 0;
+}
+.ms-page .ms-cta-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--ms-sp-m);
+}
+.ms-page .ms-cta-title {
+  font-size: clamp(48px, 10vw, 140px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.88;
+  margin-bottom: var(--ms-sp-m);
+}
+.ms-page .ms-cta-title span {
+  color: var(--primary);
+}
+.ms-page .ms-cta-sub {
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 52ch;
+  line-height: 1.6;
+  margin-bottom: var(--ms-sp-l);
+}
+.ms-page .ms-cta-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  border: 1px solid var(--primary);
+  padding: 16px 28px;
+  transition:
+    background 0.2s var(--ms-ease),
+    color 0.2s var(--ms-ease);
+}
+.ms-page .ms-cta-go:hover {
+  background: var(--primary);
+  color: var(--bg-primary);
+}
+
+/* ─── Overrides brutalistes de SitesPricingTable ─── */
+.ms-page .pricing-grid {
+  gap: 1px;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+}
+.ms-page .pricing-card {
+  background: var(--bg-primary);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--ms-sp-m);
+}
+.ms-page .pricing-card--featured {
+  background: var(--bg-card);
+  border: none;
+  box-shadow: none;
+}
+.ms-page .pricing-card__badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+  transform: none;
+  border-radius: 0;
+  background: var(--primary);
+  color: var(--bg-primary);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 4px 8px;
+}
+.ms-page .pricing-card__tier {
+  color: var(--text-muted);
+}
+.ms-page .pricing-card--featured .pricing-card__tier {
+  color: var(--primary);
+}
+.ms-page .pricing-card__name {
+  font-size: clamp(20px, 2.2vw, 28px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+.ms-page .pricing-card__price-main {
+  font-weight: 900;
+  color: var(--text-primary);
+}
+.ms-page .pricing-card__cta {
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  transition:
+    background 0.2s var(--ms-ease),
+    color 0.2s var(--ms-ease),
+    border-color 0.2s var(--ms-ease);
+}
+.ms-page .pricing-card__cta:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+.ms-page .pricing-card--featured .pricing-card__cta {
+  background: var(--primary);
+  color: var(--bg-primary);
+  border-color: var(--primary);
+}
+.ms-page .pricing-card--featured .pricing-card__cta:hover {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+.ms-page .pricing-toggle-badge {
+  border-radius: 0;
+  background: var(--primary);
+  color: var(--bg-primary);
+}
+.ms-page .pricing-toggle.on {
+  background: var(--primary);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .ms-page .ms-twocol {
+    grid-template-columns: 1fr;
+    gap: var(--ms-sp-m);
+  }
+}
