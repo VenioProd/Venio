@@ -5,20 +5,19 @@
   padding: 12px 16px;
   margin: 12px clamp(8px, 2vw, 20px);
   border: 1px solid rgba(var(--primary-rgb), 0.32);
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.04)),
-    rgba(10, 16, 28, 0.85);
-  color: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  border-radius: 0;
+  background: var(--bg-card);
+  color: var(--text-primary);
   animation: pushPromptFadeIn 0.25s ease-out;
 }
 
 @keyframes pushPromptFadeIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .push-prompt-icon {
@@ -27,7 +26,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 0;
   background: rgba(var(--primary-rgb), 0.18);
   color: var(--primary);
   flex-shrink: 0;
@@ -52,7 +51,7 @@
 }
 
 .push-prompt-body span {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-secondary);
   font-size: 12.5px;
   line-height: 1.4;
 }
@@ -77,19 +76,17 @@
   height: 36px;
   padding: 0 14px;
   border: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff;
+  border-radius: 0;
+  background: var(--primary);
+  color: #0a0a0a;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.4);
-  transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+  transition: opacity 0.18s;
 }
 
 .push-prompt-cta:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(var(--primary-rgb), 0.55);
+  opacity: 0.85;
 }
 
 .push-prompt-cta:disabled {
@@ -98,15 +95,17 @@
 }
 
 .push-prompt-dismiss {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-secondary);
   font-size: 12.5px;
   height: 36px;
   padding: 0 12px;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition:
+    background 0.18s,
+    color 0.18s;
 }
 
 .push-prompt-dismiss:hover {
@@ -116,11 +115,8 @@
 
 /* ─── Light theme ─── */
 [data-theme='light'] .push-prompt {
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.04)),
-    #ffffff;
+  background: #ffffff;
   color: #0f172a;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme='light'] .push-prompt-body span {
