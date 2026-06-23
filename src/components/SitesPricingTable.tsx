@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import VenioIcon, { type VenioIconName } from './VenioIcon'
 import './SitesPricingTable.css'
 
 interface Tier {
   id: string
   num: string
   name: string
+  icon: VenioIconName
   tagline: string
   constructionPrice: string
   monthlyPrice: string
@@ -21,6 +23,7 @@ const TIERS: Tier[] = [
     id: 'vitrine',
     num: '01',
     name: 'Vitrine',
+    icon: 'vitrine',
     tagline: "Présence web soignée, jusqu'à 5 pages",
     constructionPrice: 'Sur devis',
     monthlyPrice: 'Sur devis',
@@ -42,6 +45,7 @@ const TIERS: Tier[] = [
     id: 'essentiel',
     num: '02',
     name: 'Essentiel',
+    icon: 'essentiel',
     tagline: 'Site complet avec contenu dynamique',
     constructionPrice: 'Sur devis',
     monthlyPrice: 'Sur devis',
@@ -63,6 +67,7 @@ const TIERS: Tier[] = [
     id: 'business',
     num: '03',
     name: 'Business',
+    icon: 'business',
     tagline: 'Site pro avec fonctionnalités métier',
     constructionPrice: 'Sur devis',
     monthlyPrice: 'Sur devis',
@@ -84,6 +89,7 @@ const TIERS: Tier[] = [
     id: 'ecommerce',
     num: '04',
     name: 'E-commerce',
+    icon: 'ecommerce',
     tagline: 'Boutique en ligne scalable',
     constructionPrice: 'Sur devis',
     monthlyPrice: 'Sur devis',
@@ -105,6 +111,7 @@ const TIERS: Tier[] = [
     id: 'plateforme',
     num: '05',
     name: 'Plateforme',
+    icon: 'plateforme',
     tagline: 'Fonctionnalités métier 100% sur mesure',
     constructionPrice: 'Sur devis',
     monthlyPrice: 'Sur devis',
@@ -158,6 +165,7 @@ const SitesPricingTable: React.FC = () => {
           <div key={tier.id} className={`pricing-card${tier.featured ? ' pricing-card--featured' : ''}`}>
             {tier.featured && <span className="pricing-card__badge">Le plus choisi</span>}
 
+            <VenioIcon name={tier.icon} size={28} className="pricing-card__icon" />
             <div className="pricing-card__tier">Palier {tier.num}</div>
             <div className="pricing-card__name">{tier.name}</div>
             <div className="pricing-card__tagline">{tier.tagline}</div>

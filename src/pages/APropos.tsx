@@ -1,119 +1,140 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import NeonDivider from '../components/NeonDivider'
-import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import './APropos.css'
+import { useReveal } from '../hooks/useReveal'
+import '../styles/monolithe-pages.css'
 
 const APropos = () => {
+  useReveal('.mp-page .mp-reveal', 'mp-visible')
+
   return (
-    <>
+    <div className="mp-page">
       <SEO
         title="À propos — un studio digital sans détour"
-        description="Venio existe parce que le marché est saturé de mensonges. Consultants qui valident tout, développeurs qui copient-collent, créatifs qui suivent les tendances. Venio refuse ce modèle. Lucidité, efficacité, refus du mensonge."
-        keywords="à propos Venio, agence digitale Paris, équipe Venio, expertise technique, vision"
+        description="Venio existe parce que le marché est saturé de promesses creuses. Des consultants qui valident tout, des sites copiés-collés, des modes suivies sans réfléchir. Nous, on construit le reste."
+        keywords="à propos Venio, studio digital Paris, agence sans bullshit, expertise web"
       />
       <StructuredData type="apropos" />
-      <GradientMeshBackground />
-      <div className="apropos-page">
-        <section className="apropos-hero">
-          <h1>À PROPOS</h1>
-          <p className="apropos-subtitle">Pourquoi Venio existe</p>
-        </section>
 
-        <NeonDivider />
+      <section className="mp-hero">
+        <div className="mp-hero-lines" aria-hidden="true" />
+        <div className="mp-container mp-hero-content">
+          <p className="mp-eyebrow">Venio · À propos</p>
+          <h1 className="mp-title">Pourquoi Venio existe</h1>
+          <p className="mp-lede">
+            <b>Le marché est saturé de promesses creuses.</b> Nous, on construit le reste.
+          </p>
+        </div>
+      </section>
 
-        <section className="apropos-content">
-          <div className="apropos-section">
-            <h2>Le refus</h2>
-            <p>Venio existe parce que le marché est saturé de mensonges.</p>
+      {/* §I — Le refus */}
+      <section className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              I
+            </span>
+            <span className="mp-kicker">Le refus</span>
+          </div>
+          <div className="mp-prose mp-reveal">
+            <p className="mp-strong">Venio existe parce que le marché est saturé de mensonges.</p>
             <p>
-              De consultants qui valident tout pour facturer des mois. De développeurs qui copient-collent des templates
-              et appellent ça du sur mesure. De créatifs qui suivent les tendances et appellent ça de la stratégie.
+              Des conseillers qui valident tout pour facturer des mois. Des prestataires qui copient-collent un modèle
+              tout fait et appellent ça du sur-mesure. Des créatifs qui suivent les modes et appellent ça de la
+              stratégie.
             </p>
             <p>Venio refuse ce modèle.</p>
-          </div>
-
-          <div className="apropos-section">
-            <h2>La posture</h2>
             <p>
-              Venio assume que beaucoup de communications sont inutiles. Que beaucoup de sites sont beaux mais
-              inefficaces. Que beaucoup de stratégies ne servent qu&apos;à rassurer.
+              On part du principe que beaucoup de sites sont beaux mais inutiles, et que beaucoup de stratégies ne
+              servent qu'à rassurer. On n'est pas là pour vous faire plaisir, cocher des cases ou flatter. On est là
+              pour clarifier, structurer, décider — et obtenir des résultats qu'on peut mesurer.
             </p>
-            <p>Venio n&apos;est pas là pour faire plaisir. Ni pour cocher des cases. Ni pour flatter.</p>
-            <p>Venio est là pour clarifier, structurer, décider. Et produire des résultats mesurables.</p>
           </div>
+        </div>
+      </section>
 
-          <div className="apropos-section">
-            <h2>La méthode</h2>
-            <div className="piliers">
-              <div className="pilier">
-                <h3>Lucidité</h3>
-                <p>
-                  Analyse sans filtre. Diagnostic précis. Recommandations directes. Si votre stratégie est mauvaise, on
-                  vous le dit.
-                </p>
-              </div>
-              <div className="pilier">
-                <h3>Efficacité</h3>
-                <p>
-                  Architectures optimisées. Processus structurés. Livraisons dans les temps. Pas de slides PowerPoint.
-                  Des systèmes qui fonctionnent.
-                </p>
-              </div>
-              <div className="pilier">
-                <h3>Refus du mensonge</h3>
-                <p>
-                  Pas de jargon marketing vide. Pas de promesses creuses. Pas de tendances suivies par mimétisme. Si ça
-                  ne sert à rien, on ne le fait pas.
-                </p>
-              </div>
+      {/* §II — La méthode */}
+      <section className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              II
+            </span>
+            <span className="mp-kicker">Notre méthode</span>
+          </div>
+          <div className="mp-piliers">
+            <div className="mp-pilier mp-reveal">
+              <span className="mp-pilier-num">01</span>
+              <h3 className="mp-pilier-titre">Lucidité</h3>
+              <p className="mp-pilier-texte">
+                On regarde les choses en face et on vous dit ce qui ne va pas. Si votre plan est mauvais, on vous le
+                dit.
+              </p>
+            </div>
+            <div className="mp-pilier mp-reveal">
+              <span className="mp-pilier-num">02</span>
+              <h3 className="mp-pilier-titre">Efficacité</h3>
+              <p className="mp-pilier-texte">
+                On ne décore pas, on structure. Des étapes claires, des livraisons dans les temps, des choses qui
+                marchent. Pas de présentations creuses.
+              </p>
+            </div>
+            <div className="mp-pilier mp-reveal">
+              <span className="mp-pilier-num">03</span>
+              <h3 className="mp-pilier-titre">Refus du mensonge</h3>
+              <p className="mp-pilier-texte">
+                Pas de grands mots vides, pas de promesses en l'air, pas de modes suivies pour suivre. Si ça ne sert à
+                rien, on ne le fait pas.
+              </p>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="apropos-section">
-            <h2>La relation client</h2>
-            <p>
-              Venio choisit ses projets. Dit non quand c&apos;est nécessaire. Préfère perdre un client que perdre en
+      {/* §III — Comment on travaille */}
+      <section className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              III
+            </span>
+            <span className="mp-kicker">Comment on travaille</span>
+          </div>
+          <div className="mp-prose mp-reveal">
+            <p className="mp-strong">
+              Venio choisit ses projets. On dit non quand il le faut. On préfère perdre un client que perdre en
               crédibilité.
             </p>
             <p>
-              Si vous cherchez quelqu&apos;un pour exécuter sans réfléchir, ce n&apos;est pas ici. Si vous cherchez
-              quelqu&apos;un pour valider vos idées, ce n&apos;est pas ici.
+              Si vous cherchez quelqu'un pour exécuter sans réfléchir, ce n'est pas ici. Si vous cherchez quelqu'un pour
+              valider toutes vos idées, ce n'est pas ici. Si vous cherchez quelqu'un pour vous dire la vérité et
+              construire ce qui doit exister, alors oui.
             </p>
             <p>
-              Si vous cherchez quelqu&apos;un pour vous dire la vérité et construire ce qui doit exister, alors oui.
+              Côté technique : on code tout nous-mêmes, avec des outils solides et éprouvés. Pas de WordPress bricolé
+              avec des modules dans tous les sens, pas de modèle tout fait. Du sur-mesure, testé, documenté, que vos
+              équipes peuvent reprendre — fait pour durer dix ans, pas six mois.
             </p>
           </div>
+        </div>
+      </section>
 
-          <div className="apropos-section">
-            <h2>L&apos;expertise technique</h2>
-            <p>
-              React, Node.js, Python. Architectures API REST et GraphQL. Intégrations IA (OpenAI, Anthropic, modèles
-              locaux). Bases de données relationnelles et NoSQL. DevOps et déploiements automatisés.
-            </p>
-            <p>
-              Pas de WordPress avec des plugins aléatoires. Pas de templates ThemeForest. Code propriétaire, testé,
-              documenté, maintenable.
-            </p>
-            <p>Architectures pensées pour durer 10 ans. Pas 6 mois.</p>
-          </div>
-
-          <NeonDivider variant="soft" />
-
-          <div className="apropos-cta">
-            <h2>Si vous êtes arrivé jusqu&apos;ici</h2>
-            <p>C&apos;est que vous comprenez. Parlons.</p>
-            <Link to="/contact" className="cta-btn">
-              <NeonCorners />
-              <span className="cta-btn-label">Prendre contact</span>
-            </Link>
-          </div>
-        </section>
-      </div>
-    </>
+      {/* CTA */}
+      <section className="mp-cta">
+        <div className="mp-container">
+          <h2 className="mp-cta-titre">
+            Parlons<span className="mp-dot">.</span>
+          </h2>
+          <p className="mp-cta-texte">
+            Si vous êtes arrivé jusqu'ici, c'est que vous comprenez. La suite se passe de vive voix.
+          </p>
+          <Link className="mp-btn" to="/contact">
+            Prendre contact <span className="mp-ar">→</span>
+          </Link>
+        </div>
+      </section>
+    </div>
   )
 }
 

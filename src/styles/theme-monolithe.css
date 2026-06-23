@@ -24,25 +24,25 @@ html.theme-monolithe {
   --neumorphism-light: transparent;
   --neumorphism-dark: transparent;
 
-  /* Accent acide (lime) */
-  --primary: #ccff00;
-  --primary-light: #e2ff6b;
-  --primary-dark: #a5d400;
-  --primary-rgb: 204, 255, 0;
-  --primary-light-rgb: 226, 255, 107;
-  --primary-dark-rgb: 165, 212, 0;
+  /* Accent bleu (sky) */
+  --primary-rgb: 14, 165, 233;
+  --primary-light-rgb: 125, 211, 252;
+  --primary-dark-rgb: 2, 132, 199;
+  --primary: rgb(var(--primary-rgb));
+  --primary-light: rgb(var(--primary-light-rgb));
+  --primary-dark: rgb(var(--primary-dark-rgb));
 
   /* Accents — surfaces conservées, glows coupés */
-  --accent-soft: rgba(204, 255, 0, 0.06);
-  --accent-medium: rgba(204, 255, 0, 0.12);
-  --accent-border: rgba(204, 255, 0, 0.3);
-  --accent-border-strong: rgba(204, 255, 0, 0.5);
+  --accent-soft: rgba(var(--primary-rgb), 0.06);
+  --accent-medium: rgba(var(--primary-rgb), 0.12);
+  --accent-border: rgba(var(--primary-rgb), 0.3);
+  --accent-border-strong: rgba(var(--primary-rgb), 0.5);
   --accent-glow-soft: transparent;
   --accent-glow: transparent;
   --accent-glow-strong: transparent;
-  --accent-surface: rgba(204, 255, 0, 0.06);
-  --accent-surface-strong: rgba(204, 255, 0, 0.14);
-  --accent-ring: rgba(204, 255, 0, 0.45);
+  --accent-surface: rgba(var(--primary-rgb), 0.06);
+  --accent-surface-strong: rgba(var(--primary-rgb), 0.14);
+  --accent-ring: rgba(var(--primary-rgb), 0.45);
   --primary-glow: transparent;
   --primary-glow-strong: transparent;
   --primary-shadow: none;

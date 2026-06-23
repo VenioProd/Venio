@@ -1,5 +1,6 @@
 import React from 'react'
 import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
+import VenioIcon from '../components/VenioIcon'
 
 const DATA: ServiceData = {
   punch: `Avoir un logo fait sur Canva, ce n'est pas avoir une marque. Une marque, c'est ce qui vous rend reconnaissable et vous fait tenir face aux autres.`,
@@ -54,6 +55,7 @@ const ServicesCommunication = () => (
     eyebrow="Nos services · Marque"
     title="Communication & marque"
     ctaTo="/contact"
+    icon={<VenioIcon name="communication" size={40} />}
     data={DATA}
   />
 )

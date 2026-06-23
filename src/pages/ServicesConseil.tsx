@@ -1,5 +1,6 @@
 import React from 'react'
 import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
+import VenioIcon from '../components/VenioIcon'
 
 const DATA: ServiceData = {
   punch: `Le problème, ce n'est pas votre communication. Ce sont vos décisions. On est là pour vous dire ce que personne n'ose vous dire.`,
@@ -59,6 +60,7 @@ const ServicesConseil = () => (
     title="Conseil stratégique"
     ctaTo="https://calendly.com"
     ctaExternal
+    icon={<VenioIcon name="conseil" size={40} />}
     data={DATA}
   />
 )
