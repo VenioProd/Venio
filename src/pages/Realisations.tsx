@@ -28,16 +28,17 @@ const Realisations = () => {
     {
       id: 1,
       titre: 'Cabinet Mercier & Associés',
-      client: 'Cabinet d\'avocats d\'affaires — Paris',
+      client: "Cabinet d'avocats d'affaires — Paris",
       categorie: 'Développement',
       tags: ['Decisio', 'Juridique'],
-      description: 'Refonte complète du site web pour ce cabinet prestigieux. Design sobre et élégant reflétant le sérieux et la crédibilité. Intégration d\'un système de prise de rendez-vous et d\'un espace client sécurisé.',
+      description:
+        "Refonte complète du site web pour ce cabinet prestigieux. Design sobre et élégant reflétant le sérieux et la crédibilité. Intégration d'un système de prise de rendez-vous et d'un espace client sécurisé.",
       results: [
         { value: '24', label: 'Pages créées' },
         { value: '<1.2s', label: 'Temps de chargement' },
-        { value: '100%', label: 'Sécurité SSL' }
+        { value: '100%', label: 'Sécurité SSL' },
       ],
-      type: 'avocat'
+      type: 'avocat',
     },
     {
       id: 2,
@@ -45,13 +46,14 @@ const Realisations = () => {
       client: 'École de commerce — Lyon',
       categorie: 'Développement',
       tags: ['Creatio', 'Éducation'],
-      description: 'Création d\'un site moderne et dynamique pour cette école de commerce. Focus sur l\'expérience utilisateur avec une navigation intuitive, des parcours personnalisés et un système d\'inscription en ligne fluide.',
+      description:
+        "Création d'un site moderne et dynamique pour cette école de commerce. Focus sur l'expérience utilisateur avec une navigation intuitive, des parcours personnalisés et un système d'inscription en ligne fluide.",
       results: [
         { value: '38', label: 'Pages créées' },
         { value: '12', label: 'Modules fonctionnels' },
-        { value: '6 mois', label: 'Temps de développement' }
+        { value: '6 mois', label: 'Temps de développement' },
       ],
-      type: 'ecole'
+      type: 'ecole',
     },
     {
       id: 3,
@@ -59,13 +61,14 @@ const Realisations = () => {
       client: 'Agence créative — Bordeaux',
       categorie: 'Développement',
       tags: ['Branding', 'Créatif'],
-      description: 'Portfolio ultra-moderne pour ce studio de design. Mise en avant des projets avec des animations fluides, un système de filtres avancé et une navigation immersive. Design bold et typographie impactante.',
+      description:
+        'Portfolio ultra-moderne pour ce studio de design. Mise en avant des projets avec des animations fluides, un système de filtres avancé et une navigation immersive. Design bold et typographie impactante.',
       results: [
         { value: '18', label: 'Pages créées' },
         { value: '25+', label: 'Animations custom' },
-        { value: '4 mois', label: 'Temps de développement' }
+        { value: '4 mois', label: 'Temps de développement' },
       ],
-      type: 'studio'
+      type: 'studio',
     },
     {
       id: 4,
@@ -73,27 +76,29 @@ const Realisations = () => {
       client: 'SaaS Analytics — Startup Tech',
       categorie: 'Développement',
       tags: ['SaaS', 'Tech'],
-      description: 'Conception et développement complet d\'une plateforme SaaS d\'analytics B2B. Interface dashboard intuitive, système d\'authentification, API documentation et landing page optimisée conversion.',
+      description:
+        "Conception et développement complet d'une plateforme SaaS d'analytics B2B. Interface dashboard intuitive, système d'authentification, API documentation et landing page optimisée conversion.",
       results: [
         { value: '42', label: 'Pages créées' },
         { value: '18', label: 'API endpoints' },
-        { value: '8 mois', label: 'Temps de développement' }
+        { value: '8 mois', label: 'Temps de développement' },
       ],
-      type: 'saas'
+      type: 'saas',
     },
     {
       id: 5,
-      titre: 'Restaurant L\'Atelier',
+      titre: "Restaurant L'Atelier",
       client: 'Restaurant gastronomique 2* — Paris 8e',
       categorie: 'Développement',
       tags: ['Gastronomie', 'Luxe'],
-      description: 'Site web élégant pour ce restaurant étoilé. Design sombre et raffiné, système de réservation en ligne intégré, galerie photos premium et menu interactif. Expérience digitale à la hauteur de l\'excellence culinaire.',
+      description:
+        "Site web élégant pour ce restaurant étoilé. Design sombre et raffiné, système de réservation en ligne intégré, galerie photos premium et menu interactif. Expérience digitale à la hauteur de l'excellence culinaire.",
       results: [
         { value: '18', label: 'Pages créées' },
         { value: 'Système RDV', label: 'Réservation intégrée' },
-        { value: '4 mois', label: 'Temps de développement' }
+        { value: '4 mois', label: 'Temps de développement' },
       ],
-      type: 'restaurant'
+      type: 'restaurant',
     },
     {
       id: 6,
@@ -101,13 +106,14 @@ const Realisations = () => {
       client: 'Architectes — Lyon',
       categorie: 'Développement',
       tags: ['Architecture', 'Design'],
-      description: 'Portfolio minimaliste pour ce cabinet d\'architecture contemporaine. Fond beige clair, typographie épurée, grille photographique élégante. Focus sur la mise en valeur des projets avec un design qui respire l\'espace et la lumière.',
+      description:
+        "Portfolio minimaliste pour ce cabinet d'architecture contemporaine. Fond beige clair, typographie épurée, grille photographique élégante. Focus sur la mise en valeur des projets avec un design qui respire l'espace et la lumière.",
       results: [
         { value: '16', label: 'Pages créées' },
         { value: '30+', label: 'Projets présentés' },
-        { value: '3 mois', label: 'Temps de développement' }
+        { value: '3 mois', label: 'Temps de développement' },
       ],
-      type: 'archi'
+      type: 'archi',
     },
     {
       id: 7,
@@ -115,13 +121,14 @@ const Realisations = () => {
       client: 'Haute parfumerie — Paris',
       categorie: 'Développement',
       tags: ['Luxe', 'E-commerce'],
-      description: 'Boutique en ligne premium pour cette maison de parfums de luxe. Design noir & or, expérience sensorielle digitale, animations subtiles, configurateur de fragrances personnalisées. E-commerce haut de gamme avec storytelling immersif.',
+      description:
+        'Boutique en ligne premium pour cette maison de parfums de luxe. Design noir & or, expérience sensorielle digitale, animations subtiles, configurateur de fragrances personnalisées. E-commerce haut de gamme avec storytelling immersif.',
       results: [
         { value: '32', label: 'Pages créées' },
         { value: 'Configurateur', label: 'Fragrances custom' },
-        { value: '7 mois', label: 'Temps de développement' }
+        { value: '7 mois', label: 'Temps de développement' },
       ],
-      type: 'luxe'
+      type: 'luxe',
     },
     {
       id: 8,
@@ -129,14 +136,15 @@ const Realisations = () => {
       client: 'Clinique médicale — Nantes',
       categorie: 'Développement',
       tags: ['Santé', 'Médical'],
-      description: 'Plateforme digitale complète pour cette clinique moderne. Design rassurant bleu clair, prise de rendez-vous en ligne, dossier patient sécurisé, téléconsultation intégrée. Interface accessible et claire pour tous les âges.',
+      description:
+        'Plateforme digitale complète pour cette clinique moderne. Design rassurant bleu clair, prise de rendez-vous en ligne, dossier patient sécurisé, téléconsultation intégrée. Interface accessible et claire pour tous les âges.',
       results: [
         { value: '26', label: 'Pages créées' },
         { value: 'Téléconsultation', label: 'Module intégré' },
-        { value: '6 mois', label: 'Temps de développement' }
+        { value: '6 mois', label: 'Temps de développement' },
       ],
-      type: 'medical'
-    }
+      type: 'medical',
+    },
   ]
 
   const projetsComm: Projet[] = []
@@ -161,8 +169,8 @@ const Realisations = () => {
 
   return (
     <>
-      <SEO 
-        title="Réalisations"
+      <SEO
+        title="Réalisations — nos projets web et marque"
         description="Des résultats. Pas des vitrines. Études de cas représentatives du type de travail que Venio réalise. Pas de captures retouchées, pas de métriques inventées. Si vous voulez voir du réel, contactez-nous."
         keywords="réalisations Venio, portfolio, projets, sites web, développement, communication, études de cas"
       />
@@ -171,16 +179,15 @@ const Realisations = () => {
       <div className="realisations-page">
         <section className="realisations-hero">
           <h1>RÉALISATIONS</h1>
-          <p className="realisations-subtitle">
-            Des résultats. Pas des vitrines.
-          </p>
+          <p className="realisations-subtitle">Des résultats. Pas des vitrines.</p>
           <div className="realisations-intro">
             <p>
-              Les projets présentés ici sont des études de cas représentatives du type de travail que Venio réalise.
-              Pas de captures d&apos;écran retouchées. Pas de métriques inventées.
+              Les projets présentés ici sont des études de cas représentatives du type de travail que Venio réalise. Pas
+              de captures d&apos;écran retouchées. Pas de métriques inventées.
             </p>
             <p>
-              Si vous voulez voir des projets réels en production, contactez-nous. On vous montrera ce qui existe vraiment.
+              Si vous voulez voir des projets réels en production, contactez-nous. On vous montrera ce qui existe
+              vraiment.
             </p>
           </div>
         </section>
@@ -189,7 +196,7 @@ const Realisations = () => {
 
         <section className="realisations-content">
           <div className="filters">
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 className={`filter-btn ${filter === cat ? 'active' : ''}`}
@@ -201,7 +208,7 @@ const Realisations = () => {
           </div>
 
           <div className="projets-grid">
-            {filteredProjets.map(projet => (
+            {filteredProjets.map((projet) => (
               <div key={projet.id} className={`projet-card ${projet.type ? 'detailed' : ''}`}>
                 {projet.type ? (
                   <>
@@ -218,7 +225,10 @@ const Realisations = () => {
                             </div>
                           </div>
                           <div className="avocat-hero">
-                            <h2>Expertise &<br />Confiance</h2>
+                            <h2>
+                              Expertise &<br />
+                              Confiance
+                            </h2>
                             <p>Cabinet d'avocats spécialisé en droit des affaires et fiscalité depuis 1987</p>
                             <div className="avocat-btn">Prendre rendez-vous</div>
                           </div>
@@ -275,7 +285,11 @@ const Realisations = () => {
                             </div>
                           </div>
                           <div className="studio-hero">
-                            <h2>We craft<br /><span className="studio-gradient">bold experiences</span></h2>
+                            <h2>
+                              We craft
+                              <br />
+                              <span className="studio-gradient">bold experiences</span>
+                            </h2>
                             <p>Creative studio specializing in brand identity, motion design & digital experiences</p>
                             <div className="studio-cta">View our work</div>
                           </div>
@@ -297,20 +311,27 @@ const Realisations = () => {
                           </div>
                           <div className="saas-content">
                             <div className="saas-text">
-                              <h2>Analytics,<br /><span className="saas-gradient">simplified</span></h2>
-                              <p>The all-in-one platform for tracking, analyzing and optimizing your SaaS metrics in real-time.</p>
+                              <h2>
+                                Analytics,
+                                <br />
+                                <span className="saas-gradient">simplified</span>
+                              </h2>
+                              <p>
+                                The all-in-one platform for tracking, analyzing and optimizing your SaaS metrics in
+                                real-time.
+                              </p>
                               <div className="saas-cta">Start free trial</div>
                             </div>
                             <div className="saas-dashboard">
                               <div className="dashboard-header">Revenue growth</div>
                               <div className="dashboard-chart">
-                                <div className="chart-bar" style={{height: '45%'}}></div>
-                                <div className="chart-bar" style={{height: '62%'}}></div>
-                                <div className="chart-bar" style={{height: '48%'}}></div>
-                                <div className="chart-bar" style={{height: '78%'}}></div>
-                                <div className="chart-bar" style={{height: '65%'}}></div>
-                                <div className="chart-bar" style={{height: '92%'}}></div>
-                                <div className="chart-bar" style={{height: '85%'}}></div>
+                                <div className="chart-bar" style={{ height: '45%' }}></div>
+                                <div className="chart-bar" style={{ height: '62%' }}></div>
+                                <div className="chart-bar" style={{ height: '48%' }}></div>
+                                <div className="chart-bar" style={{ height: '78%' }}></div>
+                                <div className="chart-bar" style={{ height: '65%' }}></div>
+                                <div className="chart-bar" style={{ height: '92%' }}></div>
+                                <div className="chart-bar" style={{ height: '85%' }}></div>
                               </div>
                             </div>
                           </div>
@@ -330,7 +351,11 @@ const Realisations = () => {
                           </div>
                           <div className="restaurant-content">
                             <div className="restaurant-decorative"></div>
-                            <h2>haute<br />gastronomie</h2>
+                            <h2>
+                              haute
+                              <br />
+                              gastronomie
+                            </h2>
                             <p>2 Étoiles Michelin</p>
                             <div className="restaurant-btn">Réserver une table</div>
                           </div>
@@ -350,7 +375,11 @@ const Realisations = () => {
                           <div className="archi-grid">
                             <div className="archi-image"></div>
                             <div className="archi-text">
-                              <h2>Architecture<br />contemporaine</h2>
+                              <h2>
+                                Architecture
+                                <br />
+                                contemporaine
+                              </h2>
                               <p>Conception d'espaces uniques et durables depuis 2008</p>
                               <div className="archi-btn">Découvrir nos projets</div>
                             </div>
@@ -382,8 +411,17 @@ const Realisations = () => {
                           <div className="medical-nav">
                             <div className="medical-logo-container">
                               <div className="medical-logo-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/>
+                                <svg
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                                    fill="currentColor"
+                                  />
                                 </svg>
                               </div>
                               <div className="medical-logo-text">VitaSanté</div>
@@ -397,7 +435,11 @@ const Realisations = () => {
                           </div>
                           <div className="medical-hero">
                             <div className="medical-text">
-                              <h2>Votre santé,<br />notre priorité</h2>
+                              <h2>
+                                Votre santé,
+                                <br />
+                                notre priorité
+                              </h2>
                               <p>Clinique médicale moderne spécialisée en médecine préventive et soins personnalisés</p>
                               <div className="medical-cta">Prendre rendez-vous</div>
                             </div>
@@ -429,7 +471,9 @@ const Realisations = () => {
                     <div className="project-info">
                       <div className="project-meta">
                         {projet.tags?.map((tag, idx) => (
-                          <span key={idx} className="project-tag">{tag}</span>
+                          <span key={idx} className="project-tag">
+                            {tag}
+                          </span>
                         ))}
                       </div>
                       <h2 className="project-title">{projet.titre}</h2>
@@ -448,9 +492,7 @@ const Realisations = () => {
                 ) : (
                   <>
                     <div className="projet-image" aria-label={`Image du projet ${projet.titre}`}>
-                      <div className="projet-placeholder">
-                        {projet.titre}
-                      </div>
+                      <div className="projet-placeholder">{projet.titre}</div>
                     </div>
                     <div className="projet-overlay">
                       <h3 className="projet-titre">{projet.titre}</h3>
@@ -468,4 +510,3 @@ const Realisations = () => {
 }
 
 export default Realisations
-

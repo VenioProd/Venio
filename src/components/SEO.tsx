@@ -15,9 +15,9 @@ const SEO = ({
   title,
   description,
   keywords = '',
-  image = '/og-image.jpg',
+  image = '/og-image.png',
   type = 'website',
-  noindex = false
+  noindex = false,
 }: SEOProps) => {
   const location = useLocation()
   const { locale, t } = useI18n()
@@ -53,7 +53,7 @@ const SEO = ({
 
       {/* Additional meta tags */}
       <meta name="author" content="Venio" />
-      <meta name="theme-color" content="#0ea5e9" />
+      <meta name="theme-color" content="#0a0a0a" />
     </Helmet>
   )
 }

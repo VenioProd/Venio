@@ -13,7 +13,7 @@ const StructuredData = ({ type = 'home' }) => {
       '@type': 'Organization',
       name: 'Venio',
       url: siteUrl,
-      logo: `${siteUrl}/logo.png`,
+      logo: `${siteUrl}/favicon-512x512.png`,
       contactPoint: {
         '@type': 'ContactPoint',
         email: 'contact@venio.paris',
@@ -27,14 +27,6 @@ const StructuredData = ({ type = 'home' }) => {
       '@type': 'WebSite',
       name: 'Venio',
       url: siteUrl,
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: `${siteUrl}/search?q={search_term_string}`,
-        },
-        'query-input': 'required name=search_term_string',
-      },
     }
 
     switch (type) {

@@ -87,8 +87,8 @@ const Home = () => {
   return (
     <div className="mh-home">
       <SEO
-        title="Accueil"
-        description="Venio construit ce qui doit exister. Sites web sur mesure, conseil stratégique, communication et branding. Pas de templates, pas de slides."
+        title="Sites web sur mesure, conseil et marque · Paris"
+        description="Studio digital à Paris. Sites web sur mesure, conseil et identité de marque — du concret, fait pour vous, pas de modèle tout fait. Parlons de votre projet."
         keywords="agence digitale, site web sur mesure, développement web, communication, branding, stratégie digitale, Paris"
       />
       <StructuredData type="home" />
