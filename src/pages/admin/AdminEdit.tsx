@@ -47,7 +47,12 @@ const AdminEdit = () => {
   const { showToast } = useToast()
   const [admin, setAdmin] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState<{ name: string; title: string; role: string; password: string }>({ name: '', title: '', role: 'ADMIN', password: '' })
+  const [form, setForm] = useState<{ name: string; title: string; role: string; password: string }>({
+    name: '',
+    title: '',
+    role: 'ADMIN',
+    password: '',
+  })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
@@ -58,7 +63,16 @@ const AdminEdit = () => {
   // Stagiaire
   const [isStagiaire, setIsStagiaire] = useState(false)
   const [internForm, setInternForm] = useState({
-    type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT', poste: '', departement: '', dateDebut: '', dateFin: '', tuteur: '', ecole: '', formation: '', joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[], inclureEquipe: true,
+    type: 'STAGIAIRE' as 'STAGIAIRE' | 'ALTERNANT',
+    poste: '',
+    departement: '',
+    dateDebut: '',
+    dateFin: '',
+    tuteur: '',
+    ecole: '',
+    formation: '',
+    joursPresence: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as string[],
+    inclureEquipe: true,
   })
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
@@ -94,11 +108,15 @@ const AdminEdit = () => {
                 ecole: intern.ecole || '',
                 formation: intern.formation || '',
                 type: intern.type || 'STAGIAIRE',
-                joursPresence: intern.joursPresence?.length ? intern.joursPresence : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+                joursPresence: intern.joursPresence?.length
+                  ? intern.joursPresence
+                  : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
                 inclureEquipe: intern.inclureEquipe !== false,
               })
             }
-          } catch { /* silent */ }
+          } catch {
+            /* silent */
+          }
         }
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement admin')
@@ -119,9 +137,7 @@ const AdminEdit = () => {
   }
 
   const handlePermToggle = (perm: string) => {
-    setCustomPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    )
+    setCustomPermissions((prev) => (prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]))
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -196,7 +212,20 @@ const AdminEdit = () => {
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
               {admin?.email} · {admin?.title || roleLabels[admin?.role || ''] || admin?.role}
               {admin?.tags?.includes('STAGIAIRE') && (
-                <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.4)', color: '#38bdf8' }}>Stagiaire</span>
+                <span
+                  style={{
+                    marginLeft: 8,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: 'rgba(14, 165, 233, 0.12)',
+                    border: '1px solid rgba(14, 165, 233, 0.4)',
+                    color: 'var(--primary)',
+                  }}
+                >
+                  Stagiaire
+                </span>
               )}
             </p>
           </div>
@@ -213,16 +242,29 @@ const AdminEdit = () => {
         <div className="portal-card" style={{ marginTop: 24 }}>
           <div style={{ padding: '8px 0' }}>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 14 }}>
-              Le mot de passe de <strong style={{ color: 'var(--text-primary)' }}>{admin.name}</strong> a ete mis a jour. Voici les nouveaux identifiants :
+              Le mot de passe de <strong style={{ color: 'var(--text-primary)' }}>{admin.name}</strong> a ete mis a
+              jour. Voici les nouveaux identifiants :
             </p>
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 16 }}>
+            <div
+              style={{
+                background: 'var(--bg-tertiary)',
+                borderRadius: 10,
+                padding: 20,
+                border: '1px solid var(--border-color)',
+                marginBottom: 16,
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{admin.email}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {admin.email}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{savedPassword}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {savedPassword}
+                </span>
               </div>
             </div>
             <button
@@ -258,7 +300,8 @@ const AdminEdit = () => {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Titre / Fonction <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>(optionnel — ex: PDG, Directeur...)</span>
+              Titre / Fonction{' '}
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>(optionnel — ex: PDG, Directeur...)</span>
             </label>
             <input
               className="portal-input"
@@ -288,7 +331,16 @@ const AdminEdit = () => {
           </div>
           {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  color: 'var(--text-primary)',
+                }}
+              >
                 <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
                 Personnaliser les droits
               </label>
@@ -299,7 +351,17 @@ const AdminEdit = () => {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
                     {allPermissions.map((perm) => (
-                      <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                      <label
+                        key={perm}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
                         <input
                           type="checkbox"
                           checked={customPermissions.includes(perm)}
@@ -328,14 +390,47 @@ const AdminEdit = () => {
           {isSuperAdmin && (
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: 'var(--text-primary)',
+                  }}
+                >
                   <input type="checkbox" checked={isStagiaire} onChange={(e) => setIsStagiaire(e.target.checked)} />
                   <span style={{ fontWeight: 600 }}>Membre de l'équipe (stage / alternance)</span>
                 </label>
                 {isStagiaire && (
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['STAGIAIRE', 'ALTERNANT'] as const).map((t) => (
-                      <span key={t} onClick={() => setInternForm({ ...internForm, type: t })} style={{ cursor: 'pointer', padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: internForm.type === t ? (t === 'ALTERNANT' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)') : 'rgba(255,255,255,0.05)', border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#a855f7' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`, color: internForm.type === t ? (t === 'ALTERNANT' ? '#a855f7' : '#0ea5e9') : 'rgba(255,255,255,0.4)', userSelect: 'none' }}>
+                      <span
+                        key={t}
+                        onClick={() => setInternForm({ ...internForm, type: t })}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '3px 10px',
+                          borderRadius: 5,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background:
+                            internForm.type === t
+                              ? t === 'ALTERNANT'
+                                ? 'rgba(155,155,155,0.15)'
+                                : 'rgba(14, 165, 233, 0.15)'
+                              : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#9b9b9b' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`,
+                          color:
+                            internForm.type === t
+                              ? t === 'ALTERNANT'
+                                ? '#9b9b9b'
+                                : '#0ea5e9'
+                              : 'rgba(255,255,255,0.4)',
+                          userSelect: 'none',
+                        }}
+                      >
                         {t === 'STAGIAIRE' ? 'Stagiaire' : 'Alternant'}
                       </span>
                     ))}
@@ -343,49 +438,128 @@ const AdminEdit = () => {
                 )}
               </div>
               {isStagiaire && (
-                <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 16, border: '1px solid var(--border-color)' }}>
+                <div
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: 10,
+                    padding: 16,
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Poste / Mission</label>
-                      <input className="portal-input" placeholder="Ex: Commercial, Communication..." value={internForm.poste} onChange={(e) => setInternForm({ ...internForm, poste: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Poste / Mission
+                      </label>
+                      <input
+                        className="portal-input"
+                        placeholder="Ex: Commercial, Communication..."
+                        value={internForm.poste}
+                        onChange={(e) => setInternForm({ ...internForm, poste: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Departement</label>
-                      <input className="portal-input" placeholder="Departement" value={internForm.departement} onChange={(e) => setInternForm({ ...internForm, departement: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Departement
+                      </label>
+                      <input
+                        className="portal-input"
+                        placeholder="Departement"
+                        value={internForm.departement}
+                        onChange={(e) => setInternForm({ ...internForm, departement: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Date de debut</label>
-                      <input className="portal-input" type="date" value={internForm.dateDebut} onChange={(e) => setInternForm({ ...internForm, dateDebut: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Date de debut
+                      </label>
+                      <input
+                        className="portal-input"
+                        type="date"
+                        value={internForm.dateDebut}
+                        onChange={(e) => setInternForm({ ...internForm, dateDebut: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Date de fin</label>
-                      <input className="portal-input" type="date" value={internForm.dateFin} onChange={(e) => setInternForm({ ...internForm, dateFin: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Date de fin
+                      </label>
+                      <input
+                        className="portal-input"
+                        type="date"
+                        value={internForm.dateFin}
+                        onChange={(e) => setInternForm({ ...internForm, dateFin: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Tuteur</label>
-                      <select className="portal-input" value={internForm.tuteur} onChange={(e) => setInternForm({ ...internForm, tuteur: e.target.value })}>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Tuteur
+                      </label>
+                      <select
+                        className="portal-input"
+                        value={internForm.tuteur}
+                        onChange={(e) => setInternForm({ ...internForm, tuteur: e.target.value })}
+                      >
                         <option value="">— Aucun —</option>
-                        {admins.filter((a) => a._id !== userId).map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+                        {admins
+                          .filter((a) => a._id !== userId)
+                          .map((a) => (
+                            <option key={a._id} value={a._id}>
+                              {a.name}
+                            </option>
+                          ))}
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Ecole / Universite</label>
-                      <input className="portal-input" placeholder="Ecole" value={internForm.ecole} onChange={(e) => setInternForm({ ...internForm, ecole: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Ecole / Universite
+                      </label>
+                      <input
+                        className="portal-input"
+                        placeholder="Ecole"
+                        value={internForm.ecole}
+                        onChange={(e) => setInternForm({ ...internForm, ecole: e.target.value })}
+                      />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>Formation</label>
-                      <input className="portal-input" placeholder="Formation" value={internForm.formation} onChange={(e) => setInternForm({ ...internForm, formation: e.target.value })} />
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Formation
+                      </label>
+                      <input
+                        className="portal-input"
+                        placeholder="Formation"
+                        value={internForm.formation}
+                        onChange={(e) => setInternForm({ ...internForm, formation: e.target.value })}
+                      />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>Jours de présence</label>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                        Jours de présence
+                      </label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
                           const checked = internForm.joursPresence.includes(jour)
                           return (
-                            <span key={jour} onClick={() => {
-                              const next = checked ? internForm.joursPresence.filter((j) => j !== jour) : [...internForm.joursPresence, jour]
-                              setInternForm({ ...internForm, joursPresence: next })
-                            }} style={{ cursor: 'pointer', padding: '5px 12px', borderRadius: 6, background: checked ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${checked ? '#0ea5e9' : 'rgba(255,255,255,0.1)'}`, fontSize: 13, color: checked ? '#0ea5e9' : 'rgba(255,255,255,0.5)', userSelect: 'none', transition: 'all 0.15s' }}>
+                            <span
+                              key={jour}
+                              onClick={() => {
+                                const next = checked
+                                  ? internForm.joursPresence.filter((j) => j !== jour)
+                                  : [...internForm.joursPresence, jour]
+                                setInternForm({ ...internForm, joursPresence: next })
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                padding: '5px 12px',
+                                borderRadius: 6,
+                                background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                                fontSize: 13,
+                                color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
+                                userSelect: 'none',
+                                transition: 'all 0.15s',
+                              }}
+                            >
                               {jour.charAt(0).toUpperCase() + jour.slice(1)}
                             </span>
                           )
@@ -393,11 +567,43 @@ const AdminEdit = () => {
                       </div>
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
-                      <label onClick={() => setInternForm({ ...internForm, inclureEquipe: !internForm.inclureEquipe })} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-                        <div style={{ width: 36, height: 20, borderRadius: 10, background: internForm.inclureEquipe ? '#0ea5e9' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                          <div style={{ position: 'absolute', top: 2, left: internForm.inclureEquipe ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                      <label
+                        onClick={() => setInternForm({ ...internForm, inclureEquipe: !internForm.inclureEquipe })}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 36,
+                            height: 20,
+                            borderRadius: 10,
+                            background: internForm.inclureEquipe ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                            position: 'relative',
+                            transition: 'background 0.2s',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              left: internForm.inclureEquipe ? 18 : 2,
+                              width: 16,
+                              height: 16,
+                              borderRadius: '50%',
+                              background: '#fff',
+                              transition: 'left 0.2s',
+                            }}
+                          />
                         </div>
-                        <span style={{ fontSize: 13, color: internForm.inclureEquipe ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+                        <span
+                          style={{ fontSize: 13, color: internForm.inclureEquipe ? '#fff' : 'rgba(255,255,255,0.4)' }}
+                        >
                           Inclure dans la gestion équipe
                         </span>
                       </label>
@@ -418,13 +624,25 @@ const AdminEdit = () => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Laisser vide pour ne pas changer"
                 value={form.password}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setForm({ ...form, password: event.target.value })
+                }
                 style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 18 }}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  fontSize: 18,
+                }}
               >
                 {showPassword ? '🙈' : '👁'}
               </button>
@@ -440,7 +658,6 @@ const AdminEdit = () => {
           </div>
         </form>
       </div>
-
     </div>
   )
 }

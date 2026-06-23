@@ -59,36 +59,51 @@ export default function GestionKpi() {
     doc.text('Statistiques globales', 14, y)
     y += 8
     doc.setFontSize(10)
-    doc.text(`Total taches : ${kpi.totalTasks}`, 14, y); y += 6
-    doc.text(`Terminees : ${kpi.completedTasks}`, 14, y); y += 6
-    doc.text(`En retard : ${kpi.overdueTasks}`, 14, y); y += 10
+    doc.text(`Total taches : ${kpi.totalTasks}`, 14, y)
+    y += 6
+    doc.text(`Terminees : ${kpi.completedTasks}`, 14, y)
+    y += 6
+    doc.text(`En retard : ${kpi.overdueTasks}`, 14, y)
+    y += 10
 
     // By status
     doc.setFontSize(13)
-    doc.text('Par statut', 14, y); y += 8
+    doc.text('Par statut', 14, y)
+    y += 8
     doc.setFontSize(10)
     Object.entries(kpi.tasksByStatus).forEach(([k, v]) => {
-      doc.text(`${STATUS_LABELS[k] || k} : ${v}`, 20, y); y += 6
+      doc.text(`${STATUS_LABELS[k] || k} : ${v}`, 20, y)
+      y += 6
     })
     y += 4
 
     // By priority
     doc.setFontSize(13)
-    doc.text('Par priorite', 14, y); y += 8
+    doc.text('Par priorite', 14, y)
+    y += 8
     doc.setFontSize(10)
     Object.entries(kpi.tasksByPriority).forEach(([k, v]) => {
-      doc.text(`${PRIORITY_LABELS[k] || k} : ${v}`, 20, y); y += 6
+      doc.text(`${PRIORITY_LABELS[k] || k} : ${v}`, 20, y)
+      y += 6
     })
     y += 4
 
     // Per-person
     if (kpi.tasksByPerson.length > 0) {
       doc.setFontSize(13)
-      doc.text('Performance par personne', 14, y); y += 8
+      doc.text('Performance par personne', 14, y)
+      y += 8
       doc.setFontSize(9)
       kpi.tasksByPerson.forEach((p) => {
-        if (y > 270) { doc.addPage(); y = 20 }
-        doc.text(`${p.name} — Total: ${p.total} | Terminees: ${p.completed} | En retard: ${p.overdue} | Compliance: ${p.complianceRate ?? '—'}% | Moy: ${p.avgTreatmentHours ?? '—'}h`, 14, y)
+        if (y > 270) {
+          doc.addPage()
+          y = 20
+        }
+        doc.text(
+          `${p.name} — Total: ${p.total} | Terminees: ${p.completed} | En retard: ${p.overdue} | Compliance: ${p.complianceRate ?? '—'}% | Moy: ${p.avgTreatmentHours ?? '—'}h`,
+          14,
+          y,
+        )
         y += 6
       })
     }
@@ -96,24 +111,40 @@ export default function GestionKpi() {
     // Brief stats
     if (kpi.briefStats && kpi.briefStats.totalBriefs > 0) {
       y += 6
-      if (y > 250) { doc.addPage(); y = 20 }
+      if (y > 250) {
+        doc.addPage()
+        y = 20
+      }
       doc.setFontSize(13)
       doc.setTextColor(30)
-      doc.text(`Briefs de mission (${kpi.briefStats.totalBriefs} total)`, 14, y); y += 8
+      doc.text(`Briefs de mission (${kpi.briefStats.totalBriefs} total)`, 14, y)
+      y += 8
       doc.setFontSize(10)
-      doc.text('Attribues par :', 14, y); y += 6
+      doc.text('Attribues par :', 14, y)
+      y += 6
       doc.setFontSize(9)
       kpi.briefStats.byCreator.forEach((c) => {
-        if (y > 270) { doc.addPage(); y = 20 }
-        doc.text(`${c.name} : ${c.total} briefs (Valides: ${c.byStatus.VALIDE || 0}, Livres: ${c.byStatus.LIVRE || 0})`, 20, y)
+        if (y > 270) {
+          doc.addPage()
+          y = 20
+        }
+        doc.text(
+          `${c.name} : ${c.total} briefs (Valides: ${c.byStatus.VALIDE || 0}, Livres: ${c.byStatus.LIVRE || 0})`,
+          20,
+          y,
+        )
         y += 6
       })
       y += 4
       doc.setFontSize(10)
-      doc.text('Recus par :', 14, y); y += 6
+      doc.text('Recus par :', 14, y)
+      y += 6
       doc.setFontSize(9)
       kpi.briefStats.byDestinataire.forEach((d) => {
-        if (y > 270) { doc.addPage(); y = 20 }
+        if (y > 270) {
+          doc.addPage()
+          y = 20
+        }
         doc.text(`${d.name} : ${d.received} recus, ${d.completed} termines`, 20, y)
         y += 6
       })
@@ -139,17 +170,17 @@ export default function GestionKpi() {
             </button>
           ))}
         </div>
-        <select
-          className="gestion-project-select"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        >
+        <select className="gestion-project-select" value={userId} onChange={(e) => setUserId(e.target.value)}>
           <option value="">Tous les membres</option>
           {kpi.admins.map((a) => (
-            <option key={a._id} value={a._id}>{a.name}</option>
+            <option key={a._id} value={a._id}>
+              {a.name}
+            </option>
           ))}
         </select>
-        <button className="gestion-export-btn" onClick={exportPdf}>Exporter PDF</button>
+        <button className="gestion-export-btn" onClick={exportPdf}>
+          Exporter PDF
+        </button>
       </div>
 
       {/* Stat cards */}
@@ -186,7 +217,14 @@ export default function GestionKpi() {
                   className="gestion-kpi-bar-fill"
                   style={{
                     width: kpi.totalTasks > 0 ? `${(val / kpi.totalTasks) * 100}%` : '0%',
-                    background: key === 'TERMINE' ? '#22c55e' : key === 'EN_COURS' ? '#0ea5e9' : key === 'EN_REVIEW' ? '#f59e0b' : '#64748b',
+                    background:
+                      key === 'TERMINE'
+                        ? '#22c55e'
+                        : key === 'EN_COURS'
+                          ? 'var(--primary)'
+                          : key === 'EN_REVIEW'
+                            ? '#f59e0b'
+                            : '#64748b',
                   }}
                 />
               </div>
@@ -204,7 +242,14 @@ export default function GestionKpi() {
                   className="gestion-kpi-bar-fill"
                   style={{
                     width: kpi.totalTasks > 0 ? `${(val / kpi.totalTasks) * 100}%` : '0%',
-                    background: key === 'URGENTE' ? '#ef4444' : key === 'HAUTE' ? '#f59e0b' : key === 'NORMALE' ? '#0ea5e9' : '#64748b',
+                    background:
+                      key === 'URGENTE'
+                        ? '#ef4444'
+                        : key === 'HAUTE'
+                          ? '#f59e0b'
+                          : key === 'NORMALE'
+                            ? 'var(--primary)'
+                            : '#64748b',
                   }}
                 />
               </div>
@@ -237,14 +282,20 @@ export default function GestionKpi() {
                     <td className="gestion-cell-title">{p.name}</td>
                     <td>{p.total}</td>
                     <td style={{ color: '#22c55e' }}>{p.completed}</td>
-                    <td style={{ color: '#0ea5e9' }}>{p.inProgress}</td>
+                    <td style={{ color: 'var(--primary)' }}>{p.inProgress}</td>
                     <td style={{ color: p.overdue > 0 ? '#ef4444' : 'inherit' }}>{p.overdue}</td>
                     <td>
                       {p.complianceRate !== null ? (
-                        <span style={{ color: p.complianceRate >= 80 ? '#22c55e' : p.complianceRate >= 50 ? '#f59e0b' : '#ef4444' }}>
+                        <span
+                          style={{
+                            color: p.complianceRate >= 80 ? '#22c55e' : p.complianceRate >= 50 ? '#f59e0b' : '#ef4444',
+                          }}
+                        >
                           {p.complianceRate}%
                         </span>
-                      ) : '—'}
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td>{p.avgTreatmentHours !== null ? `${p.avgTreatmentHours}h` : '—'}</td>
                   </tr>
@@ -261,7 +312,9 @@ export default function GestionKpi() {
           <h3>Briefs de mission ({kpi.briefStats.totalBriefs} total)</h3>
           <div className="gestion-kpi-grid" style={{ border: 'none', padding: 0 }}>
             <div>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>Attribues par (super admin)</h4>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                Attribues par (super admin)
+              </h4>
               <div className="gestion-table-wrap">
                 <table className="gestion-table">
                   <thead>
@@ -278,7 +331,7 @@ export default function GestionKpi() {
                         <td className="gestion-cell-title">{c.name}</td>
                         <td>{c.total}</td>
                         <td style={{ color: '#22c55e' }}>{c.byStatus.VALIDE || 0}</td>
-                        <td style={{ color: '#8b5cf6' }}>{c.byStatus.LIVRE || 0}</td>
+                        <td style={{ color: 'var(--primary)' }}>{c.byStatus.LIVRE || 0}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -286,7 +339,9 @@ export default function GestionKpi() {
               </div>
             </div>
             <div>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>Recus par (membres)</h4>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                Recus par (membres)
+              </h4>
               <div className="gestion-table-wrap">
                 <table className="gestion-table">
                   <thead>
@@ -305,10 +360,12 @@ export default function GestionKpi() {
                         <td style={{ color: '#22c55e' }}>{d.completed}</td>
                         <td>
                           {d.received > 0 ? (
-                            <span style={{ color: (d.completed / d.received) >= 0.8 ? '#22c55e' : '#f59e0b' }}>
+                            <span style={{ color: d.completed / d.received >= 0.8 ? '#22c55e' : '#f59e0b' }}>
                               {Math.round((d.completed / d.received) * 100)}%
                             </span>
-                          ) : '—'}
+                          ) : (
+                            '—'
+                          )}
                         </td>
                       </tr>
                     ))}

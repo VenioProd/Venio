@@ -1,15 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
-import {
-  getBalanceSheet,
-  listFiscalYears,
-  downloadReportCsv,
-} from '../../../services/accounting'
-import type {
-  IBalanceSheetData,
-  IBalanceSheetLine,
-  IFiscalYear,
-} from '../../../types/accounting'
+import { getBalanceSheet, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
+import type { IBalanceSheetData, IBalanceSheetLine, IFiscalYear } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -214,15 +206,13 @@ const BalanceSheet = () => {
                     fontSize: '1rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    color: 'rgba(34,211,238,0.9)',
+                    color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
                   Actif
                 </h2>
                 {actifGroups.length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
-                    Aucun élément d'actif.
-                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucun élément d'actif.</p>
                 ) : (
                   <table className="accounting-table">
                     <tbody>
@@ -236,7 +226,7 @@ const BalanceSheet = () => {
                                 fontSize: '0.78rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
-                                color: 'rgba(34,211,238,0.85)',
+                                color: 'rgba(14, 165, 233, 0.85)',
                                 fontWeight: 600,
                               }}
                             >
@@ -266,7 +256,7 @@ const BalanceSheet = () => {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
                           Total Actif
                         </td>
@@ -287,15 +277,13 @@ const BalanceSheet = () => {
                     fontSize: '1rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    color: 'rgba(34,211,238,0.9)',
+                    color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
                   Passif
                 </h2>
                 {passifGroups.length === 0 && resultExercise === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
-                    Aucun élément de passif.
-                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucun élément de passif.</p>
                 ) : (
                   <table className="accounting-table">
                     <tbody>
@@ -309,7 +297,7 @@ const BalanceSheet = () => {
                                 fontSize: '0.78rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
-                                color: 'rgba(34,211,238,0.85)',
+                                color: 'rgba(14, 165, 233, 0.85)',
                                 fontWeight: 600,
                               }}
                             >
@@ -339,8 +327,8 @@ const BalanceSheet = () => {
                       ))}
                       <tr
                         style={{
-                          background: 'rgba(14,165,233,0.06)',
-                          borderTop: '1px solid rgba(14,165,233,0.2)',
+                          background: 'rgba(14, 165, 233, 0.06)',
+                          borderTop: '1px solid rgba(14, 165, 233, 0.2)',
                         }}
                       >
                         <td
@@ -374,7 +362,7 @@ const BalanceSheet = () => {
                       </tr>
                     </tbody>
                     <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
                           Total Passif
                         </td>

@@ -135,14 +135,20 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
             { value: 'month', label: 'Ce mois' },
             { value: 'all', label: 'Tout' },
           ].map((p) => (
-            <button key={p.value} className={`ticket-kpi-period-btn ${kpiPeriod === p.value ? 'active' : ''}`} onClick={() => setKpiPeriod(p.value)}>
+            <button
+              key={p.value}
+              className={`ticket-kpi-period-btn ${kpiPeriod === p.value ? 'active' : ''}`}
+              onClick={() => setKpiPeriod(p.value)}
+            >
               {p.label}
             </button>
-        ))}
+          ))}
         </div>
         <button className="ticket-export-btn" onClick={exportKpiPdf}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
           Telecharger PDF
         </button>
@@ -151,27 +157,39 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
       {/* Main KPI cards */}
       <div className="ticket-kpi-grid">
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#0ea5e9' }}>{kpi.totalCreated}</span>
+          <span className="ticket-kpi-value" style={{ color: 'var(--primary)' }}>
+            {kpi.totalCreated}
+          </span>
           <span className="ticket-kpi-label">Tickets crees</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#22c55e' }}>{kpi.resolved}</span>
+          <span className="ticket-kpi-value" style={{ color: '#22c55e' }}>
+            {kpi.resolved}
+          </span>
           <span className="ticket-kpi-label">Resolus / Fermes</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#f59e0b' }}>{kpi.open + kpi.inProgress}</span>
+          <span className="ticket-kpi-value" style={{ color: '#f59e0b' }}>
+            {kpi.open + kpi.inProgress}
+          </span>
           <span className="ticket-kpi-label">En attente</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#8b5cf6' }}>{kpi.totalReplies}</span>
+          <span className="ticket-kpi-value" style={{ color: '#ffffff' }}>
+            {kpi.totalReplies}
+          </span>
           <span className="ticket-kpi-label">Reponses donnees</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#0ea5e9' }}>{kpi.resolutionRate}%</span>
+          <span className="ticket-kpi-value" style={{ color: '#0284c7' }}>
+            {kpi.resolutionRate}%
+          </span>
           <span className="ticket-kpi-label">Taux de resolution</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#22d3ee' }}>{kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : '—'}</span>
+          <span className="ticket-kpi-value" style={{ color: '#9b9b9b' }}>
+            {kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : '—'}
+          </span>
           <span className="ticket-kpi-label">Temps moyen 1ere reponse</span>
         </div>
       </div>
@@ -229,7 +247,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
                   <div key={a.name} className="ticket-kpi-bar-row">
                     <span className="ticket-kpi-bar-label">{a.name}</span>
                     <div className="ticket-kpi-bar-track">
-                      <div className="ticket-kpi-bar-fill" style={{ width: `${pct}%`, background: '#0ea5e9' }} />
+                      <div className="ticket-kpi-bar-fill" style={{ width: `${pct}%`, background: 'var(--primary)' }} />
                     </div>
                     <span className="ticket-kpi-bar-count">{a.count}</span>
                   </div>

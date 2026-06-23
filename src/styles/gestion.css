@@ -25,7 +25,7 @@
 }
 .gestion-project-select .custom-select-trigger {
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 0.85rem;
 }
 
@@ -44,19 +44,21 @@
 }
 .gestion-filter-select .custom-select-trigger {
   padding: 7px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 0.82rem;
 }
 
 .gestion-filter-clear {
   padding: 7px 14px;
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid rgba(239, 68, 68, 0.25);
   background: rgba(239, 68, 68, 0.08);
   color: #fca5a5;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
 
@@ -68,7 +70,7 @@
   display: flex;
   gap: 4px;
   background: #0f172a;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 4px;
   border: 1px solid #1e293b;
 }
@@ -78,7 +80,7 @@
   gap: 6px;
   padding: 7px 14px;
   border: none;
-  border-radius: 7px;
+  border-radius: 0;
   background: transparent;
   color: #94a3b8;
   cursor: pointer;
@@ -107,13 +109,17 @@
   padding: 48px 0;
   color: #64748b;
 }
-.gestion-empty-state p { margin: 4px 0; }
-.gestion-empty-hint { font-size: 0.82rem; }
+.gestion-empty-state p {
+  margin: 4px 0;
+}
+.gestion-empty-hint {
+  font-size: 0.82rem;
+}
 
 /* ─── Table View ─── */
 .gestion-table-wrap {
   overflow-x: auto;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid #1e293b;
 }
 .gestion-table {
@@ -197,7 +203,7 @@
 .gestion-inline-select {
   background: transparent;
   border: 1px solid #1e293b;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 4px 8px;
   font-size: 0.8rem;
   color: inherit;
@@ -242,7 +248,7 @@
 }
 .gestion-kanban-col {
   background: #0a0e1a;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid #1e293b;
   display: flex;
   flex-direction: column;
@@ -251,7 +257,7 @@
 .gestion-kanban-header {
   padding: 12px 14px;
   border-top: 3px solid;
-  border-radius: 10px 10px 0 0;
+  border-radius: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -279,14 +285,14 @@
 .gestion-kanban-card {
   background: #111827;
   border: 1px solid #1e293b;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 10px 12px;
   cursor: grab;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: border-color 0.1s;
 }
 .gestion-kanban-card:hover {
   border-color: #334155;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 .gestion-kanban-card.dragging {
   opacity: 0.5;
@@ -309,7 +315,7 @@
   color: #64748b;
   background: #1e293b;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .gestion-kanban-card-title {
   font-size: 0.84rem;
@@ -344,12 +350,12 @@
 .gestion-kanban-progress {
   background: #1e293b;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 /* ─── Gantt View ─── */
 .gestion-gantt-wrap {
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid #1e293b;
   overflow: hidden;
 }
@@ -363,7 +369,7 @@
 .gestion-gantt-mode-btn {
   padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: #94a3b8;
   cursor: pointer;
@@ -393,18 +399,21 @@
 .gantt-nav-btn {
   padding: 6px 12px;
   border: 1px solid #1e293b;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: #94a3b8;
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.15s;
 }
-.gantt-nav-btn:hover { background: #1e293b; color: #e2e8f0; }
+.gantt-nav-btn:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
 .gantt-nav-today {
   padding: 6px 14px;
   border: 1px solid #1e293b;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: var(--primary);
   cursor: pointer;
@@ -412,7 +421,10 @@
   font-weight: 600;
   transition: all 0.15s;
 }
-.gantt-nav-today:hover { background: var(--primary); color: #fff; }
+.gantt-nav-today:hover {
+  background: var(--primary);
+  color: #fff;
+}
 .gantt-range-label {
   font-size: 0.9rem;
   color: #e2e8f0;
@@ -599,7 +611,7 @@
 .gantt-bar-track {
   position: absolute;
   inset: 0;
-  border-radius: 6px;
+  border-radius: 0;
   border: 1px solid;
   overflow: hidden;
 }
@@ -645,18 +657,24 @@
   bottom: 0;
   width: 8px;
   cursor: ew-resize;
-  border-radius: 0 6px 6px 0;
+  border-radius: 0;
   background: transparent;
   transition: background 0.15s;
 }
 .gantt-bar:hover .gantt-bar-handle {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 @media (max-width: 768px) {
-  .gantt-list { width: 200px; }
-  .gantt-list-dates { display: none; }
-  .gantt-range-label { display: none; }
+  .gantt-list {
+    width: 200px;
+  }
+  .gantt-list-dates {
+    display: none;
+  }
+  .gantt-range-label {
+    display: none;
+  }
 }
 
 /* ─── KPI ─── */
@@ -675,26 +693,32 @@
   display: flex;
   gap: 4px;
   background: #0f172a;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 3px;
   border: 1px solid #1e293b;
 }
 .gestion-kpi-period-btn {
   padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: #94a3b8;
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
-.gestion-kpi-period-btn:hover { background: #1e293b; color: #e2e8f0; }
-.gestion-kpi-period-btn.active { background: var(--primary); color: #fff; }
+.gestion-kpi-period-btn:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+.gestion-kpi-period-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
 .gestion-export-btn {
   padding: 8px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--primary);
   color: #fff;
   cursor: pointer;
@@ -702,7 +726,9 @@
   font-weight: 600;
   transition: background 0.15s;
 }
-.gestion-export-btn:hover { background: var(--primary-dark); }
+.gestion-export-btn:hover {
+  background: var(--primary-dark);
+}
 
 .gestion-kpi-cards {
   display: grid;
@@ -712,7 +738,7 @@
 .gestion-kpi-card {
   background: #0f172a;
   border: 1px solid #1e293b;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 20px;
   text-align: center;
 }
@@ -721,8 +747,12 @@
   font-weight: 700;
   color: var(--primary);
 }
-.gestion-kpi-card-success .gestion-kpi-card-value { color: #22c55e; }
-.gestion-kpi-card-danger .gestion-kpi-card-value { color: #ef4444; }
+.gestion-kpi-card-success .gestion-kpi-card-value {
+  color: #22c55e;
+}
+.gestion-kpi-card-danger .gestion-kpi-card-value {
+  color: #ef4444;
+}
 .gestion-kpi-card-label {
   font-size: 0.82rem;
   color: #94a3b8;
@@ -737,7 +767,7 @@
 .gestion-kpi-section {
   background: #0f172a;
   border: 1px solid #1e293b;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 20px;
 }
 .gestion-kpi-section h3 {
@@ -791,7 +821,7 @@
 .gestion-brief-form {
   background: #0f172a;
   border: 1px solid #1e293b;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 24px;
 }
 .gestion-brief-form h3 {
@@ -821,7 +851,7 @@
 .gestion-brief-field textarea,
 .gestion-brief-field select {
   padding: 8px 12px;
-  border-radius: 7px;
+  border-radius: 0;
   border: 1px solid #1e293b;
   background: #0a0e1a;
   color: #e2e8f0;
@@ -844,7 +874,7 @@
   color: #cbd5e1;
   cursor: pointer;
 }
-.gestion-brief-checkbox input[type="checkbox"] {
+.gestion-brief-checkbox input[type='checkbox'] {
   accent-color: var(--primary);
 }
 
@@ -857,7 +887,7 @@
 .gestion-brief-card {
   background: #0f172a;
   border: 1px solid #1e293b;
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   transition: border-color 0.15s;
 }
@@ -905,7 +935,7 @@
 .gestion-brief-entity {
   background: #1e293b;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 500;
 }
 .gestion-brief-expand {
@@ -930,7 +960,7 @@
   margin-left: 10px;
   background: #1e293b;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 0.78rem;
 }
 .gestion-brief-card-actions {
@@ -942,7 +972,7 @@
 .gestion-delete-btn {
   padding: 6px 14px;
   border: 1px solid #ef4444;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: #ef4444;
   cursor: pointer;
@@ -980,7 +1010,7 @@
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
@@ -992,8 +1022,8 @@
   padding: 10px 12px;
   background: #01040e;
   border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 8px;
-  color: #e0e7ff;
+  border-radius: 0;
+  color: var(--text-primary);
   font-size: 13px;
   font-family: inherit;
   resize: vertical;
@@ -1003,7 +1033,7 @@
 .gestion-brief-comment-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
+  box-shadow: none;
 }
 
 /* ─── Expandable Rows ─── */
@@ -1076,7 +1106,7 @@
   padding: 3px 10px;
   background: rgba(var(--primary-rgb), 0.12);
   color: var(--primary-light);
-  border-radius: 12px;
+  border-radius: 0;
   font-size: 12px;
 }
 
@@ -1094,9 +1124,11 @@
   padding: 8px 12px;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .gestion-attachment-item:hover {
@@ -1137,10 +1169,12 @@
   background: rgba(var(--primary-rgb), 0.12);
   color: var(--primary-light);
   border: 1px dashed rgba(var(--primary-rgb), 0.3);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .gestion-upload-btn:hover {
@@ -1165,7 +1199,7 @@
   padding: 12px 16px;
   background: rgba(34, 197, 94, 0.06);
   border: 1px solid rgba(34, 197, 94, 0.15);
-  border-radius: 10px;
+  border-radius: 0;
   color: #86efac;
   font-size: 14px;
   font-weight: 600;
@@ -1215,538 +1249,538 @@
 .gestion-kanban-card-ready {
   border: 1px solid rgba(34, 197, 94, 0.4) !important;
   background: rgba(34, 197, 94, 0.06) !important;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.15);
+  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════
    GESTION — LIGHT MODE OVERRIDES
    ═══════════════════════════════════════════════════════ */
 
-[data-theme="light"] .gestion-title {
+[data-theme='light'] .gestion-title {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-project-select .custom-select-trigger,
-[data-theme="light"] .gestion-filter-select .custom-select-trigger {
+[data-theme='light'] .gestion-project-select .custom-select-trigger,
+[data-theme='light'] .gestion-filter-select .custom-select-trigger {
   background: #ffffff;
   border-color: #e2e8f0;
   color: #334155;
 }
 
-[data-theme="light"] .gestion-view-toggle {
+[data-theme='light'] .gestion-view-toggle {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-view-btn {
+[data-theme='light'] .gestion-view-btn {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-view-btn.active {
+[data-theme='light'] .gestion-view-btn.active {
   background: var(--primary);
   color: #fff;
 }
 
-[data-theme="light"] .gestion-filter-clear {
+[data-theme='light'] .gestion-filter-clear {
   background: #fef2f2;
   border-color: #fecaca;
   color: #ef4444;
 }
 
 /* Table */
-[data-theme="light"] .gestion-table {
+[data-theme='light'] .gestion-table {
   background: #ffffff;
 }
 
-[data-theme="light"] .gestion-table thead th {
+[data-theme='light'] .gestion-table thead th {
   background: #f8fafc;
   color: #475569;
   border-bottom-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-table tbody tr {
+[data-theme='light'] .gestion-table tbody tr {
   border-bottom-color: #f1f5f9;
 }
 
-[data-theme="light"] .gestion-table tbody td {
+[data-theme='light'] .gestion-table tbody td {
   border-bottom-color: #f1f5f9;
   color: #334155;
 }
 
-[data-theme="light"] .gestion-table tbody tr:hover {
+[data-theme='light'] .gestion-table tbody tr:hover {
   background: #f8fafc;
 }
 
-[data-theme="light"] .gestion-cell-title {
+[data-theme='light'] .gestion-cell-title {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-cell-project {
+[data-theme='light'] .gestion-cell-project {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-assignee-badge {
+[data-theme='light'] .gestion-assignee-badge {
   background: #f1f5f9;
   color: #334155;
 }
 
-[data-theme="light"] .gestion-assignee-name {
+[data-theme='light'] .gestion-assignee-name {
   color: #475569;
 }
 
-[data-theme="light"] .gestion-inline-select {
+[data-theme='light'] .gestion-inline-select {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-inline-select option {
+[data-theme='light'] .gestion-inline-select option {
   background: #ffffff;
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-progress-bar {
+[data-theme='light'] .gestion-progress-bar {
   background: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-progress-text {
+[data-theme='light'] .gestion-progress-text {
   color: #475569;
 }
 
-[data-theme="light"] .gestion-empty {
+[data-theme='light'] .gestion-empty {
   color: #94a3b8;
 }
 
-[data-theme="light"] .gestion-loading {
+[data-theme='light'] .gestion-loading {
   color: #64748b;
 }
 
 /* Expandable Row Details */
-[data-theme="light"] .gestion-row-expanded {
+[data-theme='light'] .gestion-row-expanded {
   background: rgba(var(--primary-rgb), 0.04) !important;
 }
 
-[data-theme="light"] .gestion-task-details {
+[data-theme='light'] .gestion-task-details {
   background: #f8fafc;
   border-top-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-detail-label {
+[data-theme='light'] .gestion-detail-label {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-detail-text {
+[data-theme='light'] .gestion-detail-text {
   color: #334155;
 }
 
-[data-theme="light"] .gestion-detail-empty {
+[data-theme='light'] .gestion-detail-empty {
   color: #94a3b8;
 }
 
-[data-theme="light"] .gestion-detail-tag {
+[data-theme='light'] .gestion-detail-tag {
   background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary-dark);
 }
 
 /* Attachments */
-[data-theme="light"] .gestion-attachment-item {
+[data-theme='light'] .gestion-attachment-item {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-attachment-item:hover {
+[data-theme='light'] .gestion-attachment-item:hover {
   background: #f8fafc;
   border-color: var(--primary);
 }
 
-[data-theme="light"] .gestion-attachment-name {
+[data-theme='light'] .gestion-attachment-name {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-upload-btn {
+[data-theme='light'] .gestion-upload-btn {
   background: #f0f9ff;
   border-color: #bae6fd;
   color: var(--primary-dark);
 }
 
-[data-theme="light"] .gestion-upload-btn:hover {
+[data-theme='light'] .gestion-upload-btn:hover {
   background: #e0f2fe;
 }
 
 /* Completed Section */
-[data-theme="light"] .gestion-completed-toggle {
+[data-theme='light'] .gestion-completed-toggle {
   background: rgba(34, 197, 94, 0.06);
   border-color: #bbf7d0;
   color: #16a34a;
 }
 
-[data-theme="light"] .gestion-completed-toggle:hover {
+[data-theme='light'] .gestion-completed-toggle:hover {
   background: rgba(34, 197, 94, 0.1);
 }
 
-[data-theme="light"] .gestion-completed-icon {
+[data-theme='light'] .gestion-completed-icon {
   color: #22c55e;
 }
 
-[data-theme="light"] .gestion-table-completed tbody tr {
+[data-theme='light'] .gestion-table-completed tbody tr {
   background: rgba(34, 197, 94, 0.02);
 }
 
 /* Ready row */
-[data-theme="light"] .gestion-row-ready {
+[data-theme='light'] .gestion-row-ready {
   background: rgba(34, 197, 94, 0.06) !important;
 }
 
-[data-theme="light"] .gestion-row-ready .gestion-cell-title {
+[data-theme='light'] .gestion-row-ready .gestion-cell-title {
   color: #16a34a;
 }
 
 /* Overdue */
-[data-theme="light"] .gestion-row-overdue {
+[data-theme='light'] .gestion-row-overdue {
   background: rgba(239, 68, 68, 0.04) !important;
 }
 
-[data-theme="light"] .gestion-cell-overdue {
+[data-theme='light'] .gestion-cell-overdue {
   color: #dc2626;
 }
 
 /* Kanban */
-[data-theme="light"] .gestion-kanban-col {
+[data-theme='light'] .gestion-kanban-col {
   background: #f8fafc;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kanban-header {
+[data-theme='light'] .gestion-kanban-header {
   background: #ffffff;
   border-bottom-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kanban-title {
+[data-theme='light'] .gestion-kanban-title {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-kanban-count {
+[data-theme='light'] .gestion-kanban-count {
   background: #f1f5f9;
   color: #475569;
 }
 
-[data-theme="light"] .gestion-kanban-card {
+[data-theme='light'] .gestion-kanban-card {
   background: #ffffff;
   border-color: #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
 }
 
-[data-theme="light"] .gestion-kanban-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+[data-theme='light'] .gestion-kanban-card:hover {
+  box-shadow: none;
 }
 
-[data-theme="light"] .gestion-kanban-card-title {
+[data-theme='light'] .gestion-kanban-card-title {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-kanban-project {
+[data-theme='light'] .gestion-kanban-project {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-kanban-assignee {
+[data-theme='light'] .gestion-kanban-assignee {
   background: #f1f5f9;
   color: #334155;
 }
 
-[data-theme="light"] .gestion-kanban-date {
+[data-theme='light'] .gestion-kanban-date {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-kanban-progress {
+[data-theme='light'] .gestion-kanban-progress {
   color: #475569;
 }
 
 /* Gantt */
-[data-theme="light"] .gestion-gantt-controls {
+[data-theme='light'] .gestion-gantt-controls {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-gantt-mode-btn {
+[data-theme='light'] .gestion-gantt-mode-btn {
   background: #f1f5f9;
   color: #475569;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-gantt-mode-btn.active {
+[data-theme='light'] .gestion-gantt-mode-btn.active {
   background: var(--primary);
   color: #fff;
 }
 
-[data-theme="light"] .gantt-nav-btn,
-[data-theme="light"] .gantt-nav-today {
+[data-theme='light'] .gantt-nav-btn,
+[data-theme='light'] .gantt-nav-today {
   background: #f1f5f9;
   color: #475569;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gantt-range-label {
+[data-theme='light'] .gantt-range-label {
   color: #1e293b;
 }
 
-[data-theme="light"] .gantt-container {
+[data-theme='light'] .gantt-container {
   background: #ffffff;
 }
 
-[data-theme="light"] .gantt-list {
+[data-theme='light'] .gantt-list {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gantt-list-row:nth-child(even) {
+[data-theme='light'] .gantt-list-row:nth-child(even) {
   background: #f8fafc;
 }
 
-[data-theme="light"] .gantt-list-row:hover {
+[data-theme='light'] .gantt-list-row:hover {
   background: #f1f5f9;
 }
 
-[data-theme="light"] .gantt-col-headers {
+[data-theme='light'] .gantt-col-headers {
   background: #f8fafc;
   border-bottom-color: #e2e8f0;
 }
 
-[data-theme="light"] .gantt-col-label {
+[data-theme='light'] .gantt-col-label {
   color: #334155;
 }
 
-[data-theme="light"] .gantt-col-sub {
+[data-theme='light'] .gantt-col-sub {
   color: #94a3b8;
 }
 
-[data-theme="light"] .gantt-chart-scroll {
+[data-theme='light'] .gantt-chart-scroll {
   background: #ffffff;
 }
 
-[data-theme="light"] .gantt-list-header {
+[data-theme='light'] .gantt-list-header {
   background: #f8fafc;
   color: #475569;
   border-bottom-color: #e2e8f0;
 }
 
-[data-theme="light"] .gantt-list-row {
+[data-theme='light'] .gantt-list-row {
   border-bottom-color: #f1f5f9;
 }
 
-[data-theme="light"] .gantt-list-title {
+[data-theme='light'] .gantt-list-title {
   color: #1e293b;
 }
 
-[data-theme="light"] .gantt-list-project {
+[data-theme='light'] .gantt-list-project {
   color: #94a3b8;
 }
 
-[data-theme="light"] .gantt-list-dates {
+[data-theme='light'] .gantt-list-dates {
   color: #64748b;
 }
 
-[data-theme="light"] .gantt-col-header {
+[data-theme='light'] .gantt-col-header {
   background: #f8fafc;
   color: #475569;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gantt-grid-line {
+[data-theme='light'] .gantt-grid-line {
   border-color: #f1f5f9;
 }
 
-[data-theme="light"] .gantt-grid-weekend {
+[data-theme='light'] .gantt-grid-weekend {
   background: rgba(0, 0, 0, 0.02);
 }
 
-[data-theme="light"] .gantt-today-col {
+[data-theme='light'] .gantt-today-col {
   background: rgba(var(--primary-rgb), 0.06);
 }
 
-[data-theme="light"] .gantt-row-even {
+[data-theme='light'] .gantt-row-even {
   background: rgba(0, 0, 0, 0.01);
 }
 
 /* Briefs */
-[data-theme="light"] .gestion-brief-card {
+[data-theme='light'] .gestion-brief-card {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-brief-card-header {
+[data-theme='light'] .gestion-brief-card-header {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-brief-card-header:hover {
+[data-theme='light'] .gestion-brief-card-header:hover {
   background: #f8fafc;
 }
 
-[data-theme="light"] .gestion-brief-card-body {
+[data-theme='light'] .gestion-brief-card-body {
   border-top-color: #e2e8f0;
   background: #fafbfc;
 }
 
-[data-theme="light"] .gestion-brief-section {
+[data-theme='light'] .gestion-brief-section {
   color: #334155;
 }
 
-[data-theme="light"] .gestion-brief-entity {
+[data-theme='light'] .gestion-brief-entity {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-brief-expand {
+[data-theme='light'] .gestion-brief-expand {
   color: #94a3b8;
 }
 
-[data-theme="light"] .gestion-brief-comment-input {
+[data-theme='light'] .gestion-brief-comment-input {
   background: #ffffff;
   border-color: #e2e8f0;
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-brief-form {
+[data-theme='light'] .gestion-brief-form {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-brief-form h3 {
+[data-theme='light'] .gestion-brief-form h3 {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-brief-field label {
+[data-theme='light'] .gestion-brief-field label {
   color: #475569;
 }
 
-[data-theme="light"] .gestion-brief-field input,
-[data-theme="light"] .gestion-brief-field textarea,
-[data-theme="light"] .gestion-brief-field select {
+[data-theme='light'] .gestion-brief-field input,
+[data-theme='light'] .gestion-brief-field textarea,
+[data-theme='light'] .gestion-brief-field select {
   background: #ffffff;
   border-color: #e2e8f0;
   color: #1e293b;
 }
 
 /* Empty states */
-[data-theme="light"] .gestion-empty-state p {
+[data-theme='light'] .gestion-empty-state p {
   color: #94a3b8;
 }
 
 /* Table wrap border */
-[data-theme="light"] .gestion-table-wrap {
+[data-theme='light'] .gestion-table-wrap {
   border-color: #e2e8f0;
 }
 
 /* Inline badge (read-only status/priority badge) */
-[data-theme="light"] .gestion-inline-badge {
+[data-theme='light'] .gestion-inline-badge {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.12);
 }
 
 /* Kanban project tag & progress tag backgrounds */
-[data-theme="light"] .gestion-kanban-project {
+[data-theme='light'] .gestion-kanban-project {
   background: #f1f5f9;
 }
 
-[data-theme="light"] .gestion-kanban-progress {
+[data-theme='light'] .gestion-kanban-progress {
   background: #f1f5f9;
 }
 
 /* Kanban card meta text */
-[data-theme="light"] .gestion-kanban-card-meta {
+[data-theme='light'] .gestion-kanban-card-meta {
   color: #94a3b8;
 }
 
 /* Brief priority badge */
-[data-theme="light"] .gestion-brief-priority-badge {
+[data-theme='light'] .gestion-brief-priority-badge {
   background: #f1f5f9;
   color: #334155;
 }
 
 /* Brief card left text */
-[data-theme="light"] .gestion-brief-card-left {
+[data-theme='light'] .gestion-brief-card-left {
   color: #1e293b;
 }
 
 /* Brief card right */
-[data-theme="light"] .gestion-brief-card-right {
+[data-theme='light'] .gestion-brief-card-right {
   color: #94a3b8;
 }
 
 /* Brief entity tag */
-[data-theme="light"] .gestion-brief-entity {
+[data-theme='light'] .gestion-brief-entity {
   background: #f1f5f9;
 }
 
 /* Brief section labels */
-[data-theme="light"] .gestion-brief-section strong {
+[data-theme='light'] .gestion-brief-section strong {
   color: #475569;
 }
 
 /* Brief section border */
-[data-theme="light"] .gestion-brief-section {
+[data-theme='light'] .gestion-brief-section {
   border-bottom-color: #f1f5f9;
 }
 
 /* Brief date cle tag */
-[data-theme="light"] .gestion-brief-date-cle {
+[data-theme='light'] .gestion-brief-date-cle {
   background: #f1f5f9;
   color: #334155;
 }
 
 /* Brief checkbox */
-[data-theme="light"] .gestion-brief-checkbox {
+[data-theme='light'] .gestion-brief-checkbox {
   color: #334155;
 }
 
 /* Expand icon */
-[data-theme="light"] .gestion-expand-icon {
+[data-theme='light'] .gestion-expand-icon {
   color: #94a3b8;
 }
 
 /* KPI cards */
-[data-theme="light"] .gestion-kpi-card {
+[data-theme='light'] .gestion-kpi-card {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kpi-card-label {
+[data-theme='light'] .gestion-kpi-card-label {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-kpi-section {
+[data-theme='light'] .gestion-kpi-section {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kpi-section h3 {
+[data-theme='light'] .gestion-kpi-section h3 {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-kpi-bar-label {
+[data-theme='light'] .gestion-kpi-bar-label {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-kpi-bar-track {
+[data-theme='light'] .gestion-kpi-bar-track {
   background: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kpi-bar-value {
+[data-theme='light'] .gestion-kpi-bar-value {
   color: #1e293b;
 }
 
-[data-theme="light"] .gestion-kpi-periods {
+[data-theme='light'] .gestion-kpi-periods {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .gestion-kpi-period-btn {
+[data-theme='light'] .gestion-kpi-period-btn {
   color: #64748b;
 }
 
-[data-theme="light"] .gestion-kpi-period-btn:hover {
+[data-theme='light'] .gestion-kpi-period-btn:hover {
   background: #f1f5f9;
   color: #1e293b;
 }
 
 /* Gantt wrap border */
-[data-theme="light"] .gestion-gantt-wrap {
+[data-theme='light'] .gestion-gantt-wrap {
   border-color: #e2e8f0;
 }

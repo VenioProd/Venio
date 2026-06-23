@@ -1,29 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Legend,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import AccountingLayout from './AccountingLayout'
-import {
-  getAccountingDashboard,
-  getAccountingSettings,
-  listEntries,
-} from '../../../services/accounting'
-import type {
-  IAccountingDashboard,
-  IAccountingEntry,
-  ICompanySettings,
-  IDashboardKpi,
-} from '../../../types/accounting'
+import { getAccountingDashboard, getAccountingSettings, listEntries } from '../../../services/accounting'
+import type { IAccountingDashboard, IAccountingEntry, ICompanySettings, IDashboardKpi } from '../../../types/accounting'
 
 // ---- Formatters ----
 const EUR_COMPACT = new Intl.NumberFormat('fr-FR', {
@@ -57,7 +38,7 @@ function formatDateFr(iso: string | undefined | null): string {
   return d.toLocaleDateString('fr-FR')
 }
 
-// ---- Theme constants (neon Venio) ----
+// ---- Theme constants — graphes en accent data-viz cyan (distinct de l'UI lime) ----
 const COLOR_REVENUE = '#22d3ee'
 const COLOR_EXPENSE = '#f87171'
 const COLOR_MARGIN = '#0ea5e9'
@@ -180,24 +161,14 @@ const AccountingDashboard = () => {
   }, [monthlyRevenue])
 
   return (
-    <AccountingLayout
-      title="Comptabilité"
-      subtitle="Tableau de bord — indicateurs, écritures, accès rapide"
-    >
+    <AccountingLayout title="Comptabilité" subtitle="Tableau de bord — indicateurs, écritures, accès rapide">
       {error && <div className="accounting-message error">{error}</div>}
-      {dashboardError && (
-        <div className="accounting-message error">
-          Indicateurs indisponibles : {dashboardError}
-        </div>
-      )}
+      {dashboardError && <div className="accounting-message error">Indicateurs indisponibles : {dashboardError}</div>}
 
       {!loading && !isConfigured && (
         <div className="accounting-message info">
           Le module n'est pas encore paramétré. Commencez par{' '}
-          <Link
-            to="/admin/comptabilite/parametres"
-            style={{ color: '#7dd3fc', textDecoration: 'underline' }}
-          >
+          <Link to="/admin/comptabilite/parametres" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
             renseigner les informations de la société
           </Link>{' '}
           et par initialiser le plan comptable.
@@ -276,9 +247,7 @@ const AccountingDashboard = () => {
             }}
             onChange={() => undefined}
           >
-            <option value={fiscalYear?._id || ''}>
-              {fiscalYear?.label || '— aucun —'}
-            </option>
+            <option value={fiscalYear?._id || ''}>{fiscalYear?.label || '— aucun —'}</option>
           </select>
         </div>
       </section>
@@ -290,9 +259,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.revenueMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            ce mois
-          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>ce mois</div>
         </div>
         <div className="accounting-kpi">
           <div className="label">CA cumul exercice</div>
@@ -308,9 +275,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_RED }}>
             {loading ? '…' : formatEur(kpi.expensesMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            ce mois
-          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>ce mois</div>
         </div>
         <div className="accounting-kpi">
           <div className="label">Charges cumul</div>
@@ -321,10 +286,7 @@ const AccountingDashboard = () => {
         </div>
         <div className="accounting-kpi">
           <div className="label">Créances clients</div>
-          <div
-            className="value"
-            style={{ color: Number(kpi.receivables) > 0 ? COLOR_ORANGE : undefined }}
-          >
+          <div className="value" style={{ color: Number(kpi.receivables) > 0 ? COLOR_ORANGE : undefined }}>
             {loading ? '…' : formatEur(kpi.receivables)}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
@@ -334,30 +296,21 @@ const AccountingDashboard = () => {
         <div className="accounting-kpi">
           <div className="label">Dettes fournisseurs</div>
           <div className="value">{loading ? '…' : formatEur(kpi.payables)}</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            à régler
-          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>à régler</div>
         </div>
         <div className="accounting-kpi">
           <div className="label">TVA à payer</div>
-          <div
-            className="value"
-            style={{ color: Number(kpi.vatToPay) > 0 ? COLOR_RED : undefined }}
-          >
+          <div className="value" style={{ color: Number(kpi.vatToPay) > 0 ? COLOR_RED : undefined }}>
             {loading ? '…' : formatEur(kpi.vatToPay)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            solde de TVA
-          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>solde de TVA</div>
         </div>
         <div className="accounting-kpi">
           <div className="label">Solde banque</div>
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.bankBalance)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            comptes 512
-          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>comptes 512</div>
         </div>
       </div>
 
@@ -365,7 +318,7 @@ const AccountingDashboard = () => {
         <div className="accounting-message info">
           <Link
             to="/admin/comptabilite/ecritures?status=DRAFT"
-            style={{ color: '#7dd3fc', textDecoration: 'underline' }}
+            style={{ color: 'var(--primary)', textDecoration: 'underline' }}
           >
             Vous avez {kpi.draftEntriesCount} écriture
             {kpi.draftEntriesCount > 1 ? 's' : ''} en brouillon à valider →
@@ -402,10 +355,7 @@ const AccountingDashboard = () => {
                 tickFormatter={(v: number) => formatEur(v)}
                 width={80}
               />
-              <Tooltip
-                content={(props) => <ChartTooltip {...props} />}
-                cursor={{ fill: 'rgba(14, 165, 233, 0.06)' }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} />} cursor={{ fill: 'rgba(14, 165, 233, 0.06)' }} />
               <Legend
                 verticalAlign="bottom"
                 wrapperStyle={{
@@ -414,20 +364,8 @@ const AccountingDashboard = () => {
                   color: 'rgba(255,255,255,0.7)',
                 }}
               />
-              <Bar
-                dataKey="revenue"
-                name="Produits"
-                fill={COLOR_REVENUE}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={32}
-              />
-              <Bar
-                dataKey="expense"
-                name="Charges"
-                fill={COLOR_EXPENSE}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={32}
-              />
+              <Bar dataKey="revenue" name="Produits" fill={COLOR_REVENUE} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="expense" name="Charges" fill={COLOR_EXPENSE} radius={[4, 4, 0, 0]} maxBarSize={32} />
               <Line
                 type="monotone"
                 dataKey="margin"
@@ -463,9 +401,7 @@ const AccountingDashboard = () => {
                 <tr key={acc.code}>
                   <td>
                     <Link
-                      to={`/admin/comptabilite/grand-livre?accountCode=${encodeURIComponent(
-                        acc.code
-                      )}`}
+                      to={`/admin/comptabilite/grand-livre?accountCode=${encodeURIComponent(acc.code)}`}
                       className="code"
                     >
                       {acc.code}
@@ -489,7 +425,7 @@ const AccountingDashboard = () => {
           <div className="accounting-empty">
             Aucune écriture pour le moment.
             <div className="hint">
-              <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: '#7dd3fc' }}>
+              <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: 'var(--primary)' }}>
                 Créer une première écriture →
               </Link>
             </div>

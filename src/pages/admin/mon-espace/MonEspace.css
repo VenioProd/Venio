@@ -10,10 +10,7 @@
 .mon-espace__hello {
   font-size: 22px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--primary);
 }
 
 .bento-grid {
@@ -23,10 +20,9 @@
   gap: 16px;
 }
 .bento-tile {
-  background: rgba(20, 22, 28, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -45,7 +41,7 @@
 .bento-tile__actions button {
   background: transparent;
   border: none;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 2px;
 }
@@ -102,23 +98,23 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 .widget-count {
   margin-left: auto;
   background: rgba(var(--primary-rgb), 0.2);
-  color: #7dd3fc;
-  border-radius: 8px;
+  color: var(--primary);
+  border-radius: 0;
   padding: 0 8px;
   font-size: 11px;
 }
 .widget-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 0;
   padding: 6px 10px;
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 13px;
 }
 .widget-add {
@@ -128,8 +124,8 @@
 .widget-add__btn {
   background: rgba(var(--primary-rgb), 0.15);
   border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 8px;
-  color: #e2e8f0;
+  border-radius: 0;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 4px 8px;
 }
@@ -143,7 +139,7 @@
   gap: 4px;
 }
 .widget-empty {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
   padding: 8px 0;
 }
@@ -158,20 +154,20 @@
 .widget-task__check {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 .widget-task__title,
 .widget-note__title {
   flex: 1;
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 13px;
 }
 .widget-task__tag {
   font-size: 10px;
-  color: #7dd3fc;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 6px;
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  border-radius: 0;
   padding: 1px 6px;
   text-decoration: none;
 }
@@ -186,7 +182,7 @@
 .widget-note__actions button {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 2px;
 }
@@ -197,7 +193,7 @@
 .widget-activity a {
   display: flex;
   flex-direction: column;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 12px;
 }
@@ -205,10 +201,10 @@
   display: flex;
   gap: 8px;
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 .widget-week__date {
-  color: #7dd3fc;
+  color: var(--primary);
   min-width: 56px;
   text-transform: capitalize;
 }
@@ -220,7 +216,7 @@
 .kpi-card {
   background: rgba(var(--primary-rgb), 0.1);
   border: 1px solid rgba(var(--primary-rgb), 0.25);
-  border-radius: 10px;
+  border-radius: 0;
   padding: 10px;
   text-align: center;
   text-decoration: none;
@@ -232,7 +228,7 @@
 }
 .kpi-card span {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 .postit-wall {
   display: flex;
@@ -244,9 +240,8 @@
   position: relative;
   width: 110px;
   min-height: 90px;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .postit textarea {
   width: 100%;
@@ -269,10 +264,10 @@
 .clock-time {
   font-size: 32px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 .clock-date {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 12px;
   text-transform: capitalize;
 }
@@ -289,8 +284,8 @@
 .pomodoro-actions button {
   background: rgba(var(--primary-rgb), 0.15);
   border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 8px;
-  color: #e2e8f0;
+  border-radius: 0;
+  color: var(--text-primary);
   padding: 4px 10px;
   cursor: pointer;
   display: inline-flex;
@@ -299,7 +294,7 @@
 }
 .goal-quote {
   font-style: italic;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 .shortcuts-grid {
@@ -313,9 +308,9 @@
   align-items: center;
   gap: 4px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 11px;
 }
@@ -339,21 +334,21 @@
 }
 .widget-issue__title {
   flex: 1;
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .widget-issue__age {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 11px;
   white-space: nowrap;
 }
 .widget-footer-link {
   margin-top: auto;
   font-size: 12px;
-  color: #7dd3fc;
+  color: var(--primary);
   text-decoration: none;
 }
 .widget-session {
@@ -363,7 +358,7 @@
   text-decoration: none;
 }
 .widget-session__name {
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
 }
@@ -371,18 +366,18 @@
   align-self: flex-start;
   font-size: 11px;
   border: 1px solid;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 1px 8px;
 }
 .widget-session__meta {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 .widget-session__countdown {
-  color: #7dd3fc;
+  color: var(--primary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -397,8 +392,8 @@
 .mon-espace__drawer .chip {
   background: rgba(var(--primary-rgb), 0.12);
   border: 1px solid rgba(var(--primary-rgb), 0.3);
-  color: #7dd3fc;
-  border-radius: 20px;
+  color: var(--primary);
+  border-radius: 0;
   padding: 4px 12px;
   font-size: 12px;
   cursor: pointer;
@@ -407,8 +402,8 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 .mon-espace .subtitle {
-  color: #94a3b8;
+  color: var(--text-secondary);
 }

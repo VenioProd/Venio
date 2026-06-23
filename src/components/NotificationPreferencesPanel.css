@@ -2,13 +2,10 @@
   display: grid;
   gap: 14px;
   padding: 18px 20px;
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  border-radius: 16px;
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.02)),
-    rgba(10, 16, 28, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 0;
+  background: var(--bg-card);
   color: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(10px);
 }
 
 .notif-prefs-header {
@@ -51,14 +48,8 @@
 
 .notif-prefs-status.saved {
   background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
   color: #34d399;
-  animation: notifPrefsFade 1.5s ease-out;
-}
-
-@keyframes notifPrefsFade {
-  0% { opacity: 0; transform: translateY(-2px); }
-  20% { opacity: 1; }
-  100% { opacity: 1; }
 }
 
 .notif-prefs-error {
@@ -67,7 +58,7 @@
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.22);
   color: #fca5a5;
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 12.5px;
 }
 
@@ -90,7 +81,9 @@
 }
 
 @keyframes notifPrefsSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .notif-prefs-table-wrap {
@@ -163,7 +156,10 @@
   font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
 }
 
 .notif-prefs-bulk-btn:hover {
@@ -242,13 +238,12 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transition: transform 0.2s;
 }
 
 .notif-toggle input:checked + .notif-toggle-slider {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.35);
+  background: var(--primary);
 }
 
 .notif-toggle input:checked + .notif-toggle-slider::before {
@@ -262,9 +257,7 @@
 
 /* ─── Light theme ─── */
 [data-theme='light'] .notif-prefs {
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.02)),
-    #ffffff;
+  background: #ffffff;
   color: #0f172a;
 }
 

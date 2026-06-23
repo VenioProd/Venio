@@ -6,10 +6,10 @@ import type { MissionBrief, BriefStatus } from '../../types/brief.types'
 
 const STATUS_CONFIG: Record<BriefStatus, { label: string; color: string }> = {
   A_FAIRE: { label: 'A faire', color: '#64748b' },
-  EN_COURS: { label: 'En cours', color: '#0ea5e9' },
+  EN_COURS: { label: 'En cours', color: 'var(--primary)' },
   EN_REVIEW: { label: 'En review', color: '#f59e0b' },
   VALIDE: { label: 'Valide', color: '#22c55e' },
-  LIVRE: { label: 'Livre', color: '#8b5cf6' },
+  LIVRE: { label: 'Livre', color: 'var(--primary)' },
   NON_VALIDE: { label: 'Non valide', color: '#ef4444' },
   A_AMELIORER: { label: 'A ameliorer', color: '#fb923c' },
 }
@@ -68,9 +68,11 @@ export default function GestionBriefs({ projects, user }: Props) {
 
   useEffect(() => {
     loadBriefs()
-    apiFetch('/api/admin/admins').then((res: any) => {
-      setAdmins(Array.isArray(res) ? res : res.admins || [])
-    }).catch(() => {})
+    apiFetch('/api/admin/admins')
+      .then((res: any) => {
+        setAdmins(Array.isArray(res) ? res : res.admins || [])
+      })
+      .catch(() => {})
   }, [])
 
   const loadBriefs = async () => {
@@ -78,7 +80,9 @@ export default function GestionBriefs({ projects, user }: Props) {
     try {
       const data = await fetchBriefs()
       setBriefs(data)
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
     setLoading(false)
   }
 
@@ -89,7 +93,9 @@ export default function GestionBriefs({ projects, user }: Props) {
       setForm({ ...emptyForm })
       setShowForm(false)
       await loadBriefs()
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   const [editingComment, setEditingComment] = useState<string | null>(null)
@@ -99,7 +105,9 @@ export default function GestionBriefs({ projects, user }: Props) {
     try {
       await updateBrief(briefId, { statut })
       await loadBriefs()
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   const handleSaveComment = async (briefId: string) => {
@@ -107,22 +115,26 @@ export default function GestionBriefs({ projects, user }: Props) {
       await updateBrief(briefId, { commentaires: commentText })
       setEditingComment(null)
       await loadBriefs()
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   const handleDelete = async (briefId: string) => {
-    if (!await confirm({ message: 'Supprimer ce brief ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer ce brief ?', title: 'Suppression' }))) return
     try {
       await deleteBrief(briefId)
       await loadBriefs()
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   const toggleFormat = (fmt: string) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       formatLivrable: prev.formatLivrable.includes(fmt)
-        ? prev.formatLivrable.filter(f => f !== fmt)
+        ? prev.formatLivrable.filter((f) => f !== fmt)
         : [...prev.formatLivrable, fmt],
     }))
   }
@@ -163,52 +175,89 @@ export default function GestionBriefs({ projects, user }: Props) {
               <label>Projet *</label>
               <select value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })}>
                 <option value="">Selectionner...</option>
-                {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                {projects.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="gestion-brief-field">
               <label>Destinataire *</label>
               <select value={form.destinataire} onChange={(e) => setForm({ ...form, destinataire: e.target.value })}>
                 <option value="">Selectionner...</option>
-                {admins.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+                {admins.map((a) => (
+                  <option key={a._id} value={a._id}>
+                    {a.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="gestion-brief-field">
               <label>Entite</label>
               <select value={form.entity} onChange={(e) => setForm({ ...form, entity: e.target.value })}>
-                {ENTITY_OPTIONS.map(e => <option key={e} value={e}>{e}</option>)}
+                {ENTITY_OPTIONS.map((e) => (
+                  <option key={e} value={e}>
+                    {e}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="gestion-brief-field">
               <label>Priorite</label>
               <select value={form.briefPriority} onChange={(e) => setForm({ ...form, briefPriority: e.target.value })}>
-                {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                {PRIORITY_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="gestion-brief-field">
               <label>Deadline *</label>
-              <input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+              <input
+                type="date"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              />
             </div>
             <div className="gestion-brief-field">
               <label>Point intermediaire</label>
-              <input type="date" value={form.pointIntermediaire} onChange={(e) => setForm({ ...form, pointIntermediaire: e.target.value })} />
+              <input
+                type="date"
+                value={form.pointIntermediaire}
+                onChange={(e) => setForm({ ...form, pointIntermediaire: e.target.value })}
+              />
             </div>
             <div className="gestion-brief-field full">
               <label>Intitule de la mission *</label>
-              <input type="text" value={form.intitule} onChange={(e) => setForm({ ...form, intitule: e.target.value })} placeholder="Ex: Maquettes site vitrine" />
+              <input
+                type="text"
+                value={form.intitule}
+                onChange={(e) => setForm({ ...form, intitule: e.target.value })}
+                placeholder="Ex: Maquettes site vitrine"
+              />
             </div>
             <div className="gestion-brief-field full">
               <label>Contexte</label>
-              <textarea value={form.contexte} onChange={(e) => setForm({ ...form, contexte: e.target.value })} rows={3} />
+              <textarea
+                value={form.contexte}
+                onChange={(e) => setForm({ ...form, contexte: e.target.value })}
+                rows={3}
+              />
             </div>
             <div className="gestion-brief-field full">
               <label>Livrables attendus</label>
-              <textarea value={form.livrablesAttendus} onChange={(e) => setForm({ ...form, livrablesAttendus: e.target.value })} rows={3} />
+              <textarea
+                value={form.livrablesAttendus}
+                onChange={(e) => setForm({ ...form, livrablesAttendus: e.target.value })}
+                rows={3}
+              />
             </div>
             <div className="gestion-brief-field full">
               <label>Format livrable</label>
               <div className="gestion-brief-formats">
-                {FORMAT_OPTIONS.map(f => (
+                {FORMAT_OPTIONS.map((f) => (
                   <label key={f} className="gestion-brief-checkbox">
                     <input type="checkbox" checked={form.formatLivrable.includes(f)} onChange={() => toggleFormat(f)} />
                     {f}
@@ -218,17 +267,31 @@ export default function GestionBriefs({ projects, user }: Props) {
             </div>
             <div className="gestion-brief-field full">
               <label>Ressources / References</label>
-              <textarea value={form.ressources} onChange={(e) => setForm({ ...form, ressources: e.target.value })} rows={2} />
+              <textarea
+                value={form.ressources}
+                onChange={(e) => setForm({ ...form, ressources: e.target.value })}
+                rows={2}
+              />
             </div>
             <div className="gestion-brief-field full">
               <label>Points de vigilance</label>
-              <textarea value={form.pointsVigilance} onChange={(e) => setForm({ ...form, pointsVigilance: e.target.value })} rows={2} />
+              <textarea
+                value={form.pointsVigilance}
+                onChange={(e) => setForm({ ...form, pointsVigilance: e.target.value })}
+                rows={2}
+              />
             </div>
             <div className="gestion-brief-field">
               <label>Validation par</label>
               <select value={form.validationPar} onChange={(e) => setForm({ ...form, validationPar: e.target.value })}>
                 <option value="">—</option>
-                {admins.filter(a => a._id !== form.destinataire).map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+                {admins
+                  .filter((a) => a._id !== form.destinataire)
+                  .map((a) => (
+                    <option key={a._id} value={a._id}>
+                      {a.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -252,7 +315,9 @@ export default function GestionBriefs({ projects, user }: Props) {
               <div key={brief._id} className="gestion-brief-card">
                 <div className="gestion-brief-card-header" onClick={() => setExpandedId(isExpanded ? null : brief._id)}>
                   <div className="gestion-brief-card-left">
-                    <span className="gestion-brief-status-badge" style={{ background: sc.color }}>{sc.label}</span>
+                    <span className="gestion-brief-status-badge" style={{ background: sc.color }}>
+                      {sc.label}
+                    </span>
                     <span className="gestion-brief-priority-badge">{brief.briefPriority}</span>
                     <strong>{brief.intitule}</strong>
                   </div>
@@ -267,18 +332,54 @@ export default function GestionBriefs({ projects, user }: Props) {
 
                 {isExpanded && (
                   <div className="gestion-brief-card-body">
-                    {brief.contexte && <div className="gestion-brief-section"><strong>Contexte :</strong> {brief.contexte}</div>}
-                    {brief.livrablesAttendus && <div className="gestion-brief-section"><strong>Livrables :</strong> {brief.livrablesAttendus}</div>}
-                    {brief.formatLivrable.length > 0 && <div className="gestion-brief-section"><strong>Format :</strong> {brief.formatLivrable.join(', ')}</div>}
-                    {brief.ressources && <div className="gestion-brief-section"><strong>Ressources :</strong> {brief.ressources}</div>}
-                    {brief.pointsVigilance && <div className="gestion-brief-section"><strong>Points de vigilance :</strong> {brief.pointsVigilance}</div>}
-                    {brief.pointIntermediaire && <div className="gestion-brief-section"><strong>Point intermediaire :</strong> {formatDate(brief.pointIntermediaire)}</div>}
-                    {getName(brief.validationPar) && <div className="gestion-brief-section"><strong>Validation par :</strong> {getName(brief.validationPar)}</div>}
-                    {brief.commentaires && <div className="gestion-brief-section"><strong>Commentaires :</strong> {brief.commentaires}</div>}
+                    {brief.contexte && (
+                      <div className="gestion-brief-section">
+                        <strong>Contexte :</strong> {brief.contexte}
+                      </div>
+                    )}
+                    {brief.livrablesAttendus && (
+                      <div className="gestion-brief-section">
+                        <strong>Livrables :</strong> {brief.livrablesAttendus}
+                      </div>
+                    )}
+                    {brief.formatLivrable.length > 0 && (
+                      <div className="gestion-brief-section">
+                        <strong>Format :</strong> {brief.formatLivrable.join(', ')}
+                      </div>
+                    )}
+                    {brief.ressources && (
+                      <div className="gestion-brief-section">
+                        <strong>Ressources :</strong> {brief.ressources}
+                      </div>
+                    )}
+                    {brief.pointsVigilance && (
+                      <div className="gestion-brief-section">
+                        <strong>Points de vigilance :</strong> {brief.pointsVigilance}
+                      </div>
+                    )}
+                    {brief.pointIntermediaire && (
+                      <div className="gestion-brief-section">
+                        <strong>Point intermediaire :</strong> {formatDate(brief.pointIntermediaire)}
+                      </div>
+                    )}
+                    {getName(brief.validationPar) && (
+                      <div className="gestion-brief-section">
+                        <strong>Validation par :</strong> {getName(brief.validationPar)}
+                      </div>
+                    )}
+                    {brief.commentaires && (
+                      <div className="gestion-brief-section">
+                        <strong>Commentaires :</strong> {brief.commentaires}
+                      </div>
+                    )}
                     {brief.datesCles.length > 0 && (
                       <div className="gestion-brief-section">
                         <strong>Dates cles :</strong>
-                        {brief.datesCles.map((d, i) => <span key={i} className="gestion-brief-date-cle">{d.label}: {formatDate(d.date)}</span>)}
+                        {brief.datesCles.map((d, i) => (
+                          <span key={i} className="gestion-brief-date-cle">
+                            {d.label}: {formatDate(d.date)}
+                          </span>
+                        ))}
                       </div>
                     )}
 
@@ -297,8 +398,12 @@ export default function GestionBriefs({ projects, user }: Props) {
                               autoFocus
                             />
                             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                              <button className="gestion-export-btn" onClick={() => handleSaveComment(brief._id)}>Enregistrer</button>
-                              <button className="gestion-delete-btn" onClick={() => setEditingComment(null)}>Annuler</button>
+                              <button className="gestion-export-btn" onClick={() => handleSaveComment(brief._id)}>
+                                Enregistrer
+                              </button>
+                              <button className="gestion-delete-btn" onClick={() => setEditingComment(null)}>
+                                Annuler
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -308,7 +413,10 @@ export default function GestionBriefs({ projects, user }: Props) {
                             </p>
                             <button
                               className="gestion-export-btn"
-                              onClick={() => { setEditingComment(brief._id); setCommentText(brief.commentaires || '') }}
+                              onClick={() => {
+                                setEditingComment(brief._id)
+                                setCommentText(brief.commentaires || '')
+                              }}
                               style={{ fontSize: 12, padding: '4px 12px' }}
                             >
                               Modifier
@@ -327,14 +435,18 @@ export default function GestionBriefs({ projects, user }: Props) {
                           style={{ color: sc.color }}
                         >
                           {/* Show current status if not in admin options */}
-                          {!ADMIN_STATUS_OPTIONS.some(o => o.key === brief.statut) && (
+                          {!ADMIN_STATUS_OPTIONS.some((o) => o.key === brief.statut) && (
                             <option value={brief.statut}>{sc.label}</option>
                           )}
                           {ADMIN_STATUS_OPTIONS.map(({ key, label }) => (
-                            <option key={key} value={key}>{label}</option>
+                            <option key={key} value={key}>
+                              {label}
+                            </option>
                           ))}
                         </select>
-                        <button className="gestion-delete-btn" onClick={() => handleDelete(brief._id)}>Supprimer</button>
+                        <button className="gestion-delete-btn" onClick={() => handleDelete(brief._id)}>
+                          Supprimer
+                        </button>
                       </div>
                     )}
                   </div>

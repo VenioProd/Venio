@@ -2,15 +2,27 @@ import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
-import { fetchTasks, createTask, updateTask, moveTask, deleteTask, fetchComments, addComment, deleteComment, uploadAttachment, downloadAttachment, deleteAttachment } from '../../services/adminTasks'
+import {
+  fetchTasks,
+  createTask,
+  updateTask,
+  moveTask,
+  deleteTask,
+  fetchComments,
+  addComment,
+  deleteComment,
+  uploadAttachment,
+  downloadAttachment,
+  deleteAttachment,
+} from '../../services/adminTasks'
 import ConfirmModal from '../ConfirmModal'
 import type { Task, TaskStatus, TaskPriority, TaskComment, TaskAttachment } from '../../types/task.types'
 import type { AdminUser } from '../../types/crm.types'
 import '../../styles/task-board.css'
 
 const TASK_COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
-  { key: 'A_FAIRE', label: 'A faire', color: '#6366f1' },
-  { key: 'EN_COURS', label: 'En cours', color: '#0ea5e9' },
+  { key: 'A_FAIRE', label: 'A faire', color: '#0ea5e9' },
+  { key: 'EN_COURS', label: 'En cours', color: '#9b9b9b' },
   { key: 'EN_REVIEW', label: 'En review', color: '#f59e0b' },
   { key: 'TERMINE', label: 'Termine', color: '#22c55e' },
 ]
@@ -78,9 +90,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   }, [load])
 
   const tasksByStatus = (status: TaskStatus): Task[] => {
-    return tasks
-      .filter((t) => t.status === status)
-      .sort((a, b) => a.order - b.order)
+    return tasks.filter((t) => t.status === status).sort((a, b) => a.order - b.order)
   }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -203,9 +213,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
     try {
       const attachments = await uploadAttachment(projectId, editingTask._id, file)
       setEditingTask({ ...editingTask, attachments })
-      setTasks((prev) =>
-        prev.map((t) => (t._id === editingTask._id ? { ...t, attachments } : t))
-      )
+      setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? { ...t, attachments } : t)))
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur upload')
     } finally {
@@ -221,9 +229,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       await deleteAttachment(projectId, editingTask._id, attachmentId)
       const updated = (editingTask.attachments || []).filter((a) => a._id !== attachmentId)
       setEditingTask({ ...editingTask, attachments: updated })
-      setTasks((prev) =>
-        prev.map((t) => (t._id === editingTask._id ? { ...t, attachments: updated } : t))
-      )
+      setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? { ...t, attachments: updated } : t)))
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur suppression fichier')
     }
@@ -289,10 +295,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
               </div>
 
               {canManage && (
-                <button
-                  className="task-add-btn"
-                  onClick={() => openCreateModal(column.key)}
-                >
+                <button className="task-add-btn" onClick={() => openCreateModal(column.key)}>
                   + Ajouter
                 </button>
               )}
@@ -321,7 +324,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                     )}
                   </div>
                   {task.description && (
-                    <p className="task-card-desc">{task.description.length > 80 ? task.description.slice(0, 80) + '...' : task.description}</p>
+                    <p className="task-card-desc">
+                      {task.description.length > 80 ? task.description.slice(0, 80) + '...' : task.description}
+                    </p>
                   )}
                   <div className="task-card-meta">
                     <span
@@ -330,11 +335,11 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                     >
                       {PRIORITY_CONFIG[task.priority].label}
                     </span>
-                    {task.assignee && (
-                      <span className="task-assignee">{task.assignee.name}</span>
-                    )}
+                    {task.assignee && <span className="task-assignee">{task.assignee.name}</span>}
                     {task.dueDate && (
-                      <span className={`task-due ${isOverdue(task.dueDate) && task.status !== 'TERMINE' ? 'task-due-overdue' : ''}`}>
+                      <span
+                        className={`task-due ${isOverdue(task.dueDate) && task.status !== 'TERMINE' ? 'task-due-overdue' : ''}`}
+                      >
                         {formatDate(task.dueDate)}
                       </span>
                     )}
@@ -379,7 +384,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}
                     >
                       {TASK_COLUMNS.map((c) => (
-                        <option key={c.key} value={c.key}>{c.label}</option>
+                        <option key={c.key} value={c.key}>
+                          {c.label}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -390,7 +397,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
                     >
                       {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
-                        <option key={key} value={key}>{cfg.label}</option>
+                        <option key={key} value={key}>
+                          {cfg.label}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -398,13 +407,12 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                 <div className="task-form-row">
                   <div className="task-form-group">
                     <label>Assignee</label>
-                    <select
-                      value={form.assignee}
-                      onChange={(e) => setForm({ ...form, assignee: e.target.value })}
-                    >
+                    <select value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })}>
                       <option value="">Non assigne</option>
                       {admins.map((admin) => (
-                        <option key={admin._id} value={admin._id}>{admin.name}</option>
+                        <option key={admin._id} value={admin._id}>
+                          {admin.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -426,52 +434,56 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                   </button>
                 </div>
               </form>
-            ) : editingTask && (
-              <div className="task-detail-readonly">
-                <div className="task-form-group">
-                  <label>Titre</label>
-                  <p className="task-readonly-value">{editingTask.title}</p>
+            ) : (
+              editingTask && (
+                <div className="task-detail-readonly">
+                  <div className="task-form-group">
+                    <label>Titre</label>
+                    <p className="task-readonly-value">{editingTask.title}</p>
+                  </div>
+                  {editingTask.description && (
+                    <div className="task-form-group">
+                      <label>Description</label>
+                      <p className="task-readonly-value">{editingTask.description}</p>
+                    </div>
+                  )}
+                  <div className="task-form-row">
+                    <div className="task-form-group">
+                      <label>Statut</label>
+                      <p className="task-readonly-value">
+                        {TASK_COLUMNS.find((c) => c.key === editingTask.status)?.label}
+                      </p>
+                    </div>
+                    <div className="task-form-group">
+                      <label>Priorite</label>
+                      <p className="task-readonly-value">{PRIORITY_CONFIG[editingTask.priority].label}</p>
+                    </div>
+                  </div>
+                  <div className="task-form-row">
+                    <div className="task-form-group">
+                      <label>Assignee</label>
+                      <p className="task-readonly-value">{editingTask.assignee?.name || 'Non assigne'}</p>
+                    </div>
+                    <div className="task-form-group">
+                      <label>Echeance</label>
+                      <p className="task-readonly-value">
+                        {editingTask.dueDate ? formatDate(editingTask.dueDate) : 'Aucune'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="task-form-actions">
+                    <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
+                      Fermer
+                    </button>
+                  </div>
                 </div>
-                {editingTask.description && (
-                  <div className="task-form-group">
-                    <label>Description</label>
-                    <p className="task-readonly-value">{editingTask.description}</p>
-                  </div>
-                )}
-                <div className="task-form-row">
-                  <div className="task-form-group">
-                    <label>Statut</label>
-                    <p className="task-readonly-value">{TASK_COLUMNS.find(c => c.key === editingTask.status)?.label}</p>
-                  </div>
-                  <div className="task-form-group">
-                    <label>Priorite</label>
-                    <p className="task-readonly-value">{PRIORITY_CONFIG[editingTask.priority].label}</p>
-                  </div>
-                </div>
-                <div className="task-form-row">
-                  <div className="task-form-group">
-                    <label>Assignee</label>
-                    <p className="task-readonly-value">{editingTask.assignee?.name || 'Non assigne'}</p>
-                  </div>
-                  <div className="task-form-group">
-                    <label>Echeance</label>
-                    <p className="task-readonly-value">{editingTask.dueDate ? formatDate(editingTask.dueDate) : 'Aucune'}</p>
-                  </div>
-                </div>
-                <div className="task-form-actions">
-                  <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
-                    Fermer
-                  </button>
-                </div>
-              </div>
+              )
             )}
 
             {/* Attachments — only in edit mode */}
             {editingTask && (
               <div className="task-attachments-section">
-                <h4 className="task-attachments-title">
-                  Pieces jointes ({editingTask.attachments?.length || 0})
-                </h4>
+                <h4 className="task-attachments-title">Pieces jointes ({editingTask.attachments?.length || 0})</h4>
                 <div className="task-attachments-list">
                   {(!editingTask.attachments || editingTask.attachments.length === 0) && (
                     <p className="task-attachments-empty">Aucune piece jointe</p>
@@ -485,15 +497,16 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       </div>
                       <button
                         className="task-attachment-download"
-                        onClick={() => downloadAttachment(projectId, editingTask._id, att._id, att.originalName).catch(() => setError('Erreur telechargement'))}
+                        onClick={() =>
+                          downloadAttachment(projectId, editingTask._id, att._id, att.originalName).catch(() =>
+                            setError('Erreur telechargement'),
+                          )
+                        }
                       >
                         Telecharger
                       </button>
                       {canManage && (
-                        <button
-                          className="task-attachment-delete"
-                          onClick={() => handleDeleteAttachment(att._id)}
-                        >
+                        <button className="task-attachment-delete" onClick={() => handleDeleteAttachment(att._id)}>
                           x
                         </button>
                       )}
@@ -526,19 +539,14 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
               <div className="task-comments-section">
                 <h4 className="task-comments-title">Commentaires ({comments.length})</h4>
                 <div className="task-comments-list">
-                  {comments.length === 0 && (
-                    <p className="task-comments-empty">Aucun commentaire</p>
-                  )}
+                  {comments.length === 0 && <p className="task-comments-empty">Aucun commentaire</p>}
                   {comments.map((comment) => (
                     <div key={comment._id} className="task-comment">
                       <div className="task-comment-header">
                         <span className="task-comment-author">{comment.author.name}</span>
                         <span className="task-comment-time">{formatTimeAgo(comment.createdAt)}</span>
                         {(comment.author._id === user?._id || user?.role === 'SUPER_ADMIN') && (
-                          <button
-                            className="task-comment-delete"
-                            onClick={() => handleDeleteComment(comment._id)}
-                          >
+                          <button className="task-comment-delete" onClick={() => handleDeleteComment(comment._id)}>
                             x
                           </button>
                         )}
@@ -547,7 +555,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       {comment.mentions.length > 0 && (
                         <div className="task-comment-mentions">
                           {comment.mentions.map((m) => (
-                            <span key={m._id} className="task-mention-badge">@{m.name}</span>
+                            <span key={m._id} className="task-mention-badge">
+                              @{m.name}
+                            </span>
                           ))}
                         </div>
                       )}

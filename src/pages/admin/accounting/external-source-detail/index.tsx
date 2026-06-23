@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AccountingLayout from '../AccountingLayout'
-import {
-  updateExternalSource,
-  deleteExternalSource,
-  rotateExternalSourceKey,
-} from '../../../../services/accounting'
+import { updateExternalSource, deleteExternalSource, rotateExternalSourceKey } from '../../../../services/accounting'
 import type { ExternalSourceStatus, IRotateKeyResult } from '../../../../types/accounting'
 import { TABS, type TabId } from './types'
 import { STATUS_LABELS, statusBadgeClass } from './helpers'
@@ -97,7 +93,7 @@ const ExternalSourceDetail = () => {
     if (!id) return
     if (
       !confirm(
-        'Régénérer la clé API et le secret webhook ? Les anciennes valeurs seront immédiatement invalidées et le site tiers devra être mis à jour.'
+        'Régénérer la clé API et le secret webhook ? Les anciennes valeurs seront immédiatement invalidées et le site tiers devra être mis à jour.',
       )
     )
       return
@@ -115,7 +111,7 @@ const ExternalSourceDetail = () => {
     if (!source || !id) return
     if (
       !confirm(
-        `Supprimer définitivement la source « ${source.name} » ? Cette action est irréversible. Les écritures déjà publiées seront conservées.`
+        `Supprimer définitivement la source « ${source.name} » ? Cette action est irréversible. Les écritures déjà publiées seront conservées.`,
       )
     )
       return
@@ -162,10 +158,7 @@ const ExternalSourceDetail = () => {
           <span className="code" style={{ fontSize: '0.9rem' }}>
             {source.slug}
           </span>{' '}
-          <span
-            className={`accounting-badge ${statusBadgeClass(source.status)}`}
-            style={{ marginLeft: 8 }}
-          >
+          <span className={`accounting-badge ${statusBadgeClass(source.status)}`} style={{ marginLeft: 8 }}>
             {STATUS_LABELS[source.status] || source.status}
           </span>
         </span>
@@ -205,7 +198,7 @@ const ExternalSourceDetail = () => {
           padding: 6,
           borderRadius: 12,
           background: 'rgba(15,15,20,0.6)',
-          border: '1px solid rgba(14,165,233,0.18)',
+          border: '1px solid rgba(14, 165, 233, 0.18)',
           flexWrap: 'wrap',
         }}
       >
@@ -220,13 +213,13 @@ const ExternalSourceDetail = () => {
               borderRadius: 8,
               background:
                 activeTab === t.id
-                  ? 'linear-gradient(135deg, rgba(14,165,233,0.25) 0%, rgba(59,130,246,0.18) 100%)'
+                  ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.18) 100%)'
                   : 'transparent',
               color: activeTab === t.id ? '#fff' : 'rgba(255,255,255,0.65)',
               cursor: 'pointer',
               fontSize: '0.88rem',
               fontWeight: 500,
-              borderColor: activeTab === t.id ? 'rgba(14,165,233,0.5)' : 'transparent',
+              borderColor: activeTab === t.id ? 'rgba(14, 165, 233, 0.5)' : 'transparent',
               transition: 'all 0.2s ease',
             }}
           >
@@ -247,21 +240,10 @@ const ExternalSourceDetail = () => {
       )}
 
       {activeTab === 'info' && edit && (
-        <InfoTab
-          source={source}
-          infoForm={edit}
-          setInfoForm={setEdit}
-          onSave={handleSaveInfo}
-          saving={saving}
-        />
+        <InfoTab source={source} infoForm={edit} setInfoForm={setEdit} onSave={handleSaveInfo} saving={saving} />
       )}
 
-      {activeTab === 'rules' && id && (
-        <RulesTab
-          sourceId={id}
-          onError={setError}
-        />
-      )}
+      {activeTab === 'rules' && id && <RulesTab sourceId={id} onError={setError} />}
 
       {activeTab === 'tx' && (
         <TransactionsTab

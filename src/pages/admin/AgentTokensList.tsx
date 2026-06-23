@@ -62,7 +62,10 @@ const AgentTokensList: React.FC = () => {
       const [list, cat] = await Promise.all([
         apiFetch<{ tokens: AgentToken[] }>(`/api/admin/agent-tokens${filter}`),
         scopesCatalog
-          ? Promise.resolve({ scopes: scopesCatalog.scopes, adminWildcard: scopesCatalog.adminWildcard } as ScopesCatalog)
+          ? Promise.resolve({
+              scopes: scopesCatalog.scopes,
+              adminWildcard: scopesCatalog.adminWildcard,
+            } as ScopesCatalog)
           : apiFetch<ScopesCatalog>('/api/admin/agent-tokens/scopes'),
       ])
       setTokens(list.tokens || [])
@@ -126,7 +129,7 @@ const AgentTokensList: React.FC = () => {
     setForm((prev) =>
       prev.scopes.includes(scope)
         ? { ...prev, scopes: prev.scopes.filter((s) => s !== scope) }
-        : { ...prev, scopes: [...prev.scopes, scope] }
+        : { ...prev, scopes: [...prev.scopes, scope] },
     )
   }
 
@@ -137,11 +140,7 @@ const AgentTokensList: React.FC = () => {
 
   const toggleAllScopes = () => {
     if (!scopesCatalog) return
-    setForm((prev) =>
-      allScopesSelected
-        ? { ...prev, scopes: [] }
-        : { ...prev, scopes: [...scopesCatalog.scopes] }
-    )
+    setForm((prev) => (allScopesSelected ? { ...prev, scopes: [] } : { ...prev, scopes: [...scopesCatalog.scopes] }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -230,7 +229,7 @@ const AgentTokensList: React.FC = () => {
     setAuthLogLoading(true)
     try {
       const data = await apiFetch<{ events: AgentAuthLogEvent[] }>(
-        `/api/admin/agent-tokens/${token._id}/auth-log?limit=50`
+        `/api/admin/agent-tokens/${token._id}/auth-log?limit=50`,
       )
       setAuthLogEvents(data.events || [])
     } catch (err) {
@@ -252,8 +251,7 @@ const AgentTokensList: React.FC = () => {
           <div>
             <h1>Agents API</h1>
             <p className="admin-subtitle">
-              Personal Access Tokens (PAT) pour piloter Venio depuis Kuro et autres
-              outils externes. Cf.{' '}
+              Personal Access Tokens (PAT) pour piloter Venio depuis Kuro et autres outils externes. Cf.{' '}
               <a href="/docs/api-agent.md" target="_blank" rel="noopener noreferrer">
                 spec API
               </a>
@@ -261,12 +259,10 @@ const AgentTokensList: React.FC = () => {
             </p>
           </div>
           <div className="admin-actions portal-actions-reveal">
-            <button
-              type="button"
-              className="portal-button portal-action-link"
-              onClick={openCreate}
-            >
-              <span className="portal-action-icon" aria-hidden>+</span>
+            <button type="button" className="portal-button portal-action-link" onClick={openCreate}>
+              <span className="portal-action-icon" aria-hidden>
+                +
+              </span>
               <span className="portal-action-label">Nouveau token</span>
             </button>
           </div>
@@ -280,7 +276,7 @@ const AgentTokensList: React.FC = () => {
               onClick={() => setStatusFilter(s)}
               className={`portal-button secondary ${statusFilter === s ? 'is-active' : ''}`}
               style={{
-                background: statusFilter === s ? 'var(--accent-bg, rgba(99, 102, 241, 0.15))' : '',
+                background: statusFilter === s ? 'var(--accent-bg, rgba(14, 165, 233, 0.15))' : '',
               }}
             >
               {s === 'ACTIVE' ? 'Actifs' : s === 'REVOKED' ? 'Révoqués' : 'Tous'}
@@ -301,7 +297,7 @@ const AgentTokensList: React.FC = () => {
               <p className="admin-empty-state-text">
                 {statusFilter === 'REVOKED'
                   ? 'Aucun token révoqué'
-                  : 'Aucun token actif. Créez-en un pour que Kuro puisse appeler l\'API.'}
+                  : "Aucun token actif. Créez-en un pour que Kuro puisse appeler l'API."}
               </p>
             </div>
           </div>
@@ -324,14 +320,8 @@ const AgentTokensList: React.FC = () => {
                   <span
                     className="admin-card-role"
                     style={{
-                      background:
-                        t.status === 'ACTIVE'
-                          ? 'rgba(16, 185, 129, 0.12)'
-                          : 'rgba(100, 116, 180, 0.12)',
-                      borderColor:
-                        t.status === 'ACTIVE'
-                          ? 'rgba(16, 185, 129, 0.35)'
-                          : 'rgba(100, 116, 180, 0.35)',
+                      background: t.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(100, 116, 180, 0.12)',
+                      borderColor: t.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(100, 116, 180, 0.35)',
                       color: t.status === 'ACTIVE' ? '#6ee7b7' : '#a5b4cf',
                     }}
                   >
@@ -349,9 +339,9 @@ const AgentTokensList: React.FC = () => {
                       key={s}
                       className="admin-card-role"
                       style={{
-                        background: 'rgba(99, 102, 241, 0.12)',
-                        borderColor: 'rgba(99, 102, 241, 0.35)',
-                        color: '#a5b4fc',
+                        background: 'rgba(14, 165, 233, 0.12)',
+                        borderColor: 'rgba(14, 165, 233, 0.35)',
+                        color: 'var(--primary)',
                         fontSize: '0.75rem',
                       }}
                       title={s}
@@ -381,8 +371,7 @@ const AgentTokensList: React.FC = () => {
                     <strong>Dernière utilisation :</strong> {formatDate(t.lastUsedAt)}
                   </div>
                   <div>
-                    <strong>Requêtes :</strong> {t.totalRequests} (
-                    {t.totalMutations} mutations)
+                    <strong>Requêtes :</strong> {t.totalRequests} ({t.totalMutations} mutations)
                   </div>
                   {t.expiresAt && (
                     <div>
@@ -402,15 +391,8 @@ const AgentTokensList: React.FC = () => {
                 </div>
 
                 {t.status === 'ACTIVE' && (
-                  <div
-                    className="admin-card-actions"
-                    style={{ marginTop: 12, flexWrap: 'wrap' }}
-                  >
-                    <button
-                      type="button"
-                      className="admin-card-btn admin-card-btn--edit"
-                      onClick={() => openEdit(t)}
-                    >
+                  <div className="admin-card-actions" style={{ marginTop: 12, flexWrap: 'wrap' }}>
+                    <button type="button" className="admin-card-btn admin-card-btn--edit" onClick={() => openEdit(t)}>
                       Modifier
                     </button>
                     <button
@@ -423,11 +405,7 @@ const AgentTokensList: React.FC = () => {
                   </div>
                 )}
                 <div className="admin-card-actions" style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="admin-card-btn"
-                    onClick={() => openAuthLog(t)}
-                  >
+                  <button type="button" className="admin-card-btn" onClick={() => openAuthLog(t)}>
                     Journal
                   </button>
                 </div>
@@ -448,15 +426,8 @@ const AgentTokensList: React.FC = () => {
             aria-modal="true"
           >
             <div className="confirm-modal__header">
-              <h2 className="confirm-modal__title">
-                {editId ? 'Modifier le token' : 'Nouveau token agent'}
-              </h2>
-              <button
-                type="button"
-                className="confirm-modal__close"
-                onClick={closeForm}
-                aria-label="Fermer"
-              >
+              <h2 className="confirm-modal__title">{editId ? 'Modifier le token' : 'Nouveau token agent'}</h2>
+              <button type="button" className="confirm-modal__close" onClick={closeForm} aria-label="Fermer">
                 ✕
               </button>
             </div>
@@ -499,9 +470,9 @@ const AgentTokensList: React.FC = () => {
                       onClick={toggleAllScopes}
                       disabled={!scopesCatalog}
                       style={{
-                        background: 'rgba(99, 102, 241, 0.12)',
-                        border: '1px solid rgba(99, 102, 241, 0.35)',
-                        color: '#a5b4fc',
+                        background: 'rgba(14, 165, 233, 0.12)',
+                        border: '1px solid rgba(14, 165, 233, 0.35)',
+                        color: 'var(--primary)',
                         padding: '4px 10px',
                         borderRadius: 6,
                         fontSize: '0.8rem',
@@ -546,10 +517,10 @@ const AgentTokensList: React.FC = () => {
                                 gap: 6,
                                 padding: '6px 10px',
                                 background: form.scopes.includes(s)
-                                  ? 'rgba(99, 102, 241, 0.2)'
+                                  ? 'rgba(14, 165, 233, 0.2)'
                                   : 'rgba(255, 255, 255, 0.04)',
                                 border: form.scopes.includes(s)
-                                  ? '1px solid rgba(99, 102, 241, 0.5)'
+                                  ? '1px solid rgba(14, 165, 233, 0.5)'
                                   : '1px solid rgba(255, 255, 255, 0.08)',
                                 borderRadius: 6,
                                 cursor: 'pointer',
@@ -593,9 +564,7 @@ const AgentTokensList: React.FC = () => {
                     <input
                       type="date"
                       value={form.expiresAt}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, expiresAt: e.target.value }))
-                      }
+                      onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))}
                       className="portal-input"
                     />
                   </label>

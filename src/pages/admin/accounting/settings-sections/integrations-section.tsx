@@ -29,12 +29,7 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         }}
       >
         <h2 style={{ margin: 0 }}>Intégrations externes</h2>
-        <button
-          type="button"
-          className="portal-button"
-          onClick={onOpenCreate}
-          disabled={!canManage}
-        >
+        <button type="button" className="portal-button" onClick={onOpenCreate} disabled={!canManage}>
           + Nouvelle intégration
         </button>
       </div>
@@ -43,9 +38,8 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         style={{
           marginTop: 14,
           padding: '14px 16px',
-          background:
-            'linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(192,132,252,0.10) 100%)',
-          border: '1px solid rgba(125,211,252,0.25)',
+          background: 'linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(14,165,233,0.10) 100%)',
+          border: '1px solid rgba(14,165,233,0.25)',
           borderRadius: 10,
           fontSize: '0.88rem',
           lineHeight: 1.55,
@@ -53,24 +47,22 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         }}
       >
         <p style={{ margin: 0 }}>
-          Tout service tiers (Stripe, Shopify, Arrow, votre propre back-office…) peut pousser ses
-          écritures comptables dans Venio via une API sécurisée. Chaque intégration dispose&nbsp;:
+          Tout service tiers (Stripe, Shopify, Arrow, votre propre back-office…) peut pousser ses écritures comptables
+          dans Venio via une API sécurisée. Chaque intégration dispose&nbsp;:
         </p>
         <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
           <div>
-            <span style={{ color: '#7dd3fc', fontWeight: 600 }}>🔑 Clé API (X-Api-Key)</span>
+            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>🔑 Clé API (X-Api-Key)</span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
               Identifie le service qui parle. Comme un mot de passe d'application.
             </div>
           </div>
           <div>
-            <span style={{ color: '#c084fc', fontWeight: 600 }}>
-              ✍️ Secret HMAC (X-Venio-Signature)
-            </span>
+            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>✍️ Secret HMAC (X-Venio-Signature)</span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
-              Signature cryptographique sur chaque requête. Empêche les attaques
-              «&nbsp;man-in-the-middle&nbsp;» (modification du contenu en transit) et garantit
-              l'authenticité de l'émetteur, même si la clé API était compromise.
+              Signature cryptographique sur chaque requête. Empêche les attaques «&nbsp;man-in-the-middle&nbsp;»
+              (modification du contenu en transit) et garantit l'authenticité de l'émetteur, même si la clé API était
+              compromise.
             </div>
           </div>
         </div>
@@ -99,9 +91,7 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         <div className="accounting-empty" style={{ marginTop: 18 }}>
           <div style={{ fontSize: '2rem', opacity: 0.45 }}>🔌</div>
           Aucune intégration configurée.
-          <div className="hint">
-            Cliquez sur «&nbsp;+ Nouvelle intégration&nbsp;» pour commencer.
-          </div>
+          <div className="hint">Cliquez sur «&nbsp;+ Nouvelle intégration&nbsp;» pour commencer.</div>
         </div>
       ) : (
         <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
@@ -129,13 +119,7 @@ interface IntegrationCardProps {
   onRequestRevoke: () => void
 }
 
-export function IntegrationCard({
-  source,
-  canManage,
-  rotating,
-  onRotate,
-  onRequestRevoke,
-}: IntegrationCardProps) {
+export function IntegrationCard({ source, canManage, rotating, onRotate, onRequestRevoke }: IntegrationCardProps) {
   return (
     <div
       style={{
@@ -244,11 +228,7 @@ export function IntegrationCard({
           fontSize: '0.82rem',
         }}
       >
-        <StatCell
-          label="Préfixe clé"
-          value={source.apiKeyPrefix ? `${source.apiKeyPrefix}…` : '—'}
-          mono
-        />
+        <StatCell label="Préfixe clé" value={source.apiKeyPrefix ? `${source.apiKeyPrefix}…` : '—'} mono />
         <StatCell
           label="Dernier ping"
           value={source.lastSeenAt ? formatRelative(source.lastSeenAt) : 'Jamais'}
@@ -284,10 +264,7 @@ export function IntegrationCard({
 }
 
 export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
-  const map: Record<
-    ExternalSourceStatus,
-    { className: string; label: string; style?: React.CSSProperties }
-  > = {
+  const map: Record<ExternalSourceStatus, { className: string; label: string; style?: React.CSSProperties }> = {
     ACTIVE: { className: 'accounting-badge validated', label: 'Active' },
     PAUSED: {
       className: 'accounting-badge',
@@ -310,11 +287,7 @@ export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
   }
   const entry = map[status] || map.DISABLED
   return (
-    <span
-      className={entry.className}
-      style={{ fontSize: '0.7rem', ...entry.style }}
-      title={`Statut: ${status}`}
-    >
+    <span className={entry.className} style={{ fontSize: '0.7rem', ...entry.style }} title={`Statut: ${status}`}>
       {entry.label}
     </span>
   )
@@ -381,4 +354,3 @@ export function formatRelative(iso: string): string {
 }
 
 // ---- Modal de création ----
-

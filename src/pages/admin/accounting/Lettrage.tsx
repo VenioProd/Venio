@@ -7,11 +7,7 @@ import {
   letterLines,
   unletterCode,
 } from '../../../services/accounting'
-import type {
-  IChartOfAccount,
-  ILetteredData,
-  IUnletteredData,
-} from '../../../types/accounting'
+import type { IChartOfAccount, ILetteredData, IUnletteredData } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -83,10 +79,7 @@ const Lettrage = () => {
     setError('')
     setSelected(new Set())
     try {
-      const [u, l] = await Promise.all([
-        listUnletteredLines(accountCode),
-        listLetteredLines(accountCode),
-      ])
+      const [u, l] = await Promise.all([listUnletteredLines(accountCode), listLetteredLines(accountCode)])
       setUnlettered(u || EMPTY_UNLETTERED)
       setLettered(l || EMPTY_LETTERED)
     } catch (err) {
@@ -133,7 +126,7 @@ const Lettrage = () => {
     const src = (unlettered.lines || []).find((l) => l._id === onlyId)
     if (!src) return new Set<string>()
     const target: 'credit' | 'debit' = (Number(src.debit) || 0) > 0 ? 'credit' : 'debit'
-    const amount = (Number(src.debit) || 0) || (Number(src.credit) || 0)
+    const amount = Number(src.debit) || 0 || Number(src.credit) || 0
     if (!amount) return new Set<string>()
     const ids = new Set<string>()
     for (const l of unlettered.lines || []) {
@@ -156,14 +149,12 @@ const Lettrage = () => {
       if (r.partial) {
         setInfo(
           `Lettrage partiel créé sous le code ${r.code} (${r.lineCount} ligne(s)). Écart : ${formatEur(
-            Math.abs(Number(r.totalDebit) - Number(r.totalCredit))
-          )}.`
+            Math.abs(Number(r.totalDebit) - Number(r.totalCredit)),
+          )}.`,
         )
       } else {
         setSuccess(
-          `Lettrage ${r.code} créé : ${r.lineCount} ligne(s) lettrée(s) pour ${formatEur(
-            Number(r.totalDebit)
-          )}.`
+          `Lettrage ${r.code} créé : ${r.lineCount} ligne(s) lettrée(s) pour ${formatEur(Number(r.totalDebit))}.`,
         )
       }
       await reload()
@@ -192,10 +183,7 @@ const Lettrage = () => {
   const showSuggestions = suggestionIds.size > 0
 
   return (
-    <AccountingLayout
-      title="Lettrage"
-      subtitle="Rapprochement manuel des écritures sur un compte lettrable"
-    >
+    <AccountingLayout title="Lettrage" subtitle="Rapprochement manuel des écritures sur un compte lettrable">
       {error && <div className="accounting-message error">{error}</div>}
       {info && <div className="accounting-message info">{info}</div>}
       {success && <div className="accounting-message success">{success}</div>}
@@ -205,20 +193,14 @@ const Lettrage = () => {
           <div className="accounting-form-field" style={{ flex: 1, minWidth: 280 }}>
             <label>Compte lettrable</label>
             {accountsLoading ? (
-              <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                Chargement des comptes…
-              </p>
+              <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Chargement des comptes…</p>
             ) : lettrableAccounts.length === 0 ? (
               <p style={{ color: 'rgba(248,113,113,0.85)', margin: 0, fontSize: '0.88rem' }}>
-                Aucun compte lettrable trouvé. Activez l'option « Lettrable » sur les
-                comptes concernés dans le plan comptable.
+                Aucun compte lettrable trouvé. Activez l'option « Lettrable » sur les comptes concernés dans le plan
+                comptable.
               </p>
             ) : (
-              <select
-                className="portal-input"
-                value={accountCode}
-                onChange={(e) => setAccountCode(e.target.value)}
-              >
+              <select className="portal-input" value={accountCode} onChange={(e) => setAccountCode(e.target.value)}>
                 {lettrableAccounts.map((a) => (
                   <option key={a.code} value={a.code}>
                     {a.code} — {a.label}
@@ -233,18 +215,14 @@ const Lettrage = () => {
                 alignSelf: 'flex-end',
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: 'rgba(14,165,233,0.08)',
-                border: '1px solid rgba(14,165,233,0.25)',
+                background: 'rgba(14, 165, 233, 0.08)',
+                border: '1px solid rgba(14, 165, 233, 0.25)',
                 fontSize: '0.85rem',
                 color: 'rgba(255,255,255,0.85)',
               }}
             >
               <span className="code">{account.code}</span> — {account.label}
-              {account.type && (
-                <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.55)' }}>
-                  ({account.type})
-                </span>
-              )}
+              {account.type && <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.55)' }}>({account.type})</span>}
             </div>
           )}
         </div>
@@ -278,21 +256,15 @@ const Lettrage = () => {
                   ({(unlettered.lines || []).length} ligne(s))
                 </span>
               </h2>
-              <button
-                className="portal-button"
-                onClick={handleLetter}
-                disabled={selected.size < 2 || lettering}
-              >
-                {lettering
-                  ? 'Lettrage…'
-                  : `✓ Lettrer la sélection${selected.size > 0 ? ` (${selected.size})` : ''}`}
+              <button className="portal-button" onClick={handleLetter} disabled={selected.size < 2 || lettering}>
+                {lettering ? 'Lettrage…' : `✓ Lettrer la sélection${selected.size > 0 ? ` (${selected.size})` : ''}`}
               </button>
             </div>
 
             {showSuggestions && (
               <div className="accounting-message info" style={{ marginBottom: 12 }}>
-                Suggestion : {suggestionIds.size} ligne(s) avec un montant opposé identique
-                sont mises en évidence ci-dessous.
+                Suggestion : {suggestionIds.size} ligne(s) avec un montant opposé identique sont mises en évidence
+                ci-dessous.
               </div>
             )}
 
@@ -300,8 +272,7 @@ const Lettrage = () => {
               <div className="accounting-empty">
                 Aucune ligne à lettrer sur ce compte.
                 <div className="hint">
-                  Toutes les écritures de ce compte sont déjà lettrées ou il n'y a pas encore
-                  d'écritures validées.
+                  Toutes les écritures de ce compte sont déjà lettrées ou il n'y a pas encore d'écritures validées.
                 </div>
               </div>
             ) : (
@@ -336,23 +307,15 @@ const Lettrage = () => {
                           }
                         >
                           <td>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggle(line._id)}
-                            />
+                            <input type="checkbox" checked={isSelected} onChange={() => toggle(line._id)} />
                           </td>
                           <td>{formatDate(line.date)}</td>
                           <td className="code">{line.journalCode}</td>
                           <td className="code">{line.entryNumber}</td>
                           <td className="code">{line.pieceRef || '—'}</td>
                           <td>{line.label}</td>
-                          <td className="amount">
-                            {Number(line.debit) > 0 ? formatEur(line.debit) : '—'}
-                          </td>
-                          <td className="amount">
-                            {Number(line.credit) > 0 ? formatEur(line.credit) : '—'}
-                          </td>
+                          <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
+                          <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
                         </tr>
                       )
                     })}
@@ -361,11 +324,7 @@ const Lettrage = () => {
 
                 <div
                   className={`accounting-totals ${
-                    selected.size > 0 && balanced
-                      ? 'balanced'
-                      : selected.size > 0
-                      ? 'unbalanced'
-                      : ''
+                    selected.size > 0 && balanced ? 'balanced' : selected.size > 0 ? 'unbalanced' : ''
                   }`}
                   style={{ marginTop: 14 }}
                 >
@@ -383,17 +342,11 @@ const Lettrage = () => {
                       {selected.size === 0 ? (
                         <span style={{ color: 'rgba(255,255,255,0.55)' }}>—</span>
                       ) : balanced ? (
-                        <span
-                          className="accounting-badge validated"
-                          style={{ fontSize: '0.78rem' }}
-                        >
+                        <span className="accounting-badge validated" style={{ fontSize: '0.78rem' }}>
                           Équilibré ✓
                         </span>
                       ) : (
-                        <span
-                          className="accounting-badge draft"
-                          style={{ fontSize: '0.78rem' }}
-                        >
+                        <span className="accounting-badge draft" style={{ fontSize: '0.78rem' }}>
                           Déséquilibre : {formatEur(Math.abs(diff))}
                         </span>
                       )}
@@ -423,15 +376,13 @@ const Lettrage = () => {
               <div className="accounting-empty">
                 Aucun lettrage sur ce compte.
                 <div className="hint">
-                  Sélectionnez au moins 2 lignes ci-dessus puis cliquez sur « Lettrer la
-                  sélection ».
+                  Sélectionnez au moins 2 lignes ci-dessus puis cliquez sur « Lettrer la sélection ».
                 </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {lettered.groups.map((g) => {
-                  const groupBalanced =
-                    Math.abs(Number(g.totalDebit) - Number(g.totalCredit)) < 0.01
+                  const groupBalanced = Math.abs(Number(g.totalDebit) - Number(g.totalCredit)) < 0.01
                   return (
                     <div
                       key={g.code}
@@ -439,7 +390,7 @@ const Lettrage = () => {
                         padding: 16,
                         borderRadius: 12,
                         background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(14,165,233,0.18)',
+                        border: '1px solid rgba(14, 165, 233, 0.18)',
                       }}
                     >
                       <div
@@ -458,7 +409,7 @@ const Lettrage = () => {
                             style={{
                               fontSize: '1.4rem',
                               fontWeight: 700,
-                              color: '#7dd3fc',
+                              color: 'var(--primary)',
                             }}
                           >
                             {g.code}
@@ -469,24 +420,17 @@ const Lettrage = () => {
                               fontSize: '0.88rem',
                             }}
                           >
-                            {g.lineCount} ligne(s) · Débit {formatEur(g.totalDebit)} · Crédit{' '}
-                            {formatEur(g.totalCredit)} · {formatDate(g.lettrageDate)}
+                            {g.lineCount} ligne(s) · Débit {formatEur(g.totalDebit)} · Crédit {formatEur(g.totalCredit)}{' '}
+                            · {formatDate(g.lettrageDate)}
                           </span>
                           {!groupBalanced && (
-                            <span
-                              className="accounting-badge draft"
-                              style={{ fontSize: '0.72rem' }}
-                            >
+                            <span className="accounting-badge draft" style={{ fontSize: '0.72rem' }}>
                               Partiel
                             </span>
                           )}
                         </div>
                         <div className="accounting-row-actions">
-                          <button
-                            type="button"
-                            className="danger"
-                            onClick={() => handleUnletter(g.code)}
-                          >
+                          <button type="button" className="danger" onClick={() => handleUnletter(g.code)}>
                             Délettrer
                           </button>
                         </div>
@@ -510,12 +454,8 @@ const Lettrage = () => {
                               <td className="code">{line.journalCode}</td>
                               <td className="code">{line.entryNumber}</td>
                               <td>{line.label}</td>
-                              <td className="amount">
-                                {Number(line.debit) > 0 ? formatEur(line.debit) : '—'}
-                              </td>
-                              <td className="amount">
-                                {Number(line.credit) > 0 ? formatEur(line.credit) : '—'}
-                              </td>
+                              <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
+                              <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
                             </tr>
                           ))}
                         </tbody>

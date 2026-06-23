@@ -73,7 +73,9 @@ const QualiopiQuestionnaires = () => {
     }
   }, [])
 
-  useEffect(() => { loadList() }, [loadList])
+  useEffect(() => {
+    loadList()
+  }, [loadList])
 
   const openDetail = async (id: string) => {
     try {
@@ -110,7 +112,7 @@ const QualiopiQuestionnaires = () => {
   }
 
   const updateQuestion = (i: number, patch: Partial<Question>) => {
-    setFormQuestions(formQuestions.map((q, idx) => idx === i ? { ...q, ...patch } : q))
+    setFormQuestions(formQuestions.map((q, idx) => (idx === i ? { ...q, ...patch } : q)))
   }
 
   const handleSave = async () => {
@@ -145,14 +147,18 @@ const QualiopiQuestionnaires = () => {
   }
 
   const handleDelete = async (id: string) => {
-    if (!await confirm({ message: 'Supprimer ce questionnaire et toutes ses reponses ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer ce questionnaire et toutes ses reponses ?', title: 'Suppression' })))
+      return
     await apiFetch(`/api/admin/qualiopi-questionnaires/${id}`, { method: 'DELETE' })
     await loadList()
-    if (selected?._id === id) { setSelected(null); setView('list') }
+    if (selected?._id === id) {
+      setSelected(null)
+      setView('list')
+    }
   }
 
   const deleteResponse = async (qId: string, rId: string) => {
-    if (!await confirm({ message: 'Supprimer cette reponse ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer cette reponse ?', title: 'Suppression' }))) return
     await apiFetch(`/api/admin/qualiopi-questionnaires/${qId}/responses/${rId}`, { method: 'DELETE' })
     openDetail(qId)
   }
@@ -182,7 +188,9 @@ const QualiopiQuestionnaires = () => {
 
   // ── Creation links state ──
   const [showCreationLinks, setShowCreationLinks] = useState(false)
-  const [creationLinks, setCreationLinks] = useState<{ _id: string; token: string; label: string; active: boolean; createdAt: string }[]>([])
+  const [creationLinks, setCreationLinks] = useState<
+    { _id: string; token: string; label: string; active: boolean; createdAt: string }[]
+  >([])
   const [creationLabel, setCreationLabel] = useState('')
   const [creationLoading, setCreationLoading] = useState(false)
   const [copiedCreation, setCopiedCreation] = useState<string | null>(null)
@@ -213,7 +221,7 @@ const QualiopiQuestionnaires = () => {
   }
 
   const deleteCreationLink = async (id: string) => {
-    if (!await confirm({ message: 'Supprimer ce lien de creation ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer ce lien de creation ?', title: 'Suppression' }))) return
     try {
       await apiFetch(`/api/admin/qualiopi-questionnaires/creation-links/${id}`, { method: 'DELETE' })
       await loadCreationLinks()
@@ -288,12 +296,26 @@ const QualiopiQuestionnaires = () => {
         <div className="qq-header">
           <h2 className="qq-title">Questionnaires de satisfaction</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="qq-create-btn" style={{ background: 'rgba(255, 0, 128, 0.1)', border: '2px solid rgba(255, 0, 128, 0.3)', color: '#ff0080' }} onClick={() => setShowCreationLinks(!showCreationLinks)}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+            <button
+              className="qq-create-btn"
+              style={{
+                background: 'rgba(14, 165, 233, 0.1)',
+                border: '2px solid rgba(14, 165, 233, 0.3)',
+                color: 'var(--primary)',
+              }}
+              onClick={() => setShowCreationLinks(!showCreationLinks)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
               Lien de creation
             </button>
             <button className="qq-create-btn" onClick={openCreate}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
               Nouveau questionnaire
             </button>
           </div>
@@ -301,11 +323,25 @@ const QualiopiQuestionnaires = () => {
 
         {/* Creation links panel */}
         {showCreationLinks && (
-          <div style={{ padding: '20px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,0,128,0.15)', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 className="qq-section-title" style={{ margin: 0, border: 'none', padding: 0 }}>Liens de creation</h3>
+          <div
+            style={{
+              padding: '20px',
+              marginBottom: '16px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(14, 165, 233, 0.15)',
+              borderRadius: '12px',
+            }}
+          >
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}
+            >
+              <h3 className="qq-section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                Liens de creation
+              </h3>
               <button className="qq-icon-btn" onClick={() => setShowCreationLinks(false)} title="Fermer">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -315,7 +351,7 @@ const QualiopiQuestionnaires = () => {
                   flex: 1,
                   padding: '8px 12px',
                   borderRadius: '8px',
-                  border: '2px solid rgba(255, 0, 128, 0.25)',
+                  border: '2px solid rgba(14, 165, 233, 0.25)',
                   background: 'rgba(255, 255, 255, 0.03)',
                   color: '#ffffff',
                   fontSize: '0.85rem',
@@ -327,7 +363,10 @@ const QualiopiQuestionnaires = () => {
                 placeholder="Label (optionnel)"
               />
               <button className="qq-create-btn" onClick={generateCreationLink} style={{ whiteSpace: 'nowrap' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
                 Generer
               </button>
             </div>
@@ -335,7 +374,9 @@ const QualiopiQuestionnaires = () => {
             {creationLoading ? (
               <div className="qq-loading">Chargement...</div>
             ) : creationLinks.length === 0 ? (
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textAlign: 'center', padding: '12px 0' }}>
+              <div
+                style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textAlign: 'center', padding: '12px 0' }}
+              >
                 Aucun lien de creation
               </div>
             ) : (
@@ -344,14 +385,17 @@ const QualiopiQuestionnaires = () => {
                   <div key={link._id} className="qq-link-box">
                     <span className="qq-link-label">{link.label}</span>
                     <code className="qq-link-url">{getCreationLink(link.token)}</code>
-                    <button
-                      className="qq-copy-btn"
-                      onClick={() => copyCreationLink(link.token)}
-                    >
+                    <button className="qq-copy-btn" onClick={() => copyCreationLink(link.token)}>
                       {copiedCreation === link.token ? '✓ Copie !' : 'Copier'}
                     </button>
-                    <button className="qq-icon-btn qq-icon-btn-danger" onClick={() => deleteCreationLink(link._id)} title="Supprimer">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                    <button
+                      className="qq-icon-btn qq-icon-btn-danger"
+                      onClick={() => deleteCreationLink(link._id)}
+                      title="Supprimer"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                      </svg>
                     </button>
                   </div>
                 ))}
@@ -364,7 +408,17 @@ const QualiopiQuestionnaires = () => {
           <div className="qq-loading">Chargement...</div>
         ) : questionnaires.length === 0 ? (
           <div className="qq-empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="1.5"
+            >
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
             <p>Aucun questionnaire cree</p>
             <p className="qq-empty-sub">Creez votre premier questionnaire de satisfaction</p>
           </div>
@@ -375,24 +429,42 @@ const QualiopiQuestionnaires = () => {
                 <div className="qq-card-left">
                   <div className="qq-card-title">{q.title}</div>
                   <div className="qq-card-meta">
-                    {q.questionCount} question(s) · {q.responseCount} reponse(s)
-                    · {new Date(q.createdAt).toLocaleDateString('fr-FR')}
+                    {q.questionCount} question(s) · {q.responseCount} reponse(s) ·{' '}
+                    {new Date(q.createdAt).toLocaleDateString('fr-FR')}
                   </div>
                 </div>
                 <div className="qq-card-right" onClick={(e) => e.stopPropagation()}>
                   <span className={`qq-badge ${q.active ? 'qq-badge-active' : 'qq-badge-inactive'}`}>
                     {q.active ? 'Actif' : 'Inactif'}
                   </span>
-                  <button className="qq-icon-btn" onClick={() => toggleActive(q._id, q.active)} title={q.active ? 'Desactiver' : 'Activer'}>
+                  <button
+                    className="qq-icon-btn"
+                    onClick={() => toggleActive(q._id, q.active)}
+                    title={q.active ? 'Desactiver' : 'Activer'}
+                  >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      {q.active
-                        ? <><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/><line x1="2" y1="2" x2="22" y2="22"/></>
-                        : <><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></>
-                      }
+                      {q.active ? (
+                        <>
+                          <path d="M18.36 6.64A9 9 0 0 1 20.77 15" />
+                          <path d="M6.16 6.16a9 9 0 1 0 12.68 12.68" />
+                          <line x1="2" y1="2" x2="22" y2="22" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
+                          <path d="M12 6v6l4 2" />
+                        </>
+                      )}
                     </svg>
                   </button>
-                  <button className="qq-icon-btn qq-icon-btn-danger" onClick={() => handleDelete(q._id)} title="Supprimer">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  <button
+                    className="qq-icon-btn qq-icon-btn-danger"
+                    onClick={() => handleDelete(q._id)}
+                    title="Supprimer"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -407,17 +479,28 @@ const QualiopiQuestionnaires = () => {
   if (view === 'create') {
     return (
       <div className="qq-container">
-        <button className="qq-back" onClick={() => setView('list')}>← Retour</button>
+        <button className="qq-back" onClick={() => setView('list')}>
+          ← Retour
+        </button>
         <h2 className="qq-title">{editingId ? 'Modifier le questionnaire' : 'Nouveau questionnaire'}</h2>
 
         <div className="qq-form">
           <div className="qq-field">
             <label>Titre</label>
-            <input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Ex: Satisfaction formation React" />
+            <input
+              value={formTitle}
+              onChange={(e) => setFormTitle(e.target.value)}
+              placeholder="Ex: Satisfaction formation React"
+            />
           </div>
           <div className="qq-field">
             <label>Description (optionnel)</label>
-            <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Decrivez le questionnaire..." rows={2} />
+            <textarea
+              value={formDesc}
+              onChange={(e) => setFormDesc(e.target.value)}
+              placeholder="Decrivez le questionnaire..."
+              rows={2}
+            />
           </div>
 
           <h3 className="qq-section-title">Questions</h3>
@@ -427,15 +510,25 @@ const QualiopiQuestionnaires = () => {
               <div className="qq-question-header">
                 <span className="qq-question-num">Q{i + 1}</span>
                 <select value={q.type} onChange={(e) => updateQuestion(i, { type: e.target.value as any })}>
-                  {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {QUESTION_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
                 </select>
                 <label className="qq-required-toggle">
-                  <input type="checkbox" checked={q.required} onChange={(e) => updateQuestion(i, { required: e.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={q.required}
+                    onChange={(e) => updateQuestion(i, { required: e.target.checked })}
+                  />
                   Obligatoire
                 </label>
                 {formQuestions.length > 1 && (
                   <button className="qq-remove-q" onClick={() => removeQuestion(i)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
                   </button>
                 )}
               </div>
@@ -458,23 +551,36 @@ const QualiopiQuestionnaires = () => {
                         }}
                         placeholder={`Option ${oi + 1}`}
                       />
-                      <button className="qq-remove-opt" onClick={() => updateQuestion(i, { options: q.options.filter((_, j) => j !== oi) })}>×</button>
+                      <button
+                        className="qq-remove-opt"
+                        onClick={() => updateQuestion(i, { options: q.options.filter((_, j) => j !== oi) })}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
-                  <button className="qq-add-opt" onClick={() => updateQuestion(i, { options: [...q.options, ''] })}>+ Ajouter une option</button>
+                  <button className="qq-add-opt" onClick={() => updateQuestion(i, { options: [...q.options, ''] })}>
+                    + Ajouter une option
+                  </button>
                 </div>
               )}
-              {q.type === 'rating' && (
-                <div className="qq-rating-preview">★★★★★ (Note de 1 a 5)</div>
-              )}
+              {q.type === 'rating' && <div className="qq-rating-preview">★★★★★ (Note de 1 a 5)</div>}
             </div>
           ))}
 
-          <button className="qq-add-question" onClick={addQuestion}>+ Ajouter une question</button>
+          <button className="qq-add-question" onClick={addQuestion}>
+            + Ajouter une question
+          </button>
 
           <div className="qq-form-actions">
-            <button className="qq-cancel" onClick={() => setView('list')}>Annuler</button>
-            <button className="qq-save" onClick={handleSave} disabled={!formTitle.trim() || formQuestions.some((q) => !q.label.trim())}>
+            <button className="qq-cancel" onClick={() => setView('list')}>
+              Annuler
+            </button>
+            <button
+              className="qq-save"
+              onClick={handleSave}
+              disabled={!formTitle.trim() || formQuestions.some((q) => !q.label.trim())}
+            >
               {editingId ? 'Enregistrer' : 'Creer le questionnaire'}
             </button>
           </div>
@@ -489,7 +595,15 @@ const QualiopiQuestionnaires = () => {
     return (
       <div className="qq-container">
         {ConfirmDialog}
-        <button className="qq-back" onClick={() => { setView('list'); setSelected(null) }}>← Retour</button>
+        <button
+          className="qq-back"
+          onClick={() => {
+            setView('list')
+            setSelected(null)
+          }}
+        >
+          ← Retour
+        </button>
 
         <div className="qq-detail-header">
           <div>
@@ -497,8 +611,13 @@ const QualiopiQuestionnaires = () => {
             {selected.description && <p className="qq-desc">{selected.description}</p>}
           </div>
           <div className="qq-detail-actions">
-            <button className="qq-edit-btn" onClick={() => openEdit(selected)}>Modifier</button>
-            <button className={`qq-toggle-btn ${selected.active ? '' : 'inactive'}`} onClick={() => toggleActive(selected._id, selected.active)}>
+            <button className="qq-edit-btn" onClick={() => openEdit(selected)}>
+              Modifier
+            </button>
+            <button
+              className={`qq-toggle-btn ${selected.active ? '' : 'inactive'}`}
+              onClick={() => toggleActive(selected._id, selected.active)}
+            >
               {selected.active ? 'Desactiver' : 'Activer'}
             </button>
           </div>
@@ -508,7 +627,9 @@ const QualiopiQuestionnaires = () => {
         <div className="qq-link-box">
           <span className="qq-link-label">Lien public :</span>
           <code className="qq-link-url">{getPublicLink(selected.token)}</code>
-          <button className="qq-copy-btn" onClick={() => copyLink(selected.token)}>{copied ? '✓ Copie !' : 'Copier'}</button>
+          <button className="qq-copy-btn" onClick={() => copyLink(selected.token)}>
+            {copied ? '✓ Copie !' : 'Copier'}
+          </button>
         </div>
 
         {/* Stats */}
@@ -518,12 +639,18 @@ const QualiopiQuestionnaires = () => {
               <div className="qq-stat-value">{selected.responses.length}</div>
               <div className="qq-stat-label">Reponses</div>
             </div>
-            {stats.map((s, i) => s && (
-              <div key={i} className="qq-stat-card">
-                <div className="qq-stat-value">{s.avg.toFixed(1)}<span className="qq-stat-unit">/5</span></div>
-                <div className="qq-stat-label">{selected.questions[i].label.substring(0, 30)}</div>
-              </div>
-            ))}
+            {stats.map(
+              (s, i) =>
+                s && (
+                  <div key={i} className="qq-stat-card">
+                    <div className="qq-stat-value">
+                      {s.avg.toFixed(1)}
+                      <span className="qq-stat-unit">/5</span>
+                    </div>
+                    <div className="qq-stat-label">{selected.questions[i].label.substring(0, 30)}</div>
+                  </div>
+                ),
+            )}
           </div>
         )}
 
@@ -543,13 +670,33 @@ const QualiopiQuestionnaires = () => {
                     {r.formation && <span className="qq-response-formation">{r.formation}</span>}
                   </div>
                   <div className="qq-response-meta">
-                    <span className="qq-response-date">{new Date(r.submittedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                    <button className="qq-dl-btn" onClick={() => downloadPdf(selected._id, r._id, r.respondentName)} title="Telecharger PDF">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span className="qq-response-date">
+                      {new Date(r.submittedAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <button
+                      className="qq-dl-btn"
+                      onClick={() => downloadPdf(selected._id, r._id, r.respondentName)}
+                      title="Telecharger PDF"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
                       PDF
                     </button>
-                    <button className="qq-icon-btn qq-icon-btn-danger" onClick={() => deleteResponse(selected._id, r._id)} title="Supprimer">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    <button
+                      className="qq-icon-btn qq-icon-btn-danger"
+                      onClick={() => deleteResponse(selected._id, r._id)}
+                      title="Supprimer"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                      </svg>
                     </button>
                   </div>
                 </div>

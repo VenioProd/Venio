@@ -1,16 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
-import {
-  getTrialBalance,
-  listFiscalYears,
-  downloadReportCsv,
-} from '../../../services/accounting'
-import type {
-  AccountType,
-  IFiscalYear,
-  ITrialBalanceData,
-  ITrialBalanceRow,
-} from '../../../types/accounting'
+import { getTrialBalance, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
+import type { AccountType, IFiscalYear, ITrialBalanceData, ITrialBalanceRow } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -206,9 +197,7 @@ const TrialBalance = () => {
         ) : !data || rows.length === 0 ? (
           <div className="accounting-empty">
             Aucune ligne pour ces filtres.
-            <div className="hint">
-              Activez « Inclure soldes nuls » pour afficher tous les comptes.
-            </div>
+            <div className="hint">Activez « Inclure soldes nuls » pour afficher tous les comptes.</div>
           </div>
         ) : (
           <table className="accounting-table">
@@ -238,7 +227,7 @@ const TrialBalance = () => {
                         fontSize: '0.78rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
-                        color: 'rgba(34,211,238,0.85)',
+                        color: 'rgba(14, 165, 233, 0.85)',
                         fontWeight: 600,
                       }}
                     >
@@ -262,12 +251,12 @@ const TrialBalance = () => {
                       {formatEur(r.balance)}
                     </td>
                   </tr>
-                )
+                ),
               )}
             </tbody>
             {totals && (
               <tfoot>
-                <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                   <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, padding: '14px' }}>
                     Totaux
                   </td>

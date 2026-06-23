@@ -26,12 +26,10 @@ const DashSection = ({ title, subtitle, icon, action, children, marginTop = 24 }
         <h2 className="dash-section-title" style={{ margin: 0 }}>
           {title}
         </h2>
-        {subtitle && (
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{subtitle}</span>
-        )}
+        {subtitle && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{subtitle}</span>}
       </div>
       {action && (
-        <Link to={action.to} style={{ color: '#0ea5e9', fontSize: 13, textDecoration: 'none' }}>
+        <Link to={action.to} style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}>
           {action.label} →
         </Link>
       )}

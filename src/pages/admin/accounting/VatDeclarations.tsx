@@ -251,11 +251,7 @@ const VatDeclarations = () => {
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-            <button
-              className="portal-button secondary"
-              onClick={handlePreview}
-              disabled={previewLoading}
-            >
+            <button className="portal-button secondary" onClick={handlePreview} disabled={previewLoading}>
               {previewLoading ? 'Calcul…' : '⟳ Prévisualiser'}
             </button>
             <button className="portal-button" onClick={handleCreate} disabled={creating}>
@@ -332,7 +328,7 @@ const VatDeclarations = () => {
                       fontSize: '0.95rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      color: '#7dd3fc',
+                      color: 'var(--primary)',
                     }}
                   >
                     TVA déductible
@@ -372,7 +368,7 @@ const VatDeclarations = () => {
                       fontSize: '0.95rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      color: 'rgba(34,211,238,0.85)',
+                      color: 'rgba(14, 165, 233, 0.85)',
                     }}
                   >
                     Lignes CA3
@@ -409,7 +405,7 @@ const VatDeclarations = () => {
                 </div>
                 <div className="accounting-kpi">
                   <div className="label">Total déductible</div>
-                  <div className="value" style={{ color: '#7dd3fc' }}>
+                  <div className="value" style={{ color: 'var(--primary)' }}>
                     {formatEur(preview.totalDeductible)}
                   </div>
                 </div>
@@ -461,11 +457,7 @@ const VatDeclarations = () => {
         ) : filteredDeclarations.length === 0 ? (
           <div className="accounting-empty">
             Aucune déclaration de TVA pour ces filtres.
-            {canManage && (
-              <div className="hint">
-                Cliquez sur « Nouvelle déclaration » pour en créer une.
-              </div>
-            )}
+            {canManage && <div className="hint">Cliquez sur « Nouvelle déclaration » pour en créer une.</div>}
           </div>
         ) : (
           <table className="accounting-table">
@@ -503,11 +495,7 @@ const VatDeclarations = () => {
                       {formatEur(due)}
                     </td>
                     <td>
-                      <span
-                        className={`accounting-badge ${
-                          d.status === 'SUBMITTED' ? 'validated' : 'draft'
-                        }`}
-                      >
+                      <span className={`accounting-badge ${d.status === 'SUBMITTED' ? 'validated' : 'draft'}`}>
                         {d.status === 'SUBMITTED' ? 'Soumise' : 'Brouillon'}
                       </span>
                     </td>
@@ -517,11 +505,7 @@ const VatDeclarations = () => {
                           <button type="button">Ouvrir</button>
                         </Link>
                         {canManage && d.status === 'DRAFT' && (
-                          <button
-                            type="button"
-                            className="danger"
-                            onClick={() => handleDelete(d._id)}
-                          >
+                          <button type="button" className="danger" onClick={() => handleDelete(d._id)}>
                             Supprimer
                           </button>
                         )}

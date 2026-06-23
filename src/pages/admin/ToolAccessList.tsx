@@ -43,16 +43,24 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  IA: '#8b5cf6',
-  DESIGN: '#f472b6',
-  DEV: '#0ea5e9',
+  IA: '#0ea5e9',
+  DESIGN: '#ffffff',
+  DEV: '#0284c7',
   MARKETING: '#f59e0b',
   COMMUNICATION: '#22c55e',
-  GESTION: '#6366f1',
+  GESTION: '#9b9b9b',
   AUTRE: '#64748b',
 }
 
-const emptyForm = { name: '', url: '', login: '', password: '', category: 'AUTRE', notes: '', visibleTo: [] as string[] }
+const emptyForm = {
+  name: '',
+  url: '',
+  login: '',
+  password: '',
+  category: 'AUTRE',
+  notes: '',
+  visibleTo: [] as string[],
+}
 
 const ToolAccessList = () => {
   const { user } = useAuth()
@@ -82,14 +90,19 @@ const ToolAccessList = () => {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const filtered = useMemo(() => {
     let list = tools
     if (filterCategory) list = list.filter((t) => t.category === filterCategory)
     if (search) {
       const q = search.toLowerCase()
-      list = list.filter((t) => t.name.toLowerCase().includes(q) || t.login.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q))
+      list = list.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) || t.login.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q),
+      )
     }
     return list
   }, [tools, search, filterCategory])
@@ -107,7 +120,15 @@ const ToolAccessList = () => {
   const handleOpenForm = (tool?: ToolAccess) => {
     if (tool) {
       setEditId(tool._id)
-      setForm({ name: tool.name, url: tool.url, login: tool.login, password: tool.password, category: tool.category, notes: tool.notes, visibleTo: tool.visibleTo || [] })
+      setForm({
+        name: tool.name,
+        url: tool.url,
+        login: tool.login,
+        password: tool.password,
+        category: tool.category,
+        notes: tool.notes,
+        visibleTo: tool.visibleTo || [],
+      })
     } else {
       setEditId(null)
       setForm(emptyForm)
@@ -205,13 +226,18 @@ const ToolAccessList = () => {
             className="portal-input"
             value={filterCategory}
             onChange={setFilterCategory}
-            options={[{ value: '', label: 'Toutes les categories' }, ...CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c }))]}
+            options={[
+              { value: '', label: 'Toutes les categories' },
+              ...CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c })),
+            ]}
           />
         </div>
       </div>
 
       {loading ? (
-        <div className="admin-loading" style={{ marginTop: 24 }}>Chargement...</div>
+        <div className="admin-loading" style={{ marginTop: 24 }}>
+          Chargement...
+        </div>
       ) : filtered.length === 0 ? (
         <div className="portal-card" style={{ marginTop: 24, textAlign: 'center', padding: 40 }}>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
@@ -222,7 +248,14 @@ const ToolAccessList = () => {
         Array.from(grouped.entries()).map(([category, categoryTools]) => (
           <div key={category} style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingLeft: 4 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: CATEGORY_COLORS[category] || '#64748b' }} />
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: CATEGORY_COLORS[category] || '#64748b',
+                }}
+              />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
                 {CATEGORY_LABELS[category] || category}
               </span>
@@ -231,12 +264,30 @@ const ToolAccessList = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
               {categoryTools.map((tool) => (
                 <div key={tool._id} className="portal-card" style={{ padding: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 14,
+                    }}
+                  >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                         <h3 style={{ margin: 0, fontSize: 15, color: 'var(--text-primary)' }}>{tool.name}</h3>
                         {tool.visibleTo?.length > 0 && (
-                          <span title={`Visible par : ${tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}`} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', whiteSpace: 'nowrap' }}>
+                          <span
+                            title={`Visible par : ${tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}`}
+                            style={{
+                              fontSize: 11,
+                              padding: '2px 8px',
+                              borderRadius: 20,
+                              background: 'rgba(14, 165, 233, 0.15)',
+                              color: 'var(--primary)',
+                              border: '1px solid rgba(14, 165, 233, 0.3)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}
                           </span>
                         )}
@@ -246,7 +297,11 @@ const ToolAccessList = () => {
                           href={tool.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ fontSize: 12, color: CATEGORY_COLORS[tool.category] || '#0ea5e9', textDecoration: 'none' }}
+                          style={{
+                            fontSize: 12,
+                            color: CATEGORY_COLORS[tool.category] || 'var(--primary)',
+                            textDecoration: 'none',
+                          }}
                         >
                           {tool.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                         </a>
@@ -257,7 +312,13 @@ const ToolAccessList = () => {
                         type="button"
                         onClick={() => handleCopy(tool)}
                         title="Copier"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: copiedId === tool._id ? '#22c55e' : 'var(--text-muted)', fontSize: 16 }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: copiedId === tool._id ? '#22c55e' : 'var(--text-muted)',
+                          fontSize: 16,
+                        }}
                       >
                         {copiedId === tool._id ? '✓' : '⎘'}
                       </button>
@@ -267,7 +328,13 @@ const ToolAccessList = () => {
                             type="button"
                             onClick={() => handleOpenForm(tool)}
                             title="Modifier"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14 }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--text-muted)',
+                              fontSize: 14,
+                            }}
                           >
                             ✏️
                           </button>
@@ -276,7 +343,13 @@ const ToolAccessList = () => {
                               type="button"
                               onClick={() => handleDelete(tool)}
                               title="Supprimer"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14 }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#ef4444',
+                                fontSize: 14,
+                              }}
                             >
                               🗑
                             </button>
@@ -289,18 +362,34 @@ const ToolAccessList = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Login</span>
-                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{tool.login}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                        {tool.login}
+                      </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mot de passe</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            color: 'var(--text-primary)',
+                            fontFamily: 'monospace',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
                           {visiblePasswords.has(tool._id) ? tool.password : '••••••••'}
                         </span>
                         <button
                           type="button"
                           onClick={() => togglePassword(tool._id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 15, padding: 0 }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--text-secondary)',
+                            fontSize: 15,
+                            padding: 0,
+                          }}
                         >
                           {visiblePasswords.has(tool._id) ? '🙈' : '👁'}
                         </button>
@@ -309,7 +398,16 @@ const ToolAccessList = () => {
                   </div>
 
                   {tool.notes && (
-                    <p style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: 10, margin: '10px 0 0' }}>
+                    <p
+                      style={{
+                        marginTop: 10,
+                        fontSize: 12,
+                        color: 'var(--text-muted)',
+                        borderTop: '1px solid var(--border-color)',
+                        paddingTop: 10,
+                        margin: '10px 0 0',
+                      }}
+                    >
                       {tool.notes}
                     </p>
                   )}
@@ -323,37 +421,87 @@ const ToolAccessList = () => {
       {/* Modal formulaire */}
       {showForm && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+          }}
           onClick={handleCloseForm}
         >
           <div
-            style={{ background: '#0a0f1a', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, border: '1px solid rgba(14,165,233,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}
+            style={{
+              background: '#0a0f1a',
+              borderRadius: 14,
+              padding: 28,
+              width: '100%',
+              maxWidth: 480,
+              border: '1px solid rgba(14, 165, 233, 0.2)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            }}
             onClick={(event) => event.stopPropagation()}
           >
             <h2 style={{ margin: '0 0 20px', fontSize: 17, color: 'var(--text-primary)' }}>
-              {editId ? 'Modifier l\'outil' : 'Nouvel outil'}
+              {editId ? "Modifier l'outil" : 'Nouvel outil'}
             </h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Nom de l'outil *</label>
-                <input className="portal-input" placeholder="Ex: Leonardo AI" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Nom de l'outil *
+                </label>
+                <input
+                  className="portal-input"
+                  placeholder="Ex: Leonardo AI"
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  required
+                />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>URL</label>
-                <input className="portal-input" placeholder="https://..." value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  URL
+                </label>
+                <input
+                  className="portal-input"
+                  placeholder="https://..."
+                  value={form.url}
+                  onChange={(event) => setForm({ ...form, url: event.target.value })}
+                />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Login / Email *</label>
-                  <input className="portal-input" placeholder="email@..." value={form.login} onChange={(event) => setForm({ ...form, login: event.target.value })} required />
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    Login / Email *
+                  </label>
+                  <input
+                    className="portal-input"
+                    placeholder="email@..."
+                    value={form.login}
+                    onChange={(event) => setForm({ ...form, login: event.target.value })}
+                    required
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Mot de passe *</label>
-                  <input className="portal-input" placeholder="Mot de passe" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    Mot de passe *
+                  </label>
+                  <input
+                    className="portal-input"
+                    placeholder="Mot de passe"
+                    value={form.password}
+                    onChange={(event) => setForm({ ...form, password: event.target.value })}
+                    required
+                  />
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Categorie</label>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Categorie
+                </label>
                 <CustomSelect
                   className="portal-input"
                   value={form.category}
@@ -362,7 +510,9 @@ const ToolAccessList = () => {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Notes</label>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Notes
+                </label>
                 <textarea
                   className="portal-input"
                   placeholder="Infos complementaires..."
@@ -374,7 +524,8 @@ const ToolAccessList = () => {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  Visible par — <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>laisser vide = tous les admins</span>
+                  Visible par —{' '}
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>laisser vide = tous les admins</span>
                 </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {ALL_ROLES.map((role) => {
@@ -383,13 +534,18 @@ const ToolAccessList = () => {
                       <button
                         key={role}
                         type="button"
-                        onClick={() => setForm({ ...form, visibleTo: checked ? form.visibleTo.filter((r) => r !== role) : [...form.visibleTo, role] })}
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            visibleTo: checked ? form.visibleTo.filter((r) => r !== role) : [...form.visibleTo, role],
+                          })
+                        }
                         style={{
                           padding: '4px 12px',
                           borderRadius: 20,
-                          border: `1px solid ${checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                          background: checked ? 'rgba(14,165,233,0.15)' : 'transparent',
-                          color: checked ? 'var(--accent-blue)' : 'var(--text-muted)',
+                          border: `1px solid ${checked ? 'var(--primary)' : 'var(--border-color)'}`,
+                          background: checked ? 'rgba(14, 165, 233, 0.15)' : 'transparent',
+                          color: checked ? 'var(--primary)' : 'var(--text-muted)',
                           fontSize: 12,
                           cursor: 'pointer',
                         }}

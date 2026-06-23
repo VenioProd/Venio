@@ -1,16 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
-import {
-  getIncomeStatement,
-  listFiscalYears,
-  downloadReportCsv,
-} from '../../../services/accounting'
-import type {
-  IFiscalYear,
-  IIncomeGroup,
-  IIncomeLine,
-  IIncomeStatementData,
-} from '../../../types/accounting'
+import { getIncomeStatement, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
+import type { IFiscalYear, IIncomeGroup, IIncomeLine, IIncomeStatementData } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -43,14 +34,7 @@ interface GroupSectionProps {
   color: string
 }
 
-const GroupSection = ({
-  title,
-  totalLabel,
-  groups,
-  total,
-  details,
-  color,
-}: GroupSectionProps) => {
+const GroupSection = ({ title, totalLabel, groups, total, details, color }: GroupSectionProps) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   function toggle(g: string) {
@@ -71,9 +55,7 @@ const GroupSection = ({
         {title}
       </h2>
       {!groups || groups.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
-          Aucune ligne sur la période.
-        </p>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucune ligne sur la période.</p>
       ) : (
         <table className="accounting-table">
           <tbody>
@@ -96,14 +78,12 @@ const GroupSection = ({
                         fontSize: '0.78rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
-                        color: 'rgba(34,211,238,0.85)',
+                        color: 'rgba(14, 165, 233, 0.85)',
                         fontWeight: 600,
                       }}
                     >
                       {hasLines && (
-                        <span style={{ marginRight: 6, display: 'inline-block', width: 12 }}>
-                          {isOpen ? '▾' : '▸'}
-                        </span>
+                        <span style={{ marginRight: 6, display: 'inline-block', width: 12 }}>{isOpen ? '▾' : '▸'}</span>
                       )}
                       {g.group} — {g.label}
                     </td>
@@ -135,7 +115,7 @@ const GroupSection = ({
             })}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+            <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
               <td style={{ fontWeight: 700, padding: '14px' }}>{totalLabel}</td>
               <td className="amount" style={{ fontWeight: 700, color }}>
                 {formatEur(total)}
@@ -311,9 +291,7 @@ const IncomeStatement = () => {
                 background: isProfit
                   ? 'linear-gradient(135deg, rgba(74,222,128,0.12) 0%, rgba(34,197,94,0.06) 100%)'
                   : 'linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(239,68,68,0.06) 100%)',
-                border: `1px solid ${
-                  isProfit ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)'
-                }`,
+                border: `1px solid ${isProfit ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)'}`,
                 textAlign: 'center',
               }}
             >
@@ -347,8 +325,7 @@ const IncomeStatement = () => {
                   color: 'rgba(255,255,255,0.6)',
                 }}
               >
-                Total produits {formatEur(data.totalProduits)} − Total charges{' '}
-                {formatEur(data.totalCharges)}
+                Total produits {formatEur(data.totalProduits)} − Total charges {formatEur(data.totalCharges)}
               </div>
             </div>
           </>

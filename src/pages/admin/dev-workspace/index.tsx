@@ -593,7 +593,7 @@ const DevWorkspace = () => {
       .filter((i) => !used.has(i._id) && i.status === 'IN_PROGRESS')
       .sort((a, b) => ts(b.updatedAt) - ts(a.updatedAt))
     return [
-      { key: 'À valider', color: '#8b5cf6', issues: review, count: review.length, reviewShortcut: true },
+      { key: 'À valider', color: 'var(--primary)', issues: review, count: review.length, reviewShortcut: true },
       { key: 'Urgentes & en retard', color: '#ef4444', issues: urgent, count: urgent.length, reviewShortcut: false },
       { key: 'En cours', color: '#eab308', issues: inProgress, count: inProgress.length, reviewShortcut: false },
     ].filter((g) => g.count > 0)

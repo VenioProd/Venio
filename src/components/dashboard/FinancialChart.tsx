@@ -24,9 +24,7 @@ const FinancialChart = ({ data, label, currentValue, secondarySeries, height = 2
     )
   }
 
-  const merged = secondarySeries
-    ? data.map((d, i) => ({ ...d, secondary: secondarySeries[i]?.value }))
-    : data
+  const merged = secondarySeries ? data.map((d, i) => ({ ...d, secondary: secondarySeries[i]?.value })) : data
 
   return (
     <div className="dash-fchart" style={{ height }}>

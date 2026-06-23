@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import {
-  listEntries,
-  listExternalSources,
-  bulkValidateEntries,
-} from '../../../services/accounting'
-import type {
-  IAccountingEntry,
-  IExternalSource,
-} from '../../../types/accounting'
+import { listEntries, listExternalSources, bulkValidateEntries } from '../../../services/accounting'
+import type { IAccountingEntry, IExternalSource } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -96,15 +89,7 @@ const DraftQueue = () => {
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    filters.status,
-    filters.source,
-    filters.sourceSlug,
-    filters.from,
-    filters.to,
-    filters.page,
-    filters.limit,
-  ])
+  }, [filters.status, filters.source, filters.sourceSlug, filters.from, filters.to, filters.page, filters.limit])
 
   useEffect(() => {
     reload()
@@ -123,12 +108,8 @@ const DraftQueue = () => {
     return { totalAmount: sum, draftCount: count }
   }, [entries])
 
-  const selectableEntries = useMemo(
-    () => entries.filter((e) => e.status === 'DRAFT'),
-    [entries]
-  )
-  const allSelected =
-    selectableEntries.length > 0 && selectableEntries.every((e) => selected.has(e._id))
+  const selectableEntries = useMemo(() => entries.filter((e) => e.status === 'DRAFT'), [entries])
+  const allSelected = selectableEntries.length > 0 && selectableEntries.every((e) => selected.has(e._id))
 
   function toggle(id: string) {
     const s = new Set(selected)
@@ -153,13 +134,9 @@ const DraftQueue = () => {
     setSuccess('')
     try {
       const results = await bulkValidateEntries(ids)
-      const ok = Array.isArray(results)
-        ? results.filter((r) => r.ok || r.success).length
-        : ids.length
+      const ok = Array.isArray(results) ? results.filter((r) => r.ok || r.success).length : ids.length
       const ko = Array.isArray(results) ? results.length - ok : 0
-      setSuccess(
-        `${ok} écriture(s) validée(s)${ko > 0 ? `, ${ko} en erreur` : ''}.`
-      )
+      setSuccess(`${ok} écriture(s) validée(s)${ko > 0 ? `, ${ko} en erreur` : ''}.`)
       await reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur')
@@ -171,12 +148,7 @@ const DraftQueue = () => {
   async function handleValidateAll() {
     const ids = selectableEntries.map((e) => e._id)
     if (ids.length === 0) return
-    if (
-      !confirm(
-        `Valider toutes les ${ids.length} écritures DRAFT affichées sur cette page ?`
-      )
-    )
-      return
+    if (!confirm(`Valider toutes les ${ids.length} écritures DRAFT affichées sur cette page ?`)) return
     await handleBulkValidate(ids)
   }
 
@@ -214,7 +186,7 @@ const DraftQueue = () => {
         </div>
         <div className="accounting-kpi">
           <div className="label">Sélectionnées</div>
-          <div className="value" style={{ color: selected.size > 0 ? '#7dd3fc' : undefined }}>
+          <div className="value" style={{ color: selected.size > 0 ? 'var(--primary)' : undefined }}>
             {selected.size}
           </div>
         </div>
@@ -225,9 +197,7 @@ const DraftQueue = () => {
           <select
             className="portal-input"
             value={filters.sourceSlug}
-            onChange={(e) =>
-              setFilters({ ...filters, sourceSlug: e.target.value, page: 1 })
-            }
+            onChange={(e) => setFilters({ ...filters, sourceSlug: e.target.value, page: 1 })}
           >
             <option value="">Toutes les sources externes</option>
             {sources.map((s) => (
@@ -270,9 +240,7 @@ const DraftQueue = () => {
                 onClick={() => handleBulkValidate(Array.from(selected))}
                 disabled={validating}
               >
-                {validating
-                  ? 'Validation…'
-                  : `✓ Valider la sélection (${selected.size})`}
+                {validating ? 'Validation…' : `✓ Valider la sélection (${selected.size})`}
               </button>
             )}
           </div>
@@ -283,8 +251,7 @@ const DraftQueue = () => {
         ) : entries.length === 0 ? (
           <div className="accounting-empty">
             <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>✓</div>
-            Tout est à jour !
-            <div className="hint">Aucune écriture en attente de validation pour ces filtres.</div>
+            Tout est à jour !<div className="hint">Aucune écriture en attente de validation pour ces filtres.</div>
           </div>
         ) : (
           <table className="accounting-table">
@@ -317,11 +284,7 @@ const DraftQueue = () => {
                   <tr key={e._id}>
                     <td>
                       {isDraft && (
-                        <input
-                          type="checkbox"
-                          checked={selected.has(e._id)}
-                          onChange={() => toggle(e._id)}
-                        />
+                        <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
                       )}
                     </td>
                     <td>
@@ -349,9 +312,7 @@ const DraftQueue = () => {
                       )}
                     </td>
                     <td>
-                      <span className={`accounting-badge ${e.status.toLowerCase()}`}>
-                        {e.status}
-                      </span>
+                      <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
                     </td>
                     <td>
                       <div className="accounting-row-actions">
@@ -359,11 +320,7 @@ const DraftQueue = () => {
                           <button type="button">Ouvrir</button>
                         </Link>
                         {isDraft && (
-                          <button
-                            type="button"
-                            onClick={() => handleBulkValidate([e._id])}
-                            disabled={validating}
-                          >
+                          <button type="button" onClick={() => handleBulkValidate([e._id])} disabled={validating}>
                             ✓ Valider
                           </button>
                         )}

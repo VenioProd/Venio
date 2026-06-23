@@ -20,8 +20,18 @@ interface CalendarEvent {
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
 const MONTH_NAMES = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+  'Janvier',
+  'Février',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Août',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Décembre',
 ]
 
 const TYPE_LABELS: Record<string, string> = {
@@ -32,7 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const LEGEND_ITEMS = [
-  { type: 'task', label: 'Tâches', color: '#6366f1' },
+  { type: 'task', label: 'Tâches', color: '#0ea5e9' },
   { type: 'deadline', label: 'Deadlines', color: '#ef4444' },
   { type: 'project_start', label: 'Début projet', color: '#22c55e' },
   { type: 'project_end', label: 'Fin projet', color: '#f97316' },
@@ -94,7 +104,7 @@ export default function Calendar() {
       const startStr = formatDateKey(start)
       const endStr = formatDateKey(end)
       const res = await apiFetch<{ events: CalendarEvent[] }>(
-        `/api/admin/calendar/events?start=${startStr}&end=${endStr}`
+        `/api/admin/calendar/events?start=${startStr}&end=${endStr}`,
       )
       setEvents(res.events)
     } catch {
@@ -136,7 +146,7 @@ export default function Calendar() {
     eventsByDate[ev.date].push(ev)
   }
 
-  const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : []
+  const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
 
   const selectedDateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null
   const selectedLabel = selectedDateObj
@@ -170,7 +180,9 @@ export default function Calendar() {
               &#8594;
             </button>
           </div>
-          <h2>{MONTH_NAMES[month]} {year}</h2>
+          <h2>
+            {MONTH_NAMES[month]} {year}
+          </h2>
           <div style={{ width: 120 }} />
         </div>
 
@@ -182,7 +194,9 @@ export default function Calendar() {
             <div className="calendar-grid">
               {/* Day Headers */}
               {DAY_NAMES.map((day) => (
-                <div key={day} className="calendar-day-header">{day}</div>
+                <div key={day} className="calendar-day-header">
+                  {day}
+                </div>
               ))}
 
               {/* Day Cells */}
@@ -199,14 +213,12 @@ export default function Calendar() {
                   isToday && 'today',
                   isSelected && 'selected',
                   hasEvents && 'has-events',
-                ].filter(Boolean).join(' ')
+                ]
+                  .filter(Boolean)
+                  .join(' ')
 
                 return (
-                  <div
-                    key={key}
-                    className={classes}
-                    onClick={() => setSelectedDate(isSelected ? null : key)}
-                  >
+                  <div key={key} className={classes} onClick={() => setSelectedDate(isSelected ? null : key)}>
                     <span className="calendar-day-number">{date.getDate()}</span>
                     {dayEvents.length > 0 && (
                       <div className="calendar-events">
@@ -216,9 +228,7 @@ export default function Calendar() {
                           </div>
                         ))}
                         {dayEvents.length > 3 && (
-                          <span className="calendar-event-more">
-                            +{dayEvents.length - 3} de plus
-                          </span>
+                          <span className="calendar-event-more">+{dayEvents.length - 3} de plus</span>
                         )}
                       </div>
                     )}

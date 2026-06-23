@@ -57,27 +57,59 @@ export default function ProjectFormDrawer({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="portal-label">Nom du projet *</label>
-            <input className="portal-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Plateforme Arrow" />
+            <input
+              className="portal-input"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Ex: Plateforme Arrow"
+            />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="portal-label">Description</label>
-            <textarea className="portal-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} style={{ resize: 'vertical' }} placeholder="Objectif, contexte..." />
+            <textarea
+              className="portal-input"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              rows={3}
+              style={{ resize: 'vertical' }}
+              placeholder="Objectif, contexte..."
+            />
           </div>
           <div>
             <label className="portal-label">Entité</label>
-            <select className="portal-input" value={form.entity} onChange={e => setForm(f => ({ ...f, entity: e.target.value }))}>
-              {ENTITIES.map((e: string) => <option key={e} value={e}>{e}</option>)}
+            <select
+              className="portal-input"
+              value={form.entity}
+              onChange={(e) => setForm((f) => ({ ...f, entity: e.target.value }))}
+            >
+              {ENTITIES.map((e: string) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="portal-label">Statut</label>
-            <select className="portal-input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-              {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            <select
+              className="portal-input"
+              value={form.status}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+            >
+              {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="portal-label">Priorité</label>
-            <select className="portal-input" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+            <select
+              className="portal-input"
+              value={form.priority}
+              onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+            >
               <option value="BASSE">Basse</option>
               <option value="NORMALE">Normale</option>
               <option value="HAUTE">Haute</option>
@@ -86,7 +118,12 @@ export default function ProjectFormDrawer({
           </div>
           <div>
             <label className="portal-label">Tags (virgule)</label>
-            <input className="portal-input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, refonte, v2..." />
+            <input
+              className="portal-input"
+              value={form.tags}
+              onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+              placeholder="design, refonte, v2..."
+            />
           </div>
           {/* Poles */}
           <div style={{ gridColumn: '1 / -1' }}>
@@ -105,11 +142,13 @@ export default function ProjectFormDrawer({
                     fontWeight: 500,
                     cursor: 'pointer',
                     background: form.poles.includes(pole) ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
-                    borderColor: form.poles.includes(pole) ? '#0ea5e9' : 'var(--border)',
-                    color: form.poles.includes(pole) ? '#38bdf8' : 'var(--text-secondary)',
+                    borderColor: form.poles.includes(pole) ? 'var(--primary)' : 'var(--border)',
+                    color: form.poles.includes(pole) ? 'var(--primary)' : 'var(--text-secondary)',
                     transition: 'all .15s',
                   }}
-                >{pole}</button>
+                >
+                  {pole}
+                </button>
               ))}
             </div>
           </div>
@@ -117,7 +156,7 @@ export default function ProjectFormDrawer({
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="portal-label">Membres assignés</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-              {admins.map(admin => (
+              {admins.map((admin) => (
                 <button
                   key={admin._id}
                   type="button"
@@ -134,7 +173,9 @@ export default function ProjectFormDrawer({
                     color: form.members.includes(admin._id) ? '#6ee7b7' : 'var(--text-secondary)',
                     transition: 'all .15s',
                   }}
-                >{admin.name}</button>
+                >
+                  {admin.name}
+                </button>
               ))}
             </div>
           </div>
@@ -146,7 +187,10 @@ export default function ProjectFormDrawer({
           <button
             className="portal-button secondary"
             type="button"
-            onClick={() => { onClose(); setForm(() => ({ ...emptyForm })) }}
+            onClick={() => {
+              onClose()
+              setForm(() => ({ ...emptyForm }))
+            }}
           >
             Annuler
           </button>

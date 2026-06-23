@@ -68,9 +68,12 @@ const AdminList = () => {
   const handleImpersonate = async (adminId: string) => {
     setImpersonating(adminId)
     try {
-      const data = await apiFetch<{ token: string; user: { role: string } }>(`/api/admin/admins/impersonate/${adminId}`, {
-        method: 'POST',
-      })
+      const data = await apiFetch<{ token: string; user: { role: string } }>(
+        `/api/admin/admins/impersonate/${adminId}`,
+        {
+          method: 'POST',
+        },
+      )
       const targetPath = data.user.role === 'CLIENT' ? '/espace-client' : '/admin'
       const url = `${window.location.origin}${targetPath}?impersonate=${data.token}`
       // Use a temporary <a> link to avoid popup blockers
@@ -91,9 +94,16 @@ const AdminList = () => {
   const handleResetLink = async (adminId: string) => {
     setResetting(adminId)
     try {
-      const data = await apiFetch<{ resetUrl: string; emailSent: boolean }>(`/api/admin/admins/${adminId}/reset-link`, { method: 'POST' })
+      const data = await apiFetch<{ resetUrl: string; emailSent: boolean }>(`/api/admin/admins/${adminId}/reset-link`, {
+        method: 'POST',
+      })
       await navigator.clipboard.writeText(data.resetUrl)
-      showToast(data.emailSent ? 'Email envoye + lien copie dans le presse-papiers' : 'Lien copie (email non envoye, verifier SMTP)', 'success')
+      showToast(
+        data.emailSent
+          ? 'Email envoye + lien copie dans le presse-papiers'
+          : 'Lien copie (email non envoye, verifier SMTP)',
+        'success',
+      )
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
@@ -154,13 +164,40 @@ const AdminList = () => {
               }}
             >
               <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
               </span>
               <span className="portal-action-label">Exporter CSV</span>
             </button>
-            <Link className="portal-button portal-action-link" to="/admin/comptes-admin/nouveau" title="Nouvel administrateur">
+            <Link
+              className="portal-button portal-action-link"
+              to="/admin/comptes-admin/nouveau"
+              title="Nouvel administrateur"
+            >
               <span className="portal-action-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <line x1="19" y1="8" x2="19" y2="14" />
+                  <line x1="22" y1="11" x2="16" y2="11" />
+                </svg>
               </span>
               <span className="portal-action-label">Nouvel administrateur</span>
             </Link>
@@ -195,9 +232,7 @@ const AdminList = () => {
                     >
                       {(admin.name || '?').charAt(0).toUpperCase()}
                     </div>
-                    {user?._id === admin._id && (
-                      <span className="admin-card-you">Vous</span>
-                    )}
+                    {user?._id === admin._id && <span className="admin-card-you">Vous</span>}
                   </div>
                   <h3 className="client-card-name">{admin.name}</h3>
                   <p className="client-card-email">{admin.email}</p>
@@ -218,7 +253,7 @@ const AdminList = () => {
                         style={{
                           background: 'rgba(14, 165, 233, 0.12)',
                           borderColor: 'rgba(14, 165, 233, 0.4)',
-                          color: '#38bdf8',
+                          color: 'var(--primary)',
                         }}
                       >
                         Stagiaire
@@ -286,7 +321,6 @@ const AdminList = () => {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-
     </div>
   )
 }

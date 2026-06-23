@@ -3,7 +3,7 @@ import type { Task, TaskStatus } from '../../types/task.types'
 
 const COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
   { key: 'A_FAIRE', label: 'A faire', color: '#64748b' },
-  { key: 'EN_COURS', label: 'En cours', color: '#0ea5e9' },
+  { key: 'EN_COURS', label: 'En cours', color: 'var(--primary)' },
   { key: 'EN_REVIEW', label: 'En review', color: '#f59e0b' },
   { key: 'VALIDE', label: 'Valide', color: '#22c55e' },
   { key: 'NON_VALIDE', label: 'Non valide', color: '#ef4444' },
@@ -13,7 +13,7 @@ const COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
 
 const PRIORITY_COLORS: Record<string, string> = {
   BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
+  NORMALE: 'var(--primary)',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
@@ -48,10 +48,13 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
   const handleDrop = (e: DragEvent, status: TaskStatus) => {
     e.preventDefault()
     const taskId = e.dataTransfer.getData('taskId')
-    const task = tasks.find(t => t._id === taskId)
-    if (!task || task.status === status) { setDraggingId(null); return }
+    const task = tasks.find((t) => t._id === taskId)
+    if (!task || task.status === status) {
+      setDraggingId(null)
+      return
+    }
 
-    const colTasks = tasks.filter(t => t.status === status)
+    const colTasks = tasks.filter((t) => t.status === status)
     const order = colTasks.length
     onMove(getProjectId(task), taskId, status, order)
     setDraggingId(null)
@@ -66,7 +69,7 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
   return (
     <div className="gestion-kanban">
       {COLUMNS.map((col) => {
-        const colTasks = tasks.filter(t => t.status === col.key).sort((a, b) => a.order - b.order)
+        const colTasks = tasks.filter((t) => t.status === col.key).sort((a, b) => a.order - b.order)
         return (
           <div
             key={col.key}
@@ -92,25 +95,27 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
                       style={{ background: PRIORITY_COLORS[task.priority] }}
                       title={task.priority}
                     />
-                    {getProjectName(task) && (
-                      <span className="gestion-kanban-project">{getProjectName(task)}</span>
-                    )}
+                    {getProjectName(task) && <span className="gestion-kanban-project">{getProjectName(task)}</span>}
                   </div>
                   <div className="gestion-kanban-card-title">{task.title}</div>
                   <div className="gestion-kanban-card-meta">
                     {task.assignee && (
                       <span className="gestion-kanban-assignee">
-                        {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {task.assignee.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()}
                       </span>
                     )}
                     {task.dueDate && (
-                      <span className={`gestion-kanban-date ${task.status !== 'TERMINE' && task.status !== 'VALIDE' && new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}>
+                      <span
+                        className={`gestion-kanban-date ${task.status !== 'TERMINE' && task.status !== 'VALIDE' && new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}
+                      >
                         {formatDate(task.dueDate)}
                       </span>
                     )}
-                    {task.progress > 0 && (
-                      <span className="gestion-kanban-progress">{task.progress}%</span>
-                    )}
+                    {task.progress > 0 && <span className="gestion-kanban-progress">{task.progress}%</span>}
                   </div>
                 </div>
               ))}

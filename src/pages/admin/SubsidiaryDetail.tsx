@@ -393,7 +393,7 @@ export default function SubsidiaryDetail() {
   if (!sub) {
     return (
       <div className="portal-container">
-        <Link to="/admin/filiales" style={{ color: '#0ea5e9', textDecoration: 'none' }}>
+        <Link to="/admin/filiales" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
           ← Retour aux filiales
         </Link>
         <p style={{ marginTop: 16, color: 'var(--text-secondary)' }}>Cette filiale est introuvable.</p>
@@ -401,7 +401,7 @@ export default function SubsidiaryDetail() {
     )
   }
 
-  const accent = sub.accentColor || '#0ea5e9'
+  const accent = sub.accentColor || 'var(--primary)'
   const accentRgb = hexToRgb(accent)
   const headcount = sub.team?.length || sub.kpis?.headcount || 0
   const obj = sub.objective
@@ -548,8 +548,8 @@ export default function SubsidiaryDetail() {
               label="Marge"
               value={`${k.margin}%`}
               icon={<Percent size={14} />}
-              accentColor="#8b5cf6"
-              accentRgb="139, 92, 246"
+              accentColor="#9b9b9b"
+              accentRgb="155, 155, 155"
               objective={
                 k.marginTarget
                   ? { current: k.margin, target: k.marginTarget, label: `cible ${k.marginTarget}%` }

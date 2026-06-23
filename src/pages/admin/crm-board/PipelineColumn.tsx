@@ -33,7 +33,7 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
       className="crm-column"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => onDrop(e, column.status)}
-      style={{ '--column-color': status?.color || '#0ea5e9' } as React.CSSProperties}
+      style={{ '--column-color': status?.color || 'var(--primary)' } as React.CSSProperties}
     >
       <div className="crm-column-header">
         <span className="crm-column-title">{status?.label || column.status}</span>

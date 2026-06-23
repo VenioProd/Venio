@@ -45,27 +45,56 @@ const SortIcon = ({ field, sortField, sortDir }: { field: string; sortField: str
 }
 
 const LeadTable: React.FC<LeadTableProps> = ({
-  groupedLeads, filteredLeads, totalLeads, search, filterStatus, filterPriority, filterAssignee,
-  sortField, sortDir, collapsedGroups, admins, adminsById, canManageCrm, converting, deleteConfirm,
-  activeFilters, isSuperAdmin, allCollapsed, onSearchChange, onFilterStatusChange, onFilterPriorityChange,
-  onFilterAssigneeChange, onClearFilters, onToggleAll, onToggleSort, onToggleGroup, onUpdateLead,
-  onConvertToClient, onDeleteLead, onSetDeleteConfirm, onExpandLead, onTransferToArrow, onTransferSelectionToArrow,
+  groupedLeads,
+  filteredLeads,
+  totalLeads,
+  search,
+  filterStatus,
+  filterPriority,
+  filterAssignee,
+  sortField,
+  sortDir,
+  collapsedGroups,
+  admins,
+  adminsById,
+  canManageCrm,
+  converting,
+  deleteConfirm,
+  activeFilters,
+  isSuperAdmin,
+  allCollapsed,
+  onSearchChange,
+  onFilterStatusChange,
+  onFilterPriorityChange,
+  onFilterAssigneeChange,
+  onClearFilters,
+  onToggleAll,
+  onToggleSort,
+  onToggleGroup,
+  onUpdateLead,
+  onConvertToClient,
+  onDeleteLead,
+  onSetDeleteConfirm,
+  onExpandLead,
+  onTransferToArrow,
+  onTransferSelectionToArrow,
 }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const allIds = filteredLeads.map(l => l._id)
-  const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id))
+  const allIds = filteredLeads.map((l) => l._id)
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id))
   const someSelected = selected.size > 0
 
-  const toggleOne = (id: string) => setSelected(prev => {
-    const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
-    return next
-  })
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
 
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds))
 
-  const colSpanTotal = canManageCrm ? (onTransferSelectionToArrow ? 14 : 13) : (onTransferSelectionToArrow ? 13 : 12)
+  const colSpanTotal = canManageCrm ? (onTransferSelectionToArrow ? 14 : 13) : onTransferSelectionToArrow ? 13 : 12
 
   return (
     <div className="crm-table-container">
@@ -90,14 +119,26 @@ const LeadTable: React.FC<LeadTableProps> = ({
 
       {/* Barre de sélection */}
       {someSelected && onTransferSelectionToArrow && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px', background: 'rgba(14,165,233,0.08)', borderBottom: '1px solid rgba(14,165,233,0.2)' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '10px 20px',
+            background: 'rgba(14, 165, 233, 0.08)',
+            borderBottom: '1px solid rgba(14, 165, 233, 0.2)',
+          }}
+        >
           <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
             {selected.size} lead{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}
           </span>
           <button
             className="portal-button"
             style={{ fontSize: 12, padding: '5px 14px' }}
-            onClick={() => { onTransferSelectionToArrow([...selected]); setSelected(new Set()) }}
+            onClick={() => {
+              onTransferSelectionToArrow([...selected])
+              setSelected(new Set())
+            }}
           >
             Transférer vers Arrow Écoles
           </button>
@@ -116,7 +157,12 @@ const LeadTable: React.FC<LeadTableProps> = ({
             <tr>
               {onTransferSelectionToArrow && (
                 <th className="crm-th" style={{ width: 36, padding: '14px 8px' }}>
-                  <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ cursor: 'pointer', width: 15, height: 15 }} />
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    style={{ cursor: 'pointer', width: 15, height: 15 }}
+                  />
                 </th>
               )}
               <th className="crm-th crm-th-company" onClick={() => onToggleSort('company')}>
@@ -161,30 +207,33 @@ const LeadTable: React.FC<LeadTableProps> = ({
                         <span className={`crm-group-chevron ${isCollapsed ? '' : 'open'}`}>▶</span>
                         <span className="crm-group-color-bar" style={{ background: group.color }} />
                         <span className="crm-group-label">{group.label}</span>
-                        <span className="crm-group-count">{group.leads.length} lead{group.leads.length !== 1 ? 's' : ''}</span>
+                        <span className="crm-group-count">
+                          {group.leads.length} lead{group.leads.length !== 1 ? 's' : ''}
+                        </span>
                       </div>
                     </td>
                   </tr>
-                  {!isCollapsed && group.leads.map((lead) => (
-                    <LeadTableRow
-                      key={lead._id}
-                      lead={lead}
-                      groupColor={group.color}
-                      admins={admins}
-                      adminsById={adminsById}
-                      canManageCrm={canManageCrm}
-                      converting={converting}
-                      deleteConfirm={deleteConfirm}
-                      onUpdateLead={onUpdateLead}
-                      onConvertToClient={onConvertToClient}
-                      onDeleteLead={onDeleteLead}
-                      onSetDeleteConfirm={onSetDeleteConfirm}
-                      onExpandLead={onExpandLead}
-                      onTransferToArrow={onTransferToArrow}
-                      isSelected={selected.has(lead._id)}
-                      onToggleSelect={onTransferSelectionToArrow ? () => toggleOne(lead._id) : undefined}
-                    />
-                  ))}
+                  {!isCollapsed &&
+                    group.leads.map((lead) => (
+                      <LeadTableRow
+                        key={lead._id}
+                        lead={lead}
+                        groupColor={group.color}
+                        admins={admins}
+                        adminsById={adminsById}
+                        canManageCrm={canManageCrm}
+                        converting={converting}
+                        deleteConfirm={deleteConfirm}
+                        onUpdateLead={onUpdateLead}
+                        onConvertToClient={onConvertToClient}
+                        onDeleteLead={onDeleteLead}
+                        onSetDeleteConfirm={onSetDeleteConfirm}
+                        onExpandLead={onExpandLead}
+                        onTransferToArrow={onTransferToArrow}
+                        isSelected={selected.has(lead._id)}
+                        onToggleSelect={onTransferSelectionToArrow ? () => toggleOne(lead._id) : undefined}
+                      />
+                    ))}
                 </React.Fragment>
               )
             })}
@@ -192,7 +241,14 @@ const LeadTable: React.FC<LeadTableProps> = ({
         </table>
         {filteredLeads.length === 0 && (
           <div className="crm-table-empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <p>Aucun lead trouvé</p>

@@ -24,21 +24,13 @@ function StatusBadge({ ok, label }: { ok: boolean; label?: string }) {
   )
 }
 
-function HealthCard({
-  title,
-  children,
-  accent,
-}: {
-  title: string
-  children: React.ReactNode
-  accent?: string
-}) {
+function HealthCard({ title, children, accent }: { title: string; children: React.ReactNode; accent?: string }) {
   return (
     <div
       style={{
         background: 'var(--bg-card)',
         border: '1.5px solid var(--border-color)',
-        borderLeft: `3px solid ${accent ?? '#6366f1'}`,
+        borderLeft: `3px solid ${accent ?? 'var(--primary)'}`,
         borderRadius: 14,
         padding: '20px 24px',
       }}
@@ -117,9 +109,7 @@ export default function SystemHealth() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              Sante systeme
-            </h1>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Sante systeme</h1>
             {data && (
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                 Derniere verification : {formatDate(data.checkedAt)}
@@ -190,20 +180,14 @@ export default function SystemHealth() {
             {/* Email */}
             <HealthCard title="Email (SMTP)" accent={data.email.configured ? '#22c55e' : '#f59e0b'}>
               <Row label="Configuration">
-                <StatusBadge
-                  ok={data.email.configured}
-                  label={data.email.configured ? 'Configure' : 'Manquant'}
-                />
+                <StatusBadge ok={data.email.configured} label={data.email.configured ? 'Configure' : 'Manquant'} />
               </Row>
             </HealthCard>
 
             {/* Push */}
             <HealthCard title="Notifications push (VAPID)" accent={data.push.configured ? '#22c55e' : '#f59e0b'}>
               <Row label="Configuration">
-                <StatusBadge
-                  ok={data.push.configured}
-                  label={data.push.configured ? 'Configure' : 'Manquant'}
-                />
+                <StatusBadge ok={data.push.configured} label={data.push.configured ? 'Configure' : 'Manquant'} />
               </Row>
             </HealthCard>
 
@@ -238,7 +222,7 @@ export default function SystemHealth() {
             </HealthCard>
 
             {/* Schedulers */}
-            <HealthCard title="Schedulers" accent="#6366f1">
+            <HealthCard title="Schedulers" accent="var(--primary)">
               <Row label="CRM (relances)">
                 <StatusBadge ok={data.schedulers.crmLegacy} label="Actif" />
               </Row>

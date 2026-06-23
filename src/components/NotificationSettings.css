@@ -3,12 +3,9 @@
   gap: 12px;
   padding: 18px 20px;
   border: 1px solid rgba(var(--primary-rgb), 0.18);
-  border-radius: 16px;
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-rgb), 0.02)),
-    rgba(10, 16, 28, 0.5);
+  border-radius: 0;
+  background: var(--bg-card);
   color: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(10px);
 }
 
 .notification-settings-header {
@@ -54,7 +51,7 @@
 
 .notification-settings-status-ok .notification-settings-dot {
   background: #34d399;
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16);
+  box-shadow: none;
 }
 
 .notification-settings-status-warn {
@@ -64,7 +61,7 @@
 
 .notification-settings-status-warn .notification-settings-dot {
   background: #f87171;
-  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.16);
+  box-shadow: none;
 }
 
 .notification-settings-help {
@@ -77,7 +74,7 @@
 .notification-settings-blocked {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.22);
   color: #fca5a5;
@@ -103,22 +100,25 @@
   height: 38px;
   padding: 0 18px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 0;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, transform 0.18s, color 0.18s;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s;
 }
 
 .notification-settings-btn.primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.42);
+  box-shadow: none;
 }
 
 .notification-settings-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(var(--primary-rgb), 0.55);
+  background: var(--primary-dark);
+  box-shadow: none;
 }
 
 .notification-settings-btn.destructive {
@@ -138,9 +138,7 @@
 
 /* ─── Light theme ─── */
 [data-theme='light'] .notification-settings {
-  background:
-    linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-rgb), 0.02)),
-    #ffffff;
+  background: #ffffff;
   color: #0f172a;
   border-color: rgba(var(--primary-rgb), 0.22);
 }

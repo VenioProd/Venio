@@ -291,8 +291,8 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
                   className="sub-status-pill"
                   style={{
                     cursor: 'pointer',
-                    borderColor: form.team.includes(a._id) ? '#0ea5e9' : 'var(--border-color)',
-                    color: form.team.includes(a._id) ? '#7dd3fc' : 'var(--text-secondary)',
+                    borderColor: form.team.includes(a._id) ? 'var(--primary)' : 'var(--border-color)',
+                    color: form.team.includes(a._id) ? 'var(--primary)' : 'var(--text-secondary)',
                   }}
                 >
                   {a.name || a.email}

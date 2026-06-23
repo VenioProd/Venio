@@ -174,7 +174,7 @@ const Entries = () => {
           <div className="accounting-empty">
             Aucune écriture pour ces filtres.
             <div className="hint">
-              <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: '#7dd3fc' }}>
+              <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: 'var(--primary)' }}>
                 Créer une écriture →
               </Link>
             </div>
@@ -202,11 +202,7 @@ const Entries = () => {
                     {canManage && (
                       <td>
                         {e.status === 'DRAFT' && (
-                          <input
-                            type="checkbox"
-                            checked={selected.has(e._id)}
-                            onChange={() => toggle(e._id)}
-                          />
+                          <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
                         )}
                       </td>
                     )}
@@ -222,11 +218,7 @@ const Entries = () => {
                     <td className="amount">{Number(e.totalDebit).toFixed(2)} €</td>
                     <td className="amount">{Number(e.totalCredit).toFixed(2)} €</td>
                     <td>
-                      <span
-                        className={`accounting-badge ${
-                          e.source === 'EXTERNAL' ? 'source-external' : 'locked'
-                        }`}
-                      >
+                      <span className={`accounting-badge ${e.source === 'EXTERNAL' ? 'source-external' : 'locked'}`}>
                         {e.source}
                       </span>
                     </td>

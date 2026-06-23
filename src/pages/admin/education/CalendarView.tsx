@@ -98,7 +98,7 @@ function durationLabel(min: number): string {
 function eventColor(ev: AppleCalendarEvent): string {
   // Couleur stable par école/classe pour aider Raphael à scanner.
   const key = (ev.school || ev.classLabel || ev.title || ev.uid).toLowerCase()
-  const palette = ['#22C55E', '#0EA5E9', '#A855F7', '#F59E0B', '#EC4899', '#14B8A6', '#F97316', '#6366F1']
+  const palette = ['#22C55E', '#CCFF00', '#9B9B9B', '#F59E0B', '#FFFFFF', '#14B8A6', '#F97316', '#A5D400']
   let hash = 0
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0
   return palette[hash % palette.length]
@@ -601,7 +601,7 @@ function EventDrawer({
           {event.url && (
             <div className="edu-form-group">
               <label>Lien</label>
-              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: '#0EA5E9' }}>
+              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>
                 {event.url}
               </a>
             </div>
@@ -878,7 +878,7 @@ function CalendarStyles() {
       .edu-cal-event-school {
         display: inline-block; margin-top: 4px;
         font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
-        background: rgba(14,165,233,0.18); color: #BAE6FD;
+        background: rgba(14, 165, 233, 0.18); color: var(--primary);
         padding: 2px 6px; border-radius: 4px;
       }
       .edu-cal-event.compact {
