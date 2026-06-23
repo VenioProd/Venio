@@ -132,7 +132,7 @@
 }
 
 .notif-mark-all:hover {
-  background: rgba(204, 255, 0, 0.1);
+  background: rgba(14, 165, 233, 0.1);
 }
 
 /* List */
@@ -167,7 +167,7 @@
 }
 
 .notif-item-unread {
-  background: rgba(204, 255, 0, 0.05);
+  background: rgba(14, 165, 233, 0.05);
 }
 
 .notif-item-unread::before {
@@ -246,7 +246,7 @@
 }
 
 [data-theme='light'] .notif-item-unread {
-  background: rgba(204, 255, 0, 0.04);
+  background: rgba(14, 165, 233, 0.04);
 }
 
 [data-theme='light'] .notif-item-title {

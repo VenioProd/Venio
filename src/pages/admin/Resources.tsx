@@ -10,12 +10,12 @@ import './AdminPortal.css'
 const CATEGORIES = ['Présentation', 'Charte graphique', 'RH', 'Juridique', 'Commercial', 'Formation', 'Autre']
 
 const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  Présentation: { bg: 'rgba(204,255,0,0.12)', border: 'rgba(204,255,0,0.3)', text: '#ccff00' },
+  Présentation: { bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)', text: '#0ea5e9' },
   'Charte graphique': { bg: 'rgba(155,155,155,0.12)', border: 'rgba(155,155,155,0.3)', text: '#9b9b9b' },
   RH: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', text: '#6ee7b7' },
   Juridique: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)', text: '#fde047' },
   Commercial: { bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)', text: '#fb923c' },
-  Formation: { bg: 'rgba(165,212,0,0.12)', border: 'rgba(165,212,0,0.3)', text: '#a5d400' },
+  Formation: { bg: 'rgba(2,132,199,0.12)', border: 'rgba(2,132,199,0.3)', text: '#0284c7' },
   Autre: { bg: 'rgba(110,110,110,0.12)', border: 'rgba(110,110,110,0.3)', text: '#ffffff' },
 }
 
@@ -356,7 +356,7 @@ export default function Resources() {
                     borderRadius: 8,
                     textAlign: 'center',
                     cursor: 'pointer',
-                    background: file ? 'rgba(204,255,0,0.05)' : 'transparent',
+                    background: file ? 'rgba(14,165,233,0.05)' : 'transparent',
                     transition: 'all .15s',
                   }}
                 >

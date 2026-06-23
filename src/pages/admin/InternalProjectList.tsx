@@ -570,7 +570,7 @@ export default function InternalProjectList() {
     .slice(0, 4)
   const arrowMissionsByStatus = [
     { value: 'A_FAIRE', label: 'À faire', color: '#fde047' },
-    { value: 'EN_COURS', label: 'En cours', color: '#ccff00' },
+    { value: 'EN_COURS', label: 'En cours', color: '#0ea5e9' },
     { value: 'TERMINE', label: 'Terminé', color: '#6ee7b7' },
   ].map((status) => ({
     ...status,
@@ -689,9 +689,9 @@ export default function InternalProjectList() {
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
-                border: `1px solid ${viewTab === 'arrow' ? 'rgba(204, 255, 0, 0.55)' : 'rgba(204, 255, 0, 0.24)'}`,
-                background: viewTab === 'arrow' ? 'rgba(204, 255, 0, 0.12)' : 'rgba(204, 255, 0, 0.04)',
-                color: viewTab === 'arrow' ? 'var(--primary)' : 'rgba(204, 255, 0, 0.62)',
+                border: `1px solid ${viewTab === 'arrow' ? 'rgba(14, 165, 233, 0.55)' : 'rgba(14, 165, 233, 0.24)'}`,
+                background: viewTab === 'arrow' ? 'rgba(14, 165, 233, 0.12)' : 'rgba(14, 165, 233, 0.04)',
+                color: viewTab === 'arrow' ? 'var(--primary)' : 'rgba(14, 165, 233, 0.62)',
                 transition: 'all .15s',
               }}
             >
@@ -719,8 +719,8 @@ export default function InternalProjectList() {
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
-                border: `1px solid ${viewTab === 'projects' ? 'rgba(204, 255, 0, 0.45)' : 'rgba(255,255,255,0.1)'}`,
-                background: viewTab === 'projects' ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+                border: `1px solid ${viewTab === 'projects' ? 'rgba(14, 165, 233, 0.45)' : 'rgba(255,255,255,0.1)'}`,
+                background: viewTab === 'projects' ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
                 color: viewTab === 'projects' ? 'var(--primary)' : 'var(--text-secondary)',
                 transition: 'all .15s',
               }}
@@ -806,8 +806,8 @@ export default function InternalProjectList() {
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: '1px solid rgba(204, 255, 0, 0.38)',
-                  background: 'rgba(204, 255, 0, 0.1)',
+                  border: '1px solid rgba(14, 165, 233, 0.38)',
+                  background: 'rgba(14, 165, 233, 0.1)',
                   color: 'var(--primary)',
                   transition: 'all .15s',
                 }}
@@ -915,8 +915,8 @@ export default function InternalProjectList() {
                             fontWeight: 600,
                             padding: '2px 8px',
                             borderRadius: 4,
-                            background: 'rgba(204, 255, 0, 0.12)',
-                            border: '1px solid rgba(204, 255, 0, 0.3)',
+                            background: 'rgba(14, 165, 233, 0.12)',
+                            border: '1px solid rgba(14, 165, 233, 0.3)',
                             color: 'var(--primary)',
                           }}
                         >
@@ -965,8 +965,8 @@ export default function InternalProjectList() {
                                 fontSize: 11,
                                 padding: '2px 7px',
                                 borderRadius: 12,
-                                background: 'rgba(204, 255, 0, 0.12)',
-                                border: '1px solid rgba(204, 255, 0, 0.3)',
+                                background: 'rgba(14, 165, 233, 0.12)',
+                                border: '1px solid rgba(14, 165, 233, 0.3)',
                                 color: 'var(--primary)',
                               }}
                             >

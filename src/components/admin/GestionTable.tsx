@@ -4,7 +4,7 @@ import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
   A_FAIRE: { label: 'A faire', color: '#64748b' },
-  EN_COURS: { label: 'En cours', color: '#ccff00' },
+  EN_COURS: { label: 'En cours', color: '#0ea5e9' },
   EN_REVIEW: { label: 'En review', color: '#f59e0b' },
   TERMINE: { label: 'Termine', color: '#22c55e' },
   VALIDE: { label: 'Valide', color: '#22c55e' },
@@ -17,7 +17,7 @@ const ADMIN_TASK_STATUSES: TaskStatus[] = ['EN_REVIEW', 'VALIDE', 'NON_VALIDE', 
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
   BASSE: { label: 'Basse', color: '#64748b' },
-  NORMALE: { label: 'Normale', color: '#ccff00' },
+  NORMALE: { label: 'Normale', color: '#0ea5e9' },
   HAUTE: { label: 'Haute', color: '#f59e0b' },
   URGENTE: { label: 'Urgente', color: '#ef4444' },
 }

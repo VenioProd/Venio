@@ -197,8 +197,8 @@ const MyReports = () => {
                   background: 'rgba(255,255,255,0.02)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(204, 255, 0, 0.4)'
-                  e.currentTarget.style.background = 'rgba(204, 255, 0, 0.04)'
+                  e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.4)'
+                  e.currentTarget.style.background = 'rgba(14, 165, 233, 0.04)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
@@ -210,7 +210,7 @@ const MyReports = () => {
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#ccff00"
+                  stroke="#0ea5e9"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -237,8 +237,8 @@ const MyReports = () => {
                         style={{
                           padding: '6px 10px',
                           borderRadius: 6,
-                          background: 'rgba(204, 255, 0, 0.06)',
-                          border: '1px solid rgba(204, 255, 0, 0.15)',
+                          background: 'rgba(14, 165, 233, 0.06)',
+                          border: '1px solid rgba(14, 165, 233, 0.15)',
                           color: 'rgba(255,255,255,0.8)',
                           fontSize: 12,
                           display: 'flex',
@@ -246,7 +246,7 @@ const MyReports = () => {
                           gap: 8,
                         }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ccff00" strokeWidth="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
@@ -416,7 +416,7 @@ const MyReports = () => {
                       style={{
                         padding: '10px 14px',
                         borderRadius: 6,
-                        background: 'rgba(204, 255, 0, 0.08)',
+                        background: 'rgba(14, 165, 233, 0.08)',
                         marginBottom: 12,
                         borderLeft: '3px solid var(--primary)',
                       }}

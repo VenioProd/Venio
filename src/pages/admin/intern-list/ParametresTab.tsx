@@ -76,8 +76,8 @@ export default function ParametresTab({
               cursor: 'pointer',
               padding: '10px 14px',
               borderRadius: 10,
-              background: selectedIds.has(a._id) ? 'rgba(204, 255, 0, 0.1)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${selectedIds.has(a._id) ? 'rgba(204, 255, 0, 0.4)' : 'rgba(255,255,255,0.08)'}`,
+              background: selectedIds.has(a._id) ? 'rgba(14, 165, 233, 0.1)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${selectedIds.has(a._id) ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.08)'}`,
               transition: 'all 0.15s',
             }}
           >

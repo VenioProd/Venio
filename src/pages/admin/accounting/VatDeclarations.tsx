@@ -368,7 +368,7 @@ const VatDeclarations = () => {
                       fontSize: '0.95rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      color: 'rgba(204, 255, 0, 0.85)',
+                      color: 'rgba(14, 165, 233, 0.85)',
                     }}
                   >
                     Lignes CA3

@@ -368,7 +368,7 @@ const InternDetail = () => {
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: 'rgba(204, 255, 0, 0.15)',
+                background: 'rgba(14, 165, 233, 0.15)',
                 color: 'var(--primary)',
               }}
             >
@@ -590,7 +590,7 @@ const InternDetail = () => {
                           cursor: 'pointer',
                           padding: '5px 12px',
                           borderRadius: 6,
-                          background: checked ? 'rgba(204, 255, 0, 0.15)' : 'rgba(255,255,255,0.04)',
+                          background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
                           border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
                           fontSize: 13,
                           color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
@@ -637,7 +637,7 @@ const InternDetail = () => {
                 marginTop: 16,
                 padding: '12px 16px',
                 borderRadius: 8,
-                background: 'rgba(204, 255, 0, 0.06)',
+                background: 'rgba(14, 165, 233, 0.06)',
                 borderLeft: '3px solid var(--primary)',
               }}
             >
@@ -655,7 +655,7 @@ const InternDetail = () => {
                 marginTop: 16,
                 padding: '14px 16px',
                 borderRadius: 8,
-                background: 'rgba(204, 255, 0, 0.06)',
+                background: 'rgba(14, 165, 233, 0.06)',
                 borderLeft: '3px solid var(--primary)',
               }}
             >
@@ -671,8 +671,8 @@ const InternDetail = () => {
                     textDecoration: 'none',
                     padding: '3px 8px',
                     borderRadius: 4,
-                    border: '1px solid rgba(204, 255, 0, 0.3)',
-                    background: 'rgba(204, 255, 0, 0.08)',
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    background: 'rgba(14, 165, 233, 0.08)',
                   }}
                 >
                   Ouvrir Nextcloud
@@ -738,9 +738,9 @@ const InternDetail = () => {
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: conventionUploading ? 'rgba(255,255,255,0.06)' : 'rgba(204, 255, 0, 0.15)',
+                background: conventionUploading ? 'rgba(255,255,255,0.06)' : 'rgba(14, 165, 233, 0.15)',
                 color: conventionUploading ? 'rgba(255,255,255,0.3)' : 'var(--primary)',
-                border: '1px solid rgba(204, 255, 0, 0.3)',
+                border: '1px solid rgba(14, 165, 233, 0.3)',
                 cursor: conventionUploading ? 'not-allowed' : 'pointer',
               }}
             >
@@ -814,9 +814,9 @@ const InternDetail = () => {
                       padding: '5px 10px',
                       borderRadius: 5,
                       fontSize: 12,
-                      background: 'rgba(204, 255, 0, 0.08)',
+                      background: 'rgba(14, 165, 233, 0.08)',
                       color: 'var(--primary)',
-                      border: '1px solid rgba(204, 255, 0, 0.2)',
+                      border: '1px solid rgba(14, 165, 233, 0.2)',
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -967,8 +967,8 @@ const InternDetail = () => {
                             borderRadius: 4,
                             fontSize: 11,
                             cursor: 'pointer',
-                            border: '1px solid rgba(204, 255, 0, 0.3)',
-                            background: 'rgba(204, 255, 0, 0.08)',
+                            border: '1px solid rgba(14, 165, 233, 0.3)',
+                            background: 'rgba(14, 165, 233, 0.08)',
                             color: 'var(--primary)',
                           }}
                         >
@@ -1083,7 +1083,7 @@ const InternDetail = () => {
                         style={{
                           padding: '10px 14px',
                           borderRadius: 6,
-                          background: 'rgba(204, 255, 0, 0.08)',
+                          background: 'rgba(14, 165, 233, 0.08)',
                           borderLeft: '3px solid var(--primary)',
                           marginBottom: 12,
                         }}
@@ -1225,7 +1225,7 @@ const InternDetail = () => {
                         style={{
                           padding: '10px 14px',
                           borderRadius: 6,
-                          background: 'rgba(204, 255, 0, 0.08)',
+                          background: 'rgba(14, 165, 233, 0.08)',
                           marginBottom: 12,
                           borderLeft: '3px solid var(--primary)',
                         }}

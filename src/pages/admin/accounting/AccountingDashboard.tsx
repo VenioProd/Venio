@@ -237,7 +237,7 @@ const AccountingDashboard = () => {
             value={fiscalYear?._id || ''}
             style={{
               background: 'rgba(15,15,20,0.7)',
-              border: '1px solid rgba(204, 255, 0, 0.25)',
+              border: '1px solid rgba(14, 165, 233, 0.25)',
               borderRadius: 8,
               color: 'rgba(255,255,255,0.85)',
               padding: '8px 12px',

@@ -68,7 +68,7 @@ function hexToRgb(hex: string): string {
           .join('')
       : m
   const n = parseInt(full, 16)
-  if (Number.isNaN(n)) return '204, 255, 0'
+  if (Number.isNaN(n)) return '14, 165, 233'
   return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`
 }
 

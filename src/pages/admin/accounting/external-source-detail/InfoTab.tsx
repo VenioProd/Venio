@@ -151,7 +151,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
         <div
           style={{
             background: 'rgba(15,15,20,0.7)',
-            border: '1px solid rgba(204, 255, 0, 0.2)',
+            border: '1px solid rgba(14, 165, 233, 0.2)',
             borderRadius: 10,
             padding: 14,
             fontFamily: "'SF Mono', Menlo, Consolas, monospace",
@@ -184,7 +184,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             fontSize: '0.85rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
-            color: 'rgba(204, 255, 0, 0.85)',
+            color: 'rgba(14, 165, 233, 0.85)',
           }}
         >
           Headers requis

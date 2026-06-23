@@ -251,8 +251,8 @@ const AdminList = () => {
                       <span
                         className="admin-card-role"
                         style={{
-                          background: 'rgba(204, 255, 0, 0.12)',
-                          borderColor: 'rgba(204, 255, 0, 0.4)',
+                          background: 'rgba(14, 165, 233, 0.12)',
+                          borderColor: 'rgba(14, 165, 233, 0.4)',
                           color: 'var(--primary)',
                         }}
                       >

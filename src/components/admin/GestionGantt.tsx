@@ -3,7 +3,7 @@ import type { Task } from '../../types/task.types'
 
 const PRIORITY_COLORS: Record<string, string> = {
   BASSE: '#64748b',
-  NORMALE: '#ccff00',
+  NORMALE: '#0ea5e9',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
@@ -347,7 +347,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
               {/* Rows & bars */}
               {ganttTasks.map((task, idx) => {
                 const { left, width } = getBarPosition(task)
-                const color = PRIORITY_COLORS[task.priority] || '#ccff00'
+                const color = PRIORITY_COLORS[task.priority] || '#0ea5e9'
                 const isOverdue =
                   task.dueDate &&
                   task.status !== 'TERMINE' &&

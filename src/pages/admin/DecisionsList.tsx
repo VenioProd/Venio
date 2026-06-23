@@ -263,7 +263,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
 
 const PRIORITY_COLORS: Record<DecisionPriority, string> = {
   BASSE: '#64748b',
-  NORMALE: '#ccff00',
+  NORMALE: '#0ea5e9',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
@@ -604,9 +604,9 @@ export default function DecisionsList() {
                                     fontSize: 12,
                                     padding: '2px 8px',
                                     borderRadius: 12,
-                                    background: 'rgba(204, 255, 0, 0.12)',
+                                    background: 'rgba(14, 165, 233, 0.12)',
                                     color: 'var(--primary)',
-                                    border: '1px solid rgba(204, 255, 0, 0.25)',
+                                    border: '1px solid rgba(14, 165, 233, 0.25)',
                                   }}
                                 >
                                   {typeof r === 'string' ? r : r.name || r.email}

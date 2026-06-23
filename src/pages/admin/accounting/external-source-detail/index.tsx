@@ -198,7 +198,7 @@ const ExternalSourceDetail = () => {
           padding: 6,
           borderRadius: 12,
           background: 'rgba(15,15,20,0.6)',
-          border: '1px solid rgba(204, 255, 0, 0.18)',
+          border: '1px solid rgba(14, 165, 233, 0.18)',
           flexWrap: 'wrap',
         }}
       >
@@ -213,13 +213,13 @@ const ExternalSourceDetail = () => {
               borderRadius: 8,
               background:
                 activeTab === t.id
-                  ? 'linear-gradient(135deg, rgba(204, 255, 0, 0.25) 0%, rgba(204, 255, 0, 0.18) 100%)'
+                  ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.18) 100%)'
                   : 'transparent',
               color: activeTab === t.id ? '#fff' : 'rgba(255,255,255,0.65)',
               cursor: 'pointer',
               fontSize: '0.88rem',
               fontWeight: 500,
-              borderColor: activeTab === t.id ? 'rgba(204, 255, 0, 0.5)' : 'transparent',
+              borderColor: activeTab === t.id ? 'rgba(14, 165, 233, 0.5)' : 'transparent',
               transition: 'all 0.2s ease',
             }}
           >

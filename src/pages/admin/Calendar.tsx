@@ -42,7 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const LEGEND_ITEMS = [
-  { type: 'task', label: 'Tâches', color: '#ccff00' },
+  { type: 'task', label: 'Tâches', color: '#0ea5e9' },
   { type: 'deadline', label: 'Deadlines', color: '#ef4444' },
   { type: 'project_start', label: 'Début projet', color: '#22c55e' },
   { type: 'project_end', label: 'Fin projet', color: '#f97316' },

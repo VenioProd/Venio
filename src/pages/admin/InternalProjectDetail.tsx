@@ -564,12 +564,12 @@ export default function InternalProjectDetail() {
                       : isBehind
                         ? 'rgba(251,191,36,0.2)'
                         : p.user?._id === user?._id
-                          ? 'rgba(204, 255, 0, 0.15)'
+                          ? 'rgba(14, 165, 233, 0.15)'
                           : 'rgba(255,255,255,0.05)'
                     const cardBg = p.blocked
                       ? 'rgba(248,113,113,0.04)'
                       : p.user?._id === user?._id
-                        ? 'rgba(204, 255, 0, 0.05)'
+                        ? 'rgba(14, 165, 233, 0.05)'
                         : 'rgba(255,255,255,0.02)'
                     const barColor = p.blocked ? '#f87171' : p.progress === 100 ? '#10b981' : 'var(--primary)'
                     return (
@@ -610,8 +610,8 @@ export default function InternalProjectDetail() {
                                 style={{
                                   fontSize: 10,
                                   color: 'var(--primary)',
-                                  background: 'rgba(204, 255, 0, 0.1)',
-                                  border: '1px solid rgba(204, 255, 0, 0.2)',
+                                  background: 'rgba(14, 165, 233, 0.1)',
+                                  border: '1px solid rgba(14, 165, 233, 0.2)',
                                   borderRadius: 8,
                                   padding: '1px 6px',
                                 }}
@@ -944,8 +944,8 @@ export default function InternalProjectDetail() {
                           width: 16,
                           height: 16,
                           borderRadius: '50%',
-                          background: 'rgba(204, 255, 0, 0.15)',
-                          border: '1px solid rgba(204, 255, 0, 0.3)',
+                          background: 'rgba(14, 165, 233, 0.15)',
+                          border: '1px solid rgba(14, 165, 233, 0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1118,8 +1118,8 @@ export default function InternalProjectDetail() {
                           gap: 3,
                           padding: '2px 7px',
                           borderRadius: 9,
-                          border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(204, 255, 0, 0.4)' : 'rgba(255,255,255,0.07)'}`,
-                          background: stepAssigneeInputs[m._id] === a._id ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+                          border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                          background: stepAssigneeInputs[m._id] === a._id ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
                           color: stepAssigneeInputs[m._id] === a._id ? 'var(--primary)' : 'var(--text-secondary)',
                           fontSize: 11,
                           cursor: 'pointer',
@@ -1166,8 +1166,8 @@ export default function InternalProjectDetail() {
                     style={{
                       padding: '5px 10px',
                       borderRadius: 5,
-                      border: '1px solid rgba(204, 255, 0, 0.3)',
-                      background: 'rgba(204, 255, 0, 0.08)',
+                      border: '1px solid rgba(14, 165, 233, 0.3)',
+                      background: 'rgba(14, 165, 233, 0.08)',
                       color: 'var(--primary)',
                       fontSize: 14,
                       cursor: 'pointer',
@@ -1202,8 +1202,8 @@ export default function InternalProjectDetail() {
                     fontSize: 11,
                     padding: '1px 7px',
                     borderRadius: 8,
-                    background: 'rgba(204, 255, 0, 0.1)',
-                    border: '1px solid rgba(204, 255, 0, 0.25)',
+                    background: 'rgba(14, 165, 233, 0.1)',
+                    border: '1px solid rgba(14, 165, 233, 0.25)',
                     color: 'var(--primary)',
                   }}
                 >
@@ -1226,8 +1226,8 @@ export default function InternalProjectDetail() {
                       marginBottom: 6,
                       padding: '8px 10px',
                       borderRadius: 7,
-                      background: d.done ? 'rgba(204, 255, 0, 0.04)' : 'rgba(255,255,255,0.02)',
-                      border: `1px solid ${d.done ? 'rgba(204, 255, 0, 0.18)' : 'rgba(255,255,255,0.05)'}`,
+                      background: d.done ? 'rgba(14, 165, 233, 0.04)' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${d.done ? 'rgba(14, 165, 233, 0.18)' : 'rgba(255,255,255,0.05)'}`,
                     }}
                   >
                     <input
@@ -1252,8 +1252,8 @@ export default function InternalProjectDetail() {
                               width: 14,
                               height: 14,
                               borderRadius: '50%',
-                              background: 'rgba(204, 255, 0, 0.15)',
-                              border: '1px solid rgba(204, 255, 0, 0.3)',
+                              background: 'rgba(14, 165, 233, 0.15)',
+                              border: '1px solid rgba(14, 165, 233, 0.3)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1321,8 +1321,8 @@ export default function InternalProjectDetail() {
                       style={{
                         padding: '2px 7px',
                         borderRadius: 9,
-                        border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(204, 255, 0, 0.35)' : 'rgba(255,255,255,0.07)'}`,
-                        background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(204, 255, 0, 0.08)' : 'transparent',
+                        border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(14, 165, 233, 0.35)' : 'rgba(255,255,255,0.07)'}`,
+                        background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
                         color: !deliverableInputs[m._id]?.assignedTo ? 'var(--primary)' : 'var(--text-secondary)',
                         fontSize: 11,
                         cursor: 'pointer',
@@ -1349,9 +1349,9 @@ export default function InternalProjectDetail() {
                           gap: 3,
                           padding: '2px 7px',
                           borderRadius: 9,
-                          border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(204, 255, 0, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                          border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
                           background:
-                            deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+                            deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
                           color:
                             deliverableInputs[m._id]?.assignedTo === a._id ? 'var(--primary)' : 'var(--text-secondary)',
                           fontSize: 11,
@@ -1400,8 +1400,8 @@ export default function InternalProjectDetail() {
                     style={{
                       padding: '5px 10px',
                       borderRadius: 5,
-                      border: '1px solid rgba(204, 255, 0, 0.3)',
-                      background: 'rgba(204, 255, 0, 0.08)',
+                      border: '1px solid rgba(14, 165, 233, 0.3)',
+                      background: 'rgba(14, 165, 233, 0.08)',
                       color: 'var(--primary)',
                       fontSize: 14,
                       cursor: 'pointer',
@@ -1613,8 +1613,8 @@ export default function InternalProjectDetail() {
                   fontWeight: 600,
                   padding: '2px 8px',
                   borderRadius: 4,
-                  background: 'rgba(204, 255, 0, 0.12)',
-                  border: '1px solid rgba(204, 255, 0, 0.3)',
+                  background: 'rgba(14, 165, 233, 0.12)',
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
                   color: 'var(--primary)',
                 }}
               >
@@ -1692,8 +1692,8 @@ export default function InternalProjectDetail() {
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
-            border: `1px solid ${activeTab === 'overview' ? 'rgba(204, 255, 0, 0.45)' : 'rgba(255,255,255,0.1)'}`,
-            background: activeTab === 'overview' ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+            border: `1px solid ${activeTab === 'overview' ? 'rgba(14, 165, 233, 0.45)' : 'rgba(255,255,255,0.1)'}`,
+            background: activeTab === 'overview' ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
             color: activeTab === 'overview' ? 'var(--primary)' : 'var(--text-secondary)',
             transition: 'all .15s',
           }}
@@ -1796,7 +1796,7 @@ export default function InternalProjectDetail() {
                       gap: 5,
                       padding: '5px 11px',
                       border: 'none',
-                      background: missionView === v ? 'rgba(204, 255, 0, 0.14)' : 'transparent',
+                      background: missionView === v ? 'rgba(14, 165, 233, 0.14)' : 'transparent',
                       color: missionView === v ? 'var(--primary)' : 'var(--text-secondary)',
                       fontSize: 12,
                       fontWeight: 600,
@@ -2024,7 +2024,7 @@ export default function InternalProjectDetail() {
                                 cursor: 'pointer',
                                 borderBottom: isExpanded ? 'none' : '1px solid rgba(255,255,255,0.05)',
                                 background: isExpanded
-                                  ? 'rgba(204, 255, 0, 0.06)'
+                                  ? 'rgba(14, 165, 233, 0.06)'
                                   : isOverdue
                                     ? 'rgba(248,113,113,0.04)'
                                     : 'transparent',
@@ -2223,7 +2223,7 @@ export default function InternalProjectDetail() {
                               <tr
                                 style={{
                                   borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                  background: 'rgba(204, 255, 0, 0.04)',
+                                  background: 'rgba(14, 165, 233, 0.04)',
                                 }}
                               >
                                 <td colSpan={8} style={{ padding: 0 }}>
@@ -2254,7 +2254,7 @@ export default function InternalProjectDetail() {
                           marginBottom: 10,
                           borderRadius: 10,
                           background: 'rgba(255,255,255,0.02)',
-                          border: `1px solid ${isExpanded ? 'rgba(204, 255, 0, 0.2)' : 'rgba(255,255,255,0.06)'}`,
+                          border: `1px solid ${isExpanded ? 'rgba(14, 165, 233, 0.2)' : 'rgba(255,255,255,0.06)'}`,
                           overflow: 'hidden',
                           transition: 'border-color .15s',
                         }}

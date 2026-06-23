@@ -18,8 +18,8 @@ export default function MissionForm({ form, setForm, members, saving, onSubmit, 
         marginBottom: 16,
         padding: '16px',
         borderRadius: 10,
-        background: 'rgba(204, 255, 0, 0.04)',
-        border: '1px solid rgba(204, 255, 0, 0.15)',
+        background: 'rgba(14, 165, 233, 0.04)',
+        border: '1px solid rgba(14, 165, 233, 0.15)',
       }}
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

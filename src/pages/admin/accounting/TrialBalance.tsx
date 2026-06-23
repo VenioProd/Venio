@@ -227,7 +227,7 @@ const TrialBalance = () => {
                         fontSize: '0.78rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
-                        color: 'rgba(204, 255, 0, 0.85)',
+                        color: 'rgba(14, 165, 233, 0.85)',
                         fontWeight: 600,
                       }}
                     >
@@ -256,7 +256,7 @@ const TrialBalance = () => {
             </tbody>
             {totals && (
               <tfoot>
-                <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                   <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, padding: '14px' }}>
                     Totaux
                   </td>

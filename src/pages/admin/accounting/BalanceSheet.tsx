@@ -206,7 +206,7 @@ const BalanceSheet = () => {
                     fontSize: '1rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    color: 'rgba(204, 255, 0, 0.9)',
+                    color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
                   Actif
@@ -226,7 +226,7 @@ const BalanceSheet = () => {
                                 fontSize: '0.78rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
-                                color: 'rgba(204, 255, 0, 0.85)',
+                                color: 'rgba(14, 165, 233, 0.85)',
                                 fontWeight: 600,
                               }}
                             >
@@ -256,7 +256,7 @@ const BalanceSheet = () => {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
                           Total Actif
                         </td>
@@ -277,7 +277,7 @@ const BalanceSheet = () => {
                     fontSize: '1rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    color: 'rgba(204, 255, 0, 0.9)',
+                    color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
                   Passif
@@ -297,7 +297,7 @@ const BalanceSheet = () => {
                                 fontSize: '0.78rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
-                                color: 'rgba(204, 255, 0, 0.85)',
+                                color: 'rgba(14, 165, 233, 0.85)',
                                 fontWeight: 600,
                               }}
                             >
@@ -327,8 +327,8 @@ const BalanceSheet = () => {
                       ))}
                       <tr
                         style={{
-                          background: 'rgba(204, 255, 0, 0.06)',
-                          borderTop: '1px solid rgba(204, 255, 0, 0.2)',
+                          background: 'rgba(14, 165, 233, 0.06)',
+                          borderTop: '1px solid rgba(14, 165, 233, 0.2)',
                         }}
                       >
                         <td
@@ -362,7 +362,7 @@ const BalanceSheet = () => {
                       </tr>
                     </tbody>
                     <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
                           Total Passif
                         </td>

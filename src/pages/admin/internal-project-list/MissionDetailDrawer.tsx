@@ -86,12 +86,12 @@ export default function MissionDetailDrawer({ ctx }: Props) {
   const SC: Record<string, string> = { A_FAIRE: '#fde047', EN_COURS: 'var(--primary)', TERMINE: '#6ee7b7' }
   const SBg: Record<string, string> = {
     A_FAIRE: 'rgba(234,179,8,0.12)',
-    EN_COURS: 'rgba(204, 255, 0, 0.12)',
+    EN_COURS: 'rgba(14, 165, 233, 0.12)',
     TERMINE: 'rgba(16,185,129,0.12)',
   }
   const SBo: Record<string, string> = {
     A_FAIRE: 'rgba(234,179,8,0.3)',
-    EN_COURS: 'rgba(204, 255, 0, 0.3)',
+    EN_COURS: 'rgba(14, 165, 233, 0.3)',
     TERMINE: 'rgba(16,185,129,0.3)',
   }
   const doneCount = m.steps?.filter((s) => s.done).length ?? 0
@@ -166,7 +166,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
         <div
           style={{
             padding: '22px 24px 18px',
-            background: 'linear-gradient(180deg, rgba(204, 255, 0, 0.06) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(14, 165, 233, 0.06) 0%, transparent 100%)',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}
         >
@@ -179,8 +179,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     fontWeight: 600,
                     padding: '2px 8px',
                     borderRadius: 4,
-                    background: 'rgba(204, 255, 0, 0.12)',
-                    border: '1px solid rgba(204, 255, 0, 0.25)',
+                    background: 'rgba(14, 165, 233, 0.12)',
+                    border: '1px solid rgba(14, 165, 233, 0.25)',
                     color: 'var(--primary)',
                   }}
                 >
@@ -394,14 +394,14 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       : p.status === 'TERMINE'
                         ? 'rgba(16,185,129,0.15)'
                         : p.user?._id === user?._id
-                          ? 'rgba(204, 255, 0, 0.15)'
+                          ? 'rgba(14, 165, 233, 0.15)'
                           : 'rgba(165,180,207,0.12)'
                     const avatarBorder = p.blocked
                       ? 'rgba(248,113,113,0.4)'
                       : p.status === 'TERMINE'
                         ? 'rgba(16,185,129,0.4)'
                         : p.user?._id === user?._id
-                          ? 'rgba(204, 255, 0, 0.3)'
+                          ? 'rgba(14, 165, 233, 0.3)'
                           : 'rgba(165,180,207,0.2)'
                     const avatarColor = p.blocked
                       ? '#f87171'
@@ -415,12 +415,12 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       : isBehind
                         ? 'rgba(251,191,36,0.2)'
                         : p.user?._id === user?._id
-                          ? 'rgba(204, 255, 0, 0.15)'
+                          ? 'rgba(14, 165, 233, 0.15)'
                           : 'rgba(255,255,255,0.05)'
                     const cardBg = p.blocked
                       ? 'rgba(248,113,113,0.04)'
                       : p.user?._id === user?._id
-                        ? 'rgba(204, 255, 0, 0.05)'
+                        ? 'rgba(14, 165, 233, 0.05)'
                         : 'rgba(255,255,255,0.02)'
                     const barColor = p.blocked
                       ? '#f87171'
@@ -469,8 +469,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                 style={{
                                   fontSize: 10,
                                   color: 'var(--primary)',
-                                  background: 'rgba(204, 255, 0, 0.1)',
-                                  border: '1px solid rgba(204, 255, 0, 0.2)',
+                                  background: 'rgba(14, 165, 233, 0.1)',
+                                  border: '1px solid rgba(14, 165, 233, 0.2)',
                                   borderRadius: 8,
                                   padding: '1px 6px',
                                 }}
@@ -623,11 +623,11 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   color: myDelivsDone === myDelivs.length ? 'var(--primary)' : 'var(--text-secondary)',
                                   background:
                                     myDelivsDone === myDelivs.length
-                                      ? 'rgba(204, 255, 0, 0.08)'
+                                      ? 'rgba(14, 165, 233, 0.08)'
                                       : 'rgba(255,255,255,0.04)',
                                   borderRadius: 6,
                                   padding: '2px 7px',
-                                  border: `1px solid ${myDelivsDone === myDelivs.length ? 'rgba(204, 255, 0, 0.2)' : 'rgba(255,255,255,0.06)'}`,
+                                  border: `1px solid ${myDelivsDone === myDelivs.length ? 'rgba(14, 165, 233, 0.2)' : 'rgba(255,255,255,0.06)'}`,
                                 }}
                               >
                                 📦 {myDelivsDone}/{myDelivs.length} livrables
@@ -811,8 +811,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                           width: 18,
                           height: 18,
                           borderRadius: '50%',
-                          background: 'rgba(204, 255, 0, 0.15)',
-                          border: '1px solid rgba(204, 255, 0, 0.3)',
+                          background: 'rgba(14, 165, 233, 0.15)',
+                          border: '1px solid rgba(14, 165, 233, 0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -954,8 +954,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                         gap: 4,
                         padding: '2px 8px',
                         borderRadius: 10,
-                        border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(204, 255, 0, 0.4)' : 'rgba(255,255,255,0.07)'}`,
-                        background: stepAssigneeInputs[m._id] === a._id ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+                        border: `1px solid ${stepAssigneeInputs[m._id] === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                        background: stepAssigneeInputs[m._id] === a._id ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
                         color: stepAssigneeInputs[m._id] === a._id ? 'var(--primary)' : 'var(--text-secondary)',
                         fontSize: 11,
                         cursor: 'pointer',
@@ -1014,8 +1014,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                   style={{
                     padding: '6px 12px',
                     borderRadius: 6,
-                    border: '1px solid rgba(204, 255, 0, 0.3)',
-                    background: 'rgba(204, 255, 0, 0.08)',
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    background: 'rgba(14, 165, 233, 0.08)',
                     color: 'var(--primary)',
                     fontSize: 15,
                     cursor: 'pointer',
@@ -1039,8 +1039,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                   fontSize: 11,
                   padding: '1px 7px',
                   borderRadius: 8,
-                  background: 'rgba(204, 255, 0, 0.1)',
-                  border: '1px solid rgba(204, 255, 0, 0.25)',
+                  background: 'rgba(14, 165, 233, 0.1)',
+                  border: '1px solid rgba(14, 165, 233, 0.25)',
                   color: 'var(--primary)',
                 }}
               >
@@ -1064,8 +1064,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     marginBottom: 8,
                     padding: '10px 12px',
                     borderRadius: 8,
-                    background: d.done ? 'rgba(204, 255, 0, 0.04)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${d.done ? 'rgba(204, 255, 0, 0.18)' : 'rgba(255,255,255,0.05)'}`,
+                    background: d.done ? 'rgba(14, 165, 233, 0.04)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${d.done ? 'rgba(14, 165, 233, 0.18)' : 'rgba(255,255,255,0.05)'}`,
                   }}
                 >
                   <input
@@ -1076,7 +1076,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       cursor: 'pointer',
                       width: 15,
                       height: 15,
-                      accentColor: '#ccff00',
+                      accentColor: '#0ea5e9',
                       flexShrink: 0,
                       marginTop: 2,
                     }}
@@ -1090,8 +1090,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                             width: 16,
                             height: 16,
                             borderRadius: '50%',
-                            background: 'rgba(204, 255, 0, 0.15)',
-                            border: '1px solid rgba(204, 255, 0, 0.3)',
+                            background: 'rgba(14, 165, 233, 0.15)',
+                            border: '1px solid rgba(14, 165, 233, 0.3)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1159,8 +1159,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     style={{
                       padding: '2px 8px',
                       borderRadius: 10,
-                      border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(204, 255, 0, 0.35)' : 'rgba(255,255,255,0.07)'}`,
-                      background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(204, 255, 0, 0.08)' : 'transparent',
+                      border: `1px solid ${!deliverableInputs[m._id]?.assignedTo ? 'rgba(14, 165, 233, 0.35)' : 'rgba(255,255,255,0.07)'}`,
+                      background: !deliverableInputs[m._id]?.assignedTo ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
                       color: !deliverableInputs[m._id]?.assignedTo ? 'var(--primary)' : 'var(--text-secondary)',
                       fontSize: 11,
                       cursor: 'pointer',
@@ -1187,9 +1187,9 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                         gap: 4,
                         padding: '2px 8px',
                         borderRadius: 10,
-                        border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(204, 255, 0, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                        border: `1px solid ${deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
                         background:
-                          deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(204, 255, 0, 0.1)' : 'transparent',
+                          deliverableInputs[m._id]?.assignedTo === a._id ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
                         color:
                           deliverableInputs[m._id]?.assignedTo === a._id ? 'var(--primary)' : 'var(--text-secondary)',
                         fontSize: 11,
@@ -1238,8 +1238,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                   style={{
                     padding: '6px 12px',
                     borderRadius: 6,
-                    border: '1px solid rgba(204, 255, 0, 0.3)',
-                    background: 'rgba(204, 255, 0, 0.08)',
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    background: 'rgba(14, 165, 233, 0.08)',
                     color: 'var(--primary)',
                     fontSize: 15,
                     cursor: 'pointer',
@@ -1289,7 +1289,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     height="14"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#ccff00"
+                    stroke="#0ea5e9"
                     strokeWidth="2.5"
                     style={{ flexShrink: 0 }}
                   >
@@ -1318,8 +1318,8 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       fontSize: 11,
                       padding: '3px 8px',
                       borderRadius: 6,
-                      border: '1px solid rgba(204, 255, 0, 0.3)',
-                      background: 'rgba(204, 255, 0, 0.08)',
+                      border: '1px solid rgba(14, 165, 233, 0.3)',
+                      background: 'rgba(14, 165, 233, 0.08)',
                       color: 'var(--primary)',
                       cursor: 'pointer',
                       flexShrink: 0,

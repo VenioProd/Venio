@@ -43,9 +43,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  IA: '#ccff00',
+  IA: '#0ea5e9',
   DESIGN: '#ffffff',
-  DEV: '#a5d400',
+  DEV: '#0284c7',
   MARKETING: '#f59e0b',
   COMMUNICATION: '#22c55e',
   GESTION: '#9b9b9b',
@@ -282,9 +282,9 @@ const ToolAccessList = () => {
                               fontSize: 11,
                               padding: '2px 8px',
                               borderRadius: 20,
-                              background: 'rgba(204, 255, 0, 0.15)',
+                              background: 'rgba(14, 165, 233, 0.15)',
                               color: 'var(--primary)',
-                              border: '1px solid rgba(204, 255, 0, 0.3)',
+                              border: '1px solid rgba(14, 165, 233, 0.3)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -440,7 +440,7 @@ const ToolAccessList = () => {
               padding: 28,
               width: '100%',
               maxWidth: 480,
-              border: '1px solid rgba(204, 255, 0, 0.2)',
+              border: '1px solid rgba(14, 165, 233, 0.2)',
               boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
             }}
             onClick={(event) => event.stopPropagation()}
@@ -544,7 +544,7 @@ const ToolAccessList = () => {
                           padding: '4px 12px',
                           borderRadius: 20,
                           border: `1px solid ${checked ? 'var(--primary)' : 'var(--border-color)'}`,
-                          background: checked ? 'rgba(204, 255, 0, 0.15)' : 'transparent',
+                          background: checked ? 'rgba(14, 165, 233, 0.15)' : 'transparent',
                           color: checked ? 'var(--primary)' : 'var(--text-muted)',
                           fontSize: 12,
                           cursor: 'pointer',

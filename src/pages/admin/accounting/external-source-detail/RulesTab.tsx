@@ -195,7 +195,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
         <div
           className="accounting-card"
           style={{
-            background: 'rgba(204, 255, 0, 0.04)',
+            background: 'rgba(14, 165, 233, 0.04)',
             marginBottom: 16,
           }}
         >
@@ -240,7 +240,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(204, 255, 0, 0.85)',
+                color: 'rgba(14, 165, 233, 0.85)',
                 fontSize: '0.85rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -407,7 +407,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(204, 255, 0, 0.85)',
+                color: 'rgba(14, 165, 233, 0.85)',
                 fontSize: '0.85rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',

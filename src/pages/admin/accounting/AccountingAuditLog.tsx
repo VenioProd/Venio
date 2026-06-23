@@ -192,7 +192,7 @@ const AccountingAuditLog = () => {
                         {ACTION_LABELS[e.action] || e.action}
                       </span>
                     </td>
-                    <td style={{ color: 'rgba(204, 255, 0, 0.85)', fontSize: '0.85rem' }}>{e.entityType}</td>
+                    <td style={{ color: 'rgba(14, 165, 233, 0.85)', fontSize: '0.85rem' }}>{e.entityType}</td>
                     <td>
                       {(() => {
                         const link = entityLink(e)

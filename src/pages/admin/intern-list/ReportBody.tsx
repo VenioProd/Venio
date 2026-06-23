@@ -80,7 +80,7 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
           style={{
             padding: '10px 14px',
             borderRadius: 6,
-            background: 'rgba(204, 255, 0, 0.08)',
+            background: 'rgba(14, 165, 233, 0.08)',
             marginBottom: 12,
             borderLeft: '3px solid var(--primary)',
           }}

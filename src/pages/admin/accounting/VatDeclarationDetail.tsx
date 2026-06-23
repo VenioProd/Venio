@@ -280,7 +280,7 @@ const VatDeclarationDetail = () => {
             className="accounting-card"
             style={{
               marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(204, 255, 0, 0.07) 0%, rgba(59,130,246,0.03) 100%)',
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.07) 0%, rgba(59,130,246,0.03) 100%)',
             }}
           >
             <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Récapitulatif</h2>
@@ -386,7 +386,7 @@ const VatDeclarationDetail = () => {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                  <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                     <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.collectedByRate))}
@@ -425,7 +425,7 @@ const VatDeclarationDetail = () => {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                  <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                     <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.deductibleByRate))}

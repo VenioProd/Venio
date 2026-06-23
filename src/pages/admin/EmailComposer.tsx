@@ -382,7 +382,7 @@ export default function EmailComposer() {
                               <span
                                 style={{
                                   fontSize: 10,
-                                  background: 'rgba(204, 255, 0, 0.15)',
+                                  background: 'rgba(14, 165, 233, 0.15)',
                                   color: 'var(--primary)',
                                   padding: '1px 5px',
                                   borderRadius: 4,

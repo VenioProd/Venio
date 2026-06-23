@@ -45,7 +45,7 @@ export default function GestionKpi() {
     let y = 20
 
     doc.setFontSize(18)
-    doc.setTextColor(204, 255, 0)
+    doc.setTextColor(14, 165, 233)
     doc.text('KPI Gestion de Projets', 14, y)
     y += 10
     doc.setFontSize(10)

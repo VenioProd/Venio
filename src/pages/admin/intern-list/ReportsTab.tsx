@@ -47,11 +47,11 @@ export default function ReportsTab({
     grouped[uid].reports.push(r)
   })
   const people = Object.entries(grouped).sort((a, b) => a[1].name.localeCompare(b[1].name))
-  const colors = ['#ccff00', '#9b9b9b', '#22c55e', '#f59e0b', '#ef4444', '#ffffff']
+  const colors = ['#0ea5e9', '#9b9b9b', '#22c55e', '#f59e0b', '#ef4444', '#ffffff']
   const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
   const kanbanCols: { key: string; label: string; color: string }[] = [
     { key: 'BROUILLON', label: 'Brouillon', color: '#a5b4cf' },
-    { key: 'SOUMIS', label: 'Soumis', color: '#ccff00' },
+    { key: 'SOUMIS', label: 'Soumis', color: '#0ea5e9' },
     { key: 'EN_COURS_DE_REVUE', label: 'En revue', color: '#f59e0b' },
     { key: 'VALIDE', label: 'Validé', color: '#22c55e' },
     { key: 'REJETE', label: 'Rejeté', color: '#ef4444' },
@@ -426,7 +426,7 @@ export default function ReportsTab({
                                 marginTop: 6,
                                 padding: '4px 8px',
                                 borderRadius: 4,
-                                background: 'rgba(204, 255, 0, 0.08)',
+                                background: 'rgba(14, 165, 233, 0.08)',
                                 borderLeft: '2px solid var(--primary)',
                               }}
                             >

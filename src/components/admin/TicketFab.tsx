@@ -3,7 +3,7 @@ import { getToken } from '../../lib/api'
 import '../../pages/admin/AdminPortal.css'
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-  QUESTION: { label: 'Question', color: '#ccff00' },
+  QUESTION: { label: 'Question', color: '#0ea5e9' },
   DEMANDE: { label: 'Demande', color: '#9b9b9b' },
   PROBLEME: { label: 'Probleme', color: '#ef4444' },
 }

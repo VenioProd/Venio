@@ -373,8 +373,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <SecretField
         label="VENIO_API_KEY"
         value={credentials.apiKey}
-        color="#ccff00"
-        borderColor="rgba(204,255,0,0.35)"
+        color="#0ea5e9"
+        borderColor="rgba(14,165,233,0.35)"
         fieldKey="apiKey"
         copiedField={copiedField}
         onCopy={onCopy}

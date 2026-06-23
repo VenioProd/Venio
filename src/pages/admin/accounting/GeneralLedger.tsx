@@ -190,7 +190,7 @@ const GeneralLedger = () => {
               <div className="accounting-kpi">
                 <div className="label">Compte</div>
                 <div className="value" style={{ fontSize: '1.1rem' }}>
-                  <span className="code" style={{ color: 'rgba(204, 255, 0, 0.9)' }}>
+                  <span className="code" style={{ color: 'rgba(14, 165, 233, 0.9)' }}>
                     {account?.code}
                   </span>
                   <div
@@ -273,7 +273,7 @@ const GeneralLedger = () => {
                 </tbody>
                 {totals && (
                   <tfoot>
-                    <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+                    <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                       <td colSpan={5} style={{ textAlign: 'right', fontWeight: 600, padding: '14px' }}>
                         Totaux
                       </td>

@@ -37,7 +37,7 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }
   },
   document: {
     label: 'Document',
-    color: '#ccff00',
+    color: '#0ea5e9',
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
   },
   tableur: {
@@ -57,7 +57,7 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }
   },
   audio: {
     label: 'Audio',
-    color: '#a5d400',
+    color: '#0284c7',
     icon: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z',
   },
   archive: {
@@ -257,8 +257,8 @@ export default function InternDocuments() {
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
-            border: '1px solid rgba(204, 255, 0, 0.3)',
-            background: 'rgba(204, 255, 0, 0.08)',
+            border: '1px solid rgba(14, 165, 233, 0.3)',
+            background: 'rgba(14, 165, 233, 0.08)',
             color: 'var(--primary)',
           }}
         >

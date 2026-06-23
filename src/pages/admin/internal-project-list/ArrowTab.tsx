@@ -30,8 +30,8 @@ export default function ArrowTab() {
       <div
         className="portal-card"
         style={{
-          border: '1px solid rgba(204, 255, 0,0.18)',
-          background: 'linear-gradient(135deg, rgba(204, 255, 0,0.08), rgba(204, 255, 0,0.04))',
+          border: '1px solid rgba(14, 165, 233,0.18)',
+          background: 'linear-gradient(135deg, rgba(14, 165, 233,0.08), rgba(14, 165, 233,0.04))',
         }}
       >
         <div
@@ -80,7 +80,7 @@ export default function ArrowTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(140px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Projets actifs', value: arrowActiveProjects.length, color: '#ccff00' },
+          { label: 'Projets actifs', value: arrowActiveProjects.length, color: '#0ea5e9' },
           { label: 'Missions Arrow', value: arrowMissions.length, color: '#9b9b9b' },
           { label: 'Terminées', value: arrowCompletedMissions.length, color: '#6ee7b7' },
           {
@@ -141,8 +141,8 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(204, 255, 0,0.25)',
-                background: 'rgba(204, 255, 0,0.08)',
+                border: '1px solid rgba(14, 165, 233,0.25)',
+                background: 'rgba(14, 165, 233,0.08)',
                 borderRadius: 8,
                 padding: '5px 9px',
                 cursor: 'pointer',
@@ -163,8 +163,8 @@ export default function ArrowTab() {
                   alignItems: 'flex-start',
                   padding: '10px 12px',
                   borderRadius: 8,
-                  background: index === 0 ? 'rgba(204, 255, 0,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${index === 0 ? 'rgba(204, 255, 0,0.22)' : 'rgba(255,255,255,0.06)'}`,
+                  background: index === 0 ? 'rgba(14, 165, 233,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${index === 0 ? 'rgba(14, 165, 233,0.22)' : 'rgba(255,255,255,0.06)'}`,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -178,7 +178,7 @@ export default function ArrowTab() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    background: index === 0 ? 'rgba(204, 255, 0,0.14)' : 'rgba(165,180,207,0.08)',
+                    background: index === 0 ? 'rgba(14, 165, 233,0.14)' : 'rgba(165,180,207,0.08)',
                     color: index === 0 ? 'var(--primary)' : '#9b9b9b',
                     fontSize: 12,
                     fontWeight: 700,
@@ -210,8 +210,8 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(204, 255, 0,0.25)',
-                background: 'rgba(204, 255, 0,0.08)',
+                border: '1px solid rgba(14, 165, 233,0.25)',
+                background: 'rgba(14, 165, 233,0.08)',
                 borderRadius: 8,
                 padding: '5px 9px',
                 cursor: 'pointer',
@@ -433,8 +433,8 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(204, 255, 0,0.25)',
-                background: 'rgba(204, 255, 0,0.08)',
+                border: '1px solid rgba(14, 165, 233,0.25)',
+                background: 'rgba(14, 165, 233,0.08)',
                 borderRadius: 8,
                 padding: '5px 9px',
                 cursor: 'pointer',
@@ -484,8 +484,8 @@ export default function ArrowTab() {
               fontSize: 12,
               fontWeight: 700,
               color: 'var(--primary)',
-              border: '1px solid rgba(204, 255, 0,0.25)',
-              background: 'rgba(204, 255, 0,0.08)',
+              border: '1px solid rgba(14, 165, 233,0.25)',
+              background: 'rgba(14, 165, 233,0.08)',
               borderRadius: 8,
               padding: '5px 9px',
               cursor: 'pointer',

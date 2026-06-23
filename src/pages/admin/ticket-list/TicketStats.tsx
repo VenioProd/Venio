@@ -29,7 +29,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     y += 14
 
     // Separator
-    doc.setDrawColor(204, 255, 0)
+    doc.setDrawColor(14, 165, 233)
     doc.setLineWidth(0.5)
     doc.line(14, y, 196, y)
     y += 10
@@ -181,7 +181,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
           <span className="ticket-kpi-label">Reponses donnees</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#a5d400' }}>
+          <span className="ticket-kpi-value" style={{ color: '#0284c7' }}>
             {kpi.resolutionRate}%
           </span>
           <span className="ticket-kpi-label">Taux de resolution</span>

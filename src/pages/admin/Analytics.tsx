@@ -38,17 +38,17 @@ const PRIORITY_LABELS: Record<string, string> = {
 
 const PRIORITY_COLORS: Record<string, string> = {
   BASSE: '#22c55e',
-  NORMALE: '#ccff00',
+  NORMALE: '#0ea5e9',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  EN_COURS: '#ccff00',
+  EN_COURS: '#0ea5e9',
   EN_ATTENTE: '#f59e0b',
   TERMINE: '#22c55e',
   A_FAIRE: '#94a3b8',
-  EN_REVIEW: '#a5d400',
+  EN_REVIEW: '#0284c7',
 }
 
 const MONTH_LABELS = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -236,7 +236,7 @@ export default function Analytics() {
           <div className="analytics-funnel">
             <div className="analytics-funnel-item">
               <span className="analytics-funnel-label">Total leads</span>
-              <div className="analytics-funnel-bar" style={{ width: '100%', background: 'rgba(204, 255, 0, 0.2)' }}>
+              <div className="analytics-funnel-bar" style={{ width: '100%', background: 'rgba(14, 165, 233, 0.2)' }}>
                 <span>{data.leadStats.total}</span>
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function Analytics() {
                 className="analytics-funnel-bar"
                 style={{
                   width: `${(data.leadStats.active / data.leadStats.total) * 100}%`,
-                  background: 'rgba(204, 255, 0, 0.2)',
+                  background: 'rgba(14, 165, 233, 0.2)',
                 }}
               >
                 <span>{data.leadStats.active}</span>

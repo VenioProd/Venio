@@ -219,8 +219,8 @@ const AdminEdit = () => {
                     borderRadius: 4,
                     fontSize: 11,
                     fontWeight: 600,
-                    background: 'rgba(204, 255, 0, 0.12)',
-                    border: '1px solid rgba(204, 255, 0, 0.4)',
+                    background: 'rgba(14, 165, 233, 0.12)',
+                    border: '1px solid rgba(14, 165, 233, 0.4)',
                     color: 'var(--primary)',
                   }}
                 >
@@ -419,14 +419,14 @@ const AdminEdit = () => {
                             internForm.type === t
                               ? t === 'ALTERNANT'
                                 ? 'rgba(155,155,155,0.15)'
-                                : 'rgba(204, 255, 0, 0.15)'
+                                : 'rgba(14, 165, 233, 0.15)'
                               : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#9b9b9b' : '#ccff00') : 'rgba(255,255,255,0.1)'}`,
+                          border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#9b9b9b' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`,
                           color:
                             internForm.type === t
                               ? t === 'ALTERNANT'
                                 ? '#9b9b9b'
-                                : '#ccff00'
+                                : '#0ea5e9'
                               : 'rgba(255,255,255,0.4)',
                           userSelect: 'none',
                         }}
@@ -552,7 +552,7 @@ const AdminEdit = () => {
                                 cursor: 'pointer',
                                 padding: '5px 12px',
                                 borderRadius: 6,
-                                background: checked ? 'rgba(204, 255, 0, 0.15)' : 'rgba(255,255,255,0.04)',
+                                background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
                                 border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
                                 fontSize: 13,
                                 color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.5)',

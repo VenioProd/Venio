@@ -283,7 +283,7 @@ export default function DashboardTab({
                             fontSize: 10,
                             fontWeight: 600,
                             background:
-                              di.type === 'ALTERNANT' ? 'rgba(204, 255, 0, 0.15)' : 'rgba(155, 155, 155, 0.15)',
+                              di.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155, 155, 155, 0.15)',
                             color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
                           }}
                         >
@@ -301,7 +301,7 @@ export default function DashboardTab({
                                 fontWeight: 600,
                                 padding: '2px 4px',
                                 borderRadius: 3,
-                                background: jours.includes(j) ? 'rgba(204, 255, 0, 0.15)' : 'rgba(255,255,255,0.04)',
+                                background: jours.includes(j) ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
                                 color: jours.includes(j) ? 'var(--primary)' : 'rgba(255,255,255,0.2)',
                               }}
                             >
@@ -372,7 +372,7 @@ export default function DashboardTab({
                 ok: '#22c55e',
               }
               const alertColor = alertColors[alertLevel]
-              const colors = ['#ccff00', '#9b9b9b', '#ffffff', '#a5d400', '#6e6e6e', '#ccff00']
+              const colors = ['#0ea5e9', '#9b9b9b', '#ffffff', '#0284c7', '#6e6e6e', '#0ea5e9']
               const avatarColor = colors[(di.userId?.name || '').charCodeAt(0) % colors.length]
 
               return (
@@ -412,7 +412,7 @@ export default function DashboardTab({
                               fontSize: 10,
                               fontWeight: 600,
                               background:
-                                di.type === 'ALTERNANT' ? 'rgba(204, 255, 0, 0.15)' : 'rgba(155, 155, 155, 0.15)',
+                                di.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155, 155, 155, 0.15)',
                               color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
                             }}
                           >

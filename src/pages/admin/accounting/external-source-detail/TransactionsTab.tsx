@@ -268,7 +268,7 @@ export default function TransactionsTab({
               <pre
                 style={{
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(204, 255, 0, 0.2)',
+                  border: '1px solid rgba(14, 165, 233, 0.2)',
                   borderRadius: 10,
                   padding: 14,
                   fontSize: '0.78rem',
@@ -297,7 +297,7 @@ export default function TransactionsTab({
               <pre
                 style={{
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(204, 255, 0, 0.2)',
+                  border: '1px solid rgba(14, 165, 233, 0.2)',
                   borderRadius: 10,
                   padding: 14,
                   fontSize: '0.78rem',

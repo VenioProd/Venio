@@ -276,7 +276,7 @@ const AgentTokensList: React.FC = () => {
               onClick={() => setStatusFilter(s)}
               className={`portal-button secondary ${statusFilter === s ? 'is-active' : ''}`}
               style={{
-                background: statusFilter === s ? 'var(--accent-bg, rgba(204, 255, 0, 0.15))' : '',
+                background: statusFilter === s ? 'var(--accent-bg, rgba(14, 165, 233, 0.15))' : '',
               }}
             >
               {s === 'ACTIVE' ? 'Actifs' : s === 'REVOKED' ? 'Révoqués' : 'Tous'}
@@ -339,8 +339,8 @@ const AgentTokensList: React.FC = () => {
                       key={s}
                       className="admin-card-role"
                       style={{
-                        background: 'rgba(204, 255, 0, 0.12)',
-                        borderColor: 'rgba(204, 255, 0, 0.35)',
+                        background: 'rgba(14, 165, 233, 0.12)',
+                        borderColor: 'rgba(14, 165, 233, 0.35)',
                         color: 'var(--primary)',
                         fontSize: '0.75rem',
                       }}
@@ -470,8 +470,8 @@ const AgentTokensList: React.FC = () => {
                       onClick={toggleAllScopes}
                       disabled={!scopesCatalog}
                       style={{
-                        background: 'rgba(204, 255, 0, 0.12)',
-                        border: '1px solid rgba(204, 255, 0, 0.35)',
+                        background: 'rgba(14, 165, 233, 0.12)',
+                        border: '1px solid rgba(14, 165, 233, 0.35)',
                         color: 'var(--primary)',
                         padding: '4px 10px',
                         borderRadius: 6,
@@ -517,10 +517,10 @@ const AgentTokensList: React.FC = () => {
                                 gap: 6,
                                 padding: '6px 10px',
                                 background: form.scopes.includes(s)
-                                  ? 'rgba(204, 255, 0, 0.2)'
+                                  ? 'rgba(14, 165, 233, 0.2)'
                                   : 'rgba(255, 255, 255, 0.04)',
                                 border: form.scopes.includes(s)
-                                  ? '1px solid rgba(204, 255, 0, 0.5)'
+                                  ? '1px solid rgba(14, 165, 233, 0.5)'
                                   : '1px solid rgba(255, 255, 255, 0.08)',
                                 borderRadius: 6,
                                 cursor: 'pointer',

@@ -78,7 +78,7 @@ const GroupSection = ({ title, totalLabel, groups, total, details, color }: Grou
                         fontSize: '0.78rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
-                        color: 'rgba(204, 255, 0, 0.85)',
+                        color: 'rgba(14, 165, 233, 0.85)',
                         fontWeight: 600,
                       }}
                     >
@@ -115,7 +115,7 @@ const GroupSection = ({ title, totalLabel, groups, total, details, color }: Grou
             })}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
+            <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
               <td style={{ fontWeight: 700, padding: '14px' }}>{totalLabel}</td>
               <td className="amount" style={{ fontWeight: 700, color }}>
                 {formatEur(total)}

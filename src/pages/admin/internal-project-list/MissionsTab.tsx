@@ -187,12 +187,12 @@ export default function MissionsTab() {
               {missions.map((m) => {
                 const statusBg: Record<string, string> = {
                   A_FAIRE: 'rgba(234,179,8,0.12)',
-                  EN_COURS: 'rgba(204, 255, 0, 0.12)',
+                  EN_COURS: 'rgba(14, 165, 233, 0.12)',
                   TERMINE: 'rgba(16,185,129,0.12)',
                 }
                 const statusBorder: Record<string, string> = {
                   A_FAIRE: 'rgba(234,179,8,0.3)',
-                  EN_COURS: 'rgba(204, 255, 0, 0.3)',
+                  EN_COURS: 'rgba(14, 165, 233, 0.3)',
                   TERMINE: 'rgba(16,185,129,0.3)',
                 }
                 const statusColor: Record<string, string> = {
@@ -217,7 +217,7 @@ export default function MissionsTab() {
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.04)',
                         cursor: 'pointer',
-                        background: isSelected ? 'rgba(204, 255, 0, 0.04)' : 'transparent',
+                        background: isSelected ? 'rgba(14, 165, 233, 0.04)' : 'transparent',
                         transition: 'background .15s',
                       }}
                       onClick={() => setSelectedMission(m._id)}

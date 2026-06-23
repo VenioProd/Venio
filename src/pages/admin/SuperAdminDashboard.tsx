@@ -244,7 +244,7 @@ const SuperAdminDashboard = () => {
                         label: 'CA · mois',
                         value: formatEUR(data.kpis.ca.value),
                         accentColor: 'var(--primary)',
-                        accentRgb: '204, 255, 0',
+                        accentRgb: '14, 165, 233',
                         delta: data.kpis.ca.delta,
                         objective: data.kpis.ca.objective,
                       },
@@ -252,7 +252,7 @@ const SuperAdminDashboard = () => {
                         label: 'Pipeline',
                         value: formatEUR(data.kpis.pipeline.value),
                         accentColor: 'var(--primary)',
-                        accentRgb: '204, 255, 0',
+                        accentRgb: '14, 165, 233',
                         delta: data.kpis.pipeline.delta,
                         to: '/admin/crm',
                       },
@@ -343,14 +343,14 @@ const SuperAdminDashboard = () => {
                 label="Clients"
                 value={data.team.clients}
                 accentColor="var(--primary)"
-                accentRgb="204, 255, 0"
+                accentRgb="14, 165, 233"
                 to="/admin/comptes-clients"
               />
               <DashKpiCard
                 label="Admins"
                 value={data.team.admins}
                 accentColor="var(--primary)"
-                accentRgb="204, 255, 0"
+                accentRgb="14, 165, 233"
                 to="/admin/comptes-admin"
                 icon={<ShieldCheck size={14} />}
               />

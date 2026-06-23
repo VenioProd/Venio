@@ -162,8 +162,8 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: 20,
-                  background: 'rgba(204, 255, 0, 0.12)',
-                  border: '1px solid rgba(204, 255, 0, 0.3)',
+                  background: 'rgba(14, 165, 233, 0.12)',
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
                   color: 'var(--primary)',
                 }}
               >

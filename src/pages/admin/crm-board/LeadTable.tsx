@@ -125,8 +125,8 @@ const LeadTable: React.FC<LeadTableProps> = ({
             alignItems: 'center',
             gap: 12,
             padding: '10px 20px',
-            background: 'rgba(204, 255, 0, 0.08)',
-            borderBottom: '1px solid rgba(204, 255, 0, 0.2)',
+            background: 'rgba(14, 165, 233, 0.08)',
+            borderBottom: '1px solid rgba(14, 165, 233, 0.2)',
           }}
         >
           <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>

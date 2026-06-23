@@ -69,7 +69,7 @@ export default function RotateKeyModal({
             style={{
               padding: '14px 16px',
               background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(204, 255, 0, 0.35)',
+              border: '1px solid rgba(14, 165, 233, 0.35)',
               borderRadius: 10,
               fontFamily: "'SF Mono', Menlo, Consolas, monospace",
               fontSize: '0.92rem',
@@ -106,7 +106,7 @@ export default function RotateKeyModal({
             style={{
               padding: '14px 16px',
               background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(204, 255, 0, 0.35)',
+              border: '1px solid rgba(14, 165, 233, 0.35)',
               borderRadius: 10,
               fontFamily: "'SF Mono', Menlo, Consolas, monospace",
               fontSize: '0.92rem',

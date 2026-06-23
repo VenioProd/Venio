@@ -796,7 +796,7 @@ const InternList = () => {
                             cursor: 'pointer',
                             padding: '4px 10px',
                             borderRadius: 6,
-                            background: checked ? 'rgba(204, 255, 0, 0.15)' : 'rgba(255,255,255,0.04)',
+                            background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
                             border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
                             fontSize: 13,
                             color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
@@ -904,7 +904,7 @@ const InternList = () => {
                           fontSize: 11,
                           fontWeight: 600,
                           background:
-                            intern.type === 'ALTERNANT' ? 'rgba(204, 255, 0, 0.15)' : 'rgba(155,155,155,0.15)',
+                            intern.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155,155,155,0.15)',
                           color: intern.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
                         }}
                       >

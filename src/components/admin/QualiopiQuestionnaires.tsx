@@ -299,8 +299,8 @@ const QualiopiQuestionnaires = () => {
             <button
               className="qq-create-btn"
               style={{
-                background: 'rgba(204, 255, 0, 0.1)',
-                border: '2px solid rgba(204, 255, 0, 0.3)',
+                background: 'rgba(14, 165, 233, 0.1)',
+                border: '2px solid rgba(14, 165, 233, 0.3)',
                 color: 'var(--primary)',
               }}
               onClick={() => setShowCreationLinks(!showCreationLinks)}
@@ -328,7 +328,7 @@ const QualiopiQuestionnaires = () => {
               padding: '20px',
               marginBottom: '16px',
               background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(204, 255, 0, 0.15)',
+              border: '1px solid rgba(14, 165, 233, 0.15)',
               borderRadius: '12px',
             }}
           >
@@ -351,7 +351,7 @@ const QualiopiQuestionnaires = () => {
                   flex: 1,
                   padding: '8px 12px',
                   borderRadius: '8px',
-                  border: '2px solid rgba(204, 255, 0, 0.25)',
+                  border: '2px solid rgba(14, 165, 233, 0.25)',
                   background: 'rgba(255, 255, 255, 0.03)',
                   color: '#ffffff',
                   fontSize: '0.85rem',

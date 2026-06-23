@@ -141,7 +141,7 @@ export default function ProjectFormDrawer({
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
-                    background: form.poles.includes(pole) ? 'rgba(204, 255, 0, 0.2)' : 'transparent',
+                    background: form.poles.includes(pole) ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
                     borderColor: form.poles.includes(pole) ? 'var(--primary)' : 'var(--border)',
                     color: form.poles.includes(pole) ? 'var(--primary)' : 'var(--text-secondary)',
                     transition: 'all .15s',

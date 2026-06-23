@@ -38,8 +38,8 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         style={{
           marginTop: 14,
           padding: '14px 16px',
-          background: 'linear-gradient(135deg, rgba(204,255,0,0.10) 0%, rgba(204,255,0,0.10) 100%)',
-          border: '1px solid rgba(204,255,0,0.25)',
+          background: 'linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(14,165,233,0.10) 100%)',
+          border: '1px solid rgba(14,165,233,0.25)',
           borderRadius: 10,
           fontSize: '0.88rem',
           lineHeight: 1.55,

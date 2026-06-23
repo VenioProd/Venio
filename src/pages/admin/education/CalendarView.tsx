@@ -878,7 +878,7 @@ function CalendarStyles() {
       .edu-cal-event-school {
         display: inline-block; margin-top: 4px;
         font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
-        background: rgba(204, 255, 0, 0.18); color: var(--primary);
+        background: rgba(14, 165, 233, 0.18); color: var(--primary);
         padding: 2px 6px; border-radius: 4px;
       }
       .edu-cal-event.compact {

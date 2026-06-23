@@ -353,7 +353,7 @@ const QualiopiBoard = () => {
           </p>
         </div>
         <div className="qualiopi-hero-badge">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccff00" strokeWidth="1.5">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5">
             <path d="M9 12l2 2 4-4" />
             <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
           </svg>
@@ -759,7 +759,7 @@ const QualiopiBoard = () => {
                   <iframe src={preview.url} className="qualiopi-preview-iframe" title={preview.name} />
                 ) : (
                   <div className="qualiopi-preview-unsupported">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccff00" strokeWidth="1.5">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5">
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>

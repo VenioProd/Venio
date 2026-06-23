@@ -30,8 +30,8 @@ const ACTION_ICONS: Record<ActivityAction, string> = {
 const ACTION_COLORS: Record<string, string> = {
   PROJECT_CREATED: '#10b981',
   STATUS_CHANGED: '#f59e0b',
-  TASK_CREATED: '#ccff00',
-  TASK_MOVED: '#a5d400',
+  TASK_CREATED: '#0ea5e9',
+  TASK_MOVED: '#0284c7',
   TASK_DELETED: '#ef4444',
   DOCUMENT_UPLOADED: '#9b9b9b',
   UPDATE_POSTED: '#ffffff',
@@ -141,8 +141,8 @@ export default function ActivityTimeline({ projectId }: Props) {
                 <div
                   className="activity-item-icon"
                   style={{
-                    background: `${ACTION_COLORS[a.action] || '#ccff00'}20`,
-                    color: ACTION_COLORS[a.action] || '#ccff00',
+                    background: `${ACTION_COLORS[a.action] || '#0ea5e9'}20`,
+                    color: ACTION_COLORS[a.action] || '#0ea5e9',
                   }}
                 >
                   {ACTION_ICONS[a.action] || '\u{1F4CC}'}

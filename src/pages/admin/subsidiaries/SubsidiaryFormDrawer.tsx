@@ -48,7 +48,7 @@ function toForm(s: Subsidiary | null): FormState {
     sector: s?.sector ?? '',
     status: s?.status ?? 'INCUBATION',
     health: s?.health ?? 'WATCH',
-    accentColor: s?.accentColor ?? '#ccff00',
+    accentColor: s?.accentColor ?? '#0ea5e9',
     description: s?.description ?? '',
     lead: s?.lead?._id ?? '',
     foundedYear: s?.foundedYear ? String(s.foundedYear) : '',

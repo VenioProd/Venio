@@ -112,7 +112,7 @@ export default function InternKpi() {
 
     // Titre
     doc.setFontSize(18)
-    doc.setTextColor(204, 255, 0)
+    doc.setTextColor(14, 165, 233)
     doc.text('KPI Stagiaires — Venio', 14, y)
     y += 10
     doc.setFontSize(10)
@@ -156,7 +156,7 @@ export default function InternKpi() {
       }
 
       doc.setFontSize(12)
-      doc.setTextColor(204, 255, 0)
+      doc.setTextColor(14, 165, 233)
       doc.text(`${idx + 1}. ${d.intern.name}`, 14, y)
       y += 7
 
@@ -278,8 +278,8 @@ export default function InternKpi() {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
-              border: '1px solid rgba(204, 255, 0, 0.3)',
-              background: 'rgba(204, 255, 0, 0.08)',
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              background: 'rgba(14, 165, 233, 0.08)',
               color: 'var(--primary)',
             }}
           >
@@ -306,8 +306,8 @@ export default function InternKpi() {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
-              border: '1px solid rgba(204, 255, 0, 0.3)',
-              background: 'rgba(204, 255, 0, 0.08)',
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              background: 'rgba(14, 165, 233, 0.08)',
               color: 'var(--primary)',
             }}
           >
@@ -372,7 +372,7 @@ export default function InternKpi() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {data.map((d) => {
-              const colors = ['#ccff00', '#9b9b9b', '#ffffff', '#a5d400', '#6e6e6e', '#ccff00']
+              const colors = ['#0ea5e9', '#9b9b9b', '#ffffff', '#0284c7', '#6e6e6e', '#0ea5e9']
               const avatarColor = colors[d.intern.name.charCodeAt(0) % colors.length]
               const valColor =
                 d.kpis.validationRate >= 80 ? '#22c55e' : d.kpis.validationRate >= 50 ? '#f59e0b' : '#ef4444'
@@ -558,7 +558,7 @@ export default function InternKpi() {
                       : k.daysSinceLastReport > 1
                         ? 'warning'
                         : 'ok'
-                const colors = ['#ccff00', '#9b9b9b', '#ffffff', '#a5d400', '#6e6e6e', '#ccff00']
+                const colors = ['#0ea5e9', '#9b9b9b', '#ffffff', '#0284c7', '#6e6e6e', '#0ea5e9']
                 const avatarColor = colors[d.intern.name.charCodeAt(0) % colors.length]
 
                 return (
@@ -754,8 +754,8 @@ export default function InternKpi() {
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: 'pointer',
-                          border: '1px solid rgba(204, 255, 0, 0.3)',
-                          background: 'rgba(204, 255, 0, 0.08)',
+                          border: '1px solid rgba(14, 165, 233, 0.3)',
+                          background: 'rgba(14, 165, 233, 0.08)',
                           color: 'var(--primary)',
                         }}
                       >
@@ -810,10 +810,10 @@ export default function InternKpi() {
                                       ? 'rgba(255,255,255,0.06)'
                                       : w.validated === w.reports
                                         ? '#22c55e44'
-                                        : 'rgba(204, 255, 0, 0.27)',
+                                        : 'rgba(14, 165, 233, 0.27)',
                                   border:
                                     w.reports > 0
-                                      ? `1px solid ${w.validated === w.reports ? '#22c55e' : '#ccff00'}`
+                                      ? `1px solid ${w.validated === w.reports ? '#22c55e' : '#0ea5e9'}`
                                       : 'none',
                                   transition: 'height 0.3s',
                                 }}

@@ -21,7 +21,7 @@ import type { AdminUser } from '../../types/crm.types'
 import '../../styles/task-board.css'
 
 const TASK_COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
-  { key: 'A_FAIRE', label: 'A faire', color: '#ccff00' },
+  { key: 'A_FAIRE', label: 'A faire', color: '#0ea5e9' },
   { key: 'EN_COURS', label: 'En cours', color: '#9b9b9b' },
   { key: 'EN_REVIEW', label: 'En review', color: '#f59e0b' },
   { key: 'TERMINE', label: 'Termine', color: '#22c55e' },
@@ -29,7 +29,7 @@ const TASK_COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
   BASSE: { label: 'Basse', color: '#64748b' },
-  NORMALE: { label: 'Normale', color: '#ccff00' },
+  NORMALE: { label: 'Normale', color: '#0ea5e9' },
   HAUTE: { label: 'Haute', color: '#f59e0b' },
   URGENTE: { label: 'Urgente', color: '#ef4444' },
 }

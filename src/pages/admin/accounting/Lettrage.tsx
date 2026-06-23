@@ -215,8 +215,8 @@ const Lettrage = () => {
                 alignSelf: 'flex-end',
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: 'rgba(204, 255, 0, 0.08)',
-                border: '1px solid rgba(204, 255, 0, 0.25)',
+                background: 'rgba(14, 165, 233, 0.08)',
+                border: '1px solid rgba(14, 165, 233, 0.25)',
                 fontSize: '0.85rem',
                 color: 'rgba(255,255,255,0.85)',
               }}
@@ -390,7 +390,7 @@ const Lettrage = () => {
                         padding: 16,
                         borderRadius: 12,
                         background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(204, 255, 0, 0.18)',
+                        border: '1px solid rgba(14, 165, 233, 0.18)',
                       }}
                     >
                       <div
