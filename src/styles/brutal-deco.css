@@ -1,0 +1,139 @@
+/* ═══════════════════════════════════════════
+   BrutalDeco — éléments graphiques SVG/CSS
+   Esthétique Monolithe : structure, pas décoration.
+   Couleurs via tokens du thème.
+   ═══════════════════════════════════════════ */
+
+/* Grille blueprint */
+.bd-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.bd-grid line {
+  stroke: var(--border-color);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Grain */
+.bd-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Repères de coupe */
+.bd-crops {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bd-crop {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+}
+.bd-crop::before,
+.bd-crop::after {
+  content: '';
+  position: absolute;
+  background: var(--primary);
+}
+.bd-crop::before {
+  width: 100%;
+  height: 1px;
+  top: 0;
+}
+.bd-crop::after {
+  height: 100%;
+  width: 1px;
+  left: 0;
+}
+.bd-crop--tl {
+  top: 14px;
+  left: 14px;
+}
+.bd-crop--tr {
+  top: 14px;
+  right: 14px;
+  transform: scaleX(-1);
+}
+.bd-crop--bl {
+  bottom: 14px;
+  left: 14px;
+  transform: scaleY(-1);
+}
+.bd-crop--br {
+  bottom: 14px;
+  right: 14px;
+  transform: scale(-1);
+}
+
+/* Crosshair */
+.bd-cross {
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.bd-cross line {
+  stroke: var(--primary);
+  stroke-width: 1;
+}
+.bd-cross circle {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1;
+}
+
+/* Axe de données */
+.bd-axis {
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  overflow: visible;
+}
+.bd-axis-area {
+  fill: var(--accent-surface, rgba(204, 255, 0, 0.06));
+  stroke: none;
+}
+.bd-axis-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.bd-axis-base,
+.bd-axis-tick {
+  stroke: var(--border-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Scanlines */
+.bd-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--border-color) 0,
+    var(--border-color) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-grain {
+    display: none;
+  }
+}

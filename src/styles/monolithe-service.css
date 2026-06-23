@@ -356,3 +356,9 @@
     font-size: clamp(32px, 13vw, 56px);
   }
 }
+
+/* ─── ICÔNE HERO SERVICE ─── */
+.msv-page .msv-hero-icon {
+  margin-bottom: var(--msv-sp-m);
+  opacity: 0.9;
+}
