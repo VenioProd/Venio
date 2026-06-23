@@ -316,28 +316,31 @@
 
 .mh-home .mh-pricing {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  background: var(--border-color);
-  border: 1px solid var(--border-color);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(14px, 1.6vw, 22px);
 }
 .mh-home .mh-price {
   background: var(--bg-primary);
-  padding: var(--mh-sp-m);
+  border: 1px solid var(--border-color);
+  padding: var(--mh-sp-l) var(--mh-sp-m);
   display: flex;
   flex-direction: column;
   gap: var(--mh-sp-s);
   position: relative;
   min-height: 100%;
-  transition: background 0.25s var(--mh-ease);
+  transition:
+    background 0.25s var(--mh-ease),
+    border-color 0.25s var(--mh-ease);
   text-decoration: none;
   color: inherit;
 }
 .mh-home .mh-price:hover {
   background: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 .mh-home .mh-price--featured {
   background: var(--bg-card);
+  border-color: var(--accent-border);
 }
 .mh-home .mh-price-badge {
   position: absolute;
@@ -361,16 +364,16 @@
   color: var(--primary);
 }
 .mh-home .mh-price-name {
-  font-size: clamp(20px, 2.2vw, 26px);
+  font-size: clamp(22px, 2.4vw, 30px);
   font-weight: 900;
   letter-spacing: -0.03em;
   text-transform: uppercase;
   line-height: 1;
 }
 .mh-home .mh-price-tag {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.4;
+  font-size: clamp(14px, 1.3vw, 16px);
+  color: var(--text-primary);
+  line-height: 1.45;
   font-weight: 500;
 }
 .mh-home .mh-price-incl {
@@ -383,24 +386,24 @@
   margin-top: auto;
 }
 .mh-home .mh-price-incl li {
-  font-size: 12px;
-  color: var(--text-primary);
+  font-size: 13.5px;
+  color: var(--text-secondary);
   font-weight: 500;
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 .mh-home .mh-price-incl li::before {
   content: '—';
   color: var(--text-muted);
 }
 .mh-home .mh-price-devis {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .mh-home .mh-price-cta {
   font-size: 11px;
@@ -625,14 +628,8 @@
 }
 
 /* ─── RESPONSIVE ─── */
-@media (max-width: 1100px) {
-  .mh-home .mh-pricing {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .mh-home .mh-price:nth-child(5) {
-    grid-column: span 2;
-  }
-}
+/* La grille pricing utilise auto-fit (minmax 340px) : 3 → 2 → 1 colonnes
+   selon la largeur, sans override manuel. */
 @media (max-width: 900px) {
   .mh-home .mh-piliers {
     grid-template-columns: 1fr;
@@ -664,12 +661,6 @@
   .mh-home .mh-hero-lines::before,
   .mh-home .mh-hero-lines::after {
     display: none;
-  }
-  .mh-home .mh-pricing {
-    grid-template-columns: 1fr;
-  }
-  .mh-home .mh-price:nth-child(5) {
-    grid-column: auto;
   }
   .mh-home .mh-metier {
     grid-template-columns: 1fr;
