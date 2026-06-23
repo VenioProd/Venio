@@ -9,6 +9,7 @@ import './styles/theme.css'
 import './index.css'
 import './styles/theme-monolithe.css'
 import './styles/brutal-deco.css'
+import './styles/monolithe-portal.css'
 
 // Sentry — no-op si VITE_SENTRY_DSN absent
 initSentry()

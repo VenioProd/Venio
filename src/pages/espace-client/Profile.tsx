@@ -4,8 +4,6 @@ import { useAuth } from '../../context/AuthContext'
 import { apiFetch, getToken } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
-import { ColorThemePicker } from '../../components/ColorThemePicker'
-import ThemeToggle from '../../components/ThemeToggle'
 import UserAvatar from '../../components/UserAvatar'
 import AvatarCropModal from '../../components/AvatarCropModal'
 import './ClientPortal.css'
@@ -148,7 +146,10 @@ const ClientProfile = () => {
   return (
     <div className="portal-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ marginBottom: '24px' }}>
-        <Link to="/espace-client" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>
+        <Link
+          to="/espace-client"
+          style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
+        >
           ← Retour au tableau de bord
         </Link>
       </div>
@@ -159,16 +160,18 @@ const ClientProfile = () => {
       </p>
 
       {success && (
-        <div style={{
-          padding: '12px 16px',
-          background: 'rgba(74, 222, 128, 0.1)',
-          border: '1px solid rgba(74, 222, 128, 0.3)',
-          borderRadius: '10px',
-          color: '#4ade80',
-          marginBottom: '24px',
-          fontSize: '14px',
-          fontWeight: 600,
-        }}>
+        <div
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(74, 222, 128, 0.1)',
+            border: '1px solid rgba(74, 222, 128, 0.3)',
+            borderRadius: '10px',
+            color: '#4ade80',
+            marginBottom: '24px',
+            fontSize: '14px',
+            fontWeight: 600,
+          }}
+        >
           {success}
         </div>
       )}
@@ -228,9 +231,7 @@ const ClientProfile = () => {
               </button>
             )}
             {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>
-              JPEG, PNG ou WebP · 10 Mo max
-            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>JPEG, PNG ou WebP · 10 Mo max</p>
           </div>
         </div>
       </div>
@@ -239,7 +240,15 @@ const ClientProfile = () => {
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Informations générales</h2>
         <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Nom complet
             </label>
             <input
@@ -251,23 +260,33 @@ const ClientProfile = () => {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Email
             </label>
-            <input
-              className="portal-input"
-              type="email"
-              value={user?.email || ''}
-              disabled
-              style={{ opacity: 0.5 }}
-            />
+            <input className="portal-input" type="email" value={user?.email || ''} disabled style={{ opacity: 0.5 }} />
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
               L'email ne peut pas être modifié. Contactez votre administrateur.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
                 Téléphone
               </label>
               <input
@@ -279,7 +298,15 @@ const ClientProfile = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
                 Site web
               </label>
               <input
@@ -292,7 +319,15 @@ const ClientProfile = () => {
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Entreprise
             </label>
             <input
@@ -317,24 +352,19 @@ const ClientProfile = () => {
         <NotificationPreferencesPanel />
       </div>
 
-      <div className="portal-card" style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Apparence</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <p style={{ margin: '0 0 10px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Mode d'affichage
-            </p>
-            <ThemeToggle />
-          </div>
-          <ColorThemePicker />
-        </div>
-      </div>
-
       <div className="portal-card">
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Changer le mot de passe</h2>
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Mot de passe actuel
             </label>
             <input
@@ -346,7 +376,15 @@ const ClientProfile = () => {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Nouveau mot de passe
             </label>
             <input
@@ -359,7 +397,15 @@ const ClientProfile = () => {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: '6px',
+              }}
+            >
               Confirmer le nouveau mot de passe
             </label>
             <input
@@ -376,13 +422,7 @@ const ClientProfile = () => {
           </button>
         </form>
       </div>
-      {cropFile && (
-        <AvatarCropModal
-          file={cropFile}
-          onConfirm={handleCropConfirm}
-          onCancel={handleCropCancel}
-        />
-      )}
+      {cropFile && <AvatarCropModal file={cropFile} onConfirm={handleCropConfirm} onCancel={handleCropCancel} />}
     </div>
   )
 }

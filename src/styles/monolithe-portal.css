@@ -1,0 +1,719 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Thème MONOLITHE — PORTAIL (admin + espace client)
+   ───────────────────────────────────────────────────────────────────
+   Symétrique de theme-monolithe.css (site public). Scopé sur
+   html.theme-monolithe-portal (posé par App.tsx sur les routes
+   /admin et /espace-client, login inclus).
+
+   Sélecteur volontairement plus spécifique que [data-theme="…"] et
+   [data-accent="…"] pour gagner la cascade : le mode clair et les
+   accents perso n'ont donc plus d'effet dans le portail
+   (Monolithe imposé — brutalisme suisse, noir + bleu sky).
+
+   Lot 0 : redéfinition des tokens.
+   Lot 1 : aplatissement brutaliste + refonte des primitives partagées.
+   Les écrans spécifiques (lots 2→9) héritent déjà de cette couche.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────────
+   LOT 0 — TOKENS
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal {
+  /* Surfaces */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-card: #141414;
+  --bg-card-hover: #1c1c1c;
+
+  /* Texte */
+  --text-primary: #ffffff;
+  --text-secondary: #9b9b9b;
+  /* #909090 : franchit WCAG AA (6.2:1 sur #0a0a0a, 5.77:1 sur #141414).
+     Le portail affiche beaucoup d'info via --text-muted (labels, en-têtes de
+     table, kickers) → contraste plus exigeant que le public éditorial. */
+  --text-muted: #909090;
+  --border-color: rgba(255, 255, 255, 0.14);
+
+  /* Pas de relief neumorphe */
+  --neumorphism-light: transparent;
+  --neumorphism-dark: transparent;
+
+  /* Accent bleu (sky) */
+  --primary: rgb(var(--primary-rgb));
+  --primary-light: rgb(var(--primary-light-rgb));
+  --primary-dark: rgb(var(--primary-dark-rgb));
+  --primary-fg: #0a0a0a;
+  --primary-rgb: 14, 165, 233;
+  --primary-light-rgb: 125, 211, 252;
+  --primary-dark-rgb: 2, 132, 199;
+
+  /* Accents — surfaces conservées, glows coupés */
+  --accent-soft: rgba(var(--primary-rgb), 0.06);
+  --accent-medium: rgba(var(--primary-rgb), 0.12);
+  --accent-border: rgba(var(--primary-rgb), 0.3);
+  --accent-border-strong: rgba(var(--primary-rgb), 0.5);
+  --accent-glow-soft: transparent;
+  --accent-glow: transparent;
+  --accent-glow-strong: transparent;
+  --accent-surface: rgba(var(--primary-rgb), 0.06);
+  --accent-surface-strong: rgba(var(--primary-rgb), 0.14);
+  --accent-ring: rgba(var(--primary-rgb), 0.45);
+  --primary-glow: transparent;
+  --primary-glow-strong: transparent;
+  --primary-shadow: none;
+  --primary-shadow-strong: none;
+
+  /* Mesh ambiant neutralisé (brutalisme = pas de halo).
+     !important : theme.css redéfinit ces tokens via [data-theme="dark"][data-accent="X"]
+     (spécificité 0,2,0) si l'utilisateur a un accent perso sauvegardé ; il faut donc
+     forcer la neutralisation pour garantir « aucun glow » dans le portail. */
+  --ambient-mesh-primary: transparent !important;
+  --ambient-mesh-primary-soft: transparent !important;
+  --ambient-mesh-secondary: transparent !important;
+  --ambient-mesh-secondary-soft: transparent !important;
+  --ambient-mesh-layer-1: transparent !important;
+  --ambient-mesh-layer-2: transparent !important;
+  --ambient-mesh-layer-3: transparent !important;
+  --ambient-mesh-layer-4: transparent !important;
+
+  /* Fonds des shells — aplatis (les glows radiaux deviennent transparents) */
+  --admin-shell-bg-base: #0a0a0a;
+  --admin-shell-bg-glow-1: transparent !important;
+  --admin-shell-bg-glow-2: transparent !important;
+  --admin-shell-bg-glow-3: transparent !important;
+  --client-shell-bg-base: #0a0a0a;
+  --client-shell-bg-glow-1: transparent !important;
+  --client-shell-bg-glow-2: transparent !important;
+  --client-shell-bg-glow-3: transparent !important;
+
+  /* Danger sobre conservé (actions destructives) */
+  --mono-danger: #ff5c5c;
+  --mono-danger-surface: rgba(255, 92, 92, 0.1);
+  --mono-danger-border: rgba(255, 92, 92, 0.4);
+
+  /* Typographie Archivo */
+  --font-heading: 'Archivo', 'Cabinet Grotesk', sans-serif;
+  --font-body: 'Archivo', 'Cabinet Grotesk', sans-serif;
+}
+
+/* Fond noir garanti partout (login sans shell inclus) */
+html.theme-monolithe-portal,
+html.theme-monolithe-portal body {
+  background: #0a0a0a;
+}
+
+html.theme-monolithe-portal body {
+  font-family: var(--font-body);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   LOT 1 — APLATISSEMENT BRUTALISTE
+   Angles droits, aucune ombre décorative, pas de lift au survol.
+   Les surfaces rondes (avatars, pastilles, spinners, barres de
+   progression, interrupteurs) sont volontairement exclues.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal
+  :is(
+    button,
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea,
+    fieldset,
+    table,
+    th,
+    td,
+    thead,
+    tbody,
+    .portal-card,
+    .portal-input,
+    .portal-button,
+    .portal-badge,
+    .portal-action-link,
+    .admin-widget,
+    .admin-stat-card,
+    .admin-table-wrapper,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-card-btn,
+    .admin-card-role,
+    .admin-card-you,
+    .admin-tag,
+    .admin-badge,
+    .admin-tab,
+    .admin-tabs,
+    .admin-form-section,
+    .project-form-section,
+    .project-form-section-icon,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .priority-indicator,
+    .admin-empty-state,
+    .admin-error,
+    .admin-success,
+    .admin-info,
+    .admin-divider,
+    .admin-button,
+    .client-card-status,
+    .client-card-service,
+    .client-card-avatar,
+    .admin-card-actions,
+    .client-dashboard-logout,
+    .client-dashboard-hero,
+    .client-dashboard-stat,
+    .client-dashboard-stat-icon,
+    .client-dashboard-empty,
+    .client-project-card,
+    .client-project-card-badge,
+    .client-project-card-tag,
+    .client-project-card-tag-more,
+    .client-project-back,
+    .client-project-hero,
+    .client-project-hero-badge,
+    .client-project-tabs,
+    .client-project-tab,
+    .client-project-section,
+    .client-project-item,
+    .client-project-item-type,
+    .client-project-item-note,
+    .client-project-item-file,
+    .client-project-item-button,
+    .client-project-empty-state,
+    .client-project-update,
+    .client-project-document,
+    .client-project-document-icon,
+    .client-project-document-button,
+    .client-progress-info,
+    .client-progress-tasks,
+    .client-progress-activity,
+    .client-progress-status-item,
+    .client-activity-load-more,
+    .client-project-item-button,
+    .client-status-active,
+    .client-status-done,
+    .client-status-pending,
+    .client-status-cancelled,
+    .client-project-item-type
+  ) {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Coupe les translations / scale décoratifs au survol (brutalisme = pas de flottement) */
+html.theme-monolithe-portal
+  :is(
+    .admin-widget,
+    .admin-stat-card,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-card-btn,
+    .portal-button,
+    .portal-action-link,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .admin-badge,
+    .priority-indicator,
+    .admin-button.secondary,
+    .client-dashboard-stat,
+    .client-project-card,
+    .client-project-item,
+    .client-project-document,
+    .client-project-back,
+    .client-project-document-button,
+    .client-project-item-button,
+    .client-dashboard-logout
+  ):hover {
+  transform: none !important;
+}
+
+/* Neutralise les barres / halos décoratifs en ::before des cartes */
+html.theme-monolithe-portal
+  :is(
+    .admin-widget,
+    .admin-stat-card,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .admin-form-section,
+    .project-form-section,
+    .portal-card,
+    .admin-header,
+    .client-project-card,
+    .admin-tag
+  )::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   EN-TÊTES DE PAGE — kicker + titre Archivo plein + filet lime
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .admin-header h1,
+html.theme-monolithe-portal .admin-page-header h1 {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  /* couleur pleine — fin des dégradés de texte */
+  background: none !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+html.theme-monolithe-portal .admin-page-header {
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-monolithe-portal .admin-page-header::after {
+  background: var(--primary) !important;
+  opacity: 1 !important;
+  height: 2px;
+  border-radius: 0 !important;
+}
+html.theme-monolithe-portal .admin-page-subtitle {
+  color: var(--text-muted);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   BOUTONS
+   Primaire : fond lime / texte noir → hover inversion.
+   Secondaire : contour blanc / texte blanc → hover inversion.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .portal-button {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #0a0a0a;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+html.theme-monolithe-portal .portal-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+html.theme-monolithe-portal .portal-button.secondary,
+html.theme-monolithe-portal .admin-button.secondary {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+html.theme-monolithe-portal .portal-button.secondary:hover:not(:disabled),
+html.theme-monolithe-portal .admin-button.secondary:hover {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: #0a0a0a;
+}
+html.theme-monolithe-portal .portal-button::before {
+  display: none !important;
+}
+
+/* Boutons d'action « libellé révélé » (topbar dashboard) */
+html.theme-monolithe-portal .admin-actions .portal-action-link {
+  border: 1px solid var(--border-color) !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border-radius: 0 !important;
+  letter-spacing: 0.04em;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease,
+    background 0.18s ease;
+}
+html.theme-monolithe-portal .admin-actions .portal-action-link:hover {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background: var(--accent-soft) !important;
+}
+html.theme-monolithe-portal .admin-actions .portal-action-link[title='Se deconnecter'],
+html.theme-monolithe-portal .admin-actions .portal-action-link[title='Déconnexion'] {
+  border-color: var(--mono-danger-border) !important;
+  color: var(--mono-danger) !important;
+  background: var(--mono-danger-surface) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CHAMPS DE FORMULAIRE
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .portal-input,
+html.theme-monolithe-portal input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html.theme-monolithe-portal select,
+html.theme-monolithe-portal textarea {
+  background: #141414;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+html.theme-monolithe-portal .portal-input:focus,
+html.theme-monolithe-portal input:focus,
+html.theme-monolithe-portal select:focus,
+html.theme-monolithe-portal textarea:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: none !important;
+  background: #141414;
+}
+html.theme-monolithe-portal .portal-container select,
+html.theme-monolithe-portal .portal-container select option {
+  background-color: #141414;
+  color: var(--text-primary);
+}
+html.theme-monolithe-portal .portal-container select option:checked {
+  background-color: var(--accent-surface-strong);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CARTES & GRILLES
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .portal-card {
+  background: #141414;
+  border: 1px solid var(--border-color);
+}
+html.theme-monolithe-portal
+  :is(
+    .admin-widget,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .admin-form-section,
+    .project-form-section
+  ) {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-monolithe-portal
+  :is(
+    .admin-widget,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card
+  ):hover {
+  background: #1c1c1c !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+}
+
+/* Stat-cards : gros chiffre Archivo, label uppercase muted, accent lime unifié */
+html.theme-monolithe-portal .admin-stat-card {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+  border-left: 2px solid var(--primary) !important;
+}
+html.theme-monolithe-portal .admin-stat-card:hover {
+  background: #1c1c1c !important;
+}
+html.theme-monolithe-portal .admin-stat-label,
+html.theme-monolithe-portal .admin-widget-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+html.theme-monolithe-portal .admin-stat-value,
+html.theme-monolithe-portal .admin-widget-value {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--primary) !important;
+  text-shadow: none !important;
+}
+
+/* Neutralise les variantes « arc-en-ciel » des widgets / stat-cards */
+html.theme-monolithe-portal .admin-widget:nth-child(n) .admin-widget-value,
+html.theme-monolithe-portal .admin-stat-card:nth-child(n) .admin-stat-value {
+  color: var(--primary) !important;
+  text-shadow: none !important;
+}
+html.theme-monolithe-portal .admin-widget:nth-child(n) {
+  border-color: var(--border-color) !important;
+}
+html.theme-monolithe-portal .admin-widget:nth-child(n):hover {
+  border-color: var(--primary) !important;
+}
+html.theme-monolithe-portal .admin-stat-card:nth-child(n) {
+  border-left-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   TABLES
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .admin-table-wrapper {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-monolithe-portal .admin-table th {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-muted) !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-monolithe-portal .admin-table td {
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-monolithe-portal .admin-table tr:hover td {
+  background: #1c1c1c !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   BADGES / STATUTS / PRIORITÉS — plats, carrés, 1px, sémantique sobre
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal :is(.admin-badge, .priority-indicator, .admin-card-role) {
+  background: var(--accent-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+/* En cours / normal → lime */
+html.theme-monolithe-portal .admin-badge.status-en-cours,
+html.theme-monolithe-portal .priority-indicator.normale,
+html.theme-monolithe-portal .client-status-active {
+  background: var(--accent-surface) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--primary) !important;
+}
+/* Terminé / succès → vert sobre */
+html.theme-monolithe-portal .admin-badge.status-termine,
+html.theme-monolithe-portal .client-status-done {
+  background: rgba(74, 222, 128, 0.08) !important;
+  border-color: rgba(74, 222, 128, 0.35) !important;
+  color: #4ade80 !important;
+}
+/* Attente → ambre sobre */
+html.theme-monolithe-portal .admin-badge.status-en-attente,
+html.theme-monolithe-portal .priority-indicator.haute,
+html.theme-monolithe-portal .client-status-pending {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+  color: #fbbf24 !important;
+}
+/* Urgent / danger → rouge sobre */
+html.theme-monolithe-portal .priority-indicator.urgente {
+  background: var(--mono-danger-surface) !important;
+  border-color: var(--mono-danger-border) !important;
+  color: var(--mono-danger) !important;
+  animation: none !important;
+}
+/* Annulé / clos → neutre */
+html.theme-monolithe-portal .client-status-cancelled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Tags */
+html.theme-monolithe-portal .admin-tag,
+html.theme-monolithe-portal .client-project-card-tag {
+  background: var(--accent-surface) !important;
+  border: 1px solid var(--accent-border) !important;
+  color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ONGLETS
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .admin-tabs {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0;
+  gap: 0;
+}
+html.theme-monolithe-portal .admin-tab {
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+}
+html.theme-monolithe-portal .admin-tab:hover:not(.active) {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+html.theme-monolithe-portal .admin-tab.active {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  border-bottom-color: var(--primary) !important;
+  text-shadow: none !important;
+}
+
+/* Onglets espace client (pill → souligné) */
+html.theme-monolithe-portal .client-project-tabs {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  padding: 0;
+  gap: 0;
+}
+html.theme-monolithe-portal .client-project-tab {
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  border-bottom: 2px solid transparent !important;
+}
+html.theme-monolithe-portal .client-project-tab.active {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   MESSAGES / ÉTATS / DIVIDERS / BREADCRUMB
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .admin-error {
+  background: var(--mono-danger-surface) !important;
+  border: 1px solid var(--mono-danger-border) !important;
+  color: var(--mono-danger) !important;
+  animation: none !important;
+}
+html.theme-monolithe-portal .admin-success {
+  background: rgba(74, 222, 128, 0.08) !important;
+  border: 1px solid rgba(74, 222, 128, 0.35) !important;
+  color: #4ade80 !important;
+}
+html.theme-monolithe-portal .admin-info {
+  background: var(--accent-surface) !important;
+  border: 1px solid var(--accent-border) !important;
+  color: var(--primary) !important;
+}
+html.theme-monolithe-portal :is(.admin-empty-state, .client-dashboard-empty, .client-project-empty-state) {
+  background: transparent !important;
+  border: 1px dashed var(--border-color) !important;
+}
+html.theme-monolithe-portal .admin-empty-state-icon {
+  animation: none !important;
+}
+html.theme-monolithe-portal .admin-empty-state-text {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-muted) !important;
+  color: var(--text-muted) !important;
+}
+html.theme-monolithe-portal .admin-divider {
+  background: var(--border-color) !important;
+  box-shadow: none !important;
+}
+html.theme-monolithe-portal .admin-divider::before {
+  display: none !important;
+}
+html.theme-monolithe-portal .admin-breadcrumb span {
+  background: none !important;
+  -webkit-text-fill-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+html.theme-monolithe-portal .admin-tooltip:hover::after {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+html.theme-monolithe-portal .admin-tooltip:hover::before {
+  border-top-color: var(--border-color) !important;
+}
+
+/* Forms : titre plein, barre latérale lime nette */
+html.theme-monolithe-portal .admin-form-section h2 {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-weight: 900;
+}
+html.theme-monolithe-portal .admin-form-section::before,
+html.theme-monolithe-portal .project-form-section::before {
+  background: var(--primary) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  display: block !important;
+  content: '' !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ESPACE CLIENT — dashboard & détail projet
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal .client-dashboard-hero,
+html.theme-monolithe-portal .client-project-hero {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-monolithe-portal .client-dashboard-title,
+html.theme-monolithe-portal .client-project-hero-title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+html.theme-monolithe-portal
+  :is(
+    .client-dashboard-stat,
+    .client-project-section,
+    .client-project-item,
+    .client-project-update,
+    .client-project-document,
+    .client-progress-info,
+    .client-progress-tasks,
+    .client-progress-activity
+  ) {
+  background: #141414 !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-monolithe-portal .client-dashboard-stat-value {
+  font-family: var(--font-heading);
+  font-weight: 900;
+}
+html.theme-monolithe-portal .client-dashboard-stat-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+html.theme-monolithe-portal .client-project-card-progress-fill,
+html.theme-monolithe-portal .client-progress-bar-fill {
+  background: var(--primary) !important;
+}
+html.theme-monolithe-portal :is(.client-project-item-button, .client-project-document-button:hover) {
+  background: var(--primary) !important;
+  color: #0a0a0a !important;
+  border-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ACCESSIBILITÉ — focus clavier visible (WCAG 2.4.7)
+   Anneau lime carré, net (outline car les ombres sont neutralisées).
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal
+  :is(a, button, [role='button'], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   DIVERS — scrollbar, sélection
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-monolithe-portal ::selection {
+  background: var(--primary);
+  color: #0a0a0a;
+}
+html.theme-monolithe-portal *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+}
