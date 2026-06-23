@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import emailjs from '@emailjs/browser'
-import GradientMeshBackground from '../components/GradientMeshBackground'
 import MathCaptcha from '../components/MathCaptcha'
-import NeonDivider from '../components/NeonDivider'
-import NeonCorners from '../components/NeonCorners'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import './Contact.css'
+import { useReveal } from '../hooks/useReveal'
+import '../styles/monolithe-pages.css'
 
 interface ContactFormData {
   prenom: string
@@ -18,6 +16,8 @@ interface ContactFormData {
 }
 
 const Contact = () => {
+  useReveal('.mp-page .mp-reveal', 'mp-visible')
+
   const [captchaVerified, setCaptchaVerified] = useState<boolean>(false)
   const [formData, setFormData] = useState<ContactFormData>({
     prenom: '',
@@ -82,13 +82,13 @@ const Contact = () => {
       setCaptchaVerified(false)
       setFormStatus({
         type: 'success',
-        message: 'Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.',
+        message: 'Votre message a été envoyé. On vous répond sous 48h.',
       })
     } catch {
       setFormStatus({
         type: 'error',
         message:
-          "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.paris",
+          "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous écrire directement à contact@venio.paris",
       })
     } finally {
       setIsSubmitting(false)
@@ -96,46 +96,70 @@ const Contact = () => {
   }
 
   return (
-    <>
+    <div className="mp-page">
       <SEO
         title="Contact — parlons de votre projet web"
-        description="Venio ne travaille pas avec tout le monde. Si vous cherchez du rapide et du pas cher, ce n'est pas ici. Si vous voulez construire quelque chose qui dure, parlons. Réponse sous 48h."
-        keywords="contact Venio, formulaire contact, devis, consultation gratuite"
+        description="On ne travaille pas avec tout le monde. Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous voulez construire quelque chose qui dure, parlons. Réponse sous 48h."
+        keywords="contact Venio, devis site web Paris, prendre contact, projet web"
       />
       <StructuredData type="contact" />
-      <GradientMeshBackground />
-      <div className="contact-page">
-        <section className="contact-hero">
-          <h1>CONTACT</h1>
-          <p className="contact-subtitle">Avant de nous contacter</p>
-        </section>
 
-        <NeonDivider />
+      <section className="mp-hero">
+        <div className="mp-hero-lines" aria-hidden="true" />
+        <div className="mp-container mp-hero-content">
+          <p className="mp-eyebrow">Venio · Contact</p>
+          <h1 className="mp-title">Contact</h1>
+          <p className="mp-lede">
+            <b>On ne travaille pas avec tout le monde.</b> Et c'est tant mieux.
+          </p>
+        </div>
+      </section>
 
-        <section className="contact-content">
-          <div className="contact-qualification">
-            <p>Venio ne travaille pas avec tout le monde.</p>
-            <p>
-              Si vous cherchez du rapide et du pas cher, ce n&apos;est pas ici. Si vous cherchez quelqu&apos;un pour
-              valider vos idées sans réfléchir, ce n&apos;est pas ici. Si vous voulez un template WordPress
-              personnalisé, ce n&apos;est pas ici.
-            </p>
-            <p>Si vous voulez construire quelque chose qui dure, qui a du sens, qui est pensé pour vous, alors oui.</p>
-            <p>Nous répondons sous 48h. Si votre projet a du sens, on vous le dira. Sinon aussi.</p>
+      {/* §I — Qualification */}
+      <section className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              I
+            </span>
+            <span className="mp-kicker">Avant de nous écrire</span>
           </div>
+          <div className="mp-prose mp-reveal">
+            <p className="mp-strong">Venio ne travaille pas avec tout le monde.</p>
+            <p>
+              Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous cherchez quelqu'un pour valider vos
+              idées sans réfléchir, ce n'est pas ici. Si vous voulez un modèle tout fait vite personnalisé, ce n'est pas
+              ici.
+            </p>
+            <p>
+              Si vous voulez construire quelque chose qui dure, qui a du sens et qui est pensé pour vous, alors oui.
+            </p>
+            <p>On répond sous 48h. Si votre projet a du sens, on vous le dit. Sinon aussi.</p>
+          </div>
+        </div>
+      </section>
 
-          <div className="contact-grid">
-            <div className="contact-info">
+      {/* §II — Écrivez-nous */}
+      <section className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              II
+            </span>
+            <span className="mp-kicker">Écrivez-nous</span>
+          </div>
+          <div className="mp-contact-grid">
+            <div className="mp-contact-aside mp-reveal">
               <h2>Email direct</h2>
-              <div className="info-item">
-                <a href="mailto:contact@venio.paris">contact@venio.paris</a>
-              </div>
+              <a className="mp-mail" href="mailto:contact@venio.paris">
+                contact@venio.paris
+              </a>
             </div>
 
-            <div className="contact-form-wrapper">
-              <h2>Formulaire</h2>
-              <form className="contact-form" onSubmit={handleSubmit}>
-                <div className="form-row">
+            <div className="mp-contact-form mp-reveal">
+              <h2>Le formulaire</h2>
+              <form className="mp-form" onSubmit={handleSubmit}>
+                <div className="mp-form-row">
                   <input
                     type="text"
                     name="prenom"
@@ -164,19 +188,20 @@ const Contact = () => {
                 <input
                   type="text"
                   name="entreprise"
-                  placeholder="Entreprise"
+                  placeholder="Entreprise (optionnel)"
                   value={formData.entreprise}
                   onChange={handleChange}
                 />
-                <select className="form-select" name="sujet" value={formData.sujet} onChange={handleChange} required>
-                  <option value="">Sujet</option>
-                  <option value="Communication & Branding">Communication & Branding</option>
-                  <option value="Développement">Développement</option>
-                  <option value="Conseil Stratégique">Conseil Stratégique</option>
-                  <option value="Autre">Autre</option>
+                <select name="sujet" value={formData.sujet} onChange={handleChange} required>
+                  <option value="">Votre besoin</option>
+                  <option value="Site web">Un site web</option>
+                  <option value="Développement sur mesure">Un outil sur mesure</option>
+                  <option value="Conseil">Du conseil</option>
+                  <option value="Communication & marque">Ma marque, ma communication</option>
+                  <option value="Autre">Autre chose</option>
                 </select>
                 <textarea
-                  placeholder="Message"
+                  placeholder="Votre message"
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
@@ -186,25 +211,21 @@ const Contact = () => {
                 <MathCaptcha onVerify={setCaptchaVerified} />
                 {formStatus && (
                   <p
-                    style={{
-                      color: formStatus.type === 'success' ? '#22c55e' : '#ef4444',
-                      fontSize: '14px',
-                      margin: '8px 0',
-                    }}
+                    className="mp-form-status"
+                    style={{ color: formStatus.type === 'success' ? 'var(--primary)' : '#ef4444' }}
                   >
                     {formStatus.message}
                   </p>
                 )}
-                <button type="submit" className="form-submit" disabled={!captchaVerified || isSubmitting}>
-                  <NeonCorners />
-                  <span className="form-submit-label">{isSubmitting ? 'Envoi...' : 'Envoyer'}</span>
+                <button type="submit" className="mp-submit" disabled={!captchaVerified || isSubmitting}>
+                  {isSubmitting ? 'Envoi…' : 'Envoyer'}
                 </button>
               </form>
             </div>
           </div>
-        </section>
-      </div>
-    </>
+        </div>
+      </section>
+    </div>
   )
 }
 
