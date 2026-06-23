@@ -9,35 +9,35 @@ const TIERS = [
     num: '01',
     name: 'Vitrine',
     tag: 'Exister en ligne, proprement.',
-    incl: ['Design sur mesure', 'Responsive mobile', 'SEO de base'],
+    incl: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
     featured: false,
   },
   {
     num: '02',
     name: 'Essentiel',
     tag: 'Publier et faire vivre votre contenu.',
-    incl: ['Design sur mesure', 'SEO avancé', 'Blog & actualités'],
+    incl: ['Design sur mesure', 'Mieux placé sur Google', 'Blog & actualités'],
     featured: false,
   },
   {
     num: '03',
     name: 'Business',
     tag: 'Vendre et gérer vos clients en ligne.',
-    incl: ['SEO avancé + Analytics', 'Espace client', 'Paiement en ligne'],
+    incl: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
     featured: true,
   },
   {
     num: '04',
     name: 'E-commerce',
-    tag: 'Vendre en ligne, à grande échelle.',
-    incl: ['Catalogue illimité', 'Paiement multi-moyens', 'Gestion des stocks'],
+    tag: 'Vendre en ligne, en grand.',
+    incl: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
     featured: false,
   },
   {
     num: '05',
     name: 'Plateforme',
-    tag: 'Votre outil métier, sur mesure.',
-    incl: ['Architecture sur mesure', 'Intégrations API', 'Multi-utilisateurs & rôles'],
+    tag: 'Votre outil de travail, rien qu’à vous.',
+    incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
     featured: false,
   },
 ]
@@ -47,22 +47,22 @@ const METIERS = [
     num: '01',
     name: 'Conseil',
     to: '/services/conseil',
-    tag: 'Audit sans filtre. Des décisions claires, pas des slides. Si votre stratégie est mauvaise, on vous le dit.',
-    deliv: ['Audit & diagnostic', 'Stratégie IA pragmatique', 'Positionnement défendable'],
+    tag: 'Un état des lieux sans détour. Des décisions claires, pas de jolies présentations. Si votre stratégie ne tient pas, on vous le dit en face.',
+    deliv: ['État des lieux franc', 'L’IA quand ça sert', 'Une place qui tient face aux concurrents'],
   },
   {
     num: '02',
     name: 'Développement',
     to: '/services/developpement',
-    tag: 'Code propriétaire. Des architectures qui durent 10 ans, pas 6 mois. Que vos équipes peuvent maintenir.',
-    deliv: ['Plateformes métier', 'SaaS scalables', 'Intégrations IA'],
+    tag: 'Un site qui vous appartient. Solide, fait pour durer dix ans, pas six mois. Et que vos équipes peuvent reprendre quand elles veulent.',
+    deliv: ['Outils de travail sur mesure', 'Un logiciel qui grandit avec vous', 'L’IA utile au quotidien'],
   },
   {
     num: '03',
     name: 'Communication',
     to: '/services/communication',
-    tag: 'Une marque qui se tient. Pas une charte PDF et trois posts. Un système qui dure et ne ressemble à personne.',
-    deliv: ['Identité système', 'Ligne éditoriale', 'Direction artistique'],
+    tag: 'Une marque qui se tient. Pas un PDF et trois posts. Un ensemble cohérent qui dure et ne ressemble à personne.',
+    deliv: ['Une marque cohérente', 'Une voix qui vous ressemble', 'Un style qui vous va'],
   },
 ]
 
@@ -109,7 +109,8 @@ const Home = () => {
           </h1>
           <p className="mh-hero-sub">Pas ce qui rassure.</p>
           <p className="mh-hero-offer">
-            <b>Sites sur mesure, conseil, marque.</b> Code propriétaire — zéro template, zéro slide.
+            <b>Un site web rien qu’à vous, du conseil, une marque qui tient.</b> Fait sur mesure — jamais un modèle tout
+            fait, jamais des présentations qui sonnent creux.
           </p>
           <div className="mh-hero-actions">
             <a className="mh-btn mh-btn--lime" href="#mh-sites">
@@ -149,7 +150,9 @@ const Home = () => {
             </div>
           </div>
           <div className="mh-refus mh-reveal">
-            <span className="mh-refus-no">Pas de template. Pas de slides. Pas de oui complaisant.</span>
+            <span className="mh-refus-no">
+              Pas de modèle tout fait. Pas de présentation creuse. Pas de oui pour vous faire plaisir.
+            </span>
             <span className="mh-refus-yes">Construire ce qui doit exister — alors on parle.</span>
           </div>
         </div>
@@ -168,8 +171,8 @@ const Home = () => {
             Des sites qui durent <span className="mh-accent">10 ans</span>. Pas 6 mois.
           </h2>
           <p className="mh-sites-intro mh-reveal">
-            Pas de template acheté qui casse à la première mise à jour. Chaque site écrit de zéro, pensé pour vos
-            besoins réels — et qui grandit avec vous. Cinq paliers selon l’ambition du projet.
+            Pas un modèle acheté qui se casse à la première mise à jour. Chaque site est fait pour vous, à partir de vos
+            vrais besoins — et il grandit en même temps que votre activité. Cinq formules, selon l’ambition du projet.
           </p>
 
           <div className="mh-pricing">
@@ -198,8 +201,9 @@ const Home = () => {
 
           <div className="mh-sites-foot mh-reveal">
             <p className="mh-webnote">
-              <b>Webmastering en option sur chaque palier</b> — hébergement, mises à jour, sauvegardes, support. Votre
-              site reste vivant sans que vous ayez à y toucher.
+              <b>On s’occupe de tout, en option sur chaque formule :</b> on héberge votre site, on le met à jour, on le
+              sauvegarde et on répond quand vous avez une question. Votre site reste vivant sans que vous ayez à y
+              toucher.
             </p>
             <Link className="mh-link" to="/services/sites">
               Le détail des offres <span className="mh-ar">→</span>
