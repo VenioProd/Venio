@@ -189,10 +189,11 @@
 
   position: relative;
   background:
+    linear-gradient(180deg, rgba(14, 165, 233, 0.04) 0%, transparent 100%),
     repeating-linear-gradient(0deg, transparent 0 19px, var(--dash-fchart-grid) 19px 20px),
     repeating-linear-gradient(90deg, transparent 0 29px, var(--dash-fchart-grid) 29px 30px);
   background-color: var(--dash-fchart-bg);
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border: 1px solid rgba(14, 165, 233, 0.25);
   border-radius: 0;
   overflow: hidden;
   min-height: 220px;

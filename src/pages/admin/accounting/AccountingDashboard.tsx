@@ -38,10 +38,10 @@ function formatDateFr(iso: string | undefined | null): string {
   return d.toLocaleDateString('fr-FR')
 }
 
-// ---- Theme constants (neon Venio) ----
-const COLOR_REVENUE = '#ccff00'
+// ---- Theme constants — graphes en accent data-viz cyan (distinct de l'UI lime) ----
+const COLOR_REVENUE = '#22d3ee'
 const COLOR_EXPENSE = '#f87171'
-const COLOR_MARGIN = '#ffffff'
+const COLOR_MARGIN = '#0ea5e9'
 const COLOR_GREEN = '#4ade80'
 const COLOR_ORANGE = '#fbbf24'
 const COLOR_RED = '#f87171'
@@ -66,7 +66,7 @@ const ChartTooltip = (props: TooltipContentProps) => {
     <div
       style={{
         background: 'rgba(15, 15, 20, 0.95)',
-        border: '1px solid rgba(204, 255, 0, 0.4)',
+        border: '1px solid rgba(14, 165, 233, 0.4)',
         borderRadius: 8,
         padding: '10px 12px',
         fontSize: '0.82rem',
@@ -355,7 +355,7 @@ const AccountingDashboard = () => {
                 tickFormatter={(v: number) => formatEur(v)}
                 width={80}
               />
-              <Tooltip content={(props) => <ChartTooltip {...props} />} cursor={{ fill: 'rgba(204, 255, 0, 0.06)' }} />
+              <Tooltip content={(props) => <ChartTooltip {...props} />} cursor={{ fill: 'rgba(14, 165, 233, 0.06)' }} />
               <Legend
                 verticalAlign="bottom"
                 wrapperStyle={{

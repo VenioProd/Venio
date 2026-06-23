@@ -121,7 +121,7 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Terminé',
 }
 
-const STATUS_COLORS = ['#ccff00', '#f59e0b', '#10b981', '#9b9b9b', '#ef4444', '#64748b']
+const STATUS_COLORS = ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b']
 
 const formatEUR = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k €` : `${n.toLocaleString('fr-FR')} €`)
 
@@ -373,7 +373,7 @@ const SuperAdminDashboard = () => {
                       <YAxis stroke="#94a3b8" fontSize={11} />
                       <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="Tâches" stackId="a" fill="#ccff00" />
+                      <Bar dataKey="Tâches" stackId="a" fill="#0ea5e9" />
                       <Bar dataKey="Retard" stackId="a" fill="#ef4444" />
                     </BarChart>
                   </ResponsiveContainer>
