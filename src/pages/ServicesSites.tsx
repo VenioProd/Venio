@@ -9,8 +9,8 @@ const ServicesSites: React.FC = () => {
   return (
     <div className="ms-page">
       <SEO
-        title="Sites Web Sur Mesure"
-        description="Pas de templates. Pas de WordPress. Des sites web construits de zéro, qui tiennent dans le temps — avec ou sans webmastering."
+        title="Création de site web sur mesure, sans template"
+        description="Création de sites web sur mesure à Paris : 5 formules, de la vitrine à la boutique en ligne. Un site fait pour vous, qui dure dans le temps."
         keywords="site web sur mesure, création site web Paris, site web code propriétaire, webmastering, hébergement site web"
       />
       <StructuredData type="service-sites" />

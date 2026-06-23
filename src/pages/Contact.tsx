@@ -25,16 +25,16 @@ const Contact = () => {
     email: '',
     entreprise: '',
     sujet: '',
-    message: ''
+    message: '',
   })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
@@ -55,7 +55,11 @@ const Contact = () => {
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
       if (!serviceId || !templateId || !publicKey) {
-        setFormStatus({ type: 'error', message: 'Le formulaire de contact n\'est pas encore configuré. Contactez-nous directement à contact@venio.paris' })
+        setFormStatus({
+          type: 'error',
+          message:
+            "Le formulaire de contact n'est pas encore configuré. Contactez-nous directement à contact@venio.paris",
+        })
         setIsSubmitting(false)
         return
       }
@@ -69,16 +73,23 @@ const Contact = () => {
         subject: `Contact Venio - ${formData.sujet || 'Sans sujet'}`,
         entreprise: formData.entreprise || 'Non renseignée',
         message: formData.message,
-        sujet: formData.sujet || 'Non renseigné'
+        sujet: formData.sujet || 'Non renseigné',
       }
 
       await emailjs.send(serviceId, templateId, templateParams)
 
       setFormData({ prenom: '', nom: '', email: '', entreprise: '', sujet: '', message: '' })
       setCaptchaVerified(false)
-      setFormStatus({ type: 'success', message: 'Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.' })
+      setFormStatus({
+        type: 'success',
+        message: 'Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.',
+      })
     } catch {
-      setFormStatus({ type: 'error', message: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.paris' })
+      setFormStatus({
+        type: 'error',
+        message:
+          "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous contacter directement à contact@venio.paris",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -86,8 +97,8 @@ const Contact = () => {
 
   return (
     <>
-      <SEO 
-        title="Contact"
+      <SEO
+        title="Contact — parlons de votre projet web"
         description="Venio ne travaille pas avec tout le monde. Si vous cherchez du rapide et du pas cher, ce n'est pas ici. Si vous voulez construire quelque chose qui dure, parlons. Réponse sous 48h."
         keywords="contact Venio, formulaire contact, devis, consultation gratuite"
       />
@@ -103,20 +114,14 @@ const Contact = () => {
 
         <section className="contact-content">
           <div className="contact-qualification">
+            <p>Venio ne travaille pas avec tout le monde.</p>
             <p>
-              Venio ne travaille pas avec tout le monde.
+              Si vous cherchez du rapide et du pas cher, ce n&apos;est pas ici. Si vous cherchez quelqu&apos;un pour
+              valider vos idées sans réfléchir, ce n&apos;est pas ici. Si vous voulez un template WordPress
+              personnalisé, ce n&apos;est pas ici.
             </p>
-            <p>
-              Si vous cherchez du rapide et du pas cher, ce n&apos;est pas ici.
-              Si vous cherchez quelqu&apos;un pour valider vos idées sans réfléchir, ce n&apos;est pas ici.
-              Si vous voulez un template WordPress personnalisé, ce n&apos;est pas ici.
-            </p>
-            <p>
-              Si vous voulez construire quelque chose qui dure, qui a du sens, qui est pensé pour vous, alors oui.
-            </p>
-            <p>
-              Nous répondons sous 48h. Si votre projet a du sens, on vous le dira. Sinon aussi.
-            </p>
+            <p>Si vous voulez construire quelque chose qui dure, qui a du sens, qui est pensé pour vous, alors oui.</p>
+            <p>Nous répondons sous 48h. Si votre projet a du sens, on vous le dira. Sinon aussi.</p>
           </div>
 
           <div className="contact-grid">
@@ -131,45 +136,39 @@ const Contact = () => {
               <h2>Formulaire</h2>
               <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-row">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="prenom"
-                    placeholder="Prénom" 
+                    placeholder="Prénom"
                     value={formData.prenom}
                     onChange={handleChange}
-                    required 
+                    required
                   />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="nom"
-                    placeholder="Nom" 
+                    placeholder="Nom"
                     value={formData.nom}
                     onChange={handleChange}
-                    required 
+                    required
                   />
                 </div>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   name="email"
-                  placeholder="Email" 
+                  placeholder="Email"
                   value={formData.email}
                   onChange={handleChange}
-                  required 
+                  required
                 />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   name="entreprise"
-                  placeholder="Entreprise" 
+                  placeholder="Entreprise"
                   value={formData.entreprise}
                   onChange={handleChange}
                 />
-                <select 
-                  className="form-select" 
-                  name="sujet"
-                  value={formData.sujet}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" name="sujet" value={formData.sujet} onChange={handleChange} required>
                   <option value="">Sujet</option>
                   <option value="Communication & Branding">Communication & Branding</option>
                   <option value="Développement">Développement</option>
@@ -186,19 +185,19 @@ const Contact = () => {
                 ></textarea>
                 <MathCaptcha onVerify={setCaptchaVerified} />
                 {formStatus && (
-                  <p style={{ color: formStatus.type === 'success' ? '#22c55e' : '#ef4444', fontSize: '14px', margin: '8px 0' }}>
+                  <p
+                    style={{
+                      color: formStatus.type === 'success' ? '#22c55e' : '#ef4444',
+                      fontSize: '14px',
+                      margin: '8px 0',
+                    }}
+                  >
                     {formStatus.message}
                   </p>
                 )}
-                <button
-                  type="submit"
-                  className="form-submit"
-                  disabled={!captchaVerified || isSubmitting}
-                >
+                <button type="submit" className="form-submit" disabled={!captchaVerified || isSubmitting}>
                   <NeonCorners />
-                  <span className="form-submit-label">
-                    {isSubmitting ? 'Envoi...' : 'Envoyer'}
-                  </span>
+                  <span className="form-submit-label">{isSubmitting ? 'Envoi...' : 'Envoyer'}</span>
                 </button>
               </form>
             </div>
@@ -210,4 +209,3 @@ const Contact = () => {
 }
 
 export default Contact
-
