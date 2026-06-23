@@ -71,10 +71,7 @@ export default function TransactionsTab({
           value={filters.to}
           onChange={(e) => setFilters({ ...filters, to: e.target.value })}
         />
-        <button
-          className="portal-button secondary"
-          onClick={() => onReload()}
-        >
+        <button className="portal-button secondary" onClick={() => onReload()}>
           Filtrer
         </button>
       </div>
@@ -102,9 +99,7 @@ export default function TransactionsTab({
                   <td style={{ fontSize: '0.82rem' }}>{formatDateTime(t.receivedAt)}</td>
                   <td className="code">{t.externalId || '—'}</td>
                   <td>
-                    <span className={`accounting-badge ${txStatusClass(t.status)}`}>
-                      {t.status}
-                    </span>
+                    <span className={`accounting-badge ${txStatusClass(t.status)}`}>{t.status}</span>
                     {t.errorReason && (
                       <div
                         style={{
@@ -128,9 +123,7 @@ export default function TransactionsTab({
                     {t.generatedEntry ? (
                       <Link
                         to={`/admin/comptabilite/ecritures/${
-                          typeof t.generatedEntry === 'object'
-                            ? t.generatedEntry._id
-                            : t.generatedEntry
+                          typeof t.generatedEntry === 'object' ? t.generatedEntry._id : t.generatedEntry
                         }`}
                         className="code"
                       >
@@ -232,24 +225,15 @@ export default function TransactionsTab({
                   }}
                 >
                   Reçue le {formatDateTime(txDetail.receivedAt)} ·{' '}
-                  <span className={`accounting-badge ${txStatusClass(txDetail.status)}`}>
-                    {txDetail.status}
-                  </span>
+                  <span className={`accounting-badge ${txStatusClass(txDetail.status)}`}>{txDetail.status}</span>
                   {txDetail.signatureVerified === false && (
-                    <span
-                      className="accounting-badge draft"
-                      style={{ marginLeft: 8 }}
-                    >
+                    <span className="accounting-badge draft" style={{ marginLeft: 8 }}>
                       ⚠ Signature non vérifiée
                     </span>
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                className="portal-button secondary"
-                onClick={() => setTxDetail(null)}
-              >
+              <button type="button" className="portal-button secondary" onClick={() => setTxDetail(null)}>
                 Fermer
               </button>
             </div>
@@ -264,9 +248,7 @@ export default function TransactionsTab({
               <div className="accounting-message info" style={{ marginTop: 14 }}>
                 Règle matchée :{' '}
                 <strong>
-                  {typeof txDetail.matchedRule === 'object'
-                    ? txDetail.matchedRule.name
-                    : txDetail.matchedRule}
+                  {typeof txDetail.matchedRule === 'object' ? txDetail.matchedRule.name : txDetail.matchedRule}
                 </strong>
               </div>
             )}
@@ -278,7 +260,7 @@ export default function TransactionsTab({
                   fontSize: '0.85rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  color: 'rgba(34,211,238,0.85)',
+                  color: 'var(--primary)',
                 }}
               >
                 Payload brut reçu
@@ -286,7 +268,7 @@ export default function TransactionsTab({
               <pre
                 style={{
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14,165,233,0.2)',
+                  border: '1px solid rgba(204, 255, 0, 0.2)',
                   borderRadius: 10,
                   padding: 14,
                   fontSize: '0.78rem',
@@ -307,7 +289,7 @@ export default function TransactionsTab({
                   fontSize: '0.85rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  color: 'rgba(192,132,252,0.85)',
+                  color: 'var(--primary)',
                 }}
               >
                 Payload normalisé
@@ -315,7 +297,7 @@ export default function TransactionsTab({
               <pre
                 style={{
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(192,132,252,0.2)',
+                  border: '1px solid rgba(204, 255, 0, 0.2)',
                   borderRadius: 10,
                   padding: 14,
                   fontSize: '0.78rem',
@@ -344,9 +326,7 @@ export default function TransactionsTab({
                 </h3>
                 <Link
                   to={`/admin/comptabilite/ecritures/${
-                    typeof txDetail.generatedEntry === 'object'
-                      ? txDetail.generatedEntry._id
-                      : txDetail.generatedEntry
+                    typeof txDetail.generatedEntry === 'object' ? txDetail.generatedEntry._id : txDetail.generatedEntry
                   }`}
                   className="portal-button secondary"
                 >
@@ -362,8 +342,7 @@ export default function TransactionsTab({
                 color: 'rgba(255,255,255,0.45)',
               }}
             >
-              IP : {txDetail.requestIp || '—'} · UA :{' '}
-              {txDetail.requestUserAgent || '—'} · Idempotency :{' '}
+              IP : {txDetail.requestIp || '—'} · UA : {txDetail.requestUserAgent || '—'} · Idempotency :{' '}
               <span className="code">{txDetail.idempotencyKey || '—'}</span>
             </div>
           </div>

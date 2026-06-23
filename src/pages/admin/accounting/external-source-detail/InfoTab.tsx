@@ -16,25 +16,17 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
       <div className="accounting-kpi-grid">
         <div className="accounting-kpi">
           <div className="label">Total reçu</div>
-          <div className="value">
-            {Number(source.totalIngested || 0).toLocaleString('fr-FR')}
-          </div>
+          <div className="value">{Number(source.totalIngested || 0).toLocaleString('fr-FR')}</div>
         </div>
         <div className="accounting-kpi">
           <div className="label">Rejetées</div>
-          <div
-            className="value"
-            style={{ color: source.totalRejected ? '#f87171' : undefined }}
-          >
+          <div className="value" style={{ color: source.totalRejected ? '#f87171' : undefined }}>
             {Number(source.totalRejected || 0).toLocaleString('fr-FR')}
           </div>
         </div>
         <div className="accounting-kpi">
           <div className="label">Doublons</div>
-          <div
-            className="value"
-            style={{ color: source.totalDuplicates ? '#fbbf24' : undefined }}
-          >
+          <div className="value" style={{ color: source.totalDuplicates ? '#fbbf24' : undefined }}>
             {Number(source.totalDuplicates || 0).toLocaleString('fr-FR')}
           </div>
         </div>
@@ -100,9 +92,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             <input
               className="portal-input"
               value={infoForm.defaultJournalCode}
-              onChange={(e) =>
-                setInfoForm({ ...infoForm, defaultJournalCode: e.target.value.toUpperCase() })
-              }
+              onChange={(e) => setInfoForm({ ...infoForm, defaultJournalCode: e.target.value.toUpperCase() })}
             />
           </div>
           <div className="accounting-form-field">
@@ -155,14 +145,13 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             marginTop: 0,
           }}
         >
-          Le site tiers doit utiliser le slug{' '}
-          <span className="code">{source.slug}</span> dans toutes les URL.
+          Le site tiers doit utiliser le slug <span className="code">{source.slug}</span> dans toutes les URL.
         </p>
 
         <div
           style={{
             background: 'rgba(15,15,20,0.7)',
-            border: '1px solid rgba(14,165,233,0.2)',
+            border: '1px solid rgba(204, 255, 0, 0.2)',
             borderRadius: 10,
             padding: 14,
             fontFamily: "'SF Mono', Menlo, Consolas, monospace",
@@ -176,15 +165,15 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             {source.slug}/entries
           </div>
           <div>
-            <span style={{ color: '#7dd3fc' }}>GET&nbsp;</span> https://venio.paris/api/external/
+            <span style={{ color: 'var(--primary)' }}>GET&nbsp;</span> https://venio.paris/api/external/
             {source.slug}/entries/{'{externalId}'}
           </div>
           <div>
-            <span style={{ color: '#7dd3fc' }}>GET&nbsp;</span> https://venio.paris/api/external/
+            <span style={{ color: 'var(--primary)' }}>GET&nbsp;</span> https://venio.paris/api/external/
             {source.slug}/entries?from=&to=
           </div>
           <div>
-            <span style={{ color: '#7dd3fc' }}>GET&nbsp;</span> https://venio.paris/api/external/
+            <span style={{ color: 'var(--primary)' }}>GET&nbsp;</span> https://venio.paris/api/external/
             {source.slug}/ping
           </div>
         </div>
@@ -195,7 +184,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             fontSize: '0.85rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
-            color: 'rgba(34,211,238,0.85)',
+            color: 'rgba(204, 255, 0, 0.85)',
           }}
         >
           Headers requis

@@ -48,7 +48,7 @@ function toForm(s: Subsidiary | null): FormState {
     sector: s?.sector ?? '',
     status: s?.status ?? 'INCUBATION',
     health: s?.health ?? 'WATCH',
-    accentColor: s?.accentColor ?? '#0ea5e9',
+    accentColor: s?.accentColor ?? '#ccff00',
     description: s?.description ?? '',
     lead: s?.lead?._id ?? '',
     foundedYear: s?.foundedYear ? String(s.foundedYear) : '',
@@ -291,8 +291,8 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
                   className="sub-status-pill"
                   style={{
                     cursor: 'pointer',
-                    borderColor: form.team.includes(a._id) ? '#0ea5e9' : 'var(--border-color)',
-                    color: form.team.includes(a._id) ? '#7dd3fc' : 'var(--text-secondary)',
+                    borderColor: form.team.includes(a._id) ? 'var(--primary)' : 'var(--border-color)',
+                    color: form.team.includes(a._id) ? 'var(--primary)' : 'var(--text-secondary)',
                   }}
                 >
                   {a.name || a.email}

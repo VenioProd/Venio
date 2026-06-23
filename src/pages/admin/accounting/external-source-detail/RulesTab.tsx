@@ -98,14 +98,8 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
           type: editingRule.conditions.type || undefined,
           categoryRegex: editingRule.conditions.categoryRegex || undefined,
           descriptionRegex: editingRule.conditions.descriptionRegex || undefined,
-          amountMin:
-            editingRule.conditions.amountMin !== ''
-              ? Number(editingRule.conditions.amountMin)
-              : undefined,
-          amountMax:
-            editingRule.conditions.amountMax !== ''
-              ? Number(editingRule.conditions.amountMax)
-              : undefined,
+          amountMin: editingRule.conditions.amountMin !== '' ? Number(editingRule.conditions.amountMin) : undefined,
+          amountMax: editingRule.conditions.amountMax !== '' ? Number(editingRule.conditions.amountMax) : undefined,
           currency: editingRule.conditions.currency || undefined,
           tagsAll: parseTagsInput(editingRule.conditions.tagsAll),
           tagsAny: parseTagsInput(editingRule.conditions.tagsAny),
@@ -114,10 +108,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
           journalCode: editingRule.mapping.journalCode || undefined,
           debitAccount: editingRule.mapping.debitAccount || undefined,
           creditAccount: editingRule.mapping.creditAccount || undefined,
-          vatRateValue:
-            editingRule.mapping.vatRateValue !== ''
-              ? Number(editingRule.mapping.vatRateValue)
-              : undefined,
+          vatRateValue: editingRule.mapping.vatRateValue !== '' ? Number(editingRule.mapping.vatRateValue) : undefined,
           useVatFromPayload: !!editingRule.mapping.useVatFromPayload,
           labelTemplate: editingRule.mapping.labelTemplate || undefined,
           autoValidate: !!editingRule.mapping.autoValidate,
@@ -192,8 +183,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               color: 'rgba(255,255,255,0.55)',
             }}
           >
-            Les règles sont évaluées par priorité décroissante. La première qui matche
-            s'applique.
+            Les règles sont évaluées par priorité décroissante. La première qui matche s'applique.
           </p>
         </div>
         <button className="portal-button" onClick={openNewRule}>
@@ -205,13 +195,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
         <div
           className="accounting-card"
           style={{
-            background: 'rgba(14,165,233,0.04)',
+            background: 'rgba(204, 255, 0, 0.04)',
             marginBottom: 16,
           }}
         >
-          <h3 style={{ marginTop: 0, fontSize: '1rem' }}>
-            {editingRule._id ? 'Modifier la règle' : 'Nouvelle règle'}
-          </h3>
+          <h3 style={{ marginTop: 0, fontSize: '1rem' }}>{editingRule._id ? 'Modifier la règle' : 'Nouvelle règle'}</h3>
 
           <div className="accounting-form">
             <div className="accounting-form-field">
@@ -229,21 +217,15 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                 type="number"
                 className="portal-input"
                 value={editingRule.priority}
-                onChange={(e) =>
-                  setEditingRule({ ...editingRule, priority: e.target.value })
-                }
+                onChange={(e) => setEditingRule({ ...editingRule, priority: e.target.value })}
               />
             </div>
             <div className="accounting-form-field">
-              <label
-                style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}
-              >
+              <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
                 <input
                   type="checkbox"
                   checked={editingRule.enabled}
-                  onChange={(e) =>
-                    setEditingRule({ ...editingRule, enabled: e.target.checked })
-                  }
+                  onChange={(e) => setEditingRule({ ...editingRule, enabled: e.target.checked })}
                   style={{ marginRight: 8 }}
                 />
                 Règle active
@@ -254,13 +236,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
           <div style={{ marginTop: 20 }}>
             <button
               type="button"
-              onClick={() =>
-                setExpandedSections((s) => ({ ...s, conditions: !s.conditions }))
-              }
+              onClick={() => setExpandedSections((s) => ({ ...s, conditions: !s.conditions }))}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(34,211,238,0.85)',
+                color: 'rgba(204, 255, 0, 0.85)',
                 fontSize: '0.85rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -396,9 +376,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
-                    Séparés par des virgules
-                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>Séparés par des virgules</span>
                 </div>
                 <div className="accounting-form-field">
                   <label>Tags requis (un seul suffit)</label>
@@ -416,9 +394,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
-                    Séparés par des virgules
-                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>Séparés par des virgules</span>
                 </div>
               </div>
             )}
@@ -427,13 +403,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
           <div style={{ marginTop: 20 }}>
             <button
               type="button"
-              onClick={() =>
-                setExpandedSections((s) => ({ ...s, mapping: !s.mapping }))
-              }
+              onClick={() => setExpandedSections((s) => ({ ...s, mapping: !s.mapping }))}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(34,211,238,0.85)',
+                color: 'rgba(204, 255, 0, 0.85)',
                 fontSize: '0.85rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -517,9 +491,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field full">
-                  <label
-                    style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}
-                  >
+                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.useVatFromPayload}
@@ -555,14 +527,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
                     Variables disponibles : <span className="code">{'{description}'}</span>{' '}
-                    <span className="code">{'{externalId}'}</span>{' '}
-                    <span className="code">{'{date}'}</span>
+                    <span className="code">{'{externalId}'}</span> <span className="code">{'{date}'}</span>
                   </span>
                 </div>
                 <div className="accounting-form-field">
-                  <label
-                    style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}
-                  >
+                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.autoValidate}
@@ -581,9 +550,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   </label>
                 </div>
                 <div className="accounting-form-field">
-                  <label
-                    style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}
-                  >
+                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.assignToAuxiliary}
@@ -613,16 +580,9 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button className="portal-button" onClick={handleSaveRule} disabled={ruleSaving}>
-              {ruleSaving
-                ? 'Enregistrement…'
-                : editingRule._id
-                ? '✓ Mettre à jour'
-                : '✚ Créer'}
+              {ruleSaving ? 'Enregistrement…' : editingRule._id ? '✓ Mettre à jour' : '✚ Créer'}
             </button>
-            <button
-              className="portal-button secondary"
-              onClick={() => setEditingRule(null)}
-            >
+            <button className="portal-button secondary" onClick={() => setEditingRule(null)}>
               Annuler
             </button>
           </div>
@@ -634,9 +594,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       ) : sortedRules.length === 0 ? (
         <div className="accounting-empty">
           Aucune règle de classification.
-          <div className="hint">
-            Sans règle, les écritures utilisent les mappings par défaut de la source.
-          </div>
+          <div className="hint">Sans règle, les écritures utilisent les mappings par défaut de la source.</div>
         </div>
       ) : (
         <table className="accounting-table">
@@ -659,9 +617,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                 <td>{r.name}</td>
                 <td className="code">{r.conditions?.type || '—'}</td>
                 <td style={{ fontSize: '0.82rem' }}>
-                  {r.mapping?.journalCode && (
-                    <span className="code">{r.mapping.journalCode}</span>
-                  )}{' '}
+                  {r.mapping?.journalCode && <span className="code">{r.mapping.journalCode}</span>}{' '}
                   {r.mapping?.debitAccount && (
                     <>
                       <span style={{ color: 'rgba(255,255,255,0.5)' }}>Db</span>{' '}
@@ -675,9 +631,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                     </>
                   )}
                 </td>
-                <td className="amount">
-                  {Number(r.matchCount || 0).toLocaleString('fr-FR')}
-                </td>
+                <td className="amount">{Number(r.matchCount || 0).toLocaleString('fr-FR')}</td>
                 <td style={{ fontSize: '0.82rem' }}>{formatDateTime(r.lastMatchedAt)}</td>
                 <td>
                   <span className={`accounting-badge ${r.enabled ? 'validated' : 'locked'}`}>
@@ -700,11 +654,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                     >
                       Tester
                     </button>
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => handleDeleteRule(r)}
-                    >
+                    <button type="button" className="danger" onClick={() => handleDeleteRule(r)}>
                       Supprimer
                     </button>
                   </div>

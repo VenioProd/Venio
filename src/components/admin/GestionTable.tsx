@@ -4,7 +4,7 @@ import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
   A_FAIRE: { label: 'A faire', color: '#64748b' },
-  EN_COURS: { label: 'En cours', color: '#0ea5e9' },
+  EN_COURS: { label: 'En cours', color: '#ccff00' },
   EN_REVIEW: { label: 'En review', color: '#f59e0b' },
   TERMINE: { label: 'Termine', color: '#22c55e' },
   VALIDE: { label: 'Valide', color: '#22c55e' },
@@ -17,7 +17,7 @@ const ADMIN_TASK_STATUSES: TaskStatus[] = ['EN_REVIEW', 'VALIDE', 'NON_VALIDE', 
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
   BASSE: { label: 'Basse', color: '#64748b' },
-  NORMALE: { label: 'Normale', color: '#0ea5e9' },
+  NORMALE: { label: 'Normale', color: '#ccff00' },
   HAUTE: { label: 'Haute', color: '#f59e0b' },
   URGENTE: { label: 'Urgente', color: '#ef4444' },
 }
@@ -51,16 +51,29 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
   const sortTasks = (list: Task[]) => {
     return [...list].sort((a, b) => {
       let va: any, vb: any
-      if (sortKey === 'title') { va = a.title.toLowerCase(); vb = b.title.toLowerCase() }
-      else if (sortKey === 'status') { va = a.status; vb = b.status }
-      else if (sortKey === 'priority') {
+      if (sortKey === 'title') {
+        va = a.title.toLowerCase()
+        vb = b.title.toLowerCase()
+      } else if (sortKey === 'status') {
+        va = a.status
+        vb = b.status
+      } else if (sortKey === 'priority') {
         const order = { BASSE: 0, NORMALE: 1, HAUTE: 2, URGENTE: 3 }
-        va = order[a.priority]; vb = order[b.priority]
+        va = order[a.priority]
+        vb = order[b.priority]
+      } else if (sortKey === 'assignee') {
+        va = a.assignee?.name || ''
+        vb = b.assignee?.name || ''
+      } else if (sortKey === 'dueDate') {
+        va = a.dueDate || '9999'
+        vb = b.dueDate || '9999'
+      } else if (sortKey === 'progress') {
+        va = a.progress
+        vb = b.progress
+      } else {
+        va = a.createdAt
+        vb = b.createdAt
       }
-      else if (sortKey === 'assignee') { va = a.assignee?.name || ''; vb = b.assignee?.name || '' }
-      else if (sortKey === 'dueDate') { va = a.dueDate || '9999'; vb = b.dueDate || '9999' }
-      else if (sortKey === 'progress') { va = a.progress; vb = b.progress }
-      else { va = a.createdAt; vb = b.createdAt }
 
       if (va < vb) return sortDir === 'asc' ? -1 : 1
       if (va > vb) return sortDir === 'asc' ? 1 : -1
@@ -71,8 +84,8 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
   // Separate active and completed tasks
   // For non-super-admin (readOnly): tasks at 100% progress also go to completed
   const isCompleted = (t: Task) => t.status === 'TERMINE' || t.status === 'VALIDE' || (readOnly && t.progress === 100)
-  const activeTasks = sortTasks(tasks.filter(t => !isCompleted(t)))
-  const completedTasks = sortTasks(tasks.filter(t => isCompleted(t)))
+  const activeTasks = sortTasks(tasks.filter((t) => !isCompleted(t)))
+  const completedTasks = sortTasks(tasks.filter((t) => isCompleted(t)))
 
   const getProjectName = (task: Task) => {
     if (typeof task.project === 'object' && task.project?.name) return task.project.name
@@ -88,7 +101,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
     return task.dueDate && task.status !== 'TERMINE' && task.status !== 'VALIDE' && new Date(task.dueDate) < new Date()
   }
 
-  const sortArrow = (key: string) => sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
+  const sortArrow = (key: string) => (sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '')
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} o`
@@ -148,14 +161,22 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
           <td>
             {task.assignee ? (
               <span className="gestion-assignee-badge">
-                {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                {task.assignee.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()}
                 <span className="gestion-assignee-name">{task.assignee.name}</span>
               </span>
-            ) : '—'}
+            ) : (
+              '—'
+            )}
           </td>
           <td>
             {readOnly || task.progress < 100 ? (
-              <span className="gestion-inline-badge" style={{ color: STATUS_CONFIG[task.status].color }}>{STATUS_CONFIG[task.status].label}</span>
+              <span className="gestion-inline-badge" style={{ color: STATUS_CONFIG[task.status].color }}>
+                {STATUS_CONFIG[task.status].label}
+              </span>
             ) : (
               <select
                 className="gestion-inline-select"
@@ -168,14 +189,18 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                   <option value={task.status}>{STATUS_CONFIG[task.status].label}</option>
                 )}
                 {ADMIN_TASK_STATUSES.map((k) => (
-                  <option key={k} value={k}>{STATUS_CONFIG[k].label}</option>
+                  <option key={k} value={k}>
+                    {STATUS_CONFIG[k].label}
+                  </option>
                 ))}
               </select>
             )}
           </td>
           <td>
             {readOnly ? (
-              <span className="gestion-inline-badge" style={{ color: PRIORITY_CONFIG[task.priority].color }}>{PRIORITY_CONFIG[task.priority].label}</span>
+              <span className="gestion-inline-badge" style={{ color: PRIORITY_CONFIG[task.priority].color }}>
+                {PRIORITY_CONFIG[task.priority].label}
+              </span>
             ) : (
               <select
                 className="gestion-inline-select"
@@ -185,21 +210,24 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                 onChange={(e) => onUpdate(getProjectId(task), task._id, { priority: e.target.value })}
               >
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => (
-                  <option key={k} value={k}>{v.label}</option>
+                  <option key={k} value={k}>
+                    {v.label}
+                  </option>
                 ))}
               </select>
             )}
           </td>
-          <td className={isOverdue(task) ? 'gestion-cell-overdue' : ''}>
-            {formatDate(task.dueDate)}
-          </td>
+          <td className={isOverdue(task) ? 'gestion-cell-overdue' : ''}>{formatDate(task.dueDate)}</td>
           <td>{task.estimatedDuration ?? '—'}</td>
           <td>
             <div className="gestion-progress-cell">
               <div className="gestion-progress-bar">
                 <div
                   className="gestion-progress-fill"
-                  style={{ width: `${task.progress}%`, background: task.progress === 100 ? '#22c55e' : '#0ea5e9' }}
+                  style={{
+                    width: `${task.progress}%`,
+                    background: task.progress === 100 ? '#22c55e' : 'var(--primary)',
+                  }}
                 />
               </div>
               {readOnly ? (
@@ -210,7 +238,9 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                   onChange={(e) => onUpdate(getProjectId(task), task._id, { progress: Number(e.target.value) })}
                 >
                   {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((v) => (
-                    <option key={v} value={v}>{v}%</option>
+                    <option key={v} value={v}>
+                      {v}%
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -234,7 +264,9 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                     <span className="gestion-detail-label">Tags</span>
                     <div className="gestion-detail-tags">
                       {task.tags.map((tag, i) => (
-                        <span key={i} className="gestion-detail-tag">{tag}</span>
+                        <span key={i} className="gestion-detail-tag">
+                          {tag}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -244,7 +276,14 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                   {task.attachments && task.attachments.length > 0 ? (
                     <div className="gestion-attachments-list">
                       {task.attachments.map((att) => (
-                        <div key={att._id} className="gestion-attachment-item" onClick={(e) => { e.stopPropagation(); handleDownload(task, att) }}>
+                        <div
+                          key={att._id}
+                          className="gestion-attachment-item"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownload(task, att)
+                          }}
+                        >
                           <span className="gestion-attachment-icon">
                             {att.mimeType.startsWith('image/') ? '🖼' : att.mimeType.includes('pdf') ? '📄' : '📎'}
                           </span>
@@ -301,12 +340,22 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
         </thead>
         <tbody>
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
-            <tr><td colSpan={8} className="gestion-empty">Aucune tache</td></tr>
+            <tr>
+              <td colSpan={8} className="gestion-empty">
+                Aucune tache
+              </td>
+            </tr>
           ) : (
             <>
               {activeTasks.length === 0 ? (
-                <tr><td colSpan={8} className="gestion-empty">Aucune tache en cours</td></tr>
-              ) : activeTasks.map(renderRow)}
+                <tr>
+                  <td colSpan={8} className="gestion-empty">
+                    Aucune tache en cours
+                  </td>
+                </tr>
+              ) : (
+                activeTasks.map(renderRow)
+              )}
             </>
           )}
         </tbody>
@@ -314,10 +363,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
 
       {completedTasks.length > 0 && (
         <div className="gestion-completed-section">
-          <button
-            className="gestion-completed-toggle"
-            onClick={() => setShowCompleted(!showCompleted)}
-          >
+          <button className="gestion-completed-toggle" onClick={() => setShowCompleted(!showCompleted)}>
             <span className="gestion-completed-icon">{showCompleted ? '▾' : '▸'}</span>
             Taches terminees ({completedTasks.length})
           </button>
@@ -335,9 +381,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                   <th>Progression</th>
                 </tr>
               </thead>
-              <tbody>
-                {completedTasks.map(renderRow)}
-              </tbody>
+              <tbody>{completedTasks.map(renderRow)}</tbody>
             </table>
           )}
         </div>

@@ -30,11 +30,11 @@ const ACTION_ICONS: Record<ActivityAction, string> = {
 const ACTION_COLORS: Record<string, string> = {
   PROJECT_CREATED: '#10b981',
   STATUS_CHANGED: '#f59e0b',
-  TASK_CREATED: '#6366f1',
-  TASK_MOVED: '#0ea5e9',
+  TASK_CREATED: '#ccff00',
+  TASK_MOVED: '#a5d400',
   TASK_DELETED: '#ef4444',
-  DOCUMENT_UPLOADED: '#8b5cf6',
-  UPDATE_POSTED: '#06b6d4',
+  DOCUMENT_UPLOADED: '#9b9b9b',
+  UPDATE_POSTED: '#ffffff',
   BILLING_CREATED: '#f97316',
 }
 
@@ -63,21 +63,24 @@ export default function ActivityTimeline({ projectId }: Props) {
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
 
-  const load = useCallback(async (before?: string) => {
-    try {
-      const data = await fetchActivities(projectId, 30, before)
-      if (before) {
-        setActivities((prev) => [...prev, ...data])
-      } else {
-        setActivities(data)
+  const load = useCallback(
+    async (before?: string) => {
+      try {
+        const data = await fetchActivities(projectId, 30, before)
+        if (before) {
+          setActivities((prev) => [...prev, ...data])
+        } else {
+          setActivities(data)
+        }
+        setHasMore(data.length === 30)
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false)
       }
-      setHasMore(data.length === 30)
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+    },
+    [projectId],
+  )
 
   useEffect(() => {
     setLoading(true)
@@ -137,14 +140,16 @@ export default function ActivityTimeline({ projectId }: Props) {
               <div key={a._id} className="activity-item">
                 <div
                   className="activity-item-icon"
-                  style={{ background: `${ACTION_COLORS[a.action] || '#6366f1'}20`, color: ACTION_COLORS[a.action] || '#6366f1' }}
+                  style={{
+                    background: `${ACTION_COLORS[a.action] || '#ccff00'}20`,
+                    color: ACTION_COLORS[a.action] || '#ccff00',
+                  }}
                 >
                   {ACTION_ICONS[a.action] || '\u{1F4CC}'}
                 </div>
                 <div className="activity-item-content">
                   <p className="activity-item-summary">
-                    <span className="activity-item-actor">{getActorName(a.actor)}</span>
-                    {' '}{a.summary}
+                    <span className="activity-item-actor">{getActorName(a.actor)}</span> {a.summary}
                   </p>
                   <span className="activity-item-time">{formatRelativeTime(a.createdAt)}</span>
                 </div>

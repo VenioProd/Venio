@@ -13,7 +13,6 @@ interface GeneratedCredentials {
   context: 'created' | 'rotated'
 }
 
-
 // ---- Modals d'intégrations externes ----
 
 interface CreateIntegrationModalProps {
@@ -27,11 +26,7 @@ interface CreateIntegrationModalProps {
   }) => Promise<string | null>
 }
 
-export function CreateIntegrationModal({
-  existingSlugs,
-  onCancel,
-  onSubmit,
-}: CreateIntegrationModalProps) {
+export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: CreateIntegrationModalProps) {
   const [slug, setSlug] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -147,8 +142,8 @@ export function CreateIntegrationModal({
                 color: 'rgba(255,255,255,0.6)',
               }}
             >
-              Si coché, les écritures sont créées directement en <code>VALIDATED</code>. À
-              n'activer que pour les sources de confiance maximale.
+              Si coché, les écritures sont créées directement en <code>VALIDATED</code>. À n'activer que pour les
+              sources de confiance maximale.
             </div>
           </span>
         </label>
@@ -177,12 +172,7 @@ export function CreateIntegrationModal({
             gap: 8,
           }}
         >
-          <button
-            type="button"
-            className="portal-button secondary"
-            onClick={onCancel}
-            disabled={submitting}
-          >
+          <button type="button" className="portal-button secondary" onClick={onCancel} disabled={submitting}>
             Annuler
           </button>
           <button type="submit" className="portal-button" disabled={!canSubmit}>
@@ -243,8 +233,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
         >
           {source.slug}
         </code>{' '}
-        sera supprimée et sa clé API immédiatement invalidée. Les écritures déjà reçues sont
-        conservées.
+        sera supprimée et sa clé API immédiatement invalidée. Les écritures déjà reçues sont conservées.
       </div>
 
       <div className="accounting-form-field" style={{ marginTop: 18 }}>
@@ -295,12 +284,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           gap: 8,
         }}
       >
-        <button
-          type="button"
-          className="portal-button secondary"
-          onClick={onCancel}
-          disabled={submitting}
-        >
+        <button type="button" className="portal-button secondary" onClick={onCancel} disabled={submitting}>
           Annuler
         </button>
         <button
@@ -382,17 +366,15 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
         <br />
         Stocke-les immédiatement dans un gestionnaire de secrets sécurisé.
         {credentials.warning && (
-          <div style={{ marginTop: 8, fontSize: '0.82rem', opacity: 0.85 }}>
-            {credentials.warning}
-          </div>
+          <div style={{ marginTop: 8, fontSize: '0.82rem', opacity: 0.85 }}>{credentials.warning}</div>
         )}
       </div>
 
       <SecretField
         label="VENIO_API_KEY"
         value={credentials.apiKey}
-        color="#7dd3fc"
-        borderColor="rgba(14,165,233,0.35)"
+        color="#ccff00"
+        borderColor="rgba(204,255,0,0.35)"
         fieldKey="apiKey"
         copiedField={copiedField}
         onCopy={onCopy}
@@ -401,8 +383,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <SecretField
         label="VENIO_HMAC_SECRET"
         value={credentials.webhookSecret}
-        color="#c084fc"
-        borderColor="rgba(192,132,252,0.35)"
+        color="#9b9b9b"
+        borderColor="rgba(155,155,155,0.35)"
         fieldKey="webhookSecret"
         copiedField={copiedField}
         onCopy={onCopy}
@@ -485,15 +467,7 @@ interface SecretFieldProps {
   onCopy: (value: string, fieldKey: string) => void
 }
 
-export function SecretField({
-  label,
-  value,
-  color,
-  borderColor,
-  fieldKey,
-  copiedField,
-  onCopy,
-}: SecretFieldProps) {
+export function SecretField({ label, value, color, borderColor, fieldKey, copiedField, onCopy }: SecretFieldProps) {
   return (
     <div style={{ marginTop: 18 }}>
       <div
@@ -555,13 +529,7 @@ interface ModalShellProps {
   children: React.ReactNode
 }
 
-export function ModalShell({
-  title,
-  onClose,
-  closeOnBackdrop = true,
-  wide = false,
-  children,
-}: ModalShellProps) {
+export function ModalShell({ title, onClose, closeOnBackdrop = true, wide = false, children }: ModalShellProps) {
   return (
     <div
       role="dialog"

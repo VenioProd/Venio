@@ -110,9 +110,7 @@ const VatDeclarationDetail = () => {
   const currentCredit = Number(declaration?.currentCredit) || 0
 
   const title = declaration
-    ? `Déclaration ${declaration.type} — ${formatDate(declaration.periodStart)} → ${formatDate(
-        declaration.periodEnd
-      )}`
+    ? `Déclaration ${declaration.type} — ${formatDate(declaration.periodStart)} → ${formatDate(declaration.periodEnd)}`
     : 'Déclaration de TVA'
 
   return (
@@ -125,10 +123,7 @@ const VatDeclarationDetail = () => {
       }
       actions={
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="portal-button secondary"
-            onClick={() => navigate('/admin/comptabilite/tva')}
-          >
+          <button className="portal-button secondary" onClick={() => navigate('/admin/comptabilite/tva')}>
             ← Liste
           </button>
           {declaration && canManage && isDraft && (
@@ -152,7 +147,7 @@ const VatDeclarationDetail = () => {
         <div className="accounting-empty">
           Déclaration introuvable.
           <div className="hint">
-            <Link to="/admin/comptabilite/tva" style={{ color: '#7dd3fc' }}>
+            <Link to="/admin/comptabilite/tva" style={{ color: 'var(--primary)' }}>
               Retour à la liste →
             </Link>
           </div>
@@ -180,9 +175,7 @@ const VatDeclarationDetail = () => {
                 >
                   Type
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
-                  {declaration.type}
-                </div>
+                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.type}</div>
               </div>
               <div>
                 <div
@@ -212,9 +205,7 @@ const VatDeclarationDetail = () => {
                 >
                   Régime
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
-                  {declaration.regime || '—'}
-                </div>
+                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.regime || '—'}</div>
               </div>
               <div>
                 <div
@@ -228,9 +219,7 @@ const VatDeclarationDetail = () => {
                 >
                   Périodicité
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
-                  {declaration.periodicity || '—'}
-                </div>
+                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.periodicity || '—'}</div>
               </div>
               <div>
                 <div
@@ -291,8 +280,7 @@ const VatDeclarationDetail = () => {
             className="accounting-card"
             style={{
               marginBottom: 16,
-              background:
-                'linear-gradient(135deg, rgba(14,165,233,0.07) 0%, rgba(59,130,246,0.03) 100%)',
+              background: 'linear-gradient(135deg, rgba(204, 255, 0, 0.07) 0%, rgba(59,130,246,0.03) 100%)',
             }}
           >
             <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Récapitulatif</h2>
@@ -312,7 +300,7 @@ const VatDeclarationDetail = () => {
               </div>
               <div className="accounting-kpi">
                 <div className="label">Total déductible</div>
-                <div className="value" style={{ color: '#7dd3fc' }}>
+                <div className="value" style={{ color: 'var(--primary)' }}>
                   {formatEur(totalDeductible)}
                 </div>
               </div>
@@ -334,9 +322,7 @@ const VatDeclarationDetail = () => {
                   totalDue > 0
                     ? 'linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(239,68,68,0.06) 100%)'
                     : 'linear-gradient(135deg, rgba(74,222,128,0.12) 0%, rgba(34,197,94,0.06) 100%)',
-                border: `1px solid ${
-                  totalDue > 0 ? 'rgba(248,113,113,0.4)' : 'rgba(74,222,128,0.4)'
-                }`,
+                border: `1px solid ${totalDue > 0 ? 'rgba(248,113,113,0.4)' : 'rgba(74,222,128,0.4)'}`,
                 textAlign: 'center',
               }}
             >
@@ -376,9 +362,7 @@ const VatDeclarationDetail = () => {
           </section>
 
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#4ade80' }}>
-              TVA collectée par taux
-            </h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#4ade80' }}>TVA collectée par taux</h2>
             {(declaration.collectedByRate || []).length === 0 ? (
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
                 Aucune TVA collectée sur la période.
@@ -402,7 +386,7 @@ const VatDeclarationDetail = () => {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                  <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
                     <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.collectedByRate))}
@@ -417,9 +401,7 @@ const VatDeclarationDetail = () => {
           </section>
 
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#7dd3fc' }}>
-              TVA déductible par taux
-            </h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem', color: 'var(--primary)' }}>TVA déductible par taux</h2>
             {(declaration.deductibleByRate || []).length === 0 ? (
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
                 Aucune TVA déductible sur la période.
@@ -443,12 +425,12 @@ const VatDeclarationDetail = () => {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                  <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
                     <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.deductibleByRate))}
                     </td>
-                    <td className="amount" style={{ fontWeight: 700, color: '#7dd3fc' }}>
+                    <td className="amount" style={{ fontWeight: 700, color: 'var(--primary)' }}>
                       {formatEur(sumAmount(declaration.deductibleByRate))}
                     </td>
                   </tr>
@@ -457,32 +439,31 @@ const VatDeclarationDetail = () => {
             )}
           </section>
 
-          {Array.isArray(declaration.declarationLines) &&
-            declaration.declarationLines.length > 0 && (
-              <section className="accounting-card" style={{ marginBottom: 16 }}>
-                <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Lignes CA3</h2>
-                <table className="accounting-table">
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th>Libellé</th>
-                      <th className="amount">Base</th>
-                      <th className="amount">Montant</th>
+          {Array.isArray(declaration.declarationLines) && declaration.declarationLines.length > 0 && (
+            <section className="accounting-card" style={{ marginBottom: 16 }}>
+              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Lignes CA3</h2>
+              <table className="accounting-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Libellé</th>
+                    <th className="amount">Base</th>
+                    <th className="amount">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {declaration.declarationLines.map((l, i) => (
+                    <tr key={`dl-${i}`}>
+                      <td className="code">{l.code}</td>
+                      <td>{l.label}</td>
+                      <td className="amount">{formatEur(l.base)}</td>
+                      <td className="amount">{formatEur(l.amount)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {declaration.declarationLines.map((l, i) => (
-                      <tr key={`dl-${i}`}>
-                        <td className="code">{l.code}</td>
-                        <td>{l.label}</td>
-                        <td className="amount">{formatEur(l.base)}</td>
-                        <td className="amount">{formatEur(l.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </section>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
           {declaration.notes && declaration.notes.trim() && (
             <section className="accounting-card">
@@ -522,8 +503,8 @@ const VatDeclarationDetail = () => {
           >
             <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Soumettre la déclaration</h2>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-              Une fois soumise, la déclaration ne pourra plus être modifiée ni supprimée.
-              Vous pouvez optionnellement renseigner la référence retournée par impots.gouv.fr.
+              Une fois soumise, la déclaration ne pourra plus être modifiée ni supprimée. Vous pouvez optionnellement
+              renseigner la référence retournée par impots.gouv.fr.
             </p>
             <div className="accounting-form-field">
               <label>Référence de soumission (optionnel)</label>

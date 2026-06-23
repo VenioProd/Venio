@@ -76,10 +76,21 @@ interface OverviewTabProps {
 
 export function MetaInfo({ project }: { project: Project }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}>
+    <div
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}
+    >
       {project.startDate && (
         <div className="portal-card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              marginBottom: 4,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '.5px',
+            }}
+          >
             Début
           </div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.startDate).toLocaleDateString('fr-FR')}</div>
@@ -87,20 +98,47 @@ export function MetaInfo({ project }: { project: Project }) {
       )}
       {project.endDate && (
         <div className="portal-card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              marginBottom: 4,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '.5px',
+            }}
+          >
             Fin prévue
           </div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.endDate).toLocaleDateString('fr-FR')}</div>
         </div>
       )}
       <div className="portal-card" style={{ padding: '12px 16px' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-secondary)',
+            marginBottom: 4,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '.5px',
+          }}
+        >
           Créé par
         </div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{project.createdBy?.name || '—'}</div>
       </div>
       <div className="portal-card" style={{ padding: '12px 16px' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-secondary)',
+            marginBottom: 4,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '.5px',
+          }}
+        >
           Mise à jour
         </div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.updatedAt).toLocaleDateString('fr-FR')}</div>
@@ -119,7 +157,15 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
             {project.poles.map((pole) => (
               <span
                 key={pole}
-                style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: 20,
+                  background: 'rgba(204, 255, 0, 0.12)',
+                  border: '1px solid rgba(204, 255, 0, 0.3)',
+                  color: 'var(--primary)',
+                }}
               >
                 {pole}
               </span>
@@ -132,16 +178,37 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
           Membres ({project.members.length})
         </h2>
         {project.members.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aucun membre assigné directement (accessible via pôle)</p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            Aucun membre assigné directement (accessible via pôle)
+          </p>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {project.members.map((m) => (
               <div
                 key={m._id}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(16,185,129,0.08)',
+                  border: '1px solid rgba(16,185,129,0.2)',
+                }}
               >
                 <div
-                  style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.1))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: '#6ee7b7',
+                  }}
                 >
                   {(m.name || '?').charAt(0).toUpperCase()}
                 </div>
@@ -161,7 +228,14 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
             {project.tags.map((tag) => (
               <span
                 key={tag}
-                style={{ fontSize: 11, padding: '3px 9px', borderRadius: 12, background: 'rgba(100,116,180,0.12)', border: '1px solid rgba(100,116,180,0.25)', color: '#a5b4cf' }}
+                style={{
+                  fontSize: 11,
+                  padding: '3px 9px',
+                  borderRadius: 12,
+                  background: 'rgba(100,116,180,0.12)',
+                  border: '1px solid rgba(100,116,180,0.25)',
+                  color: '#a5b4cf',
+                }}
               >
                 #{tag}
               </span>
@@ -174,7 +248,15 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
           <button
             type="button"
             onClick={onGoToMissions}
-            style={{ fontSize: 12, color: 'rgba(253,224,71,0.7)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+            style={{
+              fontSize: 12,
+              color: 'rgba(253,224,71,0.7)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textUnderlineOffset: 3,
+            }}
           >
             Voir les {missions.length} mission{missions.length > 1 ? 's' : ''} de ce projet →
           </button>

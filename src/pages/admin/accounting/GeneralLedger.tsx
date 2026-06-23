@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import {
-  getGeneralLedger,
-  listAccounts,
-  listFiscalYears,
-  downloadReportCsv,
-} from '../../../services/accounting'
-import type {
-  IChartOfAccount,
-  IFiscalYear,
-  IGeneralLedgerData,
-} from '../../../types/accounting'
+import { getGeneralLedger, listAccounts, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
+import type { IChartOfAccount, IFiscalYear, IGeneralLedgerData } from '../../../types/accounting'
 
 const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -121,11 +112,7 @@ const GeneralLedger = () => {
       title="Grand livre"
       subtitle="Détail chronologique des mouvements par compte"
       actions={
-        <button
-          className="portal-button secondary"
-          onClick={handleExport}
-          disabled={!filters.accountCode}
-        >
+        <button className="portal-button secondary" onClick={handleExport} disabled={!filters.accountCode}>
           ⬇ Export CSV
         </button>
       }
@@ -195,9 +182,7 @@ const GeneralLedger = () => {
         ) : !data ? (
           <div className="accounting-empty">
             Sélectionnez un compte pour afficher le grand livre.
-            <div className="hint">
-              Choisissez un compte ci-dessus puis cliquez sur « Filtrer ».
-            </div>
+            <div className="hint">Choisissez un compte ci-dessus puis cliquez sur « Filtrer ».</div>
           </div>
         ) : (
           <>
@@ -205,7 +190,7 @@ const GeneralLedger = () => {
               <div className="accounting-kpi">
                 <div className="label">Compte</div>
                 <div className="value" style={{ fontSize: '1.1rem' }}>
-                  <span className="code" style={{ color: 'rgba(34,211,238,0.9)' }}>
+                  <span className="code" style={{ color: 'rgba(204, 255, 0, 0.9)' }}>
                     {account?.code}
                   </span>
                   <div
@@ -277,12 +262,8 @@ const GeneralLedger = () => {
                       </td>
                       <td className="code">{m.pieceRef || '—'}</td>
                       <td>{m.label}</td>
-                      <td className="amount">
-                        {Number(m.debit) > 0 ? formatEur(m.debit) : ''}
-                      </td>
-                      <td className="amount">
-                        {Number(m.credit) > 0 ? formatEur(m.credit) : ''}
-                      </td>
+                      <td className="amount">{Number(m.debit) > 0 ? formatEur(m.debit) : ''}</td>
+                      <td className="amount">{Number(m.credit) > 0 ? formatEur(m.credit) : ''}</td>
                       <td className="amount" style={{ fontWeight: 600 }}>
                         {formatEur(m.runningBalance)}
                       </td>
@@ -292,7 +273,7 @@ const GeneralLedger = () => {
                 </tbody>
                 {totals && (
                   <tfoot>
-                    <tr style={{ borderTop: '2px solid rgba(14,165,233,0.4)' }}>
+                    <tr style={{ borderTop: '2px solid rgba(204, 255, 0, 0.4)' }}>
                       <td colSpan={5} style={{ textAlign: 'right', fontWeight: 600, padding: '14px' }}>
                         Totaux
                       </td>

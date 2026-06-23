@@ -3,7 +3,7 @@ import type { Task } from '../../types/task.types'
 
 const PRIORITY_COLORS: Record<string, string> = {
   BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
+  NORMALE: '#ccff00',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
@@ -63,7 +63,13 @@ function startOfMonth(d: Date): Date {
 export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, readOnly }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()))
-  const [dragState, setDragState] = useState<{ taskId: string; type: 'move' | 'resize'; startX: number; origStart: Date; origEnd: Date } | null>(null)
+  const [dragState, setDragState] = useState<{
+    taskId: string
+    type: 'move' | 'resize'
+    startX: number
+    origStart: Date
+    origEnd: Date
+  } | null>(null)
 
   // Compute visible range based on view mode
   const { rangeStart, rangeEnd, totalDays, colWidth, columns, rangeLabel } = useMemo(() => {
@@ -86,7 +92,12 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
         totalDays: 1,
         colWidth: cw,
         columns: cols,
-        rangeLabel: rStart.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        rangeLabel: rStart.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
       }
     } else if (viewMode === 'week') {
       rStart = startOfWeek(currentDate)
@@ -128,32 +139,40 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
 
   // Navigate
   const navigate = (dir: -1 | 1) => {
-    if (viewMode === 'day') setCurrentDate(prev => addDays(prev, dir))
-    else if (viewMode === 'week') setCurrentDate(prev => addDays(prev, dir * 7))
-    else setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1))
+    if (viewMode === 'day') setCurrentDate((prev) => addDays(prev, dir))
+    else if (viewMode === 'week') setCurrentDate((prev) => addDays(prev, dir * 7))
+    else setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + dir, 1))
   }
 
   const goToday = () => setCurrentDate(startOfDay(new Date()))
 
   // Prepare tasks with dates
   const ganttTasks = useMemo(() => {
-    return tasks
-      .filter(t => t.startDate || t.dueDate || t.createdAt)
-      .map((t) => {
-        const start = startOfDay(t.startDate ? new Date(t.startDate) : (t.dueDate ? addDays(new Date(t.dueDate), -3) : new Date(t.createdAt)))
-        const end = startOfDay(t.dueDate ? new Date(t.dueDate) : addDays(start, t.estimatedDuration ? Math.ceil(t.estimatedDuration / 8) : 3))
-        const safeEnd = end > start ? end : addDays(start, 1)
-        return { ...t, _start: start, _end: safeEnd }
-      })
-      // Filter to tasks visible in range
-      .filter(t => t._end > rangeStart && t._start < rangeEnd)
-      .sort((a, b) => a._start.getTime() - b._start.getTime())
+    return (
+      tasks
+        .filter((t) => t.startDate || t.dueDate || t.createdAt)
+        .map((t) => {
+          const start = startOfDay(
+            t.startDate ? new Date(t.startDate) : t.dueDate ? addDays(new Date(t.dueDate), -3) : new Date(t.createdAt),
+          )
+          const end = startOfDay(
+            t.dueDate
+              ? new Date(t.dueDate)
+              : addDays(start, t.estimatedDuration ? Math.ceil(t.estimatedDuration / 8) : 3),
+          )
+          const safeEnd = end > start ? end : addDays(start, 1)
+          return { ...t, _start: start, _end: safeEnd }
+        })
+        // Filter to tasks visible in range
+        .filter((t) => t._end > rangeStart && t._start < rangeEnd)
+        .sort((a, b) => a._start.getTime() - b._start.getTime())
+    )
   }, [tasks, rangeStart, rangeEnd])
 
   const chartWidth = viewMode === 'day' ? columns.length * colWidth : totalDays * colWidth
   const rowHeight = 48
 
-  const getBarPosition = (task: typeof ganttTasks[0]) => {
+  const getBarPosition = (task: (typeof ganttTasks)[0]) => {
     if (viewMode === 'day') {
       // For day view, bar spans full day
       const dayStart = 8 // 8h
@@ -176,36 +195,48 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
   }
 
   // Drag handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent, taskId: string, type: 'move' | 'resize', start: Date, end: Date) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragState({ taskId, type, startX: e.clientX, origStart: new Date(start), origEnd: new Date(end) })
-  }, [])
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, taskId: string, type: 'move' | 'resize', start: Date, end: Date) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setDragState({ taskId, type, startX: e.clientX, origStart: new Date(start), origEnd: new Date(end) })
+    },
+    [],
+  )
 
-  const handleMouseUp = useCallback(async (e: React.MouseEvent) => {
-    if (!dragState) return
-    const dx = e.clientX - dragState.startX
-    const daysDelta = Math.round(dx / colWidth)
-    if (daysDelta === 0) { setDragState(null); return }
-
-    const task = ganttTasks.find(t => t._id === dragState.taskId)
-    if (!task) { setDragState(null); return }
-
-    if (dragState.type === 'move') {
-      const newStart = addDays(dragState.origStart, daysDelta)
-      const newEnd = addDays(dragState.origEnd, daysDelta)
-      await onUpdate(getProjectId(task), task._id, {
-        startDate: newStart.toISOString(),
-        dueDate: newEnd.toISOString(),
-      })
-    } else {
-      const newEnd = addDays(dragState.origEnd, daysDelta)
-      if (newEnd > dragState.origStart) {
-        await onUpdate(getProjectId(task), task._id, { dueDate: newEnd.toISOString() })
+  const handleMouseUp = useCallback(
+    async (e: React.MouseEvent) => {
+      if (!dragState) return
+      const dx = e.clientX - dragState.startX
+      const daysDelta = Math.round(dx / colWidth)
+      if (daysDelta === 0) {
+        setDragState(null)
+        return
       }
-    }
-    setDragState(null)
-  }, [dragState, colWidth, ganttTasks, onUpdate, getProjectId])
+
+      const task = ganttTasks.find((t) => t._id === dragState.taskId)
+      if (!task) {
+        setDragState(null)
+        return
+      }
+
+      if (dragState.type === 'move') {
+        const newStart = addDays(dragState.origStart, daysDelta)
+        const newEnd = addDays(dragState.origEnd, daysDelta)
+        await onUpdate(getProjectId(task), task._id, {
+          startDate: newStart.toISOString(),
+          dueDate: newEnd.toISOString(),
+        })
+      } else {
+        const newEnd = addDays(dragState.origEnd, daysDelta)
+        if (newEnd > dragState.origStart) {
+          await onUpdate(getProjectId(task), task._id, { dueDate: newEnd.toISOString() })
+        }
+      }
+      setDragState(null)
+    },
+    [dragState, colWidth, ganttTasks, onUpdate, getProjectId],
+  )
 
   const today = startOfDay(new Date())
 
@@ -216,11 +247,11 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
       {/* Controls */}
       <div className="gestion-gantt-controls">
         <div className="gantt-mode-group">
-          {([
+          {[
             { mode: 'day' as ViewMode, label: 'Jour' },
             { mode: 'week' as ViewMode, label: 'Semaine' },
             { mode: 'month' as ViewMode, label: 'Mois' },
-          ]).map(({ mode, label }) => (
+          ].map(({ mode, label }) => (
             <button
               key={mode}
               className={`gestion-gantt-mode-btn ${viewMode === mode ? 'active' : ''}`}
@@ -231,9 +262,15 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
           ))}
         </div>
         <div className="gantt-nav">
-          <button className="gantt-nav-btn" onClick={() => navigate(-1)}>←</button>
-          <button className="gantt-nav-today" onClick={goToday}>Aujourd'hui</button>
-          <button className="gantt-nav-btn" onClick={() => navigate(1)}>→</button>
+          <button className="gantt-nav-btn" onClick={() => navigate(-1)}>
+            ←
+          </button>
+          <button className="gantt-nav-today" onClick={goToday}>
+            Aujourd'hui
+          </button>
+          <button className="gantt-nav-btn" onClick={() => navigate(1)}>
+            →
+          </button>
         </div>
         <span className="gantt-range-label">{rangeLabel}</span>
       </div>
@@ -243,11 +280,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
           <p>Aucune tache visible sur cette periode.</p>
         </div>
       ) : (
-        <div
-          className="gantt-container"
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => setDragState(null)}
-        >
+        <div className="gantt-container" onMouseUp={handleMouseUp} onMouseLeave={() => setDragState(null)}>
           {/* Left panel: task list */}
           <div className="gantt-list">
             <div className="gantt-list-header" style={{ height: 52 }}>
@@ -297,19 +330,29 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
               ))}
 
               {/* Today highlight */}
-              {viewMode !== 'day' && (() => {
-                const todayOff = diffDays(rangeStart, today)
-                if (todayOff >= 0 && todayOff < totalDays) {
-                  return <div className="gantt-today-col" style={{ left: todayOff * colWidth, width: colWidth, top: 52 }} />
-                }
-                return null
-              })()}
+              {viewMode !== 'day' &&
+                (() => {
+                  const todayOff = diffDays(rangeStart, today)
+                  if (todayOff >= 0 && todayOff < totalDays) {
+                    return (
+                      <div
+                        className="gantt-today-col"
+                        style={{ left: todayOff * colWidth, width: colWidth, top: 52 }}
+                      />
+                    )
+                  }
+                  return null
+                })()}
 
               {/* Rows & bars */}
               {ganttTasks.map((task, idx) => {
                 const { left, width } = getBarPosition(task)
-                const color = PRIORITY_COLORS[task.priority] || '#0ea5e9'
-                const isOverdue = task.dueDate && task.status !== 'TERMINE' && task.status !== 'VALIDE' && new Date(task.dueDate) < today
+                const color = PRIORITY_COLORS[task.priority] || '#ccff00'
+                const isOverdue =
+                  task.dueDate &&
+                  task.status !== 'TERMINE' &&
+                  task.status !== 'VALIDE' &&
+                  new Date(task.dueDate) < today
 
                 return (
                   <div
@@ -320,23 +363,39 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
                     <div
                       className={`gantt-bar ${dragState?.taskId === task._id ? 'gantt-bar-dragging' : ''}`}
                       style={{ left, width }}
-                      onMouseDown={readOnly ? undefined : (e) => handleMouseDown(e, task._id, 'move', task._start, task._end)}
+                      onMouseDown={
+                        readOnly ? undefined : (e) => handleMouseDown(e, task._id, 'move', task._start, task._end)
+                      }
                       title={`${task.title}\n${formatDateShort(task._start)} → ${formatDateShort(task._end)}\n${STATUS_LABELS[task.status]} — ${task.progress}%`}
                     >
                       <div className="gantt-bar-track" style={{ background: `${color}25`, borderColor: `${color}50` }}>
-                        <div className="gantt-bar-fill" style={{ width: `${Math.max(task.progress, 8)}%`, background: color, opacity: task.progress > 0 ? 1 : 0.3 }} />
+                        <div
+                          className="gantt-bar-fill"
+                          style={{
+                            width: `${Math.max(task.progress, 8)}%`,
+                            background: color,
+                            opacity: task.progress > 0 ? 1 : 0.3,
+                          }}
+                        />
                       </div>
                       {isOverdue && <div className="gantt-bar-overdue-indicator" />}
                       {task.assignee && (
                         <span className="gantt-bar-avatar" style={{ background: color }}>
-                          {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {task.assignee.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .toUpperCase()}
                         </span>
                       )}
                       {/* Resize handle */}
                       {!readOnly && (
                         <div
                           className="gantt-bar-handle"
-                          onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, task._id, 'resize', task._start, task._end) }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation()
+                            handleMouseDown(e, task._id, 'resize', task._start, task._end)
+                          }}
                         />
                       )}
                     </div>

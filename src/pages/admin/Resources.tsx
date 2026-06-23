@@ -10,13 +10,13 @@ import './AdminPortal.css'
 const CATEGORIES = ['Présentation', 'Charte graphique', 'RH', 'Juridique', 'Commercial', 'Formation', 'Autre']
 
 const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  'Présentation':    { bg: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  text: '#38bdf8' },
-  'Charte graphique':{ bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.3)',  text: '#c4b5fd' },
-  'RH':              { bg: 'rgba(16,185,129,0.12)',   border: 'rgba(16,185,129,0.3)',  text: '#6ee7b7' },
-  'Juridique':       { bg: 'rgba(234,179,8,0.12)',    border: 'rgba(234,179,8,0.3)',   text: '#fde047' },
-  'Commercial':      { bg: 'rgba(249,115,22,0.12)',   border: 'rgba(249,115,22,0.3)',  text: '#fb923c' },
-  'Formation':       { bg: 'rgba(236,72,153,0.12)',   border: 'rgba(236,72,153,0.3)',  text: '#f9a8d4' },
-  'Autre':           { bg: 'rgba(100,116,180,0.12)',  border: 'rgba(100,116,180,0.3)', text: '#a5b4cf' },
+  Présentation: { bg: 'rgba(204,255,0,0.12)', border: 'rgba(204,255,0,0.3)', text: '#ccff00' },
+  'Charte graphique': { bg: 'rgba(155,155,155,0.12)', border: 'rgba(155,155,155,0.3)', text: '#9b9b9b' },
+  RH: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', text: '#6ee7b7' },
+  Juridique: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)', text: '#fde047' },
+  Commercial: { bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)', text: '#fb923c' },
+  Formation: { bg: 'rgba(165,212,0,0.12)', border: 'rgba(165,212,0,0.3)', text: '#a5d400' },
+  Autre: { bg: 'rgba(110,110,110,0.12)', border: 'rgba(110,110,110,0.3)', text: '#ffffff' },
 }
 
 function fileIcon(mime: string) {
@@ -80,7 +80,10 @@ export default function Resources() {
       const resp = await fetch(`/api/admin/resources/${r._id}/download`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!resp.ok) { showToast('Impossible d\'ouvrir le fichier', 'error'); return }
+      if (!resp.ok) {
+        showToast("Impossible d'ouvrir le fichier", 'error')
+        return
+      }
       const blob = await resp.blob()
       const url = URL.createObjectURL(blob)
       if (inline) {
@@ -94,7 +97,9 @@ export default function Resources() {
         a.click()
         setTimeout(() => URL.revokeObjectURL(url), 5000)
       }
-    } catch { showToast('Erreur réseau', 'error') }
+    } catch {
+      showToast('Erreur réseau', 'error')
+    }
   }
 
   const closePreview = () => {
@@ -104,7 +109,9 @@ export default function Resources() {
 
   useEffect(() => {
     if (!previewUrl) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closePreview() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePreview()
+    }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [previewUrl])
@@ -114,15 +121,27 @@ export default function Resources() {
     try {
       const data = await apiFetch<{ resources: Resource[] }>('/api/admin/resources')
       setResources(data.resources || [])
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file) { showToast('Sélectionne un fichier', 'error'); return }
-    if (!form.name.trim()) { showToast('Le nom est requis', 'error'); return }
+    if (!file) {
+      showToast('Sélectionne un fichier', 'error')
+      return
+    }
+    if (!form.name.trim()) {
+      showToast('Le nom est requis', 'error')
+      return
+    }
 
     setUploading(true)
     setUploadProgress(0)
@@ -143,8 +162,15 @@ export default function Resources() {
           if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100))
         }
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) { resolve() }
-          else { try { reject(new Error(JSON.parse(xhr.responseText).error || 'Erreur')) } catch { reject(new Error('Erreur upload')) } }
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve()
+          } else {
+            try {
+              reject(new Error(JSON.parse(xhr.responseText).error || 'Erreur'))
+            } catch {
+              reject(new Error('Erreur upload'))
+            }
+          }
         }
         xhr.onerror = () => reject(new Error('Erreur réseau'))
         xhr.send(formData)
@@ -156,7 +182,10 @@ export default function Resources() {
       load()
     } catch (err: any) {
       showToast(err.message || 'Erreur upload', 'error')
-    } finally { setUploading(false); setUploadProgress(0) }
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
   }
 
   const handleDelete = async () => {
@@ -166,12 +195,17 @@ export default function Resources() {
       showToast('Ressource supprimée', 'success')
       setDeleteTarget(null)
       load()
-    } catch (err: any) { showToast(err.message || 'Erreur', 'error') }
+    } catch (err: any) {
+      showToast(err.message || 'Erreur', 'error')
+    }
   }
 
-  const filtered = resources.filter(r =>
-    (filterCat === 'all' || r.category === filterCat) &&
-    (search === '' || r.name.toLowerCase().includes(search.toLowerCase()) || r.originalName.toLowerCase().includes(search.toLowerCase()))
+  const filtered = resources.filter(
+    (r) =>
+      (filterCat === 'all' || r.category === filterCat) &&
+      (search === '' ||
+        r.name.toLowerCase().includes(search.toLowerCase()) ||
+        r.originalName.toLowerCase().includes(search.toLowerCase())),
   )
 
   return (
@@ -186,14 +220,19 @@ export default function Resources() {
           <h1>Ressources du groupe</h1>
           {isSuperAdmin && (
             <div className="admin-actions portal-actions-reveal">
-              <button
-                className="portal-button portal-action-link"
-                type="button"
-                onClick={() => setShowForm(true)}
-              >
+              <button className="portal-button portal-action-link" type="button" onClick={() => setShowForm(true)}>
                 <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                 </span>
                 <span className="portal-action-label">Ajouter un fichier</span>
@@ -208,24 +247,48 @@ export default function Resources() {
             className="portal-input"
             placeholder="Rechercher..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             style={{ minWidth: 200, fontSize: 13, padding: '6px 10px' }}
           />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => setFilterCat('all')}
-              style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: filterCat === 'all' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: filterCat === 'all' ? 'rgba(255,255,255,0.3)' : 'var(--border)', color: filterCat === 'all' ? '#fff' : 'var(--text-secondary)' }}
-            >Tous</button>
-            {CATEGORIES.map(cat => {
+              style={{
+                padding: '5px 12px',
+                borderRadius: 20,
+                border: '1px solid',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: filterCat === 'all' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                borderColor: filterCat === 'all' ? 'rgba(255,255,255,0.3)' : 'var(--border)',
+                color: filterCat === 'all' ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              Tous
+            </button>
+            {CATEGORIES.map((cat) => {
               const c = CAT_COLORS[cat] || CAT_COLORS['Autre']
               return (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setFilterCat(cat === filterCat ? 'all' : cat)}
-                  style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: filterCat === cat ? c.bg : 'transparent', borderColor: filterCat === cat ? c.border : 'var(--border)', color: filterCat === cat ? c.text : 'var(--text-secondary)' }}
-                >{cat}</button>
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    border: '1px solid',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: filterCat === cat ? c.bg : 'transparent',
+                    borderColor: filterCat === cat ? c.border : 'var(--border)',
+                    color: filterCat === cat ? c.text : 'var(--text-secondary)',
+                  }}
+                >
+                  {cat}
+                </button>
               )
             })}
           </div>
@@ -240,17 +303,35 @@ export default function Resources() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
                 <label className="portal-label">Nom *</label>
-                <input className="portal-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Présentation groupe Venio 2026" />
+                <input
+                  className="portal-input"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Ex: Présentation groupe Venio 2026"
+                />
               </div>
               <div>
                 <label className="portal-label">Catégorie</label>
-                <select className="portal-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                <select
+                  className="portal-input"
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="portal-label">Description (optionnel)</label>
-                <input className="portal-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Brève description du document..." />
+                <input
+                  className="portal-input"
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Brève description du document..."
+                />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="portal-label">Fichier *</label>
@@ -258,32 +339,63 @@ export default function Resources() {
                   ref={fileRef}
                   type="file"
                   style={{ display: 'none' }}
-                  onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); if (!form.name) setForm(prev => ({ ...prev, name: f.name.replace(/\.[^/.]+$/, '') })) } }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) {
+                      setFile(f)
+                      if (!form.name) setForm((prev) => ({ ...prev, name: f.name.replace(/\.[^/.]+$/, '') }))
+                    }
+                  }}
                 />
                 <div
                   onClick={() => fileRef.current?.click()}
-                  style={{ padding: '20px', border: '2px dashed', borderColor: file ? '#0ea5e9' : 'var(--border)', borderRadius: 8, textAlign: 'center', cursor: 'pointer', background: file ? 'rgba(14,165,233,0.05)' : 'transparent', transition: 'all .15s' }}
+                  style={{
+                    padding: '20px',
+                    border: '2px dashed',
+                    borderColor: file ? 'var(--primary)' : 'var(--border)',
+                    borderRadius: 8,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: file ? 'rgba(204,255,0,0.05)' : 'transparent',
+                    transition: 'all .15s',
+                  }}
                 >
                   {file ? (
                     <div>
                       <div style={{ fontSize: 24 }}>{fileIcon(file.type)}</div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0ea5e9', marginTop: 4 }}>{file.name}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', marginTop: 4 }}>
+                        {file.name}
+                      </div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatSize(file.size)}</div>
                     </div>
                   ) : (
                     <div>
                       <div style={{ fontSize: 24 }}>📁</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Clique pour choisir un fichier</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Tous formats acceptés · max 100 Mo</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        Clique pour choisir un fichier
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        Tous formats acceptés · max 100 Mo
+                      </div>
                     </div>
                   )}
                 </div>
                 {uploading && (
                   <div style={{ marginTop: 8 }}>
                     <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
-                      <div style={{ height: '100%', borderRadius: 2, width: `${uploadProgress}%`, background: '#0ea5e9', transition: 'width .2s' }} />
+                      <div
+                        style={{
+                          height: '100%',
+                          borderRadius: 2,
+                          width: `${uploadProgress}%`,
+                          background: 'var(--primary)',
+                          transition: 'width .2s',
+                        }}
+                      />
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, textAlign: 'center' }}>{uploadProgress}%</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, textAlign: 'center' }}>
+                      {uploadProgress}%
+                    </div>
                   </div>
                 )}
               </div>
@@ -292,7 +404,15 @@ export default function Resources() {
               <button className="portal-button" type="submit" disabled={uploading}>
                 {uploading ? `Upload... ${uploadProgress}%` : 'Publier la ressource'}
               </button>
-              <button className="portal-button secondary" type="button" onClick={() => { setShowForm(false); setFile(null); setForm({ name: '', description: '', category: 'Autre' }) }}>
+              <button
+                className="portal-button secondary"
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setFile(null)
+                  setForm({ name: '', description: '', category: 'Autre' })
+                }}
+              >
                 Annuler
               </button>
             </div>
@@ -303,17 +423,21 @@ export default function Resources() {
       {/* Resources grid */}
       <div style={{ marginTop: 20 }}>
         {loading ? (
-          <div className="portal-card"><p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p></div>
+          <div className="portal-card">
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="portal-card">
             <div className="admin-empty-state">
               <div className="admin-empty-state-icon">📂</div>
-              <p className="admin-empty-state-text">{resources.length === 0 ? 'Aucune ressource pour l\'instant' : 'Aucun résultat'}</p>
+              <p className="admin-empty-state-text">
+                {resources.length === 0 ? "Aucune ressource pour l'instant" : 'Aucun résultat'}
+              </p>
             </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {filtered.map(r => {
+            {filtered.map((r) => {
               const c = CAT_COLORS[r.category] || CAT_COLORS['Autre']
               return (
                 <div key={r._id} className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -321,12 +445,36 @@ export default function Resources() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                       <div style={{ fontSize: 32, flexShrink: 0, lineHeight: 1 }}>{fileIcon(r.mimeType)}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4, wordBreak: 'break-word' }}>{r.name}</div>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            color: 'var(--text-primary)',
+                            marginBottom: 4,
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {r.name}
+                        </div>
                         {r.description && (
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 6 }}>{r.description}</div>
+                          <div
+                            style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 6 }}
+                          >
+                            {r.description}
+                          </div>
                         )}
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: 12,
+                              background: c.bg,
+                              border: `1px solid ${c.border}`,
+                              color: c.text,
+                            }}
+                          >
                             {r.category}
                           </span>
                           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatSize(r.size)}</span>
@@ -334,7 +482,15 @@ export default function Resources() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div
+                    style={{
+                      padding: '10px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                    }}
+                  >
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                       Ajouté par {r.uploadedBy?.name || '—'} · {new Date(r.createdAt).toLocaleDateString('fr-FR')}
                     </div>
@@ -379,20 +535,60 @@ export default function Resources() {
       {/* Preview modal */}
       {previewUrl && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.85)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
           onClick={closePreview}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'rgba(0,0,0,0.5)', flexShrink: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              background: 'rgba(0,0,0,0.5)',
+              flexShrink: 0,
+            }}
+          >
             <span style={{ fontWeight: 600, fontSize: 14, color: '#fff' }}>{previewName}</span>
             <button
               type="button"
               onClick={closePreview}
-              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
-            >✕</button>
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#fff',
+                fontSize: 22,
+                cursor: 'pointer',
+                lineHeight: 1,
+                padding: '0 4px',
+              }}
+            >
+              ✕
+            </button>
           </div>
-          <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={e => e.stopPropagation()}>
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {previewMime.startsWith('image/') ? (
-              <img src={previewUrl} alt={previewName} style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 4, objectFit: 'contain' }} />
+              <img
+                src={previewUrl}
+                alt={previewName}
+                style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 4, objectFit: 'contain' }}
+              />
             ) : (
               <iframe
                 src={previewUrl}

@@ -19,7 +19,7 @@ function formatRelative(date: string | null | undefined): string {
 }
 
 function projectColor(project: DevIssue['project']): string {
-  return typeof project === 'object' && project?.color ? project.color : '#7dd3fc'
+  return typeof project === 'object' && project?.color ? project.color : 'var(--primary)'
 }
 
 export function DevReviewWidget() {
@@ -73,7 +73,8 @@ export function DevReviewWidget() {
 }
 
 function sessionClass(classId: EducationSession['classId']): { name: string; color: string } | null {
-  if (typeof classId === 'object' && classId?.name) return { name: classId.name, color: classId.color || '#7dd3fc' }
+  if (typeof classId === 'object' && classId?.name)
+    return { name: classId.name, color: classId.color || 'var(--primary)' }
   return null
 }
 

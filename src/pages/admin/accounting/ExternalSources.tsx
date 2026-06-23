@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import {
-  listExternalSources,
-  createExternalSource,
-  updateExternalSource,
-} from '../../../services/accounting'
-import type {
-  ExternalSourceStatus,
-  IExternalSource,
-  IExternalSourceCreateResult,
-} from '../../../types/accounting'
+import { listExternalSources, createExternalSource, updateExternalSource } from '../../../services/accounting'
+import type { ExternalSourceStatus, IExternalSource, IExternalSourceCreateResult } from '../../../types/accounting'
 
 function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'
@@ -104,7 +96,7 @@ const ExternalSources = () => {
     setFormError('')
     if (!form.slug || !SLUG_REGEX.test(form.slug)) {
       setFormError(
-        'Le slug doit être en minuscules, commencer par une lettre ou un chiffre et ne contenir que des lettres, chiffres et tirets.'
+        'Le slug doit être en minuscules, commencer par une lettre ou un chiffre et ne contenir que des lettres, chiffres et tirets.',
       )
       return
     }
@@ -192,9 +184,7 @@ const ExternalSources = () => {
                 className="portal-input"
                 placeholder="arrow"
                 value={form.slug}
-                onChange={(e) =>
-                  setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })
-                }
+                onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
               />
               <span
                 style={{
@@ -203,8 +193,7 @@ const ExternalSources = () => {
                   marginTop: 2,
                 }}
               >
-                Identifiant unique en minuscules (a-z, 0-9, tirets). Utilisé dans l'URL des
-                endpoints API.
+                Identifiant unique en minuscules (a-z, 0-9, tirets). Utilisé dans l'URL des endpoints API.
               </span>
             </div>
             <div className="accounting-form-field">
@@ -227,9 +216,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field full">
-              <label
-                style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}
-              >
+              <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
                 <input
                   type="checkbox"
                   checked={form.autoValidateAll}
@@ -245,8 +232,8 @@ const ExternalSources = () => {
                   marginTop: 2,
                 }}
               >
-                ⚠ Si activé, toutes les écritures arrivent validées (à n'activer que pour les
-                sources de confiance maximale).
+                ⚠ Si activé, toutes les écritures arrivent validées (à n'activer que pour les sources de confiance
+                maximale).
               </span>
             </div>
             <div className="accounting-form-field">
@@ -267,7 +254,7 @@ const ExternalSources = () => {
               fontSize: '0.85rem',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
-              color: 'rgba(34,211,238,0.85)',
+              color: 'var(--primary)',
             }}
           >
             Mappings par défaut
@@ -279,9 +266,7 @@ const ExternalSources = () => {
               <input
                 className="portal-input"
                 value={form.defaultJournalCode}
-                onChange={(e) =>
-                  setForm({ ...form, defaultJournalCode: e.target.value.toUpperCase() })
-                }
+                onChange={(e) => setForm({ ...form, defaultJournalCode: e.target.value.toUpperCase() })}
               />
             </div>
             <div className="accounting-form-field">
@@ -376,12 +361,10 @@ const ExternalSources = () => {
                 color: '#fde68a',
               }}
             >
-              ⚠ Cette clé et ce secret ne seront PLUS jamais affichés. Stockez-les immédiatement
-              de manière sécurisée (gestionnaire de mots de passe, coffre-fort).
+              ⚠ Cette clé et ce secret ne seront PLUS jamais affichés. Stockez-les immédiatement de manière sécurisée
+              (gestionnaire de mots de passe, coffre-fort).
               {credentials.warning && (
-                <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>
-                  {credentials.warning}
-                </div>
+                <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>{credentials.warning}</div>
               )}
             </div>
 
@@ -401,11 +384,11 @@ const ExternalSources = () => {
                 style={{
                   padding: '14px 16px',
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14,165,233,0.35)',
+                  border: '1px solid rgba(204, 255, 0, 0.35)',
                   borderRadius: 10,
                   fontFamily: "'SF Mono', Menlo, Consolas, monospace",
                   fontSize: '0.92rem',
-                  color: '#7dd3fc',
+                  color: 'var(--primary)',
                   wordBreak: 'break-all',
                   userSelect: 'all',
                 }}
@@ -438,11 +421,11 @@ const ExternalSources = () => {
                 style={{
                   padding: '14px 16px',
                   background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(192,132,252,0.35)',
+                  border: '1px solid rgba(204, 255, 0, 0.35)',
                   borderRadius: 10,
                   fontFamily: "'SF Mono', Menlo, Consolas, monospace",
                   fontSize: '0.92rem',
-                  color: '#c084fc',
+                  color: 'var(--primary)',
                   wordBreak: 'break-all',
                   userSelect: 'all',
                 }}
@@ -467,11 +450,7 @@ const ExternalSources = () => {
                 justifyContent: 'flex-end',
               }}
             >
-              <button
-                type="button"
-                className="portal-button"
-                onClick={() => setCredentials(null)}
-              >
+              <button type="button" className="portal-button" onClick={() => setCredentials(null)}>
                 J'ai bien noté → Fermer
               </button>
             </div>
@@ -486,8 +465,7 @@ const ExternalSources = () => {
           <div className="accounting-empty">
             Aucune source externe configurée.
             <div className="hint">
-              Cliquez sur « Nouvelle source » pour permettre à un site tiers d'envoyer ses
-              écritures comptables.
+              Cliquez sur « Nouvelle source » pour permettre à un site tiers d'envoyer ses écritures comptables.
             </div>
           </div>
         ) : (
@@ -521,10 +499,7 @@ const ExternalSources = () => {
                       {s.name}
                     </Link>
                     {s.autoValidateAll && (
-                      <span
-                        className="accounting-badge source-external"
-                        style={{ marginLeft: 8, fontSize: '0.66rem' }}
-                      >
+                      <span className="accounting-badge source-external" style={{ marginLeft: 8, fontSize: '0.66rem' }}>
                         Auto-validation
                       </span>
                     )}
@@ -539,11 +514,7 @@ const ExternalSources = () => {
                         padding: 0,
                         cursor: 'pointer',
                       }}
-                      title={
-                        s.status === 'ACTIVE'
-                          ? 'Cliquer pour mettre en pause'
-                          : 'Cliquer pour réactiver'
-                      }
+                      title={s.status === 'ACTIVE' ? 'Cliquer pour mettre en pause' : 'Cliquer pour réactiver'}
                     >
                       <span className={`accounting-badge ${statusBadgeClass(s.status)}`}>
                         {STATUS_LABELS[s.status] || s.status}
@@ -565,16 +536,11 @@ const ExternalSources = () => {
                       </div>
                     )}
                   </td>
-                  <td className="amount">
-                    {Number(s.totalIngested || 0).toLocaleString('fr-FR')}
-                  </td>
+                  <td className="amount">{Number(s.totalIngested || 0).toLocaleString('fr-FR')}</td>
                   <td className="amount" style={{ color: s.totalRejected ? '#fca5a5' : undefined }}>
                     {Number(s.totalRejected || 0).toLocaleString('fr-FR')}
                   </td>
-                  <td
-                    className="amount"
-                    style={{ color: s.totalDuplicates ? '#fbbf24' : undefined }}
-                  >
+                  <td className="amount" style={{ color: s.totalDuplicates ? '#fbbf24' : undefined }}>
                     {Number(s.totalDuplicates || 0).toLocaleString('fr-FR')}
                   </td>
                   <td>

@@ -53,12 +53,9 @@ function actionBadgeClass(action: string): string {
 
 function entityLink(entry: IAuditEntry): string | null {
   if (!entry.entityId) return null
-  if (entry.entityType === 'AccountingEntry')
-    return `/admin/comptabilite/ecritures/${entry.entityId}`
-  if (entry.entityType === 'ExternalSource')
-    return `/admin/comptabilite/sources-externes/${entry.entityId}`
-  if (entry.entityType === 'VatDeclaration')
-    return `/admin/comptabilite/tva/${entry.entityId}`
+  if (entry.entityType === 'AccountingEntry') return `/admin/comptabilite/ecritures/${entry.entityId}`
+  if (entry.entityType === 'ExternalSource') return `/admin/comptabilite/sources-externes/${entry.entityId}`
+  if (entry.entityType === 'VatDeclaration') return `/admin/comptabilite/tva/${entry.entityId}`
   return null
 }
 
@@ -195,15 +192,13 @@ const AccountingAuditLog = () => {
                         {ACTION_LABELS[e.action] || e.action}
                       </span>
                     </td>
-                    <td style={{ color: 'rgba(34, 211, 238, 0.85)', fontSize: '0.85rem' }}>
-                      {e.entityType}
-                    </td>
+                    <td style={{ color: 'rgba(204, 255, 0, 0.85)', fontSize: '0.85rem' }}>{e.entityType}</td>
                     <td>
                       {(() => {
                         const link = entityLink(e)
                         const label = e.entityRef || e.entityId || '—'
                         return link ? (
-                          <Link to={link} className="code" style={{ color: '#7dd3fc' }}>
+                          <Link to={link} className="code" style={{ color: 'var(--primary)' }}>
                             {label}
                           </Link>
                         ) : (
@@ -217,9 +212,7 @@ const AccountingAuditLog = () => {
                           {e.actor?.type ? ACTOR_LABELS[e.actor.type] || e.actor.type : '—'}
                         </span>
                         {e.actor?.userEmail && (
-                          <div style={{ color: 'rgba(255,255,255,0.85)' }}>
-                            {e.actor.userEmail}
-                          </div>
+                          <div style={{ color: 'rgba(255,255,255,0.85)' }}>{e.actor.userEmail}</div>
                         )}
                         {e.actor?.externalSourceSlug && (
                           <div className="code" style={{ color: '#c084fc' }}>
@@ -291,9 +284,7 @@ const AccountingAuditLog = () => {
               </span>
             </div>
 
-            {selected.summary && (
-              <p style={{ color: 'rgba(255,255,255,0.85)' }}>{selected.summary}</p>
-            )}
+            {selected.summary && <p style={{ color: 'rgba(255,255,255,0.85)' }}>{selected.summary}</p>}
 
             {selected.diff && selected.diff.length > 0 && (
               <>

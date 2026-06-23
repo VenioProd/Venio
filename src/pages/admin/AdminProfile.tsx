@@ -9,8 +9,8 @@ import AvatarCropModal from '../../components/AvatarCropModal'
 import '../espace-client/ClientPortal.css'
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-  SUPER_ADMIN: { label: 'Super Admin', color: '#a78bfa' },
-  ADMIN: { label: 'Commercial', color: '#0ea5e9' },
+  SUPER_ADMIN: { label: 'Super Admin', color: '#ccff00' },
+  ADMIN: { label: 'Commercial', color: '#a5d400' },
   VIEWER: { label: 'Lecteur', color: '#64748b' },
 }
 

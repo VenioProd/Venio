@@ -15,10 +15,7 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, accent, to, description, loading }: KpiCardProps) {
   return (
-    <Link
-      to={to}
-      style={{ textDecoration: 'none', color: 'inherit' }}
-    >
+    <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div
         className="admin-stat-card"
         style={{
@@ -29,14 +26,18 @@ function KpiCard({ label, value, accent, to, description, loading }: KpiCardProp
       >
         <div
           className="admin-stat-label"
-          style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}
+          style={{
+            color: 'var(--text-muted)',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
         >
           {label}
         </div>
-        <div
-          className="admin-stat-value"
-          style={{ fontSize: 36, fontWeight: 800, color: accent, lineHeight: 1 }}
-        >
+        <div className="admin-stat-value" style={{ fontSize: 36, fontWeight: 800, color: accent, lineHeight: 1 }}>
           {loading ? (
             <span style={{ fontSize: 20, color: 'var(--text-muted)' }}>...</span>
           ) : value === null ? (
@@ -63,7 +64,7 @@ export default function ActivityCenter() {
       const result = await fetchActivitySummary()
       setData(result)
     } catch {
-      setError('Impossible de charger le centre d\'activite.')
+      setError("Impossible de charger le centre d'activite.")
     } finally {
       setLoading(false)
     }
@@ -154,7 +155,7 @@ export default function ActivityCenter() {
           <KpiCard
             label="Messages non lus"
             value={data?.unreadMessages ?? null}
-            accent="#8b5cf6"
+            accent="var(--primary)"
             to="/admin/messages"
             description="Messages recus non lus"
             loading={loading && !data}
@@ -170,7 +171,7 @@ export default function ActivityCenter() {
           <KpiCard
             label="Factures impayees"
             value={data?.overdueBilling ?? null}
-            accent="#ff0080"
+            accent="var(--primary)"
             to="/admin/comptabilite"
             description="Echeance depassee"
             loading={loading && !data}

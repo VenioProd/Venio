@@ -13,20 +13,19 @@ import {
   Cell,
   Legend,
 } from 'recharts'
-import {
-  AlertTriangle,
-  FolderKanban,
-  Users,
-  TrendingUp,
-  Plus,
-  ShieldCheck,
-  Receipt,
-  GitBranch,
-} from 'lucide-react'
+import { AlertTriangle, FolderKanban, Users, TrendingUp, Plus, ShieldCheck, Receipt, GitBranch } from 'lucide-react'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonRow } from '../../components/Skeleton'
-import { DashKpiCard, DashAlertBanner, DashSection, InboxStream, TwoColumnGrid, PeriodSelector, type Period } from '../../components/dashboard'
+import {
+  DashKpiCard,
+  DashAlertBanner,
+  DashSection,
+  InboxStream,
+  TwoColumnGrid,
+  PeriodSelector,
+  type Period,
+} from '../../components/dashboard'
 import type { AlertItem } from '../../components/dashboard'
 import PulseStatus from '../../components/dashboard/PulseStatus'
 import KpiGrid2x2 from '../../components/dashboard/KpiGrid2x2'
@@ -122,13 +121,11 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Terminé',
 }
 
-const STATUS_COLORS = ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b']
+const STATUS_COLORS = ['#ccff00', '#f59e0b', '#10b981', '#9b9b9b', '#ef4444', '#64748b']
 
-const formatEUR = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(1)}k €` : `${n.toLocaleString('fr-FR')} €`
+const formatEUR = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k €` : `${n.toLocaleString('fr-FR')} €`)
 
-const formatMonth = (y: number, m: number) =>
-  new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' })
+const formatMonth = (y: number, m: number) => new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' })
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth()
@@ -136,10 +133,16 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true)
   const [refresh, setRefresh] = useState(0)
   const [period, setPeriod] = useState<Period>(() => {
-    try { return (localStorage.getItem('venio-admin-dashboard-period') as Period) || '30d' } catch { return '30d' }
+    try {
+      return (localStorage.getItem('venio-admin-dashboard-period') as Period) || '30d'
+    } catch {
+      return '30d'
+    }
   })
   useEffect(() => {
-    try { localStorage.setItem('venio-admin-dashboard-period', period) } catch {}
+    try {
+      localStorage.setItem('venio-admin-dashboard-period', period)
+    } catch {}
   }, [period])
 
   useEffect(() => {
@@ -219,7 +222,9 @@ const SuperAdminDashboard = () => {
 
       {loading && !data ? (
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
         </div>
       ) : data ? (
         <>
@@ -233,37 +238,39 @@ const SuperAdminDashboard = () => {
               <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
                 <PulseStatus checks={data.pulseChecks} />
                 <div style={{ marginTop: 12 }}>
-                  <KpiGrid2x2 kpis={[
-                    {
-                      label: 'CA · mois',
-                      value: formatEUR(data.kpis.ca.value),
-                      accentColor: '#ff0080',
-                      accentRgb: '255, 0, 128',
-                      delta: data.kpis.ca.delta,
-                      objective: data.kpis.ca.objective,
-                    },
-                    {
-                      label: 'Pipeline',
-                      value: formatEUR(data.kpis.pipeline.value),
-                      accentColor: '#8b5cf6',
-                      accentRgb: '139, 92, 246',
-                      delta: data.kpis.pipeline.delta,
-                      to: '/admin/crm',
-                    },
-                    {
-                      label: 'Leads chauds',
-                      value: data.kpis.hotLeads.value,
-                      accentColor: '#f59e0b',
-                      accentRgb: '245, 158, 11',
-                      to: '/admin/crm',
-                    },
-                    {
-                      label: 'Projets actifs',
-                      value: data.kpis.activeProjects.value,
-                      accentColor: '#22c55e',
-                      accentRgb: '34, 197, 94',
-                    },
-                  ]} />
+                  <KpiGrid2x2
+                    kpis={[
+                      {
+                        label: 'CA · mois',
+                        value: formatEUR(data.kpis.ca.value),
+                        accentColor: 'var(--primary)',
+                        accentRgb: '204, 255, 0',
+                        delta: data.kpis.ca.delta,
+                        objective: data.kpis.ca.objective,
+                      },
+                      {
+                        label: 'Pipeline',
+                        value: formatEUR(data.kpis.pipeline.value),
+                        accentColor: 'var(--primary)',
+                        accentRgb: '204, 255, 0',
+                        delta: data.kpis.pipeline.delta,
+                        to: '/admin/crm',
+                      },
+                      {
+                        label: 'Leads chauds',
+                        value: data.kpis.hotLeads.value,
+                        accentColor: '#f59e0b',
+                        accentRgb: '245, 158, 11',
+                        to: '/admin/crm',
+                      },
+                      {
+                        label: 'Projets actifs',
+                        value: data.kpis.activeProjects.value,
+                        accentColor: '#22c55e',
+                        accentRgb: '34, 197, 94',
+                      },
+                    ]}
+                  />
                 </div>
                 {trendData.length > 0 && (
                   <div style={{ marginTop: 12 }}>
@@ -282,14 +289,19 @@ const SuperAdminDashboard = () => {
           <DashSection title="Opérations" icon={<FolderKanban size={16} />}>
             <div className="dash-twocol-grid">
               <div className="dash-subcard">
-                <h3 className="dash-subcard__title">
-                  Projets par statut ({data.operations.activeProjects} actifs)
-                </h3>
+                <h3 className="dash-subcard__title">Projets par statut ({data.operations.activeProjects} actifs)</h3>
                 {projectsPie.length > 0 ? (
                   <div style={{ height: 200 }}>
                     <ResponsiveContainer>
                       <PieChart>
-                        <Pie data={projectsPie} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
+                        <Pie
+                          data={projectsPie}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={45}
+                          outerRadius={75}
+                          paddingAngle={2}
+                        >
                           {projectsPie.map((_, i) => (
                             <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
                           ))}
@@ -312,7 +324,8 @@ const SuperAdminDashboard = () => {
                     return (
                       <div key={p} className="dash-brief-row">
                         <span style={{ fontSize: 13 }}>
-                          <strong style={{ color }}>{p}</strong> — {p === 'P1' ? 'Urgent' : p === 'P2' ? 'Important' : 'Normal'}
+                          <strong style={{ color }}>{p}</strong> —{' '}
+                          {p === 'P1' ? 'Urgent' : p === 'P2' ? 'Important' : 'Normal'}
                         </span>
                         <strong style={{ color, fontSize: 16 }}>{count}</strong>
                       </div>
@@ -326,15 +339,32 @@ const SuperAdminDashboard = () => {
           {/* ─── Équipe ─── */}
           <DashSection title="Équipe" icon={<Users size={16} />}>
             <div className="admin-stats-grid" style={{ marginBottom: 16 }}>
-              <DashKpiCard label="Clients" value={data.team.clients} accentColor="#ff0080" accentRgb="255, 0, 128" to="/admin/comptes-clients" />
-              <DashKpiCard label="Admins" value={data.team.admins} accentColor="#8b5cf6" accentRgb="139, 92, 246" to="/admin/comptes-admin" icon={<ShieldCheck size={14} />} />
-              <DashKpiCard label="Stagiaires" value={data.team.interns} accentColor="#f59e0b" accentRgb="245, 158, 11" to="/admin/stagiaires" />
+              <DashKpiCard
+                label="Clients"
+                value={data.team.clients}
+                accentColor="var(--primary)"
+                accentRgb="204, 255, 0"
+                to="/admin/comptes-clients"
+              />
+              <DashKpiCard
+                label="Admins"
+                value={data.team.admins}
+                accentColor="var(--primary)"
+                accentRgb="204, 255, 0"
+                to="/admin/comptes-admin"
+                icon={<ShieldCheck size={14} />}
+              />
+              <DashKpiCard
+                label="Stagiaires"
+                value={data.team.interns}
+                accentColor="#f59e0b"
+                accentRgb="245, 158, 11"
+                to="/admin/stagiaires"
+              />
             </div>
             {teamLoadData.length > 0 && (
               <div className="dash-subcard">
-                <h3 className="dash-subcard__title">
-                  Charge par admin (tâches ouvertes)
-                </h3>
+                <h3 className="dash-subcard__title">Charge par admin (tâches ouvertes)</h3>
                 <div style={{ height: 240 }}>
                   <ResponsiveContainer>
                     <BarChart data={teamLoadData}>
@@ -343,7 +373,7 @@ const SuperAdminDashboard = () => {
                       <YAxis stroke="#94a3b8" fontSize={11} />
                       <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="Tâches" stackId="a" fill="#0ea5e9" />
+                      <Bar dataKey="Tâches" stackId="a" fill="#ccff00" />
                       <Bar dataKey="Retard" stackId="a" fill="#ef4444" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -355,12 +385,26 @@ const SuperAdminDashboard = () => {
           {/* ─── Raccourcis ─── */}
           <DashSection title="Raccourcis" icon={<Plus size={16} />}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <Link to="/admin/comptes-clients/nouveau" className="portal-button">+ Client</Link>
-              <Link to="/admin/projets/nouveau" className="portal-button secondary">+ Projet</Link>
-              <Link to="/admin/comptes-admin" className="portal-button secondary">+ Admin</Link>
-              <Link to="/admin/audit" className="portal-button secondary">Audit</Link>
-              <Link to="/admin/dev" className="portal-button secondary"><GitBranch size={14} style={{ marginRight: 4 }} />Dev workspace</Link>
-              <Link to="/admin/comptabilite" className="portal-button secondary"><Receipt size={14} style={{ marginRight: 4 }} />Comptabilité</Link>
+              <Link to="/admin/comptes-clients/nouveau" className="portal-button">
+                + Client
+              </Link>
+              <Link to="/admin/projets/nouveau" className="portal-button secondary">
+                + Projet
+              </Link>
+              <Link to="/admin/comptes-admin" className="portal-button secondary">
+                + Admin
+              </Link>
+              <Link to="/admin/audit" className="portal-button secondary">
+                Audit
+              </Link>
+              <Link to="/admin/dev" className="portal-button secondary">
+                <GitBranch size={14} style={{ marginRight: 4 }} />
+                Dev workspace
+              </Link>
+              <Link to="/admin/comptabilite" className="portal-button secondary">
+                <Receipt size={14} style={{ marginRight: 4 }} />
+                Comptabilité
+              </Link>
             </div>
           </DashSection>
         </>

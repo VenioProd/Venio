@@ -16,7 +16,15 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {/* Contenu */}
       <div style={{ marginBottom: 12 }}>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: '4px 0 0', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+        <p
+          style={{
+            color: 'rgba(255,255,255,0.8)',
+            fontSize: 14,
+            margin: '4px 0 0',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.6,
+          }}
+        >
           {report.contenu}
         </p>
       </div>
@@ -46,7 +54,17 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
                 href={`/api/admin/interns/reports/files/${f.filename}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#0ea5e9', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  background: 'rgba(255,255,255,0.04)',
+                  color: 'var(--primary)',
+                  fontSize: 12,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
               >
                 {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
                 <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
@@ -59,9 +77,15 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {/* Commentaire admin */}
       {report.commentaireAdmin && (
         <div
-          style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(139,92,246,0.08)', marginBottom: 12, borderLeft: '3px solid #8b5cf6' }}
+          style={{
+            padding: '10px 14px',
+            borderRadius: 6,
+            background: 'rgba(204, 255, 0, 0.08)',
+            marginBottom: 12,
+            borderLeft: '3px solid var(--primary)',
+          }}
         >
-          <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
+          <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
         </div>
       )}
@@ -78,12 +102,20 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {showAdminActions && isAdmin && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {report.status !== 'VALIDE' && (
-            <button className="ticket-new-btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => onValidate(report._id, 'VALIDE')}>
+            <button
+              className="ticket-new-btn"
+              style={{ fontSize: 12, padding: '6px 14px' }}
+              onClick={() => onValidate(report._id, 'VALIDE')}
+            >
               Valider
             </button>
           )}
           {report.status === 'VALIDE' && (
-            <button className="ticket-back-btn" style={{ fontSize: 12 }} onClick={() => onValidate(report._id, 'SOUMIS')}>
+            <button
+              className="ticket-back-btn"
+              style={{ fontSize: 12 }}
+              onClick={() => onValidate(report._id, 'SOUMIS')}
+            >
               Annuler validation
             </button>
           )}
@@ -100,7 +132,11 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {/* Actions stagiaire (supprimer si pas valide) */}
       {!showAdminActions && report.status !== 'VALIDE' && (
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="ticket-back-btn" style={{ fontSize: 12, color: '#ef4444' }} onClick={() => onDelete(report._id)}>
+          <button
+            className="ticket-back-btn"
+            style={{ fontSize: 12, color: '#ef4444' }}
+            onClick={() => onDelete(report._id)}
+          >
             Supprimer
           </button>
         </div>

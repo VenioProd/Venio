@@ -38,9 +38,7 @@ export default function RotateKeyModal({
           overflow: 'auto',
         }}
       >
-        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>
-          Nouvelle clé API et nouveau secret
-        </h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Nouvelle clé API et nouveau secret</h2>
 
         <div
           className="accounting-message"
@@ -50,13 +48,9 @@ export default function RotateKeyModal({
             color: '#fde68a',
           }}
         >
-          ⚠ L'ancienne clé est invalidée. Ces nouvelles valeurs ne seront PLUS jamais
-          affichées. Mettez à jour la configuration du site tiers immédiatement.
-          {warning && (
-            <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>
-              {warning}
-            </div>
-          )}
+          ⚠ L'ancienne clé est invalidée. Ces nouvelles valeurs ne seront PLUS jamais affichées. Mettez à jour la
+          configuration du site tiers immédiatement.
+          {warning && <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>{warning}</div>}
         </div>
 
         <div style={{ marginTop: 18 }}>
@@ -75,11 +69,11 @@ export default function RotateKeyModal({
             style={{
               padding: '14px 16px',
               background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(14,165,233,0.35)',
+              border: '1px solid rgba(204, 255, 0, 0.35)',
               borderRadius: 10,
               fontFamily: "'SF Mono', Menlo, Consolas, monospace",
               fontSize: '0.92rem',
-              color: '#7dd3fc',
+              color: 'var(--primary)',
               wordBreak: 'break-all',
               userSelect: 'all',
             }}
@@ -112,11 +106,11 @@ export default function RotateKeyModal({
             style={{
               padding: '14px 16px',
               background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(192,132,252,0.35)',
+              border: '1px solid rgba(204, 255, 0, 0.35)',
               borderRadius: 10,
               fontFamily: "'SF Mono', Menlo, Consolas, monospace",
               fontSize: '0.92rem',
-              color: '#c084fc',
+              color: 'var(--primary)',
               wordBreak: 'break-all',
               userSelect: 'all',
             }}
@@ -141,11 +135,7 @@ export default function RotateKeyModal({
             justifyContent: 'flex-end',
           }}
         >
-          <button
-            type="button"
-            className="portal-button"
-            onClick={onClose}
-          >
+          <button type="button" className="portal-button" onClick={onClose}>
             J'ai bien noté → Fermer
           </button>
         </div>

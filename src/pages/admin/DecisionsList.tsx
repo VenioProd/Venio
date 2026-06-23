@@ -11,7 +11,12 @@ type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 type DecisionCategory = 'BUDGET' | 'EMBAUCHE' | 'PROJET' | 'PARTENARIAT' | 'AUTRE'
 type DecisionPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
-interface UserRef { _id: string; name?: string; email?: string; avatarUrl?: string }
+interface UserRef {
+  _id: string
+  name?: string
+  email?: string
+  avatarUrl?: string
+}
 
 interface DecisionAttachment {
   originalName: string
@@ -45,14 +50,25 @@ interface Decision {
 function formatFileSize(bytes: number): string {
   if (!bytes) return ''
   const units = ['o', 'Ko', 'Mo']
-  let size = bytes, i = 0
-  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++ }
+  let size = bytes,
+    i = 0
+  while (size >= 1024 && i < units.length - 1) {
+    size /= 1024
+    i++
+  }
   return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-interface FilePreview { objectUrl: string; name: string; mimeType: string }
+interface FilePreview {
+  objectUrl: string
+  name: string
+  mimeType: string
+}
 
-async function fetchDecisionBlob(decisionId: string, index: number): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
+async function fetchDecisionBlob(
+  decisionId: string,
+  index: number,
+): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
   const token = getToken()
   const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -79,37 +95,161 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
   const isVideo = preview.mimeType?.startsWith('video/')
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
   return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
-      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2001, width: 'calc(100% - 32px)', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-card,#1e293b)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 2000,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+        }}
+        onClick={onClose}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%,-50%)',
+          zIndex: 2001,
+          width: 'calc(100% - 32px)',
+          maxWidth: 900,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg-card,#1e293b)',
+          borderRadius: 16,
+          overflow: 'hidden',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+        }}
+      >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview.name}</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {preview.name}
+          </span>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button type="button" onClick={() => forceDownload(preview.objectUrl, preview.name)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13 }}>
+            <button
+              type="button"
+              onClick={() => forceDownload(preview.objectUrl, preview.name)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                fontSize: 13,
+              }}
+            >
               Télécharger
             </button>
-            <button type="button" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.12)', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#ef4444' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(239,68,68,0.12)',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                color: '#ef4444',
+              }}
+            >
               <X size={16} />
             </button>
           </div>
         </div>
         {/* Contenu */}
-        <div style={{ flex: 1, overflow: 'auto', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
-          {isImage && <img src={preview.objectUrl} alt={preview.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />}
-          {isPdf && <iframe src={preview.objectUrl} title={preview.name} style={{ width: '100%', height: '80vh', border: 'none', display: 'block' }} />}
-          {isVideo && <video src={preview.objectUrl} controls style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />}
+        <div
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            background: '#000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 0,
+          }}
+        >
+          {isImage && (
+            <img
+              src={preview.objectUrl}
+              alt={preview.name}
+              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }}
+            />
+          )}
+          {isPdf && (
+            <iframe
+              src={preview.objectUrl}
+              title={preview.name}
+              style={{ width: '100%', height: '80vh', border: 'none', display: 'block' }}
+            />
+          )}
+          {isVideo && (
+            <video src={preview.objectUrl} controls style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />
+          )}
           {!isImage && !isPdf && !isVideo && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 48, background: 'var(--bg-card,#1e293b)' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 16,
+                padding: 48,
+                background: 'var(--bg-card,#1e293b)',
+              }}
+            >
               <Paperclip size={48} style={{ color: 'var(--text-muted)' }} />
               <p style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{preview.name}</p>
-              <button type="button" onClick={() => forceDownload(preview.objectUrl, preview.name)} style={{ padding: '10px 24px', background: 'var(--primary,#7c3aed)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              <button
+                type="button"
+                onClick={() => forceDownload(preview.objectUrl, preview.name)}
+                style={{
+                  padding: '10px 24px',
+                  background: 'var(--primary,#7c3aed)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
                 Télécharger
               </button>
             </div>
@@ -117,13 +257,13 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
         </div>
       </div>
     </>,
-    document.body
+    document.body,
   )
 }
 
 const PRIORITY_COLORS: Record<DecisionPriority, string> = {
   BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
+  NORMALE: '#ccff00',
   HAUTE: '#f59e0b',
   URGENTE: '#ef4444',
 }
@@ -162,7 +302,10 @@ export default function DecisionsList() {
 
   const openPreview = async (decisionId: string, index: number, name: string, mimeType: string) => {
     const result = await fetchDecisionBlob(decisionId, index)
-    if (result.error || !result.blob) { showToast(result.error ?? 'Erreur', 'error'); return }
+    if (result.error || !result.blob) {
+      showToast(result.error ?? 'Erreur', 'error')
+      return
+    }
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
     const url = URL.createObjectURL(result.blob)
     previewUrlRef.current = url
@@ -171,7 +314,10 @@ export default function DecisionsList() {
 
   const closePreview = () => {
     setPreview(null)
-    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
+    }
   }
 
   const loadDecisions = useCallback(async () => {
@@ -243,9 +389,7 @@ export default function DecisionsList() {
       <div className="admin-page-header">
         <div>
           <h1>Décisions</h1>
-          <p className="admin-page-subtitle">
-            Soumettez une décision à valider ou consultez celles en attente
-          </p>
+          <p className="admin-page-subtitle">Soumettez une décision à valider ou consultez celles en attente</p>
         </div>
         <div className="admin-quick-actions">
           <button type="button" className="portal-button" onClick={() => setShowCreate(true)}>
@@ -309,22 +453,44 @@ export default function DecisionsList() {
                     }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <strong style={{ fontSize: 14 }}>{d.title}</strong>
                       <span className="admin-badge">{d.category}</span>
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0' }}>
-                      {!expanded && d.description.length > 200
-                        ? d.description.slice(0, 200) + '…'
-                        : d.description}
+                      {!expanded && d.description.length > 200 ? d.description.slice(0, 200) + '…' : d.description}
                     </p>
-                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 12,
+                        fontSize: 11,
+                        color: 'var(--text-muted)',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <User size={11} /> {d.submittedByName}
                       </span>
                       <span>{new Date(d.createdAt).toLocaleDateString('fr-FR')}</span>
                       {deadlineDate && (
-                        <span style={{ color: overdue ? '#ef4444' : undefined, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span
+                          style={{
+                            color: overdue ? '#ef4444' : undefined,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
                           <Calendar size={11} />
                           Échéance : {deadlineDate.toLocaleDateString('fr-FR')}
                         </span>
@@ -335,7 +501,7 @@ export default function DecisionsList() {
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          color: '#0ea5e9',
+                          color: 'var(--primary)',
                           cursor: 'pointer',
                           padding: 0,
                           display: 'inline-flex',
@@ -344,40 +510,106 @@ export default function DecisionsList() {
                           fontSize: 11,
                         }}
                       >
-                        {expanded ? <><ChevronUp size={12} /> Réduire</> : <><ChevronDown size={12} /> Détails</>}
+                        {expanded ? (
+                          <>
+                            <ChevronUp size={12} /> Réduire
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={12} /> Détails
+                          </>
+                        )}
                       </button>
                     </div>
 
                     {expanded && (
-                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          paddingTop: 12,
+                          borderTop: '1px solid rgba(255,255,255,0.06)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                          fontSize: 13,
+                        }}
+                      >
                         {d.context && (
                           <div>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Contexte</div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: 'var(--text-muted)',
+                                marginBottom: 4,
+                              }}
+                            >
+                              Contexte
+                            </div>
                             <div style={{ color: 'var(--text-muted)' }}>{d.context}</div>
                           </div>
                         )}
                         {d.options && d.options.length > 0 && (
                           <div>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Options</div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: 'var(--text-muted)',
+                                marginBottom: 4,
+                              }}
+                            >
+                              Options
+                            </div>
                             <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-muted)' }}>
-                              {d.options.map((opt, i) => <li key={i}>{opt}</li>)}
+                              {d.options.map((opt, i) => (
+                                <li key={i}>{opt}</li>
+                              ))}
                             </ul>
                           </div>
                         )}
                         {d.recommendation && (
                           <div>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Recommandation</div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: 'var(--text-muted)',
+                                marginBottom: 4,
+                              }}
+                            >
+                              Recommandation
+                            </div>
                             <div style={{ color: 'var(--text-muted)' }}>{d.recommendation}</div>
                           </div>
                         )}
                         {/* Destinataires */}
                         {d.recipients && d.recipients.length > 0 && (
                           <div>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Adressé à</div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: 'var(--text-muted)',
+                                marginBottom: 4,
+                              }}
+                            >
+                              Adressé à
+                            </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                               {d.recipients.map((r) => (
-                                <span key={typeof r === 'string' ? r : r._id} style={{ fontSize: 12, padding: '2px 8px', borderRadius: 12, background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
-                                  {typeof r === 'string' ? r : (r.name || r.email)}
+                                <span
+                                  key={typeof r === 'string' ? r : r._id}
+                                  style={{
+                                    fontSize: 12,
+                                    padding: '2px 8px',
+                                    borderRadius: 12,
+                                    background: 'rgba(204, 255, 0, 0.12)',
+                                    color: 'var(--primary)',
+                                    border: '1px solid rgba(204, 255, 0, 0.25)',
+                                  }}
+                                >
+                                  {typeof r === 'string' ? r : r.name || r.email}
                                 </span>
                               ))}
                             </div>
@@ -386,7 +618,14 @@ export default function DecisionsList() {
                         {/* Pièces jointes */}
                         {d.attachments && d.attachments.length > 0 && (
                           <div>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: 'var(--text-muted)',
+                                marginBottom: 4,
+                              }}
+                            >
                               <Paperclip size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
                               Pièces jointes
                             </div>
@@ -396,11 +635,36 @@ export default function DecisionsList() {
                                   key={idx}
                                   type="button"
                                   onClick={() => openPreview(d._id, idx, a.originalName, a.mimeType)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#93c5fd', textAlign: 'left' }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    fontSize: 12,
+                                    background: 'rgba(255,255,255,0.04)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: 6,
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    color: 'var(--primary)',
+                                    textAlign: 'left',
+                                  }}
                                 >
                                   <Paperclip size={12} />
-                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{a.originalName}</span>
-                                  {a.size > 0 && <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatFileSize(a.size)}</span>}
+                                  <span
+                                    style={{
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      maxWidth: 180,
+                                    }}
+                                  >
+                                    {a.originalName}
+                                  </span>
+                                  {a.size > 0 && (
+                                    <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+                                      {formatFileSize(a.size)}
+                                    </span>
+                                  )}
                                   <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 2 }}>👁</span>
                                 </button>
                               ))}
@@ -408,8 +672,21 @@ export default function DecisionsList() {
                           </div>
                         )}
                         {d.status !== 'PENDING' && (
-                          <div style={{ padding: 10, borderRadius: 8, background: d.status === 'APPROVED' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}>
-                            <div style={{ fontSize: 11, textTransform: 'uppercase', color: d.status === 'APPROVED' ? '#10b981' : '#ef4444', marginBottom: 4 }}>
+                          <div
+                            style={{
+                              padding: 10,
+                              borderRadius: 8,
+                              background: d.status === 'APPROVED' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: d.status === 'APPROVED' ? '#10b981' : '#ef4444',
+                                marginBottom: 4,
+                              }}
+                            >
                               {d.status === 'APPROVED' ? 'Approuvée' : 'Rejetée'}
                             </div>
                             <div style={{ fontSize: 12 }}>
@@ -417,7 +694,9 @@ export default function DecisionsList() {
                               {d.decidedAt && ` · le ${new Date(d.decidedAt).toLocaleDateString('fr-FR')}`}
                             </div>
                             {d.decisionComment && (
-                              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>« {d.decisionComment} »</div>
+                              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+                                « {d.decisionComment} »
+                              </div>
                             )}
                           </div>
                         )}
@@ -511,18 +790,27 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    apiFetch<{ users: UserRef[] }>('/api/admin/messaging/users').then((d) => setAllUsers(d.users)).catch(() => {})
-    return () => { document.body.style.overflow = prev }
+    apiFetch<{ users: UserRef[] }>('/api/admin/messaging/users')
+      .then((d) => setAllUsers(d.users))
+      .catch(() => {})
+    return () => {
+      document.body.style.overflow = prev
+    }
   }, [])
 
   const parsedOptions = useMemo(
-    () => optionsText.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 10),
-    [optionsText]
+    () =>
+      optionsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .slice(0, 10),
+    [optionsText],
   )
 
   const toggleRecipient = (u: UserRef) => {
     setSelectedRecipients((prev) =>
-      prev.some((r) => r._id === u._id) ? prev.filter((r) => r._id !== u._id) : [...prev, u]
+      prev.some((r) => r._id === u._id) ? prev.filter((r) => r._id !== u._id) : [...prev, u],
     )
   }
 
@@ -574,82 +862,152 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
     <>
       <div className="dm-backdrop" onClick={onClose} />
       <form className="dm-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-
         <div className="dm-header">
           <h2>Nouvelle demande de décision</h2>
-          <button type="button" className="dm-close" onClick={onClose}><X size={16} /></button>
+          <button type="button" className="dm-close" onClick={onClose}>
+            <X size={16} />
+          </button>
         </div>
 
         <div className="dm-body">
           <div className="dm-field">
             <label className="dm-label">Titre *</label>
-            <input className="portal-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-              required minLength={3} maxLength={200} placeholder="Intitulé de la décision…" />
+            <input
+              className="portal-input"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              minLength={3}
+              maxLength={200}
+              placeholder="Intitulé de la décision…"
+            />
           </div>
 
           <div className="dm-field">
             <label className="dm-label">Description *</label>
-            <textarea className="portal-input" value={description} onChange={(e) => setDescription(e.target.value)}
-              required rows={3} placeholder="Décrivez la décision à prendre…" />
+            <textarea
+              className="portal-input"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              rows={3}
+              placeholder="Décrivez la décision à prendre…"
+            />
           </div>
 
           <div className="dm-row">
             <div className="dm-field">
               <label className="dm-label">Catégorie</label>
-              <select className="portal-input" value={category} onChange={(e) => setCategory(e.target.value as DecisionCategory)}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <select
+                className="portal-input"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as DecisionCategory)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="dm-field">
               <label className="dm-label">Priorité</label>
-              <select className="portal-input" value={priority} onChange={(e) => setPriority(e.target.value as DecisionPriority)}>
-                {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+              <select
+                className="portal-input"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as DecisionPriority)}
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="dm-field">
-            <label className="dm-label">Contexte <small>(optionnel)</small></label>
-            <textarea className="portal-input" value={context} onChange={(e) => setContext(e.target.value)}
-              rows={2} placeholder="Informations de contexte utiles à la décision…" />
+            <label className="dm-label">
+              Contexte <small>(optionnel)</small>
+            </label>
+            <textarea
+              className="portal-input"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              rows={2}
+              placeholder="Informations de contexte utiles à la décision…"
+            />
           </div>
 
           <div className="dm-field">
-            <label className="dm-label">Options <small>(une par ligne — {parsedOptions.length}/10)</small></label>
-            <textarea className="portal-input" value={optionsText} onChange={(e) => setOptionsText(e.target.value)}
-              rows={3} placeholder={'Option A\nOption B\nOption C'} />
+            <label className="dm-label">
+              Options <small>(une par ligne — {parsedOptions.length}/10)</small>
+            </label>
+            <textarea
+              className="portal-input"
+              value={optionsText}
+              onChange={(e) => setOptionsText(e.target.value)}
+              rows={3}
+              placeholder={'Option A\nOption B\nOption C'}
+            />
           </div>
 
           <div className="dm-row">
             <div className="dm-field">
-              <label className="dm-label">Recommandation <small>(optionnel)</small></label>
-              <textarea className="portal-input" value={recommendation} onChange={(e) => setRecommendation(e.target.value)}
-                rows={2} placeholder="Votre recommandation…" />
+              <label className="dm-label">
+                Recommandation <small>(optionnel)</small>
+              </label>
+              <textarea
+                className="portal-input"
+                value={recommendation}
+                onChange={(e) => setRecommendation(e.target.value)}
+                rows={2}
+                placeholder="Votre recommandation…"
+              />
             </div>
             <div className="dm-field">
-              <label className="dm-label">Échéance <small>(optionnel)</small></label>
-              <input className="portal-input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+              <label className="dm-label">
+                Échéance <small>(optionnel)</small>
+              </label>
+              <input
+                className="portal-input"
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
             </div>
           </div>
 
           <div className="dm-field">
-            <label className="dm-label">Adresser à <small>(en plus des admins)</small></label>
+            <label className="dm-label">
+              Adresser à <small>(en plus des admins)</small>
+            </label>
             <div className="dm-chips">
-              {allUsers.length === 0
-                ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
-                : allUsers.map((u) => {
-                    const sel = selectedRecipients.some((r) => r._id === u._id)
-                    return (
-                      <button key={u._id} type="button" className={`dm-chip${sel ? ' on' : ''}`} onClick={() => toggleRecipient(u)}>
-                        {u.name || u.email}
-                      </button>
-                    )
-                  })}
+              {allUsers.length === 0 ? (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
+              ) : (
+                allUsers.map((u) => {
+                  const sel = selectedRecipients.some((r) => r._id === u._id)
+                  return (
+                    <button
+                      key={u._id}
+                      type="button"
+                      className={`dm-chip${sel ? ' on' : ''}`}
+                      onClick={() => toggleRecipient(u)}
+                    >
+                      {u.name || u.email}
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
 
           <div className="dm-field">
-            <label className="dm-label">Pièces jointes <small>(max 5 × 20 Mo)</small></label>
+            <label className="dm-label">
+              Pièces jointes <small>(max 5 × 20 Mo)</small>
+            </label>
             <input
               ref={fileInputRef}
               type="file"
@@ -660,13 +1018,13 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
                 setFileNames(names)
               }}
             />
-            <button
-              type="button"
-              className="dm-file-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
+            <button type="button" className="dm-file-btn" onClick={() => fileInputRef.current?.click()}>
               <Paperclip size={14} />
-              <span>{fileNames.length === 0 ? 'Cliquer pour ajouter des fichiers…' : `${fileNames.length} fichier(s) sélectionné(s)`}</span>
+              <span>
+                {fileNames.length === 0
+                  ? 'Cliquer pour ajouter des fichiers…'
+                  : `${fileNames.length} fichier(s) sélectionné(s)`}
+              </span>
             </button>
             {fileNames.length > 0 && (
               <div className="dm-file-list">
@@ -684,13 +1042,15 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
         </div>
 
         <div className="dm-footer">
-          <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>Annuler</button>
+          <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>
+            Annuler
+          </button>
           <button type="submit" className="portal-button" disabled={submitting}>
             {submitting ? 'Envoi…' : 'Soumettre la demande'}
           </button>
         </div>
       </form>
     </>,
-    document.body
+    document.body,
   )
 }
