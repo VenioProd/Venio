@@ -1,5 +1,6 @@
 import React from 'react'
 import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
+import VenioIcon from '../components/VenioIcon'
 
 const DATA: ServiceData = {
   punch: `Un beau site ne sert à rien s'il ne marche pas. Le vôtre doit tenir, durer, et vous appartenir vraiment.`,
@@ -54,6 +55,7 @@ const ServicesDeveloppement = () => (
     eyebrow="Nos services · Développement"
     title="Développement web"
     ctaTo="/contact"
+    icon={<VenioIcon name="developpement" size={40} />}
     data={DATA}
   />
 )
