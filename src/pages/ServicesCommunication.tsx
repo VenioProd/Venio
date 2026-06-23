@@ -1,126 +1,61 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import NeonDivider from '../components/NeonDivider'
-import NeonCorners from '../components/NeonCorners'
-import SEO from '../components/SEO'
-import StructuredData from '../components/StructuredData'
-import './ServicesPage.css'
+import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
 
-const ServicesCommunication = () => {
-  return (
-    <>
-      <SEO
-        title="Communication et identité de marque"
-        description="Avoir un logo sur Canva, ce n'est pas avoir une marque. Identités cohérentes qui ont une colonne vertébrale. Stratégies éditoriales pensées. Pas de tendances, pas de générique. Ce qui dure."
-        keywords="communication, branding, identité visuelle, stratégie éditoriale, storytelling, direction artistique"
-      />
-      <StructuredData type="service-communication" />
-      <GradientMeshBackground />
-      <div className="services-page">
-        <section className="services-hero">
-          <h1>COMMUNICATION & BRANDING</h1>
-          <p className="services-subtitle">
-            Avoir un logo sur Canva,
-            <br />
-            ce n&apos;est pas avoir une marque.
-          </p>
-        </section>
-
-        <NeonDivider />
-
-        <section className="services-content">
-          <div className="services-section">
-            <h2>Ce que le marché vous vend</h2>
-            <p className="section-intro">
-              Des identités visuelles. Un logo, une charte graphique en PDF, trois posts Instagram. Des stratégies
-              éditoriales copiées-collées. Du storytelling générique.
-            </p>
-            <p className="section-intro">
-              Résultat : vous ressemblez à tout le monde. Votre marque n&apos;a pas de colonne vertébrale.
-            </p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pourquoi ça ne marche pas</h2>
-            <p className="section-intro">
-              Parce qu&apos;une identité visuelle sans stratégie, c&apos;est de la décoration.
-            </p>
-            <p className="section-intro">
-              Parce que les tendances changent tous les 6 mois. Si vous les suivez, vous êtes déjà en retard. Et dans 2
-              ans, votre marque sera datée.
-            </p>
-            <p className="section-intro">Ce qui est générique ne dure pas. Ce qui suit les modes non plus.</p>
-          </div>
-
-          <div className="services-section highlight">
-            <h2>Ce que Venio construit</h2>
-            <p className="section-intro">Des identités cohérentes. Qui ont une colonne vertébrale.</p>
-            <ul className="services-list">
-              <li>
-                <strong>Identités visuelles structurées</strong>
-                <br />
-                Pas juste un logo. Un système visuel complet qui tient dans le temps. Typographie, couleurs, grille,
-                principes de composition.
-              </li>
-              <li>
-                <strong>Stratégies éditoriales pensées</strong>
-                <br />
-                Ligne éditoriale claire. Calendrier de contenu structuré. Processus de production. Quoi dire, comment le
-                dire, quand le dire.
-              </li>
-              <li>
-                <strong>Contenus qui positionnent</strong>
-                <br />
-                Articles de fond, études de cas, manifestes de marque. Pas du remplissage SEO. Du contenu qui affirme
-                qui vous êtes.
-              </li>
-              <li>
-                <strong>Direction artistique</strong>
-                <br />
-                Supervision créative de tous vos supports. Print, digital, vidéo. Cohérence visuelle sur tous les points
-                de contact.
-              </li>
-            </ul>
-          </div>
-
-          <div className="services-section">
-            <h2>Ce que ça produit</h2>
-            <p className="section-intro">Une marque qui se tient. Qui ne suit pas les tendances. Qui dure.</p>
-            <p className="section-intro">
-              Une voix qui vous appartient. Une identité qui ne ressemble à personne d&apos;autre. Une cohérence sur
-              tous vos supports.
-            </p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pour qui</h2>
-            <p className="section-intro">Pour ceux qui veulent une marque, pas un logo.</p>
-            <p className="section-intro">
-              Pour ceux qui refusent de ressembler à tout le monde. Pour ceux qui comprennent que la cohérence est plus
-              importante que les tendances.
-            </p>
-            <p className="section-intro">Si vous cherchez du rapide et du tendance, ce n&apos;est pas ici.</p>
-          </div>
-
-          <NeonDivider variant="soft" />
-
-          <div className="services-cta">
-            <h2>Parlons de votre projet</h2>
-            <p className="section-intro">Vous avez un projet de communication ou de branding ? Parlons-en.</p>
-            <Link
-              to="/contact"
-              className="form-submit"
-              style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}
-            >
-              <NeonCorners />
-              <span className="form-submit-label">Nous contacter</span>
-            </Link>
-          </div>
-        </section>
-      </div>
-    </>
-  )
+const DATA: ServiceData = {
+  punch: `Avoir un logo fait sur Canva, ce n'est pas avoir une marque. Une marque, c'est ce qui vous rend reconnaissable et vous fait tenir face aux autres.`,
+  probleme_titre: `Ce qu'on vous vend, et pourquoi ça tombe à plat`,
+  probleme: [
+    `On vous vend un logo, un document de règles en PDF, trois posts Instagram, et des textes recopiés d'un client à l'autre.`,
+    `Résultat : vous ressemblez à tout le monde, et votre marque ne repose sur rien de solide.`,
+    `Un beau visuel sans réflexion derrière, c'est de la déco. Et les modes changent tous les six mois : si vous les suivez, vous êtes déjà en retard, et dans deux ans tout aura l'air vieux.`,
+  ],
+  offres_titre: `Ce qu'on construit`,
+  offres: [
+    {
+      nom: `Une vraie identité, pas juste un logo`,
+      desc: `On pose tout ce qui rend votre marque reconnaissable : les couleurs, la façon d'écrire votre nom, la mise en page. Un ensemble qui tient dans le temps, pas une image isolée.`,
+    },
+    {
+      nom: `Quoi dire, et comment le dire`,
+      desc: `On définit votre façon de parler et on organise vos publications : quoi raconter, sur quel ton, et à quel rythme, sans vous laisser improviser.`,
+    },
+    {
+      nom: `Des contenus qui vous donnent une place`,
+      desc: `Articles de fond, retours d'expérience, prises de position. Pas du remplissage : du contenu qui dit clairement qui vous êtes et pourquoi on vous choisit.`,
+    },
+    {
+      nom: `Une cohérence partout`,
+      desc: `On veille à ce que tout se ressemble et se tienne, du papier à l'écran jusqu'à la vidéo. Le même style sur chaque support.`,
+    },
+  ],
+  resultat_titre: `Ce que vous obtenez`,
+  resultat: [
+    `Une marque qui se tient debout, qui ne court pas après les modes, et qui dure dans le temps.`,
+    `Une voix qui est la vôtre, qui ne ressemble à personne, et la même cohérence sur tous vos supports.`,
+  ],
+  pourqui_titre: `Pour qui c'est, pour qui ça ne l'est pas`,
+  pourqui: [
+    `Pour vous si vous voulez une vraie marque, pas juste un logo.`,
+    `Pour vous si vous refusez de ressembler à tous vos concurrents.`,
+    `Pour vous si vous comprenez que la cohérence compte plus que la dernière tendance.`,
+    `Si vous cherchez du vite fait et du tendance, ce n'est pas chez nous.`,
+  ],
+  cta_titre: `Parlons de votre projet`,
+  cta_texte: `Vous avez un projet de marque ou de communication ? Dites-nous où vous en êtes, on vous répond en face, sans détour. Si ça n'a pas de sens, on vous le dit.`,
+  cta_label: `Nous contacter`,
 }
+
+const ServicesCommunication = () => (
+  <ServicePageMono
+    seoTitle="Communication et identité de marque"
+    seoDescription="Identité de marque et communication à Paris. Une vraie marque, pas juste un logo : cohérente, qui vous ressemble et qui dure dans le temps."
+    seoKeywords="communication, identité de marque, branding, image de marque, agence communication Paris"
+    structuredDataType="service-communication"
+    eyebrow="Nos services · Marque"
+    title="Communication & marque"
+    ctaTo="/contact"
+    data={DATA}
+  />
+)
 
 export default ServicesCommunication

@@ -1,133 +1,61 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import NeonDivider from '../components/NeonDivider'
-import NeonCorners from '../components/NeonCorners'
-import SEO from '../components/SEO'
-import StructuredData from '../components/StructuredData'
-import './ServicesPage.css'
+import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
 
-const ServicesDeveloppement = () => {
-  return (
-    <>
-      <SEO
-        title="Développement web et applications sur mesure"
-        description="Ce n'est pas parce que c'est beau que ça fonctionne. Pas de templates WordPress. Pas de thèmes ThemeForest. Code propriétaire, architectures pensées pour durer 10 ans. Des systèmes qui tiennent."
-        keywords="développement web, développement sur mesure, SaaS, plateforme web, architecture web, React, développement Paris"
-      />
-      <StructuredData type="service-developpement" />
-      <GradientMeshBackground />
-      <div className="services-page">
-        <section className="services-hero">
-          <h1>DÉVELOPPEMENT</h1>
-          <p className="services-subtitle">
-            Ce n&apos;est pas parce que c&apos;est beau
-            <br />
-            que ça fonctionne.
-          </p>
-        </section>
-
-        <NeonDivider />
-
-        <section className="services-content">
-          <div className="services-section">
-            <h2>Ce que le marché vous promet</h2>
-            <p className="section-intro">
-              Des sites beaux et modernes. Des templates WordPress personnalisables. Des thèmes achetés sur ThemeForest.
-              Des plugins pour tout.
-            </p>
-            <p className="section-intro">
-              Résultat : ça marche 6 mois, puis ça casse. Ou ça ne scale pas. Ou personne ne peut le maintenir.
-            </p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pourquoi ça ne marche pas</h2>
-            <p className="section-intro">Parce que les templates sont conçus pour tout le monde. Donc pour personne.</p>
-            <p className="section-intro">
-              Parce que les plugins s&apos;empilent sans cohérence. Chaque mise à jour casse quelque chose. Le code est
-              incompréhensible. Personne ne veut y toucher.
-            </p>
-            <p className="section-intro">
-              Et quand vous voulez évoluer, vous découvrez que c&apos;est impossible sans tout refaire.
-            </p>
-          </div>
-
-          <div className="services-section highlight">
-            <h2>Ce que Venio construit</h2>
-            <p className="section-intro">Du code propriétaire. Écrit de zéro. Documenté.</p>
-            <ul className="services-list">
-              <li>
-                <strong>Sites web sur mesure</strong>
-                <br />
-                Pas de templates. Pas de shortcuts. Architecture pensée pour vos besoins réels.
-              </li>
-              <li>
-                <strong>Plateformes métier complexes</strong>
-                <br />
-                Outils internes qui automatisent vos processus. Qui évoluent avec vous.
-              </li>
-              <li>
-                <strong>SaaS scalables</strong>
-                <br />
-                Architectures pensées pour durer 10 ans. Pas 6 mois. Code qui peut grandir de 10 à 10 000 utilisateurs.
-              </li>
-              <li>
-                <strong>Intégrations IA</strong>
-                <br />
-                Locale ou cloud. Anthropic, OpenAI, ou modèles open source. Intégration réelle, pas un chatbot collé sur
-                votre site.
-              </li>
-            </ul>
-            <div className="why-us">
-              <p className="why-us-negative">Pas de templates WordPress ou Webflow</p>
-              <p className="why-us-negative">Pas de thèmes ThemeForest</p>
-              <p className="why-us-negative">Pas de plugins qui cassent</p>
-              <p className="why-us-positive">Code propriétaire, architectures sur mesure</p>
-              <p className="why-us-positive">Tests automatisés, déploiements structurés</p>
-              <p className="why-us-positive">Formation de vos équipes pour l&apos;autonomie</p>
-            </div>
-          </div>
-
-          <div className="services-section">
-            <h2>Ce que ça produit</h2>
-            <p className="section-intro">
-              Des systèmes qui tiennent. Que vous pouvez faire grandir. Que vous comprenez.
-            </p>
-            <p className="section-intro">
-              Du code que vos équipes peuvent maintenir. Des architectures qui évoluent. Des plateformes qui durent 10
-              ans, pas 6 mois.
-            </p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pour qui</h2>
-            <p className="section-intro">Pour ceux qui veulent construire quelque chose qui dure.</p>
-            <p className="section-intro">
-              Pour ceux qui ont déjà essayé les templates et compris les limites. Pour ceux qui préfèrent investir
-              maintenant plutôt que refaire dans 2 ans.
-            </p>
-            <p className="section-intro">Si vous cherchez du rapide et du pas cher, ce n&apos;est pas ici.</p>
-          </div>
-
-          <NeonDivider variant="soft" />
-
-          <div className="services-cta">
-            <h2>Parlons de votre projet</h2>
-            <p className="section-intro">Vous avez un projet de développement ? Parlons-en.</p>
-            <Link
-              to="/contact"
-              className="form-submit"
-              style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}
-            >
-              <NeonCorners />
-              <span className="form-submit-label">Nous contacter</span>
-            </Link>
-          </div>
-        </section>
-      </div>
-    </>
-  )
+const DATA: ServiceData = {
+  punch: `Un beau site ne sert à rien s'il ne marche pas. Le vôtre doit tenir, durer, et vous appartenir vraiment.`,
+  probleme_titre: `Ce qu'on vous vend partout`,
+  probleme: [
+    `On vous vend un site beau et moderne, monté sur un modèle tout fait acheté en ligne, avec des petits modules ajoutés pour tout faire.`,
+    `Ça marche six mois. Puis ça casse, ça rame dès que vous avez du monde, ou plus personne n'arrive à y toucher.`,
+    `Normal : un modèle tout fait est pensé pour tout le monde, donc pour personne. Et le jour où vous voulez évoluer, il faut tout refaire.`,
+  ],
+  offres_titre: `Ce qu'on construit`,
+  offres: [
+    {
+      nom: `Un site fait pour vous`,
+      desc: `Pensé pour vos vrais besoins et écrit à la main, pas assemblé à partir d'un modèle. Vous en êtes propriétaire, du début à la fin.`,
+    },
+    {
+      nom: `Vos outils de travail sur mesure`,
+      desc: `Des outils internes qui font tourner votre activité presque tout seuls et qui évoluent à mesure que vous grandissez.`,
+    },
+    {
+      nom: `Un logiciel qui grandit avec vous`,
+      desc: `Conçu pour durer dix ans et encaisser la montée : de dix clients à dix mille, sans tout casser.`,
+    },
+    {
+      nom: `L'IA quand elle est utile`,
+      desc: `Branchée pour de vrai dans votre activité quand elle vous fait gagner du temps. Pas un robot de discussion collé pour faire joli.`,
+    },
+  ],
+  resultat_titre: `Ce que vous obtenez`,
+  resultat: [
+    `Un site et des outils qui tiennent, que vous pouvez faire grandir, et que vous comprenez.`,
+    `Des fondations saines que vos équipes peuvent reprendre quand elles veulent. Fait pour durer dix ans, pas six mois.`,
+  ],
+  pourqui_titre: `Pour qui c'est`,
+  pourqui: [
+    `Pour ceux qui veulent construire quelque chose qui dure.`,
+    `Pour ceux qui ont déjà essayé les modèles tout faits et compris où ça coince.`,
+    `Pour ceux qui préfèrent investir une bonne fois plutôt que tout refaire dans deux ans.`,
+    `Si vous cherchez du vite fait et pas cher, ce n'est pas ici.`,
+  ],
+  cta_titre: `Parlons de votre projet`,
+  cta_texte: `Vous avez un projet de site ou d'outil ? Dites-nous où vous en êtes. On vous répond en face, et si ça n'a pas de sens, on vous le dit.`,
+  cta_label: `Nous contacter`,
 }
+
+const ServicesDeveloppement = () => (
+  <ServicePageMono
+    seoTitle="Développement web et applications sur mesure"
+    seoDescription="Création de sites web et d'outils sur mesure à Paris. Un site qui vous appartient, fait pour durer dix ans, pas six mois. Pas de modèle tout fait."
+    seoKeywords="développement web, site sur mesure, application web, logiciel sur mesure, développeur Paris"
+    structuredDataType="service-developpement"
+    eyebrow="Nos services · Développement"
+    title="Développement web"
+    ctaTo="/contact"
+    data={DATA}
+  />
+)
 
 export default ServicesDeveloppement

@@ -1,130 +1,66 @@
 import React from 'react'
-import GradientMeshBackground from '../components/GradientMeshBackground'
-import NeonDivider from '../components/NeonDivider'
-import NeonCorners from '../components/NeonCorners'
-import SEO from '../components/SEO'
-import StructuredData from '../components/StructuredData'
-import './ServicesPage.css'
+import ServicePageMono, { ServiceData } from '../components/ServicePageMono'
 
-const ServicesConseil = () => {
-  return (
-    <>
-      <SEO
-        title="Conseil stratégique et audit digital"
-        description="Le problème n'est pas votre communication. C'est vos décisions. Audit sans filtre, diagnostic précis, recommandations actionnables. Si votre stratégie est mauvaise, on vous le dit. Pas de slides PowerPoint."
-        keywords="conseil stratégique, transformation digitale, audit stratégique, consulting, stratégie IA, positionnement"
-      />
-      <StructuredData type="service-conseil" />
-      <GradientMeshBackground />
-      <div className="services-page">
-        <section className="services-hero">
-          <h1>CONSEIL STRATÉGIQUE</h1>
-          <p className="services-subtitle">
-            Le problème n&apos;est pas votre communication.
-            <br />
-            C&apos;est vos décisions.
-          </p>
-        </section>
-
-        <NeonDivider />
-
-        <section className="services-content">
-          <div className="services-section">
-            <h2>Ce que le marché vous vend</h2>
-            <p className="section-intro">
-              De l&apos;accompagnement. Des consultants qui hochent la tête et valident vos idées. Des ateliers de
-              co-création où tout le monde est d&apos;accord. Des roadmaps en slides PowerPoint qui finissent dans un
-              dossier.
-            </p>
-            <p className="section-intro">Résultat : vous payez pour qu&apos;on vous dise oui.</p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pourquoi ça ne marche pas</h2>
-            <p className="section-intro">
-              Parce que la plupart des consultants ne sont pas là pour vous aider. Ils sont là pour facturer des mois.
-            </p>
-            <p className="section-intro">
-              Ils ne remettent rien en question. Ils ne disent pas non. Ils produisent des stratégies creuses qui
-              rassurent mais ne changent rien.
-            </p>
-          </div>
-
-          <div className="services-section highlight">
-            <h2>Ce que Venio fait différemment</h2>
-            <p className="section-intro">Venio fait l&apos;inverse.</p>
-            <ul className="services-list">
-              <li>
-                <strong>Audit sans filtre</strong>
-                <br />
-                Diagnostic complet de votre existant. Identification des failles réelles. Si votre stratégie est
-                mauvaise, on vous le dit.
-              </li>
-              <li>
-                <strong>Architecture digitale</strong>
-                <br />
-                Cartographie de votre écosystème technique. Conception de ce qui doit exister. Pas de buzzwords, que du
-                concret.
-              </li>
-              <li>
-                <strong>Stratégie IA pragmatique</strong>
-                <br />
-                Identification des processus automatisables. Choix des technologies pertinentes. Roadmap
-                d&apos;implémentation réelle.
-              </li>
-              <li>
-                <strong>Positionnement lucide</strong>
-                <br />
-                Clarification de votre proposition de valeur. Analyse concurrentielle sans complaisance. Positionnement
-                différenciant et défendable.
-              </li>
-              <li>
-                <strong>Structuration d&apos;offres</strong>
-                <br />
-                Refonte de votre architecture commerciale. Pricing stratégique basé sur la valeur créée. Pas sur ce que
-                font vos concurrents.
-              </li>
-            </ul>
-            <p className="section-intro">Si votre projet n&apos;a pas de sens, on refuse.</p>
-          </div>
-
-          <div className="services-section">
-            <h2>Ce que ça produit</h2>
-            <p className="section-intro">
-              Des décisions claires. Des plans d&apos;action actionnables. Des priorités définies.
-            </p>
-            <p className="section-intro">
-              Pas des slides PowerPoint. Pas des ateliers sans fin. Pas des stratégies qui rassurent.
-            </p>
-            <p className="section-intro">Vous repartez avec une direction. Et la lucidité pour l&apos;exécuter.</p>
-          </div>
-
-          <div className="services-section">
-            <h2>Pour qui</h2>
-            <p className="section-intro">Pour les décideurs. Pas pour les rêveurs.</p>
-            <p className="section-intro">
-              Pour ceux qui veulent des réponses honnêtes, pas des validations. Pour ceux qui préfèrent savoir
-              maintenant que ça ne marchera pas, plutôt que dans 6 mois.
-            </p>
-            <p className="section-intro">
-              Si vous cherchez quelqu&apos;un pour exécuter sans réfléchir, ce n&apos;est pas ici.
-            </p>
-          </div>
-
-          <NeonDivider variant="soft" />
-
-          <div className="services-cta calendly">
-            <h2>Premier échange (30min)</h2>
-            <p>On discute de votre projet. Sans filtre.</p>
-            <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="calendly-btn">
-              <NeonCorners />
-              <span className="calendly-btn-label">Réserver un créneau →</span>
-            </a>
-          </div>
-        </section>
-      </div>
-    </>
-  )
+const DATA: ServiceData = {
+  punch: `Le problème, ce n'est pas votre communication. Ce sont vos décisions. On est là pour vous dire ce que personne n'ose vous dire.`,
+  probleme_titre: `Ce qu'on vous vend partout`,
+  probleme: [
+    `On vous vend de l'accompagnement : des conseillers qui hochent la tête, valident vos idées et organisent des réunions où tout le monde est d'accord.`,
+    `Au bout, de belles présentations qui finissent dans un tiroir et que personne ne rouvre.`,
+    `La plupart sont là pour facturer des mois, pas pour vous aider. Ils ne disent jamais non. Vous payez pour qu'on vous dise oui.`,
+  ],
+  offres_titre: `Ce qu'on fait, nous`,
+  offres: [
+    {
+      nom: `Le bilan sans filtre`,
+      desc: `On regarde tout ce que vous avez en place, on pointe les vraies failles, et si votre plan est mauvais on vous le dit en face.`,
+    },
+    {
+      nom: `Le tri dans vos outils`,
+      desc: `On fait le ménage dans les outils que vous utilisez et on dessine ce dont vous avez vraiment besoin. Que du concret, zéro grands mots.`,
+    },
+    {
+      nom: `L'IA quand ça sert`,
+      desc: `On repère ce qui peut tourner tout seul chez vous, et on vous dit aussi quand l'IA n'apporte rien. Pas de gadget.`,
+    },
+    {
+      nom: `Une place claire face aux concurrents`,
+      desc: `On clarifie ce que vous apportez vraiment et ce qui vous distingue, pour qu'on vous choisisse vous et pas le voisin.`,
+    },
+    {
+      nom: `Des offres qui tiennent debout`,
+      desc: `On revoit ce que vous vendez et à quel prix, en partant de ce que ça rapporte à votre client. Pas de ce que font les autres.`,
+    },
+  ],
+  resultat_titre: `Ce que vous repartez avec`,
+  resultat: [
+    `Des décisions claires, des priorités et un plan que vous pouvez suivre dès demain.`,
+    `Pas des présentations qui rassurent. Une direction nette, et de quoi la tenir jusqu'au bout.`,
+  ],
+  pourqui_titre: `Pour qui c'est`,
+  pourqui: [
+    `Pour les décideurs, pas les rêveurs.`,
+    `Pour ceux qui veulent des réponses honnêtes, pas qu'on valide tout ce qu'ils disent.`,
+    `Pour ceux qui préfèrent savoir maintenant que ça ne marchera pas, plutôt que dans six mois.`,
+    `Si vous cherchez quelqu'un qui exécute sans réfléchir, ce n'est pas ici. Et si votre projet n'a pas de sens, on refuse.`,
+  ],
+  cta_titre: `Premier échange (30 min)`,
+  cta_texte: `On parle de votre projet. Sans filtre. Si on peut vous aider, on vous le dit. Si on ne peut pas, on vous le dit aussi.`,
+  cta_label: `Réserver un créneau`,
 }
+
+const ServicesConseil = () => (
+  <ServicePageMono
+    seoTitle="Conseil stratégique et audit digital"
+    seoDescription="Conseil et audit pour votre digital à Paris. Un bilan sans détour, des décisions claires, des priorités. Si votre stratégie ne tient pas, on vous le dit."
+    seoKeywords="conseil stratégique, audit digital, stratégie digitale, transformation digitale, conseil Paris"
+    structuredDataType="service-conseil"
+    eyebrow="Nos services · Conseil"
+    title="Conseil stratégique"
+    ctaTo="https://calendly.com"
+    ctaExternal
+    data={DATA}
+  />
+)
 
 export default ServicesConseil

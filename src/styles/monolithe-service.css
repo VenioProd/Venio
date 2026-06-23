@@ -1,0 +1,358 @@
+/* ═══════════════════════════════════════════
+   Pages services Monolithe — gabarit commun
+   (scopé .msv-page, couleurs via tokens du thème)
+   ═══════════════════════════════════════════ */
+
+.msv-page {
+  --msv-sp-xs: clamp(8px, 1vw, 12px);
+  --msv-sp-s: clamp(12px, 2vw, 20px);
+  --msv-sp-m: clamp(20px, 3vw, 32px);
+  --msv-sp-l: clamp(32px, 5vw, 64px);
+  --msv-sp-xl: clamp(64px, 8vw, 120px);
+  --msv-gutter: clamp(16px, 3vw, 48px);
+  --msv-max: 1400px;
+  --msv-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.msv-page .msv-container {
+  width: 100%;
+  max-width: var(--msv-max);
+  margin: 0 auto;
+  padding: 0 var(--msv-gutter);
+}
+
+.msv-page section {
+  border-top: 1px solid var(--border-color);
+}
+.msv-page .msv-hero {
+  border-top: none;
+}
+
+/* Reveal */
+.msv-page .msv-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s var(--msv-ease),
+    transform 0.6s var(--msv-ease);
+}
+.msv-page .msv-reveal.msv-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section head (index romain + kicker) */
+.msv-page .msv-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--msv-sp-m);
+  margin-bottom: var(--msv-sp-l);
+}
+.msv-page .msv-index {
+  font-size: clamp(64px, 9vw, 130px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--border-color);
+  user-select: none;
+  flex-shrink: 0;
+}
+.msv-page .msv-kicker {
+  font-size: clamp(11px, 1.1vw, 14px);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── HERO ─── */
+.msv-page .msv-hero {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: calc(var(--msv-sp-xl) + 40px) 0 var(--msv-sp-xl);
+  position: relative;
+  overflow: hidden;
+}
+.msv-page .msv-hero-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.msv-page .msv-hero-lines::before,
+.msv-page .msv-hero-lines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-color);
+}
+.msv-page .msv-hero-lines::before {
+  left: calc(var(--msv-gutter) + (100% - 2 * var(--msv-gutter)) / 3);
+}
+.msv-page .msv-hero-lines::after {
+  left: calc(var(--msv-gutter) + 2 * (100% - 2 * var(--msv-gutter)) / 3);
+}
+.msv-page .msv-hero-content {
+  position: relative;
+  z-index: 1;
+}
+.msv-page .msv-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--msv-sp-m);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.msv-page .msv-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--primary);
+}
+.msv-page .msv-title {
+  font-size: clamp(40px, 9vw, 130px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  margin-bottom: var(--msv-sp-m);
+  max-width: 16ch;
+}
+.msv-page .msv-punch {
+  font-size: clamp(16px, 2vw, 24px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 40ch;
+  line-height: 1.35;
+  margin-bottom: var(--msv-sp-l);
+}
+.msv-page .msv-punch b {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+/* Boutons */
+.msv-page .msv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bg-primary);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 15px 26px;
+  transition:
+    background 0.2s var(--msv-ease),
+    color 0.2s var(--msv-ease);
+}
+.msv-page .msv-btn:hover {
+  background: transparent;
+  color: var(--primary);
+}
+.msv-page .msv-btn .msv-ar {
+  transition: transform 0.2s var(--msv-ease);
+}
+.msv-page .msv-btn:hover .msv-ar {
+  transform: translateX(4px);
+}
+
+/* ─── PROBLÈME ─── */
+.msv-page .msv-problem {
+  padding: var(--msv-sp-xl) 0;
+}
+.msv-page .msv-prose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--msv-sp-m);
+  max-width: 62ch;
+}
+.msv-page .msv-prose p {
+  font-size: clamp(16px, 1.7vw, 21px);
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.msv-page .msv-prose p:first-child {
+  color: var(--text-primary);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ─── OFFRES ─── */
+.msv-page .msv-offres {
+  padding: var(--msv-sp-xl) 0;
+}
+.msv-page .msv-offre {
+  display: grid;
+  grid-template-columns: clamp(56px, 8vw, 120px) 1fr;
+  gap: var(--msv-sp-m);
+  padding: var(--msv-sp-l) 0;
+  border-top: 1px solid var(--border-color);
+}
+.msv-page .msv-offre:last-child {
+  border-bottom: 1px solid var(--border-color);
+}
+.msv-page .msv-offre-num {
+  font-size: clamp(32px, 5vw, 72px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.85;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--border-color);
+  transition: -webkit-text-stroke-color 0.25s var(--msv-ease);
+}
+.msv-page .msv-offre:hover .msv-offre-num {
+  -webkit-text-stroke-color: var(--primary);
+}
+.msv-page .msv-offre-nom {
+  font-size: clamp(22px, 3vw, 38px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.msv-page .msv-offre-desc {
+  font-size: clamp(14px, 1.5vw, 17px);
+  color: var(--text-secondary);
+  max-width: 52ch;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* ─── RÉSULTAT + POUR QUI ─── */
+.msv-page .msv-result {
+  padding: var(--msv-sp-xl) 0;
+}
+.msv-page .msv-result-lead {
+  font-size: clamp(22px, 3.2vw, 44px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  max-width: 20ch;
+  margin-bottom: var(--msv-sp-m);
+}
+.msv-page .msv-result-lead .msv-accent {
+  color: var(--primary);
+}
+.msv-page .msv-result-sub {
+  font-size: clamp(15px, 1.6vw, 18px);
+  color: var(--text-secondary);
+  max-width: 56ch;
+  line-height: 1.55;
+  font-weight: 500;
+}
+.msv-page .msv-pourqui {
+  margin-top: var(--msv-sp-l);
+  padding-top: var(--msv-sp-l);
+  border-top: 1px solid var(--border-color);
+}
+.msv-page .msv-pourqui-titre {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--msv-sp-m);
+}
+.msv-page .msv-pourqui-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--msv-sp-s);
+  max-width: 64ch;
+}
+.msv-page .msv-pourqui-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: clamp(15px, 1.6vw, 19px);
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.msv-page .msv-pourqui-list li::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: var(--primary);
+  flex-shrink: 0;
+  margin-top: 9px;
+}
+
+/* ─── CTA FINAL ─── */
+.msv-page .msv-cta {
+  padding: var(--msv-sp-xl) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 46vh;
+  justify-content: center;
+}
+.msv-page .msv-cta-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--msv-sp-m);
+}
+.msv-page .msv-cta-titre {
+  font-size: clamp(40px, 8vw, 120px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  margin-bottom: var(--msv-sp-m);
+}
+.msv-page .msv-cta-titre .msv-dot {
+  color: var(--primary);
+}
+.msv-page .msv-cta-texte {
+  font-size: clamp(15px, 1.6vw, 18px);
+  color: var(--text-secondary);
+  max-width: 50ch;
+  line-height: 1.55;
+  font-weight: 500;
+  margin-bottom: var(--msv-sp-l);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 600px) {
+  .msv-page .msv-head {
+    flex-direction: column;
+    gap: var(--msv-sp-xs);
+    align-items: flex-start;
+  }
+  .msv-page .msv-index {
+    font-size: clamp(44px, 16vw, 72px);
+  }
+  .msv-page .msv-title {
+    font-size: clamp(34px, 11vw, 60px);
+  }
+  .msv-page .msv-hero-lines::before,
+  .msv-page .msv-hero-lines::after {
+    display: none;
+  }
+  .msv-page .msv-offre {
+    grid-template-columns: 1fr;
+    gap: var(--msv-sp-s);
+  }
+  .msv-page .msv-offre-num {
+    font-size: clamp(32px, 13vw, 56px);
+  }
+}
