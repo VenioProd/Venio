@@ -140,6 +140,16 @@
   white-space: nowrap;
 }
 
+.pricing-card__icon {
+  display: block;
+  margin-bottom: 14px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.pricing-card:hover .pricing-card__icon {
+  opacity: 1;
+}
+
 .pricing-card__tier {
   font-size: 9px;
   letter-spacing: 0.15em;

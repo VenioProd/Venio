@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from './SEO'
 import StructuredData from './StructuredData'
+import { CropMarks, GrainOverlay } from './BrutalDeco'
 import '../styles/monolithe-service.css'
 
 export interface ServiceOffre {
@@ -33,6 +34,7 @@ interface ServicePageMonoProps {
   title: string
   ctaTo: string
   ctaExternal?: boolean
+  icon?: React.ReactNode
   data: ServiceData
 }
 
@@ -47,6 +49,7 @@ const ServicePageMono: React.FC<ServicePageMonoProps> = ({
   title,
   ctaTo,
   ctaExternal = false,
+  icon,
   data,
 }) => {
   useEffect(() => {
@@ -84,7 +87,10 @@ const ServicePageMono: React.FC<ServicePageMonoProps> = ({
       {/* HERO */}
       <section className="msv-hero">
         <div className="msv-hero-lines" aria-hidden="true" />
+        <GrainOverlay opacity={0.04} />
+        <CropMarks />
         <div className="msv-container msv-hero-content">
+          {icon && <div className="msv-hero-icon">{icon}</div>}
           <p className="msv-eyebrow">{eyebrow}</p>
           <h1 className="msv-title">{title}</h1>
           <p className="msv-punch">{data.punch}</p>
