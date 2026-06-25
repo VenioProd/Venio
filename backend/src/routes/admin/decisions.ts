@@ -23,6 +23,28 @@ const upload = multer({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function contentDispositionFilename(name: string): string {
+  const fallback = name.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_')
+  return `filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`
+}
+
+function inferMimeType(attachment: { originalName: string; mimeType?: string }): string {
+  if (attachment.mimeType && attachment.mimeType !== 'application/octet-stream') return attachment.mimeType
+  if (attachment.originalName.toLowerCase().endsWith('.pdf')) return 'application/pdf'
+  return attachment.mimeType || 'application/octet-stream'
+}
+
+function serializeDecision(decision: any) {
+  const obj = typeof decision.toObject === 'function' ? decision.toObject() : decision
+  return {
+    ...obj,
+    attachments: (obj.attachments || []).map((attachment: any) => ({
+      ...attachment,
+      mimeType: inferMimeType(attachment),
+    })),
+  }
+}
+
 async function notifyDecision(
   decisionId: string,
   title: string,
@@ -68,7 +90,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .populate('decidedBy', 'name email')
       .populate('recipients', 'name email')
 
-    return res.json({ decisions })
+    return res.json({ decisions: decisions.map(serializeDecision) })
   } catch (err) {
     return next(err)
   }
@@ -82,7 +104,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       .populate('decidedBy', 'name email')
       .populate('recipients', 'name email')
     if (!decision) return res.status(404).json({ message: 'Décision introuvable' })
-    return res.json({ decision })
+    return res.json({ decision: serializeDecision(decision) })
   } catch (err) {
     return next(err)
   }
@@ -165,7 +187,19 @@ router.get('/:id/attachments/:index/download', async (req: Request, res: Respons
     const filePath = path.resolve(process.cwd(), attachment.storagePath)
     if (!filePath.startsWith(safeRoot)) return res.status(403).json({ error: 'Access denied' })
 
-    return res.download(filePath, attachment.originalName)
+    const stat = await fs.promises.stat(filePath).catch(() => null)
+    if (!stat?.isFile()) return res.status(404).json({ error: 'Fichier non trouvé' })
+
+    const dispositionType = req.query.download === '1' ? 'attachment' : 'inline'
+    res.setHeader('Content-Type', inferMimeType(attachment))
+    res.setHeader('Content-Length', String(stat.size))
+    res.setHeader(
+      'Content-Disposition',
+      `${dispositionType}; ${contentDispositionFilename(attachment.originalName)}`
+    )
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+
+    return res.sendFile(filePath)
   } catch (err) {
     return next(err)
   }
