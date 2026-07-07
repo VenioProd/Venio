@@ -89,6 +89,10 @@ const mongoUri = process.env.MONGODB_URI
 const isProd = process.env.NODE_ENV === 'production'
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5001'
 
+if (isProd) {
+  app.set('trust proxy', 1)
+}
+
 if (!mongoUri) {
   throw new Error('MONGODB_URI is required')
 }
@@ -120,9 +124,10 @@ app.use(
   }),
 )
 
-// Force HTTPS in production
+// Force HTTPS in production, but keep the local Docker healthcheck reachable.
 if (isProd) {
   app.use((req, res, next) => {
+    if (req.path === '/api/health') return next()
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`)
     }
