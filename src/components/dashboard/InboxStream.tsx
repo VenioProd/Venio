@@ -20,10 +20,14 @@ const InboxStream = () => {
       const includeSnoozed = filter === 'snoozed'
       const res = await apiFetch<InboxResponse>(`/api/admin/inbox?includeSnoozed=${includeSnoozed}`)
       setData(res)
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }, [filter])
 
-  useEffect(() => { fetchInbox() }, [fetchInbox])
+  useEffect(() => {
+    fetchInbox()
+  }, [fetchInbox])
 
   const filteredItems = useMemo(() => {
     if (!data) return []
@@ -43,11 +47,17 @@ const InboxStream = () => {
     try {
       switch (kind) {
         case 'approve':
-          await apiFetch(`/api/admin/decisions/${item.sourceId}/approve`, { method: 'POST', body: JSON.stringify({ comment: '' }) })
+          await apiFetch(`/api/admin/decisions/${item.sourceId}/approve`, {
+            method: 'POST',
+            body: JSON.stringify({ comment: '' }),
+          })
           break
         case 'reject': {
           const c = window.prompt('Motif du rejet :') ?? ''
-          await apiFetch(`/api/admin/decisions/${item.sourceId}/reject`, { method: 'POST', body: JSON.stringify({ comment: c }) })
+          await apiFetch(`/api/admin/decisions/${item.sourceId}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ comment: c }),
+          })
           break
         }
         case 'open':
@@ -91,18 +101,25 @@ const InboxStream = () => {
 
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        const next = Math.min(filteredItems.length - 1, focusedIndex + 1)
+        const currentIndex = focusedIndex >= 0 ? focusedIndex : 0
+        const next = Math.min(filteredItems.length - 1, currentIndex + 1)
         if (filteredItems[next]) setFocusedId(filteredItems[next].id)
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        const prev = Math.max(0, focusedIndex - 1)
+        const currentIndex = focusedIndex >= 0 ? focusedIndex : 0
+        const prev = Math.max(0, currentIndex - 1)
         if (filteredItems[prev]) setFocusedId(filteredItems[prev].id)
       } else if (focusedItem) {
         const matchedAction = focusedItem.actions.find((a) => a.shortcut === e.key.toLowerCase())
-        if (matchedAction) { e.preventDefault(); handleAction(matchedAction.kind, focusedItem) }
-        else if (e.key === 'Enter') {
+        if (matchedAction) {
+          e.preventDefault()
+          handleAction(matchedAction.kind, focusedItem)
+        } else if (e.key === 'Enter') {
           const openAction = focusedItem.actions.find((a) => a.kind === 'open' || a.kind === 'read')
-          if (openAction) { e.preventDefault(); handleAction(openAction.kind, focusedItem) }
+          if (openAction) {
+            e.preventDefault()
+            handleAction(openAction.kind, focusedItem)
+          }
         }
       }
     }
@@ -118,11 +135,14 @@ const InboxStream = () => {
         <span className="ix-stream__title">⚡ INBOX — {data?.counts.all ?? 0} à traiter</span>
         <span className="ix-stream__shortcut">↑↓ · A/R · S snooze · ⏎ ouvrir · F fait</span>
       </header>
-      <InboxFilters value={filter} counts={data?.counts ?? {}} snoozedCount={data?.snoozedCount ?? 0} onChange={setFilter} />
+      <InboxFilters
+        value={filter}
+        counts={data?.counts ?? {}}
+        snoozedCount={data?.snoozedCount ?? 0}
+        onChange={setFilter}
+      />
       {filteredItems.length === 0 ? (
-        <p style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-          🎉 Inbox vide
-        </p>
+        <p style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>🎉 Inbox vide</p>
       ) : (
         filteredItems.map((it) => (
           <InboxCard key={it.id} item={it} focused={it.id === focusedId} onAction={handleAction} />
