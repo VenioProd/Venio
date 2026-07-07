@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip } from 'lucide-react'
+import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip, MessageSquare } from 'lucide-react'
 import { apiFetch, getToken } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT'
 type DecisionCategory = 'BUDGET' | 'EMBAUCHE' | 'PROJET' | 'PARTENARIAT' | 'AUTRE'
 type DecisionPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 
@@ -271,11 +271,33 @@ const PRIORITY_COLORS: Record<DecisionPriority, string> = {
 const CATEGORIES: DecisionCategory[] = ['BUDGET', 'EMBAUCHE', 'PROJET', 'PARTENARIAT', 'AUTRE']
 const PRIORITIES: DecisionPriority[] = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'MINE'
+const STATUS_META: Record<
+  Exclude<DecisionStatus, 'PENDING'>,
+  { label: string; color: string; background: string }
+> = {
+  APPROVED: {
+    label: 'Approuvée',
+    color: '#10b981',
+    background: 'rgba(16,185,129,0.08)',
+  },
+  REJECTED: {
+    label: 'Rejetée',
+    color: '#ef4444',
+    background: 'rgba(239,68,68,0.08)',
+  },
+  IMPROVEMENT: {
+    label: 'À améliorer',
+    color: '#f59e0b',
+    background: 'rgba(245,158,11,0.1)',
+  },
+}
+
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT' | 'MINE'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'PENDING', label: 'En attente' },
   { key: 'APPROVED', label: 'Approuvées' },
+  { key: 'IMPROVEMENT', label: 'À améliorer' },
   { key: 'REJECTED', label: 'Rejetées' },
   { key: 'MINE', label: 'Mes soumissions' },
 ]
@@ -296,6 +318,8 @@ export default function DecisionsList() {
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [actingId, setActingId] = useState<string | null>(null)
+  const [savingCommentId, setSavingCommentId] = useState<string | null>(null)
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [showCreate, setShowCreate] = useState(false)
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const previewUrlRef = useRef<string | null>(null)
@@ -331,7 +355,14 @@ export default function DecisionsList() {
         params.set('status', tab)
       }
       const data = await apiFetch<{ decisions: Decision[] }>(`/api/admin/decisions?${params.toString()}`)
-      setDecisions(data.decisions || [])
+      const nextDecisions = data.decisions || []
+      setDecisions(nextDecisions)
+      setCommentDrafts((prev) =>
+        nextDecisions.reduce<Record<string, string>>((acc, decision) => {
+          acc[decision._id] = prev[decision._id] ?? decision.decisionComment ?? ''
+          return acc
+        }, {}),
+      )
     } catch (err) {
       setError((err as Error).message || 'Erreur de chargement')
     } finally {
@@ -346,7 +377,27 @@ export default function DecisionsList() {
   const handleApprove = async (id: string) => {
     setActingId(id)
     try {
-      await apiFetch(`/api/admin/decisions/${id}/approve`, { method: 'POST', body: JSON.stringify({}) })
+      const comment = (commentDrafts[id] || '').trim()
+      await apiFetch(`/api/admin/decisions/${id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify(comment ? { comment } : {}),
+      })
+      await loadDecisions()
+    } catch (err) {
+      window.alert((err as Error).message || 'Erreur')
+    } finally {
+      setActingId(null)
+    }
+  }
+
+  const handleImprove = async (id: string) => {
+    setActingId(id)
+    try {
+      const comment = (commentDrafts[id] || '').trim()
+      await apiFetch(`/api/admin/decisions/${id}/improve`, {
+        method: 'POST',
+        body: JSON.stringify(comment ? { comment } : {}),
+      })
       await loadDecisions()
     } catch (err) {
       window.alert((err as Error).message || 'Erreur')
@@ -356,9 +407,9 @@ export default function DecisionsList() {
   }
 
   const handleReject = async (id: string) => {
-    const comment = window.prompt('Motif du rejet (optionnel) :') ?? ''
     setActingId(id)
     try {
+      const comment = (commentDrafts[id] || '').trim()
       await apiFetch(`/api/admin/decisions/${id}/reject`, {
         method: 'POST',
         body: JSON.stringify(comment ? { comment } : {}),
@@ -368,6 +419,24 @@ export default function DecisionsList() {
       window.alert((err as Error).message || 'Erreur')
     } finally {
       setActingId(null)
+    }
+  }
+
+  const handleSaveComment = async (id: string) => {
+    setSavingCommentId(id)
+    try {
+      const comment = (commentDrafts[id] || '').trim()
+      const data = await apiFetch<{ decision: Decision }>(`/api/admin/decisions/${id}/comment`, {
+        method: 'PATCH',
+        body: JSON.stringify({ comment }),
+      })
+      setDecisions((prev) => prev.map((decision) => (decision._id === id ? data.decision : decision)))
+      setCommentDrafts((prev) => ({ ...prev, [id]: data.decision.decisionComment || '' }))
+      showToast('Commentaire sauvegardé', 'success')
+    } catch (err) {
+      window.alert((err as Error).message || 'Erreur')
+    } finally {
+      setSavingCommentId(null)
     }
   }
 
@@ -671,23 +740,85 @@ export default function DecisionsList() {
                             </div>
                           </div>
                         )}
-                        {d.status !== 'PENDING' && (
+                        {d.status === 'PENDING' && (
                           <div
                             style={{
                               padding: 10,
                               borderRadius: 8,
-                              background: d.status === 'APPROVED' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                              background: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.08)',
                             }}
                           >
                             <div
                               style={{
                                 fontSize: 11,
                                 textTransform: 'uppercase',
-                                color: d.status === 'APPROVED' ? '#10b981' : '#ef4444',
+                                color: 'var(--text-muted)',
+                                marginBottom: 6,
+                              }}
+                            >
+                              Commentaire de décision
+                            </div>
+                            {isSuperAdmin ? (
+                              <>
+                                <textarea
+                                  className="portal-input"
+                                  value={commentDrafts[d._id] ?? d.decisionComment ?? ''}
+                                  onChange={(event) =>
+                                    setCommentDrafts((prev) => ({ ...prev, [d._id]: event.target.value }))
+                                  }
+                                  rows={3}
+                                  maxLength={2000}
+                                  placeholder="Note, consigne ou raison à conserver avec cette décision…"
+                                />
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    marginTop: 8,
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                    Ce commentaire sera visible après validation, rejet ou demande d'amélioration.
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="portal-button secondary"
+                                    style={{ padding: '5px 10px', fontSize: 12 }}
+                                    disabled={savingCommentId === d._id}
+                                    onClick={() => handleSaveComment(d._id)}
+                                  >
+                                    {savingCommentId === d._id ? 'Sauvegarde…' : 'Sauvegarder'}
+                                  </button>
+                                </div>
+                              </>
+                            ) : d.decisionComment ? (
+                              <div style={{ color: 'var(--text-muted)' }}>« {d.decisionComment} »</div>
+                            ) : (
+                              <div style={{ color: 'var(--text-muted)' }}>Aucun commentaire pour l'instant.</div>
+                            )}
+                          </div>
+                        )}
+                        {d.status !== 'PENDING' && (
+                          <div
+                            style={{
+                              padding: 10,
+                              borderRadius: 8,
+                              background: STATUS_META[d.status].background,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                textTransform: 'uppercase',
+                                color: STATUS_META[d.status].color,
                                 marginBottom: 4,
                               }}
                             >
-                              {d.status === 'APPROVED' ? 'Approuvée' : 'Rejetée'}
+                              {STATUS_META[d.status].label}
                             </div>
                             <div style={{ fontSize: 12 }}>
                               Par <strong>{d.decidedByName || '—'}</strong>
@@ -716,6 +847,16 @@ export default function DecisionsList() {
                         >
                           <Check size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
                           Valider
+                        </button>
+                        <button
+                          type="button"
+                          className="portal-button secondary"
+                          style={{ padding: '6px 12px', fontSize: 12, color: '#f59e0b', borderColor: '#f59e0b' }}
+                          disabled={actingId === d._id}
+                          onClick={() => handleImprove(d._id)}
+                        >
+                          <MessageSquare size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
+                          À améliorer
                         </button>
                         <button
                           type="button"

@@ -104,7 +104,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       .populate('decidedBy', 'name email')
       .populate('recipients', 'name email')
     if (!decision) return res.status(404).json({ message: 'Décision introuvable' })
-    return res.json({ decision: serializeDecision(decision) })
+    return res.json({ decision })
   } catch (err) {
     return next(err)
   }
@@ -205,6 +205,30 @@ router.get('/:id/attachments/:index/download', async (req: Request, res: Respons
   }
 })
 
+// PATCH /api/admin/decisions/:id/comment
+router.patch(
+  '/:id/comment',
+  requireSuperAdmin,
+  body('comment').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+      const { comment } = req.body
+      const decision = await Decision.findById(req.params.id)
+      if (!decision) return res.status(404).json({ message: 'Décision introuvable' })
+
+      decision.decisionComment = typeof comment === 'string' && comment.trim() ? comment.trim() : null
+      await decision.save()
+
+      return res.json({ decision })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
 // POST /api/admin/decisions/:id/approve
 router.post('/:id/approve', requireSuperAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -226,6 +250,38 @@ router.post('/:id/approve', requireSuperAdmin, async (req: Request, res: Respons
         type: 'DECISION_APPROVED',
         title: 'Décision approuvée ✅',
         message: `"${decision.title}" a été approuvée${comment ? ` : ${comment}` : ''}`,
+        link: '/admin/decisions',
+        metadata: { decisionId: String(decision._id) },
+      }).catch(() => {})
+    }
+
+    return res.json({ decision })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/decisions/:id/improve
+router.post('/:id/improve', requireSuperAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { comment } = req.body
+    const decision = await Decision.findById(req.params.id)
+    if (!decision) return res.status(404).json({ message: 'Décision introuvable' })
+    if (decision.status !== 'PENDING') return res.status(409).json({ message: 'Décision déjà traitée' })
+
+    decision.status = 'IMPROVEMENT'
+    decision.decidedBy = req.user!.id as any
+    decision.decidedByName = req.user!.name || req.user!.email || 'Super admin'
+    decision.decisionComment = typeof comment === 'string' && comment.trim() ? comment.trim() : decision.decisionComment || null
+    decision.decidedAt = new Date()
+    await decision.save()
+
+    if (String(decision.submittedBy) !== req.user!.id) {
+      createNotification({
+        recipient: decision.submittedBy,
+        type: 'DECISION_IMPROVEMENT',
+        title: 'Décision à améliorer',
+        message: `"${decision.title}" doit être améliorée${decision.decisionComment ? ` : ${decision.decisionComment}` : ''}`,
         link: '/admin/decisions',
         metadata: { decisionId: String(decision._id) },
       }).catch(() => {})

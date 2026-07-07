@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
-export type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type DecisionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT'
 export type DecisionPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type DecisionCategory = 'BUDGET' | 'EMBAUCHE' | 'PROJET' | 'PARTENARIAT' | 'AUTRE'
 
@@ -49,7 +49,7 @@ const decisionSchema = new Schema<IDecision>(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      enum: ['PENDING', 'APPROVED', 'REJECTED', 'IMPROVEMENT'],
       default: 'PENDING',
       index: true,
     },
