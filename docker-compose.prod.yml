@@ -12,7 +12,7 @@ services:
     # Le HEALTHCHECK est défini dans le Dockerfile ; redondance ici pour `docker compose ps`
     # qui affichera `(healthy)` / `(unhealthy)` à côté du container.
     healthcheck:
-      test: ['CMD-SHELL', "wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ['CMD-SHELL', "wget --quiet --tries=1 --spider http://localhost:$${PORT:-3000}/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       start_period: 20s

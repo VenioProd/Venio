@@ -38,6 +38,6 @@ EXPOSE 3000
 # Healthcheck Docker — interroge /api/health enrichi (chantier #5 audit 2026-05-26)
 # Retourne 200 si Mongo OK, 503 si dégradé. Le swap dans deploy-ionos.yml utilise ce signal.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget --quiet --tries=1 --spider --server-response http://localhost:3000/api/health 2>&1 | grep -q "200" || exit 1
+  CMD wget --quiet --tries=1 --spider --server-response http://localhost:${PORT:-3000}/api/health 2>&1 | grep -q "200" || exit 1
 
 CMD ["node", "dist/index.js"]
