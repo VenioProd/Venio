@@ -9,13 +9,16 @@ import DevIssue, {
 } from '../../models/DevIssue.js'
 import DevIssueComment from '../../models/DevIssueComment.js'
 import DevProject from '../../models/DevProject.js'
+import { CLOSED_ISSUE_STATUSES } from './issueMutations.js'
 
 export const STATUS_WEIGHT: Record<DevIssueStatus, number> = {
   BACKLOG: 0,
   TODO: 10,
   IN_PROGRESS: 50,
   IN_REVIEW: 80,
+  BLOCKED: 20,
   DONE: 100,
+  DUPLICATE: 0,
   CANCELLED: 0,
 }
 
@@ -27,7 +30,7 @@ export function computeProgress(byStatus: Record<DevIssueStatus, number>): numbe
   let weighted = 0
   let nonCancelled = 0
   for (const [status, count] of Object.entries(byStatus) as [DevIssueStatus, number][]) {
-    if (status === 'CANCELLED') continue
+    if (status === 'CANCELLED' || status === 'DUPLICATE') continue
     weighted += STATUS_WEIGHT[status] * count
     nonCancelled += count
   }
@@ -70,7 +73,8 @@ export interface StatsPayload {
 
 const BLOCKED_LABELS = ['blocked', 'blocker']
 const BLOCKED_LABEL_REGEXES = BLOCKED_LABELS.map((l) => new RegExp(`^${l}$`, 'i'))
-const CLOSED_STATUSES = ['DONE', 'CANCELLED'] as const
+const CLOSED_STATUSES = CLOSED_ISSUE_STATUSES
+const ACTIVE_MATCH = { archivedAt: null }
 
 export async function computeStats(
   match: Record<string, unknown> = {}
@@ -79,19 +83,20 @@ export async function computeStats(
   const day = 24 * 60 * 60 * 1000
   const since14 = new Date(now - 14 * day)
   const since7 = new Date(now - 7 * day)
-  const openMatch = { ...match, status: { $nin: CLOSED_STATUSES } }
+  const scopedMatch = { ...ACTIVE_MATCH, ...match }
+  const openMatch = { ...scopedMatch, status: { $nin: CLOSED_STATUSES } }
 
   const [byStatusAgg, byPriorityAgg, total, openCount, totalProjects, urgent, blocked, completed7d, completed14d] =
     await Promise.all([
-      DevIssue.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
-      DevIssue.aggregate([{ $match: match }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
-      DevIssue.countDocuments(match),
+      DevIssue.aggregate([{ $match: scopedMatch }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      DevIssue.aggregate([{ $match: scopedMatch }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
+      DevIssue.countDocuments(scopedMatch),
       DevIssue.countDocuments(openMatch),
       DevProject.countDocuments({ status: { $ne: 'ARCHIVED' } }),
       DevIssue.countDocuments({ ...openMatch, priority: 'URGENT' }),
       DevIssue.countDocuments({ ...openMatch, labels: { $in: BLOCKED_LABEL_REGEXES } }),
-      DevIssue.countDocuments({ ...match, status: 'DONE', completedAt: { $gte: since7 } }),
-      DevIssue.countDocuments({ ...match, status: 'DONE', completedAt: { $gte: since14 } }),
+      DevIssue.countDocuments({ ...scopedMatch, status: 'DONE', completedAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ ...scopedMatch, status: 'DONE', completedAt: { $gte: since14 } }),
     ])
 
   const byStatus: Record<string, number> = {}
@@ -157,7 +162,16 @@ export interface OverviewPayload {
 }
 
 function emptyByStatus(): Record<DevIssueStatus, number> {
-  return { BACKLOG: 0, TODO: 0, IN_PROGRESS: 0, IN_REVIEW: 0, DONE: 0, CANCELLED: 0 }
+  return {
+    BACKLOG: 0,
+    TODO: 0,
+    IN_PROGRESS: 0,
+    IN_REVIEW: 0,
+    BLOCKED: 0,
+    DONE: 0,
+    DUPLICATE: 0,
+    CANCELLED: 0,
+  }
 }
 
 export async function computeOverview(): Promise<OverviewPayload> {
@@ -181,6 +195,7 @@ export async function computeOverview(): Promise<OverviewPayload> {
     blocked: number
     lastUpdatedAt: Date | null
   } & Record<DevIssueStatus, number>>([
+    { $match: ACTIVE_MATCH },
     {
       $group: {
         _id: '$project',
@@ -246,7 +261,8 @@ export async function computeOverview(): Promise<OverviewPayload> {
     const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
     const done = byStatus.DONE
     const cancelled = byStatus.CANCELLED
-    const open = total - done - cancelled
+    const duplicate = byStatus.DUPLICATE
+    const open = total - done - duplicate - cancelled
     const urgent = agg?.urgent ?? 0
     const blocked = agg?.blocked ?? 0
     const progress = computeProgress(byStatus)
@@ -285,8 +301,8 @@ export async function computeOverview(): Promise<OverviewPayload> {
   const since14 = new Date(now - 14 * day)
   const since7 = new Date(now - 7 * day)
   const [completed7d, completed14d] = await Promise.all([
-    DevIssue.countDocuments({ status: 'DONE', completedAt: { $gte: since7 } }),
-    DevIssue.countDocuments({ status: 'DONE', completedAt: { $gte: since14 } }),
+      DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since14 } }),
   ])
 
   const kpis: OverviewKpis = {
@@ -467,7 +483,7 @@ export async function computeProjectCockpit(
     .lean()
   if (!projectDoc) return null
 
-  const match = { project: id }
+  const match = { ...ACTIVE_MATCH, project: id }
   const now = Date.now()
   const day = 24 * 60 * 60 * 1000
   const since7 = new Date(now - 7 * day)
@@ -564,12 +580,12 @@ export async function computeProjectCockpit(
       .sort({ dueDate: 1 })
       .limit(5)
       .lean(),
-    DevIssue.find({ project: id, status: 'DONE' })
+    DevIssue.find({ ...ACTIVE_MATCH, project: id, status: 'DONE' })
       .populate('assignee', 'name email avatarUrl')
       .sort({ completedAt: -1 })
       .limit(5)
       .lean(),
-    DevIssue.find({ project: id })
+    DevIssue.find(match)
       .populate('assignee', 'name email avatarUrl')
       .populate('reporter', 'name email')
       .sort({ updatedAt: -1 })
@@ -623,7 +639,8 @@ export async function computeProjectCockpit(
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
   const done = byStatus.DONE
   const cancelled = byStatus.CANCELLED
-  const open = total - done - cancelled
+  const duplicate = byStatus.DUPLICATE
+  const open = total - done - duplicate - cancelled
   const urgent = urgentRaw.length
   const blocked = blockersRaw.length
   const overdueCount = overdueRaw.length

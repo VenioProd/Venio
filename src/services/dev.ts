@@ -1,9 +1,17 @@
 import { apiFetch } from '../lib/api'
 
 export type DevProjectStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
-export type DevIssueStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CANCELLED'
+export type DevIssueStatus =
+  | 'BACKLOG'
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'BLOCKED'
+  | 'DONE'
+  | 'DUPLICATE'
+  | 'CANCELLED'
 export type DevIssuePriority = 'NO_PRIORITY' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-export type DevIssueType = 'FEATURE' | 'BUG' | 'CHORE' | 'TASK'
+export type DevIssueType = 'FEATURE' | 'BUG' | 'CHORE' | 'TASK' | 'REFACTOR' | 'SECURITY' | 'CI' | 'DEPLOY' | 'DOC'
 
 export interface UserRef {
   _id: string
@@ -48,6 +56,17 @@ export interface DevIssueGithubLink {
   mergedAt: string | null
 }
 
+export interface DevIssueExternalRef {
+  linearId: string | null
+  linearUrl: string | null
+  linearIdentifier: string | null
+}
+
+export interface DevIssueRelation {
+  type: 'blocks' | 'blocked_by' | 'relates_to' | 'duplicates'
+  issue: string
+}
+
 export interface DevIssue {
   _id: string
   project: { _id: string; key: string; name: string; color?: string } | string
@@ -61,9 +80,23 @@ export interface DevIssue {
   assignee: UserRef | null
   reporter: UserRef | null
   labels: string[]
+  estimate: number | null
+  rank: string | null
+  cycle: string | null
+  parent: string | null
+  relations: DevIssueRelation[]
+  source: { kind: 'manual' | 'agent' | 'linear' | 'github' | 'import'; name: string | null } | null
+  external: DevIssueExternalRef | null
+  agentAssignee: string | null
+  acceptanceCriteria: string[]
+  subtasks: string[]
+  blockedReason: string | null
+  blockedBy: string[]
+  duplicateOf: string | null
   dueDate: string | null
   startedAt: string | null
   completedAt: string | null
+  archivedAt: string | null
   github: DevIssueGithubLink | null
   createdAt: string
   updatedAt: string
@@ -75,6 +108,32 @@ export interface DevIssueComment {
   project: string
   author: UserRef
   body: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevIssueEvent {
+  _id: string
+  issue: string
+  project: string
+  actor: UserRef | null
+  type:
+    | 'created'
+    | 'status_changed'
+    | 'priority_changed'
+    | 'type_changed'
+    | 'assigned'
+    | 'metadata_changed'
+    | 'commented'
+    | 'github_linked'
+    | 'ci_changed'
+    | 'agent_started'
+    | 'agent_blocked'
+    | 'agent_done'
+    | 'deployed'
+    | 'archived'
+  summary: string
+  metadata: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -165,6 +224,7 @@ export interface DevRoadmapProject {
     cancelled: number
     inProgress: number
     inReview: number
+    blocked: number
     todo: number
     backlog: number
     overdue: number
@@ -188,6 +248,9 @@ export interface IssueFilters {
   assignee?: string | 'me' | 'unassigned' | 'all'
   q?: string
   label?: string
+  cycle?: string
+  agentAssignee?: string
+  includeArchived?: 'true'
 }
 
 function qs(params: Record<string, string | undefined>): string {
@@ -228,7 +291,7 @@ export function listDevIssues(filters: IssueFilters = {}): Promise<{ issues: Dev
   return apiFetch(`/api/admin/dev/issues${qs(filters as Record<string, string | undefined>)}`)
 }
 
-export function getDevIssue(id: string): Promise<{ issue: DevIssue; comments: DevIssueComment[] }> {
+export function getDevIssue(id: string): Promise<{ issue: DevIssue; comments: DevIssueComment[]; events: DevIssueEvent[] }> {
   return apiFetch(`/api/admin/dev/issues/${id}`)
 }
 
@@ -242,6 +305,16 @@ export function createDevIssue(data: {
   assignee?: string | null
   labels?: string[]
   dueDate?: string | null
+  estimate?: number | null
+  rank?: string | null
+  cycle?: string | null
+  external?: Partial<DevIssueExternalRef> | null
+  agentAssignee?: string | null
+  acceptanceCriteria?: string[]
+  subtasks?: string[]
+  blockedReason?: string | null
+  blockedBy?: string[]
+  duplicateOf?: string | null
 }): Promise<DevIssue> {
   return apiFetch('/api/admin/dev/issues', { method: 'POST', body: JSON.stringify(data) })
 }
@@ -618,7 +691,9 @@ export const STATUS_LABEL: Record<DevIssueStatus, string> = {
   TODO: 'À faire',
   IN_PROGRESS: 'En cours',
   IN_REVIEW: 'En revue',
+  BLOCKED: 'Bloqué',
   DONE: 'Terminé',
+  DUPLICATE: 'Doublon',
   CANCELLED: 'Annulé',
 }
 
@@ -627,11 +702,13 @@ export const STATUS_COLOR: Record<DevIssueStatus, string> = {
   TODO: '#cbd5e1',
   IN_PROGRESS: '#facc15',
   IN_REVIEW: '#a78bfa',
+  BLOCKED: '#ef4444',
   DONE: '#10b981',
+  DUPLICATE: '#64748b',
   CANCELLED: '#475569',
 }
 
-export const STATUS_ORDER: DevIssueStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED']
+export const STATUS_ORDER: DevIssueStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE', 'DUPLICATE', 'CANCELLED']
 
 export const PRIORITY_LABEL: Record<DevIssuePriority, string> = {
   NO_PRIORITY: 'Aucune',
@@ -656,6 +733,11 @@ export const TYPE_LABEL: Record<DevIssueType, string> = {
   BUG: 'Bug',
   CHORE: 'Chore',
   TASK: 'Task',
+  REFACTOR: 'Refactor',
+  SECURITY: 'Sécurité',
+  CI: 'CI',
+  DEPLOY: 'Déploiement',
+  DOC: 'Doc',
 }
 
 export const TYPE_COLOR: Record<DevIssueType, string> = {
@@ -663,6 +745,11 @@ export const TYPE_COLOR: Record<DevIssueType, string> = {
   BUG: '#ef4444',
   CHORE: '#a3a3a3',
   TASK: '#7c5cff',
+  REFACTOR: '#14b8a6',
+  SECURITY: '#f43f5e',
+  CI: '#38bdf8',
+  DEPLOY: '#22c55e',
+  DOC: '#f59e0b',
 }
 
 // Weighted progression — must match backend src/lib/dev/stats.ts STATUS_WEIGHT.
@@ -672,7 +759,9 @@ export const STATUS_WEIGHT: Record<DevIssueStatus, number> = {
   TODO: 10,
   IN_PROGRESS: 50,
   IN_REVIEW: 80,
+  BLOCKED: 20,
   DONE: 100,
+  DUPLICATE: 0,
   CANCELLED: 0,
 }
 
@@ -680,7 +769,7 @@ export function computeWeightedProgress(byStatus: Record<DevIssueStatus, number>
   let weighted = 0
   let nonCancelled = 0
   for (const status of STATUS_ORDER) {
-    if (status === 'CANCELLED') continue
+    if (status === 'CANCELLED' || status === 'DUPLICATE') continue
     const count = byStatus[status] || 0
     weighted += STATUS_WEIGHT[status] * count
     nonCancelled += count

@@ -12,6 +12,7 @@ import {
 import User from '../models/User.js'
 import DevProject from '../models/DevProject.js'
 import DevIssue from '../models/DevIssue.js'
+import DevIssueEvent from '../models/DevIssueEvent.js'
 
 let app: Express
 let systemUserId: mongoose.Types.ObjectId
@@ -146,6 +147,43 @@ describe('PATCH /api/v1/agent/dev/issues/:id — labels + dueDate', () => {
       .expect(200)
     expect(res.body.dueDate).toBeNull()
   })
+
+  it('accepts issue v2 metadata and records timeline events', async () => {
+    const issue = await DevIssue.create({
+      project: projectId,
+      identifier: 'VEN-1',
+      number: 1,
+      title: 'A',
+      reporter: systemUserId,
+    })
+    const { plainSecret } = await createAgentTokenInDb(['write:dev'])
+    const res = await request(app)
+      .patch(`/api/v1/agent/dev/issues/${issue._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({
+        status: 'BLOCKED',
+        type: 'SECURITY',
+        estimate: 3,
+        cycle: 'linear-level',
+        agentAssignee: 'Kuro',
+        blockedReason: 'Needs rollout window',
+        external: {
+          linearId: 'lin_123',
+          linearIdentifier: 'VEN-999',
+          linearUrl: 'https://linear.app/example/issue/VEN-999',
+        },
+      })
+      .expect(200)
+    expect(res.body.status).toBe('BLOCKED')
+    expect(res.body.type).toBe('SECURITY')
+    expect(res.body.estimate).toBe(3)
+    expect(res.body.external.linearIdentifier).toBe('VEN-999')
+
+    const events = await DevIssueEvent.find({ issue: issue._id }).sort({ createdAt: 1 }).lean()
+    expect(events.map((e) => e.type)).toEqual(
+      expect.arrayContaining(['status_changed', 'type_changed', 'metadata_changed'])
+    )
+  })
 })
 
 describe('POST /api/v1/agent/dev/issues — labels + dueDate', () => {
@@ -164,5 +202,29 @@ describe('POST /api/v1/agent/dev/issues — labels + dueDate', () => {
     expect(res.body.labels).toEqual(['backend', 'p1'])
     expect(new Date(res.body.dueDate).toISOString().startsWith('2026-09-01')).toBe(true)
     expect(res.body.identifier).toMatch(/^VEN-\d+$/)
+  })
+
+  it('persists issue v2 metadata on create and records a created event', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:dev'])
+    const res = await request(app)
+      .post('/api/v1/agent/dev/issues')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({
+        project: String(projectId),
+        title: 'Linear import candidate',
+        type: 'DOC',
+        status: 'TODO',
+        rank: '0001',
+        agentAssignee: 'Hashirama',
+        external: { linearId: 'lin_456', linearIdentifier: 'LIN-456' },
+      })
+      .expect(201)
+    expect(res.body.type).toBe('DOC')
+    expect(res.body.rank).toBe('0001')
+    expect(res.body.agentAssignee).toBe('Hashirama')
+    expect(res.body.external.linearId).toBe('lin_456')
+
+    const events = await DevIssueEvent.find({ issue: res.body._id }).lean()
+    expect(events.some((e) => e.type === 'created')).toBe(true)
   })
 })

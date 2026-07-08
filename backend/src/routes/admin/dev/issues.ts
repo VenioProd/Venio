@@ -9,13 +9,21 @@ import DevIssue, {
   DEV_ISSUE_TYPES,
 } from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
+import DevIssueEvent from '../../../models/DevIssueEvent.js'
 import { createNotification } from '../../../lib/notifications.js'
 import { createIssueWithRetry } from '../../../lib/dev/createIssue.js'
 import { parseGithubPatch, mergeGithubLink } from '../../../lib/dev/github.js'
+import {
+  applyIssueV2Patch,
+  applyStatusTimestamps,
+  CLOSED_ISSUE_STATUSES,
+  recordIssueEvent,
+} from '../../../lib/dev/issueMutations.js'
 
 const router = express.Router()
 
 const isObjectId = (v: unknown): v is string => typeof v === 'string' && mongoose.isValidObjectId(v)
+const ACTIVE_ISSUE_FILTER = { archivedAt: null }
 
 function parseLabels(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
@@ -33,8 +41,9 @@ function parseLabels(raw: unknown): string[] {
 // GET /api/admin/dev/issues — filtre principal type Linear
 router.get('/issues', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filter: Record<string, unknown> = {}
-    const { project, status, priority, type, assignee, q, label } = req.query
+    const filter: Record<string, unknown> = { ...ACTIVE_ISSUE_FILTER }
+    const { project, status, priority, type, assignee, q, label, cycle, agentAssignee, includeArchived } = req.query
+    if (includeArchived === 'true') delete filter.archivedAt
 
     if (typeof project === 'string') {
       if (isObjectId(project)) filter.project = project
@@ -42,7 +51,7 @@ router.get('/issues', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Reque
     }
 
     if (typeof status === 'string') {
-      if (status === 'open') filter.status = { $nin: ['DONE', 'CANCELLED'] }
+      if (status === 'open') filter.status = { $nin: CLOSED_ISSUE_STATUSES }
       else if ((DEV_ISSUE_STATUSES as readonly string[]).includes(status)) filter.status = status
     }
     if (typeof priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(priority)) {
@@ -59,11 +68,15 @@ router.get('/issues', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Reque
     if (typeof label === 'string' && label.trim()) {
       filter.labels = label.trim().toLowerCase()
     }
+    if (typeof cycle === 'string' && cycle.trim()) filter.cycle = cycle.trim()
+    if (typeof agentAssignee === 'string' && agentAssignee.trim()) filter.agentAssignee = agentAssignee.trim()
     if (typeof q === 'string' && q.trim()) {
       const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       filter.$or = [
         { title: { $regex: safe, $options: 'i' } },
         { identifier: { $regex: safe, $options: 'i' } },
+        { description: { $regex: safe, $options: 'i' } },
+        { 'external.linearIdentifier': { $regex: safe, $options: 'i' } },
       ]
     }
 
@@ -71,7 +84,7 @@ router.get('/issues', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Reque
       .populate('assignee', 'name email avatarUrl')
       .populate('reporter', 'name email avatarUrl')
       .populate('project', 'key name color')
-      .sort({ updatedAt: -1 })
+      .sort({ rank: 1, updatedAt: -1 })
       .limit(500)
       .lean()
     res.json({ issues })
@@ -120,6 +133,8 @@ router.post('/issues', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: Re
       labels,
       dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,
     })
+    const changed = applyIssueV2Patch(issue, req.body)
+    if (changed.length) await issue.save()
     const identifier = issue.identifier
 
     const populated = await DevIssue.findById(issue._id)
@@ -138,6 +153,15 @@ router.post('/issues', requirePermission(PERMISSIONS.MANAGE_DEV), async (req: Re
         metadata: { issueId: String(issue._id), identifier },
       }).catch(() => {})
     }
+
+    await recordIssueEvent({
+      issue: issue._id,
+      project: issue.project,
+      actor: req.user!.id,
+      type: 'created',
+      summary: `Issue ${identifier} créée`,
+      metadata: { status: issue.status, priority: issue.priority, type: issue.type },
+    })
 
     res.status(201).json(populated)
   } catch (err) {
@@ -159,7 +183,11 @@ router.get('/issues/:id', requirePermission(PERMISSIONS.VIEW_DEV), async (req: R
       .populate('author', 'name email avatarUrl')
       .sort({ createdAt: 1 })
       .lean()
-    res.json({ issue, comments })
+    const events = await DevIssueEvent.find({ issue: issue._id })
+      .populate('actor', 'name email avatarUrl')
+      .sort({ createdAt: 1 })
+      .lean()
+    res.json({ issue, comments, events })
   } catch (err) {
     next(err)
   }
@@ -173,7 +201,10 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
     if (!issue) return res.status(404).json({ error: 'Issue introuvable' })
 
     const oldStatus = issue.status
+    const oldPriority = issue.priority
+    const oldType = issue.type
     const oldAssignee = issue.assignee ? String(issue.assignee) : null
+    const oldGithub = issue.github ? JSON.stringify(issue.github) : null
 
     if (typeof req.body?.title === 'string' && req.body.title.trim()) {
       issue.title = req.body.title.trim().slice(0, 200)
@@ -186,12 +217,7 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
     }
     if (typeof req.body?.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(req.body.status)) {
       const next = req.body.status as typeof issue.status
-      if (next !== issue.status) {
-        if ((next === 'IN_PROGRESS' || next === 'IN_REVIEW') && !issue.startedAt) issue.startedAt = new Date()
-        if (next === 'DONE' && !issue.completedAt) issue.completedAt = new Date()
-        if (next !== 'DONE') issue.completedAt = null
-      }
-      issue.status = next
+      applyStatusTimestamps(issue, next)
     }
     if (typeof req.body?.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)) {
       issue.priority = req.body.priority as typeof issue.priority
@@ -207,6 +233,7 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
     const githubPatch = parseGithubPatch(req.body?.github)
     if (githubPatch === null) issue.github = null
     else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
+    const metadataChanged = applyIssueV2Patch(issue, req.body)
 
     await issue.save()
     const populated = await DevIssue.findById(issue._id)
@@ -237,6 +264,57 @@ router.patch('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (re
       }).catch(() => {})
     }
 
+    const eventBase = { issue: issue._id, project: issue.project, actor: req.user!.id }
+    if (oldStatus !== issue.status) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'status_changed',
+        summary: `${issue.identifier} ${oldStatus} → ${issue.status}`,
+        metadata: { from: oldStatus, to: issue.status },
+      })
+    }
+    if (oldPriority !== issue.priority) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'priority_changed',
+        summary: `${issue.identifier} priorité ${oldPriority} → ${issue.priority}`,
+        metadata: { from: oldPriority, to: issue.priority },
+      })
+    }
+    if (oldType !== issue.type) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'type_changed',
+        summary: `${issue.identifier} type ${oldType} → ${issue.type}`,
+        metadata: { from: oldType, to: issue.type },
+      })
+    }
+    if (oldAssignee !== newAssignee) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'assigned',
+        summary: `${issue.identifier} assignation modifiée`,
+        metadata: { from: oldAssignee, to: newAssignee },
+      })
+    }
+    const newGithub = issue.github ? JSON.stringify(issue.github) : null
+    if (oldGithub !== newGithub) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'github_linked',
+        summary: `${issue.identifier} lien GitHub mis à jour`,
+        metadata: { github: issue.github },
+      })
+    }
+    if (metadataChanged.length) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'metadata_changed',
+        summary: `${issue.identifier} métadonnées mises à jour`,
+        metadata: { fields: metadataChanged },
+      })
+    }
+
     res.json(populated)
   } catch (err) {
     next(err)
@@ -249,8 +327,16 @@ router.delete('/issues/:id', requirePermission(PERMISSIONS.MANAGE_DEV), async (r
     if (!isObjectId(req.params.id)) return res.status(400).json({ error: 'ID invalide' })
     const issue = await DevIssue.findById(req.params.id)
     if (!issue) return res.status(404).json({ error: 'Issue introuvable' })
-    await DevIssueComment.deleteMany({ issue: issue._id })
-    await issue.deleteOne()
+    issue.archivedAt = new Date()
+    await issue.save()
+    await recordIssueEvent({
+      issue: issue._id,
+      project: issue.project,
+      actor: req.user!.id,
+      type: 'archived',
+      summary: `${issue.identifier} archivée`,
+      metadata: {},
+    })
     res.json({ ok: true })
   } catch (err) {
     next(err)
@@ -292,6 +378,14 @@ router.post('/issues/:id/comments', requirePermission(PERMISSIONS.MANAGE_DEV), a
     await DevIssue.updateOne({ _id: issue._id }, { $set: { updatedAt: new Date() } })
 
     const populated = await DevIssueComment.findById(comment._id).populate('author', 'name email avatarUrl')
+    await recordIssueEvent({
+      issue: issue._id,
+      project: issue.project,
+      actor: req.user!.id,
+      type: 'commented',
+      summary: 'Commentaire ajouté',
+      metadata: { commentId: String(comment._id) },
+    })
     res.status(201).json(populated)
   } catch (err) {
     next(err)

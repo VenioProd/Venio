@@ -140,6 +140,79 @@ export default function IssueDetailPanel({
             />
           </span>
 
+          <span className="dev-detail-meta-label">Estimation</span>
+          <span className="dev-detail-meta-value">
+            <input
+              type="number"
+              min={0}
+              max={999}
+              disabled={!canManage}
+              value={issue.estimate ?? ''}
+              onChange={(e) =>
+                onPatch(issue._id, {
+                  estimate: e.target.value === '' ? null : Number(e.target.value),
+                })
+              }
+            />
+          </span>
+
+          <span className="dev-detail-meta-label">Cycle</span>
+          <span className="dev-detail-meta-value">
+            <input
+              disabled={!canManage}
+              value={issue.cycle ?? ''}
+              placeholder="Sprint / vague"
+              onChange={(e) => setIssue((p) => (p ? { ...p, cycle: e.target.value || null } : p))}
+              onBlur={() => canManage && onPatch(issue._id, { cycle: issue.cycle || null })}
+            />
+          </span>
+
+          <span className="dev-detail-meta-label">Agent</span>
+          <span className="dev-detail-meta-value">
+            <input
+              disabled={!canManage}
+              value={issue.agentAssignee ?? ''}
+              placeholder="Kuro, Hashirama..."
+              onChange={(e) => setIssue((p) => (p ? { ...p, agentAssignee: e.target.value || null } : p))}
+              onBlur={() => canManage && onPatch(issue._id, { agentAssignee: issue.agentAssignee || null })}
+            />
+          </span>
+
+          <span className="dev-detail-meta-label">Blocage</span>
+          <span className="dev-detail-meta-value">
+            <input
+              disabled={!canManage}
+              value={issue.blockedReason ?? ''}
+              placeholder="Raison du blocage"
+              onChange={(e) => setIssue((p) => (p ? { ...p, blockedReason: e.target.value || null } : p))}
+              onBlur={() => canManage && onPatch(issue._id, { blockedReason: issue.blockedReason || null })}
+            />
+          </span>
+
+          <span className="dev-detail-meta-label">Linear</span>
+          <span className="dev-detail-meta-value">
+            <input
+              disabled={!canManage}
+              value={issue.external?.linearIdentifier ?? ''}
+              placeholder="VEN-123 / ID Linear"
+              onChange={(e) =>
+                setIssue((p) =>
+                  p
+                    ? {
+                        ...p,
+                        external: {
+                          linearId: p.external?.linearId ?? null,
+                          linearUrl: p.external?.linearUrl ?? null,
+                          linearIdentifier: e.target.value || null,
+                        },
+                      }
+                    : p,
+                )
+              }
+              onBlur={() => canManage && onPatch(issue._id, { external: issue.external })}
+            />
+          </span>
+
           <span className="dev-detail-meta-label">Créée</span>
           <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: '#94a3b8' }}>
             {formatRelative(issue.createdAt)}

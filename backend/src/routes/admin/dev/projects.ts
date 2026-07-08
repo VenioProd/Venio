@@ -11,6 +11,7 @@ import DevIssue, {
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import { notifyUsers } from '../../../lib/notifyHelpers.js'
 import { invalidateCodeMetricsCache } from '../../../lib/dev/codeMetrics.js'
+import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
 
 const router = express.Router()
 
@@ -101,7 +102,7 @@ router.get('/projects', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Req
     const ids = projects.map((p) => p._id)
     const counts = ids.length
       ? await DevIssue.aggregate([
-          { $match: { project: { $in: ids }, status: { $nin: ['DONE', 'CANCELLED'] } } },
+          { $match: { project: { $in: ids }, archivedAt: null, status: { $nin: CLOSED_ISSUE_STATUSES } } },
           { $group: { _id: '$project', count: { $sum: 1 } } },
         ])
       : []
@@ -214,23 +215,23 @@ router.get('/projects/:id/detail', requirePermission(PERMISSIONS.VIEW_DEV), asyn
 
     const [byStatusAgg, byPriorityAgg, byTypeAgg, total, completed14, completed7, created7, overdue, recentIssues] = await Promise.all([
       DevIssue.aggregate([
-        { $match: { project: projectId } },
+        { $match: { project: projectId, archivedAt: null } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
       DevIssue.aggregate([
-        { $match: { project: projectId } },
+        { $match: { project: projectId, archivedAt: null } },
         { $group: { _id: '$priority', count: { $sum: 1 } } },
       ]),
       DevIssue.aggregate([
-        { $match: { project: projectId } },
+        { $match: { project: projectId, archivedAt: null } },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]),
-      DevIssue.countDocuments({ project: projectId }),
-      DevIssue.countDocuments({ project: projectId, status: 'DONE', completedAt: { $gte: since14 } }),
-      DevIssue.countDocuments({ project: projectId, status: 'DONE', completedAt: { $gte: since7 } }),
-      DevIssue.countDocuments({ project: projectId, createdAt: { $gte: since7 } }),
-      DevIssue.countDocuments({ project: projectId, dueDate: { $ne: null, $lt: now }, status: { $nin: ['DONE', 'CANCELLED'] } }),
-      DevIssue.find({ project: projectId })
+      DevIssue.countDocuments({ project: projectId, archivedAt: null }),
+      DevIssue.countDocuments({ project: projectId, archivedAt: null, status: 'DONE', completedAt: { $gte: since14 } }),
+      DevIssue.countDocuments({ project: projectId, archivedAt: null, status: 'DONE', completedAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ project: projectId, archivedAt: null, createdAt: { $gte: since7 } }),
+      DevIssue.countDocuments({ project: projectId, archivedAt: null, dueDate: { $ne: null, $lt: now }, status: { $nin: CLOSED_ISSUE_STATUSES } }),
+      DevIssue.find({ project: projectId, archivedAt: null })
         .populate('assignee', 'name email avatarUrl')
         .populate('reporter', 'name email avatarUrl')
         .sort({ updatedAt: -1 })
@@ -252,7 +253,8 @@ router.get('/projects/:id/detail', requirePermission(PERMISSIONS.VIEW_DEV), asyn
 
     const done = byStatus.DONE || 0
     const cancelled = byStatus.CANCELLED || 0
-    const open = total - done - cancelled
+    const duplicate = byStatus.DUPLICATE || 0
+    const open = total - done - duplicate - cancelled
     const progress = total > 0 ? Math.round((done / total) * 100) : 0
 
     res.json({

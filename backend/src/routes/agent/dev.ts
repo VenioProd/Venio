@@ -15,6 +15,12 @@ import User from '../../models/User.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
 import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
+import {
+  applyIssueV2Patch,
+  applyStatusTimestamps,
+  CLOSED_ISSUE_STATUSES,
+  recordIssueEvent,
+} from '../../lib/dev/issueMutations.js'
 
 /**
  * Routes agent pour le suivi des développements (DevProject + DevIssue +
@@ -27,6 +33,7 @@ import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
 const router = express.Router()
 
 const isObjectId = (v: unknown): v is string => typeof v === 'string' && mongoose.isValidObjectId(v)
+const ACTIVE_ISSUE_FILTER = { archivedAt: null }
 
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)
@@ -185,12 +192,13 @@ router.get(
 router.get('/dev/issues', requireScope('read:dev'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pag = parsePagination(req)
-    const filter: Record<string, unknown> = {}
+    const filter: Record<string, unknown> = { ...ACTIVE_ISSUE_FILTER }
+    if (req.query.includeArchived === 'true') delete filter.archivedAt
     if (typeof req.query.project === 'string' && isObjectId(req.query.project)) {
       filter.project = req.query.project
     }
     if (typeof req.query.status === 'string') {
-      if (req.query.status === 'open') filter.status = { $nin: ['DONE', 'CANCELLED'] }
+      if (req.query.status === 'open') filter.status = { $nin: CLOSED_ISSUE_STATUSES }
       else if ((DEV_ISSUE_STATUSES as readonly string[]).includes(req.query.status)) filter.status = req.query.status
     }
     if (typeof req.query.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.query.priority)) {
@@ -215,15 +223,21 @@ router.get('/dev/issues', requireScope('read:dev'), async (req: Request, res: Re
     if (typeof req.query.label === 'string' && req.query.label.trim()) {
       filter.labels = req.query.label.trim().toLowerCase()
     }
+    if (typeof req.query.cycle === 'string' && req.query.cycle.trim()) filter.cycle = req.query.cycle.trim()
+    if (typeof req.query.agentAssignee === 'string' && req.query.agentAssignee.trim()) {
+      filter.agentAssignee = req.query.agentAssignee.trim()
+    }
     if (typeof req.query.q === 'string' && req.query.q.trim()) {
       const safe = req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       filter.$or = [
         { title: { $regex: safe, $options: 'i' } },
         { identifier: { $regex: safe, $options: 'i' } },
+        { description: { $regex: safe, $options: 'i' } },
+        { 'external.linearIdentifier': { $regex: safe, $options: 'i' } },
       ]
     }
     const [items, total] = await Promise.all([
-      DevIssue.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
+      DevIssue.find(filter).sort({ rank: 1, updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
       DevIssue.countDocuments(filter),
     ])
     res.json(paginatedResponse(items, pag, total))
@@ -279,6 +293,17 @@ router.post(
         labels: parseLabels(req.body?.labels),
         dueDate,
       })
+      const changed = applyIssueV2Patch(issue, req.body)
+      if (changed.length) await issue.save()
+
+      await recordIssueEvent({
+        issue: issue._id,
+        project: issue.project,
+        actor: systemId,
+        type: 'created',
+        summary: `Issue ${issue.identifier} créée par agent`,
+        metadata: { status: issue.status, priority: issue.priority, type: issue.type },
+      })
 
       res.locals.audit = {
         entityType: 'DevIssue',
@@ -304,6 +329,11 @@ router.patch(
       const issue = await DevIssue.findById(req.params.id)
       if (!issue) return respondError(res, 404, 'NOT_FOUND', 'Issue introuvable')
       const before = issue.toObject()
+      const oldStatus = issue.status
+      const oldPriority = issue.priority
+      const oldType = issue.type
+      const oldAssignee = issue.assignee ? String(issue.assignee) : null
+      const oldGithub = issue.github ? JSON.stringify(issue.github) : null
 
       if (typeof req.body?.title === 'string' && req.body.title.trim()) issue.title = req.body.title.trim().slice(0, 200)
       if (typeof req.body?.description === 'string') issue.description = req.body.description.slice(0, 20000)
@@ -312,12 +342,7 @@ router.patch(
       }
       if (typeof req.body?.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(req.body.status)) {
         const next = req.body.status as typeof issue.status
-        if (next !== issue.status) {
-          if ((next === 'IN_PROGRESS' || next === 'IN_REVIEW') && !issue.startedAt) issue.startedAt = new Date()
-          if (next === 'DONE' && !issue.completedAt) issue.completedAt = new Date()
-          if (next !== 'DONE') issue.completedAt = null
-        }
-        issue.status = next
+        applyStatusTimestamps(issue, next)
       }
       if (typeof req.body?.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)) {
         issue.priority = req.body.priority as typeof issue.priority
@@ -333,8 +358,61 @@ router.patch(
       const githubPatch = parseGithubPatch(req.body?.github)
       if (githubPatch === null) issue.github = null
       else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
+      const metadataChanged = applyIssueV2Patch(issue, req.body)
 
       await issue.save()
+      const systemId = await resolveSystemUserId()
+      const eventBase = { issue: issue._id, project: issue.project, actor: systemId }
+      if (oldStatus !== issue.status) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'status_changed',
+          summary: `${issue.identifier} ${oldStatus} → ${issue.status}`,
+          metadata: { from: oldStatus, to: issue.status },
+        })
+      }
+      if (oldPriority !== issue.priority) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'priority_changed',
+          summary: `${issue.identifier} priorité ${oldPriority} → ${issue.priority}`,
+          metadata: { from: oldPriority, to: issue.priority },
+        })
+      }
+      if (oldType !== issue.type) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'type_changed',
+          summary: `${issue.identifier} type ${oldType} → ${issue.type}`,
+          metadata: { from: oldType, to: issue.type },
+        })
+      }
+      const newAssignee = issue.assignee ? String(issue.assignee) : null
+      if (oldAssignee !== newAssignee) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'assigned',
+          summary: `${issue.identifier} assignation modifiée`,
+          metadata: { from: oldAssignee, to: newAssignee },
+        })
+      }
+      const newGithub = issue.github ? JSON.stringify(issue.github) : null
+      if (oldGithub !== newGithub) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'github_linked',
+          summary: `${issue.identifier} lien GitHub mis à jour`,
+          metadata: { github: issue.github },
+        })
+      }
+      if (metadataChanged.length) {
+        await recordIssueEvent({
+          ...eventBase,
+          type: 'metadata_changed',
+          summary: `${issue.identifier} métadonnées mises à jour`,
+          metadata: { fields: metadataChanged },
+        })
+      }
       res.locals.audit = {
         entityType: 'DevIssue',
         entityId: String(issue._id),
@@ -369,6 +447,14 @@ router.post(
         body: String(req.body.body).trim().slice(0, 10000),
       })
       await DevIssue.updateOne({ _id: issue._id }, { $set: { updatedAt: new Date() } })
+      await recordIssueEvent({
+        issue: issue._id,
+        project: issue.project,
+        actor: systemId,
+        type: 'commented',
+        summary: 'Commentaire ajouté par agent',
+        metadata: { commentId: String(comment._id) },
+      })
 
       res.locals.audit = {
         entityType: 'DevIssueComment',

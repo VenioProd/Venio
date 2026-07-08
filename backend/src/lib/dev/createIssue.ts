@@ -6,6 +6,7 @@ import DevIssue, {
   type IDevIssue,
 } from '../../models/DevIssue.js'
 import DevProject from '../../models/DevProject.js'
+import { applyStatusTimestamps } from './issueMutations.js'
 
 export interface CreateIssueInput {
   project: mongoose.Types.ObjectId
@@ -19,6 +20,17 @@ export interface CreateIssueInput {
   assignee?: mongoose.Types.ObjectId | string | null
   labels?: string[]
   dueDate?: Date | null
+  estimate?: number | null
+  rank?: string | null
+  cycle?: string | null
+  source?: IDevIssue['source']
+  external?: IDevIssue['external']
+  agentAssignee?: string | null
+  acceptanceCriteria?: string[]
+  subtasks?: string[]
+  blockedReason?: string | null
+  blockedBy?: mongoose.Types.ObjectId[]
+  duplicateOf?: mongoose.Types.ObjectId | null
 }
 
 const DUPLICATE_KEY_ERROR_CODE = 11000
@@ -102,17 +114,25 @@ export async function createIssueWithRetry(input: CreateIssueInput): Promise<IDe
     assignee = null,
     labels = [],
     dueDate = null,
+    estimate = null,
+    rank = null,
+    cycle = null,
+    source = null,
+    external = null,
+    agentAssignee = null,
+    acceptanceCriteria = [],
+    subtasks = [],
+    blockedReason = null,
+    blockedBy = [],
+    duplicateOf = null,
   } = input
-
-  const startedAt = status === 'IN_PROGRESS' || status === 'IN_REVIEW' ? new Date() : null
-  const completedAt = status === 'DONE' ? new Date() : null
 
   let lastErr: unknown = null
   for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
     const number = await allocateNextNumber(project)
     const identifier = `${projectKey}-${number}`
     try {
-      const issue = await DevIssue.create({
+      const issue = new DevIssue({
         project,
         number,
         identifier,
@@ -125,9 +145,20 @@ export async function createIssueWithRetry(input: CreateIssueInput): Promise<IDe
         reporter,
         labels,
         dueDate: dueDate || null,
-        startedAt,
-        completedAt,
+        estimate,
+        rank,
+        cycle,
+        source,
+        external,
+        agentAssignee,
+        acceptanceCriteria,
+        subtasks,
+        blockedReason,
+        blockedBy,
+        duplicateOf,
       })
+      applyStatusTimestamps(issue, status)
+      await issue.save()
       return issue
     } catch (err) {
       if (isDuplicateNumberError(err)) {

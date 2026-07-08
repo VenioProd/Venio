@@ -10,7 +10,9 @@ const empty = (): Record<DevIssueStatus, number> => ({
   TODO: 0,
   IN_PROGRESS: 0,
   IN_REVIEW: 0,
+  BLOCKED: 0,
   DONE: 0,
+  DUPLICATE: 0,
   CANCELLED: 0,
 })
 
@@ -41,15 +43,16 @@ describe('computeWeightedProgress', () => {
   })
 
   it('weights mixed statuses correctly', () => {
-    // 2 BACKLOG (0), 2 TODO (10), 2 IN_PROGRESS (50), 2 IN_REVIEW (80), 2 DONE (100)
-    // = (0 + 20 + 100 + 160 + 200) / 10 = 48
+    // 2 BACKLOG (0), 2 TODO (10), 2 IN_PROGRESS (50), 2 IN_REVIEW (80), 2 BLOCKED (20), 2 DONE (100)
+    // = (0 + 20 + 100 + 160 + 40 + 200) / 12 = 43.33
     const m = empty()
     m.BACKLOG = 2
     m.TODO = 2
     m.IN_PROGRESS = 2
     m.IN_REVIEW = 2
+    m.BLOCKED = 2
     m.DONE = 2
-    expect(computeWeightedProgress(m)).toBe(48)
+    expect(computeWeightedProgress(m)).toBe(43)
   })
 })
 

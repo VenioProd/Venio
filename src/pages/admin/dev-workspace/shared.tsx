@@ -4,6 +4,7 @@ import {
   CircleDot,
   CircleCheck,
   CircleX,
+  Copy,
   Loader,
   AlertOctagon,
   Signal,
@@ -11,6 +12,10 @@ import {
   Bug,
   Wrench,
   ListChecks,
+  ShieldAlert,
+  GitBranch,
+  Rocket,
+  FileText,
 } from 'lucide-react'
 import type {
   DevIssueStatus,
@@ -27,7 +32,9 @@ export const STATUS_ICON: Record<DevIssueStatus, StatusIcon> = {
   TODO: Circle,
   IN_PROGRESS: Loader,
   IN_REVIEW: CircleDot,
+  BLOCKED: AlertOctagon,
   DONE: CircleCheck,
+  DUPLICATE: Copy,
   CANCELLED: CircleX,
 }
 
@@ -36,6 +43,11 @@ export const TYPE_ICON: Record<DevIssueType, StatusIcon> = {
   BUG: Bug,
   CHORE: Wrench,
   TASK: ListChecks,
+  REFACTOR: Wrench,
+  SECURITY: ShieldAlert,
+  CI: GitBranch,
+  DEPLOY: Rocket,
+  DOC: FileText,
 }
 
 export function PriorityIcon({

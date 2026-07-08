@@ -4,6 +4,7 @@ import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import DevProject from '../../../models/DevProject.js'
 import DevIssue from '../../../models/DevIssue.js'
+import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
 
 const router = express.Router()
 
@@ -50,15 +51,16 @@ router.get(
         recentRaw,
       ] = await Promise.all([
         DevIssue.aggregate([
-          { $match: { project: { $in: projectIds } } },
+          { $match: { project: { $in: projectIds }, archivedAt: null } },
           { $group: { _id: { project: '$project', status: '$status' }, count: { $sum: 1 } } },
         ]),
         DevIssue.aggregate([
           {
             $match: {
               project: { $in: projectIds },
+              archivedAt: null,
               dueDate: { $ne: null, $lt: now },
-              status: { $nin: ['DONE', 'CANCELLED'] },
+              status: { $nin: CLOSED_ISSUE_STATUSES },
             },
           },
           { $group: { _id: '$project', count: { $sum: 1 } } },
@@ -67,6 +69,7 @@ router.get(
         // (impossible a faire en sort Mongo car priority est un string).
         DevIssue.find({
           project: { $in: projectIds },
+          archivedAt: null,
           status: { $in: ['IN_PROGRESS', 'IN_REVIEW'] },
         })
           .populate('assignee', 'name email avatarUrl')
@@ -75,6 +78,7 @@ router.get(
           .lean(),
         DevIssue.find({
           project: { $in: projectIds },
+          archivedAt: null,
           status: { $in: ['TODO', 'BACKLOG'] },
         })
           .populate('assignee', 'name email avatarUrl')
@@ -83,6 +87,7 @@ router.get(
           .lean(),
         DevIssue.find({
           project: { $in: projectIds },
+          archivedAt: null,
           status: 'DONE',
           completedAt: { $gte: since14 },
         })
@@ -129,12 +134,14 @@ router.get(
         const counts = countsMap.get(projectId) || {}
         const done = counts.DONE || 0
         const cancelled = counts.CANCELLED || 0
+        const duplicate = counts.DUPLICATE || 0
         const inProgress = counts.IN_PROGRESS || 0
         const inReview = counts.IN_REVIEW || 0
+        const blocked = counts.BLOCKED || 0
         const todo = counts.TODO || 0
         const backlog = counts.BACKLOG || 0
-        const total = done + cancelled + inProgress + inReview + todo + backlog
-        const open = inProgress + inReview + todo + backlog
+        const total = done + duplicate + cancelled + inProgress + inReview + blocked + todo + backlog
+        const open = inProgress + inReview + blocked + todo + backlog
         const progress = total > 0 ? Math.round((done / total) * 100) : 0
 
         return {
@@ -155,6 +162,7 @@ router.get(
             cancelled,
             inProgress,
             inReview,
+            blocked,
             todo,
             backlog,
             overdue: overdueMap.get(projectId) || 0,

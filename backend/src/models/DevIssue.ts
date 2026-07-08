@@ -5,7 +5,9 @@ export const DEV_ISSUE_STATUSES = [
   'TODO',
   'IN_PROGRESS',
   'IN_REVIEW',
+  'BLOCKED',
   'DONE',
+  'DUPLICATE',
   'CANCELLED',
 ] as const
 export type DevIssueStatus = (typeof DEV_ISSUE_STATUSES)[number]
@@ -13,7 +15,7 @@ export type DevIssueStatus = (typeof DEV_ISSUE_STATUSES)[number]
 export const DEV_ISSUE_PRIORITIES = ['NO_PRIORITY', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const
 export type DevIssuePriority = (typeof DEV_ISSUE_PRIORITIES)[number]
 
-export const DEV_ISSUE_TYPES = ['FEATURE', 'BUG', 'CHORE', 'TASK'] as const
+export const DEV_ISSUE_TYPES = ['FEATURE', 'BUG', 'CHORE', 'TASK', 'REFACTOR', 'SECURITY', 'CI', 'DEPLOY', 'DOC'] as const
 export type DevIssueType = (typeof DEV_ISSUE_TYPES)[number]
 
 export const DEV_CI_STATUSES = ['PENDING', 'RUNNING', 'SUCCESS', 'FAILURE', 'UNKNOWN'] as const
@@ -29,6 +31,22 @@ export interface DevIssueGithubLink {
   mergedAt: Date | null
 }
 
+export interface DevIssueRelation {
+  type: 'blocks' | 'blocked_by' | 'relates_to' | 'duplicates'
+  issue: mongoose.Types.ObjectId
+}
+
+export interface DevIssueExternalRef {
+  linearId: string | null
+  linearUrl: string | null
+  linearIdentifier: string | null
+}
+
+export interface DevIssueSource {
+  kind: 'manual' | 'agent' | 'linear' | 'github' | 'import'
+  name: string | null
+}
+
 export interface IDevIssue extends Document {
   _id: mongoose.Types.ObjectId
   project: mongoose.Types.ObjectId
@@ -42,9 +60,23 @@ export interface IDevIssue extends Document {
   assignee: mongoose.Types.ObjectId | null
   reporter: mongoose.Types.ObjectId
   labels: string[]
+  estimate: number | null
+  rank: string | null
+  cycle: string | null
+  parent: mongoose.Types.ObjectId | null
+  relations: DevIssueRelation[]
+  source: DevIssueSource | null
+  external: DevIssueExternalRef | null
+  agentAssignee: string | null
+  acceptanceCriteria: string[]
+  subtasks: string[]
+  blockedReason: string | null
+  blockedBy: mongoose.Types.ObjectId[]
+  duplicateOf: mongoose.Types.ObjectId | null
   dueDate: Date | null
   startedAt: Date | null
   completedAt: Date | null
+  archivedAt: Date | null
   github: DevIssueGithubLink | null
   createdAt: Date
   updatedAt: Date
@@ -63,9 +95,53 @@ const devIssueSchema = new Schema<IDevIssue>(
     assignee: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     reporter: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     labels: { type: [String], default: [] },
+    estimate: { type: Number, default: null, min: 0, max: 999 },
+    rank: { type: String, default: null, maxlength: 80 },
+    cycle: { type: String, default: null, trim: true, maxlength: 120, index: true },
+    parent: { type: Schema.Types.ObjectId, ref: 'DevIssue', default: null, index: true },
+    relations: {
+      type: [
+        new Schema<DevIssueRelation>(
+          {
+            type: { type: String, enum: ['blocks', 'blocked_by', 'relates_to', 'duplicates'], required: true },
+            issue: { type: Schema.Types.ObjectId, ref: 'DevIssue', required: true },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+    source: {
+      type: new Schema<DevIssueSource>(
+        {
+          kind: { type: String, enum: ['manual', 'agent', 'linear', 'github', 'import'], default: 'manual' },
+          name: { type: String, default: null, maxlength: 120 },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
+    external: {
+      type: new Schema<DevIssueExternalRef>(
+        {
+          linearId: { type: String, default: null, maxlength: 120 },
+          linearUrl: { type: String, default: null, maxlength: 500 },
+          linearIdentifier: { type: String, default: null, maxlength: 80 },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
+    agentAssignee: { type: String, default: null, trim: true, maxlength: 80, index: true },
+    acceptanceCriteria: { type: [String], default: [] },
+    subtasks: { type: [String], default: [] },
+    blockedReason: { type: String, default: null, maxlength: 2000 },
+    blockedBy: { type: [{ type: Schema.Types.ObjectId, ref: 'DevIssue' }], default: [] },
+    duplicateOf: { type: Schema.Types.ObjectId, ref: 'DevIssue', default: null },
     dueDate: { type: Date, default: null },
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
+    archivedAt: { type: Date, default: null, index: true },
     github: {
       type: new Schema<DevIssueGithubLink>(
         {
@@ -87,6 +163,10 @@ const devIssueSchema = new Schema<IDevIssue>(
 
 devIssueSchema.index({ project: 1, number: 1 }, { unique: true })
 devIssueSchema.index({ project: 1, status: 1, updatedAt: -1 })
+devIssueSchema.index({ project: 1, rank: 1 })
+devIssueSchema.index({ cycle: 1, status: 1 })
+devIssueSchema.index({ labels: 1 })
+devIssueSchema.index({ 'external.linearId': 1 }, { sparse: true })
 devIssueSchema.index({ status: 1, priority: 1, updatedAt: -1 })
 
 export default mongoose.model<IDevIssue>('DevIssue', devIssueSchema)
