@@ -1,5 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  AlertTriangle,
+  BriefcaseBusiness,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock3,
+  FolderKanban,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Settings2,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
@@ -30,6 +45,24 @@ interface DashBrief {
   project?: { _id: string; name: string }
 }
 
+interface InternalProjectSummary {
+  _id: string
+  name: string
+  entity: string
+  status: string
+  poles: string[]
+}
+
+interface MissionSummary {
+  _id: string
+  title: string
+  description: string
+  status: string
+  dueDate: string | null
+  steps: { _id: string; title: string; done: boolean }[]
+  internalProject: { _id: string; name: string; entity: string }
+}
+
 interface DashboardData {
   myTasks: (Task & { project?: { _id: string; name: string } })[]
   myBriefs: DashBrief[]
@@ -37,36 +70,19 @@ interface DashboardData {
   tasksByStatus: Record<string, number>
   activeProjectCount: number
   totalRevenue: number
+  pipelineValue: number
+  pendingDecisionCount: number
+  staleProjectCount: number
   hotLeads: HotLead[]
   recentProjects: (Project & { client?: { _id: string; name: string } })[]
+  generatedAt: string
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#64748b',
-  NORMALE: 'var(--primary)',
-  HAUTE: '#f59e0b',
-  URGENTE: '#ef4444',
-}
-
-const STATUS_LABELS: Record<string, string> = {
+const TASK_STATUS_LABELS: Record<string, string> = {
   A_FAIRE: 'A faire',
   EN_COURS: 'En cours',
   EN_REVIEW: 'En review',
   TERMINE: 'Termine',
-}
-
-const BRIEF_STATUS_LABELS: Record<string, string> = {
-  A_FAIRE: 'A faire',
-  EN_COURS: 'En cours',
-  EN_REVIEW: 'En review',
-  VALIDE: 'Valide',
-  LIVRE: 'Livre',
-}
-
-const BRIEF_PRIORITY_COLORS: Record<string, string> = {
-  P1: '#ef4444',
-  P2: '#f59e0b',
-  P3: '#64748b',
 }
 
 const PROJECT_STATUS_LABELS: Record<string, string> = {
@@ -75,692 +91,478 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Termine',
 }
 
-const AdminDashboard = () => {
-  const { logout, user } = useAuth()
+const PRIORITY_COLORS: Record<string, string> = {
+  BASSE: '#64748b',
+  NORMALE: '#38bdf8',
+  HAUTE: '#f59e0b',
+  URGENTE: '#ef4444',
+}
+
+const BRIEF_PRIORITY_COLORS: Record<string, string> = {
+  P1: '#ef4444',
+  P2: '#f59e0b',
+  P3: '#64748b',
+}
+
+const DASHBOARD_PREFS_KEY = 'venio-admin-command-dashboard-prefs-v1'
+
+interface DashboardPrefs {
+  density: 'comfortable' | 'compact'
+  showContext: boolean
+  showShortcuts: boolean
+}
+
+function readDashboardPrefs(): DashboardPrefs {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DASHBOARD_PREFS_KEY) || '{}') as Partial<DashboardPrefs>
+    return {
+      density: stored.density === 'compact' ? 'compact' : 'comfortable',
+      showContext: stored.showContext !== false,
+      showShortcuts: stored.showShortcuts !== false,
+    }
+  } catch {
+    return { density: 'comfortable', showContext: true, showShortcuts: true }
+  }
+}
+
+function formatDate(d: string | null | undefined) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
+
+function formatMoney(value: number) {
+  return `${Math.round(value || 0).toLocaleString('fr-FR')} EUR`
+}
+
+function isPast(date: string | null | undefined) {
+  return Boolean(date && new Date(date) < new Date())
+}
+
+function Section({
+  title,
+  icon,
+  action,
+  children,
+}: {
+  title: string
+  icon: ReactNode
+  action?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="admin-command-section">
+      <div className="admin-command-section__header">
+        <h2>
+          {icon}
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function Signal({
+  label,
+  count,
+  to,
+  tone = 'neutral',
+}: {
+  label: string
+  count: number
+  to: string
+  tone?: 'danger' | 'warning' | 'neutral'
+}) {
+  return (
+    <Link to={to} className={`admin-attention-signal ${tone}`}>
+      <span>{label}</span>
+      <strong>{count}</strong>
+    </Link>
+  )
+}
+
+function Kpi({
+  label,
+  value,
+  to,
+  tone = 'blue',
+}: {
+  label: string
+  value: string | number
+  to?: string
+  tone?: 'blue' | 'green' | 'orange' | 'pink'
+}) {
+  const content = (
+    <>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </>
+  )
+  return to ? (
+    <Link to={to} className={`admin-exec-kpi ${tone}`}>
+      {content}
+    </Link>
+  ) : (
+    <div className={`admin-exec-kpi ${tone}`}>{content}</div>
+  )
+}
+
+function TaskLine({ task }: { task: Task & { project?: { _id: string; name: string } } }) {
+  const color = PRIORITY_COLORS[task.priority] || '#38bdf8'
+  return (
+    <Link to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`} className="admin-command-line">
+      <span className="admin-command-dot" style={{ background: color }} />
+      <span className="admin-command-line__main">
+        <strong>{task.title}</strong>
+        <small>{task.project?.name || 'Projet non renseigne'}</small>
+      </span>
+      <span className="admin-command-pill">{TASK_STATUS_LABELS[task.status] || task.status}</span>
+      {task.dueDate && <time className={isPast(task.dueDate) ? 'danger' : ''}>{formatDate(task.dueDate)}</time>}
+    </Link>
+  )
+}
+
+function BriefLine({ brief }: { brief: DashBrief }) {
+  const color = BRIEF_PRIORITY_COLORS[brief.briefPriority] || '#64748b'
+  return (
+    <Link to="/admin/gestion?view=briefs" className="admin-command-line">
+      <span className="admin-command-dot" style={{ background: color }} />
+      <span className="admin-command-line__main">
+        <strong>{brief.intitule}</strong>
+        <small>
+          {brief.project?.name || brief.entity}
+          {brief.entity !== 'VENIO' ? ` - ${brief.entity}` : ''}
+        </small>
+      </span>
+      <span className="admin-command-pill">{brief.briefPriority}</span>
+      <time className={isPast(brief.deadline) ? 'danger' : ''}>{formatDate(brief.deadline)}</time>
+    </Link>
+  )
+}
+
+function ProjectLine({ project }: { project: Project & { client?: { _id: string; name: string } } }) {
+  const color = PRIORITY_COLORS[project.priority || 'NORMALE'] || '#38bdf8'
+  return (
+    <Link to={`/admin/projets/${project._id}`} className="admin-command-line">
+      <span className="admin-command-dot" style={{ background: color }} />
+      <span className="admin-command-line__main">
+        <strong>{project.name}</strong>
+        <small>{project.client?.name || project.responsible || 'Venio'}</small>
+      </span>
+      <span className="admin-command-pill">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
+    </Link>
+  )
+}
+
+function InternalProjectLine({ project }: { project: InternalProjectSummary }) {
+  const tone = project.status === 'EN_COURS' ? '#22c55e' : project.status === 'EN_ATTENTE' ? '#f59e0b' : '#64748b'
+  return (
+    <Link to={`/admin/projets-internes/${project._id}`} className="admin-command-line">
+      <span className="admin-command-dot" style={{ background: tone }} />
+      <span className="admin-command-line__main">
+        <strong>{project.name}</strong>
+        <small>
+          {project.entity}
+          {project.poles.length > 0 ? ` - ${project.poles.join(', ')}` : ''}
+        </small>
+      </span>
+      <span className="admin-command-pill">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
+    </Link>
+  )
+}
+
+function MissionLine({ mission }: { mission: MissionSummary }) {
+  const done = mission.steps?.filter((step) => step.done).length || 0
+  const total = mission.steps?.length || 0
+  return (
+    <Link to="/admin/gestion?view=missions" className="admin-command-line">
+      <span className="admin-command-dot" style={{ background: mission.status === 'EN_COURS' ? '#38bdf8' : '#f59e0b' }} />
+      <span className="admin-command-line__main">
+        <strong>{mission.title}</strong>
+        <small>
+          {mission.internalProject?.name || 'Mission'}
+          {total > 0 ? ` - ${done}/${total} etapes` : ''}
+        </small>
+      </span>
+      {mission.dueDate && <time className={isPast(mission.dueDate) ? 'danger' : ''}>{formatDate(mission.dueDate)}</time>}
+    </Link>
+  )
+}
+
+export default function AdminDashboard() {
+  const { user } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
-  const [expandedTask, setExpandedTask] = useState<string | null>(null)
-  const [expandedOverdue, setExpandedOverdue] = useState<string | null>(null)
-  const [expandedProject, setExpandedProject] = useState<string | null>(null)
-  const [myInternalProjects, setMyInternalProjects] = useState<
-    { _id: string; name: string; entity: string; status: string; poles: string[] }[]
-  >([])
-  const [myMissions, setMyMissions] = useState<
-    {
-      _id: string
-      title: string
-      description: string
-      status: string
-      dueDate: string | null
-      steps: { _id: string; title: string; done: boolean }[]
-      internalProject: { _id: string; name: string; entity: string }
-    }[]
-  >([])
+  const [refresh, setRefresh] = useState(0)
+  const [myInternalProjects, setMyInternalProjects] = useState<InternalProjectSummary[]>([])
+  const [myMissions, setMyMissions] = useState<MissionSummary[]>([])
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [prefs, setPrefs] = useState<DashboardPrefs>(() => readDashboardPrefs())
 
-  const canManageAdmins = hasPermission(user, PERMISSIONS.MANAGE_ADMINS)
   const canManageClients = hasPermission(user, PERMISSIONS.MANAGE_CLIENTS)
   const canViewProjects = hasPermission(user, PERMISSIONS.VIEW_PROJECTS)
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
-  const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
   const canViewMessaging = hasPermission(user, PERMISSIONS.VIEW_MESSAGING)
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      try {
-        const result = await apiFetch<DashboardData>('/api/admin/dashboard')
-        setData(result)
-      } catch {
-        // Silent for dashboard
-      } finally {
-        setLoading(false)
-      }
+    let cancelled = false
+    setLoading(true)
+    apiFetch<DashboardData>('/api/admin/dashboard')
+      .then((result) => {
+        if (!cancelled) setData(result)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    load()
-    // Load internal projects assigned to current user (fire-and-forget, doesn't block dashboard)
+  }, [refresh])
+
+  useEffect(() => {
+    const userId = user?._id || ''
     apiFetch<{
-      projects: {
-        _id: string
-        name: string
-        entity: string
-        status: string
-        poles: string[]
-        members: { _id: string }[]
-      }[]
+      projects: (InternalProjectSummary & { members?: ({ _id: string } | string)[] })[]
     }>('/api/admin/internal-projects')
       .then((d) => {
-        const userId = user?._id || ''
         const mine = (d.projects || []).filter((p) =>
-          p.members?.some((m) => m._id === userId || (m as unknown as string) === userId),
+          p.members?.some((m) => (typeof m === 'string' ? m : m._id) === userId),
         )
         setMyInternalProjects(mine)
       })
       .catch(() => {})
-    apiFetch<{ missions: typeof myMissions }>('/api/admin/internal-projects/missions')
+    apiFetch<{ missions: MissionSummary[] }>('/api/admin/internal-projects/missions')
       .then((d) => setMyMissions(d.missions || []))
       .catch(() => {})
-  }, [isSuperAdmin, user])
+  }, [user?._id, refresh])
 
-  const formatDate = (d: string | null | undefined) => {
-    if (!d) return ''
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-  }
+  useEffect(() => {
+    try {
+      localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(prefs))
+    } catch {
+      /* ignore quota/private mode */
+    }
+  }, [prefs])
+
+  const attention = useMemo(() => {
+    if (!data) return null
+    const p1Briefs = data.myBriefs.filter((brief) => brief.briefPriority === 'P1').length
+    const total =
+      data.overdueTasks.length + p1Briefs + data.pendingDecisionCount + data.hotLeads.length + data.staleProjectCount
+    return { p1Briefs, total }
+  }, [data])
+
+  const nextMilestones = useMemo(() => {
+    const tasks = data?.myTasks.filter((task) => task.dueDate).slice(0, 3) || []
+    const missions = myMissions.filter((mission) => mission.dueDate && mission.status !== 'TERMINE').slice(0, 2)
+    return { tasks, missions }
+  }, [data?.myTasks, myMissions])
 
   return (
-    <div className="portal-container">
-      <div className="admin-page-header">
+    <div className={`portal-container admin-command-dashboard ${prefs.density === 'compact' ? 'compact' : ''}`}>
+      <div className="admin-command-header">
         <div>
-          <h1>Tableau de bord</h1>
-          <p className="admin-page-subtitle">Vue d'ensemble de votre activité Venio.</p>
+          <span className="admin-command-eyebrow">Bureau Venio</span>
+          <h1>Pilotage Venio</h1>
+          <p>
+            {user?.name || user?.email || 'Admin'} · donnees{' '}
+            {data?.generatedAt
+              ? new Date(data.generatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              : 'en cours'}
+          </p>
         </div>
-        <div className="admin-quick-actions">
+        <div className="admin-command-actions">
+          <button className="portal-button secondary" onClick={() => setRefresh((r) => r + 1)} disabled={loading}>
+            <RefreshCw size={14} />
+            Rafraichir
+          </button>
+          <button className="portal-button secondary" onClick={() => setCustomizeOpen(true)}>
+            <Settings2 size={14} />
+            Personnaliser
+          </button>
           {canEditProjects && (
-            <Link className="portal-button secondary" to="/admin/projets/nouveau">
-              ✚ Nouveau projet
-            </Link>
-          )}
-          {canManageClients && (
-            <Link className="portal-button" to="/admin/comptes-clients/nouveau">
-              ✚ Nouveau client
-            </Link>
-          )}
-          {canViewMessaging && (
-            <Link className="portal-button" to="/admin/messages">
-              Messages
+            <Link className="portal-button" to="/admin/projets/nouveau">
+              <Plus size={14} />
+              Projet
             </Link>
           )}
         </div>
       </div>
 
-      {loading ? (
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {loading && !data ? (
+        <div className="admin-command-loading">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonRow key={i} />
           ))}
         </div>
-      ) : (
-        data && (
-          <>
-            {/* KPI Cards */}
-            <div className="admin-stats-grid" style={{ marginTop: 24 }}>
-              {canViewProjects && (
-                <div className="admin-stat-card">
-                  <div className="admin-stat-label">Projets actifs</div>
-                  <div className="admin-stat-value">{data.activeProjectCount}</div>
-                </div>
-              )}
-              <div className="admin-stat-card">
-                <div className="admin-stat-label">Mes taches</div>
-                <div className="admin-stat-value">{data.myTasks.length}</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-label">Mes briefs</div>
-                <div className="admin-stat-value">{data.myBriefs.length}</div>
-              </div>
-              <div
-                className="admin-stat-card"
-                style={
-                  data.overdueTasks.length > 0
-                    ? {
-                        borderColor: '#ef4444',
-                        boxShadow: '0 0 20px rgba(239,68,68,0.2), inset 0 0 30px rgba(239,68,68,0.05)',
-                      }
-                    : {}
-                }
-              >
-                <div className="admin-stat-label" style={data.overdueTasks.length > 0 ? { color: '#fca5a5' } : {}}>
-                  Taches en retard
-                </div>
-                <div
-                  className="admin-stat-value"
-                  style={
-                    data.overdueTasks.length > 0 ? { color: '#ef4444', textShadow: '0 0 20px rgba(239,68,68,0.5)' } : {}
-                  }
-                >
-                  {data.overdueTasks.length}
-                </div>
-              </div>
-              {isSuperAdmin && (
-                <div className="admin-stat-card">
-                  <div className="admin-stat-label">CA facture</div>
-                  <div className="admin-stat-value">{data.totalRevenue.toLocaleString('fr-FR')} EUR</div>
-                </div>
-              )}
+      ) : data ? (
+        <>
+          <div className={`admin-attention ${attention?.total ? 'active' : 'calm'}`}>
+            <div>
+              <span className="admin-attention__label">{attention?.total ? 'Attention requise' : 'Mode calme'}</span>
+              <strong>
+                {attention?.total
+                  ? `${attention.total} signal${attention.total > 1 ? 's' : ''} a traiter`
+                  : 'Aucun signal critique'}
+              </strong>
             </div>
-
-            {/* Two columns: My Tasks + Hot Leads */}
-            <div className="dash-two-cols" style={{ marginTop: 24 }}>
-              {/* My Tasks */}
-              <div className="dash-col">
-                <h2 className="dash-section-title">Mes taches</h2>
-                {data.myTasks.length === 0 ? (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucune tache assignee</p>
-                ) : (
-                  <div className="dash-task-list">
-                    {data.myTasks.map((task) => {
-                      const isExp = expandedTask === task._id
-                      return (
-                        <div key={task._id}>
-                          <div
-                            className="dash-task-item"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => setExpandedTask(isExp ? null : task._id)}
-                          >
-                            <span
-                              className="dash-task-priority"
-                              style={{ background: PRIORITY_COLORS[task.priority] || 'var(--primary)' }}
-                            />
-                            <div className="dash-task-info">
-                              <span className="dash-task-title">{task.title}</span>
-                              <span className="dash-task-project">
-                                {(task.project as { name?: string })?.name || ''}
-                              </span>
-                            </div>
-                            <span className="dash-task-status">{STATUS_LABELS[task.status] || task.status}</span>
-                            {task.dueDate && (
-                              <span className={`dash-task-due ${new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}>
-                                {formatDate(task.dueDate)}
-                              </span>
-                            )}
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              style={{
-                                transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s',
-                                opacity: 0.4,
-                                flexShrink: 0,
-                              }}
-                            >
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                          </div>
-                          {isExp && (
-                            <div className="dash-brief-details">
-                              {task.description && (
-                                <div className="dash-brief-field">
-                                  <span className="dash-brief-label">Description</span>
-                                  <p>{task.description}</p>
-                                </div>
-                              )}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: 16,
-                                  flexWrap: 'wrap',
-                                  fontSize: 13,
-                                  color: 'var(--text-muted)',
-                                }}
-                              >
-                                <span>
-                                  Priorite :{' '}
-                                  <strong style={{ color: PRIORITY_COLORS[task.priority] }}>{task.priority}</strong>
-                                </span>
-                                <span>
-                                  Statut : <strong>{STATUS_LABELS[task.status] || task.status}</strong>
-                                </span>
-                                {task.dueDate && (
-                                  <span>
-                                    Echeance : <strong>{new Date(task.dueDate).toLocaleDateString('fr-FR')}</strong>
-                                  </span>
-                                )}
-                                {task.tags && task.tags.length > 0 && <span>Tags : {task.tags.join(', ')}</span>}
-                              </div>
-                              {canViewProjects && (
-                                <div style={{ marginTop: 8 }}>
-                                  <Link
-                                    to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
-                                    style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                                  >
-                                    Voir le projet →
-                                  </Link>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Hot Leads + Overdue Tasks */}
-              <div className="dash-col">
-                {data.hotLeads.length > 0 && (
-                  <>
-                    <h2 className="dash-section-title">Leads chauds</h2>
-                    <div className="dash-task-list">
-                      {data.hotLeads.map((lead) => (
-                        <Link key={lead._id} to="/admin/crm" className="dash-task-item">
-                          <span
-                            className="dash-task-priority"
-                            style={{ background: lead.leadTemperature === 'TRES_CHAUD' ? '#ef4444' : '#f97316' }}
-                          />
-                          <div className="dash-task-info">
-                            <span className="dash-task-title">{lead.company}</span>
-                            <span className="dash-task-project">{lead.contactName}</span>
-                          </div>
-                          {lead.budget && (
-                            <span className="dash-task-status">{lead.budget.toLocaleString('fr-FR')} EUR</span>
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {data.overdueTasks.length > 0 && (
-                  <>
-                    <h2 className="dash-section-title" style={data.hotLeads.length > 0 ? { marginTop: 20 } : {}}>
-                      Taches en retard
-                    </h2>
-                    <div className="dash-task-list">
-                      {data.overdueTasks.slice(0, 3).map((task) => {
-                        const isExp = expandedOverdue === task._id
-                        return (
-                          <div key={task._id}>
-                            <div
-                              className="dash-task-item"
-                              style={{ cursor: 'pointer' }}
-                              onClick={() => setExpandedOverdue(isExp ? null : task._id)}
-                            >
-                              <span className="dash-task-priority" style={{ background: '#ef4444' }} />
-                              <div className="dash-task-info">
-                                <span className="dash-task-title">{task.title}</span>
-                                <span className="dash-task-project">
-                                  {(task.project as { name?: string })?.name || ''}
-                                </span>
-                              </div>
-                              <span className="dash-task-due overdue">{formatDate(task.dueDate)}</span>
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                style={{
-                                  transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)',
-                                  transition: 'transform 0.2s',
-                                  opacity: 0.4,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                <polyline points="6 9 12 15 18 9" />
-                              </svg>
-                            </div>
-                            {isExp && (
-                              <div className="dash-brief-details">
-                                {task.description && (
-                                  <div className="dash-brief-field">
-                                    <span className="dash-brief-label">Description</span>
-                                    <p>{task.description}</p>
-                                  </div>
-                                )}
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    gap: 16,
-                                    flexWrap: 'wrap',
-                                    fontSize: 13,
-                                    color: 'var(--text-muted)',
-                                  }}
-                                >
-                                  <span>
-                                    Priorite :{' '}
-                                    <strong style={{ color: PRIORITY_COLORS[task.priority] }}>{task.priority}</strong>
-                                  </span>
-                                  <span>
-                                    Statut : <strong>{STATUS_LABELS[task.status] || task.status}</strong>
-                                  </span>
-                                  {task.dueDate && (
-                                    <span>
-                                      Echeance :{' '}
-                                      <strong style={{ color: '#ef4444' }}>
-                                        {new Date(task.dueDate).toLocaleDateString('fr-FR')}
-                                      </strong>
-                                    </span>
-                                  )}
-                                </div>
-                                {canViewProjects && (
-                                  <div style={{ marginTop: 8 }}>
-                                    <Link
-                                      to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`}
-                                      style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                                    >
-                                      Voir le projet →
-                                    </Link>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    {data.overdueTasks.length > 3 && (
-                      <div style={{ marginTop: 8, textAlign: 'right' }}>
-                        <Link to="/admin/gestion" style={{ color: '#ef4444', fontSize: 13, textDecoration: 'none' }}>
-                          Voir toutes ({data.overdueTasks.length}) →
-                        </Link>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {data.hotLeads.length === 0 && data.overdueTasks.length === 0 && (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Rien a signaler</p>
-                )}
-              </div>
+            <div className="admin-attention__signals">
+              <Signal label="Taches en retard" count={data.overdueTasks.length} to="/admin/gestion" tone="danger" />
+              <Signal label="Briefs P1" count={attention?.p1Briefs || 0} to="/admin/gestion?view=briefs" tone="danger" />
+              <Signal label="Decisions" count={data.pendingDecisionCount} to="/admin/decisions" tone="warning" />
+              <Signal label="Relances CRM" count={data.hotLeads.length} to="/admin/crm" tone="warning" />
+              <Signal label="Projets dormants" count={data.staleProjectCount} to="/admin/projets" />
             </div>
+          </div>
 
-            {/* My Briefs */}
-            {data.myBriefs.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <h2 className="dash-section-title">Mes briefs</h2>
-                <div className="dash-task-list">
-                  {data.myBriefs.map((brief) => {
-                    const isExpanded = expandedBrief === brief._id
-                    const isOverdue = new Date(brief.deadline) < new Date()
-                    return (
-                      <div key={brief._id}>
-                        <div
-                          className="dash-task-item"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setExpandedBrief(isExpanded ? null : brief._id)}
-                        >
-                          <span
-                            className="dash-task-priority"
-                            style={{ background: BRIEF_PRIORITY_COLORS[brief.briefPriority] || 'var(--primary)' }}
-                          />
-                          <div className="dash-task-info">
-                            <span className="dash-task-title">{brief.intitule}</span>
-                            <span className="dash-task-project">
-                              {(brief.project as { name?: string })?.name || ''}
-                              {brief.entity !== 'VENIO' ? ` — ${brief.entity}` : ''}
-                            </span>
-                          </div>
-                          <span className="dash-task-status">{BRIEF_STATUS_LABELS[brief.statut] || brief.statut}</span>
-                          <span className={`dash-task-due ${isOverdue ? 'overdue' : ''}`}>
-                            {formatDate(brief.deadline)}
-                          </span>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            style={{
-                              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                              opacity: 0.4,
-                              flexShrink: 0,
-                            }}
-                          >
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </div>
-                        {isExpanded && (
-                          <div className="dash-brief-details">
-                            {brief.contexte && (
-                              <div className="dash-brief-field">
-                                <span className="dash-brief-label">Contexte</span>
-                                <p>{brief.contexte}</p>
-                              </div>
-                            )}
-                            {brief.livrablesAttendus && (
-                              <div className="dash-brief-field">
-                                <span className="dash-brief-label">Livrables attendus</span>
-                                <p>{brief.livrablesAttendus}</p>
-                              </div>
-                            )}
-                            <div style={{ marginTop: 8 }}>
-                              <Link
-                                to={`/admin/gestion?view=briefs`}
-                                style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                              >
-                                Voir tous les briefs →
-                              </Link>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+          <div className="admin-exec-grid">
+            {isSuperAdmin && <Kpi label="CA facture" value={formatMoney(data.totalRevenue)} to="/admin/comptabilite" tone="green" />}
+            <Kpi label="Pipeline" value={formatMoney(data.pipelineValue)} to="/admin/crm" tone="orange" />
+            {canViewProjects && <Kpi label="Projets actifs" value={data.activeProjectCount} to="/admin/projets" tone="blue" />}
+            <Kpi label="Taches ouvertes" value={data.myTasks.length} to="/admin/gestion" tone="pink" />
+          </div>
 
-            {/* My Missions */}
-            {myMissions.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <h2 className="dash-section-title">Mes missions</h2>
-                <div className="dash-task-list">
-                  {myMissions
-                    .filter((m) => m.status !== 'TERMINE')
-                    .slice(0, 5)
-                    .map((m) => {
-                      const mColors: Record<string, string> = {
-                        A_FAIRE: '#fde047',
-                        EN_COURS: 'var(--primary)',
-                        TERMINE: '#6ee7b7',
-                      }
-                      const mLabels: Record<string, string> = {
-                        A_FAIRE: 'À faire',
-                        EN_COURS: 'En cours',
-                        TERMINE: 'Terminée',
-                      }
-                      const isOverdue = m.dueDate && new Date(m.dueDate) < new Date()
-                      return (
-                        <a
-                          key={m._id}
-                          href="/admin/gestion?view=missions"
-                          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}
-                          className="dash-task-item"
-                        >
-                          <span className="dash-task-priority" style={{ background: mColors[m.status] || '#a5b4cf' }} />
-                          <div className="dash-task-info">
-                            <span className="dash-task-title">{m.title}</span>
-                            <span className="dash-task-project">
-                              {m.internalProject?.name} — {m.internalProject?.entity}
-                            </span>
-                          </div>
-                          <span
-                            className="admin-badge"
-                            style={{ color: mColors[m.status], borderColor: 'rgba(255,255,255,0.1)' }}
-                          >
-                            {mLabels[m.status]}
-                          </span>
-                          {m.dueDate && (
-                            <span className={`dash-task-due ${isOverdue ? 'overdue' : ''}`}>
-                              {new Date(m.dueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                            </span>
-                          )}
-                          {m.steps?.length > 0 && (
-                            <span style={{ fontSize: 10, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {m.steps.filter((s) => s.done).length}/{m.steps.length} étapes
-                            </span>
-                          )}
-                        </a>
-                      )
-                    })}
-                </div>
-                <div style={{ marginTop: 8, textAlign: 'right' }}>
-                  <a
-                    href="/admin/gestion?view=missions"
-                    style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                  >
-                    Voir toutes ({myMissions.length}) →
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {/* My Internal Projects */}
-            {myInternalProjects.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <h2 className="dash-section-title">Mes projets internes</h2>
-                <div className="dash-task-list">
-                  {myInternalProjects.slice(0, 5).map((p) => (
-                    <Link
-                      key={p._id}
-                      to={`/admin/projets-internes/${p._id}`}
-                      className="dash-task-item"
-                      style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}
-                    >
-                      <span
-                        className="dash-task-priority"
-                        style={{
-                          background:
-                            p.status === 'EN_COURS' ? '#10b981' : p.status === 'EN_ATTENTE' ? '#eab308' : '#64748b',
-                        }}
-                      />
-                      <div className="dash-task-info">
-                        <span className="dash-task-title">{p.name}</span>
-                        <span className="dash-task-project">
-                          {p.entity}
-                          {p.poles.length > 0 ? ` — ${p.poles.join(', ')}` : ''}
-                        </span>
-                      </div>
-                      <span className="admin-badge">
-                        {p.status === 'EN_COURS'
-                          ? 'En cours'
-                          : p.status === 'EN_ATTENTE'
-                            ? 'En attente'
-                            : p.status === 'TERMINE'
-                              ? 'Terminé'
-                              : 'Archivé'}
-                      </span>
-                    </Link>
+          <div className="admin-command-layout">
+            <div className="admin-command-main">
+              <Section title="Actions personnelles" icon={<CheckCircle2 size={16} />}>
+                <div className="admin-command-stack">
+                  {data.myTasks.slice(0, 6).map((task) => (
+                    <TaskLine key={task._id} task={task} />
                   ))}
+                  {data.myBriefs.slice(0, 4).map((brief) => (
+                    <BriefLine key={brief._id} brief={brief} />
+                  ))}
+                  {myMissions
+                    .filter((mission) => mission.status !== 'TERMINE')
+                    .slice(0, 4)
+                    .map((mission) => (
+                      <MissionLine key={mission._id} mission={mission} />
+                    ))}
+                  {data.myTasks.length === 0 && data.myBriefs.length === 0 && myMissions.length === 0 && (
+                    <p className="admin-command-empty">Rien d'assigne pour le moment.</p>
+                  )}
                 </div>
-                {myInternalProjects.length > 5 && (
-                  <div style={{ marginTop: 8, textAlign: 'right' }}>
-                    <Link
-                      to="/admin/projets-internes"
-                      style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                    >
-                      Voir tous ({myInternalProjects.length}) →
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
+              </Section>
 
-            {/* Recent Projects */}
-            {data.recentProjects.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <h2 className="dash-section-title">Projets recents</h2>
-                <div className="dash-task-list">
-                  {data.recentProjects.map((project) => {
-                    const isExp = expandedProject === project._id
-                    return (
-                      <div key={project._id}>
-                        <div
-                          className="dash-task-item"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setExpandedProject(isExp ? null : project._id)}
-                        >
-                          <span
-                            className="dash-task-priority"
-                            style={{ background: PRIORITY_COLORS[project.priority || 'NORMALE'] || 'var(--primary)' }}
-                          />
-                          <div className="dash-task-info">
-                            <span className="dash-task-title">{project.name}</span>
-                            <span className="dash-task-project">
-                              {(project.client as { name?: string })?.name || ''}
-                            </span>
-                          </div>
-                          <span className="admin-badge">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            style={{
-                              transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                              opacity: 0.4,
-                              flexShrink: 0,
-                            }}
-                          >
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </div>
-                        {isExp && (
-                          <div className="dash-brief-details">
-                            {project.description && (
-                              <div className="dash-brief-field">
-                                <span className="dash-brief-label">Description</span>
-                                <p>{project.description}</p>
-                              </div>
-                            )}
-                            <div
-                              style={{
-                                display: 'flex',
-                                gap: 16,
-                                flexWrap: 'wrap',
-                                fontSize: 13,
-                                color: 'var(--text-muted)',
-                              }}
-                            >
-                              {(project.assignedTo?.name || project.responsible) && (
-                                <span>
-                                  Responsable : <strong>{project.assignedTo?.name || project.responsible}</strong>
-                                </span>
-                              )}
-                              {project.priority && (
-                                <span>
-                                  Priorite :{' '}
-                                  <strong style={{ color: PRIORITY_COLORS[project.priority] }}>
-                                    {project.priority}
-                                  </strong>
-                                </span>
-                              )}
-                              {project.startDate && (
-                                <span>
-                                  Debut : <strong>{new Date(project.startDate).toLocaleDateString('fr-FR')}</strong>
-                                </span>
-                              )}
-                              {project.endDate && (
-                                <span>
-                                  Fin : <strong>{new Date(project.endDate).toLocaleDateString('fr-FR')}</strong>
-                                </span>
-                              )}
-                            </div>
-                            {canViewProjects && (
-                              <div style={{ marginTop: 8 }}>
-                                <Link
-                                  to={`/admin/projets/${project._id}`}
-                                  style={{ color: 'var(--primary)', fontSize: 13, textDecoration: 'none' }}
-                                >
-                                  Voir le projet →
-                                </Link>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+              <Section
+                title="Portefeuille Venio"
+                icon={<FolderKanban size={16} />}
+                action={<Link to="/admin/projets" className="admin-command-link">Tous les projets</Link>}
+              >
+                <div className="admin-command-stack">
+                  {myInternalProjects.slice(0, 5).map((project) => (
+                    <InternalProjectLine key={project._id} project={project} />
+                  ))}
+                  {data.recentProjects.slice(0, 5).map((project) => (
+                    <ProjectLine key={project._id} project={project} />
+                  ))}
+                  {myInternalProjects.length === 0 && data.recentProjects.length === 0 && (
+                    <p className="admin-command-empty">Aucun projet recent.</p>
+                  )}
                 </div>
-              </div>
+              </Section>
+            </div>
+
+            {(prefs.showContext || prefs.showShortcuts) && (
+              <aside className="admin-command-context">
+                {prefs.showContext && (
+                  <Section title="Contexte du jour" icon={<Clock3 size={16} />}>
+                    <div className="admin-day-card">
+                      <strong>
+                        {new Date().toLocaleDateString('fr-FR', {
+                          weekday: 'long',
+                          day: '2-digit',
+                          month: 'long',
+                        })}
+                      </strong>
+                      <span>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="admin-command-mini-list">
+                      {nextMilestones.tasks.map((task) => (
+                        <TaskLine key={task._id} task={task} />
+                      ))}
+                      {nextMilestones.missions.map((mission) => (
+                        <MissionLine key={mission._id} mission={mission} />
+                      ))}
+                      {nextMilestones.tasks.length === 0 && nextMilestones.missions.length === 0 && (
+                        <p className="admin-command-empty">Aucun jalon imminent.</p>
+                      )}
+                    </div>
+                  </Section>
+                )}
+
+                {prefs.showShortcuts && (
+                  <Section title="Raccourcis" icon={<Sparkles size={16} />}>
+                    <div className="admin-shortcut-grid">
+                      {canManageClients && <Link to="/admin/comptes-clients/nouveau"><BriefcaseBusiness size={15} />Client</Link>}
+                      {canViewMessaging && <Link to="/admin/messages"><MessageSquare size={15} />Messages</Link>}
+                      <Link to="/admin/crm"><CircleDollarSign size={15} />CRM</Link>
+                      <Link to="/admin/dev"><AlertTriangle size={15} />Dev</Link>
+                    </div>
+                  </Section>
+                )}
+              </aside>
             )}
-          </>
-        )
+          </div>
+
+          {customizeOpen && (
+            <div className="admin-customize-overlay" onClick={() => setCustomizeOpen(false)}>
+              <aside className="admin-customize-panel" onClick={(e) => e.stopPropagation()}>
+                <div className="admin-customize-panel__header">
+                  <div>
+                    <span className="admin-command-eyebrow">Dashboard</span>
+                    <h2>Personnalisation</h2>
+                  </div>
+                  <button onClick={() => setCustomizeOpen(false)} aria-label="Fermer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="admin-customize-group">
+                  <span className="admin-customize-label">Densite</span>
+                  <div className="admin-segmented-control">
+                    <button
+                      className={prefs.density === 'comfortable' ? 'active' : ''}
+                      onClick={() => setPrefs((p) => ({ ...p, density: 'comfortable' }))}
+                    >
+                      Confort
+                    </button>
+                    <button
+                      className={prefs.density === 'compact' ? 'active' : ''}
+                      onClick={() => setPrefs((p) => ({ ...p, density: 'compact' }))}
+                    >
+                      Compact
+                    </button>
+                  </div>
+                </div>
+                <label className="admin-toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={prefs.showContext}
+                    onChange={(e) => setPrefs((p) => ({ ...p, showContext: e.target.checked }))}
+                  />
+                  <span>Contexte du jour</span>
+                </label>
+                <label className="admin-toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={prefs.showShortcuts}
+                    onChange={(e) => setPrefs((p) => ({ ...p, showShortcuts: e.target.checked }))}
+                  />
+                  <span>Raccourcis</span>
+                </label>
+              </aside>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="admin-command-error">
+          <AlertTriangle size={32} />
+          <p>Impossible de charger le dashboard.</p>
+        </div>
       )}
     </div>
   )
 }
-
-export default AdminDashboard

@@ -66,3 +66,16 @@ describe('GET /api/admin/dashboard/super', () => {
     expect(res.body).toHaveProperty('generatedAt')
   })
 })
+
+describe('GET /api/admin/dashboard', () => {
+  it('returns command dashboard signals used by the admin cockpit', async () => {
+    const res = await request(app).get('/api/admin/dashboard').expect(200)
+    expect(res.body).toHaveProperty('pipelineValue')
+    expect(res.body).toHaveProperty('pendingDecisionCount')
+    expect(res.body).toHaveProperty('staleProjectCount')
+    expect(res.body).toHaveProperty('generatedAt')
+    expect(typeof res.body.pipelineValue).toBe('number')
+    expect(typeof res.body.pendingDecisionCount).toBe('number')
+    expect(typeof res.body.staleProjectCount).toBe('number')
+  })
+})

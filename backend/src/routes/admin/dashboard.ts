@@ -76,6 +76,18 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       // Lead model may not exist in all setups
     }
 
+    const [pipelineValue, pendingDecisionCount, staleProjectCount] = await Promise.all([
+      Lead.aggregate([
+        { $match: { status: { $nin: ['WON', 'LOST'] }, budget: { $gt: 0 } } },
+        { $group: { _id: null, total: { $sum: '$budget' } } },
+      ]).catch(() => []),
+      Decision.countDocuments({ status: 'PENDING' }).catch(() => 0),
+      Project.countDocuments({
+        $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
+        updatedAt: { $lt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000) },
+      }),
+    ])
+
     // My briefs (assigned to me, not done)
     const myBriefs = await MissionBrief.find({
       destinataire: userId,
@@ -101,8 +113,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       tasksByStatus,
       activeProjectCount,
       totalRevenue: monthlyRevenue[0]?.total || 0,
+      pipelineValue: pipelineValue[0]?.total || 0,
+      pendingDecisionCount,
+      staleProjectCount,
       hotLeads,
       recentProjects,
+      generatedAt: now.toISOString(),
     })
   } catch (err) {
     return next(err)
