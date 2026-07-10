@@ -60,6 +60,8 @@ const userSchema = new mongoose.Schema<IUser>(
     lastLoginAt: { type: Date, default: null },
     lastLoginIp: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
+    // Incremented when credentials or authorizations change to revoke issued JWTs.
+    sessionVersion: { type: Number, default: 0 },
     locale: { type: String, enum: ['fr', 'en'], default: null },
     colorTheme: {
       type: String,

@@ -153,6 +153,7 @@ router.patch(
     }
     const oldRole = user.role
     const oldPermissions = JSON.stringify({ granted: user.grantedPermissions || [], denied: user.deniedPermissions || [] })
+    let revokeSessions = false
 
     if (role) {
       if (!ADMIN_ROLES.includes(role)) {
@@ -177,12 +178,15 @@ router.patch(
         return res.status(400).json({ error: 'Cannot remove your own admin management access' })
       }
       user.role = role
+      revokeSessions = role !== oldRole
     }
 
     if (name !== undefined) user.name = name
     if (req.body.title !== undefined) (user as any).title = req.body.title
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10)
+      user.passwordChangedAt = new Date()
+      revokeSessions = true
     }
 
     // Marquer comme stagiaire (SUPER_ADMIN only)
@@ -250,9 +254,6 @@ router.patch(
     }
     if (req.body.jobTitle !== undefined) user.jobTitle = String(req.body.jobTitle)
 
-    await user.save()
-    const safeUser = await User.findById(user._id).select('-passwordHash')
-
     // Notif : changement de rôle (à l'utilisateur concerné + super admins)
     if (role && role !== oldRole) {
       if (String(user._id) !== req.user!.id) {
@@ -277,6 +278,10 @@ router.patch(
 
     // Notif : changement de permissions
     const newPermissions = JSON.stringify({ granted: user.grantedPermissions || [], denied: user.deniedPermissions || [] })
+    if (oldPermissions !== newPermissions) revokeSessions = true
+    if (revokeSessions) user.sessionVersion = (user.sessionVersion ?? 0) + 1
+    await user.save()
+    const safeUser = await User.findById(user._id).select('-passwordHash')
     if (oldPermissions !== newPermissions && String(user._id) !== req.user!.id) {
       createNotification({
         recipient: user._id,
@@ -391,6 +396,7 @@ router.post('/:userId/resend-credentials', requirePermission(PERMISSIONS.MANAGE_
     const tempPassword = crypto.randomBytes(6).toString('hex') // 12 chars hex
     user.passwordHash = await bcrypt.hash(tempPassword, 10)
     user.passwordChangedAt = new Date()
+    user.sessionVersion = (user.sessionVersion ?? 0) + 1
     await user.save()
 
     const result = await sendAdminCredentials({
@@ -422,7 +428,7 @@ router.post('/impersonate/:userId', requirePermission(PERMISSIONS.MANAGE_ADMINS)
     }
 
     const token = jwt.sign(
-      { id: target._id, role: target.role, email: target.email, name: target.name },
+      { id: target._id, role: target.role, email: target.email, name: target.name, sessionVersion: target.sessionVersion ?? 0 },
       process.env.JWT_SECRET as string,
       { expiresIn: '2h' } as jwt.SignOptions
     )

@@ -35,7 +35,7 @@ async function loginAsSuperAdmin(): Promise<string> {
     role: 'SUPER_ADMIN',
   })
   return jwt.sign(
-    { id: String(admin._id), email: admin.email, name: admin.name, role: 'SUPER_ADMIN' },
+    { id: String(admin._id), email: admin.email, name: admin.name, role: 'SUPER_ADMIN', sessionVersion: admin.sessionVersion },
     process.env.JWT_SECRET || 'test-secret',
     { expiresIn: '1h' }
   )

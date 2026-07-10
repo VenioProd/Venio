@@ -40,6 +40,7 @@ export interface IUser extends Document {
   lastLoginAt: Date | null
   lastLoginIp: string
   isActive: boolean
+  sessionVersion: number
   locale: 'fr' | 'en' | null
   colorTheme?:
     | 'sky'
