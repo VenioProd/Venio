@@ -7,6 +7,7 @@ export interface JwtPayload {
   role: UserRole
   email: string
   name: string
+  sessionVersion?: number
   iat?: number
   exp?: number
 }

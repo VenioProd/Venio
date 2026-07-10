@@ -26,7 +26,7 @@ async function loginAs(role: 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'): Promise
     role,
   })
   return jwt.sign(
-    { id: String(u._id), email: u.email, name: u.name, role },
+    { id: String(u._id), email: u.email, name: u.name, role, sessionVersion: u.sessionVersion },
     process.env.JWT_SECRET || 'test-secret',
     { expiresIn: '1h' }
   )

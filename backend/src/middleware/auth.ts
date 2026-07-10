@@ -14,17 +14,21 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
-    req.user = payload
-
-    // Bloquer les clients archivés même si leur token est encore valide
-    if (payload.role === 'CLIENT') {
-      const user = await User.findById(payload.id).select('status').lean()
-      if (user?.status === 'ARCHIVE') {
-        res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
-        return
-      }
+    const user = await User.findById(payload.id).select('role status isActive sessionVersion').lean()
+    if (!user || !user.isActive || user.status === 'ARCHIVE') {
+      res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
+      return
     }
 
+    // Do not trust role/authorization state embedded in an old JWT.
+    // Legacy tokens do not contain sessionVersion and are intentionally invalidated.
+    const currentSessionVersion = user.sessionVersion ?? 0
+    if (user.role !== payload.role || currentSessionVersion !== payload.sessionVersion) {
+      res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' })
+      return
+    }
+
+    req.user = payload
     next()
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' })

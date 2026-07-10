@@ -47,9 +47,9 @@ const router = express.Router()
 
 const MIN_PASSWORD_LENGTH = 6
 
-function signToken(user: { _id: unknown; role: string; email: string; name: string }): string {
+function signToken(user: { _id: unknown; role: string; email: string; name: string; sessionVersion?: number }): string {
   return jwt.sign(
-    { id: user._id, role: user.role, email: user.email, name: user.name },
+    { id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0 },
     process.env.JWT_SECRET as string,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
   )
@@ -84,8 +84,8 @@ router.post(
         return res.status(401).json({ error: 'Identifiants invalides' })
       }
 
-      // Bloquer les clients archivés
-      if (user.role === 'CLIENT' && user.status === 'ARCHIVE') {
+      // Every inactive or archived account is blocked, including administrators.
+      if (!user.isActive || user.status === 'ARCHIVE') {
         AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: 'account_archived' } }).catch(() => {})
         return res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
       }
@@ -219,6 +219,7 @@ router.post(
 
       user.passwordHash = await bcrypt.hash(newPassword, 10)
       user.passwordChangedAt = new Date()
+      user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
 
       AuditLog.create({ userId: user._id, email: user.email, action: 'PASSWORD_CHANGED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
@@ -342,6 +343,7 @@ router.post(
 
       user.passwordHash = await bcrypt.hash(password, 10)
       user.passwordChangedAt = new Date()
+      user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
 
       resetTokens.delete(token)
