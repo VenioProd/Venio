@@ -98,10 +98,9 @@ if (!mongoUri) {
 }
 
 // Security headers
-// scriptSrc : pas de 'unsafe-inline' — l'app n'a aucun <script> inline (vérifié
-// au chantier #6 : seuls des <script src="..."> dans index.html). Les CDN
-// utilisés (three.js, vanta) sont explicitement listés. Si Sentry est activé,
-// son origine est ajoutée à connectSrc.
+// scriptSrc : pas de 'unsafe-inline' — l'app n'a aucun <script> inline. Le fond
+// animé est désormais rendu en CSS, donc aucun CDN JavaScript n'est chargé. Si
+// Sentry est activé, son origine est ajoutée à connectSrc.
 const sentryIngest = process.env.SENTRY_DSN ? new URL(process.env.SENTRY_DSN).origin : null
 app.use(
   helmet({
@@ -110,7 +109,7 @@ app.use(
       ? {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net'],
+            scriptSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             imgSrc: ["'self'", 'data:', 'blob:'],
@@ -135,8 +134,15 @@ if (isProd) {
   })
 }
 
-// Compression
-app.use(compression())
+// Compression : Brotli lorsque le navigateur l'accepte, gzip sinon. Le seuil
+// évite de compresser les très petites réponses, pour lesquelles le coût CPU
+// serait supérieur au gain réseau.
+app.use(
+  compression({
+    threshold: 1024,
+    brotli: {},
+  }),
+)
 
 // CORS
 app.use(
@@ -308,7 +314,35 @@ app.use('/api/projects', clientMessageRoutes)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const publicDir = path.join(__dirname, '..', 'public')
-app.use(express.static(publicDir, { redirect: false }))
+const hashedAssetPattern = /-[a-zA-Z0-9_-]{8,}\.(?:css|js|mjs|woff2?|ttf|otf|svg|png|jpe?g|webp|avif|ico)$/
+
+app.use(
+  express.static(publicDir, {
+    redirect: false,
+    setHeaders: (res, filePath) => {
+      const fileName = path.basename(filePath)
+
+      // Vite fingerprints build assets. Ils ne changent jamais à contenu égal :
+      // on peut donc les conserver un an sans risquer de servir une version
+      // périmée après un déploiement.
+      if (hashedAssetPattern.test(fileName)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        return
+      }
+
+      // index.html et le manifest doivent être relus à chaque navigation pour
+      // pointer sans délai vers le nouveau bundle après un déploiement.
+      if (fileName === 'index.html' || fileName === 'manifest.json') {
+        res.setHeader('Cache-Control', 'no-cache')
+        return
+      }
+
+      // Les fichiers stables sans hash (icônes, robots.txt…) restent cachables
+      // une journée, sans bloquer durablement leurs mises à jour.
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+    },
+  }),
+)
 app.get('{*path}', (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, 'index.html'))
 })
