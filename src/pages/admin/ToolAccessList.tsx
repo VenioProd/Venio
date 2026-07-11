@@ -13,7 +13,7 @@ interface ToolAccess {
   name: string
   url: string
   login: string
-  password: string
+  password?: string
   category: string
   notes: string
   visibleTo: string[]
@@ -74,7 +74,7 @@ const ToolAccessList = () => {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({})
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const canWrite = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
@@ -124,7 +124,7 @@ const ToolAccessList = () => {
         name: tool.name,
         url: tool.url,
         login: tool.login,
-        password: tool.password,
+        password: '',
         category: tool.category,
         notes: tool.notes,
         visibleTo: tool.visibleTo || [],
@@ -144,11 +144,15 @@ const ToolAccessList = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (!form.name || !form.login || !form.password) return
+    if (!form.name || !form.login || (!editId && !form.password)) return
     setSaving(true)
     try {
       if (editId) {
-        await apiFetch(`/api/admin/tool-access/${editId}`, { method: 'PATCH', body: JSON.stringify(form) })
+        const { password, ...metadata } = form
+        await apiFetch(`/api/admin/tool-access/${editId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(password ? form : metadata),
+        })
         showToast('Outil mis a jour', 'success')
       } else {
         await apiFetch('/api/admin/tool-access', { method: 'POST', body: JSON.stringify(form) })
@@ -175,16 +179,35 @@ const ToolAccessList = () => {
     }
   }
 
-  const togglePassword = (id: string) => {
-    setVisiblePasswords((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  const handleReveal = async (tool: ToolAccess) => {
+    if (user?.role !== 'SUPER_ADMIN') {
+      showToast('La révélation est réservée au super admin', 'error')
+      return
+    }
+    const totpCode = window.prompt('Saisissez votre code MFA à 6 chiffres pour révéler ce secret')
+    if (!totpCode) return
+    try {
+      const data = await apiFetch<{ password: string }>(`/api/admin/tool-access/${tool._id}/reveal`, {
+        method: 'POST',
+        body: JSON.stringify({ totpCode }),
+      })
+      setRevealedPasswords((previous) => ({ ...previous, [tool._id]: data.password }))
+      window.setTimeout(() => {
+        setRevealedPasswords((previous) => {
+          const next = { ...previous }
+          delete next[tool._id]
+          return next
+        })
+      }, 30_000)
+      showToast('Secret révélé temporairement', 'success')
+    } catch {
+      showToast('Révélation refusée : vérifiez votre code MFA', 'error')
+    }
   }
 
   const handleCopy = async (tool: ToolAccess) => {
-    const text = `${tool.name}\nLogin : ${tool.login}\nMot de passe : ${tool.password}${tool.url ? `\nURL : ${tool.url}` : ''}`
+    const password = revealedPasswords[tool._id]
+    const text = `${tool.name}\nLogin : ${tool.login}${password ? `\nMot de passe : ${password}` : ''}${tool.url ? `\nURL : ${tool.url}` : ''}`
     await navigator.clipboard.writeText(text)
     setCopiedId(tool._id)
     setTimeout(() => setCopiedId(null), 2000)
@@ -377,11 +400,13 @@ const ToolAccessList = () => {
                             letterSpacing: '0.05em',
                           }}
                         >
-                          {visiblePasswords.has(tool._id) ? tool.password : '••••••••'}
+                          {revealedPasswords[tool._id] || '••••••••'}
                         </span>
                         <button
                           type="button"
-                          onClick={() => togglePassword(tool._id)}
+                          onClick={() => revealedPasswords[tool._id]
+                            ? setRevealedPasswords((previous) => { const next = { ...previous }; delete next[tool._id]; return next })
+                            : handleReveal(tool)}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -391,7 +416,7 @@ const ToolAccessList = () => {
                             padding: 0,
                           }}
                         >
-                          {visiblePasswords.has(tool._id) ? '🙈' : '👁'}
+                          {revealedPasswords[tool._id] ? '🙈' : '👁'}
                         </button>
                       </div>
                     </div>
@@ -487,14 +512,14 @@ const ToolAccessList = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Mot de passe *
+                    Mot de passe {editId ? '(laisser vide pour ne pas le modifier)' : '*'}
                   </label>
                   <input
                     className="portal-input"
                     placeholder="Mot de passe"
                     value={form.password}
                     onChange={(event) => setForm({ ...form, password: event.target.value })}
-                    required
+                    required={!editId}
                   />
                 </div>
               </div>

@@ -3,46 +3,40 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import ToolAccess from '../../models/ToolAccess.js'
 import AuditLog from '../../models/AuditLog.js'
-import { encrypt, decrypt, isEncryptionConfigured, looksEncrypted } from '../../lib/crypto.js'
+import User from '../../models/User.js'
+import { TOTP } from 'otpauth'
+import { encrypt, decrypt, requireEncryptionConfigured, looksEncrypted } from '../../lib/crypto.js'
 import { notifyInternalAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 
-/**
- * Encrypt password if encryption is configured, otherwise store as-is.
- */
 function encryptPassword(plain: string): string {
-  if (isEncryptionConfigured()) {
-    return encrypt(plain)
-  }
-  return plain
+  requireEncryptionConfigured()
+  return encrypt(plain)
 }
 
-/**
- * Decrypt password if it looks encrypted, otherwise return as-is.
- */
 function decryptPassword(stored: string): string {
-  if (isEncryptionConfigured() && looksEncrypted(stored)) {
-    try {
-      return decrypt(stored)
-    } catch {
-      return stored // fallback for pre-encryption data
-    }
+  requireEncryptionConfigured()
+  if (!looksEncrypted(stored)) {
+    throw new Error('This credential must be rotated before it can be revealed')
   }
-  return stored
+  return decrypt(stored)
 }
 
-/**
- * Sanitize tool for response — decrypt password.
- */
 function sanitizeTool(tool: any): any {
   const obj = tool.toObject ? tool.toObject() : { ...tool }
-  if (obj.password) {
-    obj.password = decryptPassword(obj.password)
-  }
+  delete obj.password
   return obj
+}
+
+async function verifyRevealStepUp(userId: string, code: unknown): Promise<boolean> {
+  if (typeof code !== 'string' || !/^\d{6}$/.test(code)) return false
+  const user = await User.findById(userId).select('email twoFactorEnabled twoFactorSecret').lean()
+  if (!user?.twoFactorEnabled || !user.twoFactorSecret) return false
+  const totp = new TOTP({ issuer: 'Venio', label: user.email, algorithm: 'SHA1', digits: 6, period: 30, secret: user.twoFactorSecret })
+  return totp.validate({ token: code, window: 1 }) !== null
 }
 
 // GET all tool accesses — filtrés par visibilité selon le rôle
@@ -59,7 +53,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-// GET single tool access — audit logged
+// GET single tool access — metadata only. Secrets use the explicit reveal route.
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const role = req.user!.role
@@ -69,17 +63,33 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(403).json({ error: 'Accès refusé' })
     }
 
-    // Audit: log credential access
+    res.json(sanitizeTool(tool))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST reveal — an explicit, short-lived action protected by a fresh TOTP code.
+router.post('/:id/reveal', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const role = req.user!.role
+    if (role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès réservé au super admin' })
+    if (!await verifyRevealStepUp(req.user!.id, req.body?.totpCode)) {
+      return res.status(403).json({ error: 'Code MFA requis ou invalide' })
+    }
+    const tool = await ToolAccess.findById(req.params.id)
+    if (!tool) return res.status(404).json({ error: 'Outil introuvable' })
+    const password = decryptPassword(tool.password)
     AuditLog.create({
       userId: req.user!.id,
       email: req.user!.email,
-      action: 'TOOL_ACCESS_VIEWED',
+      action: 'TOOL_ACCESS_REVEALED',
       ip: req.headers['x-forwarded-for'] || req.ip || '',
       userAgent: req.headers['user-agent'] || '',
       metadata: { toolId: tool._id.toString(), toolName: tool.name },
     }).catch(() => {})
-
-    res.json(sanitizeTool(tool))
+    res.set('Cache-Control', 'no-store')
+    res.json({ password })
   } catch (err) {
     next(err)
   }
