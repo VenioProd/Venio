@@ -7,10 +7,7 @@ import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
 import AgentToken from '../models/AgentToken.js'
 import AuditLog from '../models/AuditLog.js'
-import jwt from 'jsonwebtoken'
-
-// Garantit que le middleware auth peut vérifier les tokens JWT dans les tests
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
+import { createSession } from '../lib/session.js'
 
 let app: Express
 
@@ -34,22 +31,19 @@ async function loginAsSuperAdmin(): Promise<string> {
     name: 'Super',
     role: 'SUPER_ADMIN',
   })
-  return jwt.sign(
-    { id: String(admin._id), email: admin.email, name: admin.name, role: 'SUPER_ADMIN', sessionVersion: admin.sessionVersion },
-    process.env.JWT_SECRET || 'test-secret',
-    { expiresIn: '1h' }
-  )
+  const { token } = await createSession(String(admin._id))
+  return `venio_session=${token}`
 }
 
 describe('AgentToken ↔ User AGENT lifecycle', () => {
   it('supprime le User AGENT si la création du Token échoue (scope inconnu)', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+    const cookie = await loginAsSuperAdmin()
 
     // Provoque une erreur en envoyant un scope inconnu, qui passe les validators
     // mais déclenche findUnknownScopes côté handler.
     const res = await request(app)
       .post('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({ name: 'Bad', scopes: ['scope:inexistant'] })
 
     expect(res.status).toBe(400)
@@ -59,13 +53,13 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
   })
 
   it('supprime le User AGENT si AgentToken.create lève une exception', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+    const cookie = await loginAsSuperAdmin()
 
     const spy = vi.spyOn(AgentToken, 'create').mockRejectedValueOnce(new Error('forced DB error'))
     try {
       const res = await request(app)
         .post('/api/admin/agent-tokens')
-        .set('Authorization', `Bearer ${jwtTok}`)
+        .set('Cookie', cookie)
         .send({ name: 'WillFail', scopes: ['read:crm'] })
 
       expect(res.status).toBeGreaterThanOrEqual(500)
@@ -78,17 +72,17 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
   })
 
   it('PATCH renomme aussi le User AGENT lié', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+    const cookie = await loginAsSuperAdmin()
     const created = await request(app)
       .post('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({ name: 'Old name', scopes: ['read:crm'] })
     const tokenId = created.body.token._id
     const userId = (await AgentToken.findById(tokenId).lean())!.userId
 
     const patchRes = await request(app)
       .patch(`/api/admin/agent-tokens/${tokenId}`)
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({ name: 'New name' })
     expect(patchRes.status).toBe(200)
 
@@ -97,17 +91,17 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
   })
 
   it('revoke désactive le User AGENT lié et préfixe son nom', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+    const cookie = await loginAsSuperAdmin()
     const created = await request(app)
       .post('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({ name: 'ToRevoke', scopes: ['read:crm'] })
     const tokenId = created.body.token._id
     const userId = (await AgentToken.findById(tokenId).lean())!.userId
 
     const revokeRes = await request(app)
       .post(`/api/admin/agent-tokens/${tokenId}/revoke`)
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({})
     expect(revokeRes.status).toBe(200)
 
@@ -116,12 +110,12 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     expect(user!.name).toBe('[Révoqué] ToRevoke')
   })
 
-  it('POST /agent-tokens crée un User AGENT lié et l\'ajoute à #general', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+  it("POST /agent-tokens crée un User AGENT lié et l'ajoute à #general", async () => {
+    const cookie = await loginAsSuperAdmin()
 
     const res = await request(app)
       .post('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({
         name: 'Kuro Prod',
         scopes: ['read:internal-messaging', 'write:internal-messaging'],
@@ -144,10 +138,10 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
   })
 
   it('GET /agent-tokens/:id/auth-log retourne les connexions du token', async () => {
-    const jwtTok = await loginAsSuperAdmin()
+    const cookie = await loginAsSuperAdmin()
     const created = await request(app)
       .post('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${jwtTok}`)
+      .set('Cookie', cookie)
       .send({ name: 'Kuro Prod', scopes: ['read:crm'] })
 
     expect(created.status).toBe(201)
@@ -169,9 +163,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
       },
     })
 
-    const res = await request(app)
-      .get(`/api/admin/agent-tokens/${tokenId}/auth-log`)
-      .set('Authorization', `Bearer ${jwtTok}`)
+    const res = await request(app).get(`/api/admin/agent-tokens/${tokenId}/auth-log`).set('Cookie', cookie)
 
     expect(res.status).toBe(200)
     expect(res.body.token._id).toBe(tokenId)

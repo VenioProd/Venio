@@ -4,10 +4,8 @@ import type { Express } from 'express'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import { createAdminTestApp } from './helpers/agentTestApp.js'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
-
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
+import { createSession } from '../lib/session.js'
 
 let app: Express
 
@@ -25,43 +23,37 @@ async function loginAs(role: 'SUPER_ADMIN' | 'ADMIN' | 'RH' | 'VIEWER'): Promise
     name: role,
     role,
   })
-  return jwt.sign(
-    { id: String(u._id), email: u.email, name: u.name, role, sessionVersion: u.sessionVersion },
-    process.env.JWT_SECRET || 'test-secret',
-    { expiresIn: '1h' }
-  )
+  const { token } = await createSession(String(u._id))
+  return `venio_session=${token}`
 }
 
 describe('Durcissement /api/admin/agent-tokens à SUPER_ADMIN', () => {
+  it('rejette une requête non authentifiée avec 401', async () => {
+    const res = await request(app).get('/api/admin/agent-tokens')
+    expect(res.status).toBe(401)
+  })
+
   it('rejette ADMIN avec 403', async () => {
-    const tok = await loginAs('ADMIN')
-    const res = await request(app)
-      .get('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${tok}`)
+    const cookie = await loginAs('ADMIN')
+    const res = await request(app).get('/api/admin/agent-tokens').set('Cookie', cookie)
     expect(res.status).toBe(403)
   })
 
   it('rejette RH avec 403', async () => {
-    const tok = await loginAs('RH')
-    const res = await request(app)
-      .get('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${tok}`)
+    const cookie = await loginAs('RH')
+    const res = await request(app).get('/api/admin/agent-tokens').set('Cookie', cookie)
     expect(res.status).toBe(403)
   })
 
   it('rejette VIEWER avec 403', async () => {
-    const tok = await loginAs('VIEWER')
-    const res = await request(app)
-      .get('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${tok}`)
+    const cookie = await loginAs('VIEWER')
+    const res = await request(app).get('/api/admin/agent-tokens').set('Cookie', cookie)
     expect(res.status).toBe(403)
   })
 
   it('accepte SUPER_ADMIN avec 200', async () => {
-    const tok = await loginAs('SUPER_ADMIN')
-    const res = await request(app)
-      .get('/api/admin/agent-tokens')
-      .set('Authorization', `Bearer ${tok}`)
+    const cookie = await loginAs('SUPER_ADMIN')
+    const res = await request(app).get('/api/admin/agent-tokens').set('Cookie', cookie)
     expect(res.status).toBe(200)
   })
 })
