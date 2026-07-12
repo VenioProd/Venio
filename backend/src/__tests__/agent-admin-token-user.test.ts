@@ -31,7 +31,7 @@ async function loginAsSuperAdmin(): Promise<string> {
     name: 'Super',
     role: 'SUPER_ADMIN',
   })
-  const { token } = await createSession(String(admin._id))
+  const { token } = await createSession(String(admin._id), { mfaVerifiedAt: new Date() })
   return `venio_session=${token}`
 }
 
@@ -44,6 +44,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const res = await request(app)
       .post('/api/admin/agent-tokens')
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
       .send({ name: 'Bad', scopes: ['scope:inexistant'] })
 
     expect(res.status).toBe(400)
@@ -60,6 +61,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
       const res = await request(app)
         .post('/api/admin/agent-tokens')
         .set('Cookie', cookie)
+        .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
         .send({ name: 'WillFail', scopes: ['read:crm'] })
 
       expect(res.status).toBeGreaterThanOrEqual(500)
@@ -76,6 +78,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const created = await request(app)
       .post('/api/admin/agent-tokens')
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
       .send({ name: 'Old name', scopes: ['read:crm'] })
     const tokenId = created.body.token._id
     const userId = (await AgentToken.findById(tokenId).lean())!.userId
@@ -83,6 +86,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const patchRes = await request(app)
       .patch(`/api/admin/agent-tokens/${tokenId}`)
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_UPDATE')
       .send({ name: 'New name' })
     expect(patchRes.status).toBe(200)
 
@@ -95,6 +99,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const created = await request(app)
       .post('/api/admin/agent-tokens')
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
       .send({ name: 'ToRevoke', scopes: ['read:crm'] })
     const tokenId = created.body.token._id
     const userId = (await AgentToken.findById(tokenId).lean())!.userId
@@ -102,6 +107,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const revokeRes = await request(app)
       .post(`/api/admin/agent-tokens/${tokenId}/revoke`)
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_REVOKE')
       .send({})
     expect(revokeRes.status).toBe(200)
 
@@ -116,6 +122,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const res = await request(app)
       .post('/api/admin/agent-tokens')
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
       .send({
         name: 'Kuro Prod',
         scopes: ['read:internal-messaging', 'write:internal-messaging'],
@@ -142,6 +149,7 @@ describe('AgentToken ↔ User AGENT lifecycle', () => {
     const created = await request(app)
       .post('/api/admin/agent-tokens')
       .set('Cookie', cookie)
+      .set('X-Venio-Confirm', 'AGENT_TOKEN_CREATE')
       .send({ name: 'Kuro Prod', scopes: ['read:crm'] })
 
     expect(created.status).toBe(201)

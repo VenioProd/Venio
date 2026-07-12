@@ -31,6 +31,7 @@ import {
 } from './agent-tokens/types'
 import SecretRevealModal from './agent-tokens/SecretRevealModal'
 import AuthLogModal from './agent-tokens/AuthLogModal'
+import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../../lib/sensitiveActions'
 
 const AgentTokensList: React.FC = () => {
   const { showToast } = useToast()
@@ -172,6 +173,7 @@ const AgentTokensList: React.FC = () => {
         await apiFetch(`/api/admin/agent-tokens/${editId}`, {
           method: 'PATCH',
           body: JSON.stringify(payload),
+          headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.AGENT_TOKEN_UPDATE),
         })
         showToast('Token mis à jour', 'success')
         closeForm()
@@ -184,6 +186,7 @@ const AgentTokensList: React.FC = () => {
         }>('/api/admin/agent-tokens', {
           method: 'POST',
           body: JSON.stringify(payload),
+          headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.AGENT_TOKEN_CREATE),
         })
         setRevealedSecret(data.plainSecret)
         setRevealedTokenName(data.token.name)
@@ -214,6 +217,7 @@ const AgentTokensList: React.FC = () => {
     try {
       await apiFetch(`/api/admin/agent-tokens/${revokeTarget._id}/revoke`, {
         method: 'POST',
+        headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.AGENT_TOKEN_REVOKE),
       })
       showToast('Token révoqué', 'success')
       setRevokeTarget(null)

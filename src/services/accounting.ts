@@ -1,4 +1,5 @@
 import { apiFetch, apiDownload } from '../lib/api'
+import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../lib/sensitiveActions'
 import type {
   IAccountingDashboard,
   IAccountingEntry,
@@ -38,9 +39,7 @@ export async function getAccountingSettings(): Promise<ICompanySettings> {
   return r.settings
 }
 
-export async function updateAccountingSettings(
-  payload: Partial<ICompanySettings>
-): Promise<ICompanySettings> {
+export async function updateAccountingSettings(payload: Partial<ICompanySettings>): Promise<ICompanySettings> {
   const r = await apiFetch<{ settings: ICompanySettings }>('/api/admin/accounting/settings', {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -70,10 +69,9 @@ export async function createFiscalYear(payload: CreateFiscalYearPayload): Promis
 }
 
 export async function closeFiscalYear(id: string): Promise<IFiscalYear> {
-  const r = await apiFetch<{ fiscalYear: IFiscalYear }>(
-    `/api/admin/accounting/fiscal-years/${id}/close`,
-    { method: 'POST' }
-  )
+  const r = await apiFetch<{ fiscalYear: IFiscalYear }>(`/api/admin/accounting/fiscal-years/${id}/close`, {
+    method: 'POST',
+  })
   return r.fiscalYear
 }
 
@@ -98,7 +96,7 @@ function buildQueryString(query: object | undefined): string {
 
 export async function listAccounts(query: ListAccountsQuery = {}): Promise<IChartOfAccount[]> {
   const r = await apiFetch<{ accounts: IChartOfAccount[] }>(
-    `/api/admin/accounting/chart-of-accounts${buildQueryString(query)}`
+    `/api/admin/accounting/chart-of-accounts${buildQueryString(query)}`,
   )
   return r.accounts
 }
@@ -120,17 +118,11 @@ export async function createAccount(payload: CreateAccountPayload): Promise<ICha
   return r.account
 }
 
-export async function updateAccount(
-  id: string,
-  payload: Partial<CreateAccountPayload>
-): Promise<IChartOfAccount> {
-  const r = await apiFetch<{ account: IChartOfAccount }>(
-    `/api/admin/accounting/chart-of-accounts/${id}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }
-  )
+export async function updateAccount(id: string, payload: Partial<CreateAccountPayload>): Promise<IChartOfAccount> {
+  const r = await apiFetch<{ account: IChartOfAccount }>(`/api/admin/accounting/chart-of-accounts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
   return r.account
 }
 
@@ -167,10 +159,7 @@ export async function createJournal(payload: CreateJournalPayload): Promise<IJou
   return r.journal
 }
 
-export async function updateJournal(
-  id: string,
-  payload: Partial<CreateJournalPayload>
-): Promise<IJournal> {
+export async function updateJournal(id: string, payload: Partial<CreateJournalPayload>): Promise<IJournal> {
   const r = await apiFetch<{ journal: IJournal }>(`/api/admin/accounting/journals/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -184,10 +173,7 @@ export async function listVatRates(): Promise<IVatRate[]> {
   return r.vatRates
 }
 
-export async function updateVatRate(
-  id: string,
-  payload: Partial<IVatRate>
-): Promise<IVatRate> {
+export async function updateVatRate(id: string, payload: Partial<IVatRate>): Promise<IVatRate> {
   const r = await apiFetch<{ vatRate: IVatRate }>(`/api/admin/accounting/vat-rates/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -215,9 +201,7 @@ export interface ListEntriesResponse {
 }
 
 export async function listEntries(query: ListEntriesQuery = {}): Promise<ListEntriesResponse> {
-  return apiFetch<ListEntriesResponse>(
-    `/api/admin/accounting/entries${buildQueryString(query)}`
-  )
+  return apiFetch<ListEntriesResponse>(`/api/admin/accounting/entries${buildQueryString(query)}`)
 }
 
 export interface EntryWithLinesResponse {
@@ -246,9 +230,7 @@ export interface CreateEntryPayload {
   lines: CreateEntryLinePayload[]
 }
 
-export async function createEntry(
-  payload: CreateEntryPayload
-): Promise<EntryWithLinesResponse> {
+export async function createEntry(payload: CreateEntryPayload): Promise<EntryWithLinesResponse> {
   return apiFetch<EntryWithLinesResponse>('/api/admin/accounting/entries', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -256,10 +238,9 @@ export async function createEntry(
 }
 
 export async function validateEntry(id: string): Promise<IAccountingEntry> {
-  const r = await apiFetch<{ entry: IAccountingEntry }>(
-    `/api/admin/accounting/entries/${id}/validate`,
-    { method: 'POST' }
-  )
+  const r = await apiFetch<{ entry: IAccountingEntry }>(`/api/admin/accounting/entries/${id}/validate`, {
+    method: 'POST',
+  })
   return r.entry
 }
 
@@ -271,13 +252,10 @@ export interface BulkValidateResult {
 }
 
 export async function bulkValidateEntries(ids: string[]): Promise<BulkValidateResult[]> {
-  const r = await apiFetch<{ results: BulkValidateResult[] }>(
-    '/api/admin/accounting/entries/bulk-validate',
-    {
-      method: 'POST',
-      body: JSON.stringify({ ids }),
-    }
-  )
+  const r = await apiFetch<{ results: BulkValidateResult[] }>('/api/admin/accounting/entries/bulk-validate', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  })
   return r.results
 }
 
@@ -293,12 +271,8 @@ export interface DashboardQuery {
   fiscalYear?: string
 }
 
-export async function getAccountingDashboard(
-  query: DashboardQuery = {}
-): Promise<IAccountingDashboard> {
-  return apiFetch<IAccountingDashboard>(
-    `/api/admin/accounting/reports/dashboard${buildQueryString(query)}`
-  )
+export async function getAccountingDashboard(query: DashboardQuery = {}): Promise<IAccountingDashboard> {
+  return apiFetch<IAccountingDashboard>(`/api/admin/accounting/reports/dashboard${buildQueryString(query)}`)
 }
 
 export interface GeneralLedgerQuery {
@@ -310,9 +284,7 @@ export interface GeneralLedgerQuery {
 }
 
 export async function getGeneralLedger(query: GeneralLedgerQuery): Promise<IGeneralLedgerData> {
-  return apiFetch<IGeneralLedgerData>(
-    `/api/admin/accounting/reports/general-ledger${buildQueryString(query)}`
-  )
+  return apiFetch<IGeneralLedgerData>(`/api/admin/accounting/reports/general-ledger${buildQueryString(query)}`)
 }
 
 export interface TrialBalanceQuery {
@@ -323,12 +295,8 @@ export interface TrialBalanceQuery {
   includeZero?: boolean
 }
 
-export async function getTrialBalance(
-  query: TrialBalanceQuery = {}
-): Promise<ITrialBalanceData> {
-  return apiFetch<ITrialBalanceData>(
-    `/api/admin/accounting/reports/balance${buildQueryString(query)}`
-  )
+export async function getTrialBalance(query: TrialBalanceQuery = {}): Promise<ITrialBalanceData> {
+  return apiFetch<ITrialBalanceData>(`/api/admin/accounting/reports/balance${buildQueryString(query)}`)
 }
 
 export interface BalanceSheetQuery {
@@ -337,9 +305,7 @@ export interface BalanceSheetQuery {
 }
 
 export async function getBalanceSheet(query: BalanceSheetQuery = {}): Promise<IBalanceSheetData> {
-  return apiFetch<IBalanceSheetData>(
-    `/api/admin/accounting/reports/balance-sheet${buildQueryString(query)}`
-  )
+  return apiFetch<IBalanceSheetData>(`/api/admin/accounting/reports/balance-sheet${buildQueryString(query)}`)
 }
 
 export interface IncomeStatementQuery {
@@ -348,12 +314,8 @@ export interface IncomeStatementQuery {
   to?: string
 }
 
-export async function getIncomeStatement(
-  query: IncomeStatementQuery = {}
-): Promise<IIncomeStatementData> {
-  return apiFetch<IIncomeStatementData>(
-    `/api/admin/accounting/reports/income-statement${buildQueryString(query)}`
-  )
+export async function getIncomeStatement(query: IncomeStatementQuery = {}): Promise<IIncomeStatementData> {
+  return apiFetch<IIncomeStatementData>(`/api/admin/accounting/reports/income-statement${buildQueryString(query)}`)
 }
 
 export interface JournalViewQuery {
@@ -364,23 +326,20 @@ export interface JournalViewQuery {
 }
 
 export async function getJournalView(query: JournalViewQuery = {}): Promise<unknown> {
-  return apiFetch<unknown>(
-    `/api/admin/accounting/reports/journal${buildQueryString(query)}`
-  )
+  return apiFetch<unknown>(`/api/admin/accounting/reports/journal${buildQueryString(query)}`)
 }
 
 /**
  * Déclenche le téléchargement d'un export CSV pour un rapport.
  */
-export async function downloadReportCsv(
-  reportName: string,
-  params: Record<string, unknown> = {}
-): Promise<void> {
+export async function downloadReportCsv(reportName: string, params: Record<string, unknown> = {}): Promise<void> {
   const url = `/api/admin/accounting/reports/${reportName}${buildQueryString({
     ...params,
     format: 'csv',
   })}`
-  const { blob, filename } = await apiDownload(url)
+  const { blob, filename } = await apiDownload(url, {
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.FEC_EXPORT),
+  })
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
@@ -399,9 +358,7 @@ export interface ComputeVatQuery {
 }
 
 export async function computeVat(query: ComputeVatQuery): Promise<IVatPreview> {
-  return apiFetch<IVatPreview>(
-    `/api/admin/accounting/vat/compute${buildQueryString(query)}`
-  )
+  return apiFetch<IVatPreview>(`/api/admin/accounting/vat/compute${buildQueryString(query)}`)
 }
 
 export interface ListVatDeclarationsQuery {
@@ -409,19 +366,15 @@ export interface ListVatDeclarationsQuery {
   type?: string
 }
 
-export async function listVatDeclarations(
-  query: ListVatDeclarationsQuery = {}
-): Promise<IVatDeclaration[]> {
+export async function listVatDeclarations(query: ListVatDeclarationsQuery = {}): Promise<IVatDeclaration[]> {
   const r = await apiFetch<{ declarations: IVatDeclaration[] }>(
-    `/api/admin/accounting/vat/declarations${buildQueryString(query)}`
+    `/api/admin/accounting/vat/declarations${buildQueryString(query)}`,
   )
   return r.declarations || []
 }
 
 export async function getVatDeclaration(id: string): Promise<IVatDeclaration> {
-  const r = await apiFetch<{ declaration: IVatDeclaration }>(
-    `/api/admin/accounting/vat/declarations/${id}`
-  )
+  const r = await apiFetch<{ declaration: IVatDeclaration }>(`/api/admin/accounting/vat/declarations/${id}`)
   return r.declaration
 }
 
@@ -433,30 +386,22 @@ export interface CreateVatDeclarationPayload {
   notes?: string
 }
 
-export async function createVatDeclaration(
-  payload: CreateVatDeclarationPayload
-): Promise<IVatDeclaration> {
-  const r = await apiFetch<{ declaration: IVatDeclaration }>(
-    '/api/admin/accounting/vat/declarations',
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  )
+export async function createVatDeclaration(payload: CreateVatDeclarationPayload): Promise<IVatDeclaration> {
+  const r = await apiFetch<{ declaration: IVatDeclaration }>('/api/admin/accounting/vat/declarations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
   return r.declaration
 }
 
 export async function submitVatDeclaration(
   id: string,
-  payload: { submittedRef?: string } = {}
+  payload: { submittedRef?: string } = {},
 ): Promise<IVatDeclaration> {
-  const r = await apiFetch<{ declaration: IVatDeclaration }>(
-    `/api/admin/accounting/vat/declarations/${id}/submit`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  )
+  const r = await apiFetch<{ declaration: IVatDeclaration }>(`/api/admin/accounting/vat/declarations/${id}/submit`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
   return r.declaration
 }
 
@@ -489,14 +434,12 @@ export async function downloadFec(params: DownloadFecParams = {}): Promise<void>
 
 export async function listUnletteredLines(accountCode: string): Promise<IUnletteredData> {
   return apiFetch<IUnletteredData>(
-    `/api/admin/accounting/lettrage/account/${encodeURIComponent(accountCode)}/unlettered`
+    `/api/admin/accounting/lettrage/account/${encodeURIComponent(accountCode)}/unlettered`,
   )
 }
 
 export async function listLetteredLines(accountCode: string): Promise<ILetteredData> {
-  return apiFetch<ILetteredData>(
-    `/api/admin/accounting/lettrage/account/${encodeURIComponent(accountCode)}/lettered`
-  )
+  return apiFetch<ILetteredData>(`/api/admin/accounting/lettrage/account/${encodeURIComponent(accountCode)}/lettered`)
 }
 
 export async function letterLines(lineIds: string[], code?: string): Promise<ILetterResult> {
@@ -508,31 +451,22 @@ export async function letterLines(lineIds: string[], code?: string): Promise<ILe
   })
 }
 
-export async function unletterCode(
-  accountCode: string,
-  code: string
-): Promise<IUnletterResult> {
+export async function unletterCode(accountCode: string, code: string): Promise<IUnletterResult> {
   return apiFetch<IUnletterResult>(
-    `/api/admin/accounting/lettrage/account/${encodeURIComponent(
-      accountCode
-    )}/${encodeURIComponent(code)}`,
-    { method: 'DELETE' }
+    `/api/admin/accounting/lettrage/account/${encodeURIComponent(accountCode)}/${encodeURIComponent(code)}`,
+    { method: 'DELETE' },
   )
 }
 
 // ---- External sources ----
 
 export async function listExternalSources(): Promise<IExternalSource[]> {
-  const r = await apiFetch<{ sources: IExternalSource[] }>(
-    '/api/admin/accounting/external-sources'
-  )
+  const r = await apiFetch<{ sources: IExternalSource[] }>('/api/admin/accounting/external-sources')
   return r.sources || []
 }
 
 export async function getExternalSource(id: string): Promise<IExternalSource> {
-  const r = await apiFetch<{ source: IExternalSource }>(
-    `/api/admin/accounting/external-sources/${id}`
-  )
+  const r = await apiFetch<{ source: IExternalSource }>(`/api/admin/accounting/external-sources/${id}`)
   return r.source
 }
 
@@ -549,12 +483,11 @@ export interface CreateExternalSourcePayload {
   defaultBankAccount?: string
 }
 
-export async function createExternalSource(
-  payload: CreateExternalSourcePayload
-): Promise<IExternalSourceCreateResult> {
+export async function createExternalSource(payload: CreateExternalSourcePayload): Promise<IExternalSourceCreateResult> {
   return apiFetch<IExternalSourceCreateResult>('/api/admin/accounting/external-sources', {
     method: 'POST',
     body: JSON.stringify(payload),
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EXTERNAL_SOURCE_CREATE),
   })
 }
 
@@ -570,35 +503,31 @@ export interface UpdateExternalSourcePayload {
   defaultBankAccount?: string
 }
 
-export async function updateExternalSource(
-  id: string,
-  payload: UpdateExternalSourcePayload
-): Promise<IExternalSource> {
-  const r = await apiFetch<{ source: IExternalSource }>(
-    `/api/admin/accounting/external-sources/${id}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }
-  )
+export async function updateExternalSource(id: string, payload: UpdateExternalSourcePayload): Promise<IExternalSource> {
+  const r = await apiFetch<{ source: IExternalSource }>(`/api/admin/accounting/external-sources/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
   return r.source
 }
 
 export async function deleteExternalSource(id: string): Promise<void> {
-  await apiFetch(`/api/admin/accounting/external-sources/${id}`, { method: 'DELETE' })
+  await apiFetch(`/api/admin/accounting/external-sources/${id}`, {
+    method: 'DELETE',
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EXTERNAL_SOURCE_DELETE),
+  })
 }
 
 export async function rotateExternalSourceKey(id: string): Promise<IRotateKeyResult> {
   return apiFetch<IRotateKeyResult>(`/api/admin/accounting/external-sources/${id}/rotate`, {
     method: 'POST',
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EXTERNAL_SOURCE_ROTATE),
   })
 }
 
 // Classification rules
 export async function listClassificationRules(sourceId: string): Promise<IClassificationRule[]> {
-  const r = await apiFetch<{ rules: IClassificationRule[] }>(
-    `/api/admin/accounting/external-sources/${sourceId}/rules`
-  )
+  const r = await apiFetch<{ rules: IClassificationRule[] }>(`/api/admin/accounting/external-sources/${sourceId}/rules`)
   return r.rules || []
 }
 
@@ -612,38 +541,29 @@ export interface ClassificationRulePayload {
 
 export async function createClassificationRule(
   sourceId: string,
-  payload: ClassificationRulePayload
+  payload: ClassificationRulePayload,
 ): Promise<IClassificationRule> {
-  const r = await apiFetch<{ rule: IClassificationRule }>(
-    `/api/admin/accounting/external-sources/${sourceId}/rules`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  )
+  const r = await apiFetch<{ rule: IClassificationRule }>(`/api/admin/accounting/external-sources/${sourceId}/rules`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
   return r.rule
 }
 
 export async function updateClassificationRule(
   sourceId: string,
   ruleId: string,
-  payload: Partial<ClassificationRulePayload>
+  payload: Partial<ClassificationRulePayload>,
 ): Promise<IClassificationRule> {
   const r = await apiFetch<{ rule: IClassificationRule }>(
     `/api/admin/accounting/external-sources/${sourceId}/rules/${ruleId}`,
-    { method: 'PATCH', body: JSON.stringify(payload) }
+    { method: 'PATCH', body: JSON.stringify(payload) },
   )
   return r.rule
 }
 
-export async function deleteClassificationRule(
-  sourceId: string,
-  ruleId: string
-): Promise<void> {
-  await apiFetch(
-    `/api/admin/accounting/external-sources/${sourceId}/rules/${ruleId}`,
-    { method: 'DELETE' }
-  )
+export async function deleteClassificationRule(sourceId: string, ruleId: string): Promise<void> {
+  await apiFetch(`/api/admin/accounting/external-sources/${sourceId}/rules/${ruleId}`, { method: 'DELETE' })
 }
 
 // External transactions (audit trail)
@@ -658,18 +578,13 @@ export interface ListExternalTransactionsQuery {
 }
 
 export async function listExternalTransactions(
-  query: ListExternalTransactionsQuery = {}
+  query: ListExternalTransactionsQuery = {},
 ): Promise<IExternalTransactionsList> {
-  return apiFetch<IExternalTransactionsList>(
-    `/api/admin/accounting/external-transactions${buildQueryString(query)}`
-  )
+  return apiFetch<IExternalTransactionsList>(`/api/admin/accounting/external-transactions${buildQueryString(query)}`)
 }
 
 export async function replayExternalTransaction(id: string): Promise<IExternalTransaction> {
-  return apiFetch<IExternalTransaction>(
-    `/api/admin/accounting/external-transactions/${id}/replay`,
-    { method: 'POST' }
-  )
+  return apiFetch<IExternalTransaction>(`/api/admin/accounting/external-transactions/${id}/replay`, { method: 'POST' })
 }
 
 // ---- Audit log ----
@@ -683,21 +598,12 @@ export interface ListAuditLogQuery {
   limit?: number
 }
 
-export async function listAuditLog(
-  query: ListAuditLogQuery = {}
-): Promise<IAuditListResponse> {
-  return apiFetch<IAuditListResponse>(
-    `/api/admin/accounting/audit-log${buildQueryString(query)}`
-  )
+export async function listAuditLog(query: ListAuditLogQuery = {}): Promise<IAuditListResponse> {
+  return apiFetch<IAuditListResponse>(`/api/admin/accounting/audit-log${buildQueryString(query)}`)
 }
 
-export async function listAuditLogForEntity(
-  entityType: string,
-  entityId: string
-): Promise<IAuditListResponse> {
+export async function listAuditLogForEntity(entityType: string, entityId: string): Promise<IAuditListResponse> {
   return apiFetch<IAuditListResponse>(
-    `/api/admin/accounting/audit-log/entity/${encodeURIComponent(
-      entityType
-    )}/${encodeURIComponent(entityId)}`
+    `/api/admin/accounting/audit-log/entity/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`,
   )
 }

@@ -5,6 +5,7 @@ import { PERMISSIONS } from '../../../lib/permissions.js'
 import CompanySettings from '../../../models/CompanySettings.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import { exportFec } from '../../../lib/accounting/fecExporter.js'
+import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
 
@@ -25,6 +26,7 @@ function parseDateParam(value: unknown): Date | null {
 router.get(
   '/export',
   requirePermission(PERMISSIONS.EXPORT_FEC),
+  sensitiveAction('FEC_EXPORT'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const from = parseDateParam(req.query.from)
@@ -43,7 +45,7 @@ router.get(
       // le nom officiel mais on n'a pas le luxe de le connaître avant de
       // commencer à streamer.
       const ymd = `${to.getUTCFullYear()}${String(to.getUTCMonth() + 1).padStart(2, '0')}${String(
-        to.getUTCDate()
+        to.getUTCDate(),
       ).padStart(2, '0')}`
       const provisionalName = siren ? `${siren}FEC${ymd}.txt` : `FEC-${ymd}.txt`
 
@@ -84,7 +86,7 @@ router.get(
       }
       next(err)
     }
-  }
+  },
 )
 
 export default router

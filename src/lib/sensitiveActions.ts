@@ -1,0 +1,22 @@
+/**
+ * Contrat avec le catalogue backend des actions sensibles.
+ * L'en-tête ne contient aucune donnée utilisateur ou secrète : il atteste
+ * uniquement que l'interface a demandé la confirmation de l'action ciblée.
+ */
+export const SENSITIVE_ACTIONS = {
+  AGENT_TOKEN_CREATE: 'AGENT_TOKEN_CREATE',
+  AGENT_TOKEN_UPDATE: 'AGENT_TOKEN_UPDATE',
+  AGENT_TOKEN_REVOKE: 'AGENT_TOKEN_REVOKE',
+  TOOL_ACCESS_CREATE: 'TOOL_ACCESS_CREATE',
+  TOOL_ACCESS_UPDATE: 'TOOL_ACCESS_UPDATE',
+  TOOL_SECRET_REVEAL: 'TOOL_SECRET_REVEAL',
+  TOOL_ACCESS_DELETE: 'TOOL_ACCESS_DELETE',
+  FEC_EXPORT: 'FEC_EXPORT',
+  EXTERNAL_SOURCE_CREATE: 'EXTERNAL_SOURCE_CREATE',
+  EXTERNAL_SOURCE_ROTATE: 'EXTERNAL_SOURCE_ROTATE',
+  EXTERNAL_SOURCE_DELETE: 'EXTERNAL_SOURCE_DELETE',
+} as const
+
+export function sensitiveActionHeaders(action: (typeof SENSITIVE_ACTIONS)[keyof typeof SENSITIVE_ACTIONS]) {
+  return { 'X-Venio-Confirm': action }
+}

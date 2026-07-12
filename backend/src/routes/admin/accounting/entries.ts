@@ -5,6 +5,7 @@ import { PERMISSIONS } from '../../../lib/permissions.js'
 import AccountingEntry from '../../../models/AccountingEntry.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import { createEntry, validateEntry, deleteDraftEntry } from '../../../lib/accounting/doubleEntry.js'
+import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
 
@@ -17,7 +18,16 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { journal, status, source, from, to, search, page = '1', limit = '50' } = req.query as Record<string, string | undefined>
+      const {
+        journal,
+        status,
+        source,
+        from,
+        to,
+        search,
+        page = '1',
+        limit = '50',
+      } = req.query as Record<string, string | undefined>
       const filter: Record<string, unknown> = { archivedAt: null }
       if (journal) filter.journalCode = String(journal).toUpperCase()
       if (status) filter.status = status
@@ -37,18 +47,14 @@ router.get(
       }
       const skip = (Number(page) - 1) * Number(limit)
       const [entries, total] = await Promise.all([
-        AccountingEntry.find(filter)
-          .sort({ date: -1, createdAt: -1 })
-          .skip(skip)
-          .limit(Number(limit))
-          .lean(),
+        AccountingEntry.find(filter).sort({ date: -1, createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
         AccountingEntry.countDocuments(filter),
       ])
       res.json({ entries, total, page: Number(page), limit: Number(limit) })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // GET /:id : détail d'une écriture + ses lignes
@@ -67,7 +73,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // POST / : crée une écriture manuelle
@@ -97,7 +103,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 // POST /:id/validate : passe DRAFT → VALIDATED
@@ -116,7 +122,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 // POST /bulk-validate : valide plusieurs écritures à la fois (best-effort par id)
@@ -143,13 +149,14 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // DELETE /:id : suppression d'une écriture DRAFT (refusée sinon)
 router.delete(
   '/:id',
   requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
+  sensitiveAction('ACCOUNTING_ENTRY_DELETE'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await deleteDraftEntry(String(req.params.id))
@@ -162,7 +169,7 @@ router.delete(
       }
       next(err)
     }
-  }
+  },
 )
 
 export default router

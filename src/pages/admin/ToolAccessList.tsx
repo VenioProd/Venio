@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
+import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../../lib/sensitiveActions'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../hooks/useConfirm'
@@ -152,10 +153,15 @@ const ToolAccessList = () => {
         await apiFetch(`/api/admin/tool-access/${editId}`, {
           method: 'PATCH',
           body: JSON.stringify(password ? form : metadata),
+          headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_UPDATE),
         })
         showToast('Outil mis a jour', 'success')
       } else {
-        await apiFetch('/api/admin/tool-access', { method: 'POST', body: JSON.stringify(form) })
+        await apiFetch('/api/admin/tool-access', {
+          method: 'POST',
+          body: JSON.stringify(form),
+          headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_CREATE),
+        })
         showToast('Outil ajoute', 'success')
       }
       handleCloseForm()
@@ -171,7 +177,10 @@ const ToolAccessList = () => {
     const ok = await confirm(`Supprimer l'acces "${tool.name}" ?`)
     if (!ok) return
     try {
-      await apiFetch(`/api/admin/tool-access/${tool._id}`, { method: 'DELETE' })
+      await apiFetch(`/api/admin/tool-access/${tool._id}`, {
+        method: 'DELETE',
+        headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_DELETE),
+      })
       showToast('Outil supprime', 'success')
       load()
     } catch {
@@ -190,6 +199,7 @@ const ToolAccessList = () => {
       const data = await apiFetch<{ password: string }>(`/api/admin/tool-access/${tool._id}/reveal`, {
         method: 'POST',
         body: JSON.stringify({ totpCode }),
+        headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_SECRET_REVEAL),
       })
       setRevealedPasswords((previous) => ({ ...previous, [tool._id]: data.password }))
       window.setTimeout(() => {
@@ -404,9 +414,15 @@ const ToolAccessList = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => revealedPasswords[tool._id]
-                            ? setRevealedPasswords((previous) => { const next = { ...previous }; delete next[tool._id]; return next })
-                            : handleReveal(tool)}
+                          onClick={() =>
+                            revealedPasswords[tool._id]
+                              ? setRevealedPasswords((previous) => {
+                                  const next = { ...previous }
+                                  delete next[tool._id]
+                                  return next
+                                })
+                              : handleReveal(tool)
+                          }
                           style={{
                             background: 'none',
                             border: 'none',
