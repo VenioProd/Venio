@@ -5,7 +5,10 @@ import WorkspaceLayout from '../models/WorkspaceLayout.js'
 import PersonalTask from '../models/PersonalTask.js'
 import WorkspaceNote from '../models/WorkspaceNote.js'
 
-beforeAll(setupMongo)
+beforeAll(async () => {
+  await setupMongo()
+  await WorkspaceLayout.init()
+})
 afterAll(teardownMongo)
 beforeEach(clearDb)
 
@@ -33,9 +36,7 @@ describe('PersonalTask', () => {
     expect(doc.isArchived).toBe(false)
   })
   it('refuse un status invalide', async () => {
-    await expect(
-      PersonalTask.create({ userId: userId(), title: 'X', status: 'NOPE' as never })
-    ).rejects.toThrow()
+    await expect(PersonalTask.create({ userId: userId(), title: 'X', status: 'NOPE' as never })).rejects.toThrow()
   })
 })
 
