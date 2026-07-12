@@ -18,7 +18,7 @@ export function trackAdminEvent(event: AdminAnalyticsEvent, action: string): voi
   const actionId = action.replace(/-/g, '_')
   if (!/^[a-z0-9_]{1,80}$/.test(actionId)) return
 
-  void fetch('/api/public/analytics/event', {
+  void apiFetch('/api/public/analytics/event', {
     method: 'POST',
     body: JSON.stringify({ event, path: window.location.pathname, cta: actionId }),
     headers: { 'Content-Type': 'application/json' },
@@ -27,3 +27,4 @@ export function trackAdminEvent(event: AdminAnalyticsEvent, action: string): voi
     credentials: 'omit',
   }).catch(() => {})
 }
+import { apiFetch } from './api'

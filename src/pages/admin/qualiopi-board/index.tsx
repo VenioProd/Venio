@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
+import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import QualiopiQuestionnaires from '../../../components/admin/QualiopiQuestionnaires'
 import { CRITERIA_COLORS, getProgress } from './types'
@@ -137,16 +137,10 @@ const QualiopiBoard = () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch(
+      const updated = await apiUpload<QualiopiCriterion>(
         `/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/sub/${subId}/files`,
-        {
-          method: 'POST',
-          body: formData,
-          credentials: 'same-origin',
-        },
+        formData,
       )
-      if (!res.ok) throw new Error('Upload failed')
-      const updated = await res.json()
       setCriteria((prev) => prev.map((c) => (c._id === updated._id ? updated : c)))
     } catch (err) {
       console.error(err)
@@ -155,15 +149,11 @@ const QualiopiBoard = () => {
 
   const downloadFile = async (fileId: string, fileName: string) => {
     try {
-      const res = await fetch(`/api/admin/qualiopi/files/${fileId}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!res.ok) throw new Error('Download failed')
-      const blob = await res.blob()
+      const { blob, filename } = await apiDownload(`/api/admin/qualiopi/files/${fileId}/download`)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = fileName
+      a.download = filename ?? fileName
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
@@ -173,11 +163,7 @@ const QualiopiBoard = () => {
 
   const previewFile = async (fileId: string, fileName: string, mimeType: string) => {
     try {
-      const res = await fetch(`/api/admin/qualiopi/files/${fileId}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!res.ok) throw new Error('Preview failed')
-      const blob = await res.blob()
+      const { blob } = await apiDownload(`/api/admin/qualiopi/files/${fileId}/download`)
       const url = URL.createObjectURL(blob)
       setPreview({ url, name: fileName, mime: mimeType })
     } catch (err) {
@@ -253,13 +239,10 @@ const QualiopiBoard = () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch(`/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/files`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-      })
-      if (!res.ok) throw new Error('Upload failed')
-      const updated = await res.json()
+      const updated = await apiUpload<QualiopiCriterion>(
+        `/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/files`,
+        formData,
+      )
       setCriteria((prev) => prev.map((c) => (c._id === updated._id ? updated : c)))
     } catch (err) {
       console.error(err)

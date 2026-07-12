@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { ApiError, apiFetch } from '../lib/api'
 import './PublicQuestionnaire.css'
 
 interface Question {
@@ -23,23 +24,21 @@ const PublicQuestionnaireBuilder = () => {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [questions, setQuestions] = useState<Question[]>([
-    { type: 'rating', label: '', options: [], required: true },
-  ])
+  const [questions, setQuestions] = useState<Question[]>([{ type: 'rating', label: '', options: [], required: true }])
   const [submitting, setSubmitting] = useState(false)
   const [created, setCreated] = useState<{ token: string } | null>(null)
 
   useEffect(() => {
     const validate = async () => {
       try {
-        const res = await fetch(`/api/questionnaire/create/${token}`)
-        if (res.ok) {
-          setValid(true)
-        } else {
-          setError('Ce lien de creation est invalide ou desactive.')
-        }
-      } catch {
-        setError('Erreur de connexion au serveur.')
+        await apiFetch(`/api/questionnaire/create/${token}`)
+        setValid(true)
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? 'Ce lien de creation est invalide ou desactive.'
+            : 'Erreur de connexion au serveur.',
+        )
       } finally {
         setValidating(false)
       }
@@ -48,7 +47,7 @@ const PublicQuestionnaireBuilder = () => {
   }, [token])
 
   const updateQuestion = (i: number, patch: Partial<Question>) => {
-    setQuestions(questions.map((q, idx) => idx === i ? { ...q, ...patch } : q))
+    setQuestions(questions.map((q, idx) => (idx === i ? { ...q, ...patch } : q)))
   }
 
   const addQuestion = () => {
@@ -67,18 +66,12 @@ const PublicQuestionnaireBuilder = () => {
     setError('')
 
     try {
-      const res = await fetch(`/api/questionnaire/create/${token}`, {
+      const data = await apiFetch<{ token: string }>(`/api/questionnaire/create/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, questions }),
       })
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.message || 'Erreur lors de la creation')
-      }
-
-      const data = await res.json()
       setCreated({ token: data.token })
     } catch (err: any) {
       setError(err.message || 'Erreur inattendue')
@@ -194,7 +187,9 @@ const PublicQuestionnaireBuilder = () => {
                   onChange={(e) => updateQuestion(i, { type: e.target.value as any })}
                 >
                   {QUESTION_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
                   ))}
                 </select>
                 <label className="pqb-required-toggle">
@@ -234,7 +229,10 @@ const PublicQuestionnaireBuilder = () => {
                         }}
                         placeholder={`Option ${oi + 1}`}
                       />
-                      <button className="pqb-remove-opt" onClick={() => updateQuestion(i, { options: q.options.filter((_, j) => j !== oi) })}>
+                      <button
+                        className="pqb-remove-opt"
+                        onClick={() => updateQuestion(i, { options: q.options.filter((_, j) => j !== oi) })}
+                      >
                         x
                       </button>
                     </div>
@@ -245,9 +243,7 @@ const PublicQuestionnaireBuilder = () => {
                 </div>
               )}
 
-              {q.type === 'rating' && (
-                <div className="pqb-rating-preview">Notation de 1 a 5</div>
-              )}
+              {q.type === 'rating' && <div className="pqb-rating-preview">Notation de 1 a 5</div>}
             </div>
           ))}
 
@@ -262,11 +258,7 @@ const PublicQuestionnaireBuilder = () => {
 
         {error && <div className="pq-form-error">{error}</div>}
 
-        <button
-          className="pq-submit"
-          onClick={handleSubmit}
-          disabled={!canSubmit || submitting}
-        >
+        <button className="pq-submit" onClick={handleSubmit} disabled={!canSubmit || submitting}>
           {submitting ? 'Creation en cours...' : 'Creer le questionnaire'}
         </button>
       </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { ApiError, apiDownload, apiFetch, apiUpload } from '../../lib/api'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip, MessageSquare } from 'lucide-react'
-import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import '../espace-client/ClientPortal.css'
@@ -69,14 +69,13 @@ async function fetchDecisionBlob(
   decisionId: string,
   index: number,
 ): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
-  const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
-    credentials: 'same-origin',
-  })
-  if (!res.ok) {
-    const d = await res.json().catch(() => null)
-    return { error: (d as { error?: string })?.error || `Erreur ${res.status}` }
+  try {
+    const { blob } = await apiDownload(`/api/admin/decisions/${decisionId}/attachments/${index}/download`)
+    return { blob }
+  } catch (err) {
+    if (err instanceof ApiError) return { error: err.message || `Erreur ${err.status}` }
+    return { error: 'Erreur téléchargement' }
   }
-  return { blob: await res.blob() }
 }
 
 function forceDownload(objectUrl: string, name: string) {
@@ -976,15 +975,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       const inputFiles = fileInputRef.current?.files
       if (inputFiles) Array.from(inputFiles).forEach((f) => form.append('files', f))
 
-      const res = await fetch('/api/admin/decisions', {
-        method: 'POST',
-        body: form,
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => null)
-        throw new Error((d as { message?: string })?.message || 'Erreur')
-      }
+      await apiUpload('/api/admin/decisions', form)
       onCreated()
     } catch (e2) {
       setErr((e2 as Error).message || 'Erreur')

@@ -1,4 +1,5 @@
 import React from 'react'
+import { apiDownload } from '../../../lib/api'
 import {
   formatCurrency,
   parseCurrency,
@@ -523,11 +524,7 @@ const ProjectDetailsTab: React.FC<ProjectDetailsTabProps> = ({
                           style={{ padding: '8px 12px', fontSize: '13px' }}
                           onClick={async () => {
                             try {
-                              const res = await fetch(`/api/admin/billing/${doc._id}/pdf`, {
-                                credentials: 'same-origin',
-                              })
-                              if (!res.ok) throw new Error('PDF non disponible')
-                              const blob = await res.blob()
+                              const { blob } = await apiDownload(`/api/admin/billing/${doc._id}/pdf`)
                               const url = URL.createObjectURL(blob)
                               window.open(url, '_blank')
                             } catch (e: unknown) {

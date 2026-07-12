@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
+import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { Ticket, KpiData } from './types'
@@ -88,11 +88,7 @@ const TicketList = () => {
       fd.append('category', form.category)
       fd.append('priority', form.priority)
       formFiles.forEach((f) => fd.append('files', f))
-      await fetch('/api/admin/tickets', {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin',
-      })
+      await apiUpload('/api/admin/tickets', fd)
       setForm({ title: '', message: '', category: 'QUESTION', priority: 'NORMALE' })
       setFormFiles([])
       setShowForm(false)
@@ -111,11 +107,7 @@ const TicketList = () => {
       const fd = new FormData()
       fd.append('message', replyText)
       replyFiles.forEach((f) => fd.append('files', f))
-      await fetch(`/api/admin/tickets/${ticketId}/reply`, {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin',
-      })
+      await apiUpload(`/api/admin/tickets/${ticketId}/reply`, fd)
       setReplyText('')
       setReplyFiles([])
       await load()

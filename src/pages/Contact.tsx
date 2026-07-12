@@ -4,6 +4,7 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { useReveal } from '../hooks/useReveal'
 import { trackPublicEvent } from '../lib/publicAnalytics'
+import { apiFetch } from '../lib/api'
 import '../styles/monolithe-pages.css'
 
 interface ContactFormData {
@@ -60,7 +61,7 @@ const Contact = () => {
     trackPublicEvent('contact_form_submitted')
 
     try {
-      const response = await fetch('/api/contact', {
+      await apiFetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,8 +76,6 @@ const Contact = () => {
           startedAt: formStartedAt.current,
         }),
       })
-
-      if (!response.ok) throw new Error('Contact request failed')
 
       setFormData({
         prenom: '',

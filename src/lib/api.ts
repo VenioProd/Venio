@@ -17,6 +17,7 @@ export class ApiError extends Error {
 
 function handleAuth401(path: string): void {
   if (path.includes('/auth/login')) return
+  if (typeof window === 'undefined') return
   const currentPath = window.location.pathname
   if (currentPath.startsWith('/admin')) {
     window.location.href = '/admin/login'
@@ -25,26 +26,47 @@ function handleAuth401(path: string): void {
   }
 }
 
+function isJsonResponse(response: Response): boolean {
+  return response.headers.get('content-type')?.toLowerCase().includes('application/json') ?? false
+}
+
+async function readResponsePayload(response: Response): Promise<unknown> {
+  if (response.status === 204 || response.status === 205) return null
+
+  try {
+    if (isJsonResponse(response)) return await response.json()
+    const text = await response.text()
+    return text || null
+  } catch {
+    return null
+  }
+}
+
+function errorMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === 'object' && payload !== null) {
+    const { error, message } = payload as Record<string, unknown>
+    if (typeof error === 'string' && error) return error
+    if (typeof message === 'string' && message) return message
+  }
+  return typeof payload === 'string' && payload ? payload : fallback
+}
+
+function throwApiError(response: Response, payload: unknown, fallback: string, path: string): never {
+  if (response.status === 401) handleAuth401(path)
+  throw new ApiError(response.status, errorMessage(payload, fallback), payload)
+}
+
 // ─── apiFetch ───────────────────────────────────────────────────────────────
 
 export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  }
+  const headers = new Headers(options.headers)
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
-  const response = await fetch(path, { ...options, headers, credentials: 'same-origin' })
-  const contentType = response.headers.get('content-type') || ''
-
-  let data: T | null = null
-  if (contentType.includes('application/json')) {
-    data = await response.json()
-  }
+  const response = await fetch(path, { ...options, headers, credentials: options.credentials ?? 'same-origin' })
+  const data = await readResponsePayload(response)
 
   if (!response.ok) {
-    if (response.status === 401) handleAuth401(path)
-    const message = ((data as Record<string, unknown>)?.error as string) || 'Erreur serveur'
-    throw new ApiError(response.status, message, data)
+    throwApiError(response, data, 'Erreur serveur', path)
   }
 
   return data as T
@@ -54,7 +76,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
 
 export interface ApiUploadOptions {
   method?: 'POST' | 'PUT' | 'PATCH'
-  headers?: Record<string, string>
+  headers?: HeadersInit
   signal?: AbortSignal
 }
 
@@ -63,7 +85,7 @@ export async function apiUpload<T = unknown>(
   formData: FormData,
   options: ApiUploadOptions = {},
 ): Promise<T> {
-  const headers: Record<string, string> = { ...(options.headers || {}) }
+  const headers = new Headers(options.headers)
   // NE PAS forcer Content-Type — laisser le browser ajouter le boundary multipart
 
   const response = await fetch(path, {
@@ -73,15 +95,9 @@ export async function apiUpload<T = unknown>(
     signal: options.signal,
     credentials: 'same-origin',
   })
-  const contentType = response.headers.get('content-type') || ''
-  let data: T | null = null
-  if (contentType.includes('application/json')) {
-    data = await response.json()
-  }
+  const data = await readResponsePayload(response)
   if (!response.ok) {
-    if (response.status === 401) handleAuth401(path)
-    const message = ((data as Record<string, unknown>)?.error as string) || 'Erreur upload'
-    throw new ApiError(response.status, message, data)
+    throwApiError(response, data, 'Erreur upload', path)
   }
   return data as T
 }
@@ -91,7 +107,7 @@ export async function apiUpload<T = unknown>(
 export interface ApiDownloadOptions {
   method?: 'GET' | 'POST'
   body?: unknown
-  headers?: Record<string, string>
+  headers?: HeadersInit
   signal?: AbortSignal
 }
 
@@ -101,10 +117,64 @@ export interface ApiDownloadResult {
   contentType: string
 }
 
+/**
+ * Extract a safe suggested download name from Content-Disposition (RFC 6266).
+ * This only affects the browser's local download attribute; it never changes
+ * the response blob or server-provided content type.
+ */
+export function filenameFromContentDisposition(contentDisposition: string | null): string | null {
+  if (!contentDisposition) return null
+
+  const params: Record<string, string> = {}
+  for (const match of contentDisposition.matchAll(/;\s*([^=;\s]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^;]*))/g)) {
+    const key = match[1].toLowerCase()
+    const value = (match[2] ?? match[3] ?? '').trim().replace(/\\(.)/g, '$1')
+    params[key] = value
+  }
+
+  let filename = params['filename*']
+  if (filename) {
+    const extended = filename.match(/^([^']*)'[^']*'(.*)$/)
+    if (extended) {
+      const [, charset, encoded] = extended
+      try {
+        if (!charset || /^utf-?8$/i.test(charset)) {
+          filename = decodeURIComponent(encoded)
+        } else if (/^(iso-8859-1|latin1)$/i.test(charset)) {
+          const bytes = encoded.replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+          filename = new TextDecoder('iso-8859-1').decode(Uint8Array.from(bytes, (char) => char.charCodeAt(0)))
+        } else {
+          filename = decodeURIComponent(encoded)
+        }
+      } catch {
+        filename = encoded
+      }
+    }
+  } else {
+    filename = params.filename
+  }
+
+  if (!filename) return null
+  const filenameLeaf = filename
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((part) => part && part !== '.' && part !== '..')
+    .pop()
+  const safeFilename = Array.from(filenameLeaf ?? '')
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+      return code >= 32 && code !== 127
+    })
+    .join('')
+    .replace(/[<>:"|?*]/g, '_')
+    .trim()
+  return safeFilename && !/^\.+$/.test(safeFilename) ? safeFilename : null
+}
+
 export async function apiDownload(path: string, options: ApiDownloadOptions = {}): Promise<ApiDownloadResult> {
-  const headers: Record<string, string> = { ...(options.headers || {}) }
-  if (options.body !== undefined && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json'
+  const headers = new Headers(options.headers)
+  if (options.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
   }
 
   const response = await fetch(path, {
@@ -116,34 +186,12 @@ export async function apiDownload(path: string, options: ApiDownloadOptions = {}
   })
 
   if (!response.ok) {
-    if (response.status === 401) handleAuth401(path)
-    let payload: unknown = null
-    try {
-      payload = await response.json()
-    } catch {
-      /* ignore */
-    }
-    const message = ((payload as Record<string, unknown>)?.error as string) || 'Erreur téléchargement'
-    throw new ApiError(response.status, message, payload)
+    throwApiError(response, await readResponsePayload(response), 'Erreur téléchargement', path)
   }
 
   const blob = await response.blob()
   const contentType = response.headers.get('content-type') || 'application/octet-stream'
-  const cd = response.headers.get('content-disposition') || ''
-
-  // Parse filename selon RFC 5987 / 6266 (filename="x" ou filename*=UTF-8''x)
-  let filename: string | null = null
-  const utf8Match = cd.match(/filename\*=UTF-8''([^;\n]+)/i)
-  if (utf8Match) {
-    try {
-      filename = decodeURIComponent(utf8Match[1])
-    } catch {
-      filename = utf8Match[1]
-    }
-  } else {
-    const plainMatch = cd.match(/filename="?([^";\n]+)"?/i)
-    if (plainMatch) filename = plainMatch[1]
-  }
+  const filename = filenameFromContentDisposition(response.headers.get('content-disposition'))
 
   return { blob, filename, contentType }
 }

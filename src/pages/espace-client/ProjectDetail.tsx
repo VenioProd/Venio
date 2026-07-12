@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
-import { apiFetch } from '../../lib/api'
+import { apiDownload, apiFetch } from '../../lib/api'
 import type { Project, ProjectSection, ProjectItem, ProjectUpdate, ProjectDocument } from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
@@ -92,17 +92,11 @@ const ClientProjectDetail = () => {
 
   const downloadDocument = async (doc: ProjectDocument) => {
     try {
-      const response = await fetch(`/api/documents/${doc._id}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        throw new Error('Telechargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob, filename } = await apiDownload(`/api/documents/${doc._id}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = doc.originalName
+      link.download = filename ?? doc.originalName
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -114,17 +108,11 @@ const ClientProjectDetail = () => {
 
   const downloadItem = async (itemId: string, fileName: string) => {
     try {
-      const response = await fetch(`/api/projects/${id}/items/${itemId}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        throw new Error('Téléchargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob, filename } = await apiDownload(`/api/projects/${id}/items/${itemId}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = fileName
+      link.download = filename ?? fileName
       document.body.appendChild(link)
       link.click()
       link.remove()

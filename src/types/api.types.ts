@@ -11,8 +11,14 @@ export interface PaginationMeta {
   totalPages: number
 }
 
-export interface ApiFetchOptions {
-  method?: string
-  headers?: Record<string, string>
-  body?: string
+/**
+ * Options accepted by the JSON API client.
+ *
+ * `body` deliberately remains a `BodyInit`: callers that send JSON can keep
+ * passing `JSON.stringify(payload)`, while the shared client can forward the
+ * standard fetch options (notably `signal`) without narrowing them away.
+ */
+export interface ApiFetchOptions extends Omit<RequestInit, 'body' | 'headers'> {
+  headers?: HeadersInit
+  body?: BodyInit | null
 }

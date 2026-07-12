@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../lib/api'
+import { ApiError, apiDownload, apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -76,14 +76,7 @@ export default function Resources() {
 
   const openFile = async (r: Resource, inline: boolean) => {
     try {
-      const resp = await fetch(`/api/admin/resources/${r._id}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!resp.ok) {
-        showToast("Impossible d'ouvrir le fichier", 'error')
-        return
-      }
-      const blob = await resp.blob()
+      const { blob, filename } = await apiDownload(`/api/admin/resources/${r._id}/download`)
       const url = URL.createObjectURL(blob)
       if (inline) {
         setPreviewUrl(url)
@@ -92,12 +85,12 @@ export default function Resources() {
       } else {
         const a = document.createElement('a')
         a.href = url
-        a.download = r.originalName
+        a.download = filename ?? r.originalName
         a.click()
         setTimeout(() => URL.revokeObjectURL(url), 5000)
       }
-    } catch {
-      showToast('Erreur réseau', 'error')
+    } catch (err) {
+      showToast(err instanceof ApiError ? "Impossible d'ouvrir le fichier" : 'Erreur réseau', 'error')
     }
   }
 
