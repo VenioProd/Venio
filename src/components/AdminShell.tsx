@@ -73,6 +73,8 @@ const AdminShellInner = ({
             className="admin-shell-burger"
             onClick={() => setMobileDrawerOpen(true)}
             aria-label="Ouvrir le menu de navigation"
+            aria-haspopup="dialog"
+            aria-expanded={mobileDrawerOpen}
           >
             <Menu size={20} />
           </button>
@@ -113,6 +115,8 @@ const AdminShellInner = ({
           className={`admin-mobile-tab${mobileDrawerOpen ? ' active' : ''}`}
           onClick={() => setMobileDrawerOpen(true)}
           aria-label="Ouvrir la navigation complète"
+          aria-haspopup="dialog"
+          aria-expanded={mobileDrawerOpen}
         >
           <Menu size={22} aria-hidden />
           <span>Menu</span>

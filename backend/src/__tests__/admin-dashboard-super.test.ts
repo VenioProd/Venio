@@ -26,8 +26,12 @@ beforeAll(async () => {
   app.use('/api/admin/dashboard', dashboardRoutes)
 })
 
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('GET /api/admin/dashboard/super', () => {
   it('returns the new pulseChecks field with 7 rules', async () => {
@@ -36,8 +40,13 @@ describe('GET /api/admin/dashboard/super', () => {
     expect(res.body.pulseChecks).toHaveLength(7)
     const ids = res.body.pulseChecks.map((c: { id: string }) => c.id).sort()
     expect(ids).toEqual([
-      'backup-success', 'briefs-p1-on-time', 'ca-on-track',
-      'hot-leads-followup', 'pipeline-growing', 'qualiopi-compliant', 'team-balanced',
+      'backup-success',
+      'briefs-p1-on-time',
+      'ca-on-track',
+      'hot-leads-followup',
+      'pipeline-growing',
+      'qualiopi-compliant',
+      'team-balanced',
     ])
   })
 
@@ -74,6 +83,12 @@ describe('GET /api/admin/dashboard', () => {
     expect(res.body).toHaveProperty('pendingDecisionCount')
     expect(res.body).toHaveProperty('staleProjectCount')
     expect(res.body).toHaveProperty('generatedAt')
+    expect(res.body.cockpitMeta).toMatchObject({
+      source: 'api/admin/dashboard',
+      freshnessSlaMinutes: 5,
+      staleProjectThresholdDays: 14,
+      hotLeadFollowUpHours: 48,
+    })
     expect(typeof res.body.pipelineValue).toBe('number')
     expect(typeof res.body.pendingDecisionCount).toBe('number')
     expect(typeof res.body.staleProjectCount).toBe('number')

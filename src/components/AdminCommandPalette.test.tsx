@@ -44,4 +44,32 @@ describe('AdminCommandPalette', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('acts as a modal: it traps focus, hides the app root and restores focus', () => {
+    document.body.innerHTML = '<div id="root"><button type="button">Ouvrir la recherche</button></div>'
+    const root = document.getElementById('root')!
+    const host = document.body.appendChild(document.createElement('div'))
+    const trigger = screen.getByRole('button', { name: 'Ouvrir la recherche' })
+    trigger.focus()
+    const { unmount } = render(
+      <MemoryRouter>
+        <AdminCommandPalette onClose={() => {}} />
+      </MemoryRouter>,
+      { container: host },
+    )
+
+    const input = screen.getByRole('textbox', { name: 'Rechercher un module ou une action' })
+    expect(root).toHaveAttribute('inert')
+    expect(root).toHaveAttribute('aria-hidden', 'true')
+    expect(input).toHaveFocus()
+
+    const options = screen.getAllByRole('option')
+    options[options.length - 1].focus()
+    fireEvent.keyDown(document, { key: 'Tab' })
+    expect(input).toHaveFocus()
+
+    unmount()
+    expect(root).not.toHaveAttribute('inert')
+    expect(trigger).toHaveFocus()
+  })
 })

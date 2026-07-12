@@ -28,16 +28,28 @@
 
 /* ---- Brand ---- */
 .admin-sb-brand {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 16px 14px 14px;
+  border: 0;
   border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.admin-sb-brand:hover,
+.admin-sb-brand:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
 }
 
 .admin-sb-logo {

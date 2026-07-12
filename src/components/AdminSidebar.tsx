@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import UserAvatar from './UserAvatar'
 import { apiFetch } from '../lib/api'
+import { useModalA11y } from '../hooks/useModalA11y'
 import './AdminSidebar.css'
 
 interface NavItem {
@@ -114,6 +115,10 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   const unreadTotal = useMemo(() => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0), [conversations])
 
   const [pendingDecisionsCount, setPendingDecisionsCount] = useState(0)
+  const drawerRef = useRef<HTMLElement>(null)
+  const drawerCloseRef = useRef<HTMLButtonElement>(null)
+
+  useModalA11y(drawerOpen, drawerRef, drawerCloseRef)
 
   useEffect(() => {
     if (user?.role !== 'SUPER_ADMIN') {
@@ -143,7 +148,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
-  // Escape ferme le drawer
+  // Escape ferme le drawer; le focus trap et l'inertie sont assurés par useModalA11y.
   useEffect(() => {
     if (!drawerOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -211,16 +216,15 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   return (
     <>
       <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Navigation admin">
-        <div
+        <button
+          type="button"
           className="admin-sb-brand"
           onClick={() => navigate('/admin')}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && navigate('/admin')}
+          aria-label="Accueil Venio Admin"
         >
           <span className="admin-sb-logo">V</span>
           <span className="admin-sb-brand-name">Venio Admin</span>
-        </div>
+        </button>
 
         <nav className="admin-sb-scroll" aria-label="Navigation principale">
           {navSections}
@@ -261,13 +265,35 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
         createPortal(
           <>
             <div className="admin-sb-drawer-overlay" onClick={onDrawerClose} aria-hidden />
-            <aside className="admin-sb-drawer" aria-label="Navigation mobile">
+            <aside
+              ref={drawerRef}
+              className="admin-sb-drawer"
+              aria-label="Navigation mobile"
+              role="dialog"
+              aria-modal="true"
+              tabIndex={-1}
+            >
               <div className="admin-sb-drawer-header">
-                <div className="admin-sb-brand" style={{ border: 'none', padding: 0 }}>
+                <button
+                  type="button"
+                  className="admin-sb-brand"
+                  style={{ border: 'none', padding: 0 }}
+                  onClick={() => {
+                    onDrawerClose?.()
+                    navigate('/admin')
+                  }}
+                  aria-label="Accueil Venio Admin"
+                >
                   <span className="admin-sb-logo">V</span>
                   <span className="admin-sb-brand-name">Venio Admin</span>
-                </div>
-                <button type="button" className="admin-sb-drawer-close" onClick={onDrawerClose} aria-label="Fermer">
+                </button>
+                <button
+                  ref={drawerCloseRef}
+                  type="button"
+                  className="admin-sb-drawer-close"
+                  onClick={onDrawerClose}
+                  aria-label="Fermer le menu de navigation"
+                >
                   <X size={18} />
                 </button>
               </div>

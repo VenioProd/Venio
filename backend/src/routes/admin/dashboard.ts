@@ -40,9 +40,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .populate('project', 'name')
 
     // Task counts by status (all tasks)
-    const taskCounts = await Task.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ])
+    const taskCounts = await Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
     const tasksByStatus = Object.fromEntries(taskCounts.map((t) => [t._id, t.count]))
 
     // Active projects count
@@ -119,6 +117,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       hotLeads,
       recentProjects,
       generatedAt: now.toISOString(),
+      cockpitMeta: {
+        source: 'api/admin/dashboard',
+        generatedAt: now.toISOString(),
+        freshnessSlaMinutes: 5,
+        staleProjectThresholdDays: 14,
+        hotLeadFollowUpHours: 48,
+      },
     })
   } catch (err) {
     return next(err)
@@ -141,7 +146,10 @@ function parsePeriod(raw: unknown): Period {
   return '30d'
 }
 
-function computePeriodWindows(period: Period, now: Date): {
+function computePeriodWindows(
+  period: Period,
+  now: Date,
+): {
   periodStart: Date
   periodPrevStart: Date
   periodDays: number
@@ -243,10 +251,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         { $match: { $or: [{ isArchived: false }, { isArchived: { $exists: false } }] } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
-      Task.aggregate([
-        { $match: { status: { $ne: 'TERMINE' } } },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]),
+      Task.aggregate([{ $match: { status: { $ne: 'TERMINE' } } }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
       MissionBrief.aggregate([
         { $match: { statut: { $nin: ['VALIDE', 'LIVRE'] } } },
         { $group: { _id: '$briefPriority', count: { $sum: 1 } } },
@@ -266,7 +271,9 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         { $group: { _id: null, total: { $sum: '$budget' } } },
       ]).catch(() => []),
       User.countDocuments({ role: 'CLIENT' }).catch(() => 0),
-      User.countDocuments({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] } }).catch(() => 0),
+      User.countDocuments({
+        role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] },
+      }).catch(() => 0),
       User.countDocuments({ role: 'INTERN' }).catch(() => 0),
       Lead.countDocuments({
         leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
@@ -296,11 +303,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
             total: { $sum: 1 },
             overdue: {
               $sum: {
-                $cond: [
-                  { $and: [{ $ne: ['$dueDate', null] }, { $lt: ['$dueDate', now] }] },
-                  1,
-                  0,
-                ],
+                $cond: [{ $and: [{ $ne: ['$dueDate', null] }, { $lt: ['$dueDate', now] }] }, 1, 0],
               },
             },
           },
@@ -396,15 +399,15 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
     const pipelinePrev30Total = (pipelinePrev30Raw as Array<{ total: number }>)[0]?.total ?? 0
 
     // CA delta vs previous period (same length, immediately before)
-    const caDeltaPct = monthlyInvoicedPrevTotal > 0
-      ? Math.round(((monthlyInvoicedTotal - monthlyInvoicedPrevTotal) / monthlyInvoicedPrevTotal) * 100)
-      : 0
+    const caDeltaPct =
+      monthlyInvoicedPrevTotal > 0
+        ? Math.round(((monthlyInvoicedTotal - monthlyInvoicedPrevTotal) / monthlyInvoicedPrevTotal) * 100)
+        : 0
     const caDirection = caDeltaPct > 0 ? 'up' : caDeltaPct < 0 ? 'down' : 'flat'
 
     // Pipeline delta vs N days ago (N = periodDays)
-    const pipelineDeltaPct = pipelinePrev30Total > 0
-      ? Math.round(((pipelineTotal - pipelinePrev30Total) / pipelinePrev30Total) * 100)
-      : 0
+    const pipelineDeltaPct =
+      pipelinePrev30Total > 0 ? Math.round(((pipelineTotal - pipelinePrev30Total) / pipelinePrev30Total) * 100) : 0
     const pipelineDirection = pipelineDeltaPct > 0 ? 'up' : pipelineDeltaPct < 0 ? 'down' : 'flat'
 
     // Build Pulse context (CA scaled to selected period)
@@ -476,13 +479,11 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         activeProjects: activeProjectCount,
         archivedProjects: archivedProjectCount,
         projectsByStatus: Object.fromEntries(
-          projectsByStatus.map((p: { _id: string; count: number }) => [p._id, p.count])
+          projectsByStatus.map((p: { _id: string; count: number }) => [p._id, p.count]),
         ),
-        tasksByStatus: Object.fromEntries(
-          tasksByStatus.map((t: { _id: string; count: number }) => [t._id, t.count])
-        ),
+        tasksByStatus: Object.fromEntries(tasksByStatus.map((t: { _id: string; count: number }) => [t._id, t.count])),
         briefsByPriority: Object.fromEntries(
-          briefsByPriority.map((b: { _id: string; count: number }) => [b._id, b.count])
+          briefsByPriority.map((b: { _id: string; count: number }) => [b._id, b.count]),
         ),
       },
 
