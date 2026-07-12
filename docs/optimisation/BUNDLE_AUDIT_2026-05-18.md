@@ -1,45 +1,74 @@
-# Audit bundle Venio — 2026-05-18
+# Audit bundle Venio — VENIO-105 / Phase 6
 
-## Contexte
-Phase 6 du plan VEN-357. Lazy-load des libs PDF et split vendor-charts.
+Mesures actualisées le 2026-07-12 sur la branche `feat/venio-105-pdf-bundle`,
+depuis `origin/main` `d2ef5b178655f07de248bea9c564acc2e238982e`, avec
+`npm run build` (Vite 5.4.21). Les tailles sont celles affichées par Vite,
+avant compression puis gzip.
 
-## Baseline (avant)
+## Provenance historique — plan du 2026-05-18
+
+Le plan `docs/superpowers/plans/2026-05-18-venio-optimization.md` signalait
+les tailles suivantes. Elles sont conservées ici comme point de référence et
+ne constituent pas une nouvelle mesure reproductible du commit courant.
+
 | Chunk | Taille | Gzip |
-|---|---|---|
+| --- | ---: | ---: |
 | AccountingDashboard | 391.93 kB | 115.35 kB |
 | jspdf.es.min | 389.75 kB | 128.36 kB |
 | html2canvas.esm | 201.42 kB | 48.03 kB |
 | vendor | 178.34 kB | 58.58 kB |
 | index.es | 150.54 kB | 51.48 kB |
 
-## Après
+## Mesure du commit de départ
+
+Le commit de départ avait déjà trois imports dynamiques directs de `jspdf`
+(exports KPI gestion, stagiaires et tickets). Vite émettait donc déjà les
+chunks PDF/canvas séparés. Cette mesure sert de « avant » à VENIO-105.
+
 | Chunk | Taille | Gzip |
-|---|---|---|
-| vendor-pdf (jspdf) | 391.06 kB | 129.06 kB |
-| vendor-charts (recharts) | 380.52 kB | 112.21 kB |
-| vendor-canvas (html2canvas) | 201.42 kB | 48.03 kB |
-| index.es | 150.52 kB | 51.46 kB |
+| --- | ---: | ---: |
+| AccountingDashboard | 11.69 kB | 3.47 kB |
+| jspdf.es.min | 390.31 kB | 128.75 kB |
+| html2canvas.esm | 201.42 kB | 48.03 kB |
+| vendor-charts | 409.60 kB | 118.52 kB |
 | vendor-react | 142.38 kB | 45.64 kB |
-| index (CDzTKsES) | 101.87 kB | 28.19 kB |
-| InternalProjectList | 75.75 kB | 15.71 kB |
-| InternList | 70.27 kB | 14.98 kB |
-| ProjectDetail | 60.69 kB | 14.63 kB |
-| AccountingDashboard | 11.67 kB | 3.47 kB |
+| index.es | 150.58 kB | 51.51 kB |
 
-## Changements
-- jspdf importé dynamiquement dans 3 composants (handlers async) :
-  - `src/components/admin/GestionKpi.tsx` — `exportPdf`
-  - `src/components/admin/InternKpi.tsx` — `handleExportPdf`
-  - `src/pages/admin/ticket-list/TicketStats.tsx` — `exportKpiPdf`
-- html2canvas resté en chunk séparé (`vendor-canvas`), désormais chargé uniquement par jspdf à la demande
-- manualChunks étendu avec fonction : vendor-react, vendor-router, vendor-charts, vendor-pdf, vendor-canvas, vendor-realtime
+## Mesure après VENIO-105
 
-## Impact
-- **AccountingDashboard** : 391.93 kB → 11.67 kB (**-380 kB**, -97%) — recharts extrait dans vendor-charts
-- **vendor-pdf + vendor-canvas** : chargés uniquement lors du premier clic "Export PDF" (lazy)
-- **Initial bundle eager** allégé de ~591 kB (jspdf 390 kB + html2canvas 201 kB)
+| Chunk | Taille | Gzip |
+| --- | ---: | ---: |
+| AccountingDashboard | 11.69 kB | 3.47 kB |
+| jspdf.es.min | 390.31 kB | 128.75 kB |
+| html2canvas.esm | 201.42 kB | 48.03 kB |
+| vendor-charts | 409.60 kB | 118.52 kB |
+| vendor-react | 142.38 kB | 45.64 kB |
+| index.es | 150.58 kB | 51.51 kB |
 
-## Vérification fonctionnelle
-- Export PDF GestionKpi: OK (à tester manuellement)
-- Export PDF InternKpi: OK
-- Export PDF TicketStats: OK
+Le chargeur partagé est un chunk de 0.47 kB (gzip 0.30 kB). Les deux
+bibliothèques lourdes restent hors du chemin initial. Le coût initial évité
+demeure environ 591.73 kB non compressés (`jspdf` + `html2canvas`).
+
+## Décision d'implémentation
+
+- Les trois exports PDF passent par `src/lib/loadPdf.ts`, qui contient le seul
+  `import('jspdf')`. Aucun import statique de `jspdf` ou `html2canvas` n'existe
+  dans `src/`.
+- `html2canvas` reste le chunk dynamique créé par `jspdf` pour les API de rendu
+  HTML. Les exports actuels écrivent des primitives PDF et ne le téléchargent
+  pas.
+- Un essai de `manualChunks` `vendor-pdf` / `vendor-canvas` a été écarté : sur
+  ce graphe Rollup, il ajoutait un import statique de `vendor-pdf` à de nombreux
+  chunks admin, ce qui cassait le lazy-load. Les noms de chunks générés par
+  Vite sont donc volontairement conservés ; il n'y a ni duplication ni cycle
+  introduit.
+- Les exports CSV ne sont pas modifiés.
+
+## Vérifications
+
+- Test d'interface : `TicketStats` ne résout pas `jspdf` au rendu ; le premier
+  clic « Télécharger PDF » le charge puis appelle `save`.
+- Test de garde : les trois points d'export doivent utiliser le chargeur
+  dynamique partagé et ne peuvent pas réintroduire d'import statique.
+- Le build de cette mesure confirme des chunks séparés `jspdf.es.min` et
+  `html2canvas.esm`.
