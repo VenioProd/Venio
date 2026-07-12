@@ -8,6 +8,7 @@ export interface JwtPayload {
   name: string
   sessionVersion?: number
   mfaVerifiedAt?: number
+  impersonatorId?: string
   iat?: number
   exp?: number
 }

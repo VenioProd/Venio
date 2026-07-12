@@ -23,7 +23,17 @@ import {
   deleteAdminClientContact,
   deleteAdminClientNote,
 } from '../../../services/adminClients'
-import type { Client, Contact, ContactDraft, Note, Activity, BillingSummary, BillingDocument, Deliverable, CloudInfo } from '../../../types/client.types'
+import type {
+  Client,
+  Contact,
+  ContactDraft,
+  Note,
+  Activity,
+  BillingSummary,
+  BillingDocument,
+  Deliverable,
+  CloudInfo,
+} from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
 import type { NoteOrActivity } from './types'
 import { TABS } from './types'
@@ -123,17 +133,10 @@ const ClientAccountDetail = () => {
   const handleImpersonateClient = async () => {
     setImpersonating(true)
     try {
-      const data = await apiFetch<{ token: string }>(`/api/admin/admins/impersonate/${userId}`, {
+      await apiFetch(`/api/admin/admins/impersonate/${userId}`, {
         method: 'POST',
       })
-      const url = `${window.location.origin}/espace-client?impersonate=${data.token}`
-      const a = document.createElement('a')
-      a.href = url
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      window.location.assign('/espace-client')
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {
@@ -169,7 +172,7 @@ const ClientAccountDetail = () => {
         billingSummaryRes,
         billingDocumentsRes,
         cloudRes,
-      ] = await Promise.all([
+      ] = (await Promise.all([
         getAdminClient(userId!),
         listAdminClientProjects(userId!),
         getAdminClientProgress(userId!),
@@ -180,7 +183,7 @@ const ClientAccountDetail = () => {
         getAdminClientBillingSummary(userId!).catch(() => ({ summary: null })),
         listAdminClientBillingDocuments(userId!).catch(() => ({ documents: [] })),
         getAdminClientCloud(userId!).catch(() => ({ cloud: null })),
-      ]) as [
+      ])) as [
         Record<string, unknown>,
         Record<string, unknown>,
         Record<string, unknown>,
@@ -235,14 +238,16 @@ const ClientAccountDetail = () => {
       rawId: activity._id,
     }))
 
-    return [...fromNotes, ...fromActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return [...fromNotes, ...fromActivities].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
   }, [notes, activities])
 
   const saveClientPatch = async (patch: Record<string, unknown>) => {
     setSaving(true)
     setError('')
     try {
-      const data = await updateAdminClient(userId!, patch) as Record<string, unknown>
+      const data = (await updateAdminClient(userId!, patch)) as Record<string, unknown>
       setClient(data.client as Client)
       showToast('Modifications enregistrees', 'success')
     } catch (err: unknown) {
@@ -258,7 +263,9 @@ const ClientAccountDetail = () => {
     setSaving(true)
     setError('')
     try {
-      const data = (client?.status === 'ARCHIVE' ? await reactivateAdminClient(userId!) : await archiveAdminClient(userId!)) as Record<string, unknown>
+      const data = (
+        client?.status === 'ARCHIVE' ? await reactivateAdminClient(userId!) : await archiveAdminClient(userId!)
+      ) as Record<string, unknown>
       setClient(data.client as Client)
       await loadAll()
     } catch (err: unknown) {
@@ -276,7 +283,7 @@ const ClientAccountDetail = () => {
     try {
       await createAdminClientContact(userId!, { ...contactDraft, isMain: contacts.length === 0 })
       setContactDraft({ firstName: '', lastName: '', email: '', phone: '' })
-      const data = await listAdminClientContacts(userId!) as Record<string, unknown>
+      const data = (await listAdminClientContacts(userId!)) as Record<string, unknown>
       setContacts((data.contacts as Contact[]) || [])
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur ajout contact')
@@ -306,10 +313,10 @@ const ClientAccountDetail = () => {
     try {
       await createAdminClientNote(userId!, { content: noteDraft.trim() })
       setNoteDraft('')
-      const [notesRes, activitiesRes] = await Promise.all([
+      const [notesRes, activitiesRes] = (await Promise.all([
         listAdminClientNotes(userId!),
         listAdminClientActivities(userId!),
-      ]) as [Record<string, unknown>, Record<string, unknown>]
+      ])) as [Record<string, unknown>, Record<string, unknown>]
       setNotes((notesRes.notes as Note[]) || [])
       setActivities((activitiesRes.activities as Activity[]) || [])
     } catch (err: unknown) {
@@ -348,27 +355,48 @@ const ClientAccountDetail = () => {
             <div>
               <h1 style={{ marginBottom: 8 }}>{client.companyName || client.name || 'Société non renseignée'}</h1>
               {client.serviceType && (
-                <p style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}>Service : {client.serviceType}</p>
+                <p style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}>
+                  Service : {client.serviceType}
+                </p>
               )}
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Contact : {client.name}</p>
               <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>{client.email}</p>
             </div>
             <div className="admin-actions">
-              <Link className="portal-button portal-action-link" to={`/admin/projets/nouveau?clientId=${userId}`} title="Ajouter un projet">
+              <Link
+                className="portal-button portal-action-link"
+                to={`/admin/projets/nouveau?clientId=${userId}`}
+                title="Ajouter un projet"
+              >
                 <span className="portal-action-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
                 </span>
                 <span className="portal-action-label">Ajouter un projet</span>
               </Link>
               {canArchive && (
-                <button type="button" className="portal-button secondary" onClick={handleArchiveToggle} disabled={saving}>
+                <button
+                  type="button"
+                  className="portal-button secondary"
+                  onClick={handleArchiveToggle}
+                  disabled={saving}
+                >
                   {client.status === 'ARCHIVE' ? 'Réactiver' : 'Archiver'}
                 </button>
               )}
             </div>
           </div>
         )}
-
       </div>
 
       <div className="admin-tabs" style={{ marginTop: 20 }}>
@@ -384,7 +412,11 @@ const ClientAccountDetail = () => {
         ))}
       </div>
 
-      {error && <div className="admin-error" style={{ marginTop: 24 }}>{error}</div>}
+      {error && (
+        <div className="admin-error" style={{ marginTop: 24 }}>
+          {error}
+        </div>
+      )}
 
       <div className="portal-card" style={{ marginTop: 24 }}>
         {loading ? (
@@ -446,28 +478,61 @@ const ClientAccountDetail = () => {
 
         {generatedPassword ? (
           <>
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 16 }}>
+            <div
+              style={{
+                background: 'var(--bg-tertiary)',
+                borderRadius: 10,
+                padding: 20,
+                border: '1px solid var(--border-color)',
+                marginBottom: 16,
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{client?.email}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {client?.email}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nouveau mot de passe</span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{generatedPassword}</span>
+                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {generatedPassword}
+                </span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button className="portal-button" type="button" onClick={handleCopyClientCredentials} style={{ flex: 1, minWidth: 160 }}>
+              <button
+                className="portal-button"
+                type="button"
+                onClick={handleCopyClientCredentials}
+                style={{ flex: 1, minWidth: 160 }}
+              >
                 {copied ? 'Copie !' : 'Copier les identifiants'}
               </button>
-              <button className="portal-button secondary" type="button" onClick={handleSendClientEmail} disabled={sending || emailSent} style={{ flex: 1, minWidth: 160 }}>
+              <button
+                className="portal-button secondary"
+                type="button"
+                onClick={handleSendClientEmail}
+                disabled={sending || emailSent}
+                style={{ flex: 1, minWidth: 160 }}
+              >
                 {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
               </button>
-              <button className="portal-button secondary" type="button" onClick={handleResetClientPassword} disabled={resetting} style={{ flex: 1, minWidth: 160 }}>
+              <button
+                className="portal-button secondary"
+                type="button"
+                onClick={handleResetClientPassword}
+                disabled={resetting}
+                style={{ flex: 1, minWidth: 160 }}
+              >
                 {resetting ? 'Generation...' : 'Regenerer'}
               </button>
             </div>
-            {emailError && <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>}
+            {emailError && (
+              <div className="admin-error" style={{ marginTop: 12 }}>
+                {emailError}
+              </div>
+            )}
           </>
         ) : (
           <button className="portal-button" type="button" onClick={handleResetClientPassword} disabled={resetting}>

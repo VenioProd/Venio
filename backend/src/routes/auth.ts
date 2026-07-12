@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
@@ -13,6 +12,13 @@ import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
 import { consumeRecoveryCode, graceEndsAt, requiresMfa, verifyTotp } from '../lib/mfa.js'
+import {
+  clearSessionCookie,
+  readSessionCookie,
+  revokeSession,
+  revokeUserSessions,
+  setSessionCookie,
+} from '../lib/session.js'
 
 // In-memory store for reset tokens (simple approach, clears on restart)
 export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
@@ -47,14 +53,6 @@ const router = express.Router()
 
 const MIN_PASSWORD_LENGTH = 6
 
-function signToken(user: { _id: unknown; role: string; email: string; name: string; sessionVersion?: number }, mfaVerifiedAt?: number): string {
-  return jwt.sign(
-    { id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0, ...(mfaVerifiedAt ? { mfaVerifiedAt } : {}) },
-    process.env.JWT_SECRET as string,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
-  )
-}
-
 // POST /api/auth/login
 router.post(
   '/login',
@@ -74,19 +72,39 @@ router.post(
 
       const user = await User.findOne({ email: email.toLowerCase().trim() })
       if (!user) {
-        AuditLog.create({ email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: 'user_not_found' } }).catch(() => {})
+        AuditLog.create({
+          email,
+          action: 'LOGIN_FAILED',
+          ip: clientIp,
+          userAgent,
+          metadata: { reason: 'user_not_found' },
+        }).catch(() => {})
         return res.status(401).json({ error: 'Identifiants invalides' })
       }
 
       const isValid = await bcrypt.compare(password, user.passwordHash)
       if (!isValid) {
-        AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: 'bad_password' } }).catch(() => {})
+        AuditLog.create({
+          userId: user._id,
+          email,
+          action: 'LOGIN_FAILED',
+          ip: clientIp,
+          userAgent,
+          metadata: { reason: 'bad_password' },
+        }).catch(() => {})
         return res.status(401).json({ error: 'Identifiants invalides' })
       }
 
       // Every inactive or archived account is blocked, including administrators.
       if (!user.isActive || user.status === 'ARCHIVE') {
-        AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: 'account_archived' } }).catch(() => {})
+        AuditLog.create({
+          userId: user._id,
+          email,
+          action: 'LOGIN_FAILED',
+          ip: clientIp,
+          userAgent,
+          metadata: { reason: 'account_archived' },
+        }).catch(() => {})
         return res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
       }
 
@@ -99,14 +117,25 @@ router.post(
           return res.json({ requires2FA: true })
         }
         const validTotp = totpCode && verifyTotp(user.twoFactorSecret, user.email, totpCode)
-        const recovery = validTotp ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] } : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
+        const recovery = validTotp
+          ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] }
+          : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
         if (!validTotp && !recovery.valid) {
-          AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: '2fa_invalid' } }).catch(() => {})
+          AuditLog.create({
+            userId: user._id,
+            email,
+            action: 'LOGIN_FAILED',
+            ip: clientIp,
+            userAgent,
+            metadata: { reason: '2fa_invalid' },
+          }).catch(() => {})
           return res.status(401).json({ error: 'Code 2FA invalide' })
         }
         if (recovery.valid) {
           user.twoFactorRecoveryCodeHashes = recovery.hashes
-          AuditLog.create({ userId: user._id, email, action: 'MFA_RECOVERY_CODE_USED', ip: clientIp, userAgent }).catch(() => {})
+          AuditLog.create({ userId: user._id, email, action: 'MFA_RECOVERY_CODE_USED', ip: clientIp, userAgent }).catch(
+            () => {},
+          )
         }
         mfaVerifiedAt = Date.now()
       } else if (requiresMfa(user.role)) {
@@ -114,24 +143,58 @@ router.post(
         // so existing administrators are never locked out by a release.
         if (!user.mfaGraceUntil) user.mfaGraceUntil = graceEndsAt()
         if (user.mfaGraceUntil.getTime() <= Date.now()) {
-          return res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'La période d’enrôlement MFA est terminée.' })
+          return res
+            .status(403)
+            .json({ error: 'MFA_SETUP_REQUIRED', message: 'La période d’enrôlement MFA est terminée.' })
         }
       }
 
-      AuditLog.create({ userId: user._id, email, action: 'LOGIN_SUCCESS', ip: clientIp, userAgent, metadata: { role: user.role } }).catch(() => {})
+      AuditLog.create({
+        userId: user._id,
+        email,
+        action: 'LOGIN_SUCCESS',
+        ip: clientIp,
+        userAgent,
+        metadata: { role: user.role },
+      }).catch(() => {})
 
       // Track last login
       user.lastLoginAt = new Date()
       user.lastLoginIp = typeof clientIp === 'string' ? clientIp : Array.isArray(clientIp) ? clientIp[0] : ''
       user.save().catch(() => {})
 
-      const token = signToken(user, mfaVerifiedAt)
-      return res.json({ token, ...(requiresMfa(user.role) && !user.twoFactorEnabled ? { mfaEnrollmentRequired: true, mfaGraceUntil: user.mfaGraceUntil } : {}) })
+      await setSessionCookie(res, user._id.toString(), {
+        ...(mfaVerifiedAt ? { mfaVerifiedAt: new Date(mfaVerifiedAt) } : {}),
+      })
+      return res.json({
+        ...(requiresMfa(user.role) && !user.twoFactorEnabled
+          ? { mfaEnrollmentRequired: true, mfaGraceUntil: user.mfaGraceUntil }
+          : {}),
+      })
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
+
+// POST /api/auth/logout — revoke the server-side session before clearing its cookie.
+router.post('/logout', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await revokeSession(readSessionCookie(req.headers.cookie))
+    clearSessionCookie(res)
+    AuditLog.create({
+      userId: req.user!.id,
+      email: req.user!.email,
+      action: 'LOGOUT',
+      ip: req.headers['x-forwarded-for'] || req.ip || '',
+      userAgent: req.headers['user-agent'] || '',
+      metadata: req.user!.impersonatorId ? { impersonatorId: req.user!.impersonatorId } : {},
+    }).catch(() => {})
+    return res.status(204).send()
+  } catch (err) {
+    return next(err)
+  }
+})
 
 // GET /api/auth/me
 router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) => {
@@ -156,21 +219,23 @@ router.patch(
   body('phone').optional().trim(),
   body('companyName').optional().trim(),
   body('website').optional().trim(),
-  body('colorTheme').optional({ nullable: true }).isIn([
-    'sky',
-    'violet',
-    'emerald',
-    'amber',
-    'rose',
-    'coral',
-    'yellow',
-    'indigo',
-    'teal',
-    'fuchsia',
-    'lime',
-    'slate',
-    null,
-  ]),
+  body('colorTheme')
+    .optional({ nullable: true })
+    .isIn([
+      'sky',
+      'violet',
+      'emerald',
+      'amber',
+      'rose',
+      'coral',
+      'yellow',
+      'indigo',
+      'teal',
+      'fuchsia',
+      'lime',
+      'slate',
+      null,
+    ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -203,7 +268,7 @@ router.patch(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/auth/change-password — change own password
@@ -211,7 +276,9 @@ router.post(
   '/change-password',
   auth,
   body('currentPassword').notEmpty().withMessage('Mot de passe actuel requis'),
-  body('newPassword').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('newPassword')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -235,21 +302,31 @@ router.post(
       user.passwordChangedAt = new Date()
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
+      await revokeUserSessions(user._id.toString())
+      clearSessionCookie(res)
 
-      AuditLog.create({ userId: user._id, email: user.email, action: 'PASSWORD_CHANGED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
+      AuditLog.create({
+        userId: user._id,
+        email: user.email,
+        action: 'PASSWORD_CHANGED',
+        ip: req.headers['x-forwarded-for'] || req.ip || '',
+        userAgent: req.headers['user-agent'] || '',
+      }).catch(() => {})
 
       return res.json({ message: 'Mot de passe modifié avec succès' })
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/auth/bootstrap-admin
 router.post(
   '/bootstrap-admin',
   body('email').isEmail().withMessage('Email invalide'),
-  body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -273,12 +350,12 @@ router.post(
         name,
       })
 
-      const token = signToken(admin)
-      return res.status(201).json({ token })
+      await setSessionCookie(res, admin._id.toString())
+      return res.status(201).json({})
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/auth/forgot-password
@@ -313,7 +390,9 @@ router.post(
       }
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
-      const loginPath = ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number]) ? '/admin/login' : '/espace-client/login'
+      const loginPath = ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number])
+        ? '/admin/login'
+        : '/espace-client/login'
       const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
 
       await sendPasswordResetEmail({
@@ -326,14 +405,16 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/auth/reset-password
 router.post(
   '/reset-password',
   body('token').notEmpty().withMessage('Token requis'),
-  body('password').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -359,6 +440,7 @@ router.post(
       user.passwordChangedAt = new Date()
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
+      await revokeUserSessions(user._id.toString())
 
       resetTokens.delete(token)
 
@@ -374,7 +456,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // PATCH /api/auth/locale
@@ -397,48 +479,55 @@ router.patch(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/auth/avatar — upload photo de profil
-router.post('/avatar', auth, (req: Request, res: Response, next: NextFunction) => {
-  avatarUpload.single('avatar')(req, res, (err: unknown) => {
-    if (err instanceof multer.MulterError) {
-      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux (max 2 Mo)' : err.message
-      return res.status(400).json({ error: msg })
-    }
-    if (err instanceof Error) return res.status(400).json({ error: err.message })
-    next()
-  })
-}, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier reçu' })
-    }
-
-    const user = await User.findById(req.user!.id)
-    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
-
-    const ext = path.extname(req.file.filename)
-    const newUrl = `/api/avatars/${req.user!.id}${ext}`
-
-    // Supprimer l'ancien fichier si l'extension a changé
-    if (user.avatarUrl && user.avatarUrl !== newUrl) {
-      const oldFilename = path.basename(user.avatarUrl)
-      const oldPath = path.join(avatarsDir, oldFilename)
-      if (oldPath.startsWith(avatarsDir + path.sep)) {
-        await fs.promises.unlink(oldPath).catch((e: NodeJS.ErrnoException) => { if (e.code !== 'ENOENT') throw e })
+router.post(
+  '/avatar',
+  auth,
+  (req: Request, res: Response, next: NextFunction) => {
+    avatarUpload.single('avatar')(req, res, (err: unknown) => {
+      if (err instanceof multer.MulterError) {
+        const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux (max 2 Mo)' : err.message
+        return res.status(400).json({ error: msg })
       }
+      if (err instanceof Error) return res.status(400).json({ error: err.message })
+      next()
+    })
+  },
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Aucun fichier reçu' })
+      }
+
+      const user = await User.findById(req.user!.id)
+      if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
+
+      const ext = path.extname(req.file.filename)
+      const newUrl = `/api/avatars/${req.user!.id}${ext}`
+
+      // Supprimer l'ancien fichier si l'extension a changé
+      if (user.avatarUrl && user.avatarUrl !== newUrl) {
+        const oldFilename = path.basename(user.avatarUrl)
+        const oldPath = path.join(avatarsDir, oldFilename)
+        if (oldPath.startsWith(avatarsDir + path.sep)) {
+          await fs.promises.unlink(oldPath).catch((e: NodeJS.ErrnoException) => {
+            if (e.code !== 'ENOENT') throw e
+          })
+        }
+      }
+
+      user.avatarUrl = newUrl
+      await user.save()
+
+      return res.json({ avatarUrl: newUrl })
+    } catch (err) {
+      return next(err)
     }
-
-    user.avatarUrl = newUrl
-    await user.save()
-
-    return res.json({ avatarUrl: newUrl })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // DELETE /api/auth/avatar — supprimer photo de profil
 router.delete('/avatar', auth, async (req: Request, res: Response, next: NextFunction) => {
@@ -450,7 +539,9 @@ router.delete('/avatar', auth, async (req: Request, res: Response, next: NextFun
       const filename = path.basename(user.avatarUrl)
       const filePath = path.join(avatarsDir, filename)
       if (filePath.startsWith(avatarsDir + path.sep)) {
-        await fs.promises.unlink(filePath).catch((e: NodeJS.ErrnoException) => { if (e.code !== 'ENOENT') throw e })
+        await fs.promises.unlink(filePath).catch((e: NodeJS.ErrnoException) => {
+          if (e.code !== 'ENOENT') throw e
+        })
       }
       user.avatarUrl = ''
       await user.save()

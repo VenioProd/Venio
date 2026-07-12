@@ -74,7 +74,6 @@ export interface User {
 }
 
 export interface LoginResult {
-  token?: string
   user?: User | null
   requires2FA?: boolean
 }
@@ -83,6 +82,6 @@ export interface AuthContextValue {
   user: User | null
   loading: boolean
   login: (email: string, password: string, totpCode?: string) => Promise<LoginResult>
-  logout: () => void
+  logout: () => Promise<void>
   refreshUser: () => Promise<User | null>
 }

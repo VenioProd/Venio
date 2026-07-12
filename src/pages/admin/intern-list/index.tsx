@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import {
@@ -359,8 +359,8 @@ const InternList = () => {
 
       await fetch('/api/admin/interns/reports', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
 
       setReportForm({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
@@ -382,8 +382,8 @@ const InternList = () => {
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
       await fetch(`/api/admin/interns/reports/${reportId}`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
       loadReports()
     } catch {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../../hooks/useTabState'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiFetch } from '../../../lib/api'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import { useAuth } from '../../../context/AuthContext'
@@ -54,7 +54,11 @@ const AdminProjectDetail = () => {
   const [deliverableTypeInput, setDeliverableTypeInput] = useState<string>('')
   const [tagInput, setTagInput] = useState<string>('')
   const [updateForm, setUpdateForm] = useState<{ title: string; description: string }>({ title: '', description: '' })
-  const [sectionForm, setSectionForm] = useState<{ title: string; description: string; isVisible: boolean }>({ title: '', description: '', isVisible: true })
+  const [sectionForm, setSectionForm] = useState<{ title: string; description: string; isVisible: boolean }>({
+    title: '',
+    description: '',
+    isVisible: true,
+  })
   const [itemForm, setItemForm] = useState<Record<string, string | boolean>>({
     section: '',
     type: 'LIVRABLE',
@@ -117,10 +121,16 @@ const AdminProjectDetail = () => {
         apiFetch<{ project?: Project }>(`/api/admin/projects/${id}`),
         apiFetch<{ documents?: ProjectDocument[] }>(`/api/admin/projects/${id}/documents`),
         apiFetch<{ updates?: ProjectUpdate[] }>(`/api/admin/projects/${id}/updates`),
-        canViewContent ? apiFetch<{ sections?: ProjectSection[] }>(`/api/admin/projects/${id}/sections`) : Promise.resolve({ sections: [] as ProjectSection[] }),
-        canViewContent ? apiFetch<{ items?: ProjectItem[] }>(`/api/admin/projects/${id}/items`) : Promise.resolve({ items: [] as ProjectItem[] }),
+        canViewContent
+          ? apiFetch<{ sections?: ProjectSection[] }>(`/api/admin/projects/${id}/sections`)
+          : Promise.resolve({ sections: [] as ProjectSection[] }),
+        canViewContent
+          ? apiFetch<{ items?: ProjectItem[] }>(`/api/admin/projects/${id}/items`)
+          : Promise.resolve({ items: [] as ProjectItem[] }),
         canViewBilling
-          ? apiFetch<{ documents?: BillingDocument[] }>(`/api/admin/billing/projects/${id}/billing-documents`).catch(() => ({ documents: [] as BillingDocument[] }))
+          ? apiFetch<{ documents?: BillingDocument[] }>(`/api/admin/billing/projects/${id}/billing-documents`).catch(
+              () => ({ documents: [] as BillingDocument[] }),
+            )
           : Promise.resolve({ documents: [] as BillingDocument[] }),
       ])
       setProject(projectRes.project || null)
@@ -133,35 +143,51 @@ const AdminProjectDetail = () => {
       try {
         const adminsData = await apiFetch<{ users?: AdminUser[] }>('/api/admin/admins')
         setAdmins(adminsData.users || [])
-      } catch { setAdmins([]) }
+      } catch {
+        setAdmins([])
+      }
       if (projectRes.project) {
         const p = projectRes.project
         const deadlines = (p.deadlines || []).map((d) => ({
           label: d.label || '',
           dueAt: d.dueAt ? (typeof d.dueAt === 'string' ? d.dueAt : new Date(d.dueAt).toISOString()) : '',
         }))
-        const budget: { amount: number | ''; currency: string; note: string } = p.budget && typeof p.budget === 'object'
-          ? {
-              amount: p.budget.amount != null && p.budget.amount !== '' ? Number(p.budget.amount) : '',
-              currency: p.budget.currency || 'EUR',
-              note: p.budget.note || '',
-            }
-          : { amount: '', currency: 'EUR', note: '' }
-        const billing: { amountInvoiced: number | ''; billingStatus: string; quoteReference: string } = p.billing && typeof p.billing === 'object'
-          ? {
-              amountInvoiced: p.billing.amountInvoiced != null ? Number(p.billing.amountInvoiced) : '',
-              billingStatus: p.billing.billingStatus || 'NON_FACTURE',
-              quoteReference: p.billing.quoteReference || '',
-            }
-          : { amountInvoiced: '', billingStatus: 'NON_FACTURE', quoteReference: '' }
+        const budget: { amount: number | ''; currency: string; note: string } =
+          p.budget && typeof p.budget === 'object'
+            ? {
+                amount: p.budget.amount != null && p.budget.amount !== '' ? Number(p.budget.amount) : '',
+                currency: p.budget.currency || 'EUR',
+                note: p.budget.note || '',
+              }
+            : { amount: '', currency: 'EUR', note: '' }
+        const billing: { amountInvoiced: number | ''; billingStatus: string; quoteReference: string } =
+          p.billing && typeof p.billing === 'object'
+            ? {
+                amountInvoiced: p.billing.amountInvoiced != null ? Number(p.billing.amountInvoiced) : '',
+                billingStatus: p.billing.billingStatus || 'NON_FACTURE',
+                quoteReference: p.billing.quoteReference || '',
+              }
+            : { amountInvoiced: '', billingStatus: 'NON_FACTURE', quoteReference: '' }
         setForm({
           name: p.name,
           description: p.description || '',
           status: p.status,
           projectNumber: p.projectNumber || '',
-          startDate: p.startDate ? (typeof p.startDate === 'string' ? p.startDate.slice(0, 10) : new Date(p.startDate).toISOString().slice(0, 10)) : '',
-          endDate: p.endDate ? (typeof p.endDate === 'string' ? p.endDate.slice(0, 10) : new Date(p.endDate).toISOString().slice(0, 10)) : '',
-          deliveredAt: p.deliveredAt ? (typeof p.deliveredAt === 'string' ? p.deliveredAt.slice(0, 10) : new Date(p.deliveredAt).toISOString().slice(0, 10)) : '',
+          startDate: p.startDate
+            ? typeof p.startDate === 'string'
+              ? p.startDate.slice(0, 10)
+              : new Date(p.startDate).toISOString().slice(0, 10)
+            : '',
+          endDate: p.endDate
+            ? typeof p.endDate === 'string'
+              ? p.endDate.slice(0, 10)
+              : new Date(p.endDate).toISOString().slice(0, 10)
+            : '',
+          deliveredAt: p.deliveredAt
+            ? typeof p.deliveredAt === 'string'
+              ? p.deliveredAt.slice(0, 10)
+              : new Date(p.deliveredAt).toISOString().slice(0, 10)
+            : '',
           priority: p.priority || 'NORMALE',
           responsible: p.responsible || '',
           assignedTo: (p as any).assignedTo?._id || (p as any).assignedTo || '',
@@ -173,7 +199,11 @@ const AdminProjectDetail = () => {
           budget,
           tags: Array.isArray(p.tags) ? p.tags : [],
           billing,
-          reminderAt: p.reminderAt ? (typeof p.reminderAt === 'string' ? p.reminderAt : new Date(p.reminderAt).toISOString()) : '',
+          reminderAt: p.reminderAt
+            ? typeof p.reminderAt === 'string'
+              ? p.reminderAt
+              : new Date(p.reminderAt).toISOString()
+            : '',
           isArchived: Boolean(p.isArchived),
         })
       }
@@ -293,7 +323,9 @@ const AdminProjectDetail = () => {
 
   const refreshBillingDocuments = async () => {
     try {
-      const data = await apiFetch<{ documents?: BillingDocument[] }>(`/api/admin/billing/projects/${id}/billing-documents`)
+      const data = await apiFetch<{ documents?: BillingDocument[] }>(
+        `/api/admin/billing/projects/${id}/billing-documents`,
+      )
       setBillingDocuments(data.documents || [])
     } catch (_: unknown) {
       setBillingDocuments([])
@@ -380,14 +412,11 @@ const AdminProjectDetail = () => {
     if (!ensurePermission(canEditProjects, 'Accès en lecture seule.')) return
     const formEl = event.target as HTMLFormElement
     try {
-      const token = getToken()
       const formData = new FormData(formEl)
       const response = await fetch(`/api/admin/projects/${id}/documents`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
+        credentials: 'same-origin',
       })
       if (!response.ok) {
         const data = await response.json()
@@ -418,7 +447,7 @@ const AdminProjectDetail = () => {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!await confirm({ message: 'Supprimer cette section ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer cette section ?', title: 'Suppression' }))) return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${id}/sections/${sectionId}`, {
@@ -449,7 +478,6 @@ const AdminProjectDetail = () => {
     setError('')
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
     try {
-      const token = getToken()
       const formData = new FormData()
 
       Object.keys(itemForm).forEach((key) => {
@@ -464,10 +492,8 @@ const AdminProjectDetail = () => {
 
       const response = await fetch(`/api/admin/projects/${id}/items`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
@@ -495,7 +521,7 @@ const AdminProjectDetail = () => {
 
   const handleDeleteItem = async (itemId: string) => {
     if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' })) return
+    if (!(await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' }))) return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${id}/items/${itemId}`, {
@@ -524,11 +550,8 @@ const AdminProjectDetail = () => {
   const handleDownloadItem = async (itemId: string, fileName: string) => {
     if (!ensurePermission(canViewContent, 'Accès en lecture seule.')) return
     try {
-      const token = getToken()
       const response = await fetch(`/api/admin/projects/${id}/items/${itemId}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
       if (!response.ok) {
         throw new Error('Téléchargement impossible')
@@ -569,9 +592,8 @@ const AdminProjectDetail = () => {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               onClick={async () => {
                 try {
-                  const token = getToken()
                   const res = await fetch(`/api/admin/projects/${id}/recap-pdf`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: 'same-origin',
                   })
                   if (!res.ok) throw new Error('Erreur PDF')
                   const blob = await res.blob()
@@ -586,7 +608,16 @@ const AdminProjectDetail = () => {
                 }
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -618,10 +649,7 @@ const AdminProjectDetail = () => {
         >
           Contenu du projet
         </button>
-        <button
-          className={`admin-tab ${activeTab === 'tasks' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
-        >
+        <button className={`admin-tab ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
           Taches
         </button>
         <button
@@ -733,11 +761,7 @@ const AdminProjectDetail = () => {
       )}
 
       {activeTab === 'documents' && (
-        <ProjectDocumentsTab
-          documents={documents}
-          canEditProjects={canEditProjects}
-          onUpload={handleUpload}
-        />
+        <ProjectDocumentsTab documents={documents} canEditProjects={canEditProjects} onUpload={handleUpload} />
       )}
 
       {activeTab === 'messages' && id && (

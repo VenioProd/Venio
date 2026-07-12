@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { apiFetch, getToken, setToken } from '../lib/api'
+import { apiFetch } from '../lib/api'
 import { resolveUserPermissions } from '../lib/permissions'
 import type { AuthContextValue, User } from '../types/auth.types'
 
@@ -17,12 +17,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(normalizedUser)
       // Sync locale preference from backend if set
       if (normalizedUser.locale) {
-        try { localStorage.setItem('venio-lang', normalizedUser.locale) } catch {}
+        try {
+          localStorage.setItem('venio-lang', normalizedUser.locale)
+        } catch {}
       }
       return normalizedUser
     } catch (err) {
       setUser(null)
-      setToken(null)
       return null
     } finally {
       setLoading(false)
@@ -30,47 +31,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    // Handle impersonation via URL parameter
-    const params = new URLSearchParams(window.location.search)
-    const impersonateToken = params.get('impersonate')
-    if (impersonateToken) {
-      setToken(impersonateToken)
-      // Clean URL
-      params.delete('impersonate')
-      const cleanUrl = params.toString()
-        ? `${window.location.pathname}?${params.toString()}`
-        : window.location.pathname
-      window.history.replaceState({}, '', cleanUrl)
-      loadUser()
-      return
-    }
-
-    const token = getToken()
-    if (token) {
-      loadUser()
-    } else {
-      setLoading(false)
-    }
+    // Authentication is represented exclusively by the HttpOnly session cookie.
+    // /me lets the server decide whether a browser session is still active.
+    loadUser()
   }, [])
 
   const login = async (email: string, password: string, totpCode?: string) => {
-    const data = await apiFetch<{ token?: string; requires2FA?: boolean; user?: User }>('/api/auth/login', {
+    const data = await apiFetch<{ requires2FA?: boolean }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password, ...(totpCode ? { totpCode } : {}) }),
     })
     if (data.requires2FA) {
       return { requires2FA: true }
     }
-    if (data.token) {
-      setToken(data.token)
-      const currentUser = await loadUser()
-      return { token: data.token, user: currentUser }
-    }
-    return {}
+    const currentUser = await loadUser()
+    return { user: currentUser }
   }
 
-  const logout = () => {
-    setToken(null)
+  const logout = async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Clear local state even when an expired session has already been rejected.
+    }
     setUser(null)
   }
 
@@ -82,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshUser: loadUser,
     }),
-    [user, loading]
+    [user, loading],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

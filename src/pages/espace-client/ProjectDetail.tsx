@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import type { Project, ProjectSection, ProjectItem, ProjectUpdate, ProjectDocument } from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
@@ -46,11 +46,15 @@ const ClientProjectDetail = () => {
     const load = async () => {
       try {
         const [projectData, sectionsData, itemsData, progressData, activityData] = await Promise.all([
-          apiFetch<{ project: Project; documents?: ProjectDocument[]; updates?: ProjectUpdate[] }>(`/api/projects/${id}`),
+          apiFetch<{ project: Project; documents?: ProjectDocument[]; updates?: ProjectUpdate[] }>(
+            `/api/projects/${id}`,
+          ),
           apiFetch<{ sections: ProjectSection[] }>(`/api/projects/${id}/sections`),
           apiFetch<{ items: ProjectItem[] }>(`/api/projects/${id}/items`),
           apiFetch<TaskProgress>(`/api/projects/${id}/task-progress`).catch(() => null),
-          apiFetch<{ activities: ActivityEntry[] }>(`/api/projects/${id}/activity?limit=15`).catch(() => ({ activities: [] })),
+          apiFetch<{ activities: ActivityEntry[] }>(`/api/projects/${id}/activity?limit=15`).catch(() => ({
+            activities: [],
+          })),
         ])
         setProject(projectData.project)
         setDocuments(projectData.documents || [])
@@ -74,10 +78,10 @@ const ClientProjectDetail = () => {
     try {
       const last = activities[activities.length - 1]
       const data = await apiFetch<{ activities: ActivityEntry[] }>(
-        `/api/projects/${id}/activity?limit=15&before=${last.createdAt}`
+        `/api/projects/${id}/activity?limit=15&before=${last.createdAt}`,
       )
       if (data.activities?.length) {
-        setActivities(prev => [...prev, ...data.activities])
+        setActivities((prev) => [...prev, ...data.activities])
       }
     } catch {
       // ignore
@@ -88,11 +92,8 @@ const ClientProjectDetail = () => {
 
   const downloadDocument = async (doc: ProjectDocument) => {
     try {
-      const token = getToken()
       const response = await fetch(`/api/documents/${doc._id}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
       if (!response.ok) {
         throw new Error('Telechargement impossible')
@@ -113,11 +114,8 @@ const ClientProjectDetail = () => {
 
   const downloadItem = async (itemId: string, fileName: string) => {
     try {
-      const token = getToken()
       const response = await fetch(`/api/projects/${id}/items/${itemId}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
       if (!response.ok) {
         throw new Error('Téléchargement impossible')
@@ -224,9 +222,19 @@ const ClientProjectDetail = () => {
   return (
     <div className="portal-container client-project-detail">
       {/* Header avec breadcrumb */}
-      <div className="client-project-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <div
+        className="client-project-breadcrumb"
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}
+      >
         <Link to="/espace-client" className="client-project-back">
-          <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            stroke="currentColor"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
           <span>Mes projets</span>
@@ -263,9 +271,7 @@ const ClientProjectDetail = () => {
                 </span>
               </div>
               <h1 className="client-project-hero-title">{project.name}</h1>
-              {project.description && (
-                <p className="client-project-hero-description">{project.description}</p>
-              )}
+              {project.description && <p className="client-project-hero-description">{project.description}</p>}
             </div>
           </div>
 
@@ -275,7 +281,14 @@ const ClientProjectDetail = () => {
               className={`client-project-tab ${activeTab === 'content' ? 'active' : ''}`}
               onClick={() => setActiveTab('content')}
             >
-              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+              <svg
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                stroke="currentColor"
+              >
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                 <polyline points="13 2 13 9 20 9" />
               </svg>
@@ -285,7 +298,14 @@ const ClientProjectDetail = () => {
               className={`client-project-tab ${activeTab === 'updates' ? 'active' : ''}`}
               onClick={() => setActiveTab('updates')}
             >
-              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+              <svg
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                stroke="currentColor"
+              >
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
               <span>Mises à jour</span>
@@ -294,7 +314,14 @@ const ClientProjectDetail = () => {
               className={`client-project-tab ${activeTab === 'progress' ? 'active' : ''}`}
               onClick={() => setActiveTab('progress')}
             >
-              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+              <svg
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                stroke="currentColor"
+              >
                 <line x1="18" y1="20" x2="18" y2="10" />
                 <line x1="12" y1="20" x2="12" y2="4" />
                 <line x1="6" y1="20" x2="6" y2="14" />
@@ -305,7 +332,14 @@ const ClientProjectDetail = () => {
               className={`client-project-tab ${activeTab === 'documents' ? 'active' : ''}`}
               onClick={() => setActiveTab('documents')}
             >
-              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+              <svg
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                stroke="currentColor"
+              >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -318,7 +352,14 @@ const ClientProjectDetail = () => {
               className={`client-project-tab ${activeTab === 'messages' ? 'active' : ''}`}
               onClick={() => setActiveTab('messages')}
             >
-              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+              <svg
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                stroke="currentColor"
+              >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span>Messages</span>
@@ -346,9 +387,7 @@ const ClientProjectDetail = () => {
             <div key={section._id} className="client-project-section">
               <div className="client-project-section-header">
                 <h2 className="client-project-section-title">{section.title}</h2>
-                {section.description && (
-                  <p className="client-project-section-description">{section.description}</p>
-                )}
+                {section.description && <p className="client-project-section-description">{section.description}</p>}
               </div>
               {getItemsBySection(section._id).length === 0 ? (
                 <div className="client-project-empty">
@@ -415,14 +454,20 @@ const ClientProjectDetail = () => {
                 {project.priority && (
                   <div className="client-progress-info-item">
                     <span className="client-progress-info-label">Priorité</span>
-                    <span className="client-progress-info-value">{priorityLabels[project.priority] || project.priority}</span>
+                    <span className="client-progress-info-value">
+                      {priorityLabels[project.priority] || project.priority}
+                    </span>
                   </div>
                 )}
                 {project.startDate && (
                   <div className="client-progress-info-item">
                     <span className="client-progress-info-label">Date de début</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {new Date(project.startDate).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 )}
@@ -430,7 +475,11 @@ const ClientProjectDetail = () => {
                   <div className="client-progress-info-item">
                     <span className="client-progress-info-label">Date de fin prévue</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {new Date(project.endDate).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 )}
@@ -438,7 +487,11 @@ const ClientProjectDetail = () => {
                   <div className="client-progress-info-item">
                     <span className="client-progress-info-label">Livré le</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.deliveredAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {new Date(project.deliveredAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 )}
@@ -450,7 +503,11 @@ const ClientProjectDetail = () => {
                     <div key={i} className="client-progress-deadline">
                       <span className="client-progress-deadline-label">{d.label}</span>
                       <span className="client-progress-deadline-date">
-                        {new Date(d.dueAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(d.dueAt).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
                       </span>
                     </div>
                   ))}
@@ -466,14 +523,16 @@ const ClientProjectDetail = () => {
               <div className="client-progress-bar-container">
                 <div className="client-progress-bar-header">
                   <span className="client-progress-bar-label">{taskProgress.percent}% complété</span>
-                  <span className="client-progress-bar-count">{taskProgress.byStatus.TERMINE}/{taskProgress.total} tâches</span>
+                  <span className="client-progress-bar-count">
+                    {taskProgress.byStatus.TERMINE}/{taskProgress.total} tâches
+                  </span>
                 </div>
                 <div className="client-progress-bar">
                   <div className="client-progress-bar-fill" style={{ width: `${taskProgress.percent}%` }} />
                 </div>
               </div>
               <div className="client-progress-status-grid">
-                {(['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE'] as const).map(status => (
+                {(['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE'] as const).map((status) => (
                   <div key={status} className="client-progress-status-item">
                     <div className="client-progress-status-dot" style={{ background: statusTaskColors[status] }} />
                     <span className="client-progress-status-label">{statusTaskLabels[status]}</span>
@@ -495,7 +554,7 @@ const ClientProjectDetail = () => {
             <div className="client-progress-activity">
               <h2 className="client-progress-section-title">Activité récente</h2>
               <div className="client-activity-list">
-                {activities.map(a => (
+                {activities.map((a) => (
                   <div key={a._id} className="client-activity-item">
                     <span className="client-activity-icon">{getActivityIcon(a.action)}</span>
                     <div className="client-activity-content">
@@ -510,11 +569,7 @@ const ClientProjectDetail = () => {
                 ))}
               </div>
               {activities.length >= 15 && (
-                <button
-                  className="client-activity-load-more"
-                  onClick={loadMoreActivities}
-                  disabled={loadingMore}
-                >
+                <button className="client-activity-load-more" onClick={loadMoreActivities} disabled={loadingMore}>
                   {loadingMore ? 'Chargement...' : 'Charger plus'}
                 </button>
               )}
@@ -536,7 +591,14 @@ const ClientProjectDetail = () => {
               {documents.map((doc) => (
                 <div key={doc._id} className="client-project-document">
                   <div className="client-project-document-icon">
-                    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      stroke="currentColor"
+                    >
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                       <line x1="16" y1="13" x2="8" y2="13" />
@@ -553,7 +615,14 @@ const ClientProjectDetail = () => {
                     type="button"
                     onClick={() => downloadDocument(doc)}
                   >
-                    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      stroke="currentColor"
+                    >
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />

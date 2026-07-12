@@ -1,15 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import {
-  BookOpen,
-  FolderKanban,
-  HelpCircle,
-  LogOut,
-  User,
-  X,
-  type LucideIcon,
-} from 'lucide-react'
+import { BookOpen, FolderKanban, HelpCircle, LogOut, User, X, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import UserAvatar from './UserAvatar'
 import './ClientSidebar.css'
@@ -23,7 +15,13 @@ interface ClientNavItem {
 }
 
 const NAV_ITEMS: ClientNavItem[] = [
-  { to: '/espace-client', label: 'Mes projets', icon: FolderKanban, end: true, activePrefixes: ['/espace-client/projets'] },
+  {
+    to: '/espace-client',
+    label: 'Mes projets',
+    icon: FolderKanban,
+    end: true,
+    activePrefixes: ['/espace-client/projets'],
+  },
   { to: '/espace-client/guide', label: 'Guide', icon: BookOpen },
   { to: '/espace-client/profil', label: 'Profil', icon: User },
 ]
@@ -51,8 +49,8 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
     return () => window.removeEventListener('keydown', onKey)
   }, [drawerOpen, onDrawerClose])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/espace-client/login')
   }
 
@@ -91,7 +89,12 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
   const footer = (
     <>
       <div className="client-sb-user">
-        <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} className="client-sb-avatar" size={32} />
+        <UserAvatar
+          name={user?.name || user?.email || '?'}
+          avatarUrl={user?.avatarUrl}
+          className="client-sb-avatar"
+          size={32}
+        />
         <div className="client-sb-user-info">
           <div className="client-sb-user-name">{user?.name || user?.email || 'Client'}</div>
           {user?.companyName && <div className="client-sb-user-role">{user.companyName}</div>}
@@ -127,12 +130,7 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
                   <span className="client-sb-logo">V</span>
                   <span className="client-sb-brand-name">Venio</span>
                 </button>
-                <button
-                  type="button"
-                  className="client-sb-drawer-close"
-                  onClick={onDrawerClose}
-                  aria-label="Fermer"
-                >
+                <button type="button" className="client-sb-drawer-close" onClick={onDrawerClose} aria-label="Fermer">
                   <X size={18} aria-hidden />
                 </button>
               </div>
@@ -142,7 +140,7 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
               <div className="client-sb-drawer-footer">{footer}</div>
             </aside>
           </>,
-          document.body
+          document.body,
         )}
     </>
   )

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip, MessageSquare } from 'lucide-react'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import '../espace-client/ClientPortal.css'
@@ -69,9 +69,8 @@ async function fetchDecisionBlob(
   decisionId: string,
   index: number,
 ): Promise<{ blob: Blob; error?: never } | { error: string; blob?: never }> {
-  const token = getToken()
   const res = await fetch(`/api/admin/decisions/${decisionId}/attachments/${index}/download`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'same-origin',
   })
   if (!res.ok) {
     const d = await res.json().catch(() => null)
@@ -271,10 +270,7 @@ const PRIORITY_COLORS: Record<DecisionPriority, string> = {
 const CATEGORIES: DecisionCategory[] = ['BUDGET', 'EMBAUCHE', 'PROJET', 'PARTENARIAT', 'AUTRE']
 const PRIORITIES: DecisionPriority[] = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
 
-const STATUS_META: Record<
-  Exclude<DecisionStatus, 'PENDING'>,
-  { label: string; color: string; background: string }
-> = {
+const STATUS_META: Record<Exclude<DecisionStatus, 'PENDING'>, { label: string; color: string; background: string }> = {
   APPROVED: {
     label: 'Approuvée',
     color: '#10b981',
@@ -855,8 +851,7 @@ export default function DecisionsList() {
                           disabled={actingId === d._id}
                           onClick={() => handleImprove(d._id)}
                         >
-                          <MessageSquare size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                          À améliorer
+                          <MessageSquare size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />À améliorer
                         </button>
                         <button
                           type="button"
@@ -981,11 +976,10 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       const inputFiles = fileInputRef.current?.files
       if (inputFiles) Array.from(inputFiles).forEach((f) => form.append('files', f))
 
-      const token = getToken()
       const res = await fetch('/api/admin/decisions', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
+        credentials: 'same-origin',
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)

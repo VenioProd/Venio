@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import locales from '../i18n'
-import { apiFetch, getToken } from '../lib/api'
+import { apiFetch } from '../lib/api'
 
 export type Locale = 'fr' | 'en'
 
@@ -39,13 +39,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // localStorage may not be available
     }
-    // Persist to backend if authenticated (fire-and-forget)
-    if (getToken()) {
-      apiFetch('/api/auth/locale', {
-        method: 'PATCH',
-        body: JSON.stringify({ locale: newLocale }),
-      }).catch(() => {})
-    }
+    // The server accepts this only when an HttpOnly browser session is active.
+    apiFetch('/api/auth/locale', {
+      method: 'PATCH',
+      body: JSON.stringify({ locale: newLocale }),
+    }).catch(() => {})
   }, [])
 
   const t = useCallback(
@@ -61,13 +59,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       }
       return key
     },
-    [locale]
+    [locale],
   )
 
-  const value = useMemo(
-    () => ({ locale, setLocale, t }),
-    [locale, setLocale, t]
-  )
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t])
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

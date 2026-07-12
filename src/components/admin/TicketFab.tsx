@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react'
-import { getToken } from '../../lib/api'
 import '../../pages/admin/AdminPortal.css'
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -42,7 +41,6 @@ const TicketFab = () => {
       files.forEach((f) => fd.append('files', f))
       const res = await fetch('/api/admin/tickets', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
       })
       if (res.ok) {

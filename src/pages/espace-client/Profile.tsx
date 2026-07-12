@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
 import UserAvatar from '../../components/UserAvatar'
@@ -106,11 +106,10 @@ const ClientProfile = () => {
     try {
       const formData = new FormData()
       formData.append('avatar', blob, 'avatar.jpg')
-      const token = getToken()
       const res = await fetch('/api/auth/avatar', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
+        credentials: 'same-origin',
       })
       if (!res.ok) {
         const data = await res.json()

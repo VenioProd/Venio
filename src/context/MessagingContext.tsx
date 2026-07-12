@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { getToken } from '../lib/api'
 import {
   fetchConversations as fetchConversationsApi,
   fetchMessages as fetchMessagesApi,
@@ -64,9 +63,11 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
   const markRead = useCallback(async (conversationId: string) => {
     await markConversationReadApi(conversationId)
     socketRef.current?.emit('message:read', { conversationId })
-    setConversations((prev) => prev.map((conversation) => (
-      conversation._id === conversationId ? { ...conversation, unreadCount: 0 } : conversation
-    )))
+    setConversations((prev) =>
+      prev.map((conversation) =>
+        conversation._id === conversationId ? { ...conversation, unreadCount: 0 } : conversation,
+      ),
+    )
   }, [])
 
   useEffect(() => {
@@ -78,41 +79,46 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
       setMessages([])
       return
     }
-    loadMessages(activeConversationId).then(() => markRead(activeConversationId)).catch(() => {})
+    loadMessages(activeConversationId)
+      .then(() => markRead(activeConversationId))
+      .catch(() => {})
   }, [activeConversationId, loadMessages, markRead])
 
   useEffect(() => {
-    const token = getToken()
-    if (!token) return
     const socket = io('/', {
-      auth: { token },
       path: '/socket.io',
       transports: ['websocket', 'polling'],
+      withCredentials: true,
     })
     socketRef.current = socket
 
     socket.on('connect', () => setConnected(true))
     socket.on('disconnect', () => setConnected(false))
     socket.on('message:created', ({ message }: { message: InternalMessage }) => {
-      setConversations((prev) => prev.map((conversation) => (
-        conversation._id === message.conversation
-          ? {
-              ...conversation,
-              lastMessage: message,
-              lastMessageAt: message.createdAt,
-              unreadCount: message.conversation === activeConversationId ? 0 : conversation.unreadCount + 1,
-            }
-          : conversation
-      )))
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation._id === message.conversation
+            ? {
+                ...conversation,
+                lastMessage: message,
+                lastMessageAt: message.createdAt,
+                unreadCount: message.conversation === activeConversationId ? 0 : conversation.unreadCount + 1,
+              }
+            : conversation,
+        ),
+      )
       if (message.conversation === activeConversationId) {
         setMessages((prev) => mergeMessage(prev, message))
         markConversationReadApi(message.conversation).catch(() => {})
       }
     })
-    socket.on('typing:start', ({ conversationId, userId, name }: { conversationId: string; userId: string; name: string }) => {
-      if (conversationId !== activeConversationId) return
-      setTypingUsers((prev) => ({ ...prev, [userId]: name }))
-    })
+    socket.on(
+      'typing:start',
+      ({ conversationId, userId, name }: { conversationId: string; userId: string; name: string }) => {
+        if (conversationId !== activeConversationId) return
+        setTypingUsers((prev) => ({ ...prev, [userId]: name }))
+      },
+    )
     socket.on('typing:stop', ({ conversationId, userId }: { conversationId: string; userId: string }) => {
       if (conversationId !== activeConversationId) return
       setTypingUsers((prev) => {
@@ -128,47 +134,73 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activeConversationId])
 
-  const sendMessage = useCallback(async (content: string, parentMessage?: string | null) => {
-    if (!activeConversationId) return
-    const socket = socketRef.current
-    if (socket?.connected) {
-      await new Promise<void>((resolve, reject) => {
-        socket.emit('message:new', { conversationId: activeConversationId, content, parentMessage }, (ack: { ok: boolean; error?: string }) => {
-          if (ack.ok) resolve()
-          else reject(new Error(ack.error || 'Envoi impossible'))
+  const sendMessage = useCallback(
+    async (content: string, parentMessage?: string | null) => {
+      if (!activeConversationId) return
+      const socket = socketRef.current
+      if (socket?.connected) {
+        await new Promise<void>((resolve, reject) => {
+          socket.emit(
+            'message:new',
+            { conversationId: activeConversationId, content, parentMessage },
+            (ack: { ok: boolean; error?: string }) => {
+              if (ack.ok) resolve()
+              else reject(new Error(ack.error || 'Envoi impossible'))
+            },
+          )
         })
-      })
-      return
-    }
-    const message = await sendMessageApi(activeConversationId, content, parentMessage)
-    setMessages((prev) => mergeMessage(prev, message))
-    await refreshConversations()
-  }, [activeConversationId, refreshConversations])
+        return
+      }
+      const message = await sendMessageApi(activeConversationId, content, parentMessage)
+      setMessages((prev) => mergeMessage(prev, message))
+      await refreshConversations()
+    },
+    [activeConversationId, refreshConversations],
+  )
 
-  const emitTyping = useCallback((isTyping: boolean) => {
-    if (!activeConversationId) return
-    socketRef.current?.emit(isTyping ? 'typing:start' : 'typing:stop', { conversationId: activeConversationId })
-  }, [activeConversationId])
+  const emitTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!activeConversationId) return
+      socketRef.current?.emit(isTyping ? 'typing:start' : 'typing:stop', { conversationId: activeConversationId })
+    },
+    [activeConversationId],
+  )
 
   const replaceMessage = useCallback((message: InternalMessage) => {
     setMessages((prev) => mergeMessage(prev, message))
   }, [])
 
-  const value = useMemo(() => ({
-    conversations,
-    activeConversationId,
-    messages,
-    loading,
-    connected,
-    typingUsers,
-    setActiveConversationId,
-    refreshConversations,
-    loadMessages,
-    sendMessage,
-    markRead,
-    emitTyping,
-    replaceMessage,
-  }), [conversations, activeConversationId, messages, loading, connected, typingUsers, refreshConversations, loadMessages, sendMessage, markRead, emitTyping, replaceMessage])
+  const value = useMemo(
+    () => ({
+      conversations,
+      activeConversationId,
+      messages,
+      loading,
+      connected,
+      typingUsers,
+      setActiveConversationId,
+      refreshConversations,
+      loadMessages,
+      sendMessage,
+      markRead,
+      emitTyping,
+      replaceMessage,
+    }),
+    [
+      conversations,
+      activeConversationId,
+      messages,
+      loading,
+      connected,
+      typingUsers,
+      refreshConversations,
+      loadMessages,
+      sendMessage,
+      markRead,
+      emitTyping,
+      replaceMessage,
+    ],
+  )
 
   return <MessagingContext.Provider value={value}>{children}</MessagingContext.Provider>
 }
