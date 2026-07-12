@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Command, Search, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { trackAdminEvent } from '../lib/adminAnalytics'
 import { getCommandPaletteItems, type AdminCommandPaletteItem } from '../lib/adminNavigation'
+import { useModalA11y } from '../hooks/useModalA11y'
 import './AdminCommandPalette.css'
 
 const normalize = (value: string) =>
@@ -21,7 +23,11 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
+  const dialogRef = useRef<HTMLElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+
+  useModalA11y(true, dialogRef, inputRef)
 
   const items = useMemo(() => {
     const normalizedQuery = normalize(query.trim())
@@ -58,20 +64,22 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
     }
   }
 
-  return (
+  return createPortal(
     <div className="admin-command-palette-layer" role="presentation" onMouseDown={onClose}>
       <section
+        ref={dialogRef}
         className="admin-command-palette"
         role="dialog"
         aria-modal="true"
         aria-label="Recherche rapide"
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={onKeyDown}
       >
         <div className="admin-command-palette__search">
           <Search size={18} aria-hidden />
           <input
-            autoFocus
+            ref={inputRef}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value)
@@ -106,6 +114,7 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
         </div>
         <footer className="admin-command-palette__footer">↑↓ naviguer · Entrée ouvrir · Échap fermer</footer>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

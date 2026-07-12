@@ -76,6 +76,13 @@ interface DashboardData {
   hotLeads: HotLead[]
   recentProjects: (Project & { client?: { _id: string; name: string } })[]
   generatedAt: string
+  cockpitMeta: {
+    source: string
+    generatedAt: string
+    freshnessSlaMinutes: number
+    staleProjectThresholdDays: number
+    hotLeadFollowUpHours: number
+  }
 }
 
 const TASK_STATUS_LABELS: Record<string, string> = {
@@ -134,6 +141,11 @@ function formatMoney(value: number) {
   return `${Math.round(value || 0).toLocaleString('fr-FR')} EUR`
 }
 
+function formatFreshness(date: string | undefined) {
+  if (!date) return 'actualisation en cours'
+  return `mis à jour ${new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+}
+
 function isPast(date: string | null | undefined) {
   return Boolean(date && new Date(date) < new Date())
 }
@@ -168,16 +180,37 @@ function Signal({
   count,
   to,
   tone = 'neutral',
+  source,
+  owner,
+  state,
+  action,
+  generatedAt,
 }: {
   label: string
   count: number
   to: string
   tone?: 'danger' | 'warning' | 'neutral'
+  source: string
+  owner: string
+  state: string
+  action: string
+  generatedAt?: string
 }) {
   return (
-    <Link to={to} className={`admin-attention-signal ${tone}`}>
-      <span>{label}</span>
+    <Link
+      to={to}
+      className={`admin-attention-signal ${tone}`}
+      aria-label={`${label}: ${count}. ${state}. Prochaine action : ${action}.`}
+    >
+      <span className="admin-attention-signal__body">
+        <span>{label}</span>
+        <small>
+          {source} · {owner} · {formatFreshness(generatedAt)}
+        </small>
+        <em>{state}</em>
+      </span>
       <strong>{count}</strong>
+      <span className="admin-attention-signal__action">{action} →</span>
     </Link>
   )
 }
@@ -187,16 +220,26 @@ function Kpi({
   value,
   to,
   tone = 'blue',
+  source,
+  owner,
+  generatedAt,
 }: {
   label: string
   value: string | number
   to?: string
   tone?: 'blue' | 'green' | 'orange' | 'pink'
+  source: string
+  owner: string
+  generatedAt?: string
 }) {
   const content = (
     <>
       <span>{label}</span>
       <strong>{value}</strong>
+      <small>
+        {source} · {owner} · {formatFreshness(generatedAt)}
+      </small>
+      <em>À jour · recalcul à la demande</em>
     </>
   )
   return to ? (
@@ -277,7 +320,10 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
   const total = mission.steps?.length || 0
   return (
     <Link to="/admin/gestion?view=missions" className="admin-command-line">
-      <span className="admin-command-dot" style={{ background: mission.status === 'EN_COURS' ? '#38bdf8' : '#f59e0b' }} />
+      <span
+        className="admin-command-dot"
+        style={{ background: mission.status === 'EN_COURS' ? '#38bdf8' : '#f59e0b' }}
+      />
       <span className="admin-command-line__main">
         <strong>{mission.title}</strong>
         <small>
@@ -285,7 +331,9 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
           {total > 0 ? ` - ${done}/${total} etapes` : ''}
         </small>
       </span>
-      {mission.dueDate && <time className={isPast(mission.dueDate) ? 'danger' : ''}>{formatDate(mission.dueDate)}</time>}
+      {mission.dueDate && (
+        <time className={isPast(mission.dueDate) ? 'danger' : ''}>{formatDate(mission.dueDate)}</time>
+      )}
     </Link>
   )
 }
@@ -361,6 +409,69 @@ export default function AdminDashboard() {
     return { tasks, missions }
   }, [data?.myTasks, myMissions])
 
+  const exceptionSignals = useMemo(() => {
+    if (!data) return []
+    const p1Briefs = data.myBriefs.filter((brief) => brief.briefPriority === 'P1').length
+    const freshness = data.cockpitMeta?.generatedAt || data.generatedAt
+    return [
+      data.overdueTasks.length > 0 && {
+        label: 'Tâches en retard',
+        count: data.overdueTasks.length,
+        to: '/admin/gestion',
+        tone: 'danger' as const,
+        source: 'Tâches',
+        owner: 'Équipe',
+        state: 'SLA dépassé',
+        action: 'Ouvrir et réattribuer',
+        generatedAt: freshness,
+      },
+      p1Briefs > 0 && {
+        label: 'Briefs P1',
+        count: p1Briefs,
+        to: '/admin/gestion?view=briefs',
+        tone: 'danger' as const,
+        source: 'Briefs',
+        owner: 'Équipe',
+        state: 'SLA dépassé',
+        action: 'Traiter le brief',
+        generatedAt: freshness,
+      },
+      data.pendingDecisionCount > 0 && {
+        label: 'Décisions',
+        count: data.pendingDecisionCount,
+        to: '/admin/decisions',
+        tone: 'warning' as const,
+        source: 'Décisions',
+        owner: 'Direction',
+        state: 'En attente d’arbitrage',
+        action: 'Arbitrer',
+        generatedAt: freshness,
+      },
+      data.hotLeads.length > 0 && {
+        label: 'Relances CRM',
+        count: data.hotLeads.length,
+        to: '/admin/crm',
+        tone: 'warning' as const,
+        source: 'CRM',
+        owner: 'Commercial',
+        state: `Suivi sous ${data.cockpitMeta?.hotLeadFollowUpHours || 48} h`,
+        action: 'Planifier une relance',
+        generatedAt: freshness,
+      },
+      data.staleProjectCount > 0 && {
+        label: 'Projets dormants',
+        count: data.staleProjectCount,
+        to: '/admin/projets',
+        tone: 'neutral' as const,
+        source: 'Projets',
+        owner: 'Équipe projet',
+        state: `Sans activité ${data.cockpitMeta?.staleProjectThresholdDays || 14} j+`,
+        action: 'Faire un point',
+        generatedAt: freshness,
+      },
+    ].filter(Boolean) as Array<Parameters<typeof Signal>[0]>
+  }, [data])
+
   return (
     <div className={`portal-container admin-command-dashboard ${prefs.density === 'compact' ? 'compact' : ''}`}>
       <div className="admin-command-header">
@@ -368,10 +479,8 @@ export default function AdminDashboard() {
           <span className="admin-command-eyebrow">Bureau Venio</span>
           <h1>Pilotage Venio</h1>
           <p>
-            {user?.name || user?.email || 'Admin'} · donnees{' '}
-            {data?.generatedAt
-              ? new Date(data.generatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-              : 'en cours'}
+            {user?.name || user?.email || 'Admin'} · source {data?.cockpitMeta?.source || 'api/admin/dashboard'} ·{' '}
+            {formatFreshness(data?.cockpitMeta?.generatedAt || data?.generatedAt)}
           </p>
         </div>
         <div className="admin-command-actions">
@@ -409,20 +518,56 @@ export default function AdminDashboard() {
                   : 'Aucun signal critique'}
               </strong>
             </div>
-            <div className="admin-attention__signals">
-              <Signal label="Taches en retard" count={data.overdueTasks.length} to="/admin/gestion" tone="danger" />
-              <Signal label="Briefs P1" count={attention?.p1Briefs || 0} to="/admin/gestion?view=briefs" tone="danger" />
-              <Signal label="Decisions" count={data.pendingDecisionCount} to="/admin/decisions" tone="warning" />
-              <Signal label="Relances CRM" count={data.hotLeads.length} to="/admin/crm" tone="warning" />
-              <Signal label="Projets dormants" count={data.staleProjectCount} to="/admin/projets" />
-            </div>
+            {exceptionSignals.length > 0 && (
+              <div className="admin-attention__signals">
+                {exceptionSignals.map((signal) => (
+                  <Signal key={signal.label} {...signal} />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="admin-exec-grid">
-            {isSuperAdmin && <Kpi label="CA facture" value={formatMoney(data.totalRevenue)} to="/admin/comptabilite" tone="green" />}
-            <Kpi label="Pipeline" value={formatMoney(data.pipelineValue)} to="/admin/crm" tone="orange" />
-            {canViewProjects && <Kpi label="Projets actifs" value={data.activeProjectCount} to="/admin/projets" tone="blue" />}
-            <Kpi label="Taches ouvertes" value={data.myTasks.length} to="/admin/gestion" tone="pink" />
+            {isSuperAdmin && (
+              <Kpi
+                label="CA facture"
+                value={formatMoney(data.totalRevenue)}
+                to="/admin/comptabilite"
+                tone="green"
+                source="Facturation"
+                owner="Finance"
+                generatedAt={data.generatedAt}
+              />
+            )}
+            <Kpi
+              label="Pipeline"
+              value={formatMoney(data.pipelineValue)}
+              to="/admin/crm"
+              tone="orange"
+              source="CRM"
+              owner="Commercial"
+              generatedAt={data.generatedAt}
+            />
+            {canViewProjects && (
+              <Kpi
+                label="Projets actifs"
+                value={data.activeProjectCount}
+                to="/admin/projets"
+                tone="blue"
+                source="Projets"
+                owner="Équipe projet"
+                generatedAt={data.generatedAt}
+              />
+            )}
+            <Kpi
+              label="Taches ouvertes"
+              value={data.myTasks.length}
+              to="/admin/gestion"
+              tone="pink"
+              source="Tâches"
+              owner="Moi"
+              generatedAt={data.generatedAt}
+            />
           </div>
 
           <div className="admin-command-layout">
@@ -450,7 +595,11 @@ export default function AdminDashboard() {
               <Section
                 title="Portefeuille Venio"
                 icon={<FolderKanban size={16} />}
-                action={<Link to="/admin/projets" className="admin-command-link">Tous les projets</Link>}
+                action={
+                  <Link to="/admin/projets" className="admin-command-link">
+                    Tous les projets
+                  </Link>
+                }
               >
                 <div className="admin-command-stack">
                   {myInternalProjects.slice(0, 5).map((project) => (
@@ -497,10 +646,26 @@ export default function AdminDashboard() {
                 {prefs.showShortcuts && (
                   <Section title="Raccourcis" icon={<Sparkles size={16} />}>
                     <div className="admin-shortcut-grid">
-                      {canManageClients && <Link to="/admin/comptes-clients/nouveau"><BriefcaseBusiness size={15} />Client</Link>}
-                      {canViewMessaging && <Link to="/admin/messages"><MessageSquare size={15} />Messages</Link>}
-                      <Link to="/admin/crm"><CircleDollarSign size={15} />CRM</Link>
-                      <Link to="/admin/dev"><AlertTriangle size={15} />Dev</Link>
+                      {canManageClients && (
+                        <Link to="/admin/comptes-clients/nouveau">
+                          <BriefcaseBusiness size={15} />
+                          Client
+                        </Link>
+                      )}
+                      {canViewMessaging && (
+                        <Link to="/admin/messages">
+                          <MessageSquare size={15} />
+                          Messages
+                        </Link>
+                      )}
+                      <Link to="/admin/crm">
+                        <CircleDollarSign size={15} />
+                        CRM
+                      </Link>
+                      <Link to="/admin/dev">
+                        <AlertTriangle size={15} />
+                        Dev
+                      </Link>
                     </div>
                   </Section>
                 )}
