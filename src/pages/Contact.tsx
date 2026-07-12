@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
-import emailjs from '@emailjs/browser'
-import MathCaptcha from '../components/MathCaptcha'
+import React, { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { useReveal } from '../hooks/useReveal'
@@ -13,12 +12,14 @@ interface ContactFormData {
   entreprise: string
   sujet: string
   message: string
+  consent: boolean
+  website: string
 }
 
 const Contact = () => {
   useReveal('.mp-page .mp-reveal', 'mp-visible')
 
-  const [captchaVerified, setCaptchaVerified] = useState<boolean>(false)
+  const formStartedAt = useRef(Date.now())
   const [formData, setFormData] = useState<ContactFormData>({
     prenom: '',
     nom: '',
@@ -26,6 +27,8 @@ const Contact = () => {
     entreprise: '',
     sujet: '',
     message: '',
+    consent: false,
+    website: '',
   })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -34,7 +37,7 @@ const Contact = () => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: e.target instanceof HTMLInputElement && e.target.type === 'checkbox' ? e.target.checked : value,
     }))
   }
 
@@ -42,47 +45,46 @@ const Contact = () => {
     e.preventDefault()
     setFormStatus(null)
 
-    if (!captchaVerified) {
-      setFormStatus({ type: 'error', message: 'Veuillez compléter la vérification mathématique.' })
+    if (!formData.consent) {
+      setFormStatus({ type: 'error', message: 'Veuillez accepter le traitement de votre demande.' })
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID
-      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.prenom,
+          lastName: formData.nom,
+          email: formData.email,
+          company: formData.entreprise,
+          subject: formData.sujet,
+          message: formData.message,
+          consent: formData.consent,
+          website: formData.website,
+          startedAt: formStartedAt.current,
+        }),
+      })
 
-      if (!serviceId || !templateId || !publicKey) {
-        setFormStatus({
-          type: 'error',
-          message:
-            "Le formulaire de contact n'est pas encore configuré. Contactez-nous directement à contact@venio.paris",
-        })
-        setIsSubmitting(false)
-        return
-      }
+      if (!response.ok) throw new Error('Contact request failed')
 
-      emailjs.init(publicKey)
-
-      const templateParams = {
-        from_name: `${formData.prenom} ${formData.nom}`,
-        from_email: formData.email,
-        to_email: 'contact@venio.paris',
-        subject: `Contact Venio - ${formData.sujet || 'Sans sujet'}`,
-        entreprise: formData.entreprise || 'Non renseignée',
-        message: formData.message,
-        sujet: formData.sujet || 'Non renseigné',
-      }
-
-      await emailjs.send(serviceId, templateId, templateParams)
-
-      setFormData({ prenom: '', nom: '', email: '', entreprise: '', sujet: '', message: '' })
-      setCaptchaVerified(false)
+      setFormData({
+        prenom: '',
+        nom: '',
+        email: '',
+        entreprise: '',
+        sujet: '',
+        message: '',
+        consent: false,
+        website: '',
+      })
+      formStartedAt.current = Date.now()
       setFormStatus({
         type: 'success',
-        message: 'Votre message a été envoyé. On vous répond sous 48h.',
+        message: 'Merci, votre message a bien été reçu. Nous vous répondrons sous 48 h ouvrées.',
       })
     } catch {
       setFormStatus({
@@ -208,16 +210,35 @@ const Contact = () => {
                   rows={6}
                   required
                 ></textarea>
-                <MathCaptcha onVerify={setCaptchaVerified} />
+                <div className="mp-form-honeypot" aria-hidden="true">
+                  <label htmlFor="contact-website">Site web</label>
+                  <input
+                    id="contact-website"
+                    type="text"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    tabIndex={-1}
+                  />
+                </div>
+                <label className="mp-consent">
+                  <input type="checkbox" name="consent" checked={formData.consent} onChange={handleChange} required />
+                  <span>
+                    J’accepte que Venio utilise ces informations pour répondre à ma demande, conformément à la{' '}
+                    <Link to="/confidentialite">politique de confidentialité</Link>.
+                  </span>
+                </label>
                 {formStatus && (
                   <p
                     className="mp-form-status"
+                    aria-live="polite"
                     style={{ color: formStatus.type === 'success' ? 'var(--primary)' : '#ef4444' }}
                   >
                     {formStatus.message}
                   </p>
                 )}
-                <button type="submit" className="mp-submit" disabled={!captchaVerified || isSubmitting}>
+                <button type="submit" className="mp-submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Envoi…' : 'Envoyer'}
                 </button>
               </form>

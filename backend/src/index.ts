@@ -45,6 +45,7 @@ import adminBackupRoutes from './routes/admin/backup.js'
 import adminQualiopiRoutes from './routes/admin/qualiopi.js'
 import adminQualiopiQuestRoutes from './routes/admin/qualiopiQuestionnaires.js'
 import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
+import publicContactRoutes from './routes/public/contact.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
@@ -115,7 +116,7 @@ app.use(
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'", 'https://api.emailjs.com', ...(sentryIngest ? [sentryIngest] : [])],
+            connectSrc: ["'self'", ...(sentryIngest ? [sentryIngest] : [])],
             frameSrc: ["'self'", 'blob:'],
             objectSrc: ["'none'"],
             baseUri: ["'self'"],
@@ -282,6 +283,7 @@ app.use('/api/admin/backups', auth, requireMfa, adminBackupRoutes)
 app.use('/api/admin/qualiopi', adminQualiopiRoutes)
 app.use('/api/admin/qualiopi-questionnaires', adminQualiopiQuestRoutes)
 app.use('/api/questionnaire', publicQuestionnaireRoutes)
+app.use('/api/contact', publicContactRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)

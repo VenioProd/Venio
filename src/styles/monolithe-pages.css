@@ -546,6 +546,33 @@
     border-color 0.2s var(--mp-ease),
     background 0.2s var(--mp-ease);
 }
+.mp-page .mp-form-honeypot {
+  height: 1px;
+  left: -10000px;
+  overflow: hidden;
+  position: absolute;
+  top: auto;
+  width: 1px;
+}
+.mp-page .mp-consent {
+  align-items: flex-start;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 13px;
+  gap: 10px;
+  line-height: 1.5;
+}
+.mp-page .mp-consent input {
+  accent-color: var(--primary);
+  margin-top: 3px;
+  width: auto;
+}
+.mp-page .mp-consent a {
+  color: var(--text-primary);
+}
+.mp-page .mp-consent a:hover {
+  color: var(--primary);
+}
 .mp-page .mp-form input::placeholder,
 .mp-page .mp-form textarea::placeholder {
   color: var(--text-muted);

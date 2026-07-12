@@ -5,6 +5,7 @@ import { useI18n } from '../context/I18nContext'
 import { isAdminRole } from '../lib/permissions'
 import ThemeToggle from './ThemeToggle'
 import LanguageSwitch from './LanguageSwitch'
+import { serviceOffers } from '../content/serviceOffers'
 import './Navbar.css'
 
 const NotificationBell = lazy(() => import('./admin/NotificationBell'))
@@ -33,6 +34,11 @@ const Navbar = () => {
     document.body.style.overflow = 'unset'
   }
 
+  const closeServicesMenu = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.currentTarget.closest('details')?.removeAttribute('open')
+    closeMobileMenu()
+  }
+
   useEffect(() => {
     if (!mobileMenuOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -50,24 +56,31 @@ const Navbar = () => {
             VENIO
           </Link>
           <div className="nav-links">
-            <Link
-              to="/services/communication"
-              className={`nav-link nav-link-icon ${location.pathname.startsWith('/services') ? 'active' : ''}`}
-              data-tooltip={t('nav.services')}
-            >
-              <svg
-                className="nav-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
-              <span className="nav-link-text">{t('nav.services')}</span>
-            </Link>
+            <details className={`nav-services ${location.pathname.startsWith('/services') ? 'active' : ''}`}>
+              <summary className="nav-link nav-link-icon" aria-label={t('nav.services')}>
+                <svg
+                  className="nav-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                <span className="nav-link-text">{t('nav.services')}</span>
+              </summary>
+              <div className="nav-services-panel">
+                <p>Nos offres</p>
+                {serviceOffers.map((offer) => (
+                  <Link key={offer.to} to={offer.to} onClick={closeServicesMenu}>
+                    <span>{offer.label}</span>
+                    <small>{offer.description}</small>
+                  </Link>
+                ))}
+              </div>
+            </details>
 
             <Link
               to="/realisations"
@@ -216,14 +229,15 @@ const Navbar = () => {
             </button>
           </div>
           <div className="mobile-menu-content">
-            {/* Ces liens sont masqués sur mobile (déjà dans la bottom nav) */}
-            <Link
-              to="/services/communication"
-              className="mobile-nav-link mobile-menu-bottom-nav-dup"
-              onClick={closeMobileMenu}
-            >
-              {t('nav.services')}
-            </Link>
+            <section className="mobile-services" aria-label={t('nav.services')}>
+              <p>{t('nav.services')}</p>
+              {serviceOffers.map((offer) => (
+                <Link key={offer.to} to={offer.to} className="mobile-nav-link" onClick={closeMobileMenu}>
+                  <span>{offer.label}</span>
+                  <small>{offer.description}</small>
+                </Link>
+              ))}
+            </section>
             <Link to="/realisations" className="mobile-nav-link mobile-menu-bottom-nav-dup" onClick={closeMobileMenu}>
               {t('nav.realisations')}
             </Link>
@@ -272,7 +286,7 @@ const Navbar = () => {
       {/* Bottom tab bar — mobile uniquement */}
       <nav className="mobile-bottom-nav" aria-label="Navigation mobile">
         <Link
-          to="/services/communication"
+          to="/services/sites"
           className={`mobile-bottom-tab ${location.pathname.startsWith('/services') ? 'active' : ''}`}
           onClick={closeMobileMenu}
         >

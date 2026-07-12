@@ -18,7 +18,7 @@ export interface ILead extends Document {
   leadTemperature: LeadTemperature
   interactionNotes: string
   assignedTo: Types.ObjectId | null
-  createdBy: Types.ObjectId
+  createdBy: Types.ObjectId | null
   statusChangedAt: Date | null
   clientAccountId: Types.ObjectId | null
   score: number | null

@@ -58,6 +58,7 @@ const ServicesConseil = () => (
     structuredDataType="service-conseil"
     eyebrow="Nos services · Conseil"
     title="Conseil stratégique"
+    servicePath="/services/conseil"
     ctaTo="https://calendly.com"
     ctaExternal
     icon={<VenioIcon name="conseil" size={40} />}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import SEO from './SEO'
 import StructuredData from './StructuredData'
 import { CropMarks, GrainOverlay } from './BrutalDeco'
+import ServiceOfferLinks from './ServiceOfferLinks'
 import '../styles/monolithe-service.css'
 
 export interface ServiceOffre {
@@ -32,6 +33,7 @@ interface ServicePageMonoProps {
   structuredDataType: string
   eyebrow: string
   title: string
+  servicePath: string
   ctaTo: string
   ctaExternal?: boolean
   icon?: React.ReactNode
@@ -47,6 +49,7 @@ const ServicePageMono: React.FC<ServicePageMonoProps> = ({
   structuredDataType,
   eyebrow,
   title,
+  servicePath,
   ctaTo,
   ctaExternal = false,
   icon,
@@ -137,6 +140,7 @@ const ServicePageMono: React.FC<ServicePageMonoProps> = ({
               </div>
             ))}
           </div>
+          <ServiceOfferLinks currentPath={servicePath} />
         </div>
       </section>
 

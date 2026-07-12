@@ -3,9 +3,23 @@
 
 export { sendAdminCredentials, sendTestEmail, sendPasswordResetEmail, sendWelcomeEmail } from './templates/auth.js'
 export { sendInvoiceEmail, sendInvoiceReminderEmail } from './templates/billing.js'
-export { sendClientProjectUpdateEmail, sendProjectStatusEmail, sendProjectStartEmail, sendProjectCompleteEmail, sendDeliverableNotificationEmail } from './templates/project.js'
+export {
+  sendClientProjectUpdateEmail,
+  sendProjectStatusEmail,
+  sendProjectStartEmail,
+  sendProjectCompleteEmail,
+  sendDeliverableNotificationEmail,
+} from './templates/project.js'
 export { sendTaskAssignedEmail, sendTaskReminderEmail } from './templates/task.js'
 export { sendBriefAssignedEmail, sendBriefReminderEmail } from './templates/brief.js'
-export { sendLeadAssignmentEmail, sendColdLeadsReminderEmail, sendOverdueActionsEmail, sendEscalationEmail, sendProposalReminderEmail, sendArrowSchoolAssignmentEmail } from './templates/crm.js'
+export {
+  sendLeadAssignmentEmail,
+  sendColdLeadsReminderEmail,
+  sendOverdueActionsEmail,
+  sendEscalationEmail,
+  sendProposalReminderEmail,
+  sendArrowSchoolAssignmentEmail,
+} from './templates/crm.js'
 export { sendWeeklyReportEmail } from './templates/report.js'
 export { sendTicketReplyEmail } from './templates/ticket.js'
+export { sendContactReceiptEmail } from './templates/contact.js'

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { serviceOffers } from '../content/serviceOffers'
 import './Footer.css'
 
 const Footer = () => {
@@ -12,12 +13,19 @@ const Footer = () => {
 
         <div className="footer-col">
           <h4>Navigation</h4>
-          <Link to="/services/communication">Services</Link>
-          <Link to="/services/sites">Sites web</Link>
           <Link to="/methode">Méthode</Link>
           <Link to="/realisations">Réalisations</Link>
           <Link to="/a-propos">À propos</Link>
           <Link to="/contact">Contact</Link>
+        </div>
+
+        <div className="footer-col">
+          <h4>Nos offres</h4>
+          {serviceOffers.map((offer) => (
+            <Link key={offer.to} to={offer.to}>
+              {offer.label}
+            </Link>
+          ))}
         </div>
 
         <div className="footer-col">

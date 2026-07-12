@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import SitesPricingTable from '../components/SitesPricingTable'
+import ServiceOfferLinks from '../components/ServiceOfferLinks'
 import '../styles/monolithe-sites.css'
 
 const ServicesSites: React.FC = () => {
@@ -54,6 +55,7 @@ const ServicesSites: React.FC = () => {
           </p>
 
           <SitesPricingTable />
+          <ServiceOfferLinks currentPath="/services/sites" />
         </div>
       </section>
 

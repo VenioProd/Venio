@@ -30,12 +30,13 @@ const leadSchema = new mongoose.Schema<ILead>(
     },
     interactionNotes: { type: String, default: '' }, // Notes détaillées des interactions
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Les demandes publiques sont créées par le système, sans utilisateur interne.
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     statusChangedAt: { type: Date, default: null },
     clientAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     score: { type: Number, default: null }, // Lead scoring (0-100)
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 leadSchema.index({ status: 1, priority: 1 })

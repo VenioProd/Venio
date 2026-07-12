@@ -133,6 +133,84 @@
   z-index: 10000;
 }
 
+.nav-services {
+  position: relative;
+}
+
+.nav-services summary {
+  list-style: none;
+}
+
+.nav-services summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-services.active summary {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(59, 130, 246, 0.15) 100%);
+  box-shadow:
+    0 0 20px rgba(var(--primary-rgb), 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.nav-services.active summary .nav-icon {
+  color: var(--primary);
+  filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.8));
+}
+
+.nav-services-panel {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(15, 15, 15, 1) 100%);
+  border: 1px solid rgba(var(--primary-rgb), 0.45);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: grid;
+  gap: 2px;
+  left: 50%;
+  min-width: 300px;
+  padding: 12px;
+  position: absolute;
+  top: calc(100% + 16px);
+  transform: translateX(-50%);
+}
+
+.nav-services:not([open]) .nav-services-panel {
+  display: none;
+}
+
+.nav-services-panel p {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin: 2px 8px 8px;
+  text-transform: uppercase;
+}
+
+.nav-services-panel a {
+  border-radius: 6px;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.nav-services-panel a:hover,
+.nav-services-panel a:focus-visible {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  outline: none;
+}
+
+.nav-services-panel a span {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.nav-services-panel a small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .nav-link {
   padding: 10px 20px;
   color: var(--text-secondary);
@@ -654,6 +732,33 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
   flex-direction: column;
   padding: 16px;
   gap: 6px;
+}
+
+.mobile-services {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+}
+
+.mobile-services > p {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.mobile-services .mobile-nav-link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mobile-services small {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .mobile-nav-link {

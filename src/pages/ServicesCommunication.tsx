@@ -54,6 +54,7 @@ const ServicesCommunication = () => (
     structuredDataType="service-communication"
     eyebrow="Nos services · Marque"
     title="Communication & marque"
+    servicePath="/services/communication"
     ctaTo="/contact"
     icon={<VenioIcon name="communication" size={40} />}
     data={DATA}
