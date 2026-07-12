@@ -81,6 +81,7 @@ import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
 import { initSentry, Sentry } from './lib/sentry.js'
 import auth from './middleware/auth.js'
 import requireMfa from './middleware/mfa.js'
+import apiNotFound from './middleware/apiNotFound.js'
 
 dotenv.config()
 
@@ -321,6 +322,11 @@ app.use('/api/admin/education', adminEducationRoutes)
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
 app.use('/api/projects', clientMessageRoutes)
+
+// This must stay after every /api mount and before static files / the SPA
+// fallback. app.all covers the namespace root, unknown GET, mutations and
+// non-standard API methods.
+app.all(['/api', '/api/{*path}'], apiNotFound)
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url)

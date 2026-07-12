@@ -1,0 +1,494 @@
+{
+  "roles": {
+    "admin": ["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "COMMERCIAL", "COMPTABLE", "VIEWER", "STAGIAIRE"],
+    "all": [
+      "SUPER_ADMIN",
+      "ADMIN",
+      "MANAGER",
+      "RH",
+      "COMMERCIAL",
+      "COMPTABLE",
+      "VIEWER",
+      "STAGIAIRE",
+      "CLIENT",
+      "AGENT"
+    ]
+  },
+  "permissions": {
+    "MANAGE_ADMINS": "manage_admins",
+    "MANAGE_CLIENTS": "manage_clients",
+    "VIEW_CRM": "view_crm",
+    "MANAGE_CRM": "manage_crm",
+    "VIEW_MESSAGING": "view_messaging",
+    "SEND_MESSAGES": "send_messages",
+    "MANAGE_CHANNELS": "manage_channels",
+    "VIEW_PROJECTS": "view_projects",
+    "EDIT_PROJECTS": "edit_projects",
+    "VIEW_CONTENT": "view_content",
+    "EDIT_CONTENT": "edit_content",
+    "VIEW_BILLING": "view_billing",
+    "MANAGE_BILLING": "manage_billing",
+    "MANAGE_TASKS": "manage_tasks",
+    "VIEW_QUALIOPI": "view_qualiopi",
+    "MANAGE_QUALIOPI": "manage_qualiopi",
+    "VIEW_TICKETS": "view_tickets",
+    "CREATE_TICKETS": "create_tickets",
+    "MANAGE_TICKETS": "manage_tickets",
+    "VIEW_ACCOUNTING": "view_accounting",
+    "MANAGE_ACCOUNTING": "manage_accounting",
+    "LOCK_ACCOUNTING": "lock_accounting",
+    "VIEW_VAT": "view_vat",
+    "MANAGE_VAT": "manage_vat",
+    "EXPORT_FEC": "export_fec",
+    "MANAGE_EXTERNAL_SOURCES": "manage_external_sources",
+    "VIEW_DEV": "view_dev",
+    "MANAGE_DEV": "manage_dev",
+    "VIEW_EDUCATION": "view_education",
+    "MANAGE_EDUCATION": "manage_education"
+  },
+  "rolePermissions": {
+    "SUPER_ADMIN": [
+      "manage_admins",
+      "manage_clients",
+      "view_crm",
+      "manage_crm",
+      "view_messaging",
+      "send_messages",
+      "manage_channels",
+      "view_projects",
+      "edit_projects",
+      "view_content",
+      "edit_content",
+      "view_billing",
+      "manage_billing",
+      "manage_tasks",
+      "view_qualiopi",
+      "manage_qualiopi",
+      "view_tickets",
+      "create_tickets",
+      "manage_tickets",
+      "view_accounting",
+      "manage_accounting",
+      "lock_accounting",
+      "view_vat",
+      "manage_vat",
+      "export_fec",
+      "manage_external_sources",
+      "view_dev",
+      "manage_dev",
+      "view_education",
+      "manage_education"
+    ],
+    "ADMIN": [
+      "manage_clients",
+      "view_crm",
+      "manage_crm",
+      "view_messaging",
+      "send_messages",
+      "manage_channels",
+      "view_projects",
+      "edit_projects",
+      "view_content",
+      "edit_content",
+      "view_billing",
+      "manage_billing",
+      "manage_tasks",
+      "view_tickets",
+      "create_tickets",
+      "view_accounting",
+      "manage_accounting",
+      "view_vat",
+      "manage_vat",
+      "export_fec",
+      "view_dev",
+      "manage_dev"
+    ],
+    "MANAGER": [
+      "manage_clients",
+      "view_crm",
+      "manage_crm",
+      "view_messaging",
+      "send_messages",
+      "manage_channels",
+      "view_projects",
+      "edit_projects",
+      "view_content",
+      "edit_content",
+      "view_billing",
+      "manage_billing",
+      "manage_tasks",
+      "view_tickets",
+      "create_tickets",
+      "view_accounting",
+      "manage_accounting",
+      "view_vat",
+      "manage_vat",
+      "view_dev",
+      "manage_dev"
+    ],
+    "COMPTABLE": [
+      "view_accounting",
+      "manage_accounting",
+      "lock_accounting",
+      "view_vat",
+      "manage_vat",
+      "export_fec",
+      "manage_external_sources",
+      "view_projects",
+      "view_billing",
+      "view_messaging",
+      "send_messages"
+    ],
+    "RH": [
+      "view_projects",
+      "view_content",
+      "view_messaging",
+      "send_messages",
+      "view_qualiopi",
+      "manage_qualiopi",
+      "view_tickets",
+      "create_tickets"
+    ],
+    "COMMERCIAL": [
+      "view_crm",
+      "manage_crm",
+      "manage_clients",
+      "view_projects",
+      "view_content",
+      "view_billing",
+      "manage_tasks",
+      "view_messaging",
+      "send_messages",
+      "view_tickets",
+      "create_tickets"
+    ],
+    "VIEWER": [
+      "view_projects",
+      "view_content",
+      "view_billing",
+      "view_accounting",
+      "view_vat",
+      "view_messaging",
+      "send_messages",
+      "view_tickets",
+      "create_tickets",
+      "view_dev"
+    ],
+    "STAGIAIRE": [
+      "view_projects",
+      "manage_tasks",
+      "view_content",
+      "view_crm",
+      "manage_crm",
+      "view_messaging",
+      "send_messages",
+      "view_tickets",
+      "create_tickets"
+    ],
+    "CLIENT": [],
+    "AGENT": []
+  },
+  "navigation": [
+    {
+      "id": "home",
+      "section": "Principal",
+      "screen": "/admin",
+      "label": "Mon espace",
+      "permission": null,
+      "roles": []
+    },
+    {
+      "id": "dashboard",
+      "section": "Principal",
+      "screen": "/admin/dashboard",
+      "label": "Vue business",
+      "permission": null,
+      "roles": []
+    },
+    {
+      "id": "messages",
+      "section": "Principal",
+      "screen": "/admin/messages",
+      "label": "Messages",
+      "permission": "view_messaging",
+      "roles": []
+    },
+    {
+      "id": "clients",
+      "section": "Principal",
+      "screen": "/admin/comptes-clients",
+      "label": "Clients",
+      "permission": "manage_clients",
+      "roles": []
+    },
+    {
+      "id": "crm",
+      "section": "Principal",
+      "screen": "/admin/crm",
+      "label": "CRM",
+      "permission": "view_crm",
+      "roles": []
+    },
+    {
+      "id": "projects",
+      "section": "Principal",
+      "screen": "/admin/gestion",
+      "label": "Projets",
+      "permission": "view_projects",
+      "roles": []
+    },
+    {
+      "id": "accounting",
+      "section": "Principal",
+      "screen": "/admin/comptabilite",
+      "label": "Comptabilité",
+      "permission": "view_accounting",
+      "roles": []
+    },
+    {
+      "id": "interns",
+      "section": "Principal",
+      "screen": "/admin/stagiaires",
+      "label": "Équipe",
+      "permission": null,
+      "roles": ["SUPER_ADMIN", "RH"]
+    },
+    {
+      "id": "calendar",
+      "section": "Outils",
+      "screen": "/admin/calendrier",
+      "label": "Calendrier",
+      "permission": "view_projects",
+      "roles": []
+    },
+    {
+      "id": "emails",
+      "section": "Outils",
+      "screen": "/admin/emails",
+      "label": "Emails",
+      "permission": null,
+      "roles": ["SUPER_ADMIN", "RH"]
+    },
+    {
+      "id": "templates",
+      "section": "Outils",
+      "screen": "/admin/templates",
+      "label": "Templates",
+      "permission": "edit_projects",
+      "roles": []
+    },
+    {
+      "id": "resources",
+      "section": "Outils",
+      "screen": "/admin/ressources",
+      "label": "Ressources",
+      "permission": "view_content",
+      "roles": []
+    },
+    {
+      "id": "tool-access",
+      "section": "Outils",
+      "screen": "/admin/acces-outils",
+      "label": "Accès outils",
+      "permission": "manage_admins",
+      "roles": []
+    },
+    {
+      "id": "reports",
+      "section": "Outils",
+      "screen": "/admin/mes-rapports",
+      "label": "Mes rapports",
+      "permission": "view_projects",
+      "roles": []
+    },
+    {
+      "id": "analytics",
+      "section": "Outils",
+      "screen": "/admin/analytics",
+      "label": "Analytics",
+      "permission": "view_projects",
+      "roles": []
+    },
+    {
+      "id": "qualiopi",
+      "section": "Suivi",
+      "screen": "/admin/qualiopi",
+      "label": "Qualiopi",
+      "permission": null,
+      "roles": ["SUPER_ADMIN", "RH"]
+    },
+    {
+      "id": "tickets",
+      "section": "Suivi",
+      "screen": "/admin/tickets",
+      "label": "Tickets",
+      "permission": "view_tickets",
+      "roles": []
+    },
+    {
+      "id": "audit",
+      "section": "Suivi",
+      "screen": "/admin/audit",
+      "label": "Audit",
+      "permission": "manage_admins",
+      "roles": []
+    },
+    {
+      "id": "internal-projects",
+      "section": "Suivi",
+      "screen": "/admin/projets-internes",
+      "label": "Projets internes",
+      "permission": "view_projects",
+      "roles": []
+    },
+    {
+      "id": "dev",
+      "section": "Suivi",
+      "screen": "/admin/dev",
+      "label": "Dev workspace",
+      "permission": "view_dev",
+      "roles": []
+    },
+    {
+      "id": "education",
+      "section": "Suivi",
+      "screen": "/admin/education",
+      "label": "Pédagogie",
+      "permission": "view_education",
+      "roles": []
+    },
+    {
+      "id": "subsidiaries",
+      "section": "Croissance",
+      "screen": "/admin/filiales",
+      "label": "Filiales",
+      "permission": null,
+      "roles": ["SUPER_ADMIN"]
+    },
+    {
+      "id": "arrow",
+      "section": "Croissance",
+      "screen": "/admin/arrow-prospection",
+      "label": "Arrow prospection",
+      "permission": "view_crm",
+      "roles": []
+    },
+    {
+      "id": "admin-accounts",
+      "section": "Admin",
+      "screen": "/admin/comptes-admin",
+      "label": "Comptes admin",
+      "permission": "manage_admins",
+      "roles": []
+    },
+    {
+      "id": "agents",
+      "section": "Admin",
+      "screen": "/admin/agents",
+      "label": "Agents API",
+      "permission": "manage_admins",
+      "roles": []
+    },
+    {
+      "id": "decisions",
+      "section": "Admin",
+      "screen": "/admin/decisions",
+      "label": "Décisions",
+      "permission": null,
+      "roles": []
+    },
+    { "id": "guide", "section": "Admin", "screen": "/admin/guide", "label": "Guide", "permission": null, "roles": [] }
+  ],
+  "apiActions": [
+    {
+      "id": "crm.read",
+      "method": "GET",
+      "endpoint": "/api/admin/crm/leads",
+      "permission": "view_crm",
+      "agentEndpoint": "/api/v1/agent/clients",
+      "scope": "read:crm",
+      "source": "backend/src/routes/admin/crm.ts",
+      "agentSource": "backend/src/routes/agent/crm.ts"
+    },
+    {
+      "id": "crm.write",
+      "method": "POST",
+      "endpoint": "/api/admin/crm/leads",
+      "permission": "manage_crm",
+      "agentEndpoint": "/api/v1/agent/clients",
+      "scope": "write:crm",
+      "source": "backend/src/routes/admin/crm.ts",
+      "agentSource": "backend/src/routes/agent/crm.ts"
+    },
+    {
+      "id": "projects.read",
+      "method": "GET",
+      "endpoint": "/api/admin/projects",
+      "permission": "view_projects",
+      "agentEndpoint": "/api/v1/agent/projects",
+      "scope": "read:projects",
+      "source": "backend/src/routes/admin/projects/core.ts",
+      "agentSource": "backend/src/routes/agent/projects.ts"
+    },
+    {
+      "id": "projects.write",
+      "method": "POST",
+      "endpoint": "/api/admin/projects",
+      "permission": "edit_projects",
+      "agentEndpoint": "/api/v1/agent/projects",
+      "scope": "write:projects",
+      "source": "backend/src/routes/admin/projects/core.ts",
+      "agentSource": "backend/src/routes/agent/projects.ts"
+    },
+    {
+      "id": "accounting.read",
+      "method": "GET",
+      "endpoint": "/api/admin/accounting/entries",
+      "permission": "view_accounting",
+      "agentEndpoint": "/api/v1/agent/accounting/entries",
+      "scope": "read:accounting",
+      "source": "backend/src/routes/admin/accounting/entries.ts",
+      "agentSource": "backend/src/routes/agent/accounting.ts"
+    },
+    {
+      "id": "dev.read",
+      "method": "GET",
+      "endpoint": "/api/admin/dev/projects",
+      "permission": "view_dev",
+      "agentEndpoint": "/api/v1/agent/dev/projects",
+      "scope": "read:dev",
+      "source": "backend/src/routes/admin/dev/projects.ts",
+      "agentSource": "backend/src/routes/agent/dev.ts"
+    },
+    {
+      "id": "dev.write",
+      "method": "POST",
+      "endpoint": "/api/admin/dev/projects",
+      "permission": "manage_dev",
+      "agentEndpoint": "/api/v1/agent/dev/projects",
+      "scope": "write:dev",
+      "source": "backend/src/routes/admin/dev/projects.ts",
+      "agentSource": "backend/src/routes/agent/dev.ts"
+    },
+    {
+      "id": "messaging.read",
+      "method": "GET",
+      "endpoint": "/api/admin/messaging/conversations",
+      "permission": "view_messaging",
+      "agentEndpoint": "/api/v1/agent/messaging/conversations",
+      "scope": "read:internal-messaging",
+      "source": "backend/src/routes/admin/messaging.ts",
+      "agentSource": "backend/src/routes/agent/messaging.ts"
+    },
+    {
+      "id": "messaging.write",
+      "method": "POST",
+      "endpoint": "/api/admin/messaging/direct",
+      "permission": "send_messages",
+      "agentEndpoint": "/api/v1/agent/messaging/conversations",
+      "scope": "write:internal-messaging",
+      "source": "backend/src/routes/admin/messaging.ts",
+      "agentSource": "backend/src/routes/agent/messaging.ts"
+    }
+  ]
+}

@@ -1,6 +1,15 @@
 import type { UserRole, AdminRole, Permission } from '../types/enums.js'
 
-export const ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE']
+export const ADMIN_ROLES: AdminRole[] = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'MANAGER',
+  'RH',
+  'COMMERCIAL',
+  'COMPTABLE',
+  'VIEWER',
+  'STAGIAIRE',
+]
 
 export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_ADMINS: 'manage_admins',
@@ -179,16 +188,28 @@ export function getPermissionsForRole(role: UserRole): Permission[] {
   return Array.from(rolePermissions)
 }
 
-export function resolvePermissions(role: UserRole, grantedPermissions: string[], deniedPermissions: string[]): Permission[] {
-  if (role === 'SUPER_ADMIN' || role === 'AGENT') return Object.values(PERMISSIONS) as Permission[]
+export function resolvePermissions(
+  role: UserRole,
+  grantedPermissions: string[],
+  deniedPermissions: string[],
+): Permission[] {
+  if (role === 'SUPER_ADMIN') return Object.values(PERMISSIONS) as Permission[]
+  // An API agent is authorized exclusively by its PAT scopes, never by the
+  // human-admin RBAC matrix nor by ad-hoc permission grants.
+  if (role === 'AGENT') return []
   const base = new Set(getPermissionsForRole(role))
   for (const p of grantedPermissions) base.add(p as Permission)
   for (const p of deniedPermissions) base.delete(p as Permission)
   return Array.from(base)
 }
 
-export function hasPermissionResolved(role: UserRole, permission: Permission, grantedPermissions: string[], deniedPermissions: string[]): boolean {
-  if (role === 'SUPER_ADMIN' || role === 'AGENT') return true
+export function hasPermissionResolved(
+  role: UserRole,
+  permission: Permission,
+  grantedPermissions: string[],
+  deniedPermissions: string[],
+): boolean {
+  if (role === 'SUPER_ADMIN') return true
   const perms = resolvePermissions(role, grantedPermissions, deniedPermissions)
   return perms.includes(permission)
 }

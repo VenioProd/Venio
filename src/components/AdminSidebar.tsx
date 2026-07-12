@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useMessaging } from '../context/MessagingContext'
-import { hasPermission, PERMISSIONS } from '../lib/permissions'
+import { getVisibleNavigation, NAVIGATION } from '../lib/rbac'
 import {
   LayoutDashboard,
   BarChart3,
@@ -57,84 +57,49 @@ interface NavSection {
   items: NavItem[]
 }
 
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: 'Principal',
-    items: [
-      { to: '/admin', label: 'Mon espace', icon: LayoutDashboard, end: true },
-      { to: '/admin/dashboard', label: 'Vue business', icon: BarChart3 },
-      { to: '/admin/messages', label: 'Messages', icon: MessageSquare, perm: PERMISSIONS.VIEW_MESSAGING },
-      { to: '/admin/comptes-clients', label: 'Clients', icon: Users, perm: PERMISSIONS.MANAGE_CLIENTS },
-      { to: '/admin/crm', label: 'CRM', icon: Target, perm: PERMISSIONS.VIEW_CRM },
-      { to: '/admin/gestion', label: 'Projets', icon: FolderKanban, perm: PERMISSIONS.VIEW_PROJECTS },
-      { to: '/admin/comptabilite', label: 'Comptabilité', icon: Receipt, perm: PERMISSIONS.VIEW_ACCOUNTING },
-      { to: '/admin/stagiaires', label: 'Équipe', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH'] },
-    ],
-  },
-  {
-    label: 'Outils',
-    items: [
-      { to: '/admin/calendrier', label: 'Calendrier', icon: Calendar },
-      { to: '/admin/emails', label: 'Emails', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH'] },
-      { to: '/admin/templates', label: 'Templates', icon: FileText },
-      { to: '/admin/ressources', label: 'Ressources', icon: BookOpen },
-      { to: '/admin/acces-outils', label: 'Accès outils', icon: KeyRound },
-      { to: '/admin/mes-rapports', label: 'Mes rapports', icon: BarChart2 },
-      {
-        to: '/admin/analytics',
-        label: 'Analytics',
-        icon: TrendingUp,
-        perm: PERMISSIONS.MANAGE_CRM,
-        roles: ['SUPER_ADMIN'],
-      },
-    ],
-  },
-  {
-    label: 'Suivi',
-    items: [
-      { to: '/admin/qualiopi', label: 'Qualiopi', icon: BadgeCheck, roles: ['SUPER_ADMIN', 'RH'] },
-      { to: '/admin/tickets', label: 'Tickets', icon: LifeBuoy, roles: ['SUPER_ADMIN'] },
-      { to: '/admin/audit', label: 'Audit', icon: Shield, perm: PERMISSIONS.MANAGE_ADMINS, roles: ['SUPER_ADMIN'] },
-      { to: '/admin/projets-internes', label: 'Projets internes', icon: FolderGit2 },
-      { to: '/admin/dev', label: 'Dev workspace', icon: GitBranch, perm: PERMISSIONS.VIEW_DEV },
-      {
-        to: '/admin/education',
-        label: 'Pédagogie',
-        icon: GraduationCap,
-        perm: PERMISSIONS.VIEW_EDUCATION,
-        roles: ['SUPER_ADMIN'],
-      },
-    ],
-  },
-  {
-    label: 'Croissance',
-    items: [
-      { to: '/admin/filiales', label: 'Filiales', icon: Building2, roles: ['SUPER_ADMIN'] },
-      {
-        to: '/admin/arrow-prospection',
-        label: 'Arrow prospection',
-        icon: Crosshair,
-        perm: PERMISSIONS.MANAGE_CRM,
-        roles: ['SUPER_ADMIN'],
-      },
-    ],
-  },
-  {
-    label: 'Admin',
-    items: [
-      { to: '/admin/comptes-admin', label: 'Comptes admin', icon: ShieldCheck, perm: PERMISSIONS.MANAGE_ADMINS },
-      { to: '/admin/agents', label: 'Agents API', icon: Bot, roles: ['SUPER_ADMIN'] },
-      { to: '/admin/decisions', label: 'Décisions', icon: ClipboardCheck },
-      { to: '/admin/guide', label: 'Guide', icon: HelpCircle },
-    ],
-  },
-]
+const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
+  home: LayoutDashboard,
+  dashboard: BarChart3,
+  messages: MessageSquare,
+  clients: Users,
+  crm: Target,
+  projects: FolderKanban,
+  accounting: Receipt,
+  interns: UserCheck,
+  calendar: Calendar,
+  emails: Mail,
+  templates: FileText,
+  resources: BookOpen,
+  'tool-access': KeyRound,
+  reports: BarChart2,
+  analytics: TrendingUp,
+  qualiopi: BadgeCheck,
+  tickets: LifeBuoy,
+  audit: Shield,
+  'internal-projects': FolderGit2,
+  dev: GitBranch,
+  education: GraduationCap,
+  subsidiaries: Building2,
+  arrow: Crosshair,
+  'admin-accounts': ShieldCheck,
+  agents: Bot,
+  decisions: ClipboardCheck,
+  guide: HelpCircle,
+}
 
-function isItemVisible(item: NavItem, user: ReturnType<typeof useAuth>['user']): boolean {
-  const permOk = !item.perm || hasPermission(user, item.perm)
-  const rolesOk = !item.roles || (user ? item.roles.includes(user.role) : false)
-  if (item.perm && item.roles) return permOk || rolesOk
-  return permOk && rolesOk
+function getVisibleSections(user: ReturnType<typeof useAuth>['user']): NavSection[] {
+  const sections = new Map<string, NavItem[]>()
+  for (const item of getVisibleNavigation(user)) {
+    const items = sections.get(item.section) ?? []
+    items.push({
+      to: item.screen,
+      label: item.label,
+      icon: ICONS[item.id],
+      end: item.id === 'home',
+    })
+    sections.set(item.section, items)
+  }
+  return Array.from(sections, ([label, items]) => ({ label, items }))
 }
 
 export interface AdminSidebarProps {
@@ -196,10 +161,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
     navigate('/admin/login')
   }
 
-  const visibleSections = NAV_SECTIONS.map((s) => ({
-    ...s,
-    items: s.items.filter((i) => isItemVisible(i, user)),
-  })).filter((s) => s.items.length > 0)
+  const visibleSections = getVisibleSections(user)
 
   const navSections = (
     <>
