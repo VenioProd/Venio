@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import ToolAccess from '../../models/ToolAccess.js'
 import AuditLog from '../../models/AuditLog.js'
 import { encrypt, decrypt, requireEncryptionConfigured, looksEncrypted } from '../../lib/crypto.js'
@@ -31,7 +32,7 @@ function sanitizeTool(tool: any): any {
 }
 
 // GET all tool accesses — filtrés par visibilité selon le rôle
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const role = req.user!.role
     const filter = role === 'SUPER_ADMIN' ? {} : { $or: [{ visibleTo: { $size: 0 } }, { visibleTo: role }] }
@@ -43,7 +44,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // GET single tool access — metadata only. Secrets use the explicit reveal route.
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const role = req.user!.role
     const tool = await ToolAccess.findById(req.params.id)
@@ -61,6 +62,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST reveal — an explicit, short-lived action protected by a fresh TOTP code.
 router.post(
   '/:id/reveal',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
   sensitiveAction('TOOL_SECRET_REVEAL'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -86,7 +88,7 @@ router.post(
 )
 
 // POST create (SUPER_ADMIN + ADMIN only)
-router.post('/', sensitiveAction('TOOL_ACCESS_CREATE'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission(PERMISSIONS.MANAGE_ADMINS), sensitiveAction('TOOL_ACCESS_CREATE'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user!
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
@@ -135,7 +137,7 @@ router.post('/', sensitiveAction('TOOL_ACCESS_CREATE'), async (req: Request, res
 })
 
 // PATCH update (SUPER_ADMIN + ADMIN only)
-router.patch('/:id', sensitiveAction('TOOL_ACCESS_UPDATE'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_ADMINS), sensitiveAction('TOOL_ACCESS_UPDATE'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user!
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
@@ -175,6 +177,7 @@ router.patch('/:id', sensitiveAction('TOOL_ACCESS_UPDATE'), async (req: Request,
 // DELETE (SUPER_ADMIN only)
 router.delete(
   '/:id',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
   sensitiveAction('TOOL_ACCESS_DELETE'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

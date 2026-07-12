@@ -65,7 +65,7 @@ Le frontend proxy `/api/*` et `/socket.io/*` vers `VITE_API_PROXY_TARGET` (défa
 
 ## Permissions
 
-Source de vérité = liste canonique de 26 permissions, dupliquée intentionnellement entre `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`. Un test `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive.
+Source de vérité = `rbac-matrix.json` (rôles, 30 permissions et navigation). Le frontend l'importe directement ; `backend/src/__tests__/rbac-matrix.test.ts` vérifie que le backend applique la même matrice et `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive des valeurs frontend/backend.
 
 Toutes les routes admin sensibles sont protégées par `<RequirePermission>` côté frontend ET filtrées côté backend (cf. tickets).
 

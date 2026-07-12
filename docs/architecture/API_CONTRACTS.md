@@ -41,7 +41,7 @@ Distincte de l'API agent. Base path `/api/external/:sourceSlug/*`. Auth par HMAC
 
 ## Permissions
 
-Liste canonique dans `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`. Test de sync : `src/lib/__tests__/permissions-sync.test.ts`.
+`rbac-matrix.json` est la source de vérité des rôles, permissions et navigations. Le frontend l'importe directement ; `backend/src/__tests__/rbac-matrix.test.ts` vérifie l'application de la matrice côté backend et `src/lib/__tests__/permissions-sync.test.ts` contrôle l'absence de dérive des valeurs frontend/backend.
 
 Côté frontend : wrapper `<RequirePermission permission={PERMISSIONS.X} redirectTo="/admin">`.
 

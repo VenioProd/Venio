@@ -4,7 +4,8 @@ import path from 'path'
 import fs from 'fs'
 import mongoose from 'mongoose'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.js'
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
@@ -52,7 +53,7 @@ async function canAccess(userId: string, userRole: string, project: any): Promis
 }
 
 // GET / — list all internal projects
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const isStagiaire = await (async () => {
       const user = await User.findById(req.user!.id).select('tags')
@@ -92,12 +93,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // GET /meta — entities + poles lists
-router.get('/meta', (_req: Request, res: Response) => {
+router.get('/meta', requirePermission(PERMISSIONS.VIEW_PROJECTS), (_req: Request, res: Response) => {
   res.json({ entities: ENTITIES, poles: POLES })
 })
 
 // GET /missions — toutes les missions (SUPER_ADMIN = tout, autres = seulement les leurs)
-router.get('/missions', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/missions', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filter: Record<string, any> = {}
     if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = { $in: [req.user!.id] }
@@ -113,7 +114,7 @@ router.get('/missions', async (req: Request, res: Response, next: NextFunction) 
 })
 
 // GET /:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const project = await InternalProject.findById(req.params.id)
       .populate('members', 'name email role tags')
@@ -130,7 +131,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // POST / — create
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
     if (!name?.trim()) return res.status(400).json({ error: 'Le nom est requis' })
@@ -189,7 +190,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // PATCH /:id — update
-router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const project = await InternalProject.findById(req.params.id)
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })
@@ -243,7 +244,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 })
 
 // DELETE /:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Seul le Super Admin peut supprimer un projet interne' })
@@ -260,7 +261,7 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
 // ── MISSIONS ──────────────────────────────────────────────────────────────────
 
 // GET /:projectId/missions
-router.get('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:projectId/missions', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const project = await InternalProject.findById(req.params.projectId)
     if (!project) return res.status(404).json({ error: 'Projet introuvable' })
@@ -282,7 +283,7 @@ router.get('/:projectId/missions', async (req: Request, res: Response, next: Nex
 })
 
 // POST /:projectId/missions (SUPER_ADMIN + ADMIN)
-router.post('/:projectId/missions', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:projectId/missions', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)) return res.status(403).json({ error: 'Accès refusé' })
 
@@ -341,7 +342,7 @@ router.post('/:projectId/missions', async (req: Request, res: Response, next: Ne
 })
 
 // PATCH /:projectId/missions/:missionId
-router.patch('/:projectId/missions/:missionId', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:projectId/missions/:missionId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const mission = await InternalMission.findOne({
       _id: req.params.missionId,
@@ -392,7 +393,7 @@ router.patch('/:projectId/missions/:missionId', async (req: Request, res: Respon
 })
 
 // PATCH /:projectId/missions/:missionId/my-progress — mise à jour individuelle de l'assigné
-router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:projectId/missions/:missionId/my-progress', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const mission = await InternalMission.findOne({ _id: req.params.missionId, internalProject: req.params.projectId })
     if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
@@ -444,7 +445,7 @@ router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request,
 })
 
 // DELETE /:projectId/missions/:missionId (SUPER_ADMIN uniquement)
-router.delete('/:projectId/missions/:missionId', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:projectId/missions/:missionId', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut supprimer une mission' })
 
@@ -460,7 +461,7 @@ router.delete('/:projectId/missions/:missionId', async (req: Request, res: Respo
 // ── MISSION FILES ─────────────────────────────────────────────────────────────
 
 // POST /:projectId/missions/:missionId/files — upload a file
-router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:projectId/missions/:missionId/files', requirePermission(PERMISSIONS.VIEW_PROJECTS), missionUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
 
@@ -505,7 +506,7 @@ router.post('/:projectId/missions/:missionId/files', missionUpload.single('file'
 })
 
 // GET /:projectId/missions/:missionId/files/:fileId — download/view a file
-router.get('/:projectId/missions/:missionId/files/:fileId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:projectId/missions/:missionId/files/:fileId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const mission = await InternalMission.findOne({
       _id: req.params.missionId,
@@ -526,7 +527,7 @@ router.get('/:projectId/missions/:missionId/files/:fileId', async (req: Request,
 })
 
 // DELETE /:projectId/missions/:missionId/files/:fileId
-router.delete('/:projectId/missions/:missionId/files/:fileId', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:projectId/missions/:missionId/files/:fileId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const mission = await InternalMission.findOne({
       _id: req.params.missionId,
@@ -552,7 +553,7 @@ router.delete('/:projectId/missions/:missionId/files/:fileId', async (req: Reque
 // ── STEP REVIEW ───────────────────────────────────────────────────────────────
 
 // POST /:projectId/missions/:missionId/request-review — member requests step verification
-router.post('/:projectId/missions/:missionId/request-review', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:projectId/missions/:missionId/request-review', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { stepId } = req.body
     if (!stepId) return res.status(400).json({ error: 'stepId requis' })
@@ -613,7 +614,7 @@ router.post('/:projectId/missions/:missionId/request-review', async (req: Reques
 })
 
 // POST /:projectId/missions/:missionId/validate-step — SUPER_ADMIN validates a step
-router.post('/:projectId/missions/:missionId/validate-step', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:projectId/missions/:missionId/validate-step', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut valider une étape' })
 
