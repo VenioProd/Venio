@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useMessaging } from '../context/MessagingContext'
-import { getVisibleNavigation, NAVIGATION } from '../lib/rbac'
+import { NAVIGATION } from '../lib/rbac'
+import { getVisibleNavigationZones } from '../lib/adminNavigation'
+import { trackAdminEvent } from '../lib/adminAnalytics'
 import {
   LayoutDashboard,
   BarChart3,
@@ -40,8 +42,6 @@ import {
 import UserAvatar from './UserAvatar'
 import { apiFetch } from '../lib/api'
 import './AdminSidebar.css'
-
-const LS_KEY = 'venio-admin-sidebar-collapsed'
 
 interface NavItem {
   to: string
@@ -88,18 +88,15 @@ const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
 }
 
 function getVisibleSections(user: ReturnType<typeof useAuth>['user']): NavSection[] {
-  const sections = new Map<string, NavItem[]>()
-  for (const item of getVisibleNavigation(user)) {
-    const items = sections.get(item.section) ?? []
-    items.push({
+  return getVisibleNavigationZones(user).map((zone) => ({
+    label: zone.id,
+    items: zone.items.map((item) => ({
       to: item.screen,
       label: item.label,
       icon: ICONS[item.id],
       end: item.id === 'home',
-    })
-    sections.set(item.section, items)
-  }
-  return Array.from(sections, ([label, items]) => ({ label, items }))
+    })),
+  }))
 }
 
 export interface AdminSidebarProps {
@@ -177,6 +174,12 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                 end={item.end}
                 title={item.label}
                 className={({ isActive }) => `admin-sb-item${isActive ? ' active' : ''}`}
+                onClick={() =>
+                  trackAdminEvent(
+                    'admin_navigation_selected',
+                    item.to.replace('/admin/', '').replace('/admin', 'home').replace(/-/g, '_'),
+                  )
+                }
               >
                 <Icon size={17} className="admin-sb-icon" aria-hidden />
                 <span className="admin-sb-label">{item.label}</span>
