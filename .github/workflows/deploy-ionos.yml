@@ -26,7 +26,14 @@ jobs:
 
       - name: 🚀 Déployer via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
+          for attempt in 1 2 3; do
+            echo "Tentative de déploiement SSH ${attempt}/3"
+            if ssh \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=15 \
+              -o ServerAliveCountMax=4 \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
             set -e
             PROJECT_DIR="/opt/docker/openclaw/config/workspace/projects/venio"
 
@@ -70,6 +77,18 @@ jobs:
 
             echo "✅ Déploiement terminé"
           DEPLOY
+            then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 3 ]; then
+              echo "⚠️ Connexion SSH interrompue, nouvelle tentative dans 15 secondes"
+              sleep 15
+            fi
+          done
+
+          echo "❌ Déploiement SSH échoué après 3 tentatives"
+          exit 1
 
       - name: ✅ Vérifier le site
         run: |
