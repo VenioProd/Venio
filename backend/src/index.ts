@@ -14,7 +14,7 @@ import mongoose from 'mongoose'
 import logger from './lib/logger.js'
 
 // Version applicative pour les health checks et les headers
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
 const APP_VERSION = pkg.version
 
@@ -345,8 +345,20 @@ app.use(
     },
   }),
 )
-app.get('{*path}', (_req: Request, res: Response) => {
-  res.sendFile(path.join(publicDir, 'index.html'))
+
+app.get('{*path}', (req: Request, res: Response) => {
+  const prerenderedRelativePath = path.join(req.path.slice(1), 'index.html')
+  const prerenderedIndex = path.join(publicDir, prerenderedRelativePath)
+
+  // Route-specific public pages are emitted as nested index.html files during
+  // the frontend build. Express does not resolve them when the canonical URL
+  // has no trailing slash, so the SPA fallback checks for that file first.
+  if (req.path !== '/' && existsSync(prerenderedIndex)) {
+    res.sendFile(prerenderedRelativePath, { root: publicDir })
+    return
+  }
+
+  res.sendFile('index.html', { root: publicDir })
 })
 
 // Sentry error handler — doit être AVANT le notre, capture les erreurs avant qu'on les
