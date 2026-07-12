@@ -24,7 +24,8 @@ describe('Realisations', () => {
     renderPage()
 
     expect(screen.getByText(/ne publions pas de cas client nominatif/i)).toBeInTheDocument()
-    expect(screen.getByText(/Références vérifiables à venir/i)).toBeInTheDocument()
+    expect(screen.getByText(/Études de cas à publier/i)).toBeInTheDocument()
+    expect(screen.getByText(/Aucun témoignage public pour le moment/i)).toBeInTheDocument()
     expect(screen.queryByText(/Cabinet Mercier|École NOVA|Studio Prism|FlowMetrics/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Pages créées|Référence publiée|Donnée chiffrée publiée/i)).not.toBeInTheDocument()
   })

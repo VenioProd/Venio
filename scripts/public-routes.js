@@ -75,10 +75,21 @@ export const publicRoutes = [
     changefreq: 'weekly',
     title: 'Réalisations : sites, marques et projets digitaux | Venio',
     description:
-      'Découvrez une sélection de réalisations Venio : sites web, identités de marque et projets digitaux sur mesure.',
+      'Les études de cas et témoignages Venio sont publiés uniquement avec accord client et éléments vérifiables.',
     h1: 'Réalisations',
     content:
-      'Une sélection de projets conçus avec nos clients : des identités, des sites et des outils qui répondent à des enjeux réels.',
+      'Les preuves publiques Venio sont attribuées, autorisées et reliées aux offres concernées. Les références non vérifiables ne sont pas publiées.',
+  },
+  {
+    path: '/methode',
+    priority: '0.7',
+    changefreq: 'monthly',
+    title: 'Méthode de travail : étapes et livrables | Venio',
+    description:
+      'Découvrez la méthode Venio : cadrage, conception, construction, recette et transmission, avec des livrables et une cadence clairs.',
+    h1: 'Méthode de travail',
+    content:
+      'Venio fait avancer les projets avec des étapes visibles, des livrables nommés et un rythme de décision clair.',
   },
   {
     path: '/a-propos',

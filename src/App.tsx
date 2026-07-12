@@ -37,6 +37,10 @@ const ServicesConseil = lazy(() => import('./pages/ServicesConseil'))
 const ServicesSites = lazy(() => import('./pages/ServicesSites'))
 const PolesPage = lazy(() => import('./pages/PolesPage'))
 const Realisations = lazy(() => import('./pages/Realisations'))
+const Methode = lazy(() => import('./pages/Methode'))
+const CaseStudyDetail = lazy(() =>
+  import('./pages/Realisations').then((module) => ({ default: module.CaseStudyDetail })),
+)
 const APropos = lazy(() => import('./pages/APropos'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Legal = lazy(() => import('./pages/Legal'))
@@ -174,6 +178,8 @@ function App() {
                 <Route path="/services/sites" element={<ServicesSites />} />
                 <Route path="/poles" element={<PolesPage />} />
                 <Route path="/realisations" element={<Realisations />} />
+                <Route path="/realisations/:slug" element={<CaseStudyDetail />} />
+                <Route path="/methode" element={<Methode />} />
                 <Route path="/a-propos" element={<APropos />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/legal" element={<Legal />} />

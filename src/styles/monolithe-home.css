@@ -223,6 +223,28 @@
 .mh-home #mh-methode {
   padding: var(--mh-sp-xl) 0;
 }
+
+.mh-home .mh-method-link {
+  align-items: center;
+  color: var(--text-primary);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 12px;
+  letter-spacing: 0.1em;
+  margin-top: var(--mh-sp-m);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.mh-home .mh-method-link:hover {
+  color: var(--primary);
+}
+.mh-home .mh-method-link .mh-ar {
+  transition: transform 0.2s var(--mh-ease);
+}
+.mh-home .mh-method-link:hover .mh-ar {
+  transform: translateX(4px);
+}
 .mh-home .mh-piliers {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

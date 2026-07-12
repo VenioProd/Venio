@@ -181,6 +181,9 @@ const Home = () => {
             </span>
             <span className="mh-refus-yes">Construire ce qui doit exister — alors on parle.</span>
           </div>
+          <Link className="mh-method-link mh-reveal" to="/methode">
+            Voir les étapes, livrables et cadence <span className="mh-ar">→</span>
+          </Link>
         </div>
       </section>
 
