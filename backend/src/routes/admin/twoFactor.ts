@@ -1,10 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express'
 import { TOTP } from 'otpauth'
+import jwt from 'jsonwebtoken'
 import QRCode from 'qrcode'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import AuditLog from '../../models/AuditLog.js'
+import { createRecoveryCodes, consumeRecoveryCode, graceEndsAt, verifyTotp } from '../../lib/mfa.js'
+import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -73,7 +77,12 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
     }
 
     user.twoFactorEnabled = true
+    const recovery = await createRecoveryCodes()
+    user.twoFactorRecoveryCodeHashes = recovery.hashes
+    user.mfaGraceUntil = null
     await user.save()
+
+    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_ENABLED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
 
     // Notif à l'utilisateur (confirmation sécurité)
     createNotification({
@@ -84,7 +93,8 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
       link: `/admin/profile`,
     }).catch(() => {})
 
-    return res.json({ enabled: true })
+    // Recovery codes are intentionally returned exactly once, at enrollment.
+    return res.json({ enabled: true, recoveryCodes: recovery.codes })
   } catch (err) {
     return next(err)
   }
@@ -96,9 +106,18 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
     const user = await User.findById(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
 
+    const { code } = req.body || {}
+    if (!user.twoFactorSecret || !verifyTotp(user.twoFactorSecret, user.email, code)) {
+      return res.status(400).json({ error: 'Un code MFA valide est requis pour désactiver la MFA' })
+    }
+
     user.twoFactorSecret = null
     user.twoFactorEnabled = false
+    user.twoFactorRecoveryCodeHashes = []
+    user.mfaGraceUntil = graceEndsAt()
     await user.save()
+
+    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_DISABLED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '', metadata: { selfService: true } }).catch(() => {})
 
     // Notif alerte sécurité à l'utilisateur
     createNotification({
@@ -108,11 +127,38 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
       message: `L'authentification à deux facteurs a été désactivée sur votre compte`,
       link: `/admin/profile`,
     }).catch(() => {})
+    notifySuperAdmins({
+      type: 'TWO_FACTOR_DISABLED',
+      title: '⚠️ MFA désactivée',
+      message: `La MFA a été désactivée pour ${user.email}. Réenrôlement requis sous 7 jours.`,
+      link: '/admin/users',
+    }).catch(() => {})
 
     return res.json({ enabled: false })
   } catch (err) {
     return next(err)
   }
+})
+
+// POST /api/admin/2fa/step-up — exchange a TOTP/recovery code for a 15 minute MFA claim.
+router.post('/step-up', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.user!.id)
+    if (!user?.twoFactorEnabled || !user.twoFactorSecret) return res.status(400).json({ error: 'MFA non configurée' })
+    const { code, recoveryCode } = req.body || {}
+    const validTotp = code && verifyTotp(user.twoFactorSecret, user.email, code)
+    const recovery = validTotp ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] } : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
+    if (!validTotp && !recovery.valid) return res.status(401).json({ error: 'Code MFA invalide' })
+    if (recovery.valid) {
+      user.twoFactorRecoveryCodeHashes = recovery.hashes
+      await user.save()
+      AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_RECOVERY_CODE_USED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
+    }
+    const mfaVerifiedAt = Date.now()
+    const token = jwt.sign({ id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0, mfaVerifiedAt }, process.env.JWT_SECRET as string, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions)
+    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_STEP_UP', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
+    return res.json({ token, mfaVerifiedAt })
+  } catch (err) { return next(err) }
 })
 
 // GET /api/admin/2fa/status — Check if 2FA is enabled

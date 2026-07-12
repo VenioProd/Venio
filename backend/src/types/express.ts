@@ -1,5 +1,4 @@
 import type { UserRole } from './enums.js'
-import type { IAgentToken } from './models/agent.js'
 
 export interface JwtPayload {
   id: string
@@ -8,6 +7,7 @@ export interface JwtPayload {
   email: string
   name: string
   sessionVersion?: number
+  mfaVerifiedAt?: number
   iat?: number
   exp?: number
 }
@@ -25,6 +25,8 @@ export interface AgentTokenAttached {
 }
 
 declare global {
+  // Express request augmentation uses namespace merging by design.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: JwtPayload

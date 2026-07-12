@@ -6,13 +6,13 @@ import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
 import { body, validationResult } from 'express-validator'
-import { TOTP } from 'otpauth'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
 import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
+import { consumeRecoveryCode, graceEndsAt, requiresMfa, verifyTotp } from '../lib/mfa.js'
 
 // In-memory store for reset tokens (simple approach, clears on restart)
 export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
@@ -47,9 +47,9 @@ const router = express.Router()
 
 const MIN_PASSWORD_LENGTH = 6
 
-function signToken(user: { _id: unknown; role: string; email: string; name: string; sessionVersion?: number }): string {
+function signToken(user: { _id: unknown; role: string; email: string; name: string; sessionVersion?: number }, mfaVerifiedAt?: number): string {
   return jwt.sign(
-    { id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0 },
+    { id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0, ...(mfaVerifiedAt ? { mfaVerifiedAt } : {}) },
     process.env.JWT_SECRET as string,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
   )
@@ -90,17 +90,31 @@ router.post(
         return res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
       }
 
-      // Check 2FA
+      let mfaVerifiedAt: number | undefined
+      // Check 2FA, including a single-use recovery code when the authenticator
+      // is unavailable. A recovery code is consumed atomically with the login.
       if (user.twoFactorEnabled && user.twoFactorSecret) {
-        const { totpCode } = req.body
-        if (!totpCode) {
+        const { totpCode, recoveryCode } = req.body
+        if (!totpCode && !recoveryCode) {
           return res.json({ requires2FA: true })
         }
-        const totp = new TOTP({ issuer: 'Venio', label: user.email, algorithm: 'SHA1', digits: 6, period: 30, secret: user.twoFactorSecret })
-        const delta = totp.validate({ token: String(totpCode), window: 1 })
-        if (delta === null) {
+        const validTotp = totpCode && verifyTotp(user.twoFactorSecret, user.email, totpCode)
+        const recovery = validTotp ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] } : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
+        if (!validTotp && !recovery.valid) {
           AuditLog.create({ userId: user._id, email, action: 'LOGIN_FAILED', ip: clientIp, userAgent, metadata: { reason: '2fa_invalid' } }).catch(() => {})
           return res.status(401).json({ error: 'Code 2FA invalide' })
+        }
+        if (recovery.valid) {
+          user.twoFactorRecoveryCodeHashes = recovery.hashes
+          AuditLog.create({ userId: user._id, email, action: 'MFA_RECOVERY_CODE_USED', ip: clientIp, userAgent }).catch(() => {})
+        }
+        mfaVerifiedAt = Date.now()
+      } else if (requiresMfa(user.role)) {
+        // Rolling grace is initialized on first login, rather than at deploy,
+        // so existing administrators are never locked out by a release.
+        if (!user.mfaGraceUntil) user.mfaGraceUntil = graceEndsAt()
+        if (user.mfaGraceUntil.getTime() <= Date.now()) {
+          return res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'La période d’enrôlement MFA est terminée.' })
         }
       }
 
@@ -111,8 +125,8 @@ router.post(
       user.lastLoginIp = typeof clientIp === 'string' ? clientIp : Array.isArray(clientIp) ? clientIp[0] : ''
       user.save().catch(() => {})
 
-      const token = signToken(user)
-      return res.json({ token })
+      const token = signToken(user, mfaVerifiedAt)
+      return res.json({ token, ...(requiresMfa(user.role) && !user.twoFactorEnabled ? { mfaEnrollmentRequired: true, mfaGraceUntil: user.mfaGraceUntil } : {}) })
     } catch (err) {
       return next(err)
     }
@@ -299,7 +313,7 @@ router.post(
       }
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
-      const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
+      const loginPath = ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number]) ? '/admin/login' : '/espace-client/login'
       const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
 
       await sendPasswordResetEmail({
@@ -375,7 +389,7 @@ router.patch(
         return res.status(400).json({ error: errors.array()[0].msg })
       }
 
-      const userId = (req as any).user?.id
+      const userId = req.user?.id
       if (!userId) return res.status(401).json({ error: 'Non authentifie' })
 
       await User.findByIdAndUpdate(userId, { locale: req.body.locale })

@@ -233,7 +233,7 @@ export async function checkDuplicateLead(
 
   if (settings.duplicateCheckPhone && leadData.contactPhone && leadData.contactPhone.trim()) {
     // Normalize phone for comparison (remove spaces, dashes, etc.)
-    const normalizedPhone = leadData.contactPhone.replace(/[\s\-\.\(\)]/g, '')
+    const normalizedPhone = leadData.contactPhone.replace(/[\s.()-]/g, '')
     if (normalizedPhone.length >= 8) {
       conditions.push({
         contactPhone: { $regex: new RegExp(escapeRegex(normalizedPhone).replace(/^0/, '(0|\\+33)'), 'i') }

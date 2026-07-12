@@ -8,7 +8,7 @@ import { createIssueWithRetry } from '../lib/dev/createIssue.js'
 
 let systemUserId: mongoose.Types.ObjectId
 let projectId: mongoose.Types.ObjectId
-let projectKey = 'VEN'
+const projectKey = 'VEN'
 
 beforeAll(async () => {
   await setupMongo()

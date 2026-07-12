@@ -51,6 +51,10 @@ const userSchema = new mongoose.Schema<IUser>(
     // 2FA fields
     twoFactorSecret: { type: String, default: null },
     twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorRecoveryCodeHashes: { type: [String], default: [] },
+    // Set lazily at the first privileged login after rollout: existing admins
+    // retain access long enough to enroll without a deployment lock-out.
+    mfaGraceUntil: { type: Date, default: null },
     jobTitle: { type: String, default: '' },
     // Fine-grained permission overrides
     grantedPermissions: { type: [String], default: [] },

@@ -10,7 +10,6 @@ import {
   uniqueIdempotencyKey,
 } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
-import AuditLog from '../models/AuditLog.js'
 
 let app: Express
 
@@ -169,29 +168,24 @@ describe('Agent Users / 2FA', () => {
     expect(res.body.userId).toBe(String(u!._id))
   })
 
-  it('disables 2FA (and records the event in AuditLog)', async () => {
+  it('refuses to disable 2FA through an agent token', async () => {
     const { plainSecret } = await createAgentTokenInDb(['manage:2fa'])
     const u = await User.findOne({ role: 'SUPER_ADMIN' })
     u!.twoFactorEnabled = true
     u!.twoFactorSecret = 'TOTPSECRET'
+    u!.twoFactorRecoveryCodeHashes = ['hash']
     await u!.save()
 
     const res = await request(app)
       .post(`/api/v1/agent/users/${u!._id}/2fa/disable`)
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
-    expect(res.status).toBe(200)
-    expect(res.body.twoFactorEnabled).toBe(false)
-    expect(res.body.wasEnabled).toBe(true)
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('MFA_STEP_UP_REQUIRED')
 
     const after = await User.findById(u!._id).lean()
-    expect(after?.twoFactorEnabled).toBe(false)
-    expect(after?.twoFactorSecret).toBeNull()
-
-    // Audit log avec marker sensitive
-    await new Promise((r) => setTimeout(r, 100))
-    const logs = await AuditLog.find({ action: 'AGENT_API_MUTATION' }).lean()
-    const last = logs[logs.length - 1]!
-    expect((last.metadata as Record<string, unknown>).sensitive).toBe('2FA_DISABLE_BY_AGENT')
+    expect(after?.twoFactorEnabled).toBe(true)
+    expect(after?.twoFactorSecret).toBe('TOTPSECRET')
+    expect(after?.twoFactorRecoveryCodeHashes).toEqual(['hash'])
   })
 
   it('refuses without manage:2fa scope', async () => {
