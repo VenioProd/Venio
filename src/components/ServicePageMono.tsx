@@ -73,11 +73,11 @@ const ServicePageMono: React.FC<ServicePageMonoProps> = ({
   }, [])
 
   const cta = ctaExternal ? (
-    <a className="msv-btn" href={ctaTo} target="_blank" rel="noopener noreferrer">
+    <a className="msv-btn" href={ctaTo} target="_blank" rel="noopener noreferrer" data-analytics-cta="service_cta">
       {data.cta_label} <span className="msv-ar">→</span>
     </a>
   ) : (
-    <Link className="msv-btn" to={ctaTo}>
+    <Link className="msv-btn" to={ctaTo} data-analytics-cta="service_cta">
       {data.cta_label} <span className="msv-ar">→</span>
     </Link>
   )

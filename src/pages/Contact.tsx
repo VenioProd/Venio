@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { useReveal } from '../hooks/useReveal'
+import { trackPublicEvent } from '../lib/publicAnalytics'
 import '../styles/monolithe-pages.css'
 
 interface ContactFormData {
@@ -32,8 +33,13 @@ const Contact = () => {
   })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const formStarted = useRef(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (!formStarted.current) {
+      formStarted.current = true
+      trackPublicEvent('contact_form_started')
+    }
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
@@ -51,6 +57,7 @@ const Contact = () => {
     }
 
     setIsSubmitting(true)
+    trackPublicEvent('contact_form_submitted')
 
     try {
       const response = await fetch('/api/contact', {
@@ -86,12 +93,14 @@ const Contact = () => {
         type: 'success',
         message: 'Merci, votre message a bien été reçu. Nous vous répondrons sous 48 h ouvrées.',
       })
+      trackPublicEvent('contact_form_succeeded')
     } catch {
       setFormStatus({
         type: 'error',
         message:
           "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous écrire directement à contact@venio.paris",
       })
+      trackPublicEvent('contact_form_failed')
     } finally {
       setIsSubmitting(false)
     }
@@ -165,6 +174,7 @@ const Contact = () => {
                   <input
                     type="text"
                     name="prenom"
+                    aria-label="Prénom"
                     placeholder="Prénom"
                     value={formData.prenom}
                     onChange={handleChange}
@@ -173,6 +183,7 @@ const Contact = () => {
                   <input
                     type="text"
                     name="nom"
+                    aria-label="Nom"
                     placeholder="Nom"
                     value={formData.nom}
                     onChange={handleChange}
@@ -182,6 +193,7 @@ const Contact = () => {
                 <input
                   type="email"
                   name="email"
+                  aria-label="Email"
                   placeholder="Email"
                   value={formData.email}
                   onChange={handleChange}
@@ -190,11 +202,12 @@ const Contact = () => {
                 <input
                   type="text"
                   name="entreprise"
+                  aria-label="Entreprise"
                   placeholder="Entreprise (optionnel)"
                   value={formData.entreprise}
                   onChange={handleChange}
                 />
-                <select name="sujet" value={formData.sujet} onChange={handleChange} required>
+                <select name="sujet" aria-label="Votre besoin" value={formData.sujet} onChange={handleChange} required>
                   <option value="">Votre besoin</option>
                   <option value="Site web">Un site web</option>
                   <option value="Développement sur mesure">Un outil sur mesure</option>
@@ -205,6 +218,7 @@ const Contact = () => {
                 <textarea
                   placeholder="Votre message"
                   name="message"
+                  aria-label="Votre message"
                   value={formData.message}
                   onChange={handleChange}
                   rows={6}

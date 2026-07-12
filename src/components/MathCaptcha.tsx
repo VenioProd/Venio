@@ -17,8 +17,9 @@ const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
   }, [])
 
   const generateQuestion = () => {
-    const n1 = Math.floor(Math.random() * 10) + 1
-    const n2 = Math.floor(Math.random() * 10) + 1
+    const isTestMode = import.meta.env.MODE === 'test' && import.meta.env.VITE_CONTACT_FORM_MODE === 'test'
+    const n1 = isTestMode ? 2 : Math.floor(Math.random() * 10) + 1
+    const n2 = isTestMode ? 3 : Math.floor(Math.random() * 10) + 1
     setNum1(n1)
     setNum2(n2)
     setAnswer('')
@@ -54,12 +55,7 @@ const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
         <span className="captcha-numbers">
           {num1} + {num2} = ?
         </span>
-        <button
-          type="button"
-          className="captcha-refresh"
-          onClick={generateQuestion}
-          aria-label="Nouvelle question"
-        >
+        <button type="button" className="captcha-refresh" onClick={generateQuestion} aria-label="Nouvelle question">
           ↻
         </button>
       </div>
@@ -67,6 +63,7 @@ const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
         <input
           type="number"
           className={`captcha-input ${error ? 'error' : ''} ${isValid ? 'valid' : ''}`}
+          aria-label="Réponse au calcul de vérification"
           value={answer}
           onChange={handleChange}
           placeholder="Réponse"

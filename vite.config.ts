@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => {
         '**/.superpowers/**',
         '**/dist/**',
         '**/backend/**',
+        '**/e2e/**',
       ],
     },
   }

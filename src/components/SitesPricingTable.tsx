@@ -205,7 +205,7 @@ const SitesPricingTable: React.FC = () => {
               ))}
             </ul>
 
-            <Link to={tier.ctaTo} className="pricing-card__cta">
+            <Link to={tier.ctaTo} className="pricing-card__cta" data-analytics-cta={`pricing_${tier.id}`}>
               {tier.ctaLabel}
             </Link>
           </div>

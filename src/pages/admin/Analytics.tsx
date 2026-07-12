@@ -21,6 +21,20 @@ interface AnalyticsData {
   leadStats: { total: number; won: number; lost: number; active: number; pipelineValue: number }
 }
 
+interface PublicSiteAnalyticsData {
+  privacy: string
+  goals: { pageViews: number; ctaClicks: number; contactForms: number }
+  months: {
+    key: string
+    label: string
+    pageViews: number
+    ctaClicks: number
+    contactForms: number
+    ctaRate: number
+    formRate: number
+  }[]
+}
+
 const STATUS_LABELS: Record<string, string> = {
   EN_COURS: 'En cours',
   EN_ATTENTE: 'En attente',
@@ -89,13 +103,18 @@ function BarChart({
 
 export default function Analytics() {
   const [data, setData] = useState<AnalyticsData | null>(null)
+  const [publicSiteData, setPublicSiteData] = useState<PublicSiteAnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await apiFetch<AnalyticsData>('/api/admin/analytics')
+        const [res, publicSite] = await Promise.all([
+          apiFetch<AnalyticsData>('/api/admin/analytics'),
+          apiFetch<PublicSiteAnalyticsData>('/api/admin/analytics/public-site'),
+        ])
         setData(res)
+        setPublicSiteData(publicSite)
       } catch {
         // ignore
       } finally {
@@ -278,6 +297,43 @@ export default function Analytics() {
             </div>
           </div>
         </div>
+      )}
+
+      {publicSiteData && (
+        <section className="analytics-chart-card" style={{ marginTop: 24, overflowX: 'auto' }}>
+          <h3>Site public — conversion mensuelle</h3>
+          <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>{publicSiteData.privacy}</p>
+          <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th>Vues / objectif</th>
+                <th>CTA / objectif</th>
+                <th>Formulaires / objectif</th>
+                <th>Taux CTA</th>
+                <th>Taux formulaire</th>
+              </tr>
+            </thead>
+            <tbody>
+              {publicSiteData.months.map((month) => (
+                <tr key={month.key}>
+                  <td>{month.label}</td>
+                  <td>
+                    {month.pageViews} / {publicSiteData.goals.pageViews}
+                  </td>
+                  <td>
+                    {month.ctaClicks} / {publicSiteData.goals.ctaClicks}
+                  </td>
+                  <td>
+                    {month.contactForms} / {publicSiteData.goals.contactForms}
+                  </td>
+                  <td>{month.ctaRate}%</td>
+                  <td>{month.formRate}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
     </div>
   )

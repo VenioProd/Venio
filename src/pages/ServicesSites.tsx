@@ -69,7 +69,7 @@ const ServicesSites: React.FC = () => {
             Pas de devis automatique, pas de formulaire en 47 étapes. Un échange direct pour comprendre ce dont vous
             avez besoin.
           </p>
-          <Link to="/contact" className="ms-cta-go">
+          <Link to="/contact" className="ms-cta-go" data-analytics-cta="sites_final_contact">
             Prendre contact →
           </Link>
         </div>

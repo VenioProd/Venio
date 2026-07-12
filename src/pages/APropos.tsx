@@ -129,7 +129,7 @@ const APropos = () => {
           <p className="mp-cta-texte">
             Si vous êtes arrivé jusqu'ici, c'est que vous comprenez. La suite se passe de vive voix.
           </p>
-          <Link className="mp-btn" to="/contact">
+          <Link className="mp-btn" to="/contact" data-analytics-cta="about_final_contact">
             Prendre contact <span className="mp-ar">→</span>
           </Link>
         </div>

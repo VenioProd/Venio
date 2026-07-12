@@ -10,6 +10,7 @@ import { useAuth } from './context/AuthContext'
 import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
 import CookieConsent from './components/CookieConsent'
+import PublicAnalytics from './components/PublicAnalytics'
 import './App.css'
 
 function ThemeSync() {
@@ -167,6 +168,7 @@ function App() {
         <ThemeSync />
         <ToastProvider>
           <Suspense fallback={null}>{!isPublicQuestionnaire && !isPortal && <PublicHeader />}</Suspense>
+          {!isPublicQuestionnaire && !isPortal && <PublicAnalytics />}
           <Suspense fallback={null}>
             <Suspense fallback={null}>
               <Routes>
