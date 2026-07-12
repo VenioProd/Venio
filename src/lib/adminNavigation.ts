@@ -22,6 +22,7 @@ type NavigationId = NavigationItem['id']
 const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> = {
   home: 'Pilotage',
   dashboard: 'Pilotage',
+  'activity-center': 'Pilotage',
   messages: 'Pilotage',
   reports: 'Pilotage',
   analytics: 'Pilotage',
@@ -46,6 +47,7 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   'tool-access': 'Console système',
   'admin-accounts': 'Console système',
   agents: 'Console système',
+  health: 'Console système',
 }
 
 export interface NavigationZone {
@@ -91,12 +93,12 @@ const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT'>, RoleCockpit> = {
   SUPER_ADMIN: {
     title: 'Arbitrages et santé de l’organisation',
     description: 'Décidez des priorités, surveillez les signaux transverses et accédez à la console système.',
-    priorities: ['dashboard', 'decisions', 'analytics', 'admin-accounts'],
+    priorities: ['activity-center', 'dashboard', 'decisions', 'analytics', 'health'],
   },
   ADMIN: {
     title: 'Coordination des opérations',
     description: 'Suivez les projets, les clients et les sujets à débloquer pour l’équipe.',
-    priorities: ['projects', 'crm', 'tickets', 'messages'],
+    priorities: ['activity-center', 'projects', 'crm', 'tickets'],
   },
   MANAGER: {
     title: 'Pilotage des projets et de la charge',

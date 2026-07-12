@@ -294,14 +294,7 @@ function App() {
                       </RequirePermission>
                     }
                   />
-                  <Route
-                    path="centre-activite"
-                    element={
-                      <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                        <ActivityCenter />
-                      </RequirePermission>
-                    }
-                  />
+                  <Route path="centre-activite" element={<ActivityCenter />} />
 
                   {/* Projets */}
                   <Route

@@ -25,7 +25,7 @@ export async function autoLockExpiredEntries(): Promise<{ lockedCount: number }>
     try {
       await AccountingEntry.updateOne(
         { _id: entry._id, status: 'VALIDATED' },
-        { $set: { status: 'LOCKED', lockedAt: new Date() } }
+        { $set: { status: 'LOCKED', lockedAt: new Date() } },
       )
       lockedCount += 1
       await recordAudit({
@@ -45,6 +45,17 @@ export async function autoLockExpiredEntries(): Promise<{ lockedCount: number }>
 }
 
 let timer: NodeJS.Timeout | null = null
+let lastRunAt: string | null = null
+let lastFailureAt: string | null = null
+
+async function runAutoLock(): Promise<void> {
+  lastRunAt = new Date().toISOString()
+  try {
+    await autoLockExpiredEntries()
+  } catch {
+    lastFailureAt = new Date().toISOString()
+  }
+}
 
 /**
  * Démarre le scheduler de verrouillage auto (run au démarrage + toutes les 6h).
@@ -52,15 +63,11 @@ let timer: NodeJS.Timeout | null = null
  */
 export function startAutoLockScheduler(): void {
   // Run initial dès le démarrage (non bloquant)
-  autoLockExpiredEntries().catch(() => {
-    /* noop */
-  })
+  void runAutoLock()
 
   // Puis tous les 6h
   timer = setInterval(() => {
-    autoLockExpiredEntries().catch(() => {
-      /* noop */
-    })
+    void runAutoLock()
   }, SIX_HOURS_MS)
 
   if (typeof timer.unref === 'function') timer.unref()
@@ -69,4 +76,13 @@ export function startAutoLockScheduler(): void {
 export function stopAutoLockScheduler(): void {
   if (timer) clearInterval(timer)
   timer = null
+}
+
+/** Minimal, secret-free runtime information for the admin health endpoint. */
+export function getAutoLockSchedulerHealth(): {
+  running: boolean
+  lastRunAt: string | null
+  lastFailureAt: string | null
+} {
+  return { running: timer !== null, lastRunAt, lastFailureAt }
 }

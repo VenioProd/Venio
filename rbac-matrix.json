@@ -206,6 +206,14 @@
       "roles": []
     },
     {
+      "id": "activity-center",
+      "section": "Principal",
+      "screen": "/admin/centre-activite",
+      "label": "Centre d’activité",
+      "permission": null,
+      "roles": []
+    },
+    {
       "id": "messages",
       "section": "Principal",
       "screen": "/admin/messages",
@@ -386,6 +394,14 @@
       "section": "Admin",
       "screen": "/admin/agents",
       "label": "Agents API",
+      "permission": "manage_admins",
+      "roles": []
+    },
+    {
+      "id": "health",
+      "section": "Admin",
+      "screen": "/admin/health",
+      "label": "Santé système",
       "permission": "manage_admins",
       "roles": []
     },

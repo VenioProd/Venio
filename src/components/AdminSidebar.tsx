@@ -8,6 +8,7 @@ import { getVisibleNavigationZones } from '../lib/adminNavigation'
 import { trackAdminEvent } from '../lib/adminAnalytics'
 import {
   LayoutDashboard,
+  Activity,
   BarChart3,
   Users,
   Target,
@@ -61,6 +62,7 @@ interface NavSection {
 const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
   home: LayoutDashboard,
   dashboard: BarChart3,
+  'activity-center': Activity,
   messages: MessageSquare,
   clients: Users,
   crm: Target,
@@ -84,6 +86,7 @@ const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
   arrow: Crosshair,
   'admin-accounts': ShieldCheck,
   agents: Bot,
+  health: ShieldCheck,
   decisions: ClipboardCheck,
   guide: HelpCircle,
 }
