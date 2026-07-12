@@ -335,9 +335,21 @@ describe('Agent Documents / upload + download + delete', () => {
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
     expect(del.status).toBe(200)
     expect(await Document.countDocuments()).toBe(0)
-    // best-effort : le fichier physique a aussi été supprimé (peut prendre 1 tick)
-    await new Promise((r) => setTimeout(r, 50))
-    await expect(fs.access(absPath)).rejects.toThrow()
+    // La suppression disque est best-effort et asynchrone : attendre sa
+    // convergence plutôt que dépendre d'un délai fixe sensible à la charge CI.
+    await expect
+      .poll(
+        async () => {
+          try {
+            await fs.access(absPath)
+            return true
+          } catch {
+            return false
+          }
+        },
+        { timeout: 1_000 },
+      )
+      .toBe(false)
   })
 
   it('lists documents filtered by project + type', async () => {
