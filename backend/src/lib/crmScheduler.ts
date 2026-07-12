@@ -116,9 +116,19 @@ export async function processColdLeads(): Promise<SchedulerResult> {
     }).populate('assignedTo', 'name email')
 
     // Group by assignee
-    const byAssignee: Record<string, { assignee: { name: string; email: string }; leads: Array<{ company: string; contactName: string; daysSinceContact: number | null }> }> = {}
+    const byAssignee: Record<
+      string,
+      {
+        assignee: { name: string; email: string }
+        leads: Array<{ company: string; contactName: string; daysSinceContact: number | null }>
+      }
+    > = {}
     for (const lead of coldLeads) {
-      const assignedTo = lead.assignedTo as unknown as { _id: { toString(): string }; email?: string; name: string } | null
+      const assignedTo = lead.assignedTo as unknown as {
+        _id: { toString(): string }
+        email?: string
+        name: string
+      } | null
       if (!assignedTo?.email) continue
       const assigneeId = assignedTo._id.toString()
       if (!byAssignee[assigneeId]) {
@@ -171,9 +181,19 @@ export async function processOverdueActions(): Promise<SchedulerResult> {
     }).populate('assignedTo', 'name email')
 
     // Group by assignee
-    const byAssignee: Record<string, { assignee: { name: string; email: string }; leads: Array<{ company: string; contactName: string; nextActionAt: Date | string; daysOverdue: number }> }> = {}
+    const byAssignee: Record<
+      string,
+      {
+        assignee: { name: string; email: string }
+        leads: Array<{ company: string; contactName: string; nextActionAt: Date | string; daysOverdue: number }>
+      }
+    > = {}
     for (const lead of overdueLeads) {
-      const assignedTo = lead.assignedTo as unknown as { _id: { toString(): string }; email?: string; name: string } | null
+      const assignedTo = lead.assignedTo as unknown as {
+        _id: { toString(): string }
+        email?: string
+        name: string
+      } | null
       if (!assignedTo?.email) continue
       const assigneeId = assignedTo._id.toString()
       if (!byAssignee[assigneeId]) {
@@ -228,13 +248,15 @@ export async function processEscalations(): Promise<EscalationResult> {
     }).populate('assignedTo', 'name email')
 
     let escalated = 0
-    const manager = settings.escalationManagerId
-      ? await User.findById(settings.escalationManagerId)
-      : null
+    const manager = settings.escalationManagerId ? await User.findById(settings.escalationManagerId) : null
 
     for (const lead of staleLeads) {
       const daysSinceUpdate = getDaysSinceUpdate(lead)
-      const assignedTo = lead.assignedTo as unknown as { _id?: { toString(): string }; name?: string; email?: string } | null
+      const assignedTo = lead.assignedTo as unknown as {
+        _id?: { toString(): string }
+        name?: string
+        email?: string
+      } | null
 
       if (settings.escalationAction === 'NOTIFY_MANAGER' || settings.escalationAction === 'BOTH') {
         if (manager?.email) {
@@ -260,7 +282,7 @@ export async function processEscalations(): Promise<EscalationResult> {
             'ESCALATION_REASSIGN',
             `Lead réassigné automatiquement après ${daysSinceUpdate} jours d'inactivité`,
             { from: oldAssignee, to: newAssignee, days: daysSinceUpdate },
-            null
+            null,
           )
         }
       }
@@ -376,7 +398,9 @@ export async function processOverdueTasks(): Promise<OverdueTasksResult> {
       dueDate: { $lt: now },
       status: { $nin: ['TERMINE'] },
       assignee: { $ne: null },
-    }).populate('assignee', 'name email').populate('project', 'name')
+    })
+      .populate('assignee', 'name email')
+      .populate('project', 'name')
 
     let notified = 0
     for (const task of overdueTasks) {
@@ -471,7 +495,9 @@ export async function processTaskDeadlineReminders(): Promise<TaskReminderResult
       dueDate: { $gte: now, $lte: tomorrow },
       status: { $nin: ['TERMINE', 'VALIDE'] },
       assignee: { $ne: null },
-    }).populate('assignee', 'name email').populate('project', 'name')
+    })
+      .populate('assignee', 'name email')
+      .populate('project', 'name')
 
     let notified = 0
     for (const task of upcomingTasks) {
@@ -650,7 +676,9 @@ export async function processClientHealthAutoUpdate(): Promise<ClientHealthResul
       }
       // Last contact long ago -> ATTENTION
       else if (client.lastContactAt) {
-        const daysSinceContact = Math.floor((Date.now() - new Date(client.lastContactAt).getTime()) / (1000 * 60 * 60 * 24))
+        const daysSinceContact = Math.floor(
+          (Date.now() - new Date(client.lastContactAt).getTime()) / (1000 * 60 * 60 * 24),
+        )
         if (daysSinceContact > 30) {
           newHealth = 'ATTENTION'
         }
@@ -674,6 +702,7 @@ export async function processClientHealthAutoUpdate(): Promise<ClientHealthResul
  * Run all scheduled jobs (call this from a cron job or interval)
  */
 export async function runScheduledJobs(): Promise<void> {
+  lastSchedulerRunAt = new Date().toISOString()
   const now = new Date()
   const currentHour = now.getHours()
   const currentMinute = now.getMinutes()
@@ -734,12 +763,7 @@ export async function runScheduledJobs(): Promise<void> {
     }
 
     // Client health auto-update (weekly, same day as weekly report)
-    if (
-      currentDay === settings.weeklyReportDay &&
-      currentHour === 6 &&
-      currentMinute >= 0 &&
-      currentMinute < 5
-    ) {
+    if (currentDay === settings.weeklyReportDay && currentHour === 6 && currentMinute >= 0 && currentMinute < 5) {
       const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
       if (lastRunTimes.clientHealth !== thisWeek) {
         logger.info('[CRM Scheduler] Running client health auto-update...')
@@ -764,6 +788,7 @@ export async function runScheduledJobs(): Promise<void> {
       }
     }
   } catch (err) {
+    lastSchedulerFailureAt = new Date().toISOString()
     logger.error({ data: err }, '[CRM Scheduler] Error running scheduled jobs:')
   }
 }
@@ -772,6 +797,8 @@ export async function runScheduledJobs(): Promise<void> {
  * Start the scheduler (runs every minute)
  */
 let schedulerInterval: ReturnType<typeof setInterval> | null = null
+let lastSchedulerRunAt: string | null = null
+let lastSchedulerFailureAt: string | null = null
 
 export function startScheduler(): void {
   if (schedulerInterval) return
@@ -786,5 +813,18 @@ export function stopScheduler(): void {
     clearInterval(schedulerInterval)
     schedulerInterval = null
     logger.info('[CRM Scheduler] Scheduler stopped')
+  }
+}
+
+/** Minimal, secret-free runtime information for the admin health endpoint. */
+export function getCrmSchedulerHealth(): {
+  running: boolean
+  lastRunAt: string | null
+  lastFailureAt: string | null
+} {
+  return {
+    running: schedulerInterval !== null,
+    lastRunAt: lastSchedulerRunAt,
+    lastFailureAt: lastSchedulerFailureAt,
   }
 }

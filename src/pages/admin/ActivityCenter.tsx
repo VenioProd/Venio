@@ -1,55 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchActivitySummary, type ActivitySummary } from '../../services/activityCenter'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-interface KpiCardProps {
-  label: string
-  value: number | null
-  accent: string
-  to: string
-  description: string
-  loading?: boolean
-}
-
-function KpiCard({ label, value, accent, to, description, loading }: KpiCardProps) {
-  return (
-    <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
-      <div
-        className="admin-stat-card"
-        style={{
-          borderLeft: `3px solid ${accent}`,
-          cursor: 'pointer',
-          transition: 'transform 0.15s, box-shadow 0.15s',
-        }}
-      >
-        <div
-          className="admin-stat-label"
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 8,
-          }}
-        >
-          {label}
-        </div>
-        <div className="admin-stat-value" style={{ fontSize: 36, fontWeight: 800, color: accent, lineHeight: 1 }}>
-          {loading ? (
-            <span style={{ fontSize: 20, color: 'var(--text-muted)' }}>...</span>
-          ) : value === null ? (
-            <span style={{ fontSize: 20, color: 'var(--text-muted)' }}>-</span>
-          ) : (
-            value
-          )}
-        </div>
-        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>{description}</div>
-      </div>
-    </Link>
-  )
+function formatDate(value?: string): string {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
 }
 
 export default function ActivityCenter() {
@@ -61,122 +18,116 @@ export default function ActivityCenter() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchActivitySummary()
-      setData(result)
+      setData(await fetchActivitySummary())
     } catch {
-      setError("Impossible de charger le centre d'activite.")
+      setError('Impossible de charger le centre d’activité.')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
-
-  function formatDate(iso: string) {
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(iso))
-  }
 
   return (
     <div className="portal-container">
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
-        {/* Header */}
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px' }}>
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'start',
             justifyContent: 'space-between',
-            marginBottom: 32,
+            gap: 16,
             flexWrap: 'wrap',
-            gap: 12,
+            marginBottom: 28,
           }}
         >
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              Centre d'activite
+              Centre d’activité
             </h1>
             {data && (
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Mis a jour : {formatDate(data.checkedAt)}
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '5px 0 0' }}>
+                Mis à jour le {formatDate(data.checkedAt)} · aperçu limité à {data.limit} éléments par rubrique
               </p>
             )}
           </div>
-          <button
-            onClick={load}
-            disabled={loading}
-            style={{
-              padding: '8px 18px',
-              borderRadius: 8,
-              border: '1.5px solid var(--accent)',
-              background: 'transparent',
-              color: 'var(--accent)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? 'Chargement...' : 'Rafraichir'}
+          <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
+            {loading ? 'Chargement…' : 'Rafraîchir'}
           </button>
         </div>
-
         {error && (
-          <div
-            style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 10,
-              padding: '14px 18px',
-              color: '#ef4444',
-              fontSize: 13,
-              marginBottom: 24,
-            }}
-          >
+          <div className="admin-error" role="alert">
             {error}
           </div>
         )}
-
-        <div className="admin-stats-grid">
-          <KpiCard
-            label="Tickets ouverts"
-            value={data?.openTickets ?? null}
-            accent="#ef4444"
-            to="/admin/tickets"
-            description="Statut OUVERT ou EN_COURS"
-            loading={loading && !data}
-          />
-          <KpiCard
-            label="Messages non lus"
-            value={data?.unreadMessages ?? null}
-            accent="var(--primary)"
-            to="/admin/messages"
-            description="Messages recus non lus"
-            loading={loading && !data}
-          />
-          <KpiCard
-            label="Leads en retard"
-            value={data?.overdueLeads ?? null}
-            accent="#f59e0b"
-            to="/admin/crm"
-            description="Prochaine action depassee"
-            loading={loading && !data}
-          />
-          <KpiCard
-            label="Factures impayees"
-            value={data?.overdueBilling ?? null}
-            accent="var(--primary)"
-            to="/admin/comptabilite"
-            description="Echeance depassee"
-            loading={loading && !data}
-          />
-        </div>
+        {loading && !data && <p style={{ color: 'var(--text-muted)' }}>Chargement…</p>}
+        {data && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+            {data.sections.map((section) => (
+              <section
+                key={section.key}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 12,
+                  padding: 20,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <h2 style={{ margin: 0, fontSize: 15 }}>{section.label}</h2>
+                  <Link
+                    to={section.href}
+                    className="portal-button secondary"
+                    style={{ padding: '5px 9px', fontSize: 12 }}
+                  >
+                    Voir tout
+                  </Link>
+                </div>
+                {section.entries.length === 0 ? (
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Rien à traiter.</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+                    {section.entries.map((entry) => (
+                      <li key={entry.id}>
+                        <Link
+                          to={entry.href}
+                          style={{
+                            display: 'block',
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            padding: '9px 0',
+                            borderBottom: '1px solid var(--border-color)',
+                          }}
+                        >
+                          <strong style={{ display: 'block', fontSize: 13 }}>{entry.title}</strong>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{entry.meta}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {section.hasMore && (
+                  <p style={{ margin: '12px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>
+                    D’autres éléments sont disponibles.
+                  </p>
+                )}
+              </section>
+            ))}
+            {data.sections.length === 0 && (
+              <p style={{ color: 'var(--text-muted)' }}>Aucune rubrique n’est accessible avec vos permissions.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

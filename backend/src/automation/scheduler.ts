@@ -9,6 +9,8 @@ import logger from '../lib/logger.js'
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 const CHECK_INTERVAL_MS = 60_000 // 60 seconds
+let lastTickAt: string | null = null
+let lastFailureAt: string | null = null
 
 /**
  * Parse schedule string and check if it should run now.
@@ -42,6 +44,7 @@ function shouldRunNow(schedule: string | undefined, now: Date): boolean {
  * Run all cron automations that are scheduled for the current time.
  */
 async function tick(): Promise<void> {
+  lastTickAt = new Date().toISOString()
   const now = new Date()
   const cronJobs = getCronAutomations()
 
@@ -57,7 +60,7 @@ async function tick(): Promise<void> {
       const ctx = buildContext()
       const result = await runAutomation(job, ctx)
       return { key: job.key, ...result }
-    })
+    }),
   )
 
   for (const r of results) {
@@ -67,6 +70,7 @@ async function tick(): Promise<void> {
         logger.info(`[AUTOMATION SCHEDULER] ${key}: ${status}`)
       }
     } else {
+      lastFailureAt = new Date().toISOString()
       logger.error({ data: r.reason }, `[AUTOMATION SCHEDULER] Unhandled error:`)
     }
   }
@@ -97,4 +101,13 @@ export function stopAutomationScheduler(): void {
     intervalId = null
     logger.info('[AUTOMATION SCHEDULER] Stopped')
   }
+}
+
+/** Minimal, secret-free runtime information for the admin health endpoint. */
+export function getAutomationSchedulerHealth(): {
+  running: boolean
+  lastTickAt: string | null
+  lastFailureAt: string | null
+} {
+  return { running: intervalId !== null, lastTickAt, lastFailureAt }
 }
