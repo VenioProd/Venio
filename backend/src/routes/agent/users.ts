@@ -5,6 +5,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { revokeUserSessions } from '../../lib/session.js'
 
 /**
  * Routes agent pour la gestion des Users (admins + super-admins).
@@ -81,12 +82,7 @@ router.get('/users', requireScope('read:users'), async (req: Request, res: Respo
       filter.$or = [{ name: regex }, { email: regex }]
     }
     const [items, total] = await Promise.all([
-      User.find(filter)
-        .select(ADMIN_AGENT_FIELDS)
-        .sort({ createdAt: -1 })
-        .skip(pag.skip)
-        .limit(pag.limit)
-        .lean(),
+      User.find(filter).select(ADMIN_AGENT_FIELDS).sort({ createdAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
       User.countDocuments(filter),
     ])
     res.json(paginatedResponse(items, pag, total))
@@ -95,23 +91,16 @@ router.get('/users', requireScope('read:users'), async (req: Request, res: Respo
   }
 })
 
-router.get(
-  '/users/:id',
-  requireScope('read:users'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const user = await User.findById(req.params.id)
-        .select(ADMIN_AGENT_FIELDS)
-        .lean()
-      if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
-      res.json(user)
-    } catch (err) {
-      next(err)
-    }
+router.get('/users/:id', requireScope('read:users'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const user = await User.findById(req.params.id).select(ADMIN_AGENT_FIELDS).lean()
+    if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
+    res.json(user)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/users',
@@ -130,9 +119,10 @@ router.post(
       }
       // Si pas de password fourni, on en génère un aléatoire — le user devra
       // utiliser le flux de reset password (UI admin) pour le définir.
-      const rawPwd = typeof req.body.password === 'string'
-        ? req.body.password
-        : `agent-pwd-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      const rawPwd =
+        typeof req.body.password === 'string'
+          ? req.body.password
+          : `agent-pwd-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       const passwordHash = await bcrypt.hash(rawPwd, 10)
       const user = await User.create({
         email,
@@ -141,12 +131,8 @@ router.post(
         role: req.body.role,
         title: typeof req.body.title === 'string' ? req.body.title : '',
         jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
-        grantedPermissions: Array.isArray(req.body.grantedPermissions)
-          ? req.body.grantedPermissions.map(String)
-          : [],
-        deniedPermissions: Array.isArray(req.body.deniedPermissions)
-          ? req.body.deniedPermissions.map(String)
-          : [],
+        grantedPermissions: Array.isArray(req.body.grantedPermissions) ? req.body.grantedPermissions.map(String) : [],
+        deniedPermissions: Array.isArray(req.body.deniedPermissions) ? req.body.deniedPermissions.map(String) : [],
       })
       const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
       res.locals.audit = {
@@ -160,136 +146,139 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/users/:id',
-  requireScope('write:users'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const user = await User.findById(req.params.id)
-      if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
-      if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
-        return respondError(res, 422, 'NOT_ADMIN', 'Cet endpoint ne gère que les comptes admin (CLIENT → /crm/clients)')
-      }
-      const before = sanitizeAdminForAgent(user.toObject())
-
-      const stringFields = ['name', 'title', 'phone']
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(user as unknown as Record<string, string>)[f] = req.body[f]
-        }
-      }
-      if (typeof req.body.role === 'string' && (ADMIN_ROLES as readonly string[]).includes(req.body.role)) {
-        user.role = req.body.role as typeof user.role
-      }
-      if (Array.isArray(req.body.grantedPermissions)) {
-        user.grantedPermissions = req.body.grantedPermissions.map(String)
-      }
-      if (Array.isArray(req.body.deniedPermissions)) {
-        user.deniedPermissions = req.body.deniedPermissions.map(String)
-      }
-      if (typeof req.body.jobTitle === 'string') {
-        user.jobTitle = req.body.jobTitle
-      }
-      if (typeof req.body.isActive === 'boolean') user.isActive = req.body.isActive
-      if (typeof req.body.password === 'string' && req.body.password.length >= 8) {
-        user.passwordHash = await bcrypt.hash(req.body.password, 10)
-        user.passwordChangedAt = new Date()
-      }
-      await user.save()
-      const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
-      res.locals.audit = {
-        entityType: 'User',
-        entityId: String(user._id),
-        entityRef: user.email,
-        summary: `Modification user ${user.email}`,
-        before,
-        after: safe,
-      }
-      res.json(safe)
-    } catch (err) {
-      next(err)
+router.patch('/users/:id', requireScope('write:users'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
+    if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
+      return respondError(res, 422, 'NOT_ADMIN', 'Cet endpoint ne gère que les comptes admin (CLIENT → /crm/clients)')
     }
-  }
-)
+    const before = sanitizeAdminForAgent(user.toObject())
+    const oldRole = user.role
+    const oldIsActive = user.isActive
+    const oldPermissions = JSON.stringify({
+      granted: user.grantedPermissions ?? [],
+      denied: user.deniedPermissions ?? [],
+    })
+    let revokeSessions = false
 
-router.delete(
-  '/users/:id',
-  requireScope('write:users'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const user = await User.findById(req.params.id)
-      if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
-      if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
-        return respondError(res, 422, 'NOT_ADMIN', 'Cet endpoint ne gère que les comptes admin (CLIENT → /crm/clients)')
+    const stringFields = ['name', 'title', 'phone']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(user as unknown as Record<string, string>)[f] = req.body[f]
       }
-      // Sanity check : empêcher de supprimer le dernier SUPER_ADMIN
-      if (user.role === 'SUPER_ADMIN') {
-        const count = await User.countDocuments({ role: 'SUPER_ADMIN' })
-        if (count <= 1) {
-          return respondError(res, 409, 'LAST_SUPER_ADMIN', 'Impossible de supprimer le dernier SUPER_ADMIN')
-        }
-      }
-      const before = sanitizeAdminForAgent(user.toObject())
-      await User.deleteOne({ _id: user._id })
-      res.locals.audit = {
-        entityType: 'User',
-        entityId: String(user._id),
-        entityRef: user.email,
-        summary: `Suppression user ${user.email}`,
-        before,
-      }
-      res.json({ ok: true, deletedId: String(user._id) })
-    } catch (err) {
-      next(err)
     }
+    if (typeof req.body.role === 'string' && (ADMIN_ROLES as readonly string[]).includes(req.body.role)) {
+      user.role = req.body.role as typeof user.role
+    }
+    if (Array.isArray(req.body.grantedPermissions)) {
+      user.grantedPermissions = req.body.grantedPermissions.map(String)
+    }
+    if (Array.isArray(req.body.deniedPermissions)) {
+      user.deniedPermissions = req.body.deniedPermissions.map(String)
+    }
+    if (typeof req.body.jobTitle === 'string') {
+      user.jobTitle = req.body.jobTitle
+    }
+    if (typeof req.body.isActive === 'boolean') user.isActive = req.body.isActive
+    if (typeof req.body.password === 'string' && req.body.password.length >= 8) {
+      user.passwordHash = await bcrypt.hash(req.body.password, 10)
+      user.passwordChangedAt = new Date()
+      revokeSessions = true
+    }
+    const newPermissions = JSON.stringify({
+      granted: user.grantedPermissions ?? [],
+      denied: user.deniedPermissions ?? [],
+    })
+    if (user.role !== oldRole || user.isActive !== oldIsActive || oldPermissions !== newPermissions) {
+      revokeSessions = true
+    }
+    if (revokeSessions) user.sessionVersion = (user.sessionVersion ?? 0) + 1
+    await user.save()
+    if (revokeSessions) await revokeUserSessions(user._id.toString())
+    const safe = await User.findById(user._id).select(ADMIN_AGENT_FIELDS).lean()
+    res.locals.audit = {
+      entityType: 'User',
+      entityId: String(user._id),
+      entityRef: user.email,
+      summary: `Modification user ${user.email}`,
+      before,
+      after: safe,
+    }
+    res.json(safe)
+  } catch (err) {
+    next(err)
   }
-)
+})
+
+router.delete('/users/:id', requireScope('write:users'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
+    if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
+      return respondError(res, 422, 'NOT_ADMIN', 'Cet endpoint ne gère que les comptes admin (CLIENT → /crm/clients)')
+    }
+    // Sanity check : empêcher de supprimer le dernier SUPER_ADMIN
+    if (user.role === 'SUPER_ADMIN') {
+      const count = await User.countDocuments({ role: 'SUPER_ADMIN' })
+      if (count <= 1) {
+        return respondError(res, 409, 'LAST_SUPER_ADMIN', 'Impossible de supprimer le dernier SUPER_ADMIN')
+      }
+    }
+    const before = sanitizeAdminForAgent(user.toObject())
+    await revokeUserSessions(user._id.toString())
+    await User.deleteOne({ _id: user._id })
+    res.locals.audit = {
+      entityType: 'User',
+      entityId: String(user._id),
+      entityRef: user.email,
+      summary: `Suppression user ${user.email}`,
+      before,
+    }
+    res.json({ ok: true, deletedId: String(user._id) })
+  } catch (err) {
+    next(err)
+  }
+})
 
 // ───────────────────────────────────────────────────────────────────────────
 // 2FA — lecture du statut + désactivation (l'activation reste manuelle)
 // ───────────────────────────────────────────────────────────────────────────
 
-router.get(
-  '/users/:id/2fa',
-  requireScope('read:2fa'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const user = await User.findById(req.params.id).select('email twoFactorEnabled').lean()
-      if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
-      res.json({
-        userId: String(user._id),
-        email: user.email,
-        twoFactorEnabled: Boolean(user.twoFactorEnabled),
-      })
-    } catch (err) {
-      next(err)
-    }
+router.get('/users/:id/2fa', requireScope('read:2fa'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const user = await User.findById(req.params.id).select('email twoFactorEnabled').lean()
+    if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
+    res.json({
+      userId: String(user._id),
+      email: user.email,
+      twoFactorEnabled: Boolean(user.twoFactorEnabled),
+    })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.post(
-  '/users/:id/2fa/disable',
-  requireScope('manage:2fa'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      // Agent PATs cannot satisfy an interactive MFA step-up. Keeping this
-      // endpoint would create a bypass around mandatory MFA.
-      return respondError(res, 403, 'MFA_STEP_UP_REQUIRED', 'La désactivation MFA doit être effectuée par l’utilisateur avec une vérification MFA interactive.')
-    } catch (err) {
-      next(err)
-    }
+router.post('/users/:id/2fa/disable', requireScope('manage:2fa'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    // Agent PATs cannot satisfy an interactive MFA step-up. Keeping this
+    // endpoint would create a bypass around mandatory MFA.
+    return respondError(
+      res,
+      403,
+      'MFA_STEP_UP_REQUIRED',
+      'La désactivation MFA doit être effectuée par l’utilisateur avec une vérification MFA interactive.',
+    )
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

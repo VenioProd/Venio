@@ -3,19 +3,22 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
+import AuthSession from '../models/AuthSession.js'
+import { createSession } from '../lib/session.js'
+import auth from '../middleware/auth.js'
+import { requirePermission } from '../middleware/role.js'
+import { PERMISSIONS } from '../lib/permissions.js'
 
 let app: Express
 
 beforeAll(async () => {
   await setupMongo()
   app = await createTestApp()
+  app.get('/admin-sensitive', auth, requirePermission(PERMISSIONS.MANAGE_DEV), (_req, res) => {
+    res.json({ ok: true })
+  })
 })
 
 afterAll(async () => {
@@ -46,9 +49,7 @@ describe('Agent Audit / read-only', () => {
       .send({ email: 'audit@v.test', name: 'Audit User' })
     await new Promise((r) => setTimeout(r, 100)) // finish hook async
 
-    const all = await request(app)
-      .get('/api/v1/agent/audit/log')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const all = await request(app).get('/api/v1/agent/audit/log').set('Authorization', `Bearer ${plainSecret}`)
     expect(all.status).toBe(200)
     expect(all.body.total).toBeGreaterThanOrEqual(1)
 
@@ -61,9 +62,7 @@ describe('Agent Audit / read-only', () => {
 
   it('returns 403 without read:audit', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
-    const res = await request(app)
-      .get('/api/v1/agent/audit/log')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/audit/log').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(403)
   })
 })
@@ -81,9 +80,7 @@ describe('Agent Users / admin CRUD', () => {
       name: 'Client',
       role: 'CLIENT',
     })
-    const res = await request(app)
-      .get('/api/v1/agent/users')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/users').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(1) // seul SUPER_ADMIN
     expect(res.body.items[0].role).toBe('SUPER_ADMIN')
@@ -97,9 +94,7 @@ describe('Agent Users / admin CRUD', () => {
     admin!.passwordChangedAt = new Date()
     await admin!.save()
 
-    const list = await request(app)
-      .get('/api/v1/agent/users')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const list = await request(app).get('/api/v1/agent/users').set('Authorization', `Bearer ${plainSecret}`)
     expect(list.status).toBe(200)
     expect(list.body.items[0].passwordHash).toBeUndefined()
     expect(list.body.items[0].twoFactorSecret).toBeUndefined()
@@ -154,6 +149,87 @@ describe('Agent Users / admin CRUD', () => {
     expect(res.status).toBe(422)
     expect(res.body.code).toBe('NOT_ADMIN')
   })
+
+  it('revokes every browser session as soon as an admin is disabled', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const target = await User.create({
+      email: 'disabled-admin@v.test',
+      passwordHash: await bcrypt.hash('password', 10),
+      name: 'Disabled admin',
+      role: 'ADMIN',
+    })
+    const { token } = await createSession(String(target._id))
+
+    await request(app)
+      .patch(`/api/v1/agent/users/${target._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ isActive: false })
+      .expect(200)
+
+    await expect(AuthSession.exists({ userId: target._id, revokedAt: { $ne: null } })).resolves.toBeTruthy()
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${token}`).expect(401)
+  })
+
+  it('revokes sessions on role changes and uses the current role for sensitive access', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const target = await User.create({
+      email: 'role-admin@v.test',
+      passwordHash: await bcrypt.hash('password', 10),
+      name: 'Role admin',
+      role: 'SUPER_ADMIN',
+    })
+    const { token: oldToken } = await createSession(String(target._id))
+
+    await request(app)
+      .patch(`/api/v1/agent/users/${target._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ role: 'VIEWER' })
+      .expect(200)
+
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${oldToken}`).expect(401)
+    const { token: currentToken } = await createSession(String(target._id))
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${currentToken}`).expect(403)
+  })
+
+  it('revokes sessions on permission changes and uses the current permissions for sensitive access', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const target = await User.create({
+      email: 'permission-admin@v.test',
+      passwordHash: await bcrypt.hash('password', 10),
+      name: 'Permission admin',
+      role: 'ADMIN',
+    })
+    const { token: oldToken } = await createSession(String(target._id))
+
+    await request(app)
+      .patch(`/api/v1/agent/users/${target._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ deniedPermissions: [PERMISSIONS.MANAGE_DEV] })
+      .expect(200)
+
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${oldToken}`).expect(401)
+    const { token: currentToken } = await createSession(String(target._id))
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${currentToken}`).expect(403)
+  })
+
+  it('revokes sessions when an admin password is replaced', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:users'])
+    const target = await User.create({
+      email: 'password-admin@v.test',
+      passwordHash: await bcrypt.hash('password', 10),
+      name: 'Password admin',
+      role: 'ADMIN',
+    })
+    const { token } = await createSession(String(target._id))
+
+    await request(app)
+      .patch(`/api/v1/agent/users/${target._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ password: 'replacement-password' })
+      .expect(200)
+
+    await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${token}`).expect(401)
+  })
 })
 
 describe('Agent Users / 2FA', () => {
@@ -205,18 +281,14 @@ describe('Agent Users / 2FA', () => {
 describe('Agent Backup', () => {
   it('GET /backup returns a list (peut-être vide)', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:backup'])
-    const res = await request(app)
-      .get('/api/v1/agent/backup')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/backup').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.items)).toBe(true)
   })
 
   it('GET /backup refused without read:backup', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
-    const res = await request(app)
-      .get('/api/v1/agent/backup')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/backup').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(403)
   })
 })
@@ -229,9 +301,7 @@ describe('Agent Backup', () => {
 describe('Agent Automations', () => {
   it('lists registry (may be empty in isolated tests)', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:automations'])
-    const res = await request(app)
-      .get('/api/v1/agent/automations')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/automations').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.items)).toBe(true)
     // Le registry est partagé entre tests — on ne valide pas un count précis
