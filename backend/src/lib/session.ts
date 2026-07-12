@@ -40,11 +40,15 @@ export async function createSession(
   userId: string,
   options: { impersonatorId?: string; mfaVerifiedAt?: Date; ttlMs?: number } = {},
 ): Promise<{ token: string; expiresAt: Date }> {
+  const user = await User.findById(userId).select('sessionVersion').lean()
+  if (!user) throw new Error('Cannot create a session for an unknown user')
+
   const token = crypto.randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + (options.ttlMs ?? SESSION_TTL_MS))
   await AuthSession.create({
     userId,
     tokenHash: hashSessionToken(token),
+    sessionVersion: user.sessionVersion ?? 0,
     expiresAt,
     impersonatorId: options.impersonatorId ?? null,
     mfaVerifiedAt: options.mfaVerifiedAt ?? null,
@@ -89,14 +93,22 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
   }).lean()
   if (!session) return null
 
-  const user = await User.findById(session.userId).select('role status isActive email name').lean()
-  if (!user || !user.isActive || user.status === 'ARCHIVE') return null
+  const user = await User.findById(session.userId).select('role status isActive email name sessionVersion').lean()
+  if (
+    !user ||
+    !user.isActive ||
+    user.status === 'ARCHIVE' ||
+    (session.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)
+  ) {
+    return null
+  }
 
   return {
     id: String(user._id),
     role: user.role,
     email: user.email,
     name: user.name,
+    sessionVersion: user.sessionVersion ?? 0,
     mfaVerifiedAt: session.mfaVerifiedAt?.getTime(),
     impersonatorId: session.impersonatorId ? String(session.impersonatorId) : undefined,
   }

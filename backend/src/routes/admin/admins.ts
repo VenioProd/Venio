@@ -13,7 +13,7 @@ import { resetTokens } from '../auth.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import AuditLog from '../../models/AuditLog.js'
-import { readSessionCookie, revokeSession, setSessionCookie } from '../../lib/session.js'
+import { readSessionCookie, revokeSession, revokeUserSessions, setSessionCookie } from '../../lib/session.js'
 
 const router = express.Router()
 
@@ -303,6 +303,7 @@ router.patch(
       if (oldPermissions !== newPermissions) revokeSessions = true
       if (revokeSessions) user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
+      if (revokeSessions) await revokeUserSessions(user._id.toString())
       const safeUser = await User.findById(user._id).select('-passwordHash')
       if (oldPermissions !== newPermissions && String(user._id) !== req.user!.id) {
         createNotification({
@@ -343,6 +344,7 @@ router.delete(
         }
       }
 
+      await revokeUserSessions(user._id.toString())
       await user.deleteOne()
       return res.json({ success: true })
     } catch (err) {
@@ -435,6 +437,7 @@ router.post(
       user.passwordChangedAt = new Date()
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
+      await revokeUserSessions(user._id.toString())
 
       const result = await sendAdminCredentials({
         to: user.email,

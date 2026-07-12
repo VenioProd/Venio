@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import bcrypt from 'bcryptjs'
 import express from 'express'
 import request from 'supertest'
-import authRoutes from '../routes/auth.js'
+import authRoutes, { resetTokens } from '../routes/auth.js'
 import auth from '../middleware/auth.js'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
@@ -103,6 +103,74 @@ describe('browser sessions', () => {
 
     await agent.post('/api/auth/logout').expect(204)
     await request(app).get('/api/auth/me').set('Cookie', originalCookie!).expect(401)
+  })
+
+  it('rejects a session whose server-side authorization version is no longer current', async () => {
+    const user = await User.create({
+      email: 'versioned@example.test',
+      name: 'Versioned User',
+      role: 'CLIENT',
+      passwordHash: 'not-used',
+    })
+    const { token } = await createSession(String(user._id))
+
+    await User.updateOne({ _id: user._id }, { $inc: { sessionVersion: 1 } })
+
+    await request(app).get('/protected').set('Cookie', `venio_session=${token}`).expect(401)
+  })
+
+  it('revokes all sessions after a password reset', async () => {
+    const user = await User.create({
+      email: 'reset@example.test',
+      name: 'Reset User',
+      role: 'CLIENT',
+      passwordHash: await bcrypt.hash('old-password', 10),
+    })
+    const { token } = await createSession(String(user._id))
+    resetTokens.set('valid-reset-token', { userId: String(user._id), expiresAt: Date.now() + 60_000 })
+
+    await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-reset-token', password: 'new-password' })
+      .expect(200)
+
+    await request(app).get('/protected').set('Cookie', `venio_session=${token}`).expect(401)
+  })
+
+  it('revokes a managed admin session after role, permission, or password changes', async () => {
+    const passwordHash = await bcrypt.hash('super-admin-password', 10)
+    const actor = await User.create({
+      email: 'manager@example.test',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      passwordHash,
+    })
+    const target = await User.create({
+      email: 'managed-admin@example.test',
+      name: 'Managed Admin',
+      role: 'ADMIN',
+      passwordHash: await bcrypt.hash('old-password', 10),
+    })
+    const { token } = await createSession(String(target._id))
+    const adminsRouter = (await import('../routes/admin/admins.js')).default
+    const adminApp = express()
+    adminApp.use(express.json())
+    adminApp.use('/api/auth', authRoutes)
+    adminApp.use('/api/admin/admins', adminsRouter)
+    const actorLogin = await request(adminApp)
+      .post('/api/auth/login')
+      .send({ email: actor.email, password: 'super-admin-password' })
+      .expect(200)
+    const actorCookie = actorLogin.headers['set-cookie']?.[0]
+    expect(actorCookie).toBeDefined()
+
+    await request(adminApp)
+      .patch(`/api/admin/admins/${target._id}`)
+      .set('Cookie', actorCookie ?? '')
+      .send({ role: 'MANAGER', deniedPermissions: ['manage_dev'], password: 'new-password' })
+      .expect(200)
+
+    await request(adminApp).get('/api/auth/me').set('Cookie', `venio_session=${token}`).expect(401)
   })
 
   it('marks impersonation sessions as short-lived and auditable without returning a token', async () => {
