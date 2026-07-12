@@ -80,9 +80,7 @@ Ne pas commit avec des tests cassés.
 
 ## Permissions
 
-Liste canonique de 28 permissions, dupliquée intentionnellement entre `src/lib/permissions.ts` et `backend/src/lib/permissions.ts`.
-
-Le test `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive — si vous ajoutez une permission, **mettez-la dans les 2 fichiers**.
+La matrice `rbac-matrix.json` est la source de vérité des rôles, permissions et navigations. Le frontend l'importe directement ; le backend est vérifié contre elle par `backend/src/__tests__/rbac-matrix.test.ts`. Le test `src/lib/__tests__/permissions-sync.test.ts` contrôle aussi que les valeurs frontend/backend ne divergent pas.
 
 Routes admin sensibles : protéger côté frontend (`<RequirePermission>`) ET côté backend (`requirePermission` middleware).
 

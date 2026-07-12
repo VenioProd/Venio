@@ -3,7 +3,8 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import CompanyResource, { RESOURCE_CATEGORIES } from '../../models/CompanyResource.js'
 import User from '../../models/User.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
@@ -29,7 +30,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }) // 100MB
 
 // GET / — list all resources
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', requirePermission(PERMISSIONS.VIEW_CONTENT), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const resources = await CompanyResource.find()
       .populate('uploadedBy', 'name')
@@ -39,12 +40,12 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 })
 
 // GET /categories
-router.get('/categories', (_req: Request, res: Response) => {
+router.get('/categories', requirePermission(PERMISSIONS.VIEW_CONTENT), (_req: Request, res: Response) => {
   res.json({ categories: RESOURCE_CATEGORIES })
 })
 
 // GET /:id/download — serve the file
-router.get('/:id/download', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id/download', requirePermission(PERMISSIONS.VIEW_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resource = await CompanyResource.findById(req.params.id)
     if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
@@ -59,7 +60,7 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
 })
 
 // POST / — upload (SUPER_ADMIN only)
-router.post('/', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission(PERMISSIONS.EDIT_CONTENT), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') {
       if (req.file) fs.unlinkSync(req.file.path)
@@ -123,7 +124,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
 })
 
 // PATCH /:id — update name/description/category (SUPER_ADMIN only)
-router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
     const resource = await CompanyResource.findById(req.params.id)
@@ -141,7 +142,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 })
 
 // DELETE /:id (SUPER_ADMIN only)
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
     const resource = await CompanyResource.findById(req.params.id)

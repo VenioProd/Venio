@@ -3,7 +3,8 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import InternalTicket from '../../models/InternalTicket.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
@@ -27,15 +28,31 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
 // Serve uploaded files
-router.get('/files/:filename', (req: Request, res: Response) => {
-  const filePath = path.resolve(uploadsDir, req.params.filename as string)
-  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  res.sendFile(filePath)
+router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
+  try {
+    const filename = req.params.filename as string
+    const filter: Record<string, unknown> = {
+      $or: [
+        { attachments: { $elemMatch: { filename } } },
+        { 'replies.attachments': { $elemMatch: { filename } } },
+      ],
+    }
+    if (req.user!.role !== 'SUPER_ADMIN') filter.authorId = req.user!.id
+
+    const ticket = await InternalTicket.exists(filter)
+    if (!ticket) return res.status(404).json({ error: 'Fichier introuvable' })
+
+    const filePath = path.resolve(uploadsDir, filename)
+    if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
+    return res.sendFile(filePath)
+  } catch {
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
 })
 
 // GET /api/admin/tickets — active tickets only (not archived)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const { status, category, priority } = req.query
@@ -65,7 +82,7 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/stats
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const authorFilter = user.role !== 'SUPER_ADMIN' ? { authorId: user.id } : {}
@@ -81,7 +98,7 @@ router.get('/stats', async (req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/archived — archived tickets
-router.get('/archived', async (req: Request, res: Response) => {
+router.get('/archived', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const filter: Record<string, unknown> = { isArchived: true }
@@ -96,7 +113,7 @@ router.get('/archived', async (req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/kpi — KPI stats
-router.get('/kpi', async (req: Request, res: Response) => {
+router.get('/kpi', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const { period } = req.query // 'week' | 'month' | 'all'
     const now = new Date()
@@ -177,7 +194,7 @@ router.get('/kpi', async (req: Request, res: Response) => {
 })
 
 // GET /api/admin/tickets/:id
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const ticket = await InternalTicket.findById(req.params.id)
@@ -211,7 +228,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 })
 
 // POST /api/admin/tickets — create ticket
-router.post('/', upload.array('files', 10), async (req: Request, res: Response) => {
+router.post('/', requirePermission(PERMISSIONS.CREATE_TICKETS), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const { title, message, category, priority } = req.body
@@ -262,7 +279,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
 })
 
 // POST /api/admin/tickets/:id/reply
-router.post('/:id/reply', upload.array('files', 10), async (req: Request, res: Response) => {
+router.post('/:id/reply', requirePermission(PERMISSIONS.MANAGE_TICKETS), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent repondre' })
@@ -312,7 +329,7 @@ router.post('/:id/reply', upload.array('files', 10), async (req: Request, res: R
 })
 
 // PATCH /api/admin/tickets/:id/mark-read — l'auteur marque comme lu → ferme + archive
-router.patch('/:id/mark-read', async (req: Request, res: Response) => {
+router.patch('/:id/mark-read', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     const ticket = await InternalTicket.findById(req.params.id)
@@ -338,7 +355,7 @@ router.patch('/:id/mark-read', async (req: Request, res: Response) => {
 })
 
 // PATCH /api/admin/tickets/:id/status
-router.patch('/:id/status', async (req: Request, res: Response) => {
+router.patch('/:id/status', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent changer le statut' })
@@ -370,7 +387,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 })
 
 // PATCH /api/admin/tickets/:id/archive — archive a closed ticket (SUPER_ADMIN)
-router.patch('/:id/archive', async (req: Request, res: Response) => {
+router.patch('/:id/archive', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent archiver' })
@@ -389,7 +406,7 @@ router.patch('/:id/archive', async (req: Request, res: Response) => {
 })
 
 // PATCH /api/admin/tickets/:id/unarchive — restore an archived ticket (SUPER_ADMIN)
-router.patch('/:id/unarchive', async (req: Request, res: Response) => {
+router.patch('/:id/unarchive', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Forbidden' })
@@ -407,7 +424,7 @@ router.patch('/:id/unarchive', async (req: Request, res: Response) => {
 })
 
 // DELETE /api/admin/tickets/:id
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
     if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent supprimer' })
