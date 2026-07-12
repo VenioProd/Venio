@@ -20,6 +20,7 @@ Cible unique : **VPS Docker** sur `/opt/docker/openclaw/config/workspace/project
 | [`/Dockerfile`](../../Dockerfile) | Build multi-stage (frontend Vite + backend tsc) servi par Express |
 | [`/docker-compose.prod.yml`](../../docker-compose.prod.yml) | Container unique `venio-app`, `network_mode: host` |
 | [`/.github/workflows/deploy-ionos.yml`](../../.github/workflows/deploy-ionos.yml) | Pipeline SSH + docker compose |
+| [`GUIDE_CONFIGURATION.md`](./GUIDE_CONFIGURATION.md) | Configuration et nettoyage manuel des données de démo |
 | [`operations/nginx-venio.paris.conf`](../operations/nginx-venio.paris.conf) | Reverse proxy nginx (hors repo Docker, sur le VPS) |
 
 ## Secrets GitHub Actions requis
