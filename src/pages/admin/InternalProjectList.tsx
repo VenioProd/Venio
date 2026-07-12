@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../../lib/api'
+import { apiDownload, apiFetch, apiUpload } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -425,12 +425,10 @@ export default function InternalProjectList() {
     const form = new FormData()
     form.append('file', file)
     try {
-      const res = await fetch(`/api/admin/internal-projects/${projectId}/missions/${missionId}/files`, {
-        method: 'POST',
-        body: form,
-        credentials: 'same-origin',
-      })
-      const data = await res.json()
+      const data = await apiUpload<{ mission?: Mission }>(
+        `/api/admin/internal-projects/${projectId}/missions/${missionId}/files`,
+        form,
+      )
       setMissions((m) => m.map((x) => (x._id === missionId ? { ...x, files: data.mission?.files ?? x.files } : x)))
     } catch {
       /* silent */
@@ -454,10 +452,9 @@ export default function InternalProjectList() {
 
   const handleMissionFileOpen = async (missionId: string, projectId: string, fileId: string) => {
     try {
-      const res = await fetch(`/api/admin/internal-projects/${projectId}/missions/${missionId}/files/${fileId}`, {
-        credentials: 'same-origin',
-      })
-      const blob = await res.blob()
+      const { blob } = await apiDownload(
+        `/api/admin/internal-projects/${projectId}/missions/${missionId}/files/${fileId}`,
+      )
       window.open(URL.createObjectURL(blob), '_blank')
     } catch {
       /* silent */

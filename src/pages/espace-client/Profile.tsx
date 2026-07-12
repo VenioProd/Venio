@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiFetch } from '../../lib/api'
+import { apiFetch, apiUpload } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
 import UserAvatar from '../../components/UserAvatar'
@@ -106,15 +106,7 @@ const ClientProfile = () => {
     try {
       const formData = new FormData()
       formData.append('avatar', blob, 'avatar.jpg')
-      const res = await fetch('/api/auth/avatar', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Erreur lors de l'upload")
-      }
+      await apiUpload('/api/auth/avatar', formData)
       await refreshUser()
       setSuccess('Photo de profil mise à jour')
       setTimeout(() => setSuccess(''), 4000)

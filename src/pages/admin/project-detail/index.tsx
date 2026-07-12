@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../../hooks/useTabState'
-import { apiFetch } from '../../../lib/api'
+import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import { useAuth } from '../../../context/AuthContext'
@@ -413,15 +413,7 @@ const AdminProjectDetail = () => {
     const formEl = event.target as HTMLFormElement
     try {
       const formData = new FormData(formEl)
-      const response = await fetch(`/api/admin/projects/${id}/documents`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erreur upload')
-      }
+      await apiUpload(`/api/admin/projects/${id}/documents`, formData)
       await load()
       formEl.reset()
     } catch (err: unknown) {
@@ -490,16 +482,7 @@ const AdminProjectDetail = () => {
         formData.append('file', selectedFile)
       }
 
-      const response = await fetch(`/api/admin/projects/${id}/items`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erreur ajout item')
-      }
+      await apiUpload(`/api/admin/projects/${id}/items`, formData)
 
       setItemForm({
         section: '',
@@ -550,17 +533,11 @@ const AdminProjectDetail = () => {
   const handleDownloadItem = async (itemId: string, fileName: string) => {
     if (!ensurePermission(canViewContent, 'Accès en lecture seule.')) return
     try {
-      const response = await fetch(`/api/admin/projects/${id}/items/${itemId}/download`, {
-        credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        throw new Error('Téléchargement impossible')
-      }
-      const blob = await response.blob()
+      const { blob, filename } = await apiDownload(`/api/admin/projects/${id}/items/${itemId}/download`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = fileName
+      link.download = filename ?? fileName
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -592,15 +569,11 @@ const AdminProjectDetail = () => {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               onClick={async () => {
                 try {
-                  const res = await fetch(`/api/admin/projects/${id}/recap-pdf`, {
-                    credentials: 'same-origin',
-                  })
-                  if (!res.ok) throw new Error('Erreur PDF')
-                  const blob = await res.blob()
+                  const { blob, filename } = await apiDownload(`/api/admin/projects/${id}/recap-pdf`)
                   const url = window.URL.createObjectURL(blob)
                   const a = document.createElement('a')
                   a.href = url
-                  a.download = `Recap_${project.name.replace(/\s+/g, '_')}.pdf`
+                  a.download = filename ?? `Recap_${project.name.replace(/\s+/g, '_')}.pdf`
                   a.click()
                   window.URL.revokeObjectURL(url)
                 } catch {

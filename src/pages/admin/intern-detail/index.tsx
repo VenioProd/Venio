@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
+import { ApiError, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import {
@@ -187,11 +187,7 @@ const InternDetail = () => {
       const fd = new FormData()
       fd.append('status', status)
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
-      await fetch(`/api/admin/interns/reports/${reportId}`, {
-        method: 'PATCH',
-        body: fd,
-        credentials: 'same-origin',
-      })
+      await apiUpload(`/api/admin/interns/reports/${reportId}`, fd, { method: 'PATCH' })
       loadData()
     } catch {
       /* silent */
@@ -212,19 +208,10 @@ const InternDetail = () => {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch(`/api/admin/interns/${id}/convention`, {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        alert((err as { error?: string }).error || 'Erreur upload')
-        return
-      }
+      await apiUpload(`/api/admin/interns/${id}/convention`, fd)
       loadData()
-    } catch {
-      alert('Erreur réseau')
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'Erreur réseau')
     } finally {
       setConventionUploading(false)
       e.target.value = ''

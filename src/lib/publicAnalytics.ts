@@ -26,7 +26,7 @@ export function trackPublicEvent(event: PublicAnalyticsEvent, cta?: string): voi
   // keepalive lets the browser finish a short request during navigation while
   // credentials: omit ensures a signed-in session cookie is never attached.
   // This remains best-effort: analytics must not affect navigation or a form.
-  void fetch('/api/public/analytics/event', {
+  void apiFetch('/api/public/analytics/event', {
     method: 'POST',
     body: payload,
     headers: { 'Content-Type': 'application/json' },
@@ -34,3 +34,4 @@ export function trackPublicEvent(event: PublicAnalyticsEvent, cta?: string): voi
     credentials: 'omit',
   }).catch(() => {})
 }
+import { apiFetch } from './api'

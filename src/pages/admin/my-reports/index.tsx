@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../../../lib/api'
+import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage } from '../intern-list/types'
@@ -55,11 +55,7 @@ const MyReports = () => {
       }
       reportFiles.forEach((f) => fd.append('files', f))
 
-      await fetch('/api/admin/interns/reports', {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin',
-      })
+      await apiUpload('/api/admin/interns/reports', fd)
 
       setReportForm({ date: new Date().toISOString().split('T')[0], contenu: '', taches: '' })
       setReportFiles([])

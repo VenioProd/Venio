@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { ApiError, apiFetch } from '../lib/api'
 import './PublicQuestionnaire.css'
 
 interface Question {
@@ -30,13 +31,9 @@ const PublicQuestionnaire = () => {
   const [answers, setAnswers] = useState<Map<number, string>>(new Map())
 
   useEffect(() => {
-    fetch(`/api/questionnaire/${token}`)
-      .then((r) => {
-        if (!r.ok) throw new Error('Questionnaire introuvable')
-        return r.json()
-      })
+    apiFetch<QuestionnaireData>(`/api/questionnaire/${token}`)
       .then((d) => setData(d))
-      .catch((err) => setError(err.message))
+      .catch((err: unknown) => setError(err instanceof ApiError ? 'Questionnaire introuvable' : (err as Error).message))
       .finally(() => setLoading(false))
   }, [token])
 
@@ -50,7 +47,7 @@ const PublicQuestionnaire = () => {
 
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/questionnaire/${token}/submit`, {
+      await apiFetch(`/api/questionnaire/${token}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,8 +58,6 @@ const PublicQuestionnaire = () => {
         }),
       })
 
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Erreur')
       setSubmitted(true)
     } catch (err: any) {
       setError(err.message)
@@ -71,14 +66,27 @@ const PublicQuestionnaire = () => {
     }
   }
 
-  if (loading) return <div className="pq-page"><div className="pq-loading">Chargement...</div></div>
-  if (error && !data) return <div className="pq-page"><div className="pq-error">{error}</div></div>
+  if (loading)
+    return (
+      <div className="pq-page">
+        <div className="pq-loading">Chargement...</div>
+      </div>
+    )
+  if (error && !data)
+    return (
+      <div className="pq-page">
+        <div className="pq-error">{error}</div>
+      </div>
+    )
 
   if (submitted) {
     return (
       <div className="pq-page">
         <div className="pq-success">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
           <h2>Merci pour votre retour !</h2>
           <p>Votre reponse a bien ete enregistree.</p>
         </div>
@@ -106,7 +114,13 @@ const PublicQuestionnaire = () => {
           </div>
           <div className="pq-field">
             <label>Email *</label>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" />
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="votre@email.com"
+            />
           </div>
           <div className="pq-field">
             <label>Formation concernee</label>

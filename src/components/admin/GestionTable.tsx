@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { apiDownload, apiUpload } from '../../lib/api'
 import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types/task.types'
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
@@ -118,10 +119,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
       for (let i = 0; i < files.length; i++) {
         const formData = new FormData()
         formData.append('file', files[i])
-        await fetch(`/api/admin/projects/${projectId}/tasks/${task._id}/attachments`, {
-          method: 'POST',
-          body: formData,
-        })
+        await apiUpload(`/api/admin/projects/${projectId}/tasks/${task._id}/attachments`, formData)
       }
       if (fileRef.current) fileRef.current.value = ''
       onRefresh?.()
@@ -132,9 +130,23 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
     }
   }
 
-  const handleDownload = (task: Task, att: TaskAttachment) => {
+  const handleDownload = async (task: Task, att: TaskAttachment) => {
     const projectId = getProjectId(task)
-    window.open(`/api/admin/projects/${projectId}/tasks/${task._id}/attachments/${att._id}/download`, '_blank')
+    try {
+      const { blob, filename } = await apiDownload(
+        `/api/admin/projects/${projectId}/tasks/${task._id}/attachments/${att._id}/download`,
+      )
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename ?? att.originalName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Erreur téléchargement:', err)
+    }
   }
 
   const toggleExpand = (id: string) => {
