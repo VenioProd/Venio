@@ -13,6 +13,7 @@
 
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import { pathToFileURL } from 'url'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import Lead from '../models/Lead.js'
@@ -21,13 +22,15 @@ import ClientActivity from '../models/ClientActivity.js'
 
 dotenv.config()
 
-// --- Garde de sécurité ---------------------------------------------------
-if (process.env.ALLOW_DEMO_CLEANUP !== 'true') {
-  console.error('❌ Sécurité : définissez ALLOW_DEMO_CLEANUP=true pour lancer ce script.')
-  throw new Error('Set ALLOW_DEMO_CLEANUP=true to run demo cleanup')
+export function assertDemoCleanupAllowed(value = process.env.ALLOW_DEMO_CLEANUP): void {
+  if (value !== 'true') {
+    throw new Error('Set ALLOW_DEMO_CLEANUP=true to run demo cleanup')
+  }
 }
 
-const dryRun = process.argv.includes('--dry-run')
+export function hasDryRunFlag(args = process.argv): boolean {
+  return args.includes('--dry-run')
+}
 
 // --- Données ciblées -------------------------------------------------------
 const testAdminEmails = [
@@ -58,15 +61,13 @@ const demoLeadCompanies = [
 
 // ---------------------------------------------------------------------------
 
-async function main(): Promise<void> {
-  const uri = process.env.MONGODB_URI
-  if (!uri) {
-    console.error('❌ MONGODB_URI manquant dans les variables d\'environnement')
-    process.exit(1)
-  }
+interface CleanupOptions {
+  dryRun: boolean
+  allowDemoCleanup?: string
+}
 
-  await mongoose.connect(uri)
-  console.log(`🔗 Connecté à MongoDB`)
+export async function cleanupDemoData({ dryRun, allowDemoCleanup }: CleanupOptions): Promise<void> {
+  assertDemoCleanupAllowed(allowDemoCleanup)
   console.log(`🔎 Mode : ${dryRun ? 'DRY RUN (aucune suppression)' : 'EXÉCUTION RÉELLE'}`)
   console.log('')
 
@@ -171,11 +172,29 @@ async function main(): Promise<void> {
   }
 }
 
-main()
-  .catch((err: unknown) => {
+export async function main(): Promise<void> {
+  assertDemoCleanupAllowed()
+
+  const uri = process.env.MONGODB_URI
+  if (!uri) {
+    throw new Error('MONGODB_URI is required')
+  }
+
+  await mongoose.connect(uri)
+  console.log('🔗 Connecté à MongoDB')
+  try {
+    await cleanupDemoData({ dryRun: hasDryRunFlag() })
+  } finally {
+    await mongoose.disconnect()
+  }
+}
+
+const invokedAsScript = process.argv[1] !== undefined
+  && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedAsScript) {
+  void main().catch((err: unknown) => {
     console.error('❌ Erreur fatale :', err)
     process.exit(1)
   })
-  .finally(async () => {
-    await mongoose.disconnect()
-  })
+}
