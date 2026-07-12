@@ -42,7 +42,7 @@ jobs:
       # via le hook pre-commit (lint-staged). À activer en CI bloquante après un format big-bang.
 
   tests:
-    name: Tests (frontend + backend)
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,8 +62,11 @@ jobs:
       - name: Install backend deps
         run: npm --prefix backend ci
 
-      - name: Run all tests
-        run: npm run test:all
+      - name: Run frontend tests
+        run: npm run test:frontend
+
+      - name: Run backend tests
+        run: npm run test:backend
 
   public-site-recipe:
     name: Public site recipe (SEO + a11y + perf + responsive)
