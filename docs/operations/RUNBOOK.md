@@ -142,6 +142,20 @@ npm run test:all
 
 Voir [docs/superpowers/plans/2026-05-18-venio-optimization.md](../superpowers/plans/2026-05-18-venio-optimization.md) pour le plan d'optimisation complet.
 
+### Recette admin multi-rôles
+
+Pour la preuve de release des rôles administrateur, exécuter depuis la racine :
+
+```bash
+npm run recipe:admin-roles
+```
+
+La commande vérifie les rôles `SUPER_ADMIN`, `ADMIN`, `COMMERCIAL`, `RH`,
+`COMPTABLE`, `VIEWER` et `STAGIAIRE`, puis génère un rapport JSON horodaté
+dans `artifacts/admin-role-recipe/`. Voir
+[ADMIN_ROLE_RECIPE.md](./ADMIN_ROLE_RECIPE.md) pour la matrice, les données
+synthétiques et le smoke production contrôlé restant.
+
 ## CI/CD
 
 ### CI (chantier #3 — audit 2026-05-26)

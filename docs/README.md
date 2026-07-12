@@ -14,6 +14,7 @@ Index de la documentation. Pour le démarrage rapide (install, scripts, stack), 
 | [deploiement/](./deploiement/) | Déploiement VPS (Docker + GitHub Actions), debug, secrets |
 | [design/](./design/) | Arrière-plans, gradients, évolutions visuelles |
 | [operations/](./operations/) | Runbook exploitation, incidents, cleanup, conf nginx |
+| [operations/ADMIN_ROLE_RECIPE.md](./operations/ADMIN_ROLE_RECIPE.md) | Recette de release admin multi-rôles (VENIO-104) |
 | [optimisation/](./optimisation/) | Performance GPU, SEO, bundles |
 | [public/ANALYTICS_SEO_QUALITY.md](./public/ANALYTICS_SEO_QUALITY.md) | Mesure privacy-first, Search Console et recette publique |
 | [PARALLAX.md](./PARALLAX.md) | Effet parallax |
