@@ -1,13 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
 import ToastContainer from './components/ToastContainer'
 import ProtectedRoute from './components/ProtectedRoute'
-import AdminShell from './components/AdminShell'
-import ClientShell from './components/ClientShell'
 import { ToastProvider } from './context/ToastContext'
-import { NotificationProvider } from './context/NotificationContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 import type { ColorAccent } from './context/ThemeContext'
 import { I18nProvider } from './context/I18nContext'
@@ -33,6 +28,8 @@ function DashboardByRole() {
 }
 
 // Lazy-loaded: Site vitrine
+const PublicHeader = lazy(() => import('./components/PublicHeader'))
+const PublicFooter = lazy(() => import('./components/PublicFooter'))
 const Home = lazy(() => import('./pages/Home'))
 const ServicesCommunication = lazy(() => import('./pages/ServicesCommunication'))
 const ServicesDeveloppement = lazy(() => import('./pages/ServicesDeveloppement'))
@@ -50,12 +47,14 @@ const PublicQuestionnaire = lazy(() => import('./pages/PublicQuestionnaire'))
 const PublicQuestionnaireBuilder = lazy(() => import('./pages/PublicQuestionnaireBuilder'))
 
 // Lazy-loaded: Espace client
+const ClientShell = lazy(() => import('./components/ClientShell'))
 const ClientLogin = lazy(() => import('./pages/espace-client/Login'))
 const ClientDashboard = lazy(() => import('./pages/espace-client/Dashboard'))
 const ClientProjectDetail = lazy(() => import('./pages/espace-client/ProjectDetail'))
 const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 
 // Lazy-loaded: Admin
+const AdminShell = lazy(() => import('./components/AdminShell'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const SuperAdminDashboard = lazy(() => import('./pages/admin/SuperAdminDashboard'))
@@ -162,9 +161,9 @@ function App() {
     <I18nProvider>
       <ThemeProvider>
         <ThemeSync />
-        <NotificationProvider>
-          <ToastProvider>
-            {!isPublicQuestionnaire && !isPortal && <Navbar />}
+        <ToastProvider>
+          <Suspense fallback={null}>{!isPublicQuestionnaire && !isPortal && <PublicHeader />}</Suspense>
+          <Suspense fallback={null}>
             <Suspense fallback={null}>
               <Routes>
                 {/* Site vitrine */}
@@ -676,14 +675,12 @@ function App() {
                 </Route>
               </Routes>
             </Suspense>
-            {!isPublicQuestionnaire && !isPortal && <Footer />}
             <CookieConsent />
             <ToastContainer />
-            <Suspense fallback={null}>
-              <SearchModal />
-            </Suspense>
-          </ToastProvider>
-        </NotificationProvider>
+            {isAdminArea && <SearchModal />}
+          </Suspense>
+          <Suspense fallback={null}>{!isPublicQuestionnaire && !isPortal && <PublicFooter />}</Suspense>
+        </ToastProvider>
       </ThemeProvider>
     </I18nProvider>
   )

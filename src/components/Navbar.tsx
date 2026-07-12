@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { lazy, Suspense, useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useI18n } from '../context/I18nContext'
 import { isAdminRole } from '../lib/permissions'
-import NotificationBell from './admin/NotificationBell'
-import TicketFab from './admin/TicketFab'
 import ThemeToggle from './ThemeToggle'
 import LanguageSwitch from './LanguageSwitch'
 import './Navbar.css'
+
+const NotificationBell = lazy(() => import('./admin/NotificationBell'))
+const TicketFab = lazy(() => import('./admin/TicketFab'))
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -169,7 +170,11 @@ const Navbar = () => {
               <span className="nav-link-text">{t('nav.admin')}</span>
             </Link>
 
-            {showNotifBell && <NotificationBell />}
+            {showNotifBell && (
+              <Suspense fallback={null}>
+                <NotificationBell />
+              </Suspense>
+            )}
             {showNotifBell && <ThemeToggle />}
             <LanguageSwitch />
           </div>
@@ -334,7 +339,9 @@ const Navbar = () => {
 
       {showTicketFab && (
         <>
-          <TicketFab />
+          <Suspense fallback={null}>
+            <TicketFab />
+          </Suspense>
           <Link to="/admin/tickets" className="ticket-fab-tickets" title="Mes demandes">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
