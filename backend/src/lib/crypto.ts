@@ -34,6 +34,15 @@ export function isEncryptionConfigured(): boolean {
 }
 
 /**
+ * Credentials must never silently fall back to plaintext storage.
+ */
+export function requireEncryptionConfigured(): void {
+  if (!isEncryptionConfigured()) {
+    throw new Error('ENCRYPTION_KEY must be configured before managing tool credentials')
+  }
+}
+
+/**
  * Encrypt a plaintext string.
  * Returns: base64 string of IV + AuthTag + Ciphertext
  */
