@@ -246,9 +246,12 @@ router.delete(
       await Document.deleteOne({ _id: doc._id })
       // Suppression du fichier physique : best-effort, dans uploads/ uniquement
       if (absPath.startsWith(uploadsRoot())) {
-        fs.unlink(absPath).catch(() => {
-          // silencieux, fichier déjà absent
-        })
+        try {
+          await fs.unlink(absPath)
+        } catch (err) {
+          // Un fichier déjà absent ne doit pas faire échouer la suppression DB.
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+        }
       }
       res.locals.audit = {
         entityType: 'Document',
