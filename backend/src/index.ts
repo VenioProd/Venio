@@ -14,7 +14,7 @@ import mongoose from 'mongoose'
 import logger from './lib/logger.js'
 
 // Version applicative pour les health checks et les headers
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
 const APP_VERSION = pkg.version
 
@@ -77,6 +77,8 @@ import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
 import { initSentry, Sentry } from './lib/sentry.js'
+import auth from './middleware/auth.js'
+import requireMfa from './middleware/mfa.js'
 
 dotenv.config()
 
@@ -258,9 +260,9 @@ app.use('/api/documents', documentRoutes)
 app.use('/api/push', pushRoutes)
 app.use('/api/notification-preferences', notificationPreferencesRoutes)
 
-app.use('/api/admin/users', adminUserRoutes)
+app.use('/api/admin/users', auth, requireMfa, adminUserRoutes)
 app.use('/api/admin/clients', adminClientRoutes)
-app.use('/api/admin/admins', adminAdminsRoutes)
+app.use('/api/admin/admins', auth, requireMfa, adminAdminsRoutes)
 // Un seul mount pour /api/admin/projects — voir routes/admin/projects/index.ts
 app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
@@ -276,14 +278,14 @@ app.use('/api/admin/analytics', adminAnalyticsRoutes)
 app.use('/api/admin/calendar', adminCalendarRoutes)
 app.use('/api/admin/audit', adminAuditRoutes)
 app.use('/api/admin/2fa', adminTwoFactorRoutes)
-app.use('/api/admin/backups', adminBackupRoutes)
+app.use('/api/admin/backups', auth, requireMfa, adminBackupRoutes)
 app.use('/api/admin/qualiopi', adminQualiopiRoutes)
 app.use('/api/admin/qualiopi-questionnaires', adminQualiopiQuestRoutes)
 app.use('/api/questionnaire', publicQuestionnaireRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
-app.use('/api/admin/tool-access', adminToolAccessRoutes)
+app.use('/api/admin/tool-access', auth, requireMfa, adminToolAccessRoutes)
 app.use('/api/admin/automations', adminAutomationRoutes)
 app.use('/api/admin/interns', adminInternRoutes)
 app.use('/api/admin/email-composer', adminEmailComposerRoutes)
@@ -292,7 +294,7 @@ app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
 app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/subsidiaries', adminSubsidiaryRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
-app.use('/api/admin/accounting', adminAccountingRoutes)
+app.use('/api/admin/accounting', auth, requireMfa, adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
 app.use('/api/admin/health', adminHealthRoutes)
 app.use('/api/admin/activity-center', adminActivityCenterRoutes)
@@ -300,7 +302,7 @@ app.use('/api/admin/activity-center', adminActivityCenterRoutes)
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
 // express.json global, pour autoriser un body plus volumineux (upload base64).
-app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
+app.use('/api/admin/agent-tokens', auth, requireMfa, adminAgentTokenRoutes)
 
 // Dev workspace (suivi développement type Linear, séparé de Projets clients).
 app.use('/api/admin/dev', adminDevRoutes)
@@ -343,8 +345,20 @@ app.use(
     },
   }),
 )
-app.get('{*path}', (_req: Request, res: Response) => {
-  res.sendFile(path.join(publicDir, 'index.html'))
+
+app.get('{*path}', (req: Request, res: Response) => {
+  const prerenderedRelativePath = path.join(req.path.slice(1), 'index.html')
+  const prerenderedIndex = path.join(publicDir, prerenderedRelativePath)
+
+  // Route-specific public pages are emitted as nested index.html files during
+  // the frontend build. Express does not resolve them when the canonical URL
+  // has no trailing slash, so the SPA fallback checks for that file first.
+  if (req.path !== '/' && existsSync(prerenderedIndex)) {
+    res.sendFile(prerenderedRelativePath, { root: publicDir })
+    return
+  }
+
+  res.sendFile('index.html', { root: publicDir })
 })
 
 // Sentry error handler — doit être AVANT le notre, capture les erreurs avant qu'on les

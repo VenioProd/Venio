@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import './GradientMeshBackground.css'
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 const GradientMeshBackground = () => {
   const [gpuOff, setGpuOff] = useState<boolean>(() => document.body.classList.contains('gpu-off'))
+  const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion)
   const [reducedLayers, setReducedLayers] = useState<boolean>(false)
   const [disableAnimations, setDisableAnimations] = useState<boolean>(false)
   const [scrollY, setScrollY] = useState<number>(0)
@@ -18,7 +22,17 @@ const GradientMeshBackground = () => {
   }, [])
 
   useEffect(() => {
-    if (gpuOff) {
+    const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (!mediaQuery) return
+
+    const updatePreference = () => setReducedMotion(mediaQuery.matches)
+    updatePreference()
+    mediaQuery.addEventListener?.('change', updatePreference)
+    return () => mediaQuery.removeEventListener?.('change', updatePreference)
+  }, [])
+
+  useEffect(() => {
+    if (gpuOff || reducedMotion) {
       return undefined
     }
 
@@ -100,11 +114,11 @@ const GradientMeshBackground = () => {
         cancelAnimationFrame(animationFrameId)
       }
     }
-  }, [gpuOff])
+  }, [gpuOff, reducedMotion])
 
   // Parallax effect on scroll - TRÈS subtil
   useEffect(() => {
-    if (gpuOff || disableAnimations) return
+    if (gpuOff || reducedMotion || disableAnimations) return
 
     const handleScroll = () => {
       setScrollY(window.pageYOffset)
@@ -112,10 +126,10 @@ const GradientMeshBackground = () => {
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [gpuOff, disableAnimations])
+  }, [gpuOff, reducedMotion, disableAnimations])
 
-  if (gpuOff) {
-    return <div className="gradient-mesh-background gpu-off-static" />
+  if (gpuOff || reducedMotion) {
+    return <div className={`gradient-mesh-background ${gpuOff ? 'gpu-off-static' : 'reduced-motion-static'}`} />
   }
 
   // Parallax très subtil - vitesses réduites de moitié

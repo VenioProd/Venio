@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express'
 import type { UserRole, Permission } from '../types/enums.js'
-import { hasPermission, hasPermissionResolved, isAdminRole } from '../lib/permissions.js'
+import { hasPermissionResolved, isAdminRole } from '../lib/permissions.js'
 import User from '../models/User.js'
+import { graceEndsAt, isMfaEnrollmentRoute, requiresMfa } from '../lib/mfa.js'
 
 export default function requireRole(role: UserRole) {
   return function roleMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -13,28 +14,55 @@ export default function requireRole(role: UserRole) {
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+async function ensureMfaEnrollment(req: Request, res: Response): Promise<boolean> {
+  if (!req.user || !requiresMfa(req.user.role) || isMfaEnrollmentRoute(req.originalUrl || req.url)) {
+    return true
+  }
+
+  const user = await User.findById(req.user.id).select('twoFactorEnabled mfaGraceUntil')
+  if (!user) {
+    res.status(403).json({ error: 'Forbidden' })
+    return false
+  }
+  if (user.twoFactorEnabled) return true
+
+  if (!user.mfaGraceUntil) {
+    user.mfaGraceUntil = graceEndsAt()
+    await user.save()
+    return true
+  }
+
+  if (user.mfaGraceUntil.getTime() > Date.now()) return true
+
+  res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'Configurez la MFA avant de continuer.' })
+  return false
+}
+
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.user || !isAdminRole(req.user.role)) {
     res.status(403).json({ error: 'Forbidden' })
     return
   }
+  if (!(await ensureMfaEnrollment(req, res))) return
   next()
 }
 
-export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+export async function requireSuperAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.user || req.user.role !== 'SUPER_ADMIN') {
     res.status(403).json({ error: 'Forbidden' })
     return
   }
+  if (!(await ensureMfaEnrollment(req, res))) return
   next()
 }
 
 export function requirePermission(permission: Permission) {
-  return function permissionMiddleware(req: Request, res: Response, next: NextFunction): void {
+  return async function permissionMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
     if (!req.user) {
       res.status(403).json({ error: 'Forbidden' })
       return
     }
+    if (!(await ensureMfaEnrollment(req, res))) return
     // SUPER_ADMIN bypasses everything
     if (req.user.role === 'SUPER_ADMIN') {
       next()
@@ -56,11 +84,12 @@ export function requirePermission(permission: Permission) {
 }
 
 export function requireAnyPermission(permissions: Permission[] = []) {
-  return function permissionMiddleware(req: Request, res: Response, next: NextFunction): void {
+  return async function permissionMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
     if (!req.user) {
       res.status(403).json({ error: 'Forbidden' })
       return
     }
+    if (!(await ensureMfaEnrollment(req, res))) return
     if (req.user.role === 'SUPER_ADMIN') {
       next()
       return

@@ -8,9 +8,9 @@
   pointer-events: none;
   overflow: hidden;
   /* Dégradé statique en fond de base pour fallback */
-  background: radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary) 0%, rgba(0, 0, 0, 1) 60%),
-              radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary) 0%, rgba(0, 0, 0, 1) 60%),
-              #000000;
+  background:
+    radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary) 0%, rgba(0, 0, 0, 1) 60%),
+    radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary) 0%, rgba(0, 0, 0, 1) 60%), #000000;
   /* Optimisation GPU : forcer l'accélération matérielle */
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -18,10 +18,11 @@
 }
 
 /* Mode GPU OFF : rendre le fond strictement statique */
-.gradient-mesh-background.gpu-off-static {
-  background: radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary-soft) 0%, rgba(0, 0, 0, 1) 60%),
-              radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary-soft) 0%, rgba(0, 0, 0, 1) 60%),
-              #000000;
+.gradient-mesh-background.gpu-off-static,
+.gradient-mesh-background.reduced-motion-static {
+  background:
+    radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary-soft) 0%, rgba(0, 0, 0, 1) 60%),
+    radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary-soft) 0%, rgba(0, 0, 0, 1) 60%), #000000;
 }
 
 /* Couches de dégradés animés */
@@ -44,44 +45,28 @@
 
 /* Premier dégradé - Bleu cyan */
 .gradient-mesh-layer-1 {
-  background: radial-gradient(
-    circle at 20% 30%, 
-    var(--ambient-mesh-layer-1) 0%, 
-    transparent 50%
-  );
+  background: radial-gradient(circle at 20% 30%, var(--ambient-mesh-layer-1) 0%, transparent 50%);
   animation: float-1 40s linear infinite;
   animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 /* Deuxième dégradé - Bleu */
 .gradient-mesh-layer-2 {
-  background: radial-gradient(
-    circle at 80% 40%, 
-    var(--ambient-mesh-layer-2) 0%, 
-    transparent 50%
-  );
+  background: radial-gradient(circle at 80% 40%, var(--ambient-mesh-layer-2) 0%, transparent 50%);
   animation: float-2 50s linear infinite;
   animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 /* Troisième dégradé - Cyan */
 .gradient-mesh-layer-3 {
-  background: radial-gradient(
-    circle at 50% 70%, 
-    var(--ambient-mesh-layer-3) 0%, 
-    transparent 50%
-  );
+  background: radial-gradient(circle at 50% 70%, var(--ambient-mesh-layer-3) 0%, transparent 50%);
   animation: float-3 60s linear infinite;
   animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 /* Quatrième dégradé - Bleu foncé */
 .gradient-mesh-layer-4 {
-  background: radial-gradient(
-    circle at 70% 80%, 
-    var(--ambient-mesh-layer-4) 0%, 
-    transparent 50%
-  );
+  background: radial-gradient(circle at 70% 80%, var(--ambient-mesh-layer-4) 0%, transparent 50%);
   animation: float-4 45s linear infinite;
   animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
@@ -104,7 +89,8 @@
 
 /* Animations ultra-optimisées - mouvements minimaux */
 @keyframes float-1 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
   50% {
@@ -113,7 +99,8 @@
 }
 
 @keyframes float-2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
   50% {
@@ -122,7 +109,8 @@
 }
 
 @keyframes float-3 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
   50% {
@@ -131,7 +119,8 @@
 }
 
 @keyframes float-4 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
   50% {
@@ -174,20 +163,20 @@
     filter: blur(35px);
     opacity: 0.3;
   }
-  
+
   /* Ralentir drastiquement les animations sur mobile */
   .gradient-mesh-layer-1 {
     animation-duration: 60s;
   }
-  
+
   .gradient-mesh-layer-2 {
     animation-duration: 70s;
   }
-  
+
   .gradient-mesh-layer-3 {
     animation-duration: 80s;
   }
-  
+
   .gradient-mesh-layer-4 {
     animation-duration: 65s;
   }
@@ -199,18 +188,18 @@
     filter: blur(25px);
     opacity: 0.25;
   }
-  
+
   /* Désactiver les couches 3 et 4 sur très petits écrans */
   .gradient-mesh-layer-3,
   .gradient-mesh-layer-4 {
     display: none;
   }
-  
+
   /* Animations encore plus lentes */
   .gradient-mesh-layer-1 {
     animation-duration: 80s;
   }
-  
+
   .gradient-mesh-layer-2 {
     animation-duration: 90s;
   }
@@ -230,7 +219,7 @@
     filter: blur(30px);
     opacity: 0.3;
   }
-  
+
   .gradient-mesh-layer-3,
   .gradient-mesh-layer-4 {
     display: none;
@@ -240,13 +229,14 @@
 /* Version statique pour GPU très faible */
 @supports not (filter: blur(10px)) {
   .gradient-mesh-background {
-    background: linear-gradient(135deg, 
-      var(--ambient-mesh-primary-soft) 0%, 
+    background: linear-gradient(
+      135deg,
+      var(--ambient-mesh-primary-soft) 0%,
       rgba(0, 0, 0, 1) 50%,
       var(--ambient-mesh-secondary-soft) 100%
     );
   }
-  
+
   .gradient-mesh-layer {
     display: none;
   }
@@ -276,9 +266,9 @@ body.gpu-off .gradient-mesh-layer {
 
 body.gpu-off .gradient-mesh-background {
   /* Utiliser un fond statique simple */
-  background: radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary-soft) 0%, rgba(0, 0, 0, 1) 60%),
-              radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary-soft) 0%, rgba(0, 0, 0, 1) 60%),
-              #000000;
+  background:
+    radial-gradient(ellipse at 30% 40%, var(--ambient-mesh-primary-soft) 0%, rgba(0, 0, 0, 1) 60%),
+    radial-gradient(ellipse at 70% 60%, var(--ambient-mesh-secondary-soft) 0%, rgba(0, 0, 0, 1) 60%), #000000;
 }
 
 /* Désactiver aussi les animations de la navbar */

@@ -1,6 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import bcrypt from 'bcryptjs'
-import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
@@ -28,10 +27,6 @@ import { respondError } from './_middleware/errors.js'
 const router = express.Router()
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as const
-
-function isValidObjectId(id: unknown): boolean {
-  return typeof id === 'string' && mongoose.isValidObjectId(id)
-}
 
 function emit(req: Request, res: Response): boolean {
   const errors = validationResult(req)
@@ -288,22 +283,9 @@ router.post(
   async (req, res, next) => {
     if (emit(req, res)) return
     try {
-      const user = await User.findById(req.params.id)
-      if (!user) return respondError(res, 404, 'NOT_FOUND', 'User introuvable')
-      const wasEnabled = Boolean(user.twoFactorEnabled)
-      user.twoFactorEnabled = false
-      user.twoFactorSecret = null
-      await user.save()
-      res.locals.audit = {
-        entityType: 'User',
-        entityId: String(user._id),
-        entityRef: user.email,
-        summary: `2FA désactivé pour ${user.email}`,
-        before: { twoFactorEnabled: wasEnabled },
-        after: { twoFactorEnabled: false },
-        extra: { sensitive: '2FA_DISABLE_BY_AGENT' },
-      }
-      res.json({ ok: true, userId: String(user._id), twoFactorEnabled: false, wasEnabled })
+      // Agent PATs cannot satisfy an interactive MFA step-up. Keeping this
+      // endpoint would create a bypass around mandatory MFA.
+      return respondError(res, 403, 'MFA_STEP_UP_REQUIRED', 'La désactivation MFA doit être effectuée par l’utilisateur avec une vérification MFA interactive.')
     } catch (err) {
       next(err)
     }

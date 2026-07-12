@@ -68,7 +68,7 @@ router.post('/projects/:projectId/quotes', requirePermission(PERMISSIONS.MANAGE_
           quantity: Number(l.quantity) || 1,
           unitPrice: Number(l.unitPrice) || budgetAmount,
           taxRate: Number(l.taxRate) || 0,
-          total: Number(l.total) ?? (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
+          total: Number.isFinite(Number(l.total)) ? Number(l.total) : (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
         }))
       : [
           {
@@ -138,7 +138,7 @@ router.post('/projects/:projectId/invoices', requirePermission(PERMISSIONS.MANAG
           quantity: Number(l.quantity) || 1,
           unitPrice: Number(l.unitPrice) || budgetAmount,
           taxRate: Number(l.taxRate) || 0,
-          total: Number(l.total) ?? (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
+          total: Number.isFinite(Number(l.total)) ? Number(l.total) : (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
         }))
       : [
           {
@@ -230,7 +230,7 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_BILLING), async (req: 
         quantity: Number(l.quantity) || 1,
         unitPrice: Number(l.unitPrice) || 0,
         taxRate: Number(l.taxRate) || 0,
-        total: Number(l.total) ?? 0,
+        total: Number.isFinite(Number(l.total)) ? Number(l.total) : 0,
       }))
       doc.subtotal = doc.lines.reduce((s: number, l: any) => s + (l.total || 0), 0)
       doc.taxTotal = doc.lines.reduce((s: number, l: any) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)

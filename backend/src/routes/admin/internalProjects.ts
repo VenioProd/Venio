@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import mongoose from 'mongoose'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.js'
@@ -406,7 +407,7 @@ router.patch('/:projectId/missions/:missionId/my-progress', async (req: Request,
     const idx = mission.participants.findIndex(p => p.user.toString() === targetId)
     if (idx === -1) {
       // Créer le participant s'il n'existe pas (missions créées avant la migration)
-      mission.participants.push({ user: new (require('mongoose').Types.ObjectId)(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE', blocked: blocked ?? false, blockedReason: blockedReason ?? '' } as any)
+      mission.participants.push({ user: new mongoose.Types.ObjectId(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE', blocked: blocked ?? false, blockedReason: blockedReason ?? '' } as any)
     } else {
       if (progress !== undefined) mission.participants[idx].progress = Math.min(100, Math.max(0, Number(progress)))
       if (status !== undefined) mission.participants[idx].status = status
