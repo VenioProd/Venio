@@ -51,6 +51,10 @@ describe('public aggregate analytics', () => {
       .post('/api/public/analytics/event')
       .send({ event: 'page_view', path: '/admin', cta: 'nope' })
       .expect(400)
+    await request(app)
+      .post('/api/public/analytics/event')
+      .send({ event: 'admin_palette_selected', path: '/admin/crm', cta: 'create_lead' })
+      .expect(204)
 
     const report = await request(app).get('/api/admin/analytics/public-site').expect(200)
     const currentMonth = report.body.months.at(-1)

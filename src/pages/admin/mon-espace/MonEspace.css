@@ -13,6 +13,72 @@
   color: var(--primary);
 }
 
+.role-cockpit-focus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.role-cockpit-focus__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--primary);
+}
+
+.role-cockpit-focus__intro h2,
+.role-cockpit-focus__intro p {
+  margin: 0;
+}
+
+.role-cockpit-focus__intro h2 {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.role-cockpit-focus__intro > div > p:last-child {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.role-cockpit-focus__eyebrow {
+  color: var(--primary) !important;
+  font-size: 0.68rem !important;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.role-cockpit-focus__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.role-cockpit-focus__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+
+.role-cockpit-focus__action:hover,
+.role-cockpit-focus__action:focus-visible {
+  border-color: var(--primary);
+  background: var(--accent-surface);
+}
+
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -71,6 +137,15 @@
 }
 
 @media (max-width: 900px) {
+  .role-cockpit-focus {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .role-cockpit-focus__actions {
+    justify-content: flex-start;
+  }
+
   .bento-grid {
     grid-template-columns: 1fr;
   }

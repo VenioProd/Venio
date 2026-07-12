@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Settings, Check } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
+import RoleCockpitFocus from '../../../components/RoleCockpitFocus'
 import BentoGrid from './BentoGrid'
 import { renderWidget } from './widgets'
 import { OverviewProvider } from './widgets/OverviewWidgets'
@@ -81,6 +82,8 @@ export default function MonEspace() {
           )}
         </button>
       </div>
+
+      <RoleCockpitFocus />
 
       {editing && disabledKeys.length > 0 && (
         <div className="mon-espace__drawer">

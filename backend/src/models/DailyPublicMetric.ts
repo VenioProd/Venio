@@ -7,6 +7,10 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   'contact_form_submitted',
   'contact_form_succeeded',
   'contact_form_failed',
+  'admin_cockpit_viewed',
+  'admin_navigation_selected',
+  'admin_palette_opened',
+  'admin_palette_selected',
 ] as const
 
 export type PublicAnalyticsEvent = (typeof PUBLIC_ANALYTICS_EVENTS)[number]
