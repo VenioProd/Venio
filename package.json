@@ -23,6 +23,9 @@
     "test:frontend": "vitest run",
     "test:backend": "npm --prefix backend test",
     "test:all": "npm run test:frontend && npm run test:backend",
+    "test:admin-role-recipe": "vitest run src/lib/__tests__/admin-role-recipe.test.ts && npm --prefix backend test -- admin-role-recipe.test.ts",
+    "report:admin-role-recipe": "node scripts/generate-admin-role-recipe-report.mjs",
+    "recipe:admin-roles": "npm run test:admin-role-recipe && node scripts/generate-admin-role-recipe-report.mjs --validated",
     "test:watch": "vitest",
     "prepare": "husky",
     "commitlint": "commitlint --edit"

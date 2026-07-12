@@ -6,7 +6,7 @@ import { requireAdmin } from '../../middleware/role.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import AuditLog from '../../models/AuditLog.js'
-import { createRecoveryCodes, consumeRecoveryCode, graceEndsAt, verifyTotp } from '../../lib/mfa.js'
+import { createRecoveryCodes, consumeRecoveryCode, createTotpSecret, graceEndsAt, verifyTotp } from '../../lib/mfa.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { revokeSession, readSessionCookie, setSessionCookie } from '../../lib/session.js'
 
@@ -25,10 +25,8 @@ router.post('/setup', async (req: Request, res: Response, next: NextFunction) =>
       return res.status(400).json({ error: '2FA déjà activé' })
     }
 
-    // Generate a random base32 secret
-    const bytes = new Uint8Array(20)
-    crypto.getRandomValues(bytes)
-    const secret = Buffer.from(bytes).toString('base64url').slice(0, 20).toUpperCase()
+    // OTPAuth accepts RFC 4648 base32 secrets only.
+    const secret = createTotpSecret()
 
     const totp = new TOTP({
       issuer: 'Venio',

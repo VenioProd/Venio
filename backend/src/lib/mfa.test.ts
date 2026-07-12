@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { consumeRecoveryCode, createRecoveryCodes, isMfaEnrollmentRoute, requiresMfa } from './mfa.js'
+import { consumeRecoveryCode, createRecoveryCodes, createTotpSecret, isMfaEnrollmentRoute, requiresMfa } from './mfa.js'
 
 describe('MFA helpers', () => {
   it('requires MFA only for privileged administrator roles', () => {
@@ -20,6 +20,11 @@ describe('MFA helpers', () => {
 
     const replay = await consumeRecoveryCode(firstUse.hashes, codes[0])
     expect(replay.valid).toBe(false)
+  })
+
+  it('creates a TOTP secret using only RFC 4648 base32 characters', () => {
+    const secret = createTotpSecret()
+    expect(secret).toMatch(/^[A-Z2-7]{32}$/)
   })
 
   it('exempts only enrollment routes from mandatory MFA setup gating', () => {
