@@ -24,6 +24,71 @@ export interface Intern {
   updatedAt: string
 }
 
+export interface AdminUser {
+  _id: string
+  name: string
+  role: string
+  email?: string
+}
+
+export interface InternFormData {
+  name: string
+  email: string
+  phone: string
+  password: string
+  type: 'STAGIAIRE' | 'ALTERNANT'
+  poste: string
+  departement: string
+  dateDebut: string
+  dateFin: string
+  tuteur: string
+  ecole: string
+  formation: string
+  notes: string
+  joursPresence: string[]
+}
+
+export const INTERN_DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+const DEFAULT_INTERN_DAYS = INTERN_DAYS.slice(0, 5)
+
+export function createEmptyInternForm(): InternFormData {
+  return {
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    type: 'STAGIAIRE',
+    poste: '',
+    departement: '',
+    dateDebut: '',
+    dateFin: '',
+    tuteur: '',
+    ecole: '',
+    formation: '',
+    notes: '',
+    joursPresence: [...DEFAULT_INTERN_DAYS],
+  }
+}
+
+export function internFormFromIntern(intern: Intern): InternFormData {
+  return {
+    name: intern.userId.name,
+    email: intern.userId.email,
+    phone: intern.userId.phone || '',
+    password: '',
+    type: intern.type || 'STAGIAIRE',
+    poste: intern.poste,
+    departement: intern.departement,
+    dateDebut: intern.dateDebut.split('T')[0],
+    dateFin: intern.dateFin.split('T')[0],
+    tuteur: intern.tuteur?._id || '',
+    ecole: intern.ecole,
+    formation: intern.formation,
+    notes: intern.notes,
+    joursPresence: intern.joursPresence?.length ? intern.joursPresence : [...DEFAULT_INTERN_DAYS],
+  }
+}
+
 export interface ReportFile {
   filename: string
   originalName: string
@@ -64,7 +129,13 @@ export function formatDate(d: string) {
 }
 
 export function formatDateTime(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 export function formatFileSize(bytes: number) {
@@ -73,7 +144,9 @@ export function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
 }
 
-export function isImage(mime: string) { return mime.startsWith('image/') }
+export function isImage(mime: string) {
+  return mime.startsWith('image/')
+}
 
 export function daysRemaining(dateFin: string) {
   const now = new Date()
