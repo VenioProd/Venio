@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { loadJsPdf } from '../../lib/loadPdf'
 import { fetchGestionKpi } from '../../services/gestion'
 import type { GestionKpi as GestionKpiType, KpiPeriod } from '../../types/gestion.types'
 
@@ -39,7 +40,7 @@ export default function GestionKpi() {
 
   const exportPdf = async () => {
     if (!kpi) return
-    const { jsPDF } = await import('jspdf')
+    const jsPDF = await loadJsPdf()
     const doc = new jsPDF()
     const now = new Date().toLocaleDateString('fr-FR')
     let y = 20
