@@ -17,6 +17,7 @@ Index de la documentation. Pour le démarrage rapide (install, scripts, stack), 
 | [operations/ADMIN_ROLE_RECIPE.md](./operations/ADMIN_ROLE_RECIPE.md) | Recette de release admin multi-rôles (VENIO-104) |
 | [optimisation/](./optimisation/) | Performance GPU, SEO, bundles |
 | [public/ANALYTICS_SEO_QUALITY.md](./public/ANALYTICS_SEO_QUALITY.md) | Mesure privacy-first, Search Console et recette publique |
+| [security/DATA_GOVERNANCE.md](./security/DATA_GOVERNANCE.md) | Registre des données admin, rétention, exports, RGPD et réponse à incident |
 | [PARALLAX.md](./PARALLAX.md) | Effet parallax |
 | [projet/](./projet/) | Contenu projet, éditorial, tests |
 | [roadmap/](./roadmap/) | Feuille de route produit |

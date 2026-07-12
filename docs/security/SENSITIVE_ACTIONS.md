@@ -8,7 +8,7 @@ métier : elle ajoute une preuve d'intention, un step-up et une trace commune.
 | Niveau   | Actions P0                                                                                                                     | Garde-fous                                                                    |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
 | Élevé    | suppressions de projets client/dev, suppression d'écriture brouillon                                                           | confirmation typée, step-up de session                                        |
-| Haut     | export FEC, création/modification d'accès outil                                                                                | confirmation typée, step-up de session, audit ; alerte quand pertinente       |
+| Haut     | export FEC, rapports CSV comptables, exports CSV pédagogiques, création/modification d'accès outil                            | confirmation typée, step-up de session, audit ; alerte quand pertinente       |
 | Critique | création/modification/révocation de PAT, révélation/suppression d'accès outil, création/rotation/suppression de source externe | confirmation typée, step-up MFA, audit append-only et alerte quand pertinente |
 
 ## Contrat HTTP
@@ -43,3 +43,8 @@ Les suppressions de ressources non-P0 (tickets, tâches, documents, contenus
 pédagogiques, etc.) ne sont pas encore enrôlées : elles restent couvertes par
 leur RBAC existant et doivent être migrées action par action, avec une décision
 produit sur leur niveau de réversibilité.
+
+Le registre des catégories, durées, exports et procédures est dans
+[`DATA_GOVERNANCE.md`](./DATA_GOVERNANCE.md). Les exports CSV comptables et
+pédagogiques y sont qualifiés sensibles ; le garde-fou n'élargit pas leur RBAC
+existant.
