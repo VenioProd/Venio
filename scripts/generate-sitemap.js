@@ -14,7 +14,7 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 ${publicRoutes
   .map(
     (route) => `  <url>
-    <loc>${SITE_URL}${route.path}</loc>
+    <loc>${SITE_URL}${route.path || '/'}</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>${route.changefreq}</changefreq>
     <priority>${route.priority}</priority>

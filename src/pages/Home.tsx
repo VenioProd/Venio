@@ -149,7 +149,7 @@ const Home = () => {
             <a className="mh-btn mh-btn--lime" href="#mh-sites">
               Voir les offres <span className="mh-ar">↓</span>
             </a>
-            <Link className="mh-link" to="/contact">
+            <Link className="mh-link" to="/contact" data-analytics-cta="home_hero_contact">
               Parlons
             </Link>
           </div>
@@ -293,7 +293,7 @@ const Home = () => {
           <h2 className="mh-cta-title mh-reveal">
             Parlons<span className="mh-dot">.</span>
           </h2>
-          <Link className="mh-cta-go mh-reveal" to="/contact">
+          <Link className="mh-cta-go mh-reveal" to="/contact" data-analytics-cta="home_final_contact">
             Prendre contact <span className="mh-ar">→</span>
           </Link>
         </div>

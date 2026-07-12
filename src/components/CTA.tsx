@@ -6,15 +6,16 @@ const CTA = () => {
   return (
     <section className="cta-section">
       <h2 className="cta-title">
-        Construisons ensemble<br />quelque chose de solide
+        Construisons ensemble
+        <br />
+        quelque chose de solide
       </h2>
-      <p className="cta-text">
-        Discutons de votre projet avec lucidité. Sans discours creux.
-      </p>
-      <Link to="/contact" className="hero-cta">Prendre contact →</Link>
+      <p className="cta-text">Discutons de votre projet avec lucidité. Sans discours creux.</p>
+      <Link to="/contact" className="hero-cta" data-analytics-cta="shared_cta_contact">
+        Prendre contact →
+      </Link>
     </section>
   )
 }
 
 export default CTA
-

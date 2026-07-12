@@ -54,7 +54,7 @@ for (const route of publicRoutes) {
 
 const sitemap = readFileSync(join(distDir, 'sitemap.xml'), 'utf8')
 for (const route of publicRoutes) {
-  const loc = `${SITE_URL}${route.path}`
+  const loc = `${SITE_URL}${route.path || '/'}`
   if (!sitemap.includes(`<loc>${loc}</loc>`)) failures.push(`sitemap.xml: missing ${loc}`)
 }
 

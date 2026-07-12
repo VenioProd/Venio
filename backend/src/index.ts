@@ -46,6 +46,7 @@ import adminQualiopiRoutes from './routes/admin/qualiopi.js'
 import adminQualiopiQuestRoutes from './routes/admin/qualiopiQuestionnaires.js'
 import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import publicContactRoutes from './routes/public/contact.js'
+import publicAnalyticsRoutes from './routes/public/analytics.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
@@ -193,7 +194,13 @@ app.use(
     autoLogging: {
       ignore: (req: IncomingMessage) => {
         const url = req.url ?? ''
-        return url === '/api/health' || url.startsWith('/api/avatars/') || url.startsWith('/assets/')
+        return (
+          url === '/api/health' ||
+          url.startsWith('/api/avatars/') ||
+          url.startsWith('/api/assets/') ||
+          url.startsWith('/assets/') ||
+          url.startsWith('/api/public/analytics/')
+        )
       },
     },
   }),
@@ -284,6 +291,7 @@ app.use('/api/admin/qualiopi', adminQualiopiRoutes)
 app.use('/api/admin/qualiopi-questionnaires', adminQualiopiQuestRoutes)
 app.use('/api/questionnaire', publicQuestionnaireRoutes)
 app.use('/api/contact', publicContactRoutes)
+app.use('/api/public/analytics', publicAnalyticsRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
