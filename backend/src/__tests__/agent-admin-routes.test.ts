@@ -117,6 +117,7 @@ vi.mock('../middleware/auth.js', () => ({
       role: 'SUPER_ADMIN',
       email: 'admin@venio.paris',
       name: 'Admin Test',
+      mfaVerifiedAt: Date.now(),
     }
     next()
   },
@@ -136,6 +137,14 @@ async function buildApp() {
   const { default: adminAgentTokenRoutes } = await import('../routes/admin/agentTokens.js')
   const app = express()
   app.use(express.json())
+  // Les tests de handler gardent la confirmation valide afin d'isoler les
+  // validations métier. Le contrat du garde-fou est couvert en intégration.
+  app.use((req, _res, next) => {
+    if (req.method === 'POST' && req.path.endsWith('/revoke')) req.headers['x-venio-confirm'] = 'AGENT_TOKEN_REVOKE'
+    else if (req.method === 'POST') req.headers['x-venio-confirm'] = 'AGENT_TOKEN_CREATE'
+    else if (req.method === 'PATCH') req.headers['x-venio-confirm'] = 'AGENT_TOKEN_UPDATE'
+    next()
+  })
   app.use('/api/admin/agent-tokens', adminAgentTokenRoutes)
   return app
 }
@@ -176,9 +185,7 @@ describe('Admin agent-tokens / POST /', () => {
 
   it('rejects an empty scopes array', async () => {
     const app = await buildApp()
-    const res = await request(app)
-      .post('/api/admin/agent-tokens')
-      .send({ name: 'Bad', scopes: [] })
+    const res = await request(app).post('/api/admin/agent-tokens').send({ name: 'Bad', scopes: [] })
     expect(res.status).toBe(400)
   })
 

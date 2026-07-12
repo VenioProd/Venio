@@ -8,16 +8,13 @@ import { requireSuperAdmin } from '../../middleware/role.js'
 import AgentToken from '../../models/AgentToken.js'
 import AuditLog from '../../models/AuditLog.js'
 import User from '../../models/User.js'
-import {
-  AGENT_SCOPES,
-  findUnknownScopes,
-  ADMIN_WILDCARD_SCOPE,
-} from '../../lib/agent/scopes.js'
+import { AGENT_SCOPES, findUnknownScopes, ADMIN_WILDCARD_SCOPE } from '../../lib/agent/scopes.js'
 import { generateAgentToken } from '../../lib/agent/tokens.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 import { ensureGeneralChannel } from '../../services/internalMessaging.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
+import { sensitiveAction } from '../../lib/security/sensitiveActions.js'
 
 /**
  * Routes admin pour la gestion des tokens d'API agent (Personal Access Tokens).
@@ -85,7 +82,7 @@ router.get(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -117,6 +114,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 router.post(
   '/',
+  sensitiveAction('AGENT_TOKEN_CREATE'),
   body('name').isString().trim().isLength({ min: 1, max: 120 }).withMessage('Nom requis (max 120 chars)'),
   body('scopes').isArray({ min: 1 }).withMessage('Au moins un scope est requis'),
   body('rateLimitPerMin').optional().isInt({ min: 1, max: 10000 }).withMessage('rateLimitPerMin entre 1 et 10000'),
@@ -170,7 +168,7 @@ router.post(
         })
       } catch (err) {
         await User.deleteOne({ _id: agentUser._id }).catch((e) =>
-          logger.warn({ data: (e as Error).message }, '[agent-token-create] rollback failed:')
+          logger.warn({ data: (e as Error).message }, '[agent-token-create] rollback failed:'),
         )
         return next(err)
       }
@@ -202,9 +200,7 @@ router.post(
       })
 
       // Renvoyer le token sans le hash mais AVEC le plainSecret (une seule fois)
-      const tokenSafe = await AgentToken.findById(token._id)
-        .populate('createdBy', 'email name')
-        .lean()
+      const tokenSafe = await AgentToken.findById(token._id).populate('createdBy', 'email name').lean()
 
       // Notif sécurité aux super admins
       notifySuperAdmins({
@@ -224,7 +220,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -251,7 +247,7 @@ router.get(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -260,11 +256,15 @@ router.get(
 
 router.patch(
   '/:id',
+  sensitiveAction('AGENT_TOKEN_UPDATE'),
   param('id').isMongoId().withMessage('ID invalide'),
   body('name').optional().isString().trim().isLength({ min: 1, max: 120 }),
   body('scopes').optional().isArray({ min: 1 }),
   body('rateLimitPerMin').optional().isInt({ min: 1, max: 10000 }),
-  body('expiresAt').optional({ nullable: true }).custom((v) => v === null || !Number.isNaN(Date.parse(v))).withMessage('Date invalide'),
+  body('expiresAt')
+    .optional({ nullable: true })
+    .custom((v) => v === null || !Number.isNaN(Date.parse(v)))
+    .withMessage('Date invalide'),
   body('notes').optional().isString().isLength({ max: 1000 }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -316,10 +316,9 @@ router.patch(
 
       // Propage le rename au User AGENT lié, s'il y a eu un changement de nom.
       if (typeof req.body.name === 'string' && token.userId) {
-        await User.updateOne(
-          { _id: token.userId },
-          { $set: { name: token.name } }
-        ).catch((err) => logger.warn({ data: (err as Error).message }, '[agent-token-patch] user rename failed:'))
+        await User.updateOne({ _id: token.userId }, { $set: { name: token.name } }).catch((err) =>
+          logger.warn({ data: (err as Error).message }, '[agent-token-patch] user rename failed:'),
+        )
       }
 
       void recordAudit({
@@ -339,14 +338,12 @@ router.patch(
         },
       })
 
-      const safe = await AgentToken.findById(token._id)
-        .populate('createdBy', 'email name')
-        .lean()
+      const safe = await AgentToken.findById(token._id).populate('createdBy', 'email name').lean()
       return res.json({ token: safe })
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -355,6 +352,7 @@ router.patch(
 
 router.post(
   '/:id/revoke',
+  sensitiveAction('AGENT_TOKEN_REVOKE'),
   param('id').isMongoId().withMessage('ID invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -384,7 +382,7 @@ router.post(
       if (token.userId) {
         await User.updateOne(
           { _id: token.userId },
-          { $set: { isActive: false, name: `[Révoqué] ${token.name}` } }
+          { $set: { isActive: false, name: `[Révoqué] ${token.name}` } },
         ).catch((err) => logger.warn({ data: (err as Error).message }, '[agent-token-revoke] user deactivate failed:'))
       }
 
@@ -416,7 +414,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 export default router

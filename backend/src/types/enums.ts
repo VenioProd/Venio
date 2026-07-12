@@ -128,6 +128,7 @@ export type NotificationType =
   | 'TWO_FACTOR_DISABLED'
   | 'AGENT_TOKEN_CREATED'
   | 'AGENT_TOKEN_REVOKED'
+  | 'SENSITIVE_ACTION_EXECUTED'
   // Briefs (mission briefs)
   | 'BRIEF_ASSIGNED'
   | 'BRIEF_STATUS_CHANGED'
@@ -184,6 +185,7 @@ export type AuditAction =
   | 'AGENT_AUTH_SUCCESS'
   | 'AGENT_AUTH_FAIL'
   | 'AGENT_API_MUTATION'
+  | 'SENSITIVE_ACTION_EXECUTED'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

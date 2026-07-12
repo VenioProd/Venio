@@ -59,6 +59,7 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'AGENT_AUTH_SUCCESS',
         'AGENT_AUTH_FAIL',
         'AGENT_API_MUTATION',
+        'SENSITIVE_ACTION_EXECUTED',
       ],
     },
     ip: { type: String, default: '' },
