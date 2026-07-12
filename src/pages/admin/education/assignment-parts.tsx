@@ -47,7 +47,7 @@ import {
   searchEducation,
   studentDisplayName,
   formatDate,
-  assignmentExportUrl,
+  downloadAssignmentExport,
   CLASS_STATUS_LABEL,
   SESSION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL,
@@ -514,15 +514,18 @@ export function AssignmentDetailDrawer({
                 Mode correction
               </button>
             )}
-            <a
+            <button
               className="edu-btn ghost"
-              href={assignmentExportUrl(assignmentId)}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() =>
+                void downloadAssignmentExport(assignmentId).catch(() => {
+                  // Le parcours de téléchargement affiche déjà les erreurs API
+                  // dans les surfaces qui le pilotent ; ici il ne doit pas fermer le tiroir.
+                })
+              }
               title="Exporter les corrections en CSV"
             >
               Export CSV
-            </a>
+            </button>
             <button className="edu-btn-icon" onClick={onClose}>
               <X size={18} />
             </button>

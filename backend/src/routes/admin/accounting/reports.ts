@@ -11,11 +11,14 @@ import { getBalanceSheet } from '../../../lib/accounting/reports/balanceSheet.js
 import { getIncomeStatement } from '../../../lib/accounting/reports/incomeStatement.js'
 import { getAccountingDashboard } from '../../../lib/accounting/reports/dashboard.js'
 import { buildCsv, type CsvCell } from '../../../lib/accounting/csvExport.js'
+import { sensitiveActionWhen } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
+
+const protectCsvExport = sensitiveActionWhen('ACCOUNTING_REPORT_EXPORT', (req) => req.query.format === 'csv')
 
 // Helpers locaux ----------------------------------------------------------
 
@@ -55,6 +58,7 @@ function handleBusinessError(res: Response, next: NextFunction, err: unknown): v
 router.get(
   '/general-ledger',
   requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
+  protectCsvExport,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { accountCode, fiscalYear, format } = req.query as Record<string, string | undefined>
@@ -100,18 +104,7 @@ router.get(
             m.lettrage,
             m.entryStatus,
           ]),
-          [
-            '',
-            '',
-            '',
-            '',
-            'TOTAUX',
-            ledger.totals.debit,
-            ledger.totals.credit,
-            ledger.totals.closingBalance,
-            '',
-            '',
-          ],
+          ['', '', '', '', 'TOTAUX', ledger.totals.debit, ledger.totals.credit, ledger.totals.closingBalance, '', ''],
         ]
         const csv = buildCsv(headers, rows)
         sendCsv(res, `grand-livre-${ledger.account.code}.csv`, csv)
@@ -121,7 +114,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // -------------------------------------------------------------------------
@@ -130,12 +123,10 @@ router.get(
 router.get(
   '/balance',
   requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
+  protectCsvExport,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { fiscalYear, accountClass, includeZero, format } = req.query as Record<
-        string,
-        string | undefined
-      >
+      const { fiscalYear, accountClass, includeZero, format } = req.query as Record<string, string | undefined>
       const from = parseDateParam(req.query.from)
       const to = parseDateParam(req.query.to)
 
@@ -169,7 +160,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // -------------------------------------------------------------------------
@@ -178,6 +169,7 @@ router.get(
 router.get(
   '/balance-sheet',
   requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
+  protectCsvExport,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fiscalYear, format } = req.query as Record<string, string | undefined>
@@ -206,7 +198,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // -------------------------------------------------------------------------
@@ -215,6 +207,7 @@ router.get(
 router.get(
   '/income-statement',
   requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
+  protectCsvExport,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fiscalYear, format } = req.query as Record<string, string | undefined>
@@ -243,7 +236,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // -------------------------------------------------------------------------
@@ -259,7 +252,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // -------------------------------------------------------------------------
@@ -298,9 +291,7 @@ router.get(
       }
       if (fiscalYear) entryFilter.fiscalYear = fiscalYear
 
-      const entries = await AccountingEntry.find(entryFilter)
-        .sort({ date: 1, entryNumber: 1 })
-        .lean()
+      const entries = await AccountingEntry.find(entryFilter).sort({ date: 1, entryNumber: 1 }).lean()
 
       const entryIds = entries.map((e) => e._id)
       const lines = await AccountingLine.find({ entry: { $in: entryIds } })
@@ -334,7 +325,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 export default router

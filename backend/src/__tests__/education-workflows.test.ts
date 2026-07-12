@@ -26,6 +26,9 @@ vi.mock('../middleware/role.js', () => ({
   requireAnyPermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
   default: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
+vi.mock('../lib/security/sensitiveActions.js', () => ({
+  sensitiveAction: () => (_req: Request, _res: Response, next: NextFunction) => next(),
+}))
 
 let app: Express
 
@@ -62,7 +65,7 @@ async function seedClassWithStudents(name = 'BTS Communication 1A', school = 'ES
 }
 
 describe('VENIO-30 correction groupée — bulk submissions', () => {
-  it('met à jour plusieurs soumissions en une seule requête, recalcule la moyenne et logge l\'activité', async () => {
+  it("met à jour plusieurs soumissions en une seule requête, recalcule la moyenne et logge l'activité", async () => {
     const { classId, studentIds } = await seedClassWithStudents()
     const a = await request(app)
       .post('/api/admin/education/assignments')
@@ -101,16 +104,18 @@ describe('VENIO-30 correction groupée — bulk submissions', () => {
 
     const r = await request(app)
       .patch(`/api/admin/education/assignments/${aid}/submissions/bulk`)
-      .send({ updates: [
-        { studentId: studentIds[0], status: 'RENDU' },
-        { studentId: 'not-an-id', status: 'RENDU' },
-        { studentId: studentIds[1], status: 'RENDU' },
-      ] })
+      .send({
+        updates: [
+          { studentId: studentIds[0], status: 'RENDU' },
+          { studentId: 'not-an-id', status: 'RENDU' },
+          { studentId: studentIds[1], status: 'RENDU' },
+        ],
+      })
       .expect(200)
     expect(r.body.updated).toBe(2)
   })
 
-  it('persiste la rubric et les feedbackSnippets sur l\'assignment', async () => {
+  it("persiste la rubric et les feedbackSnippets sur l'assignment", async () => {
     const { classId } = await seedClassWithStudents('Pp', 'X', 1)
     const a = await request(app)
       .post('/api/admin/education/assignments')
@@ -143,15 +148,15 @@ describe('VENIO-35 export CSV', () => {
       .expect(201)
     await request(app)
       .patch(`/api/admin/education/assignments/${a.body.assignment._id}/submissions/bulk`)
-      .send({ updates: [
-        { studentId: studentIds[0], status: 'CORRIGE', grade: 12, feedback: 'OK' },
-        { studentId: studentIds[1], status: 'CORRIGE', grade: 17, feedback: 'Bien' },
-      ] })
+      .send({
+        updates: [
+          { studentId: studentIds[0], status: 'CORRIGE', grade: 12, feedback: 'OK' },
+          { studentId: studentIds[1], status: 'CORRIGE', grade: 17, feedback: 'Bien' },
+        ],
+      })
       .expect(200)
 
-    const r = await request(app)
-      .get(`/api/admin/education/assignments/${a.body.assignment._id}/export.csv`)
-      .expect(200)
+    const r = await request(app).get(`/api/admin/education/assignments/${a.body.assignment._id}/export.csv`).expect(200)
     expect(r.headers['content-type']).toContain('text/csv')
     expect(r.headers['content-disposition']).toContain('attachment')
     const body = r.text || (r.body as Buffer).toString('utf8')
@@ -169,15 +174,15 @@ describe('VENIO-35 export CSV', () => {
       .expect(201)
     await request(app)
       .patch(`/api/admin/education/sessions/${session.body.session._id}/attendance`)
-      .send({ attendance: [
-        { studentId: studentIds[0], state: 'PRESENT', comment: '' },
-        { studentId: studentIds[1], state: 'ABSENT', comment: 'Justifié' },
-      ] })
+      .send({
+        attendance: [
+          { studentId: studentIds[0], state: 'PRESENT', comment: '' },
+          { studentId: studentIds[1], state: 'ABSENT', comment: 'Justifié' },
+        ],
+      })
       .expect(200)
 
-    const r = await request(app)
-      .get(`/api/admin/education/sessions/${session.body.session._id}/export.csv`)
-      .expect(200)
+    const r = await request(app).get(`/api/admin/education/sessions/${session.body.session._id}/export.csv`).expect(200)
     const body = r.text || (r.body as Buffer).toString('utf8')
     expect(body).toContain('PRESENT')
     expect(body).toContain('ABSENT')
@@ -220,7 +225,9 @@ describe('VENIO-33 recherche avancée', () => {
       .expect(201)
 
     const r = await request(app)
-      .get(`/api/admin/education/search/advanced?entity=sessions&from=${new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()}`)
+      .get(
+        `/api/admin/education/search/advanced?entity=sessions&from=${new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()}`,
+      )
       .expect(200)
     const titles = r.body.results.sessions.map((s: { title: string }) => s.title)
     expect(titles).toContain('Future')

@@ -1,4 +1,5 @@
-import { apiFetch, apiUpload } from '../lib/api'
+import { apiDownload, apiFetch, apiUpload } from '../lib/api'
+import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../lib/sensitiveActions'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -514,6 +515,31 @@ export function assignmentExportUrl(assignmentId: string): string {
 
 export function sessionExportUrl(sessionId: string): string {
   return `${base}/sessions/${sessionId}/export.csv`
+}
+
+function saveDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+export async function downloadAssignmentExport(assignmentId: string): Promise<void> {
+  const { blob, filename } = await apiDownload(assignmentExportUrl(assignmentId), {
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EDUCATION_ASSIGNMENT_EXPORT),
+  })
+  saveDownload(blob, filename ?? 'corrections.csv')
+}
+
+export async function downloadSessionExport(sessionId: string): Promise<void> {
+  const { blob, filename } = await apiDownload(sessionExportUrl(sessionId), {
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EDUCATION_SESSION_EXPORT),
+  })
+  saveDownload(blob, filename ?? 'presences.csv')
 }
 
 // Notes

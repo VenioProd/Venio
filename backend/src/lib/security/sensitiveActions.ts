@@ -38,6 +38,9 @@ export type SensitiveActionId =
   | 'PROJECT_DELETE'
   | 'DEV_PROJECT_DELETE'
   | 'FEC_EXPORT'
+  | 'ACCOUNTING_REPORT_EXPORT'
+  | 'EDUCATION_ASSIGNMENT_EXPORT'
+  | 'EDUCATION_SESSION_EXPORT'
   | 'ACCOUNTING_ENTRY_DELETE'
   | 'EXTERNAL_SOURCE_CREATE'
   | 'EXTERNAL_SOURCE_ROTATE'
@@ -115,6 +118,24 @@ export const SENSITIVE_ACTIONS: Record<SensitiveActionId, SensitiveActionPolicy>
     stepUp: 'SESSION',
     notifySuperAdmins: true,
     summary: 'Export du fichier des écritures comptables',
+  },
+  ACCOUNTING_REPORT_EXPORT: {
+    level: 'HIGH',
+    confirmation: 'TYPED',
+    stepUp: 'SESSION',
+    summary: 'Export CSV d’un rapport comptable',
+  },
+  EDUCATION_ASSIGNMENT_EXPORT: {
+    level: 'HIGH',
+    confirmation: 'TYPED',
+    stepUp: 'SESSION',
+    summary: 'Export CSV des corrections pédagogiques',
+  },
+  EDUCATION_SESSION_EXPORT: {
+    level: 'HIGH',
+    confirmation: 'TYPED',
+    stepUp: 'SESSION',
+    summary: 'Export CSV des présences pédagogiques',
   },
   ACCOUNTING_ENTRY_DELETE: {
     level: 'HIGH',
@@ -222,5 +243,21 @@ export function sensitiveAction(action: SensitiveActionId) {
       }
     })
     next()
+  }
+}
+
+/**
+ * Applique un garde-fou uniquement quand un prédicat de requête est satisfait.
+ * Les routes de rapport restent ainsi consultables en JSON avec leur RBAC
+ * existant, tandis que leur variante téléchargeable est tracée comme export.
+ */
+export function sensitiveActionWhen(action: SensitiveActionId, predicate: (req: Request) => boolean) {
+  const middleware = sensitiveAction(action)
+  return function conditionalSensitiveAction(req: Request, res: Response, next: NextFunction): void {
+    if (!predicate(req)) {
+      next()
+      return
+    }
+    void middleware(req, res, next)
   }
 }

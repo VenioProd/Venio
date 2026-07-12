@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import { EducationSession, EducationClass, EducationStudent } from '../../../models/education/index.js'
 import { logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
+import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
 
@@ -22,7 +23,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       EducationSession.countDocuments(filter),
     ])
     res.json({ sessions: items, total })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // POST /
@@ -57,7 +60,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     await logActivity(req.user!.id, req.user!.id, 'session', created._id, 'CREATE', { classId })
     res.status(201).json({ session: created })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /:id
@@ -69,7 +74,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       .populate('attendance.studentId', 'firstName lastName')
     if (!item) return res.status(404).json({ error: 'Séance introuvable' })
     res.json({ session: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // PATCH /:id
@@ -94,7 +101,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', {})
     res.json({ session: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // PATCH /:id/attendance — bulk update présence
@@ -143,14 +152,16 @@ router.patch('/:id/attendance', async (req: Request, res: Response, next: NextFu
         }
         await EducationStudent.updateOne(
           { _id: sid, owner: req.user!.id },
-          { attendanceCount: present, absenceCount: absent, lateCount: late }
+          { attendanceCount: present, absenceCount: absent, lateCount: late },
         )
       }
     }
 
     await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', { kind: 'attendance' })
     res.json({ session: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // DELETE /:id
@@ -163,41 +174,52 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'DELETE', {})
     res.json({ success: true })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /:id/export.csv — export CSV présence + récap
-router.get('/:id/export.csv', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
-    const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
-      .populate('classId', 'name school')
-    if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+router.get(
+  '/:id/export.csv',
+  sensitiveAction('EDUCATION_SESSION_EXPORT'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+      const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate(
+        'classId',
+        'name school',
+      )
+      if (!item) return res.status(404).json({ error: 'Séance introuvable' })
 
-    const students = await EducationStudent.find({
-      _id: { $in: item.attendance.map((a) => a.studentId) },
-      ...ownerFilter(req),
-    }).select('firstName lastName email externalId')
-    const map = new Map(students.map((s) => [s._id.toString(), s]))
+      const students = await EducationStudent.find({
+        _id: { $in: item.attendance.map((a) => a.studentId) },
+        ...ownerFilter(req),
+      }).select('firstName lastName email externalId')
+      const map = new Map(students.map((s) => [s._id.toString(), s]))
 
-    const headers = ['Etudiant', 'Email', 'Identifiant', 'Présence', 'Commentaire']
-    const rows = item.attendance.map((a) => {
-      const stu = map.get(a.studentId.toString())
-      const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
-      return [name, stu?.email || '', stu?.externalId || '', a.state, a.comment || '']
-    })
+      const headers = ['Etudiant', 'Email', 'Identifiant', 'Présence', 'Commentaire']
+      const rows = item.attendance.map((a) => {
+        const stu = map.get(a.studentId.toString())
+        const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
+        return [name, stu?.email || '', stu?.externalId || '', a.state, a.comment || '']
+      })
 
-    const csv = toCsv([headers, ...rows])
-    const klassName = item.classId && typeof item.classId === 'object'
-      ? (item.classId as unknown as { name?: string }).name || 'classe'
-      : 'classe'
-    const dateSlug = new Date(item.date).toISOString().slice(0, 10)
-    const fname = `seance-${slugify(klassName)}-${dateSlug}-${slugify(item.title)}.csv`
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`)
-    res.send('﻿' + csv)
-  } catch (err) { next(err) }
-})
+      const csv = toCsv([headers, ...rows])
+      const klassName =
+        item.classId && typeof item.classId === 'object'
+          ? (item.classId as unknown as { name?: string }).name || 'classe'
+          : 'classe'
+      const dateSlug = new Date(item.date).toISOString().slice(0, 10)
+      const fname = `seance-${slugify(klassName)}-${dateSlug}-${slugify(item.title)}.csv`
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res.setHeader('Content-Disposition', `attachment; filename="${fname}"`)
+      res.send('﻿' + csv)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 function escapeCsvCell(v: unknown): string {
   if (v === null || v === undefined) return ''
@@ -213,11 +235,15 @@ function toCsv(rows: unknown[][]): string {
 }
 
 function slugify(s: string): string {
-  return String(s).toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 64) || 'export'
+  return (
+    String(s)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 64) || 'export'
+  )
 }
 
 export default router

@@ -338,7 +338,7 @@ export async function downloadReportCsv(reportName: string, params: Record<strin
     format: 'csv',
   })}`
   const { blob, filename } = await apiDownload(url, {
-    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.FEC_EXPORT),
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.ACCOUNTING_REPORT_EXPORT),
   })
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -419,7 +419,9 @@ export interface DownloadFecParams {
 
 export async function downloadFec(params: DownloadFecParams = {}): Promise<void> {
   const url = `/api/admin/accounting/fec/export${buildQueryString(params)}`
-  const { blob, filename } = await apiDownload(url)
+  const { blob, filename } = await apiDownload(url, {
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.FEC_EXPORT),
+  })
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl

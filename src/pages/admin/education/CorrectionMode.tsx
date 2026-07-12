@@ -2,12 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { X, Save, Download, Plus, Trash2, ChevronDown, ChevronUp, Keyboard, Sparkles } from 'lucide-react'
 import './CorrectionMode.css'
 import {
-  getAssignment, updateAssignment, bulkUpdateSubmissions,
-  assignmentExportUrl,
+  getAssignment,
+  updateAssignment,
+  bulkUpdateSubmissions,
+  downloadAssignmentExport,
   studentDisplayName,
-  ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_KIND_LABEL, SUBMISSION_STATUS_LABEL,
-  type EducationAssignment, type EducationSubmission, type EducationSubmissionStatus,
-  type RubricCriterion, type SubmissionBulkUpdate,
+  ASSIGNMENT_STATUS_LABEL,
+  ASSIGNMENT_KIND_LABEL,
+  SUBMISSION_STATUS_LABEL,
+  type EducationAssignment,
+  type EducationSubmission,
+  type EducationSubmissionStatus,
+  type RubricCriterion,
+  type SubmissionBulkUpdate,
 } from '../../../services/education'
 
 /**
@@ -29,10 +36,7 @@ type Draft = {
 const SAVE_KEY_PREFIX = 'edu-correction-draft-v1:'
 const FILTERS_KEY_PREFIX = 'edu-correction-filters-v1:'
 
-function makeDraft(
-  s: EducationSubmission,
-  rubric: RubricCriterion[],
-): Draft {
+function makeDraft(s: EducationSubmission, rubric: RubricCriterion[]): Draft {
   const studentId = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
   // Cherche un barème pré-saisi dans le feedback (format JSON commenté). Par défaut: 0 partout.
   const initialScores = rubric.map(() => 0)
@@ -50,8 +54,14 @@ function sumScores(scores: number[]): number {
 }
 
 export function CorrectionMode({
-  assignmentId, onClose, onSaved,
-}: { assignmentId: string; onClose: () => void; onSaved?: () => void }) {
+  assignmentId,
+  onClose,
+  onSaved,
+}: {
+  assignmentId: string
+  onClose: () => void
+  onSaved?: () => void
+}) {
   const [assignment, setAssignment] = useState<EducationAssignment | null>(null)
   const [submissions, setSubmissions] = useState<EducationSubmission[]>([])
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
@@ -84,14 +94,15 @@ export function CorrectionMode({
             if (newDrafts[sid]) newDrafts[sid] = { ...newDrafts[sid], ...d }
           }
         }
-      } catch { /* corrupt storage */ }
+      } catch {
+        /* corrupt storage */
+      }
       setDrafts(newDrafts)
       setSnippets(r.assignment.feedbackSnippets || [])
       setRubricDraft(r.assignment.rubric || [])
       if (!activeStudentId && r.submissions.length > 0) {
-        const firstSid = typeof r.submissions[0].studentId === 'string'
-          ? r.submissions[0].studentId
-          : r.submissions[0].studentId._id
+        const firstSid =
+          typeof r.submissions[0].studentId === 'string' ? r.submissions[0].studentId : r.submissions[0].studentId._id
         setActiveStudentId(firstSid)
       }
     } catch (err) {
@@ -99,23 +110,35 @@ export function CorrectionMode({
     }
   }, [assignmentId, activeStudentId])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(FILTERS_KEY_PREFIX + assignmentId)
       if (stored === 'all' || stored === 'pending' || stored === 'done') setFilter(stored)
-    } catch { /* nope */ }
+    } catch {
+      /* nope */
+    }
   }, [assignmentId])
 
   useEffect(() => {
-    try { localStorage.setItem(FILTERS_KEY_PREFIX + assignmentId, filter) } catch { /* */ }
+    try {
+      localStorage.setItem(FILTERS_KEY_PREFIX + assignmentId, filter)
+    } catch {
+      /* */
+    }
   }, [filter, assignmentId])
 
   // Auto-save drafts locally for safety (every change).
   useEffect(() => {
     if (Object.keys(drafts).length === 0) return
-    try { localStorage.setItem(SAVE_KEY_PREFIX + assignmentId, JSON.stringify(drafts)) } catch { /* */ }
+    try {
+      localStorage.setItem(SAVE_KEY_PREFIX + assignmentId, JSON.stringify(drafts))
+    } catch {
+      /* */
+    }
   }, [drafts, assignmentId])
 
   const filtered = useMemo(() => {
@@ -141,13 +164,18 @@ export function CorrectionMode({
       total++
       if (!d) continue
       if (d.status === 'CORRIGE' || d.grade != null) done++
-      if (typeof d.grade === 'number') { sum += d.grade; count++ }
+      if (typeof d.grade === 'number') {
+        sum += d.grade
+        count++
+      }
     }
     return { done, total, avg: count > 0 ? Number((sum / count).toFixed(2)) : null }
   }, [submissions, drafts])
 
   const activeSubmission = useMemo(
-    () => submissions.find((s) => (typeof s.studentId === 'string' ? s.studentId : s.studentId._id) === activeStudentId) || null,
+    () =>
+      submissions.find((s) => (typeof s.studentId === 'string' ? s.studentId : s.studentId._id) === activeStudentId) ||
+      null,
     [submissions, activeStudentId],
   )
   const activeDraft = activeStudentId ? drafts[activeStudentId] : null
@@ -156,10 +184,13 @@ export function CorrectionMode({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
       if (!filtered.length) return
-      const idx = filtered.findIndex((s) =>
-        (typeof s.studentId === 'string' ? s.studentId : s.studentId._id) === activeStudentId,
+      const idx = filtered.findIndex(
+        (s) => (typeof s.studentId === 'string' ? s.studentId : s.studentId._id) === activeStudentId,
       )
       if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault()
@@ -268,13 +299,17 @@ export function CorrectionMode({
       }))
       const r = await bulkUpdateSubmissions(assignment._id, updates)
       setLastSavedAt(Date.now())
-      try { localStorage.removeItem(SAVE_KEY_PREFIX + assignmentId) } catch { /* */ }
+      try {
+        localStorage.removeItem(SAVE_KEY_PREFIX + assignmentId)
+      } catch {
+        /* */
+      }
       if (onSaved) onSaved()
       if (r.updated > 0) {
         await refresh()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement')
+      setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement")
     } finally {
       setSaving(false)
     }
@@ -292,26 +327,40 @@ export function CorrectionMode({
     <div className="edu-correction-overlay" role="dialog" aria-label="Mode correction">
       <div className="edu-correction-toolbar">
         <div className="edu-correction-toolbar-left">
-          <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)"><X size={18} /></button>
+          <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)">
+            <X size={18} />
+          </button>
           <div>
             <h2 className="edu-correction-title">{assignment.title}</h2>
             <div className="edu-correction-subtitle">
-              {ASSIGNMENT_KIND_LABEL[assignment.kind]} · {ASSIGNMENT_STATUS_LABEL[assignment.status]} · /{assignment.maxGrade}
+              {ASSIGNMENT_KIND_LABEL[assignment.kind]} · {ASSIGNMENT_STATUS_LABEL[assignment.status]} · /
+              {assignment.maxGrade}
               {' · '}
-              <strong>{stats.done}/{stats.total}</strong> corrigés
-              {stats.avg != null && <> · moy. <strong>{stats.avg}</strong></>}
+              <strong>
+                {stats.done}/{stats.total}
+              </strong>{' '}
+              corrigés
+              {stats.avg != null && (
+                <>
+                  {' '}
+                  · moy. <strong>{stats.avg}</strong>
+                </>
+              )}
             </div>
           </div>
         </div>
         <div className="edu-correction-toolbar-right">
-          <a
+          <button
             className="edu-btn ghost"
-            href={assignmentExportUrl(assignment._id)}
-            target="_blank" rel="noopener"
+            onClick={() =>
+              void downloadAssignmentExport(assignment._id).catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : 'Impossible d’exporter les corrections')
+              })
+            }
             title="Télécharger les corrections en CSV"
           >
             <Download size={14} /> Export CSV
-          </a>
+          </button>
           <button className="edu-btn ghost" onClick={() => setShowShortcuts((v) => !v)} title="Raccourcis clavier">
             <Keyboard size={14} />
           </button>
@@ -324,11 +373,15 @@ export function CorrectionMode({
       {error && (
         <div className="edu-banner-error" style={{ margin: '0 16px 8px' }}>
           {error}
-          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>Fermer</button>
+          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
+            Fermer
+          </button>
         </div>
       )}
       {lastSavedAt && !error && (
-        <div className="edu-correction-saved-toast" aria-live="polite">Enregistré ✓</div>
+        <div className="edu-correction-saved-toast" aria-live="polite">
+          Enregistré ✓
+        </div>
       )}
 
       {showShortcuts && (
@@ -340,12 +393,20 @@ export function CorrectionMode({
       <div className="edu-correction-body">
         <aside className="edu-correction-list">
           <div className="edu-correction-filters">
-            {([['pending', 'À corriger'], ['done', 'Corrigés'], ['all', 'Tous']] as Array<['pending' | 'done' | 'all', string]>).map(([k, l]) => (
+            {(
+              [
+                ['pending', 'À corriger'],
+                ['done', 'Corrigés'],
+                ['all', 'Tous'],
+              ] as Array<['pending' | 'done' | 'all', string]>
+            ).map(([k, l]) => (
               <button
                 key={k}
                 className={`edu-correction-filter ${filter === k ? 'active' : ''}`}
                 onClick={() => setFilter(k)}
-              >{l}</button>
+              >
+                {l}
+              </button>
             ))}
           </div>
           <div className="edu-correction-quick-actions">
@@ -378,9 +439,7 @@ export function CorrectionMode({
                   className={`edu-correction-row ${isActive ? 'active' : ''}`}
                   onClick={() => setActiveStudentId(sid)}
                 >
-                  <div className="edu-correction-row-name">
-                    {stu ? studentDisplayName(stu) : '—'}
-                  </div>
+                  <div className="edu-correction-row-name">{stu ? studentDisplayName(stu) : '—'}</div>
                   <div className="edu-correction-row-meta">
                     <span className="edu-pill">{SUBMISSION_STATUS_LABEL[status]}</span>
                     <span className="edu-correction-row-grade">
@@ -453,7 +512,10 @@ export function CorrectionMode({
                   </div>
                 ))}
                 <div className="edu-row" style={{ gap: 6, marginTop: 6 }}>
-                  <button className="edu-btn ghost" onClick={() => setRubricDraft([...rubricDraft, { label: '', max: 0 }])}>
+                  <button
+                    className="edu-btn ghost"
+                    onClick={() => setRubricDraft([...rubricDraft, { label: '', max: 0 }])}
+                  >
                     <Plus size={13} /> Critère
                   </button>
                   <span className="edu-correction-rubric-sum">
@@ -461,8 +523,18 @@ export function CorrectionMode({
                   </span>
                 </div>
                 <div className="edu-row" style={{ gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
-                  <button className="edu-btn ghost" onClick={() => { setRubricDraft(assignment.rubric); setShowRubricEditor(false) }}>Annuler</button>
-                  <button className="edu-btn" onClick={saveRubric}>Enregistrer le barème</button>
+                  <button
+                    className="edu-btn ghost"
+                    onClick={() => {
+                      setRubricDraft(assignment.rubric)
+                      setShowRubricEditor(false)
+                    }}
+                  >
+                    Annuler
+                  </button>
+                  <button className="edu-btn" onClick={saveRubric}>
+                    Enregistrer le barème
+                  </button>
                 </div>
               </div>
             ) : assignment.rubric.length === 0 ? (
@@ -479,7 +551,9 @@ export function CorrectionMode({
                 ))}
                 <div className="edu-correction-rubric-summary-row total">
                   <span>Total</span>
-                  <span>{assignment.rubric.reduce((acc, c) => acc + c.max, 0)} / {assignment.maxGrade}</span>
+                  <span>
+                    {assignment.rubric.reduce((acc, c) => acc + c.max, 0)} / {assignment.maxGrade}
+                  </span>
                 </div>
               </div>
             )}
@@ -504,7 +578,11 @@ export function CorrectionMode({
 }
 
 function CorrectionPanel({
-  assignment, submission, draft, onChange, onApplyRubric,
+  assignment,
+  submission,
+  draft,
+  onChange,
+  onApplyRubric,
 }: {
   assignment: EducationAssignment
   submission: EducationSubmission
@@ -522,25 +600,25 @@ function CorrectionPanel({
   return (
     <div>
       <div className="edu-correction-student">
-        <h3 className="edu-correction-student-name">
-          {stu ? studentDisplayName(stu) : '—'}
-        </h3>
+        <h3 className="edu-correction-student-name">{stu ? studentDisplayName(stu) : '—'}</h3>
         <div className="edu-correction-student-meta">
           {submission.submittedAt && `Rendu ${new Date(submission.submittedAt).toLocaleDateString('fr-FR')}`}
-          {submission.isLate && <span className="edu-pill" style={{ marginLeft: 8, background: 'rgba(245,158,11,0.15)', color: '#FBBF24' }}>En retard</span>}
+          {submission.isLate && (
+            <span className="edu-pill" style={{ marginLeft: 8, background: 'rgba(245,158,11,0.15)', color: '#FBBF24' }}>
+              En retard
+            </span>
+          )}
         </div>
       </div>
 
       {submission.url && (
         <div className="edu-correction-link">
-          <a href={submission.url} target="_blank" rel="noopener noreferrer">{submission.url}</a>
+          <a href={submission.url} target="_blank" rel="noopener noreferrer">
+            {submission.url}
+          </a>
         </div>
       )}
-      {submission.textBody && (
-        <div className="edu-correction-body-text">
-          {submission.textBody}
-        </div>
-      )}
+      {submission.textBody && <div className="edu-correction-body-text">{submission.textBody}</div>}
 
       <div className="edu-correction-row-controls">
         <div className="edu-form-group">
@@ -550,7 +628,11 @@ function CorrectionPanel({
             value={draft.status}
             onChange={(e) => onChange({ status: e.target.value as EducationSubmissionStatus })}
           >
-            {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
           </select>
         </div>
         <div className="edu-form-group">
@@ -562,7 +644,12 @@ function CorrectionPanel({
             max={assignment.maxGrade}
             step={0.5}
             value={draft.grade ?? ''}
-            onChange={(e) => onChange({ grade: e.target.value === '' ? null : Number(e.target.value), status: e.target.value === '' ? draft.status : 'CORRIGE' })}
+            onChange={(e) =>
+              onChange({
+                grade: e.target.value === '' ? null : Number(e.target.value),
+                status: e.target.value === '' ? draft.status : 'CORRIGE',
+              })
+            }
             style={{ width: 110 }}
           />
         </div>
@@ -614,7 +701,10 @@ function CorrectionPanel({
 }
 
 function SnippetsEditor({
-  snippets, onApply, onSave, disabled,
+  snippets,
+  onApply,
+  onSave,
+  disabled,
 }: {
   snippets: string[]
   onApply: (text: string) => void
@@ -661,7 +751,15 @@ function SnippetsEditor({
             onChange={(e) => setDraft(e.target.value)}
           />
           <div className="edu-row" style={{ gap: 6, justifyContent: 'flex-end' }}>
-            <button className="edu-btn ghost" onClick={() => { setAdding(false); setDraft('') }}>Annuler</button>
+            <button
+              className="edu-btn ghost"
+              onClick={() => {
+                setAdding(false)
+                setDraft('')
+              }}
+            >
+              Annuler
+            </button>
             <button
               className="edu-btn"
               disabled={!draft.trim()}
@@ -670,7 +768,9 @@ function SnippetsEditor({
                 setAdding(false)
                 setDraft('')
               }}
-            >Ajouter</button>
+            >
+              Ajouter
+            </button>
           </div>
         </div>
       ) : (
