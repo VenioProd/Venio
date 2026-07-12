@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -75,10 +75,9 @@ export default function Resources() {
   const [previewName, setPreviewName] = useState('')
 
   const openFile = async (r: Resource, inline: boolean) => {
-    const token = getToken() || ''
     try {
       const resp = await fetch(`/api/admin/resources/${r._id}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'same-origin',
       })
       if (!resp.ok) {
         showToast("Impossible d'ouvrir le fichier", 'error')
@@ -153,11 +152,10 @@ export default function Resources() {
     formData.append('category', form.category)
 
     try {
-      const token = getToken() || ''
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('POST', '/api/admin/resources')
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+        xhr.withCredentials = true
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100))
         }

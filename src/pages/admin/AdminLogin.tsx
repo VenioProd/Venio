@@ -41,7 +41,7 @@ const AdminLogin = () => {
         return
       }
       if (!result.user || !isAdminRole(result.user.role)) {
-        logout()
+        await logout()
         setError('Accès réservé aux administrateurs')
         return
       }
@@ -58,7 +58,7 @@ const AdminLogin = () => {
       <div className="portal-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
         <h1 style={{ marginBottom: '8px' }}>Connexion Admin</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
-          {needs2FA ? 'Entrez le code de votre application d\'authentification' : 'Accès réservé aux administrateurs'}
+          {needs2FA ? "Entrez le code de votre application d'authentification" : 'Accès réservé aux administrateurs'}
         </p>
         <form onSubmit={handleSubmit} className="portal-list">
           {!needs2FA ? (
@@ -68,7 +68,9 @@ const AdminLogin = () => {
                 type="email"
                 placeholder="Email"
                 value={form.email}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: event.target.value })}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setForm({ ...form, email: event.target.value })
+                }
                 required
               />
               <div style={{ position: 'relative' }}>
@@ -77,7 +79,9 @@ const AdminLogin = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mot de passe"
                   value={form.password}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setForm({ ...form, password: event.target.value })
+                  }
                   required
                   style={{ width: '100%', paddingRight: '44px' }}
                 />
@@ -111,7 +115,9 @@ const AdminLogin = () => {
               autoComplete="one-time-code"
               placeholder="Code 2FA (6 chiffres)"
               value={totpCode}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+              }
               maxLength={6}
               required
               autoFocus
@@ -124,8 +130,19 @@ const AdminLogin = () => {
           {needs2FA && (
             <button
               type="button"
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px', marginTop: '8px' }}
-              onClick={() => { setNeeds2FA(false); setTotpCode(''); setError('') }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                fontSize: '14px',
+                marginTop: '8px',
+              }}
+              onClick={() => {
+                setNeeds2FA(false)
+                setTotpCode('')
+                setError('')
+              }}
             >
               Retour
             </button>
@@ -134,8 +151,18 @@ const AdminLogin = () => {
             <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
               <button
                 type="button"
-                onClick={() => { setForgotMode(true); setError(''); setSuccess('') }}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px' }}
+                onClick={() => {
+                  setForgotMode(true)
+                  setError('')
+                  setSuccess('')
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
               >
                 Mot de passe oublie ?
               </button>
@@ -145,21 +172,27 @@ const AdminLogin = () => {
         </form>
 
         {forgotMode && (
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            setError(''); setSuccess(''); setLoading(true)
-            try {
-              const data = await apiFetch<{ message: string }>('/api/auth/forgot-password', {
-                method: 'POST',
-                body: JSON.stringify({ email: form.email }),
-              })
-              setSuccess(data.message)
-            } catch (err: unknown) {
-              setError((err as Error).message || 'Erreur')
-            } finally {
-              setLoading(false)
-            }
-          }} className="portal-list" style={{ marginTop: 24 }}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setError('')
+              setSuccess('')
+              setLoading(true)
+              try {
+                const data = await apiFetch<{ message: string }>('/api/auth/forgot-password', {
+                  method: 'POST',
+                  body: JSON.stringify({ email: form.email }),
+                })
+                setSuccess(data.message)
+              } catch (err: unknown) {
+                setError((err as Error).message || 'Erreur')
+              } finally {
+                setLoading(false)
+              }
+            }}
+            className="portal-list"
+            style={{ marginTop: 24 }}
+          >
             <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Mot de passe oublie</h2>
             <input
               className="portal-input"
@@ -176,8 +209,18 @@ const AdminLogin = () => {
             </button>
             <button
               type="button"
-              onClick={() => { setForgotMode(false); setError(''); setSuccess('') }}
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px' }}
+              onClick={() => {
+                setForgotMode(false)
+                setError('')
+                setSuccess('')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
             >
               Retour
             </button>
@@ -185,22 +228,28 @@ const AdminLogin = () => {
         )}
 
         {resetMode && (
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            setError(''); setSuccess(''); setLoading(true)
-            try {
-              const data = await apiFetch<{ message: string }>('/api/auth/reset-password', {
-                method: 'POST',
-                body: JSON.stringify({ token: resetToken, password: newPassword }),
-              })
-              setSuccess(data.message + ' Vous pouvez maintenant vous connecter.')
-              setResetMode(false)
-            } catch (err: unknown) {
-              setError((err as Error).message || 'Erreur')
-            } finally {
-              setLoading(false)
-            }
-          }} className="portal-list" style={{ marginTop: 24 }}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setError('')
+              setSuccess('')
+              setLoading(true)
+              try {
+                const data = await apiFetch<{ message: string }>('/api/auth/reset-password', {
+                  method: 'POST',
+                  body: JSON.stringify({ token: resetToken, password: newPassword }),
+                })
+                setSuccess(data.message + ' Vous pouvez maintenant vous connecter.')
+                setResetMode(false)
+              } catch (err: unknown) {
+                setError((err as Error).message || 'Erreur')
+              } finally {
+                setLoading(false)
+              }
+            }}
+            className="portal-list"
+            style={{ marginTop: 24 }}
+          >
             <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Nouveau mot de passe</h2>
             <input
               className="portal-input"

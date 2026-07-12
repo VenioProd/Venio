@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { Ticket, KpiData } from './types'
@@ -90,8 +90,8 @@ const TicketList = () => {
       formFiles.forEach((f) => fd.append('files', f))
       await fetch('/api/admin/tickets', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
       setForm({ title: '', message: '', category: 'QUESTION', priority: 'NORMALE' })
       setFormFiles([])
@@ -113,8 +113,8 @@ const TicketList = () => {
       replyFiles.forEach((f) => fd.append('files', f))
       await fetch(`/api/admin/tickets/${ticketId}/reply`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
       setReplyText('')
       setReplyFiles([])

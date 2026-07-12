@@ -1,6 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
-import { fetchNotifications as fetchNotificationsApi, fetchUnreadCount, markAsRead as markAsReadApi, markAllAsRead as markAllAsReadApi } from '../services/notifications'
+import {
+  fetchNotifications as fetchNotificationsApi,
+  fetchUnreadCount,
+  markAsRead as markAsReadApi,
+  markAllAsRead as markAllAsReadApi,
+} from '../services/notifications'
 import { syncAppBadge } from '../lib/appBadge'
 import { useAuth } from './AuthContext'
 import { isAdminRole } from '../lib/permissions'
@@ -29,10 +34,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const refresh = useCallback(async () => {
     if (!isAdmin) return
     try {
-      const [count, notifs] = await Promise.all([
-        fetchUnreadCount(),
-        fetchNotificationsApi(),
-      ])
+      const [count, notifs] = await Promise.all([fetchUnreadCount(), fetchNotificationsApi()])
       setUnreadCount(count)
       setNotifications(notifs)
     } catch {
@@ -43,13 +45,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Socket : écoute notification:new pour un refresh instantané de la cloche
   useEffect(() => {
     if (!isAdmin || !user) return
-    const token = localStorage.getItem('token')
-    if (!token) return
-
     const socket = io('/', {
-      auth: { token },
       path: '/socket.io',
       transports: ['websocket', 'polling'],
+      withCredentials: true,
     })
     socketRef.current = socket
 
@@ -110,7 +109,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const value = useMemo(
     () => ({ unreadCount, notifications, markAsRead, markAllAsRead, refresh }),
-    [unreadCount, notifications, markAsRead, markAllAsRead, refresh]
+    [unreadCount, notifications, markAsRead, markAllAsRead, refresh],
   )
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>

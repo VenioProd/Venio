@@ -68,22 +68,11 @@ const AdminList = () => {
   const handleImpersonate = async (adminId: string) => {
     setImpersonating(adminId)
     try {
-      const data = await apiFetch<{ token: string; user: { role: string } }>(
-        `/api/admin/admins/impersonate/${adminId}`,
-        {
-          method: 'POST',
-        },
-      )
+      const data = await apiFetch<{ user: { role: string } }>(`/api/admin/admins/impersonate/${adminId}`, {
+        method: 'POST',
+      })
       const targetPath = data.user.role === 'CLIENT' ? '/espace-client' : '/admin'
-      const url = `${window.location.origin}${targetPath}?impersonate=${data.token}`
-      // Use a temporary <a> link to avoid popup blockers
-      const a = document.createElement('a')
-      a.href = url
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      window.location.assign(targetPath)
     } catch (err: unknown) {
       showToast((err as Error).message || 'Erreur', 'error')
     } finally {

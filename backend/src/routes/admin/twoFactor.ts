@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
 import { TOTP } from 'otpauth'
-import jwt from 'jsonwebtoken'
 import QRCode from 'qrcode'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
@@ -9,6 +8,7 @@ import { createNotification } from '../../lib/notifications.js'
 import AuditLog from '../../models/AuditLog.js'
 import { createRecoveryCodes, consumeRecoveryCode, graceEndsAt, verifyTotp } from '../../lib/mfa.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
+import { revokeSession, readSessionCookie, setSessionCookie } from '../../lib/session.js'
 
 const router = express.Router()
 
@@ -82,7 +82,13 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
     user.mfaGraceUntil = null
     await user.save()
 
-    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_ENABLED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
+    AuditLog.create({
+      userId: user._id,
+      email: user.email,
+      action: 'MFA_ENABLED',
+      ip: req.headers['x-forwarded-for'] || req.ip || '',
+      userAgent: req.headers['user-agent'] || '',
+    }).catch(() => {})
 
     // Notif à l'utilisateur (confirmation sécurité)
     createNotification({
@@ -117,7 +123,14 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
     user.mfaGraceUntil = graceEndsAt()
     await user.save()
 
-    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_DISABLED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '', metadata: { selfService: true } }).catch(() => {})
+    AuditLog.create({
+      userId: user._id,
+      email: user.email,
+      action: 'MFA_DISABLED',
+      ip: req.headers['x-forwarded-for'] || req.ip || '',
+      userAgent: req.headers['user-agent'] || '',
+      metadata: { selfService: true },
+    }).catch(() => {})
 
     // Notif alerte sécurité à l'utilisateur
     createNotification({
@@ -147,18 +160,37 @@ router.post('/step-up', async (req: Request, res: Response, next: NextFunction) 
     if (!user?.twoFactorEnabled || !user.twoFactorSecret) return res.status(400).json({ error: 'MFA non configurée' })
     const { code, recoveryCode } = req.body || {}
     const validTotp = code && verifyTotp(user.twoFactorSecret, user.email, code)
-    const recovery = validTotp ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] } : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
+    const recovery = validTotp
+      ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] }
+      : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
     if (!validTotp && !recovery.valid) return res.status(401).json({ error: 'Code MFA invalide' })
     if (recovery.valid) {
       user.twoFactorRecoveryCodeHashes = recovery.hashes
       await user.save()
-      AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_RECOVERY_CODE_USED', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
+      AuditLog.create({
+        userId: user._id,
+        email: user.email,
+        action: 'MFA_RECOVERY_CODE_USED',
+        ip: req.headers['x-forwarded-for'] || req.ip || '',
+        userAgent: req.headers['user-agent'] || '',
+      }).catch(() => {})
     }
     const mfaVerifiedAt = Date.now()
-    const token = jwt.sign({ id: user._id, role: user.role, email: user.email, name: user.name, sessionVersion: user.sessionVersion ?? 0, mfaVerifiedAt }, process.env.JWT_SECRET as string, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions)
-    AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_STEP_UP', ip: req.headers['x-forwarded-for'] || req.ip || '', userAgent: req.headers['user-agent'] || '' }).catch(() => {})
-    return res.json({ token, mfaVerifiedAt })
-  } catch (err) { return next(err) }
+    // Replace the pre-step-up session so a stolen pre-MFA cookie cannot retain
+    // a valid session alongside the elevated one.
+    await revokeSession(readSessionCookie(req.headers.cookie))
+    await setSessionCookie(res, user._id.toString(), { mfaVerifiedAt: new Date(mfaVerifiedAt) })
+    AuditLog.create({
+      userId: user._id,
+      email: user.email,
+      action: 'MFA_STEP_UP',
+      ip: req.headers['x-forwarded-for'] || req.ip || '',
+      userAgent: req.headers['user-agent'] || '',
+    }).catch(() => {})
+    return res.json({ mfaVerifiedAt })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/admin/2fa/status — Check if 2FA is enabled

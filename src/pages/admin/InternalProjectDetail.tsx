@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -352,11 +352,10 @@ export default function InternalProjectDetail() {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const token = getToken() || ''
       const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
+        credentials: 'same-origin',
       })
       const data = await resp.json()
       if (!resp.ok) throw new Error(data.error || 'Erreur upload')
@@ -1462,9 +1461,8 @@ export default function InternalProjectDetail() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const token = getToken() || ''
                       const resp = await fetch(`/api/admin/internal-projects/${id}/missions/${m._id}/files/${f._id}`, {
-                        headers: { Authorization: `Bearer ${token}` },
+                        credentials: 'same-origin',
                       })
                       const blob = await resp.blob()
                       const url = URL.createObjectURL(blob)

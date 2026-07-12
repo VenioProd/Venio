@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { apiFetch, getToken } from '../../../lib/api'
+import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import {
@@ -189,8 +189,8 @@ const InternDetail = () => {
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
       await fetch(`/api/admin/interns/reports/${reportId}`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
       loadData()
     } catch {
@@ -214,8 +214,8 @@ const InternDetail = () => {
       fd.append('file', file)
       const res = await fetch(`/api/admin/interns/${id}/convention`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
+        credentials: 'same-origin',
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))

@@ -1,24 +1,12 @@
 import type { ApiFetchOptions } from '../types/api.types'
 
-export function getToken(): string | null {
-  return localStorage.getItem('auth_token')
-}
-
-export function setToken(token: string | null): void {
-  if (token) {
-    localStorage.setItem('auth_token', token)
-  } else {
-    localStorage.removeItem('auth_token')
-  }
-}
-
 // ─── ApiError ───────────────────────────────────────────────────────────────
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
-    public readonly payload: unknown = null
+    public readonly payload: unknown = null,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -29,7 +17,6 @@ export class ApiError extends Error {
 
 function handleAuth401(path: string): void {
   if (path.includes('/auth/login')) return
-  setToken(null)
   const currentPath = window.location.pathname
   if (currentPath.startsWith('/admin')) {
     window.location.href = '/admin/login'
@@ -41,17 +28,12 @@ function handleAuth401(path: string): void {
 // ─── apiFetch ───────────────────────────────────────────────────────────────
 
 export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   }
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  const response = await fetch(path, { ...options, headers })
+  const response = await fetch(path, { ...options, headers, credentials: 'same-origin' })
   const contentType = response.headers.get('content-type') || ''
 
   let data: T | null = null
@@ -61,7 +43,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
 
   if (!response.ok) {
     if (response.status === 401) handleAuth401(path)
-    const message = (data as Record<string, unknown>)?.error as string || 'Erreur serveur'
+    const message = ((data as Record<string, unknown>)?.error as string) || 'Erreur serveur'
     throw new ApiError(response.status, message, data)
   }
 
@@ -79,11 +61,9 @@ export interface ApiUploadOptions {
 export async function apiUpload<T = unknown>(
   path: string,
   formData: FormData,
-  options: ApiUploadOptions = {}
+  options: ApiUploadOptions = {},
 ): Promise<T> {
-  const token = getToken()
   const headers: Record<string, string> = { ...(options.headers || {}) }
-  if (token) headers.Authorization = `Bearer ${token}`
   // NE PAS forcer Content-Type — laisser le browser ajouter le boundary multipart
 
   const response = await fetch(path, {
@@ -91,6 +71,7 @@ export async function apiUpload<T = unknown>(
     body: formData,
     headers,
     signal: options.signal,
+    credentials: 'same-origin',
   })
   const contentType = response.headers.get('content-type') || ''
   let data: T | null = null
@@ -99,7 +80,7 @@ export async function apiUpload<T = unknown>(
   }
   if (!response.ok) {
     if (response.status === 401) handleAuth401(path)
-    const message = (data as Record<string, unknown>)?.error as string || 'Erreur upload'
+    const message = ((data as Record<string, unknown>)?.error as string) || 'Erreur upload'
     throw new ApiError(response.status, message, data)
   }
   return data as T
@@ -120,13 +101,8 @@ export interface ApiDownloadResult {
   contentType: string
 }
 
-export async function apiDownload(
-  path: string,
-  options: ApiDownloadOptions = {}
-): Promise<ApiDownloadResult> {
-  const token = getToken()
+export async function apiDownload(path: string, options: ApiDownloadOptions = {}): Promise<ApiDownloadResult> {
   const headers: Record<string, string> = { ...(options.headers || {}) }
-  if (token) headers.Authorization = `Bearer ${token}`
   if (options.body !== undefined && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json'
   }
@@ -136,13 +112,18 @@ export async function apiDownload(
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     signal: options.signal,
+    credentials: 'same-origin',
   })
 
   if (!response.ok) {
     if (response.status === 401) handleAuth401(path)
     let payload: unknown = null
-    try { payload = await response.json() } catch { /* ignore */ }
-    const message = (payload as Record<string, unknown>)?.error as string || 'Erreur téléchargement'
+    try {
+      payload = await response.json()
+    } catch {
+      /* ignore */
+    }
+    const message = ((payload as Record<string, unknown>)?.error as string) || 'Erreur téléchargement'
     throw new ApiError(response.status, message, payload)
   }
 
@@ -154,7 +135,11 @@ export async function apiDownload(
   let filename: string | null = null
   const utf8Match = cd.match(/filename\*=UTF-8''([^;\n]+)/i)
   if (utf8Match) {
-    try { filename = decodeURIComponent(utf8Match[1]) } catch { filename = utf8Match[1] }
+    try {
+      filename = decodeURIComponent(utf8Match[1])
+    } catch {
+      filename = utf8Match[1]
+    }
   } else {
     const plainMatch = cd.match(/filename="?([^";\n]+)"?/i)
     if (plainMatch) filename = plainMatch[1]
