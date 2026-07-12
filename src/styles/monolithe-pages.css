@@ -343,6 +343,65 @@
   gap: var(--mp-sp-m);
   align-content: start;
 }
+
+/* ─── MÉTHODE ─── */
+.mp-page .mp-method-steps {
+  border-bottom: 1px solid var(--border-color);
+}
+.mp-page .mp-method-step {
+  display: grid;
+  grid-template-columns: minmax(56px, 0.25fr) minmax(180px, 0.75fr) 1fr;
+  gap: var(--mp-sp-m);
+  padding: var(--mp-sp-l) 0;
+  border-top: 1px solid var(--border-color);
+}
+.mp-page .mp-method-number {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+.mp-page .mp-method-step h2 {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.mp-page .mp-method-cadence {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  margin-top: var(--mp-sp-s);
+  max-width: 35ch;
+}
+.mp-page .mp-method-step h3 {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mp-page .mp-method-step ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: var(--mp-sp-s) 0 0;
+  padding: 0;
+}
+.mp-page .mp-method-step li {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.mp-page .mp-method-step li::before {
+  color: var(--primary);
+  content: '—';
+  margin-right: 8px;
+}
 .mp-page .mp-result-value {
   font-size: clamp(24px, 3vw, 40px);
   font-weight: 900;
@@ -357,6 +416,80 @@
   color: var(--text-muted);
   margin-top: 8px;
   line-height: 1.3;
+}
+
+.mp-page .mp-proof-empty {
+  border: 1px solid var(--border-color);
+  margin-top: var(--mp-sp-l);
+  max-width: 720px;
+  padding: var(--mp-sp-l);
+}
+.mp-page .mp-proof-empty h2 {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: var(--mp-sp-s) 0;
+  text-transform: uppercase;
+}
+.mp-page .mp-proof-empty p {
+  color: var(--text-secondary);
+  font-size: clamp(14px, 1.4vw, 16px);
+  font-weight: 500;
+  line-height: 1.55;
+  max-width: 52ch;
+}
+.mp-page .mp-projet-link {
+  align-self: start;
+}
+.mp-page .mp-testimonials {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+}
+.mp-page .mp-testimonial {
+  background: var(--bg-primary);
+  margin: 0;
+  padding: var(--mp-sp-l);
+}
+.mp-page .mp-testimonial blockquote {
+  color: var(--text-primary);
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+.mp-page .mp-testimonial figcaption {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-top: var(--mp-sp-m);
+}
+.mp-page .mp-testimonial figcaption strong {
+  color: var(--text-primary);
+}
+.mp-page .mp-testimonial .mp-projet-tags {
+  margin-top: var(--mp-sp-m);
+}
+.mp-page .mp-case-scope {
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(14px, 1.4vw, 16px);
+  font-weight: 500;
+  gap: var(--mp-sp-xs);
+  line-height: 1.5;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mp-page .mp-case-scope li::before {
+  color: var(--primary);
+  content: '—';
+  margin-right: 8px;
 }
 
 /* ─── CONTACT ─── */
@@ -521,6 +654,9 @@
   .mp-page .mp-piliers {
     grid-template-columns: 1fr;
   }
+  .mp-page .mp-testimonials {
+    grid-template-columns: 1fr;
+  }
   .mp-page .mp-pilier {
     border-left: none;
     border-top: 1px solid var(--border-color);
@@ -530,7 +666,8 @@
     border-top: none;
   }
   .mp-page .mp-projet,
-  .mp-page .mp-contact-grid {
+  .mp-page .mp-contact-grid,
+  .mp-page .mp-method-step {
     grid-template-columns: 1fr;
   }
 }

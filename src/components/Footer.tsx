@@ -14,6 +14,7 @@ const Footer = () => {
           <h4>Navigation</h4>
           <Link to="/services/communication">Services</Link>
           <Link to="/services/sites">Sites web</Link>
+          <Link to="/methode">Méthode</Link>
           <Link to="/realisations">Réalisations</Link>
           <Link to="/a-propos">À propos</Link>
           <Link to="/contact">Contact</Link>
