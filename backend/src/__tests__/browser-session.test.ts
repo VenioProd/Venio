@@ -206,7 +206,7 @@ describe('browser sessions', () => {
     const impersonationCookie = impersonation.headers['set-cookie']?.[0]
     expect(impersonationCookie).toContain('HttpOnly')
     expect(impersonationCookie).toContain('SameSite=Strict')
-    expect(impersonationCookie).toMatch(/Max-Age=8\d\d/)
+    expect(impersonationCookie).toMatch(/(?:^|;\s*)Max-Age=900(?:;|$)/)
 
     // The previous administrator session has been revoked, while the new
     // cookie authenticates as the target account.

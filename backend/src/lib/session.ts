@@ -61,12 +61,15 @@ export async function setSessionCookie(
   userId: string,
   options: { impersonatorId?: string; mfaVerifiedAt?: Date; impersonation?: boolean } = {},
 ): Promise<void> {
-  const { token, expiresAt } = await createSession(userId, {
+  const ttlMs = options.impersonation ? IMPERSONATION_TTL_MS : SESSION_TTL_MS
+  const { token } = await createSession(userId, {
     impersonatorId: options.impersonatorId,
     mfaVerifiedAt: options.mfaVerifiedAt,
-    ttlMs: options.impersonation ? IMPERSONATION_TTL_MS : undefined,
+    ttlMs,
   })
-  res.cookie(SESSION_COOKIE, token, cookieOptions(expiresAt.getTime() - Date.now()))
+  // Use the requested TTL directly. Deriving it from the persisted expiry after
+  // the database write can truncate the serialized Max-Age by one second.
+  res.cookie(SESSION_COOKIE, token, cookieOptions(ttlMs))
 }
 
 export function clearSessionCookie(res: Response): void {
