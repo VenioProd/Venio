@@ -6,10 +6,92 @@ import {
   EducationAssignment,
   EducationNote,
   EducationDocument,
+  EducationSubmission,
 } from '../../../models/education/index.js'
 import { asObjectId, ownerFilter, validId } from './helpers.js'
 
 const router = express.Router()
+
+type DocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student'
+
+type DocumentParentContext =
+  | {
+      state: 'available'
+      target: { kind: DocumentSearchTargetKind; id: string; label: string; school?: string }
+    }
+  | { state: 'unavailable'; reason: 'NO_PARENT' | 'TARGET_UNAVAILABLE' }
+
+/**
+ * Resolve the document's parent immediately before exposing it to Quickfind.
+ *
+ * A document can outlive a soft-deleted parent, and old data can contain a
+ * parentId belonging to another owner. Every lookup therefore repeats the
+ * current owner filter. We deliberately return the same opaque unavailable
+ * state for a deleted and an unauthorized target.
+ */
+async function resolveDocumentParentContext(
+  document: { parentType: string; parentId: { toString(): string } | null },
+  req: Request,
+): Promise<DocumentParentContext> {
+  if (!document.parentId) return { state: 'unavailable', reason: 'NO_PARENT' }
+
+  const parentId = document.parentId.toString()
+  const target = (
+    kind: DocumentSearchTargetKind,
+    id: string,
+    label: string,
+    school?: string,
+  ): DocumentParentContext => ({
+    state: 'available',
+    target: { kind, id, label, ...(school ? { school } : {}) },
+  })
+
+  switch (document.parentType) {
+    case 'class': {
+      const parent = await EducationClass.findOne({ _id: parentId, ...ownerFilter(req) }).select('name school')
+      return parent
+        ? target('class', parent._id.toString(), parent.name, parent.school)
+        : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+    }
+    case 'session': {
+      const parent = await EducationSession.findOne({ _id: parentId, ...ownerFilter(req) }).select('title')
+      return parent
+        ? target('session', parent._id.toString(), parent.title)
+        : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+    }
+    case 'assignment': {
+      const parent = await EducationAssignment.findOne({ _id: parentId, ...ownerFilter(req) }).select('title')
+      return parent
+        ? target('assignment', parent._id.toString(), parent.title)
+        : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+    }
+    case 'student': {
+      const parent = await EducationStudent.findOne({ _id: parentId, ...ownerFilter(req) }).select('firstName lastName')
+      if (!parent) return { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+      return target(
+        'student',
+        parent._id.toString(),
+        [parent.firstName, parent.lastName].filter(Boolean).join(' ') || 'Étudiant',
+      )
+    }
+    case 'submission': {
+      const submission = await EducationSubmission.findOne({ _id: parentId, ...ownerFilter(req) }).select(
+        'assignmentId',
+      )
+      if (!submission) return { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+      const assignment = await EducationAssignment.findOne({
+        _id: submission.assignmentId,
+        ...ownerFilter(req),
+      }).select('title')
+      return assignment
+        ? target('assignment', assignment._id.toString(), assignment.title)
+        : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+    }
+    default:
+      // Notes and standalone documents currently have no dedicated direct view.
+      return { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+  }
+}
 
 // GET / — recherche globale "Spotlight" (quickfind), q seul
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -29,7 +111,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       EducationDocument.find(filter).limit(limit),
     ])
 
-    res.json({ results: { classes, students, sessions, assignments, notes, documents } })
+    const documentsWithContext = await Promise.all(
+      documents.map(async (document) => ({
+        ...document.toObject(),
+        parentContext: await resolveDocumentParentContext(document, req),
+      })),
+    )
+
+    res.json({ results: { classes, students, sessions, assignments, notes, documents: documentsWithContext } })
   } catch (err) { next(err) }
 })
 

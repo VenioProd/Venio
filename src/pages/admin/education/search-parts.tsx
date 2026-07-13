@@ -29,6 +29,7 @@ import {
   type EducationNote, type NoteBlock,
   type EducationAssignmentStatus,
   type EducationTemplate,
+  type EducationSearchDocument,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
@@ -37,7 +38,19 @@ import { CorrectionMode } from './CorrectionMode'
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
-export function SearchModal({ onClose, onPickClass }: { onClose: () => void; onPickClass: (id: string) => void }) {
+export function SearchModal({
+  onClose,
+  onPickClass,
+  onPickSession,
+  onPickAssignment,
+  onPickStudent,
+}: {
+  onClose: () => void
+  onPickClass: (id: string) => void
+  onPickSession: (id: string) => void
+  onPickAssignment: (id: string) => void
+  onPickStudent: (id: string) => void
+}) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Awaited<ReturnType<typeof searchEducation>>['results'] | null>(null)
 
@@ -52,6 +65,15 @@ export function SearchModal({ onClose, onPickClass }: { onClose: () => void; onP
     }, 200)
     return () => { cancelled = true; clearTimeout(t) }
   }, [q])
+
+  function openDocumentContext(document: EducationSearchDocument) {
+    const target = document.parentContext?.state === 'available' ? document.parentContext.target : null
+    if (!target) return
+    if (target.kind === 'class') onPickClass(target.id)
+    if (target.kind === 'session') onPickSession(target.id)
+    if (target.kind === 'assignment') onPickAssignment(target.id)
+    if (target.kind === 'student') onPickStudent(target.id)
+  }
 
   return (
     <>
@@ -112,6 +134,36 @@ export function SearchModal({ onClose, onPickClass }: { onClose: () => void; onP
               {results.notes.map((n) => (
                 <div key={n._id} className="edu-search-result">{n.title || 'Sans titre'}</div>
               ))}
+              {results.documents.length > 0 && <h4>Documents</h4>}
+              {results.documents.map((document) => {
+                const target = document.parentContext?.state === 'available' ? document.parentContext.target : null
+                const noParent =
+                  document.parentContext?.state === 'unavailable' && document.parentContext.reason === 'NO_PARENT'
+                return (
+                  <button
+                    key={document._id}
+                    type="button"
+                    className="edu-search-result edu-search-result-button"
+                    disabled={!target}
+                    onClick={() => openDocumentContext(document)}
+                    aria-label={
+                      target
+                        ? `Ouvrir le contexte de ${document.title || document.originalName || 'ce document'}`
+                        : undefined
+                    }
+                  >
+                    <FileText size={14} aria-hidden style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                    {document.title || document.originalName || 'Document sans titre'}
+                    <span className="edu-search-result-meta">
+                      {target
+                        ? ` · Ouvrir ${target.kind === 'assignment' ? 'le devoir' : target.kind === 'class' ? 'la classe' : target.kind === 'session' ? 'la séance' : 'l’étudiant'} · ${target.label}${target.school ? ` · ${target.school}` : ''}`
+                        : noParent
+                          ? ' · Aucun contexte pédagogique associé'
+                          : ' · Contexte parent indisponible'}
+                    </span>
+                  </button>
+                )
+              })}
               {Object.values(results).every((arr) => arr.length === 0) && q.trim().length >= 2 && (
                 <div className="edu-empty">Aucun résultat pour « {q} »</div>
               )}
@@ -122,4 +174,3 @@ export function SearchModal({ onClose, onPickClass }: { onClose: () => void; onP
     </>
   )
 }
-

@@ -227,6 +227,19 @@ export interface EducationDocument {
   updatedAt: string
 }
 
+export type EducationDocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student'
+
+export type EducationDocumentParentContext =
+  | {
+      state: 'available'
+      target: { kind: EducationDocumentSearchTargetKind; id: string; label: string; school?: string }
+    }
+  | { state: 'unavailable'; reason: 'NO_PARENT' | 'TARGET_UNAVAILABLE' }
+
+export type EducationSearchDocument = EducationDocument & {
+  parentContext: EducationDocumentParentContext
+}
+
 export interface EducationDashboardAlert {
   type: EducationFollowUpType
   severity: 'high' | 'medium'
@@ -700,7 +713,7 @@ export async function searchEducation(q: string): Promise<{
     sessions: EducationSession[]
     assignments: EducationAssignment[]
     notes: EducationNote[]
-    documents: EducationDocument[]
+    documents: EducationSearchDocument[]
   }
 }> {
   return await apiFetch(`${base}/search?q=${encodeURIComponent(q)}`)
