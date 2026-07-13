@@ -7,6 +7,7 @@ import {
   EducationAssignment,
   EducationSubmission,
   EducationActivityLog,
+  type EducationFollowUpType,
 } from '../../../models/education/index.js'
 import { ownerFilter } from './helpers.js'
 
@@ -18,12 +19,18 @@ const MAX_PEDAGOGICAL_ALERTS = 20
 type AlertClass = { _id: unknown; name?: string; color?: string; school?: string }
 
 type PedagogicalAlert = {
-  type: 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
+  type: EducationFollowUpType
   severity: 'high' | 'medium'
   count: number
   student: { _id: unknown; firstName: string; lastName: string }
   class: AlertClass
   message: string
+}
+
+type FollowUpAcknowledgement = { type: EducationFollowUpType; count: number; acknowledgedAt: Date }
+
+function isAcknowledged(alert: PedagogicalAlert, acknowledgements: FollowUpAcknowledgement[]): boolean {
+  return acknowledgements.some((entry) => entry.type === alert.type && entry.count >= alert.count)
 }
 
 function classSummary(klass: AlertClass | null | undefined): AlertClass | null {
@@ -145,7 +152,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ...(classIds ? { classId: { $in: classIds } } : {}),
         $or: [{ absenceCount: { $gte: 2 } }, { lateCount: { $gte: 3 } }],
       })
-        .select('_id firstName lastName absenceCount lateCount classId')
+        .select('_id firstName lastName absenceCount lateCount classId followUpAcknowledgements')
         .populate('classId', 'name color school')
         .sort({ absenceCount: -1, lateCount: -1, updatedAt: -1 })
         .limit(MAX_FOLLOW_UP_CANDIDATES),
@@ -253,7 +260,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       ...ownerFilter(req),
       _id: { $in: overdueStudentIds },
       status: 'ACTIVE',
-    }).select('_id firstName lastName')
+    }).select('_id firstName lastName followUpAcknowledgements')
     const overdueStudentById = new Map(overdueStudents.map((student) => [String(student._id), student]))
     for (const item of overdueWorkByStudent) {
       const student = overdueStudentById.get(String(item._id))
@@ -270,7 +277,18 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const severityRank = { high: 0, medium: 1 }
-    alerts.sort(
+    const acknowledgementsByStudent = new Map<string, FollowUpAcknowledgement[]>()
+    for (const student of followUpStudents) {
+      acknowledgementsByStudent.set(String(student._id), student.followUpAcknowledgements as FollowUpAcknowledgement[])
+    }
+    for (const student of overdueStudents) {
+      acknowledgementsByStudent.set(String(student._id), student.followUpAcknowledgements as FollowUpAcknowledgement[])
+    }
+
+    const openAlerts = alerts.filter(
+      (alert) => !isAcknowledged(alert, acknowledgementsByStudent.get(String(alert.student._id)) || []),
+    )
+    openAlerts.sort(
       (a, b) =>
         severityRank[a.severity] - severityRank[b.severity] ||
         b.count - a.count ||
@@ -293,7 +311,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       toPrepare: toPrepareSessions,
       openAssignments,
       toCorrect: toCorrectAssignments,
-      alerts: alerts.slice(0, MAX_PEDAGOGICAL_ALERTS),
+      alerts: openAlerts.slice(0, MAX_PEDAGOGICAL_ALERTS),
       lastSessionByClass,
       activity: recentActivity,
       schools: (schools as unknown[]).filter((s): s is string => typeof s === 'string' && !!s).sort(),

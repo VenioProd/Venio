@@ -82,10 +82,7 @@ describe('education routes', () => {
 
     // Ligne 3 a un lastName vide → doit être ignorée
     const csv = 'prenom,nom,email\nMarie,Curie,marie@ex.fr\nPierre,Curie,pierre@ex.fr\nEmpty,,'
-    const imported = await request(app)
-      .post('/api/admin/education/students/import')
-      .send({ classId, csv })
-      .expect(201)
+    const imported = await request(app).post('/api/admin/education/students/import').send({ classId, csv }).expect(201)
     expect(imported.body.inserted).toBe(2)
 
     const list = await request(app).get(`/api/admin/education/students?classId=${classId}`).expect(200)
@@ -93,10 +90,7 @@ describe('education routes', () => {
   })
 
   it('sessions: create pré-remplit attendance ; PATCH attendance met à jour compteurs étudiant', async () => {
-    const { body: classBody } = await request(app)
-      .post('/api/admin/education/classes')
-      .send({ name: 'P' })
-      .expect(201)
+    const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     const classId = classBody.class._id
 
     const { body: s1 } = await request(app)
@@ -132,20 +126,14 @@ describe('education routes', () => {
   })
 
   it('assignments: passer de DRAFT à OUVERT crée les soumissions ; PATCH grade met à jour moyenne étudiant', async () => {
-    const { body: classBody } = await request(app)
-      .post('/api/admin/education/classes')
-      .send({ name: 'P' })
-      .expect(201)
+    const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     const classId = classBody.class._id
 
     const { body: s1 } = await request(app)
       .post('/api/admin/education/students')
       .send({ classId, lastName: 'A' })
       .expect(201)
-    await request(app)
-      .post('/api/admin/education/students')
-      .send({ classId, lastName: 'B' })
-      .expect(201)
+    await request(app).post('/api/admin/education/students').send({ classId, lastName: 'B' }).expect(201)
 
     const draft = await request(app)
       .post('/api/admin/education/assignments')
@@ -191,10 +179,7 @@ describe('education routes', () => {
   })
 
   it('dashboard: counters cohérents', async () => {
-    const { body: classBody } = await request(app)
-      .post('/api/admin/education/classes')
-      .send({ name: 'P' })
-      .expect(201)
+    const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     await request(app)
       .post('/api/admin/education/sessions')
       .send({ classId: classBody.class._id, title: 'Today', date: new Date().toISOString() })
@@ -241,12 +226,96 @@ describe('education routes', () => {
 
     const dash = await request(app).get('/api/admin/education/dashboard?school=EMA').expect(200)
     const alerts = dash.body.alerts as Array<{ type: string; student: { _id: string }; class: { school: string } }>
-    expect(alerts).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: 'ABSENCES_REPETEES', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
-      expect.objectContaining({ type: 'RETARDS_REPETES', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
-      expect.objectContaining({ type: 'DEVOIRS_NON_RENDUS', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
-    ]))
+    expect(alerts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'ABSENCES_REPETEES',
+          student: expect.objectContaining({ _id: emaStudent.student._id }),
+        }),
+        expect.objectContaining({
+          type: 'RETARDS_REPETES',
+          student: expect.objectContaining({ _id: emaStudent.student._id }),
+        }),
+        expect.objectContaining({
+          type: 'DEVOIRS_NON_RENDUS',
+          student: expect.objectContaining({ _id: emaStudent.student._id }),
+        }),
+      ]),
+    )
     expect(alerts).toHaveLength(3)
     expect(alerts.every((alert) => alert.class.school === 'EMA')).toBe(true)
+  })
+
+  it('suivi étudiant: un signal traité disparaît puis réapparaît quand son compteur augmente', async () => {
+    const { EducationStudent } = await import('../models/education/index.js')
+    const { body: classBody } = await request(app)
+      .post('/api/admin/education/classes')
+      .send({ name: 'BTS suivi' })
+      .expect(201)
+    const { body: studentBody } = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId: classBody.class._id, firstName: 'Lina', lastName: 'Martin' })
+      .expect(201)
+    const studentId = studentBody.student._id
+    await EducationStudent.updateOne({ _id: studentId }, { absenceCount: 3 })
+
+    let dash = await request(app).get('/api/admin/education/dashboard').expect(200)
+    expect(dash.body.alerts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'ABSENCES_REPETEES',
+          count: 3,
+          student: expect.objectContaining({ _id: studentId }),
+        }),
+      ]),
+    )
+
+    await request(app)
+      .patch(`/api/admin/education/students/${studentId}/follow-up/ABSENCES_REPETEES`)
+      .send({ acknowledged: true, count: 4 })
+      .expect(409)
+
+    const acknowledged = await request(app)
+      .patch(`/api/admin/education/students/${studentId}/follow-up/ABSENCES_REPETEES`)
+      .send({ acknowledged: true, count: 3 })
+      .expect(200)
+    expect(acknowledged.body.student.followUpAcknowledgements).toEqual([
+      expect.objectContaining({ type: 'ABSENCES_REPETEES', count: 3 }),
+    ])
+
+    dash = await request(app).get('/api/admin/education/dashboard').expect(200)
+    expect(dash.body.alerts).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'ABSENCES_REPETEES', student: expect.objectContaining({ _id: studentId }) }),
+      ]),
+    )
+
+    await EducationStudent.updateOne({ _id: studentId }, { absenceCount: 4 })
+    dash = await request(app).get('/api/admin/education/dashboard').expect(200)
+    expect(dash.body.alerts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'ABSENCES_REPETEES',
+          count: 4,
+          student: expect.objectContaining({ _id: studentId }),
+        }),
+      ]),
+    )
+  })
+
+  it('suivi étudiant: les acknowledgements restent bornés au propriétaire', async () => {
+    const { EducationStudent, EducationClass } = await import('../models/education/index.js')
+    const otherOwner = new mongoose.Types.ObjectId()
+    const otherClass = await EducationClass.create({ owner: otherOwner, name: 'Autre propriétaire' })
+    const otherStudent = await EducationStudent.create({
+      owner: otherOwner,
+      classId: otherClass._id,
+      lastName: 'Isolé',
+    })
+
+    await request(app)
+      .patch(`/api/admin/education/students/${otherStudent._id}/follow-up/ABSENCES_REPETEES`)
+      .send({ acknowledged: true, count: 2 })
+      .expect(404)
   })
 })

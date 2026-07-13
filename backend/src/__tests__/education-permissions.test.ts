@@ -58,10 +58,7 @@ describe('education access — super-admin only', () => {
   })
 
   it('VIEWER ne peut pas créer une classe (POST → 403)', async () => {
-    await request(app)
-      .post('/api/admin/education/classes')
-      .send({ name: 'Refusée' })
-      .expect(403)
+    await request(app).post('/api/admin/education/classes').send({ name: 'Refusée' }).expect(403)
   })
 
   it('VIEWER ne peut pas créer un étudiant (POST → 403)', async () => {
@@ -86,33 +83,22 @@ describe('education access — super-admin only', () => {
   })
 
   it('VIEWER ne peut pas créer une note (POST → 403)', async () => {
-    await request(app)
-      .post('/api/admin/education/notes')
-      .send({ title: 'X', blocks: [] })
-      .expect(403)
+    await request(app).post('/api/admin/education/notes').send({ title: 'X', blocks: [] }).expect(403)
   })
 
   it('VIEWER ne peut pas patcher une classe (PATCH → 403)', async () => {
     const id = new mongoose.Types.ObjectId().toString()
-    await request(app)
-      .patch(`/api/admin/education/classes/${id}`)
-      .send({ name: 'Refusé' })
-      .expect(403)
+    await request(app).patch(`/api/admin/education/classes/${id}`).send({ name: 'Refusé' }).expect(403)
   })
 
   it('VIEWER ne peut pas supprimer une classe (DELETE → 403)', async () => {
     const id = new mongoose.Types.ObjectId().toString()
-    await request(app)
-      .delete(`/api/admin/education/classes/${id}`)
-      .expect(403)
+    await request(app).delete(`/api/admin/education/classes/${id}`).expect(403)
   })
 
   it('VIEWER ne peut pas patcher une présence de séance (PATCH /:id/attendance → 403)', async () => {
     const id = new mongoose.Types.ObjectId().toString()
-    await request(app)
-      .patch(`/api/admin/education/sessions/${id}/attendance`)
-      .send({ attendance: [] })
-      .expect(403)
+    await request(app).patch(`/api/admin/education/sessions/${id}/attendance`).send({ attendance: [] }).expect(403)
   })
 
   it('VIEWER ne peut pas patcher une soumission (PATCH /assignments/:id/submissions/:studentId → 403)', async () => {
@@ -124,6 +110,14 @@ describe('education access — super-admin only', () => {
       .expect(403)
   })
 
+  it('VIEWER ne peut pas traiter un signal étudiant (PATCH /students/:id/follow-up/:type → 403)', async () => {
+    const id = new mongoose.Types.ObjectId().toString()
+    await request(app)
+      .patch(`/api/admin/education/students/${id}/follow-up/ABSENCES_REPETEES`)
+      .send({ acknowledged: true, count: 2 })
+      .expect(403)
+  })
+
   it('VIEWER ne peut pas importer un CSV étudiants (POST /students/import → 403)', async () => {
     await request(app)
       .post('/api/admin/education/students/import')
@@ -132,10 +126,7 @@ describe('education access — super-admin only', () => {
   })
 
   it('VIEWER ne peut pas créer un template (POST /templates → 403)', async () => {
-    await request(app)
-      .post('/api/admin/education/templates')
-      .send({ kind: 'session', name: 'T' })
-      .expect(403)
+    await request(app).post('/api/admin/education/templates').send({ kind: 'session', name: 'T' }).expect(403)
   })
 
   it('VIEWER ne peut pas uploader un document (POST /documents → 403)', async () => {

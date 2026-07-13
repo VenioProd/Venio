@@ -1821,6 +1821,20 @@
   align-items: center;
   white-space: nowrap;
 }
+.edu-student-follow-up {
+  margin: 20px 0;
+  padding: 12px;
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+.edu-student-follow-up .edu-h2 {
+  margin-top: 0;
+}
+.edu-student-follow-up-done {
+  margin: 0;
+  color: #22c55e;
+  font-size: 13px;
+}
 .edu-spin {
   animation: edu-spin-kf 1s linear infinite;
 }

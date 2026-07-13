@@ -10,8 +10,10 @@ import {
   listSessions,
   studentDisplayName,
   updateStudent,
+  acknowledgeStudentFollowUp,
   type AttendanceState,
   type EducationAssignment,
+  type EducationDashboardAlert,
   type EducationSession,
   type EducationStudent,
   type EducationStudentStatus,
@@ -45,10 +47,12 @@ export function StudentProfileDrawer({
   student,
   onClose,
   onChanged,
+  followUpAlert,
 }: {
   student: EducationStudent
   onClose: () => void
   onChanged: () => void
+  followUpAlert?: EducationDashboardAlert | null
 }) {
   const classId = idOf(student.classId)
 
@@ -56,6 +60,8 @@ export function StudentProfileDrawer({
   const [notes, setNotes] = useState(student.notes || '')
   const [notesSaved, setNotesSaved] = useState(false)
   const [headError, setHeadError] = useState<string | null>(null)
+  const [followUpAcknowledged, setFollowUpAcknowledged] = useState(false)
+  const [acknowledgingFollowUp, setAcknowledgingFollowUp] = useState(false)
 
   // Historique de présence.
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[] | null>(null)
@@ -136,6 +142,21 @@ export function StudentProfileDrawer({
     }
   }
 
+  async function acknowledgeFollowUp() {
+    if (!followUpAlert) return
+    setAcknowledgingFollowUp(true)
+    setHeadError(null)
+    try {
+      await acknowledgeStudentFollowUp(student._id, followUpAlert.type, followUpAlert.count)
+      setFollowUpAcknowledged(true)
+      onChanged()
+    } catch (err) {
+      setHeadError(err instanceof Error ? err.message : 'Erreur de mise à jour du suivi')
+    } finally {
+      setAcknowledgingFollowUp(false)
+    }
+  }
+
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
@@ -182,6 +203,26 @@ export function StudentProfileDrawer({
             <Kpi label="Retards" value={student.lateCount} />
             <Kpi label="Moyenne" value={student.averageGrade != null ? student.averageGrade.toFixed(1) : '—'} />
           </div>
+
+          {followUpAlert && (
+            <section className="edu-student-follow-up" aria-labelledby="student-follow-up-title">
+              <h2 id="student-follow-up-title" className="edu-h2">
+                Point d’attention
+              </h2>
+              <p className="edu-sub" style={{ marginBottom: 10 }}>
+                {followUpAlert.message}
+              </p>
+              {followUpAcknowledged ? (
+                <p className="edu-student-follow-up-done" role="status">
+                  Suivi marqué comme traité. Il réapparaîtra si la situation évolue.
+                </p>
+              ) : (
+                <button className="edu-btn ghost" onClick={acknowledgeFollowUp} disabled={acknowledgingFollowUp}>
+                  {acknowledgingFollowUp ? 'Mise à jour…' : 'Marquer comme traité'}
+                </button>
+              )}
+            </section>
+          )}
 
           <h2 className="edu-h2">
             Notes par devoir

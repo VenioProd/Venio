@@ -1,10 +1,59 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
-import { EducationStudent, EducationClass } from '../../../models/education/index.js'
+import mongoose from 'mongoose'
+import {
+  EducationStudent,
+  EducationClass,
+  EducationAssignment,
+  EducationSubmission,
+  FOLLOW_UP_TYPES,
+  type EducationFollowUpType,
+} from '../../../models/education/index.js'
 import { logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } })
+
+async function currentFollowUpCount(
+  req: Request,
+  studentId: mongoose.Types.ObjectId,
+  type: EducationFollowUpType,
+  absenceCount: number,
+  lateCount: number,
+): Promise<number> {
+  if (type === 'ABSENCES_REPETEES') return absenceCount >= 2 ? absenceCount : 0
+  if (type === 'RETARDS_REPETES') return lateCount >= 3 ? lateCount : 0
+
+  const overdue = await EducationSubmission.aggregate<{ count: number }>([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(req.user!.id),
+        studentId,
+        deletedAt: null,
+        $or: [{ status: { $in: ['NON_RENDU', 'EN_RETARD'] } }, { isLate: true, grade: null }],
+      },
+    },
+    {
+      $lookup: {
+        from: EducationAssignment.collection.name,
+        localField: 'assignmentId',
+        foreignField: '_id',
+        as: 'assignment',
+      },
+    },
+    { $unwind: '$assignment' },
+    {
+      $match: {
+        'assignment.owner': new mongoose.Types.ObjectId(req.user!.id),
+        'assignment.deletedAt': null,
+        'assignment.status': { $in: ['OUVERT', 'EN_CORRECTION'] },
+        'assignment.deadline': { $lt: new Date() },
+      },
+    },
+    { $count: 'count' },
+  ])
+  return overdue[0]?.count || 0
+}
 
 // GET / — list ; query: classId, status, search
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -19,7 +68,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       EducationStudent.countDocuments(filter),
     ])
     res.json({ students: items, total })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // POST / — create
@@ -46,7 +97,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     await logActivity(req.user!.id, req.user!.id, 'student', created._id, 'CREATE', { classId })
     res.status(201).json({ student: created })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // POST /import — import CSV (text body: csv ou form-data file)
@@ -60,7 +113,10 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
     const raw = req.file?.buffer?.toString('utf-8') ?? req.body?.csv ?? ''
     if (!raw || typeof raw !== 'string') return res.status(400).json({ error: 'CSV vide' })
 
-    const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    const lines = raw
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
     if (lines.length === 0) return res.status(400).json({ error: 'CSV vide' })
 
     const header = lines[0].split(/[,;\t]/).map((h) => h.trim().toLowerCase())
@@ -96,19 +152,68 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
     if (docs.length === 0) return res.status(400).json({ error: 'Aucune ligne valide' })
 
     const inserted = await EducationStudent.insertMany(docs)
-    await logActivity(req.user!.id, req.user!.id, 'student', classId, 'CREATE', { imported: inserted.length, kind: 'csv' })
+    await logActivity(req.user!.id, req.user!.id, 'student', classId, 'CREATE', {
+      imported: inserted.length,
+      kind: 'csv',
+    })
     res.status(201).json({ inserted: inserted.length, students: inserted })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
-    const item = await EducationStudent.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate('classId', 'name color')
+    const item = await EducationStudent.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate(
+      'classId',
+      'name color',
+    )
     if (!item) return res.status(404).json({ error: 'Étudiant introuvable' })
     res.json({ student: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /:id/follow-up/:type — acknowledge a concrete pedagogical signal.
+// The reviewed count is persisted so a later deterioration is surfaced again.
+router.patch('/:id/follow-up/:type', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const type = req.params.type as EducationFollowUpType
+    if (!FOLLOW_UP_TYPES.includes(type)) return res.status(400).json({ error: 'Type de suivi invalide' })
+
+    const item = await EducationStudent.findOne({ _id: req.params.id, ...ownerFilter(req) })
+    if (!item) return res.status(404).json({ error: 'Étudiant introuvable' })
+
+    const acknowledged = req.body?.acknowledged !== false
+    const count = Number(req.body?.count)
+    if (acknowledged && (!Number.isInteger(count) || count < 1)) {
+      return res.status(400).json({ error: 'Le nombre de signaux traités est invalide' })
+    }
+    if (acknowledged) {
+      const currentCount = await currentFollowUpCount(req, item._id, type, item.absenceCount, item.lateCount)
+      if (count > currentCount) {
+        return res.status(409).json({ error: 'Le signal a évolué, actualise la fiche avant de le traiter' })
+      }
+    }
+
+    const acknowledgements = item.followUpAcknowledgements.filter((entry) => entry.type !== type)
+    if (acknowledged) acknowledgements.push({ type, count, acknowledgedAt: new Date() })
+    item.followUpAcknowledgements = acknowledgements
+    await item.save()
+    await logActivity(req.user!.id, req.user!.id, 'student', item._id, 'UPDATE', {
+      kind: 'follow-up',
+      type,
+      acknowledged,
+      count: acknowledged ? count : null,
+    })
+    res.json({ student: item })
+  } catch (err) {
+    next(err)
+  }
 })
 
 // PATCH /:id
@@ -131,7 +236,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'student', item._id, 'UPDATE', {})
     res.json({ student: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // DELETE /:id — soft
@@ -144,7 +251,9 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'student', item._id, 'DELETE', {})
     res.json({ success: true })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 export default router

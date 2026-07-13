@@ -11,6 +11,13 @@ export type EducationAssignmentStatus = 'DRAFT' | 'OUVERT' | 'EN_CORRECTION' | '
 export type EducationAssignmentKind = 'DEVOIR' | 'PROJET' | 'EXPOSE' | 'QCM' | 'EXAMEN' | 'AUTRE'
 export type EducationSubmissionStatus = 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
 export type EducationAiMode = 'session_plan' | 'session_synthesis' | 'assignment_feedback' | 'checklist_action_plan'
+export type EducationFollowUpType = 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
+
+export interface EducationFollowUpAcknowledgement {
+  type: EducationFollowUpType
+  count: number
+  acknowledgedAt: string
+}
 
 export interface EducationAiDraft {
   text: string
@@ -98,6 +105,7 @@ export interface EducationStudent {
   lateCount: number
   averageGrade: number | null
   notes: string
+  followUpAcknowledgements: EducationFollowUpAcknowledgement[]
   createdAt: string
   updatedAt: string
 }
@@ -219,6 +227,15 @@ export interface EducationDocument {
   updatedAt: string
 }
 
+export interface EducationDashboardAlert {
+  type: EducationFollowUpType
+  severity: 'high' | 'medium'
+  count: number
+  student: { _id: string; firstName: string; lastName: string }
+  class: { _id: string; name: string; color?: string; school?: string }
+  message: string
+}
+
 export interface EducationDashboard {
   counters: {
     activeClasses: number
@@ -235,14 +252,7 @@ export interface EducationDashboard {
   toPrepare: EducationSession[]
   openAssignments: EducationAssignment[]
   toCorrect: EducationAssignment[]
-  alerts: Array<{
-    type: 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
-    severity: 'high' | 'medium'
-    count: number
-    student: { _id: string; firstName: string; lastName: string }
-    class: { _id: string; name: string; color?: string; school?: string }
-    message: string
-  }>
+  alerts: EducationDashboardAlert[]
   lastSessionByClass: Array<{
     class: { _id: string; name: string; color?: string; school?: string }
     lastSession: EducationSession | null
@@ -419,6 +429,10 @@ export async function listStudents(
   return await apiFetch(`${base}/students${qs.toString() ? '?' + qs.toString() : ''}`)
 }
 
+export async function getStudent(id: string): Promise<{ student: EducationStudent }> {
+  return await apiFetch(`${base}/students/${id}`)
+}
+
 export async function createStudent(
   data: Partial<EducationStudent> & { classId: string; lastName: string },
 ): Promise<{ student: EducationStudent }> {
@@ -440,6 +454,17 @@ export async function updateStudent(
   data: Partial<EducationStudent>,
 ): Promise<{ student: EducationStudent }> {
   return await apiFetch(`${base}/students/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export async function acknowledgeStudentFollowUp(
+  id: string,
+  type: EducationFollowUpType,
+  count: number,
+): Promise<{ student: EducationStudent }> {
+  return await apiFetch(`${base}/students/${id}/follow-up/${type}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ acknowledged: true, count }),
+  })
 }
 
 export async function deleteStudent(id: string): Promise<{ success: true }> {
