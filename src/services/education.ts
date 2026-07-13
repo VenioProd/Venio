@@ -227,7 +227,7 @@ export interface EducationDocument {
   updatedAt: string
 }
 
-export type EducationDocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student'
+export type EducationDocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student' | 'note'
 
 export type EducationDocumentParentContext =
   | {

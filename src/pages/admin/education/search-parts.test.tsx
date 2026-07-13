@@ -63,6 +63,7 @@ describe('VENIO-50 Quickfind document contexts', () => {
         onPickSession={vi.fn()}
         onPickAssignment={onPickAssignment}
         onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
       />,
     )
     fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'barème' } })
@@ -72,6 +73,53 @@ describe('VENIO-50 Quickfind document contexts', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le contexte de Barème final' }))
     expect(onPickAssignment).toHaveBeenCalledWith('assignment-1')
+  })
+
+  it('opens an accessible parent note for a document result', async () => {
+    const onPickNote = vi.fn()
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-note',
+            parentType: 'note',
+            parentId: 'note-1',
+            title: 'Brief de séance',
+            originalName: '',
+            mimeType: 'application/pdf',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'note', id: 'note-1', label: 'Préparation' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={onPickNote}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'brief' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+
+    expect(screen.getByText(/ouvrir la note.*préparation/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le contexte de Brief de séance' }))
+    expect(onPickNote).toHaveBeenCalledWith('note-1')
   })
 
   it('keeps a document without an accessible target visibly unavailable and inert', async () => {
@@ -105,6 +153,7 @@ describe('VENIO-50 Quickfind document contexts', () => {
         onPickSession={vi.fn()}
         onPickAssignment={vi.fn()}
         onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
       />,
     )
     fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'archive' } })
@@ -115,5 +164,47 @@ describe('VENIO-50 Quickfind document contexts', () => {
     expect(screen.getByText(/contexte parent indisponible/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /archive privée/i })).toBeDisabled()
     expect(onPickClass).not.toHaveBeenCalled()
+  })
+
+  it('keeps a missing or unauthorized parent note visibly unavailable and inert', async () => {
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-note-private',
+            parentType: 'note',
+            parentId: 'private-note',
+            title: 'Archive de note',
+            originalName: '',
+            mimeType: 'application/pdf',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'archive' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+
+    expect(screen.getByText(/note parente indisponible/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /archive de note/i })).toBeDisabled()
   })
 })

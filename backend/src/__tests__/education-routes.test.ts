@@ -239,6 +239,39 @@ describe('education routes', () => {
     expect(byTitle.get('Référence privée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
   })
 
+  it('Quickfind: ouvre une note parente autorisée sans révéler les notes supprimées ou étrangères', async () => {
+    const { EducationDocument, EducationNote } = await import('../models/education/index.js')
+    await EducationDocument.init()
+
+    const note = await EducationNote.create({ owner: OWNER_ID, title: 'Préparation de cours' })
+    const deletedNote = await EducationNote.create({
+      owner: OWNER_ID,
+      title: 'Ancienne préparation',
+      deletedAt: new Date(),
+    })
+    const foreignNote = await EducationNote.create({
+      owner: new mongoose.Types.ObjectId(),
+      title: 'Préparation privée',
+    })
+    await EducationDocument.create([
+      { owner: OWNER_ID, title: 'Support note parent', parentType: 'note', parentId: note._id },
+      { owner: OWNER_ID, title: 'Support note supprimée', parentType: 'note', parentId: deletedNote._id },
+      { owner: OWNER_ID, title: 'Support note privée', parentType: 'note', parentId: foreignNote._id },
+    ])
+
+    const found = await request(app).get('/api/admin/education/search?q=Support').expect(200)
+    const documents = found.body.results.documents as Array<{ title: string; parentContext: Record<string, unknown> }>
+    const byTitle = new Map(documents.map((document) => [document.title, document.parentContext]))
+
+    expect(byTitle.get('Support note parent')).toEqual({
+      state: 'available',
+      target: { kind: 'note', id: note._id.toString(), label: 'Préparation de cours' },
+    })
+    // Une note supprimée ou appartenant à un autre intervenant reste opaque.
+    expect(byTitle.get('Support note supprimée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
+    expect(byTitle.get('Support note privée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
+  })
+
   it('dashboard: counters cohérents', async () => {
     const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     await request(app)
