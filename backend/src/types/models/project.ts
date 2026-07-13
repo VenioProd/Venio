@@ -62,6 +62,20 @@ export interface IProjectMember extends Document {
   updatedAt: Date
 }
 
+export interface IProjectInvitation extends Document {
+  project: Types.ObjectId
+  tokenHash: string
+  role: ProjectMemberRole
+  createdBy: Types.ObjectId
+  expiresAt: Date
+  revokedAt: Date | null
+  revokedBy: Types.ObjectId | null
+  usedAt: Date | null
+  usedBy: Types.ObjectId | null
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── ProjectSection ───
 export interface IProjectSection extends Document {
   project: Types.ObjectId

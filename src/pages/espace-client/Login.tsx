@@ -13,6 +13,7 @@ const ClientLogin = () => {
   const [searchParams] = useSearchParams()
 
   const resetToken = searchParams.get('reset')
+  const returnTo = searchParams.get('returnTo') === '/espace-client/invitation' ? '/espace-client/invitation' : null
   const [mode, setMode] = useState<Mode>(resetToken ? 'reset' : 'login')
 
   const [email, setEmail] = useState('')
@@ -28,7 +29,7 @@ const ClientLogin = () => {
   }, [resetToken])
 
   if (user?.role === 'CLIENT') {
-    return <Navigate to="/espace-client" replace />
+    return <Navigate to={returnTo || '/espace-client'} replace />
   }
   if (user?.role && isAdminRole(user.role)) {
     return <Navigate to="/admin" replace />
@@ -44,7 +45,7 @@ const ClientLogin = () => {
         navigate('/admin', { replace: true })
         return
       }
-      navigate('/espace-client', { replace: true })
+      navigate(returnTo || '/espace-client', { replace: true })
     } catch (err: unknown) {
       setError((err as Error).message || 'Connexion impossible')
     } finally {

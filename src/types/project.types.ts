@@ -29,6 +29,16 @@ export interface ProjectCollaborator {
   createdAt: string
 }
 
+export interface ProjectInvitation {
+  _id: string
+  role: ProjectCollaboratorRole
+  createdAt: string
+  expiresAt: string
+  revokedAt: string | null
+  usedAt: string | null
+  usedBy: { name: string; email: string } | null
+}
+
 export interface Project {
   _id: string
   name: string

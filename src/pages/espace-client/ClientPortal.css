@@ -785,6 +785,51 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   margin-top: 20px;
 }
 
+.client-invitations-form {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.client-invitations-form label,
+.client-invitation-generated label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.client-invitations-form select,
+.client-invitation-generated input {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.client-invitation-generated {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.client-invitation-generated .client-collaborators-status {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
 .client-collaborators-form label,
 .client-collaborator-role {
   display: grid;
@@ -828,6 +873,32 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   border-bottom: 1px solid var(--border-color);
 }
 
+.client-invitation-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.client-invitation-status {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.client-invitation-status--active {
+  color: #86efac;
+}
+.client-invitation-status--used {
+  color: #93c5fd;
+}
+.client-invitation-status--revoked,
+.client-invitation-status--expired {
+  color: #fca5a5;
+}
+
 .client-collaborator-identity {
   min-width: 0;
   display: grid;
@@ -863,11 +934,15 @@ div:has(> input.portal-input[type="datetime-local"])::after {
 
 @media (max-width: 640px) {
   .client-collaborators-form,
-  .client-collaborators-item {
+  .client-collaborators-item,
+  .client-invitation-item,
+  .client-invitation-generated {
     grid-template-columns: 1fr;
   }
 
   .client-collaborators-form .portal-button,
+  .client-invitations-form .portal-button,
+  .client-invitation-generated .portal-button,
   .client-collaborators-revoke {
     width: 100%;
   }

@@ -6,6 +6,7 @@ export type {
   IProjectBilling,
   IProject,
   IProjectMember,
+  IProjectInvitation,
   IProjectSection,
   IProjectItemFile,
   IProjectItem,
