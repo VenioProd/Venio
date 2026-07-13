@@ -66,5 +66,7 @@ const schema = new Schema<IEducationSubmission>(
 
 schema.index({ owner: 1, assignmentId: 1, studentId: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } })
 schema.index({ owner: 1, status: 1, deletedAt: 1 })
+// Grade averages and follow-up checks read a learner's active submissions across assignments.
+schema.index({ owner: 1, studentId: 1, deletedAt: 1 })
 
 export default mongoose.model<IEducationSubmission>('EducationSubmission', schema)

@@ -63,6 +63,8 @@ const schema = new Schema<IEducationAssignment>(
 )
 
 schema.index({ owner: 1, classId: 1, status: 1, deadline: 1, deletedAt: 1 })
+// The dashboard also lists open assignments across every class, ordered by deadline.
+schema.index({ owner: 1, deletedAt: 1, status: 1, deadline: 1 })
 schema.index({ title: 'text', instructions: 'text' })
 
 export default mongoose.model<IEducationAssignment>('EducationAssignment', schema)
