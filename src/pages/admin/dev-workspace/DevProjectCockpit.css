@@ -722,6 +722,158 @@
   white-space: nowrap;
 }
 
+/* Technical timeline */
+.cockpit-timeline-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.cockpit-timeline-filter {
+  padding: 4px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.45);
+  color: #94a3b8;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cockpit-timeline-filter:hover,
+.cockpit-timeline-filter.active {
+  border-color: color-mix(in srgb, var(--primary) 65%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: #f8fafc;
+}
+
+.cockpit-timeline-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 520px;
+  overflow-y: auto;
+  border-left: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.cockpit-timeline-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  padding: 9px 0 9px 11px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.cockpit-timeline-row:last-child {
+  border-bottom: 0;
+}
+
+.cockpit-timeline-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: -23px;
+  border-radius: 999px;
+  background: #172033;
+  color: #cbd5e1;
+}
+
+.cockpit-timeline-row.tone-comment .cockpit-timeline-icon {
+  color: var(--primary);
+}
+
+.cockpit-timeline-row.tone-github .cockpit-timeline-icon {
+  color: #c4b5fd;
+}
+
+.cockpit-timeline-row.tone-agent .cockpit-timeline-icon {
+  color: #67e8f9;
+}
+
+.cockpit-timeline-row.tone-deployment .cockpit-timeline-icon {
+  color: #34d399;
+}
+
+.cockpit-timeline-main {
+  min-width: 0;
+}
+
+.cockpit-timeline-topline,
+.cockpit-timeline-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cockpit-timeline-label {
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cockpit-timeline-actor,
+.cockpit-timeline-date {
+  color: #94a3b8;
+  font-size: 10.5px;
+}
+
+.cockpit-timeline-date {
+  margin-left: auto;
+  color: #64748b;
+}
+
+.cockpit-timeline-summary {
+  margin-top: 3px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.cockpit-timeline-comment {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 2px solid color-mix(in srgb, var(--primary) 65%, transparent);
+  background: rgba(15, 23, 42, 0.45);
+  color: #cbd5e1;
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.cockpit-timeline-links {
+  margin-top: 6px;
+}
+
+.cockpit-timeline-issue,
+.cockpit-timeline-external,
+.cockpit-timeline-sha {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: 600 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-decoration: none;
+}
+
+.cockpit-timeline-issue {
+  cursor: pointer;
+}
+
+.cockpit-timeline-issue span {
+  color: #94a3b8;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.cockpit-timeline-sha {
+  color: #94a3b8;
+}
+
 /* ─── Project intelligence: GitHub / Tokens / Code / Refactor ─────────────── */
 
 .cockpit-intel-row .cockpit-intel-card {

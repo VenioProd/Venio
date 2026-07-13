@@ -21,5 +21,6 @@ const devIssueCommentSchema = new Schema<IDevIssueComment>(
 )
 
 devIssueCommentSchema.index({ issue: 1, createdAt: 1 })
+devIssueCommentSchema.index({ project: 1, createdAt: -1 })
 
 export default mongoose.model<IDevIssueComment>('DevIssueComment', devIssueCommentSchema)

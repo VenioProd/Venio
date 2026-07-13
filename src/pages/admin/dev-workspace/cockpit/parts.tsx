@@ -48,6 +48,7 @@ import {
   type DevCiStatus,
   type DevCockpitActivityEvent,
   type DevCockpitIssueRef,
+  type DevCockpitTimelineEvent,
   type DevGithubPullRequestRef,
   type DevIssuePriority,
   type DevIssueStatus,
@@ -145,6 +146,79 @@ export const ActivityRow = ({ event, onOpen }: ActivityRowProps) => {
         </button>
       )}
       <span className="cockpit-activity-date">{formatRelative(event.at)}</span>
+    </div>
+  )
+}
+
+interface TimelineRowProps {
+  event: DevCockpitTimelineEvent
+  onOpen: (id: string) => void
+}
+
+const TIMELINE_LABEL: Record<DevCockpitTimelineEvent['type'], string> = {
+  created: 'Issue créée',
+  status_changed: 'Statut modifié',
+  priority_changed: 'Priorité modifiée',
+  type_changed: 'Type modifié',
+  assigned: 'Assignation modifiée',
+  metadata_changed: 'Métadonnées modifiées',
+  commented: 'Commentaire',
+  comment: 'Commentaire',
+  github_linked: 'Lien GitHub',
+  ci_changed: 'CI',
+  agent_started: 'Agent démarré',
+  agent_blocked: 'Agent bloqué',
+  agent_done: 'Agent terminé',
+  deployed: 'Déploiement',
+  archived: 'Issue archivée',
+}
+
+const TIMELINE_ICON: Record<DevCockpitTimelineEvent['category'], typeof Sparkles> = {
+  change: RefreshCw,
+  comment: MessageSquare,
+  github: GitPullRequest,
+  agent: Sparkles,
+  deployment: Play,
+}
+
+function githubMeta(metadata: Record<string, unknown>): { prUrl: string | null; commitSha: string | null } {
+  const github = metadata.github
+  if (!github || typeof github !== 'object') return { prUrl: null, commitSha: null }
+  const value = github as Record<string, unknown>
+  return {
+    prUrl: typeof value.prUrl === 'string' ? value.prUrl : null,
+    commitSha: typeof value.commitSha === 'string' ? value.commitSha : null,
+  }
+}
+
+export const TimelineRow = ({ event, onOpen }: TimelineRowProps) => {
+  const Icon = TIMELINE_ICON[event.category]
+  const github = githubMeta(event.metadata)
+  return (
+    <div className={`cockpit-timeline-row tone-${event.category}`}>
+      <span className="cockpit-timeline-icon"><Icon size={12} /></span>
+      <div className="cockpit-timeline-main">
+        <div className="cockpit-timeline-topline">
+          <span className="cockpit-timeline-label">{TIMELINE_LABEL[event.type]}</span>
+          <span className="cockpit-timeline-actor">{event.actor?.name || event.actor?.email || 'Système'}</span>
+          <span className="cockpit-timeline-date">{formatRelative(event.at)}</span>
+        </div>
+        <div className="cockpit-timeline-summary">{event.summary}</div>
+        {event.commentBody && <div className="cockpit-timeline-comment">{event.commentBody}</div>}
+        <div className="cockpit-timeline-links">
+          {event.issue && (
+            <button type="button" className="cockpit-timeline-issue" onClick={() => onOpen(event.issue!._id)}>
+              {event.issue.identifier} <span>{event.issue.title}</span>
+            </button>
+          )}
+          {github.prUrl && (
+            <a href={github.prUrl} target="_blank" rel="noopener noreferrer" className="cockpit-timeline-external">
+              PR <ExternalLink size={10} />
+            </a>
+          )}
+          {github.commitSha && <span className="cockpit-timeline-sha">{github.commitSha.slice(0, 12)}</span>}
+        </div>
+      </div>
     </div>
   )
 }
@@ -600,4 +674,3 @@ export const RelativeTime = ({ iso }: { iso: string }) => {
   }, [])
   return <>{relativeFR(iso)}</>
 }
-

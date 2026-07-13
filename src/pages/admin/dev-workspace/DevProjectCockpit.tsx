@@ -46,7 +46,6 @@ import {
   TYPE_LABEL,
   type DevCiStatus,
   type DevCockpit,
-  type DevCockpitActivityEvent,
   type DevCockpitIssueRef,
   type DevGithubPullRequestRef,
   type DevIssuePriority,
@@ -55,6 +54,7 @@ import {
   type DevProjectGithubConfig,
   type DevProjectIntelligence,
   type DevLargeFilesSnapshot,
+  type DevTimelineCategory,
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
@@ -67,7 +67,7 @@ import { formatBytes, formatNumber, formatRelative, formatShortDate, userInitial
 import {
   GithubIcon,
   IssueRow,
-  ActivityRow,
+  TimelineRow,
   PieTooltip,
   BarTooltip,
   GithubPanel,
@@ -98,6 +98,7 @@ const DevProjectCockpit = () => {
   const [cockpit, setCockpit] = useState<DevCockpit | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [timelineFilter, setTimelineFilter] = useState<DevTimelineCategory | 'all'>('all')
 
   // Project intelligence (github / tokens / code metrics)
   const [intel, setIntel] = useState<DevProjectIntelligence | null>(null)
@@ -259,6 +260,13 @@ const DevProjectCockpit = () => {
       .filter(([, v]) => v > 0)
       .map(([k, v]) => ({ key: k, name: PRIORITY_LABEL[k], value: v, color: PRIORITY_COLOR[k] }))
   }, [cockpit])
+
+  const visibleTimeline = useMemo(() => {
+    if (!cockpit) return []
+    return timelineFilter === 'all'
+      ? cockpit.timeline
+      : cockpit.timeline.filter((event) => event.category === timelineFilter)
+  }, [cockpit, timelineFilter])
 
   const typeData = useMemo(() => {
     if (!cockpit) return []
@@ -578,21 +586,45 @@ const DevProjectCockpit = () => {
         </div>
       </section>
 
-      {/* ── Priorité 5 — Activité récente ── */}
+      {/* ── Priorité 5 — Timeline technique ── */}
       <section className="cockpit-row cockpit-row-single">
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <Activity size={11} /> Activité récente
+              <Activity size={11} /> Timeline technique
             </span>
-            <span className="cockpit-card-meta">{cockpit.activity.length} événement(s)</span>
+            <span className="cockpit-card-meta">{visibleTimeline.length} événement(s)</span>
           </div>
-          {cockpit.activity.length === 0 ? (
-            <div className="cockpit-empty">Aucune activité.</div>
+          <div className="cockpit-timeline-filters" role="group" aria-label="Filtrer la timeline technique">
+            {(
+              [
+                ['all', 'Tout'],
+                ['change', 'Changements'],
+                ['comment', 'Commentaires'],
+                ['github', 'GitHub / CI'],
+                ['agent', 'Agents'],
+                ['deployment', 'Déploiements'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={`cockpit-timeline-filter${timelineFilter === value ? ' active' : ''}`}
+                aria-pressed={timelineFilter === value}
+                onClick={() => setTimelineFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {cockpit.timeline.length === 0 ? (
+            <div className="cockpit-empty">Aucun événement technique n’a encore été tracé pour ce projet.</div>
+          ) : visibleTimeline.length === 0 ? (
+            <div className="cockpit-empty">Aucun événement ne correspond à ce filtre.</div>
           ) : (
-            <div className="cockpit-activity-list">
-              {cockpit.activity.map((event, idx) => (
-                <ActivityRow key={`${event.type}-${event.at}-${idx}`} event={event} onOpen={openIssue} />
+            <div className="cockpit-timeline-list">
+              {visibleTimeline.map((event) => (
+                <TimelineRow key={event._id} event={event} onOpen={openIssue} />
               ))}
             </div>
           )}

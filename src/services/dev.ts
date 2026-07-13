@@ -482,6 +482,20 @@ export interface DevCockpitActivityEvent {
   actor: { _id: string; name: string; email: string } | null
 }
 
+export type DevTimelineCategory = 'change' | 'comment' | 'github' | 'agent' | 'deployment'
+
+export interface DevCockpitTimelineEvent {
+  _id: string
+  type: DevIssueEvent['type'] | 'comment'
+  category: DevTimelineCategory
+  at: string
+  summary: string
+  metadata: Record<string, unknown>
+  commentBody: string | null
+  issue: { _id: string; identifier: string; title: string; status: DevIssueStatus } | null
+  actor: { _id: string; name: string; email: string } | null
+}
+
 export interface DevCockpitAssigneeRow {
   user: { _id: string; name: string; email: string; avatarUrl?: string } | null
   open: number
@@ -512,6 +526,7 @@ export interface DevCockpit {
   nextDue: DevCockpitIssueRef[]
   recentlyDone: DevCockpitIssueRef[]
   activity: DevCockpitActivityEvent[]
+  timeline: DevCockpitTimelineEvent[]
   assignees: DevCockpitAssigneeRow[]
 }
 
