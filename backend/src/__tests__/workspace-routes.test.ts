@@ -47,6 +47,11 @@ describe('layout', () => {
     expect(res.body.widgets).toHaveLength(1)
     expect(res.body.widgets[0].key).toBe('todo')
   })
+  it('PUT /layout persiste les raccourcis personnels', async () => {
+    const shortcuts = [{ label: 'CRM', link: '/admin/crm', icon: 'users' }]
+    const res = await request(app).put('/api/admin/workspace/layout').send({ shortcuts }).expect(200)
+    expect(res.body.shortcuts).toEqual(shortcuts)
+  })
 })
 
 describe('tasks', () => {
@@ -66,11 +71,17 @@ describe('tasks', () => {
 
 describe('notes', () => {
   it('CRUD note owner-scopé', async () => {
-    const created = await request(app).post('/api/admin/workspace/notes').send({ type: 'NOTE', title: 'N1' }).expect(201)
+    const created = await request(app)
+      .post('/api/admin/workspace/notes')
+      .send({ type: 'NOTE', title: 'N1' })
+      .expect(201)
     const id = created.body._id
-    await request(app).get('/api/admin/workspace/notes?type=NOTE').expect(200).then((r) => {
-      expect(r.body.map((n: { _id: string }) => n._id)).toContain(id)
-    })
+    await request(app)
+      .get('/api/admin/workspace/notes?type=NOTE')
+      .expect(200)
+      .then((r) => {
+        expect(r.body.map((n: { _id: string }) => n._id)).toContain(id)
+      })
     await request(app).delete(`/api/admin/workspace/notes/${id}`).expect(200)
   })
   it('convert idée → PersonalTask', async () => {
