@@ -254,6 +254,40 @@ export function DashboardView({
         </Section>
       )}
 
+      <Section
+        title="Suivi pédagogique"
+        subtitle={
+          dashboard.alerts.length > 0
+            ? 'Signaux calculés à partir des présences et des travaux échus. Ouvre la classe pour consulter la fiche étudiant.'
+            : 'Aucun signal de suivi dans le périmètre affiché.'
+        }
+      >
+        {dashboard.alerts.length > 0 && (
+          <div className="edu-alert-list" role="list" aria-label="Signaux de suivi pédagogique">
+            {dashboard.alerts.map((alert) => (
+              <button
+                key={`${alert.type}-${alert.student._id}`}
+                type="button"
+                className="edu-alert-row"
+                onClick={() => onOpenClass(alert.class._id)}
+                role="listitem"
+              >
+                <span className={`edu-alert-severity ${alert.severity}`} aria-hidden />
+                <span className="edu-alert-main">
+                  <strong>{[alert.student.firstName, alert.student.lastName.toUpperCase()].filter(Boolean).join(' ') || 'Étudiant sans nom'}</strong>
+                  <span>{alert.message}</span>
+                </span>
+                <span className="edu-alert-class">
+                  <span className="edu-pill-dot" style={{ background: alert.class.color || '#22C55E' }} />
+                  {alert.class.name}
+                  {alert.class.school ? ` · ${alert.class.school}` : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Section>
+
       <Section title="Activité récente">
         {dashboard.activity.length === 0 ? (
           <p className="edu-empty">—</p>

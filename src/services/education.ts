@@ -235,6 +235,14 @@ export interface EducationDashboard {
   toPrepare: EducationSession[]
   openAssignments: EducationAssignment[]
   toCorrect: EducationAssignment[]
+  alerts: Array<{
+    type: 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
+    severity: 'high' | 'medium'
+    count: number
+    student: { _id: string; firstName: string; lastName: string }
+    class: { _id: string; name: string; color?: string; school?: string }
+    message: string
+  }>
   lastSessionByClass: Array<{
     class: { _id: string; name: string; color?: string; school?: string }
     lastSession: EducationSession | null
