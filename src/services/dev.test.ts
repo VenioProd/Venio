@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { computeWeightedProgress, fetchDevDailyPriorities, fetchDevProjectCockpit, type DevIssueStatus } from './dev'
+import {
+  computeWeightedProgress,
+  fetchDevDailyPriorities,
+  fetchDevProjectCockpit,
+  launchDevAgentRun,
+  type DevIssueStatus,
+} from './dev'
 
 const empty = (): Record<DevIssueStatus, number> => ({
   BACKLOG: 0,
@@ -92,5 +98,40 @@ describe('fetchDevDailyPriorities', () => {
     await fetchDevDailyPriorities()
 
     expect(fetchMock.mock.calls[0]![0]).toContain('/api/admin/dev/priorities')
+  })
+})
+
+describe('launchDevAgentRun', () => {
+  const ORIGINAL_FETCH = global.fetch
+  afterEach(() => {
+    global.fetch = ORIGINAL_FETCH
+  })
+
+  it('uses the scoped endpoint and forwards one idempotency key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        executionId: 'run-49',
+        status: 'QUEUED',
+        bridgeExecutionId: null,
+        target: null,
+        replayed: false,
+      }),
+    })
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    await launchDevAgentRun(
+      'project-49',
+      { issueId: 'issue-49', recommendationId: 'issue-stale-issue-49' },
+      'idem-venio-49',
+    )
+
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('/api/admin/dev/projects/project-49/agent-runs')
+    const options = fetchMock.mock.calls[0]?.[1] as RequestInit
+    expect(options.method).toBe('POST')
+    expect(new Headers(options.headers).get('Idempotency-Key')).toBe('idem-venio-49')
+    expect(options.body).toBe(JSON.stringify({ issueId: 'issue-49', recommendationId: 'issue-stale-issue-49' }))
   })
 })

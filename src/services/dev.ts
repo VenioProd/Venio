@@ -534,6 +534,40 @@ export function fetchDevProjectCockpit(projectId: string): Promise<DevCockpit> {
   return apiFetch(`/api/admin/dev/projects/${projectId}/dashboard`)
 }
 
+// ─── Scoped agent launch (VENIO-49) ─────────────────────────────────────────
+
+export interface DevAgentLaunchAvailability {
+  available: boolean
+  reason: string | null
+  target: { agent: string; model: string } | null
+  limitations: string[]
+  scope: { repository: string; baseBranch: string } | null
+}
+
+export interface DevAgentRunResult {
+  executionId: string
+  status: 'QUEUED' | 'DISPATCHED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'BRIDGE_UNAVAILABLE' | 'DISPATCH_FAILED'
+  bridgeExecutionId: string | null
+  target: { agent: string; model: string } | null
+  replayed: boolean
+}
+
+export function fetchDevAgentLaunchAvailability(projectId: string): Promise<DevAgentLaunchAvailability> {
+  return apiFetch(`/api/admin/dev/projects/${projectId}/agent-launch/availability`)
+}
+
+export function launchDevAgentRun(
+  projectId: string,
+  input: { issueId: string; recommendationId?: string | null },
+  idempotencyKey: string,
+): Promise<DevAgentRunResult> {
+  return apiFetch(`/api/admin/dev/projects/${projectId}/agent-runs`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(input),
+  })
+}
+
 // ─── Project intelligence (github, tokens, code metrics) ────────────────────
 
 export interface DevGithubLinks {

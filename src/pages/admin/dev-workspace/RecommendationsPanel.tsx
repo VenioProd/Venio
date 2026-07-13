@@ -12,13 +12,17 @@ import {
   Wrench,
 } from 'lucide-react'
 import {
+  fetchDevAgentLaunchAvailability,
   fetchDevProjectRecommendations,
+  type DevAgentLaunchAvailability,
   type DevRecommendationItem,
   type DevRecommendationPriority,
   type DevRecommendationSection,
   type DevRecommendationSource,
   type DevRecommendationsPayload,
 } from '../../../services/dev'
+import { useAuth } from '../../../context/AuthContext'
+import AgentLaunchControl from './AgentLaunchControl'
 import './RecommendationsPanel.css'
 
 const SECTION_META: Record<
@@ -66,11 +70,14 @@ function relativeFR(iso: string | null | undefined): string {
 
 interface ItemRowProps {
   item: DevRecommendationItem
+  projectId: string
+  agentAvailability: DevAgentLaunchAvailability | null
   onOpenIssue: (issueId: string) => void
 }
 
-const ItemRow = ({ item, onOpenIssue }: ItemRowProps) => {
+const ItemRow = ({ item, projectId, agentAvailability, onOpenIssue }: ItemRowProps) => {
   const p = PRIORITY_META[item.priority]
+  const linkedIssueId = item.actions.find((action) => action.kind === 'open_issue' && action.issueId)?.issueId ?? null
   return (
     <li className={`reco-row tone-${item.priority}`} style={{ ['--p-color' as never]: p.color }}>
       <span className="reco-row-dot" aria-hidden />
@@ -81,7 +88,9 @@ const ItemRow = ({ item, onOpenIssue }: ItemRowProps) => {
           <span className="reco-badge reco-badge-prio">{p.label}</span>
           <span className="reco-badge reco-badge-source">{SOURCE_LABEL[item.source]}</span>
           {item.badges.slice(0, 4).map((b, idx) => (
-            <span key={`${item.id}-b-${idx}`} className="reco-badge">{b}</span>
+            <span key={`${item.id}-b-${idx}`} className="reco-badge">
+              {b}
+            </span>
           ))}
           {item.metric && (
             <span className="reco-badge reco-badge-metric">
@@ -132,6 +141,17 @@ const ItemRow = ({ item, onOpenIssue }: ItemRowProps) => {
             }
             return null
           })}
+          {linkedIssueId && agentAvailability?.available && (
+            <AgentLaunchControl
+              projectId={projectId}
+              issueId={linkedIssueId}
+              issueIdentifier={item.badges.find((badge) => /^[A-Z][A-Z0-9]{1,7}-\d+$/.test(badge)) || 'Issue'}
+              issueTitle={item.title}
+              recommendationId={item.id}
+              availability={agentAvailability}
+              compact
+            />
+          )}
         </div>
       )}
     </li>
@@ -141,10 +161,12 @@ const ItemRow = ({ item, onOpenIssue }: ItemRowProps) => {
 interface SectionCardProps {
   section: DevRecommendationSection
   items: DevRecommendationItem[]
+  projectId: string
+  agentAvailability: DevAgentLaunchAvailability | null
   onOpenIssue: (issueId: string) => void
 }
 
-const SectionCard = ({ section, items, onOpenIssue }: SectionCardProps) => {
+const SectionCard = ({ section, items, projectId, agentAvailability, onOpenIssue }: SectionCardProps) => {
   const meta = SECTION_META[section]
   const Icon = meta.icon
   return (
@@ -160,7 +182,13 @@ const SectionCard = ({ section, items, onOpenIssue }: SectionCardProps) => {
       ) : (
         <ul className="reco-list">
           {items.map((item) => (
-            <ItemRow key={item.id} item={item} onOpenIssue={onOpenIssue} />
+            <ItemRow
+              key={item.id}
+              item={item}
+              projectId={projectId}
+              agentAvailability={agentAvailability}
+              onOpenIssue={onOpenIssue}
+            />
           ))}
         </ul>
       )}
@@ -174,25 +202,50 @@ interface RecommendationsPanelProps {
 }
 
 const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelProps) => {
+  const { user } = useAuth()
   const [data, setData] = useState<DevRecommendationsPayload | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [agentAvailability, setAgentAvailability] = useState<DevAgentLaunchAvailability | null>(null)
   const [, setTick] = useState(0)
 
-  const load = useCallback(async (force = false) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const payload = await fetchDevProjectRecommendations(projectId, { refresh: force })
-      setData(payload)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur de chargement')
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+  const load = useCallback(
+    async (force = false) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const payload = await fetchDevProjectRecommendations(projectId, { refresh: force })
+        setData(payload)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Erreur de chargement')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [projectId],
+  )
 
-  useEffect(() => { load(false) }, [load])
+  useEffect(() => {
+    load(false)
+  }, [load])
+
+  useEffect(() => {
+    if (user?.role !== 'SUPER_ADMIN') {
+      setAgentAvailability(null)
+      return
+    }
+    let cancelled = false
+    void fetchDevAgentLaunchAvailability(projectId)
+      .then((availability) => {
+        if (!cancelled) setAgentAvailability(availability)
+      })
+      .catch(() => {
+        if (!cancelled) setAgentAvailability(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [projectId, user?.role])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -224,9 +277,7 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
         <div className="reco-panel-title">
           <Sparkles size={14} />
           <h2>Recommandations projet</h2>
-          <span className="reco-panel-subtitle">
-            ce qu’il faut améliorer, ajouter ou optimiser ensuite
-          </span>
+          <span className="reco-panel-subtitle">ce qu’il faut améliorer, ajouter ou optimiser ensuite</span>
         </div>
         <div className="reco-panel-meta">
           {data && (
@@ -242,16 +293,14 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
               )}
               <span
                 className="reco-panel-stat"
-                title={`Source(s) : ${[
-                  data.source.issues && 'issues',
-                  data.source.github && 'github',
-                  data.source.code && 'code',
-                ]
-                  .filter(Boolean)
-                  .join(', ') || 'aucune'}`}
+                title={`Source(s) : ${
+                  [data.source.issues && 'issues', data.source.github && 'github', data.source.code && 'code']
+                    .filter(Boolean)
+                    .join(', ') || 'aucune'
+                }`}
               >
-                {data.fromCache ? 'cache' : 'frais'} · MAJ {relativeFR(data.generatedAt)} ·
-                {' '}prochain {relativeFR(data.nextRefreshAt)}
+                {data.fromCache ? 'cache' : 'frais'} · MAJ {relativeFR(data.generatedAt)} · prochain{' '}
+                {relativeFR(data.nextRefreshAt)}
               </span>
             </>
           )}
@@ -275,11 +324,7 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
         </div>
       )}
 
-      {!data && !error && (
-        <div className="reco-empty reco-empty-loading">
-          Calcul des recommandations…
-        </div>
-      )}
+      {!data && !error && <div className="reco-empty reco-empty-loading">Calcul des recommandations…</div>}
 
       {data && data.status === 'partial' && data.reasons.length > 0 && (
         <details className="reco-warnings">
@@ -288,25 +333,50 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
             {data.reasons.length > 1 ? 's' : ''} indisponible{data.reasons.length > 1 ? 's' : ''})
           </summary>
           <ul>
-            {data.reasons.slice(0, 4).map((r, i) => <li key={i}>{r}</li>)}
+            {data.reasons.slice(0, 4).map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
           </ul>
         </details>
       )}
 
       {data && (
         <div className="reco-grid">
-          <SectionCard section="improve" items={sections!.improve} onOpenIssue={onOpenIssue} />
-          <SectionCard section="add" items={sections!.add} onOpenIssue={onOpenIssue} />
-          <SectionCard section="optimize" items={sections!.optimize} onOpenIssue={onOpenIssue} />
-          <SectionCard section="large_files" items={sections!.large_files} onOpenIssue={onOpenIssue} />
+          <SectionCard
+            section="improve"
+            items={sections!.improve}
+            projectId={projectId}
+            agentAvailability={agentAvailability}
+            onOpenIssue={onOpenIssue}
+          />
+          <SectionCard
+            section="add"
+            items={sections!.add}
+            projectId={projectId}
+            agentAvailability={agentAvailability}
+            onOpenIssue={onOpenIssue}
+          />
+          <SectionCard
+            section="optimize"
+            items={sections!.optimize}
+            projectId={projectId}
+            agentAvailability={agentAvailability}
+            onOpenIssue={onOpenIssue}
+          />
+          <SectionCard
+            section="large_files"
+            items={sections!.large_files}
+            projectId={projectId}
+            agentAvailability={agentAvailability}
+            onOpenIssue={onOpenIssue}
+          />
         </div>
       )}
 
       {data && !hasContent && data.status !== 'partial' && (
         <div className="reco-empty">
-          Aucune recommandation actionnable détectée pour le moment.
-          {' '}Les recommandations sont recalculées toutes les {Math.round(data.ttlSeconds / 3600)} h
-          {' '}à partir du snapshot périodique disponible.
+          Aucune recommandation actionnable détectée pour le moment. Les recommandations sont recalculées toutes les{' '}
+          {Math.round(data.ttlSeconds / 3600)} h à partir du snapshot périodique disponible.
         </div>
       )}
     </section>
