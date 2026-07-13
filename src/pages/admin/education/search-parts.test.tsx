@@ -1,7 +1,13 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiDownload } from '../../../lib/api'
 import { searchEducation } from '../../../services/education'
 import { SearchModal } from './search-parts'
+
+vi.mock('../../../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/api')>()),
+  apiDownload: vi.fn(),
+}))
 
 vi.mock('../../../services/education', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../services/education')>()),
@@ -9,6 +15,7 @@ vi.mock('../../../services/education', async (importOriginal) => ({
 }))
 
 const mockedSearchEducation = vi.mocked(searchEducation)
+const mockedApiDownload = vi.mocked(apiDownload)
 
 const emptyResults = {
   classes: [],
@@ -23,10 +30,18 @@ describe('VENIO-50 Quickfind document contexts', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mockedSearchEducation.mockReset()
+    mockedApiDownload.mockReset()
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => 'blob:quickfind-document'),
+      revokeObjectURL: vi.fn(),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('opens the resolved parent context for a document result', async () => {
@@ -70,6 +85,63 @@ describe('VENIO-50 Quickfind document contexts', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200)
     })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le contexte de Barème final' }))
+    expect(onPickAssignment).toHaveBeenCalledWith('assignment-1')
+  })
+
+  it('downloads an authorized document without replacing its parent action', async () => {
+    const onPickAssignment = vi.fn()
+    mockedApiDownload.mockResolvedValue({
+      blob: new Blob(['support'], { type: 'application/pdf' }),
+      filename: 'bareme.pdf',
+      contentType: 'application/pdf',
+    })
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-download',
+            parentType: 'assignment',
+            parentId: 'assignment-1',
+            title: 'Barème final',
+            originalName: 'bareme.pdf',
+            mimeType: 'application/pdf',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'assignment', id: 'assignment-1', label: 'Devoir final' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={onPickAssignment}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'barème' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Télécharger Barème final' }))
+    })
+    expect(mockedApiDownload).toHaveBeenCalledWith('/api/admin/education/documents/document-download/download')
+    expect(onPickAssignment).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le contexte de Barème final' }))
     expect(onPickAssignment).toHaveBeenCalledWith('assignment-1')
@@ -122,8 +194,13 @@ describe('VENIO-50 Quickfind document contexts', () => {
     expect(onPickNote).toHaveBeenCalledWith('note-1')
   })
 
-  it('keeps a document without an accessible target visibly unavailable and inert', async () => {
+  it('keeps an inaccessible parent inert while preserving the authorized document download', async () => {
     const onPickClass = vi.fn()
+    mockedApiDownload.mockResolvedValue({
+      blob: new Blob(['archive']),
+      filename: 'archive.pdf',
+      contentType: 'application/pdf',
+    })
     mockedSearchEducation.mockResolvedValue({
       results: {
         ...emptyResults,
@@ -162,7 +239,11 @@ describe('VENIO-50 Quickfind document contexts', () => {
     })
 
     expect(screen.getByText(/contexte parent indisponible/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /archive privée/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Ouvrir le contexte de Archive privée' })).toBeDisabled()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Télécharger Archive privée' }))
+    })
+    expect(mockedApiDownload).toHaveBeenCalledWith('/api/admin/education/documents/document-2/download')
     expect(onPickClass).not.toHaveBeenCalled()
   })
 
@@ -205,6 +286,6 @@ describe('VENIO-50 Quickfind document contexts', () => {
     })
 
     expect(screen.getByText(/note parente indisponible/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /archive de note/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Ouvrir le contexte de Archive de note' })).toBeDisabled()
   })
 })
