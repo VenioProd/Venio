@@ -17,6 +17,7 @@ import {
   GitCommit,
   GitMerge,
   GitPullRequest,
+  HeartPulse,
   Hash,
   ListChecks,
   MessageSquare,
@@ -50,6 +51,7 @@ import {
   type DevCockpitIssueRef,
   type DevCockpitTimelineEvent,
   type DevGithubPullRequestRef,
+  type DevDeploymentSummary,
   type DevIssuePriority,
   type DevIssueStatus,
   type DevIssueType,
@@ -651,6 +653,162 @@ export const RepoQualityPanel = ({ quality }: { quality: DevRepoQuality }) => {
     </div>
   )
 }
+
+const CI_STATUS_LABEL: Record<DevCiStatus, string> = {
+  PENDING: 'En attente',
+  RUNNING: 'En cours',
+  SUCCESS: 'Succès',
+  FAILURE: 'Échec',
+  UNKNOWN: 'Inconnu',
+}
+
+const DEPLOYMENT_STATUS_LABEL: Record<DevDeploymentSummary['deployment']['status'], string> = {
+  success: 'Réussi',
+  failed: 'Échec',
+  running: 'En cours',
+  unknown: 'Inconnu',
+}
+
+const HEALTHCHECK_STATUS_LABEL: Record<DevDeploymentSummary['healthcheck']['status'], string> = {
+  healthy: 'Sain',
+  degraded: 'Dégradé',
+  unhealthy: 'En échec',
+  unknown: 'Inconnu',
+}
+
+function deploymentTone(status: string | null): 'ok' | 'warn' | 'fail' | 'neutral' {
+  if (status === 'SUCCESS' || status === 'success' || status === 'healthy') return 'ok'
+  if (status === 'FAILURE' || status === 'failed' || status === 'unhealthy') return 'fail'
+  if (status === 'PENDING' || status === 'RUNNING' || status === 'running' || status === 'degraded') return 'warn'
+  return 'neutral'
+}
+
+function deploymentSource(source: DevDeploymentSummary['ci']['source']): string {
+  if (source === 'timeline_deployment') return 'timeline de déploiement'
+  if (source === 'timeline_ci') return 'timeline CI'
+  if (source === 'issue_github') return 'métadonnées GitHub de l’issue'
+  return 'aucune donnée'
+}
+
+/** A bounded, source-first summary: no client-supplied URL or live probe. */
+export const DeploymentPanel = ({ deployment }: { deployment: DevDeploymentSummary }) => (
+  <div className="cockpit-card cockpit-intel-card cockpit-deployment">
+    <div className="cockpit-card-header">
+      <span className="cockpit-card-kicker">
+        <Play size={11} /> Déploiement production
+      </span>
+      <span className={`cockpit-deployment-freshness tone-${deployment.freshness}`}>
+        {deployment.freshness === 'fresh'
+          ? 'données fraîches'
+          : deployment.freshness === 'stale'
+            ? 'données anciennes'
+            : 'fraîcheur inconnue'}
+      </span>
+    </div>
+
+    <dl className="cockpit-deployment-list">
+      <div>
+        <dt>
+          <GitCommit size={12} /> Commit en production
+        </dt>
+        <dd>
+          {deployment.productionCommit.sha ? (
+            deployment.productionCommit.url ? (
+              <a href={deployment.productionCommit.url} target="_blank" rel="noopener noreferrer">
+                {deployment.productionCommit.sha.slice(0, 12)} <ExternalLink size={10} />
+              </a>
+            ) : (
+              <code>{deployment.productionCommit.sha.slice(0, 12)}</code>
+            )
+          ) : (
+            'Inconnu'
+          )}
+          <small>
+            {deployment.productionCommit.observedAt
+              ? `observé ${formatRelative(deployment.productionCommit.observedAt)}`
+              : 'non enregistré'}
+          </small>
+        </dd>
+      </div>
+      <div>
+        <dt>
+          <GitPullRequest size={12} /> Dernier CI / build
+        </dt>
+        <dd>
+          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.ci.status)}`}>
+            {deployment.ci.status ? CI_STATUS_LABEL[deployment.ci.status] : 'Inconnu'}
+          </span>
+          {deployment.ci.runUrl && (
+            <a
+              href={deployment.ci.runUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cockpit-deployment-link"
+            >
+              Run <ExternalLink size={10} />
+            </a>
+          )}
+          <small>
+            {deployment.ci.observedAt ? `observé ${formatRelative(deployment.ci.observedAt)}` : 'non enregistré'}
+          </small>
+        </dd>
+      </div>
+      <div>
+        <dt>
+          <Play size={12} /> Dernier déploiement
+        </dt>
+        <dd>
+          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.deployment.status)}`}>
+            {DEPLOYMENT_STATUS_LABEL[deployment.deployment.status]}
+          </span>
+          {deployment.deployment.logsUrl && (
+            <a
+              href={deployment.deployment.logsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cockpit-deployment-link"
+            >
+              Logs <ExternalLink size={10} />
+            </a>
+          )}
+          <small>
+            {deployment.deployment.observedAt
+              ? `observé ${formatRelative(deployment.deployment.observedAt)}`
+              : 'non enregistré'}
+          </small>
+        </dd>
+      </div>
+      <div>
+        <dt>
+          <HeartPulse size={12} /> Healthcheck
+        </dt>
+        <dd>
+          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.healthcheck.status)}`}>
+            {HEALTHCHECK_STATUS_LABEL[deployment.healthcheck.status]}
+          </span>
+          <small>
+            {deployment.healthcheck.observedAt
+              ? `observé ${formatRelative(deployment.healthcheck.observedAt)}`
+              : 'non enregistré'}
+          </small>
+        </dd>
+      </div>
+    </dl>
+
+    <details className="cockpit-deployment-details">
+      <summary>Sources et limites</summary>
+      <p>
+        Sources : {deploymentSource(deployment.deployment.source)} et métadonnées GitHub déjà associées au projet. Les
+        liens sont construits côté serveur depuis le dépôt configuré.
+      </p>
+      <p>
+        Aucune sonde externe n’est exécutée par cette carte : sans événement de production ou healthcheck enregistré,
+        l’état reste « Inconnu ». Les données sont considérées anciennes après {deployment.freshnessThresholdHours} h.
+      </p>
+      {!deployment.configured && deployment.reason && <p className="cockpit-deployment-warning">{deployment.reason}</p>}
+    </details>
+  </div>
+)
 
 interface LargeFilesPanelProps {
   snapshot: DevLargeFilesSnapshot | null

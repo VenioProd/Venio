@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { RepoQualityPanel, TimelineRow } from './parts'
+import { DeploymentPanel, RepoQualityPanel, TimelineRow } from './parts'
 
 describe('TimelineRow', () => {
   it('renders persisted GitHub metadata and opens its linked issue', () => {
@@ -98,5 +98,75 @@ describe('RepoQualityPanel', () => {
     expect(screen.getByText(/score sur 50 pts observés/i)).toBeInTheDocument()
     expect(screen.getByText('Aucun artefact coverage-summary.json valide.')).toBeInTheDocument()
     expect(screen.getByText('coverage/coverage-summary.json')).toBeInTheDocument()
+  })
+})
+
+describe('DeploymentPanel', () => {
+  it('renders the persisted production observations and only the server-provided GitHub links', () => {
+    render(
+      <DeploymentPanel
+        deployment={{
+          configured: true,
+          reason: null,
+          productionCommit: {
+            sha: 'abcdef1234567890',
+            observedAt: '2026-07-13T10:00:00.000Z',
+            source: 'timeline_deployment',
+            url: 'https://github.com/venio/app/commit/abcdef1234567890',
+          },
+          ci: {
+            status: 'FAILURE',
+            observedAt: '2026-07-13T10:00:00.000Z',
+            source: 'timeline_ci',
+            runUrl: 'https://github.com/venio/app/actions/runs/49',
+          },
+          deployment: {
+            status: 'success',
+            observedAt: '2026-07-13T10:00:00.000Z',
+            source: 'timeline_deployment',
+            logsUrl: 'https://github.com/venio/app/actions/runs/48',
+          },
+          healthcheck: {
+            status: 'healthy',
+            observedAt: '2026-07-13T10:00:00.000Z',
+            source: 'timeline_deployment',
+          },
+          observedAt: '2026-07-13T10:00:00.000Z',
+          freshness: 'fresh',
+          freshnessThresholdHours: 24,
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Commit en production')).toBeInTheDocument()
+    expect(screen.getByText('abcdef123456')).toBeInTheDocument()
+    expect(screen.getByText('Échec')).toBeInTheDocument()
+    expect(screen.getByText('Réussi')).toBeInTheDocument()
+    expect(screen.getByText('Sain')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /run/i })).toHaveAttribute(
+      'href',
+      'https://github.com/venio/app/actions/runs/49',
+    )
+  })
+
+  it('keeps missing deployment and healthcheck evidence explicitly unknown', () => {
+    render(
+      <DeploymentPanel
+        deployment={{
+          configured: false,
+          reason: 'GitHub owner/repo non configuré.',
+          productionCommit: { sha: null, observedAt: null, source: 'unavailable', url: null },
+          ci: { status: null, observedAt: null, source: 'unavailable', runUrl: null },
+          deployment: { status: 'unknown', observedAt: null, source: 'unavailable', logsUrl: null },
+          healthcheck: { status: 'unknown', observedAt: null, source: 'unavailable' },
+          observedAt: null,
+          freshness: 'unknown',
+          freshnessThresholdHours: 24,
+        }}
+      />,
+    )
+
+    expect(screen.getAllByText('Inconnu')).toHaveLength(4)
+    expect(screen.getByText(/aucune sonde externe/i)).toBeInTheDocument()
   })
 })
