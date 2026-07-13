@@ -601,6 +601,13 @@ export function sessionExportUrl(sessionId: string): string {
   return `${base}/sessions/${sessionId}/export.csv`
 }
 
+export type EducationClassExportFormat = 'csv' | 'json'
+
+/** Export de la classe sélectionnée : CSV des cours ou instantané JSON versionné. */
+export function classWorkspaceExportUrl(classId: string, format: EducationClassExportFormat): string {
+  return `${base}/exports/classes/${encodeURIComponent(classId)}?format=${format}`
+}
+
 function saveDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -624,6 +631,16 @@ export async function downloadSessionExport(sessionId: string): Promise<void> {
     headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EDUCATION_SESSION_EXPORT),
   })
   saveDownload(blob, filename ?? 'presences.csv')
+}
+
+export async function downloadClassWorkspaceExport(
+  classId: string,
+  format: EducationClassExportFormat,
+): Promise<void> {
+  const { blob, filename } = await apiDownload(classWorkspaceExportUrl(classId, format), {
+    headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EDUCATION_CLASS_EXPORT),
+  })
+  saveDownload(blob, filename ?? `classe-workspace.${format}`)
 }
 
 // Notes

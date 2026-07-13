@@ -37,6 +37,7 @@ import { StudentsTab } from './student-parts'
 import { SessionsTab } from './session-parts'
 import { AssignmentsTab } from './assignment-parts'
 import { NotesTab } from './note-parts'
+import { ClassExportActions } from './ClassExportActions'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
@@ -298,6 +299,7 @@ export function ClassDetailDrawer({
             </div>
           </div>
           <div className="edu-row" style={{ gap: 6 }}>
+            <ClassExportActions classId={classId} />
             <button className="edu-btn ghost" onClick={() => setEditing(true)}>Modifier</button>
             <button className="edu-btn-icon" onClick={handleDelete} title="Supprimer"><Trash2 size={16} /></button>
             <button className="edu-btn-icon" onClick={onClose}><X size={18} /></button>

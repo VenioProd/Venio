@@ -57,6 +57,12 @@ describe('education access — super-admin only', () => {
     await request(app).get('/api/admin/education/classes').expect(403)
   })
 
+  it('VIEWER ne peut pas exporter une classe pédagogique', async () => {
+    await request(app)
+      .get(`/api/admin/education/exports/classes/${new mongoose.Types.ObjectId()}?format=json`)
+      .expect(403)
+  })
+
   it('VIEWER ne peut pas créer une classe (POST → 403)', async () => {
     await request(app).post('/api/admin/education/classes').send({ name: 'Refusée' }).expect(403)
   })

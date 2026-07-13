@@ -41,6 +41,7 @@ export type SensitiveActionId =
   | 'ACCOUNTING_REPORT_EXPORT'
   | 'EDUCATION_ASSIGNMENT_EXPORT'
   | 'EDUCATION_SESSION_EXPORT'
+  | 'EDUCATION_CLASS_EXPORT'
   | 'ACCOUNTING_ENTRY_DELETE'
   | 'EXTERNAL_SOURCE_CREATE'
   | 'EXTERNAL_SOURCE_ROTATE'
@@ -136,6 +137,12 @@ export const SENSITIVE_ACTIONS: Record<SensitiveActionId, SensitiveActionPolicy>
     confirmation: 'TYPED',
     stepUp: 'SESSION',
     summary: 'Export CSV des présences pédagogiques',
+  },
+  EDUCATION_CLASS_EXPORT: {
+    level: 'HIGH',
+    confirmation: 'TYPED',
+    stepUp: 'SESSION',
+    summary: 'Export CSV ou JSON d’une classe pédagogique',
   },
   ACCOUNTING_ENTRY_DELETE: {
     level: 'HIGH',
