@@ -16,7 +16,7 @@ import {
   listStudents, createStudent, importStudentsCsv, deleteStudent,
   listSessions, createSession,
   listAssignments, getAssignment, createAssignment, updateAssignment, updateSubmission,
-  listNotes, createNote, updateNote, deleteNote,
+  listNotes, createNote, updateNote, deleteNote, getNote,
   listTemplates,
   searchEducation,
   studentDisplayName, formatDate, assignmentExportUrl,
@@ -49,11 +49,15 @@ export function NotesView({
   fixedLink,
   templates,
   onTemplatesChanged: _onTemplatesChanged,
+  incomingOpenId,
+  onCloseIncomingOpen,
 }: {
   classes: EducationClass[]
   fixedLink?: { type: 'class' | 'session' | 'assignment' | 'student'; refId: string }
   templates?: EducationTemplate[]
   onTemplatesChanged?: () => void
+  incomingOpenId?: string | null
+  onCloseIncomingOpen?: () => void
 }) {
   const [notes, setNotes] = useState<EducationNote[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -84,6 +88,26 @@ export function NotesView({
     const found = notes.find((n) => n._id === activeId)
     if (found) setActiveNote(found)
   }, [activeId, notes])
+
+  useEffect(() => {
+    if (!incomingOpenId) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const { note } = await getNote(incomingOpenId)
+        if (cancelled) return
+        setNotes((current) => current.some((item) => item._id === note._id) ? current : [note, ...current])
+        setActiveId(note._id)
+        setActiveNote(note)
+        setLoadError(null)
+      } catch {
+        if (!cancelled) setLoadError('La note demandée n’est plus accessible.')
+      } finally {
+        if (!cancelled) onCloseIncomingOpen?.()
+      }
+    })()
+    return () => { cancelled = true }
+  }, [incomingOpenId, onCloseIncomingOpen])
 
   const persist = useCallback((next: EducationNote) => {
     setActiveNote(next)

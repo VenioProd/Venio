@@ -44,12 +44,14 @@ export function SearchModal({
   onPickSession,
   onPickAssignment,
   onPickStudent,
+  onPickNote,
 }: {
   onClose: () => void
   onPickClass: (id: string) => void
   onPickSession: (id: string) => void
   onPickAssignment: (id: string) => void
   onPickStudent: (id: string) => void
+  onPickNote: (id: string) => void
 }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Awaited<ReturnType<typeof searchEducation>>['results'] | null>(null)
@@ -73,6 +75,7 @@ export function SearchModal({
     if (target.kind === 'session') onPickSession(target.id)
     if (target.kind === 'assignment') onPickAssignment(target.id)
     if (target.kind === 'student') onPickStudent(target.id)
+    if (target.kind === 'note') onPickNote(target.id)
   }
 
   return (
@@ -139,6 +142,13 @@ export function SearchModal({
                 const target = document.parentContext?.state === 'available' ? document.parentContext.target : null
                 const noParent =
                   document.parentContext?.state === 'unavailable' && document.parentContext.reason === 'NO_PARENT'
+                const unavailableMessage = noParent
+                  ? document.parentType === 'note'
+                    ? ' · Aucune note parente associée'
+                    : ' · Aucun contexte pédagogique associé'
+                  : document.parentType === 'note'
+                    ? ' · Note parente indisponible'
+                    : ' · Contexte parent indisponible'
                 return (
                   <button
                     key={document._id}
@@ -156,10 +166,8 @@ export function SearchModal({
                     {document.title || document.originalName || 'Document sans titre'}
                     <span className="edu-search-result-meta">
                       {target
-                        ? ` · Ouvrir ${target.kind === 'assignment' ? 'le devoir' : target.kind === 'class' ? 'la classe' : target.kind === 'session' ? 'la séance' : 'l’étudiant'} · ${target.label}${target.school ? ` · ${target.school}` : ''}`
-                        : noParent
-                          ? ' · Aucun contexte pédagogique associé'
-                          : ' · Contexte parent indisponible'}
+                        ? ` · Ouvrir ${target.kind === 'assignment' ? 'le devoir' : target.kind === 'class' ? 'la classe' : target.kind === 'session' ? 'la séance' : target.kind === 'student' ? 'l’étudiant' : 'la note'} · ${target.label}${target.school ? ` · ${target.school}` : ''}`
+                        : unavailableMessage}
                     </span>
                   </button>
                 )

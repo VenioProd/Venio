@@ -140,6 +140,7 @@ export default function EducationWorkspace() {
   const [correctionAssignmentId, setCorrectionAssignmentId] = useState<string | null>(null)
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null)
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [school, setSchool] = useState<string>(() => loadContext().school)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
@@ -402,7 +403,13 @@ export default function EducationWorkspace() {
               />
             )}
             {view === 'notes' && (
-              <NotesView classes={classes} templates={templates} onTemplatesChanged={refreshTemplates} />
+              <NotesView
+                classes={classes}
+                templates={templates}
+                onTemplatesChanged={refreshTemplates}
+                incomingOpenId={pendingNoteId}
+                onCloseIncomingOpen={() => setPendingNoteId(null)}
+              />
             )}
             {view === 'templates' && <TemplatesView />}
             {view === 'schools' && (
@@ -470,6 +477,11 @@ export default function EducationWorkspace() {
             } catch (err) {
               setDashboardError(err instanceof Error ? err.message : 'Impossible d’ouvrir la fiche étudiant')
             }
+          }}
+          onPickNote={(id) => {
+            setPendingNoteId(id)
+            setSearchOpen(false)
+            setView('notes')
           }}
         />
       )}

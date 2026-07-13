@@ -12,7 +12,7 @@ import { asObjectId, ownerFilter, validId } from './helpers.js'
 
 const router = express.Router()
 
-type DocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student'
+type DocumentSearchTargetKind = 'class' | 'session' | 'assignment' | 'student' | 'note'
 
 type DocumentParentContext =
   | {
@@ -87,8 +87,14 @@ async function resolveDocumentParentContext(
         ? target('assignment', assignment._id.toString(), assignment.title)
         : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
     }
+    case 'note': {
+      const parent = await EducationNote.findOne({ _id: parentId, ...ownerFilter(req) }).select('title')
+      return parent
+        ? target('note', parent._id.toString(), parent.title || 'Note sans titre')
+        : { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
+    }
     default:
-      // Notes and standalone documents currently have no dedicated direct view.
+      // Les documents autonomes n'ont pas de contexte pédagogique ouvrable.
       return { state: 'unavailable', reason: 'TARGET_UNAVAILABLE' }
   }
 }
