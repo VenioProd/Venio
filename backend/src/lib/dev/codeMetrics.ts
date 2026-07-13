@@ -12,6 +12,7 @@ export interface FileEntry {
   lines: number
   bytes: number
   typescriptDebt?: TypeScriptDebt
+  todoFixmes?: Array<Omit<TodoFixme, 'path'>>
 }
 
 /**
@@ -45,6 +46,18 @@ export interface LargeFile {
   reason: string
 }
 
+export interface TodoFixme {
+  path: string
+  line: number
+  marker: 'TODO' | 'FIXME'
+  text: string
+}
+
+export interface BackendRouteWithoutTest {
+  path: string
+  testHint: string
+}
+
 export interface CodeMetricsSummary {
   available: boolean
   source: 'filesystem' | 'unconfigured' | 'error' | 'pending'
@@ -59,6 +72,8 @@ export interface CodeMetricsSummary {
   }
   byExtension: ExtensionStat[]
   largeFiles: LargeFile[]
+  todoFixmes: TodoFixme[]
+  backendRoutesWithoutTest: BackendRouteWithoutTest[]
   topFilesGlobal: Array<{ path: string; ext: string; language: string; lines: number; bytes: number }>
   typescriptDebt: TypeScriptDebt | null
   quality: RepoQualitySummary
@@ -293,11 +308,33 @@ function inspectTypeScriptDebt(content: string): TypeScriptDebt {
   }
 }
 
+function inspectTodoFixmes(content: string): Array<Omit<TodoFixme, 'path'>> {
+  const markers: Array<Omit<TodoFixme, 'path'>> = []
+  const lines = content.split(/\r?\n/)
+  for (let index = 0; index < lines.length && markers.length < 12; index++) {
+    const line = lines[index]
+    const match = /\b(TODO|FIXME)\b[:\s-]*(.*)/i.exec(line)
+    if (!match) continue
+    markers.push({
+      line: index + 1,
+      marker: match[1].toUpperCase() as TodoFixme['marker'],
+      text: (match[2].trim() || line.trim()).slice(0, 180),
+    })
+  }
+  return markers
+}
+
 function countLines(
   filePath: string,
   byteLimit: number,
   inspectTypescript: boolean,
-): { lines: number; bytes: number; approx: boolean; typescriptDebt?: TypeScriptDebt } {
+): {
+  lines: number
+  bytes: number
+  approx: boolean
+  typescriptDebt?: TypeScriptDebt
+  todoFixmes?: Array<Omit<TodoFixme, 'path'>>
+} {
   let stat: fs.Stats
   try {
     stat = fs.statSync(filePath)
@@ -321,11 +358,13 @@ function countLines(
     for (let i = 0; i < buf.length; i++) if (buf[i] === 0x0a) n++
     // Count the trailing partial line if file doesn't end with \n
     if (buf.length > 0 && buf[buf.length - 1] !== 0x0a) n++
+    const content = buf.toString('utf8')
     return {
       lines: n,
       bytes: stat.size,
       approx: false,
-      ...(inspectTypescript ? { typescriptDebt: inspectTypeScriptDebt(buf.toString('utf8')) } : {}),
+      ...(inspectTypescript ? { typescriptDebt: inspectTypeScriptDebt(content) } : {}),
+      todoFixmes: inspectTodoFixmes(content),
     }
   } catch {
     return { lines: 0, bytes: stat.size, approx: false }
@@ -374,7 +413,14 @@ function scanFs(root: string, opts: ScanOptions): ScanResult {
         break
       }
       const counted = countLines(abs, opts.maxBytesPerFile, ext === '.ts' || ext === '.tsx')
-      files.push({ path: rel, ext, lines: counted.lines, bytes: counted.bytes, typescriptDebt: counted.typescriptDebt })
+      files.push({
+        path: rel,
+        ext,
+        lines: counted.lines,
+        bytes: counted.bytes,
+        typescriptDebt: counted.typescriptDebt,
+        todoFixmes: counted.todoFixmes,
+      })
     }
     if (files.length >= opts.maxFiles) {
       truncated = true
@@ -389,6 +435,8 @@ function aggregate(files: FileEntry[]): {
   totals: CodeMetricsSummary['totals']
   byExtension: ExtensionStat[]
   largeFiles: LargeFile[]
+  todoFixmes: TodoFixme[]
+  backendRoutesWithoutTest: BackendRouteWithoutTest[]
   topFilesGlobal: CodeMetricsSummary['topFilesGlobal']
   typescriptDebt: TypeScriptDebt | null
 } {
@@ -450,6 +498,39 @@ function aggregate(files: FileEntry[]): {
   }
   largeFiles.sort((a, b) => b.score - a.score || b.lines - a.lines)
 
+  const todoFixmes = files
+    .flatMap((file) =>
+      (file.todoFixmes || []).map((marker) => ({
+        ...marker,
+        path: file.path,
+      })),
+    )
+    .slice(0, 40)
+
+  const hasBackendWorkspace = files.some((file) => file.path.startsWith('backend/src/'))
+  const routePrefix = hasBackendWorkspace ? 'backend/src/routes/' : 'src/routes/'
+  const testNames = files
+    .filter((file) => /(?:^|\/)(?:__tests__|tests?|test)\/.+\.(?:test|spec)\.[cm]?[jt]sx?$/i.test(file.path))
+    .map((file) => file.path.toLowerCase().replace(/\.(?:test|spec)\.[cm]?[jt]sx?$/i, ''))
+  const routeKey = (filePath: string) =>
+    filePath
+      .replace(routePrefix, '')
+      .replace(/\.[cm]?[jt]sx?$/i, '')
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase()
+  const backendRoutesWithoutTest = files
+    .filter((file) => file.path.startsWith(routePrefix) && /\.[cm]?[jt]sx?$/i.test(file.path))
+    .filter((file) => {
+      const key = routeKey(file.path)
+      return !testNames.some((test) => test.includes(key))
+    })
+    .map((file) => ({
+      path: file.path,
+      testHint: `Aucun fichier de test dont le nom contient « ${routeKey(file.path)} » n’a été repéré.`,
+    }))
+    .slice(0, 20)
+
   const topFilesGlobal = [...files]
     .sort((a, b) => b.lines - a.lines)
     .slice(0, 8)
@@ -478,6 +559,8 @@ function aggregate(files: FileEntry[]): {
     totals: { files: files.length, lines: totalLines, bytes: totalBytes },
     byExtension,
     largeFiles: largeFiles.slice(0, 30),
+    todoFixmes,
+    backendRoutesWithoutTest,
     topFilesGlobal,
     typescriptDebt,
   }
@@ -879,6 +962,8 @@ function unavailableCodeMetrics(
     totals: { files: 0, lines: 0, bytes: 0 },
     byExtension: [],
     largeFiles: [],
+    todoFixmes: [],
+    backendRoutesWithoutTest: [],
     topFilesGlobal: [],
     typescriptDebt: null,
     quality: emptyRepoQuality(reason),
@@ -904,7 +989,7 @@ export function computeProjectCodeMetrics(
   const scanOpts = { ...DEFAULT_OPTS, ...(opts.limits || {}) }
   try {
     const { files, durationMs, truncated } = scanFs(resolved, scanOpts)
-    const { totals, byExtension, largeFiles, topFilesGlobal, typescriptDebt } = aggregate(files)
+    const { totals, byExtension, largeFiles, todoFixmes, backendRoutesWithoutTest, topFilesGlobal, typescriptDebt } = aggregate(files)
     const payload: CodeMetricsSummary = {
       available: true,
       source: 'filesystem',
@@ -915,6 +1000,8 @@ export function computeProjectCodeMetrics(
       totals,
       byExtension,
       largeFiles,
+      todoFixmes,
+      backendRoutesWithoutTest,
       topFilesGlobal,
       typescriptDebt,
       quality: emptyRepoQuality('Collecte qualité en attente.'),
