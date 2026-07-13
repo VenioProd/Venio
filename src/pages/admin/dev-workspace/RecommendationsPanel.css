@@ -288,6 +288,34 @@
   margin-top: 6px;
 }
 
+.reco-row-evidence {
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.reco-row-evidence summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.reco-row-evidence summary::-webkit-details-marker {
+  display: none;
+}
+
+.reco-row-evidence summary::before {
+  content: 'ⓘ';
+  margin-right: 4px;
+  color: #a5b4fc;
+}
+
+.reco-row-evidence span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+}
+
 .reco-badge {
   display: inline-flex;
   align-items: center;

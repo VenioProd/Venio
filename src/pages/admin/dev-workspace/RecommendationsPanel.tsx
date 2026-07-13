@@ -89,6 +89,12 @@ const ItemRow = ({ item, onOpenIssue }: ItemRowProps) => {
             </span>
           )}
         </div>
+        <details className="reco-row-evidence" open>
+          <summary>
+            Source : {item.evidence.source} · observé {relativeFR(item.evidence.observedAt) || 'indisponible'}
+          </summary>
+          <span>Limite : {item.evidence.limitation}</span>
+        </details>
       </div>
       {item.actions.length > 0 && (
         <div className="reco-row-actions">
@@ -254,7 +260,7 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
             className="reco-refresh-btn"
             onClick={() => load(true)}
             disabled={loading}
-            title="Forcer un recalcul (heuristique)"
+            title="Recalculer à partir des sources et du snapshot disponibles"
             aria-label="Rafraîchir"
           >
             <RefreshCw size={11} className={loading ? 'reco-spin' : undefined} />
@@ -299,8 +305,8 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
       {data && !hasContent && data.status !== 'partial' && (
         <div className="reco-empty">
           Aucune recommandation actionnable détectée pour le moment.
-          {' '}Le module re-scanne automatiquement toutes les{' '}
-          {Math.round(data.ttlSeconds / 3600)} h.
+          {' '}Les recommandations sont recalculées toutes les {Math.round(data.ttlSeconds / 3600)} h
+          {' '}à partir du snapshot périodique disponible.
         </div>
       )}
     </section>

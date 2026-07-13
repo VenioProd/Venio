@@ -709,6 +709,11 @@ export interface DevRecommendationItem {
   source: DevRecommendationSource
   badges: string[]
   metric?: { label: string; value: string | number } | null
+  evidence: {
+    source: string
+    observedAt: string | null
+    limitation: string
+  }
   actions: DevRecommendationAction[]
 }
 

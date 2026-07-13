@@ -19,13 +19,17 @@ function writeRepo(base: string) {
   fs.mkdirSync(base, { recursive: true })
   fs.mkdirSync(path.join(base, 'src/components'), { recursive: true })
   fs.mkdirSync(path.join(base, 'src/pages'), { recursive: true })
+  fs.mkdirSync(path.join(base, 'src/routes/admin'), { recursive: true })
+  fs.mkdirSync(path.join(base, 'src/__tests__'), { recursive: true })
   fs.mkdirSync(path.join(base, 'node_modules/junk'), { recursive: true })
   fs.mkdirSync(path.join(base, 'dist'), { recursive: true })
   // 50-line ts file
   fs.writeFileSync(
     path.join(base, 'src/components/Small.ts'),
-    Array.from({ length: 50 }, (_, i) => `// line ${i}`).join('\n'),
+    ['// TODO: traiter le chargement lent', ...Array.from({ length: 49 }, (_, i) => `// line ${i}`)].join('\n'),
   )
+  fs.writeFileSync(path.join(base, 'src/routes/admin/orders.ts'), 'export const ordersRoute = true\n')
+  fs.writeFileSync(path.join(base, 'src/__tests__/admin-users.test.ts'), 'export const usersTest = true\n')
   // 800-line tsx file (way over threshold 350)
   fs.writeFileSync(
     path.join(base, 'src/pages/Huge.tsx'),
@@ -133,6 +137,12 @@ describe('computeProjectCodeMetrics', () => {
     expect(huge!.lines).toBeGreaterThanOrEqual(800)
     expect(huge!.score).toBeGreaterThan(0)
     expect(huge!.threshold).toBe(350)
+    expect(m.todoFixmes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: 'src/components/Small.ts', line: 1, marker: 'TODO' }),
+    ]))
+    expect(m.backendRoutesWithoutTest).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: 'src/routes/admin/orders.ts' }),
+    ]))
   })
 
   it('ignores node_modules, dist, and lockfiles', () => {

@@ -113,6 +113,31 @@ describe('GET /api/admin/dev/projects/:id/recommendations', () => {
     expect(stale).toBeDefined()
     expect(stale.priority === 'high' || stale.priority === 'medium').toBe(true)
     expect(stale.actions[0]?.kind).toBe('open_issue')
+    expect(stale.evidence).toMatchObject({ source: expect.stringMatching(/issues/i), observedAt: expect.any(String) })
+  })
+
+  it('flags active issues without an owner with an assignment action', async () => {
+    const p = await makeProject()
+    const issue = await makeIssue({
+      project: p._id,
+      identifier: 'REC-OWNER',
+      title: 'Décider le responsable',
+      status: 'TODO',
+      priority: 'HIGH',
+      assignee: null,
+    })
+
+    const res = await request(app).get(`/api/admin/dev/projects/${p._id}/recommendations`).expect(200)
+    const unowned = res.body.sections.improve.find((i: { id: string }) => i.id === `issue-unowned-${issue._id}`)
+    expect(unowned).toMatchObject({
+      source: 'issues',
+      actions: [expect.objectContaining({ kind: 'open_issue', issueId: String(issue._id) })],
+      evidence: {
+        source: expect.stringMatching(/issues/i),
+        observedAt: expect.any(String),
+        limitation: expect.any(String),
+      },
+    })
   })
 
   it('surfaces open FEATURE issues in the add section sorted by priority', async () => {
