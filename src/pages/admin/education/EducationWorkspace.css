@@ -953,6 +953,40 @@
 .edu-search-result-meta {
   color: rgba(255, 255, 255, 0.45);
 }
+.edu-search-document-result {
+  cursor: default;
+}
+.edu-search-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.edu-search-document-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.edu-search-document-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+.edu-search-document-action:focus-visible {
+  outline: 2px solid #86b7ff;
+  outline-offset: 2px;
+}
+.edu-search-document-action:disabled {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.45);
+}
 
 /* ─── Empty state ────────────────────────────────────────────────────── */
 .edu-empty {

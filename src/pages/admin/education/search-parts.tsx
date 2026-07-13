@@ -8,8 +8,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   GraduationCap, BookOpen, Calendar as CalIcon, ClipboardList, FileText,
-  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles,
+  Plus, Search, X, Trash2, Upload, ChevronRight, Menu, Sparkles, Download, Loader2,
 } from 'lucide-react'
+import { apiDownload } from '../../../lib/api'
 import {
   fetchDashboard,
   listClasses, getClass, createClass, updateClass, deleteClass,
@@ -19,7 +20,7 @@ import {
   listNotes, createNote, updateNote, deleteNote,
   listTemplates,
   searchEducation,
-  studentDisplayName, formatDate, assignmentExportUrl,
+  studentDisplayName, formatDate, assignmentExportUrl, documentDownloadUrl,
   CLASS_STATUS_LABEL, SESSION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL, ASSIGNMENT_STATUS_COLOR, ASSIGNMENT_KIND_LABEL,
   SUBMISSION_STATUS_LABEL,
@@ -55,6 +56,8 @@ export function SearchModal({
 }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Awaited<ReturnType<typeof searchEducation>>['results'] | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (q.trim().length < 2) { setResults(null); return }
@@ -76,6 +79,28 @@ export function SearchModal({
     if (target.kind === 'assignment') onPickAssignment(target.id)
     if (target.kind === 'student') onPickStudent(target.id)
     if (target.kind === 'note') onPickNote(target.id)
+  }
+
+  async function downloadDocument(document: EducationSearchDocument) {
+    setDownloadingId(document._id)
+    setDownloadError(null)
+    try {
+      // La route vérifie à nouveau le propriétaire : Quickfind ne construit
+      // jamais de lien direct vers le stockage du document.
+      const { blob, filename } = await apiDownload(documentDownloadUrl(document._id))
+      const href = URL.createObjectURL(blob)
+      const link = window.document.createElement('a')
+      link.href = href
+      link.download = filename || document.originalName || document.title || 'document'
+      window.document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(href)
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : 'Erreur de téléchargement du document')
+    } finally {
+      setDownloadingId(null)
+    }
   }
 
   return (
@@ -100,6 +125,11 @@ export function SearchModal({
           />
         </div>
         <div className="edu-search-results" style={{ padding: '8px 12px' }}>
+          {downloadError && (
+            <div className="edu-banner-error" role="alert" style={{ marginBottom: 8 }}>
+              {downloadError}
+            </div>
+          )}
           {!results && q.trim().length < 2 && (
             <div className="edu-empty">Tape au moins 2 caractères…</div>
           )}
@@ -140,6 +170,7 @@ export function SearchModal({
               {results.documents.length > 0 && <h4>Documents</h4>}
               {results.documents.map((document) => {
                 const target = document.parentContext?.state === 'available' ? document.parentContext.target : null
+                const documentLabel = document.title || document.originalName || 'Document sans titre'
                 const noParent =
                   document.parentContext?.state === 'unavailable' && document.parentContext.reason === 'NO_PARENT'
                 const unavailableMessage = noParent
@@ -150,26 +181,41 @@ export function SearchModal({
                     ? ' · Note parente indisponible'
                     : ' · Contexte parent indisponible'
                 return (
-                  <button
+                  <div
                     key={document._id}
-                    type="button"
-                    className="edu-search-result edu-search-result-button"
-                    disabled={!target}
-                    onClick={() => openDocumentContext(document)}
-                    aria-label={
-                      target
-                        ? `Ouvrir le contexte de ${document.title || document.originalName || 'ce document'}`
-                        : undefined
-                    }
+                    className="edu-search-result edu-search-document-result"
                   >
-                    <FileText size={14} aria-hidden style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                    {document.title || document.originalName || 'Document sans titre'}
-                    <span className="edu-search-result-meta">
+                    <div>
+                      <FileText size={14} aria-hidden style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                      {documentLabel}
+                    </div>
+                    <div className="edu-search-result-meta">
                       {target
                         ? ` · Ouvrir ${target.kind === 'assignment' ? 'le devoir' : target.kind === 'class' ? 'la classe' : target.kind === 'session' ? 'la séance' : target.kind === 'student' ? 'l’étudiant' : 'la note'} · ${target.label}${target.school ? ` · ${target.school}` : ''}`
                         : unavailableMessage}
-                    </span>
-                  </button>
+                    </div>
+                    <div className="edu-search-document-actions" role="group" aria-label={`Actions pour ${documentLabel}`}>
+                      <button
+                        type="button"
+                        className="edu-search-document-action"
+                        disabled={!target}
+                        onClick={() => openDocumentContext(document)}
+                        aria-label={`Ouvrir le contexte de ${documentLabel}`}
+                      >
+                        Ouvrir le contexte
+                      </button>
+                      <button
+                        type="button"
+                        className="edu-search-document-action"
+                        disabled={downloadingId === document._id}
+                        onClick={() => downloadDocument(document)}
+                        aria-label={`Télécharger ${documentLabel}`}
+                      >
+                        {downloadingId === document._id ? <Loader2 size={13} className="edu-spin" aria-hidden /> : <Download size={13} aria-hidden />}
+                        {downloadingId === document._id ? 'Téléchargement…' : 'Télécharger'}
+                      </button>
+                    </div>
+                  </div>
                 )
               })}
               {Object.values(results).every((arr) => arr.length === 0) && q.trim().length >= 2 && (

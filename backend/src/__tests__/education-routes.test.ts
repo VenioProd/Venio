@@ -2,6 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import request from 'supertest'
 import express, { type Express, type Request, type Response, type NextFunction } from 'express'
 import mongoose from 'mongoose'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 
 const OWNER_ID = new mongoose.Types.ObjectId().toString()
@@ -270,6 +273,39 @@ describe('education routes', () => {
     // Une note supprimée ou appartenant à un autre intervenant reste opaque.
     expect(byTitle.get('Support note supprimée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
     expect(byTitle.get('Support note privée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
+  })
+
+  it('documents: télécharge le binaire du propriétaire sans exposer celui d’un autre intervenant', async () => {
+    const { EducationDocument } = await import('../models/education/index.js')
+    const directory = await mkdtemp(path.join(tmpdir(), 'venio-education-document-'))
+    const filePath = path.join(directory, 'support.txt')
+    await writeFile(filePath, 'support pédagogique')
+
+    try {
+      const owned = await EducationDocument.create({
+        owner: OWNER_ID,
+        title: 'Support autorisé',
+        originalName: 'support.txt',
+        storagePath: filePath,
+        mimeType: 'text/plain',
+      })
+      const foreign = await EducationDocument.create({
+        owner: new mongoose.Types.ObjectId(),
+        title: 'Support privé',
+        originalName: 'prive.txt',
+        storagePath: filePath,
+        mimeType: 'text/plain',
+      })
+
+      const downloaded = await request(app).get(`/api/admin/education/documents/${owned._id}/download`).expect(200)
+      expect(downloaded.text).toBe('support pédagogique')
+      expect(downloaded.headers['content-type']).toContain('text/plain')
+      expect(downloaded.headers['content-disposition']).toContain('inline')
+
+      await request(app).get(`/api/admin/education/documents/${foreign._id}/download`).expect(404)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   it('dashboard: counters cohérents', async () => {
