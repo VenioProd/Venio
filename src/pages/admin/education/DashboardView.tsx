@@ -8,6 +8,7 @@ import {
   ASSIGNMENT_STATUS_LABEL,
   SESSION_STATUS_LABEL,
   type EducationDashboard,
+  type EducationDashboardAlert,
 } from '../../../services/education'
 import { EducationAiDraftPanel } from './EducationAiDraft'
 
@@ -22,6 +23,7 @@ export function DashboardView({
   selectedSchool,
   onChangeSchool,
   onOpenClass,
+  onOpenStudent,
   onCreateClass,
   reloadError,
   onReload,
@@ -30,6 +32,7 @@ export function DashboardView({
   selectedSchool: string
   onChangeSchool: (school: string) => void
   onOpenClass: (id: string) => void
+  onOpenStudent: (alert: EducationDashboardAlert) => void
   onCreateClass: () => void
   reloadError: string | null
   onReload: () => void
@@ -41,7 +44,9 @@ export function DashboardView({
         {reloadError ? (
           <div className="edu-banner-error" role="alert">
             {reloadError}
-            <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>Réessayer</button>
+            <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>
+              Réessayer
+            </button>
           </div>
         ) : (
           <p className="edu-sub">Chargement…</p>
@@ -58,14 +63,18 @@ export function DashboardView({
       {reloadError && (
         <div className="edu-banner-error" role="alert" style={{ marginBottom: 16 }}>
           {reloadError}
-          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>Réessayer</button>
+          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>
+            Réessayer
+          </button>
         </div>
       )}
 
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 className="edu-h1">Cockpit intervenant</h1>
-          <p className="edu-sub">Ton point d'entrée quotidien — aujourd'hui, cette semaine et ce qui attend ton attention.</p>
+          <p className="edu-sub">
+            Ton point d'entrée quotidien — aujourd'hui, cette semaine et ce qui attend ton attention.
+          </p>
         </div>
         <div className="edu-row" style={{ gap: 8, flexWrap: 'wrap' }}>
           {schoolsToShow.length > 0 && (
@@ -77,10 +86,16 @@ export function DashboardView({
               aria-label="Filtrer par école"
             >
               <option value="">Toutes les écoles</option>
-              {schoolsToShow.map((s) => <option key={s} value={s}>{s}</option>)}
+              {schoolsToShow.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           )}
-          <button className="edu-btn" onClick={onCreateClass}><Plus size={14} /> Nouvelle classe</button>
+          <button className="edu-btn" onClick={onCreateClass}>
+            <Plus size={14} /> Nouvelle classe
+          </button>
         </div>
       </div>
 
@@ -90,7 +105,11 @@ export function DashboardView({
         <Kpi label="Aujourd'hui" value={c.todaySessions} sub="séance(s)" />
         <Kpi label="Cette semaine" value={c.weekSessions} sub="séance(s)" />
         <Kpi label="À préparer" value={c.toPrepare} sub="prochaines 72 h" />
-        <Kpi label="À corriger" value={c.toGrade} sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined} />
+        <Kpi
+          label="À corriger"
+          value={c.toGrade}
+          sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined}
+        />
       </div>
 
       <EducationAiDraftPanel
@@ -114,7 +133,13 @@ export function DashboardView({
         ) : (
           <table className="edu-table">
             <thead>
-              <tr><th>Heure</th><th>Classe</th><th>École</th><th>Séance</th><th>Statut</th></tr>
+              <tr>
+                <th>Heure</th>
+                <th>Classe</th>
+                <th>École</th>
+                <th>Séance</th>
+                <th>Statut</th>
+              </tr>
             </thead>
             <tbody>
               {dashboard.today.map((s) => {
@@ -123,10 +148,19 @@ export function DashboardView({
                 return (
                   <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
                     <td>{new Date(s.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
+                    <td>
+                      {cls && (
+                        <span className="edu-pill">
+                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          {cls.name}
+                        </span>
+                      )}
+                    </td>
                     <td>{school || '—'}</td>
                     <td>{s.title}</td>
-                    <td><span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span></td>
+                    <td>
+                      <span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span>
+                    </td>
                   </tr>
                 )
               })}
@@ -142,7 +176,12 @@ export function DashboardView({
         ) : (
           <table className="edu-table">
             <thead>
-              <tr><th>Date</th><th>Classe</th><th>École</th><th>Séance</th></tr>
+              <tr>
+                <th>Date</th>
+                <th>Classe</th>
+                <th>École</th>
+                <th>Séance</th>
+              </tr>
             </thead>
             <tbody>
               {dashboard.week.map((s) => {
@@ -151,7 +190,14 @@ export function DashboardView({
                 return (
                   <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
                     <td>{formatDate(s.date, true)}</td>
-                    <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
+                    <td>
+                      {cls && (
+                        <span className="edu-pill">
+                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          {cls.name}
+                        </span>
+                      )}
+                    </td>
                     <td>{school || '—'}</td>
                     <td>{s.title}</td>
                   </tr>
@@ -169,7 +215,12 @@ export function DashboardView({
         ) : (
           <table className="edu-table">
             <thead>
-              <tr><th>Quand</th><th>Classe</th><th>Séance</th><th>Lieu</th></tr>
+              <tr>
+                <th>Quand</th>
+                <th>Classe</th>
+                <th>Séance</th>
+                <th>Lieu</th>
+              </tr>
             </thead>
             <tbody>
               {dashboard.toPrepare.map((s) => {
@@ -177,8 +228,18 @@ export function DashboardView({
                 return (
                   <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
                     <td>{formatDate(s.date, true)}</td>
-                    <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
-                    <td>{s.title}{s.theme && <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {s.theme}</span>}</td>
+                    <td>
+                      {cls && (
+                        <span className="edu-pill">
+                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          {cls.name}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {s.title}
+                      {s.theme && <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {s.theme}</span>}
+                    </td>
                     <td>{s.location || '—'}</td>
                   </tr>
                 )
@@ -189,13 +250,22 @@ export function DashboardView({
       </Section>
 
       {/* À corriger */}
-      <Section title="À corriger" subtitle={c.toGrade > 0 ? `${c.toGrade} copie(s) en attente` : 'Aucune correction en attente'}>
+      <Section
+        title="À corriger"
+        subtitle={c.toGrade > 0 ? `${c.toGrade} copie(s) en attente` : 'Aucune correction en attente'}
+      >
         {dashboard.toCorrect.length === 0 ? (
           <p className="edu-empty">Aucun devoir ouvert pour le moment.</p>
         ) : (
           <table className="edu-table">
             <thead>
-              <tr><th>Devoir</th><th>Classe</th><th>Type</th><th>Échéance</th><th>Statut</th></tr>
+              <tr>
+                <th>Devoir</th>
+                <th>Classe</th>
+                <th>Type</th>
+                <th>Échéance</th>
+                <th>Statut</th>
+              </tr>
             </thead>
             <tbody>
               {dashboard.toCorrect.map((a) => {
@@ -203,11 +273,21 @@ export function DashboardView({
                 return (
                   <tr key={a._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
                     <td>{a.title}</td>
-                    <td>{cls && <span className="edu-pill"><span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />{cls.name}</span>}</td>
+                    <td>
+                      {cls && (
+                        <span className="edu-pill">
+                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          {cls.name}
+                        </span>
+                      )}
+                    </td>
                     <td>{ASSIGNMENT_KIND_LABEL[a.kind]}</td>
                     <td>{a.deadline ? formatDate(a.deadline) : '—'}</td>
                     <td>
-                      <span className="edu-pill"><span className="edu-pill-dot" style={{ background: ASSIGNMENT_STATUS_COLOR[a.status] }} />{ASSIGNMENT_STATUS_LABEL[a.status]}</span>
+                      <span className="edu-pill">
+                        <span className="edu-pill-dot" style={{ background: ASSIGNMENT_STATUS_COLOR[a.status] }} />
+                        {ASSIGNMENT_STATUS_LABEL[a.status]}
+                      </span>
                     </td>
                   </tr>
                 )
@@ -224,20 +304,45 @@ export function DashboardView({
         ) : (
           <table className="edu-table">
             <thead>
-              <tr><th>Classe</th><th>École</th><th>Dernière séance</th><th>Quand</th><th>Statut</th></tr>
+              <tr>
+                <th>Classe</th>
+                <th>École</th>
+                <th>Dernière séance</th>
+                <th>Quand</th>
+                <th>Statut</th>
+              </tr>
             </thead>
             <tbody>
               {dashboard.lastSessionByClass.map((row) => (
-                <tr
-                  key={row.class._id}
-                  onClick={() => onOpenClass(row.class._id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td><span className="edu-pill"><span className="edu-pill-dot" style={{ background: row.class.color || '#22C55E' }} />{row.class.name}</span></td>
+                <tr key={row.class._id} onClick={() => onOpenClass(row.class._id)} style={{ cursor: 'pointer' }}>
+                  <td>
+                    <span className="edu-pill">
+                      <span className="edu-pill-dot" style={{ background: row.class.color || '#22C55E' }} />
+                      {row.class.name}
+                    </span>
+                  </td>
                   <td>{row.class.school || '—'}</td>
-                  <td>{row.lastSession ? row.lastSession.title : <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>}</td>
-                  <td>{row.lastSession ? formatRelative(row.lastSession.date) : <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>}</td>
-                  <td>{row.lastSession ? <span className="edu-pill">{SESSION_STATUS_LABEL[row.lastSession.status]}</span> : <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>}</td>
+                  <td>
+                    {row.lastSession ? (
+                      row.lastSession.title
+                    ) : (
+                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.lastSession ? (
+                      formatRelative(row.lastSession.date)
+                    ) : (
+                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.lastSession ? (
+                      <span className="edu-pill">{SESSION_STATUS_LABEL[row.lastSession.status]}</span>
+                    ) : (
+                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -258,7 +363,7 @@ export function DashboardView({
         title="Suivi pédagogique"
         subtitle={
           dashboard.alerts.length > 0
-            ? 'Signaux calculés à partir des présences et des travaux échus. Ouvre la classe pour consulter la fiche étudiant.'
+            ? 'Signaux calculés à partir des présences et des travaux échus. Ouvre la fiche étudiant pour consigner le suivi.'
             : 'Aucun signal de suivi dans le périmètre affiché.'
         }
       >
@@ -269,12 +374,15 @@ export function DashboardView({
                 key={`${alert.type}-${alert.student._id}`}
                 type="button"
                 className="edu-alert-row"
-                onClick={() => onOpenClass(alert.class._id)}
+                onClick={() => onOpenStudent(alert)}
                 role="listitem"
               >
                 <span className={`edu-alert-severity ${alert.severity}`} aria-hidden />
                 <span className="edu-alert-main">
-                  <strong>{[alert.student.firstName, alert.student.lastName.toUpperCase()].filter(Boolean).join(' ') || 'Étudiant sans nom'}</strong>
+                  <strong>
+                    {[alert.student.firstName, alert.student.lastName.toUpperCase()].filter(Boolean).join(' ') ||
+                      'Étudiant sans nom'}
+                  </strong>
                   <span>{alert.message}</span>
                 </span>
                 <span className="edu-alert-class">
@@ -294,10 +402,15 @@ export function DashboardView({
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {dashboard.activity.slice(0, 10).map((a) => (
-              <li key={a._id} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13 }}>
+              <li
+                key={a._id}
+                style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13 }}
+              >
                 <span style={{ color: 'rgba(255,255,255,0.5)' }}>{formatRelative(a.createdAt)}</span>
                 {' · '}
-                <span>{a.action.toLowerCase()} {a.entityType}</span>
+                <span>
+                  {a.action.toLowerCase()} {a.entityType}
+                </span>
               </li>
             ))}
           </ul>
@@ -311,7 +424,11 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   return (
     <section>
       <h2 className="edu-h2">{title}</h2>
-      {subtitle && <p className="edu-sub" style={{ marginBottom: 12 }}>{subtitle}</p>}
+      {subtitle && (
+        <p className="edu-sub" style={{ marginBottom: 12 }}>
+          {subtitle}
+        </p>
+      )}
       {children}
     </section>
   )

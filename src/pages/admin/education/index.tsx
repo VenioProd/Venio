@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import {
   fetchDashboard,
+  getStudent,
   listClasses,
   getClass,
   createClass,
@@ -49,6 +50,7 @@ import {
   SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
   type EducationDashboard,
+  type EducationDashboardAlert,
   type EducationClass,
   type EducationStudent,
   type EducationSession,
@@ -75,6 +77,7 @@ import { SessionsView } from './session-parts'
 import { AssignmentsView } from './assignment-parts'
 import { NotesView } from './note-parts'
 import { SearchModal } from './search-parts'
+import { StudentProfileDrawer } from './StudentProfileDrawer'
 
 type View =
   | 'dashboard'
@@ -141,6 +144,10 @@ export default function EducationWorkspace() {
   const [school, setSchool] = useState<string>(() => loadContext().school)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [classesError, setClassesError] = useState<string | null>(null)
+  const [profileState, setProfileState] = useState<{
+    student: EducationStudent
+    followUpAlert: EducationDashboardAlert
+  } | null>(null)
 
   const refreshDashboard = useCallback(async () => {
     try {
@@ -210,6 +217,15 @@ export default function EducationWorkspace() {
   function selectView(v: View) {
     setView(v)
     setSidebarOpen(false)
+  }
+
+  async function openStudentFollowUp(alert: EducationDashboardAlert) {
+    try {
+      const result = await getStudent(alert.student._id)
+      setProfileState({ student: result.student, followUpAlert: alert })
+    } catch (err) {
+      setDashboardError(err instanceof Error ? err.message : 'Impossible d’ouvrir la fiche étudiant')
+    }
   }
 
   return (
@@ -351,6 +367,7 @@ export default function EducationWorkspace() {
                   setSelectedClassId(id)
                   selectView('classes')
                 }}
+                onOpenStudent={openStudentFollowUp}
                 onCreateClass={() => setShowCreateClass(true)}
                 reloadError={dashboardError}
                 onReload={refreshDashboard}
@@ -444,6 +461,17 @@ export default function EducationWorkspace() {
           onClose={() => setCorrectionAssignmentId(null)}
           onSaved={() => {
             refreshDashboard()
+          }}
+        />
+      )}
+
+      {profileState && (
+        <StudentProfileDrawer
+          student={profileState.student}
+          followUpAlert={profileState.followUpAlert}
+          onClose={() => setProfileState(null)}
+          onChanged={() => {
+            void refreshDashboard()
           }}
         />
       )}
