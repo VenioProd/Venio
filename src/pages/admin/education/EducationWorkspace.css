@@ -239,6 +239,46 @@
   border-radius: 50%;
 }
 
+/* ─── Assistance pédagogique : toujours un brouillon à relire ─────────── */
+.edu-ai-draft {
+  margin: 18px 0;
+  padding: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.42);
+  background: rgba(168, 85, 247, 0.07);
+}
+.edu-ai-draft-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #d8b4fe;
+}
+.edu-ai-draft p,
+.edu-ai-draft small {
+  display: block;
+  margin: 6px 0 10px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 12px;
+}
+.edu-ai-draft label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.edu-ai-draft .edu-textarea {
+  min-height: 92px;
+  margin-bottom: 9px;
+}
+.edu-ai-draft-result pre {
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font: inherit;
+  margin: 0 0 8px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
 /* ─── Buttons & inputs ──────────────────────────────────────────────── */
 .edu-btn {
   background: var(--primary);

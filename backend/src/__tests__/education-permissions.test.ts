@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
+import { describe, it, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import express, { type Express, type Request, type Response, type NextFunction } from 'express'
 import mongoose from 'mongoose'
@@ -142,6 +142,13 @@ describe('education access — super-admin only', () => {
     await request(app)
       .post('/api/admin/education/documents')
       .send({ title: 'X', url: 'https://example.com' })
+      .expect(403)
+  })
+
+  it('VIEWER ne peut pas générer un brouillon d’assistance (POST /ai/generate → 403)', async () => {
+    await request(app)
+      .post('/api/admin/education/ai/generate')
+      .send({ mode: 'checklist_action_plan', input: { context: 'Préparer une séance' } })
       .expect(403)
   })
 })

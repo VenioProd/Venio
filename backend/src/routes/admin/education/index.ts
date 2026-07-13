@@ -12,6 +12,7 @@ import templates from './templates.js'
 import dashboard from './dashboard.js'
 import search from './search.js'
 import calendar from './calendar.js'
+import ai from './ai.js'
 
 const router = express.Router()
 
@@ -28,5 +29,6 @@ router.use('/assignments', assignments)
 router.use('/notes', notes)
 router.use('/documents', documents)
 router.use('/templates', templates)
+router.use('/ai', ai)
 
 export default router

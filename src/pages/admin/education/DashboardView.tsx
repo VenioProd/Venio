@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import {
   formatDate,
@@ -8,6 +9,7 @@ import {
   SESSION_STATUS_LABEL,
   type EducationDashboard,
 } from '../../../services/education'
+import { EducationAiDraftPanel } from './EducationAiDraft'
 
 /**
  * VENIO-27 — Cockpit intervenant multi-écoles.
@@ -32,6 +34,7 @@ export function DashboardView({
   reloadError: string | null
   onReload: () => void
 }) {
+  const [checklist, setChecklist] = useState('')
   if (!dashboard) {
     return (
       <div>
@@ -89,6 +92,20 @@ export function DashboardView({
         <Kpi label="À préparer" value={c.toPrepare} sub="prochaines 72 h" />
         <Kpi label="À corriger" value={c.toGrade} sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined} />
       </div>
+
+      <EducationAiDraftPanel
+        mode="checklist_action_plan"
+        onApply={(draft) => {
+          const items = draft.fields.checklist
+          if (Array.isArray(items)) setChecklist(items.map((item) => `- [ ] ${item}`).join('\n'))
+        }}
+      />
+      {checklist && (
+        <div className="edu-form-group" style={{ marginBottom: 20 }}>
+          <label>Ma checklist (brouillon local, à compléter avant toute action)</label>
+          <textarea className="edu-textarea" value={checklist} onChange={(event) => setChecklist(event.target.value)} />
+        </div>
+      )}
 
       {/* Aujourd'hui */}
       <Section title="Aujourd'hui">

@@ -17,6 +17,7 @@ import {
 import { SessionLiveMode } from './SessionLiveMode'
 import { DocumentsPanel } from './DocumentsPanel'
 import { PostSessionFlow } from './PostSessionFlow'
+import { EducationAiDraftPanel } from './EducationAiDraft'
 
 /**
  * VENIO-27 — Détail de séance.
@@ -209,6 +210,14 @@ export function SessionDetailDrawer({
             placeholder="Ce qui s'est passé, ce qu'il faut retenir, les points clés pour la prochaine séance…"
             style={{ minHeight: 200 }}
             aria-label="Compte-rendu de séance"
+          />
+          <EducationAiDraftPanel
+            mode="session_synthesis"
+            initialText={recap}
+            onApply={(draft) => {
+              const proposedRecap = draft.fields.recap
+              if (typeof proposedRecap === 'string') setRecap(proposedRecap)
+            }}
           />
 
           {/* Présence en note légère, repliable */}

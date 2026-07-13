@@ -67,6 +67,7 @@ import {
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { EducationAiDraftPanel } from './EducationAiDraft'
 import { SessionLiveMode } from './SessionLiveMode'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
@@ -308,6 +309,23 @@ export function SessionForm({
               onChange={(e) => setForm({ ...form, theme: e.target.value })}
             />
           </div>
+          <EducationAiDraftPanel
+            mode="session_plan"
+            onApply={(draft) => {
+              const fields = draft.fields
+              setForm((current) => ({
+                ...current,
+                title: typeof fields.title === 'string' ? fields.title : current.title,
+                theme: typeof fields.theme === 'string' ? fields.theme : current.theme,
+                agenda: typeof fields.agenda === 'string' ? fields.agenda : current.agenda,
+                objectives: Array.isArray(fields.objectives) ? fields.objectives : current.objectives,
+                durationMin:
+                  typeof fields.durationMin === 'string'
+                    ? Number(fields.durationMin) || current.durationMin
+                    : current.durationMin,
+              }))
+            }}
+          />
           <div className="edu-form-group">
             <label>Lieu</label>
             <input
