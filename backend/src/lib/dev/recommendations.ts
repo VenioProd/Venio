@@ -1,14 +1,9 @@
 import mongoose from 'mongoose'
-import DevIssue, {
-  type DevIssueStatus,
-  type DevIssuePriority,
-  type DevIssueType,
-} from '../../models/DevIssue.js'
-import DevProject, { type DevProjectGithubConfig } from '../../models/DevProject.js'
+import DevIssue, { type DevIssueStatus, type DevIssuePriority, type DevIssueType } from '../../models/DevIssue.js'
+import DevProject from '../../models/DevProject.js'
 import {
-  computeProjectCodeMetrics,
-  invalidateCodeMetricsCache,
-  resolveRepoPath,
+  getCachedProjectCodeMetrics,
+  refreshProjectCodeMetrics,
   type CodeMetricsSummary,
   type LargeFile,
 } from './codeMetrics.js'
@@ -17,21 +12,14 @@ import { computeProjectGithubSummary, type DevGithubSummary } from './githubSumm
 // ─── Public types ────────────────────────────────────────────────────────────
 
 export type RecommendationSection =
-  | 'improve'      // features existantes à améliorer
-  | 'add'          // features à ajouter ensuite
-  | 'optimize'     // optimisations / refactor / chore
-  | 'large_files'  // fichiers trop volumineux
+  | 'improve' // features existantes à améliorer
+  | 'add' // features à ajouter ensuite
+  | 'optimize' // optimisations / refactor / chore
+  | 'large_files' // fichiers trop volumineux
 
 export type RecommendationPriority = 'critical' | 'high' | 'medium' | 'low'
 
-export type RecommendationSource =
-  | 'issues'
-  | 'pull_requests'
-  | 'code_metrics'
-  | 'backlog'
-  | 'roadmap'
-  | 'labels'
-  | 'ci'
+export type RecommendationSource = 'issues' | 'pull_requests' | 'code_metrics' | 'backlog' | 'roadmap' | 'labels' | 'ci'
 
 export interface RecommendationAction {
   kind: 'open_issue' | 'open_pr' | 'open_file' | 'open_url'
@@ -111,15 +99,9 @@ const STALE_PR_DAYS = 7
 const OLD_BACKLOG_DAYS = 60
 const ROADMAP_INACTIVITY_DAYS = 21
 
-const IMPROVEMENT_LABEL_HINTS = [
-  /\bimprov/i, /améliorer/i, /amelioration/i, /enhancement/i, /polish/i, /ux/i, /a11y/i,
-]
-const FEATURE_LABEL_HINTS = [
-  /\bfeature\b/i, /\bnouveau\b/i, /\bnew\b/i, /roadmap/i, /v\d/i, /mvp/i, /next/i,
-]
-const OPTIMIZATION_LABEL_HINTS = [
-  /optim/i, /perf/i, /refactor/i, /cleanup/i, /tech[\s_-]?debt/i, /dette/i,
-]
+const IMPROVEMENT_LABEL_HINTS = [/\bimprov/i, /améliorer/i, /amelioration/i, /enhancement/i, /polish/i, /ux/i, /a11y/i]
+const FEATURE_LABEL_HINTS = [/\bfeature\b/i, /\bnouveau\b/i, /\bnew\b/i, /roadmap/i, /v\d/i, /mvp/i, /next/i]
+const OPTIMIZATION_LABEL_HINTS = [/optim/i, /perf/i, /refactor/i, /cleanup/i, /tech[\s_-]?debt/i, /dette/i]
 
 function daysSince(date: Date | string | null | undefined): number {
   if (!date) return Number.POSITIVE_INFINITY
@@ -146,10 +128,14 @@ function fileHref(repoUrl: string | null, branch: string | null, path: string): 
 
 function priorityRank(p: RecommendationPriority): number {
   switch (p) {
-    case 'critical': return 0
-    case 'high': return 1
-    case 'medium': return 2
-    case 'low': return 3
+    case 'critical':
+      return 0
+    case 'high':
+      return 1
+    case 'medium':
+      return 2
+    case 'low':
+      return 3
   }
 }
 
@@ -180,10 +166,7 @@ interface IssueLite {
   } | null
 }
 
-function buildImproveSection(
-  issues: IssueLite[],
-  github: DevGithubSummary
-): RecommendationItem[] {
+function buildImproveSection(issues: IssueLite[], github: DevGithubSummary): RecommendationItem[] {
   const items: RecommendationItem[] = []
 
   // 1. PRs ouvertes avec CI en échec — blocant pour shipper.
@@ -276,9 +259,7 @@ function buildAddSection(issues: IssueLite[]): RecommendationItem[] {
   const items: RecommendationItem[] = []
 
   // 1. Issues type=FEATURE ouvertes, par priorité décroissante.
-  const features = issues.filter(
-    (i) => i.type === 'FEATURE' && !CLOSED_STATUSES.includes(i.status)
-  )
+  const features = issues.filter((i) => i.type === 'FEATURE' && !CLOSED_STATUSES.includes(i.status))
 
   const priorityToScore: Record<DevIssuePriority, RecommendationPriority> = {
     URGENT: 'critical',
@@ -325,10 +306,7 @@ function buildAddSection(issues: IssueLite[]): RecommendationItem[] {
   return sortItems(items).slice(0, 10)
 }
 
-function buildOptimizeSection(
-  issues: IssueLite[],
-  code: CodeMetricsSummary
-): RecommendationItem[] {
+function buildOptimizeSection(issues: IssueLite[], code: CodeMetricsSummary): RecommendationItem[] {
   const items: RecommendationItem[] = []
 
   // 1. Issues type=CHORE / labels d'optimisation, ouvertes.
@@ -396,12 +374,8 @@ function buildOptimizeSection(
   // 4. Métriques code globales si disponibles : ratio TS/JS qui penche fortement vers JS
   // ⇒ candidat à une migration progressive.
   if (code.available) {
-    const tsLines = code.byExtension
-      .filter((e) => e.ext === '.ts' || e.ext === '.tsx')
-      .reduce((s, e) => s + e.lines, 0)
-    const jsLines = code.byExtension
-      .filter((e) => e.ext === '.js' || e.ext === '.jsx')
-      .reduce((s, e) => s + e.lines, 0)
+    const tsLines = code.byExtension.filter((e) => e.ext === '.ts' || e.ext === '.tsx').reduce((s, e) => s + e.lines, 0)
+    const jsLines = code.byExtension.filter((e) => e.ext === '.js' || e.ext === '.jsx').reduce((s, e) => s + e.lines, 0)
     if (jsLines > 0 && jsLines > tsLines * 0.5 && tsLines > 0) {
       items.push({
         id: 'optim-js-share',
@@ -420,10 +394,7 @@ function buildOptimizeSection(
   return sortItems(items).slice(0, 10)
 }
 
-function buildLargeFilesSection(
-  code: CodeMetricsSummary,
-  github: DevGithubSummary
-): RecommendationItem[] {
+function buildLargeFilesSection(code: CodeMetricsSummary, github: DevGithubSummary): RecommendationItem[] {
   if (!code.available) return []
   const branch = github.defaultBranch
   const repoUrl = github.links.repoUrl
@@ -441,11 +412,13 @@ function buildLargeFilesSection(
       badges: [f.language, `${f.lines} l.`, `seuil ${f.threshold}`],
       metric: { label: 'criticité', value: f.score },
       actions: repoUrl
-        ? [{
-            kind: 'open_file' as const,
-            label: 'Ouvrir sur GitHub',
-            href: fileHref(repoUrl, branch, f.path),
-          }]
+        ? [
+            {
+              kind: 'open_file' as const,
+              label: 'Ouvrir sur GitHub',
+              href: fileHref(repoUrl, branch, f.path),
+            },
+          ]
         : [],
     })
   }
@@ -461,7 +434,7 @@ export interface ComputeRecommendationsOptions {
 
 export async function computeProjectRecommendations(
   projectId: mongoose.Types.ObjectId | string,
-  opts: ComputeRecommendationsOptions = {}
+  opts: ComputeRecommendationsOptions = {},
 ): Promise<RecommendationsPayload | null> {
   const id = typeof projectId === 'string' ? new mongoose.Types.ObjectId(projectId) : projectId
   const key = String(id)
@@ -525,30 +498,10 @@ export async function computeProjectRecommendations(
     }
   }
 
-  // Code metrics — keep within recommendations cache layer; force only if caller forces.
-  const { resolved } = resolveRepoPath((project.github as DevProjectGithubConfig | null) ?? null)
-  if (opts.force && resolved) invalidateCodeMetricsCache(resolved)
-  let code: CodeMetricsSummary
-  try {
-    code = computeProjectCodeMetrics(
-      (project.github as DevProjectGithubConfig | null) ?? null,
-      { force: Boolean(opts.force) }
-    )
-  } catch (e) {
-    reasons.push(`Code: ${(e as Error).message}`)
-    code = {
-      available: false,
-      source: 'error',
-      resolvedPath: null,
-      scannedAt: null,
-      durationMs: null,
-      reason: (e as Error).message,
-      totals: { files: 0, lines: 0, bytes: 0 },
-      byExtension: [],
-      largeFiles: [],
-      topFilesGlobal: [],
-    }
-  }
+  // Recommendations reuse the periodic snapshot as well: do not revive a
+  // synchronous filesystem scan through this secondary HTTP route.
+  if (opts.force) void refreshProjectCodeMetrics(project.github ?? null)
+  const code: CodeMetricsSummary = getCachedProjectCodeMetrics(project.github ?? null)
   if (!code.available && code.reason) reasons.push(`Code: ${code.reason}`)
   if (!github.configured && github.reason) reasons.push(`GitHub: ${github.reason}`)
 
@@ -558,7 +511,10 @@ export async function computeProjectRecommendations(
   const largeFiles = buildLargeFilesSection(code, github)
 
   const bySeverity: Record<RecommendationPriority, number> = {
-    critical: 0, high: 0, medium: 0, low: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
   }
   for (const list of [improve, add, optimize, largeFiles]) {
     for (const item of list) bySeverity[item.priority] += 1
@@ -566,11 +522,7 @@ export async function computeProjectRecommendations(
   const total = improve.length + add.length + optimize.length + largeFiles.length
 
   const status: RecommendationStatus =
-    total === 0
-      ? (reasons.length ? 'partial' : 'empty')
-      : reasons.length > 0
-        ? 'partial'
-        : 'ok'
+    total === 0 ? (reasons.length ? 'partial' : 'empty') : reasons.length > 0 ? 'partial' : 'ok'
 
   const generatedAt = new Date()
   const payload: RecommendationsPayload = {

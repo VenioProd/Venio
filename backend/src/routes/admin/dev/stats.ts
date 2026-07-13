@@ -7,7 +7,7 @@ import { computeDailyPriorities } from '../../../lib/dev/dailyPriorities.js'
 import DevIssue from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import DevProject from '../../../models/DevProject.js'
-import { computeProjectCodeMetrics, invalidateCodeMetricsCache, resolveRepoPath } from '../../../lib/dev/codeMetrics.js'
+import { getCachedProjectCodeMetrics, refreshProjectCodeMetrics } from '../../../lib/dev/codeMetrics.js'
 import { computeProjectGithubSummary } from '../../../lib/dev/githubSummary.js'
 import { computeProjectTokensSnapshot } from '../../../lib/dev/tokens.js'
 import { computeProjectRecommendations, invalidateRecommendationsCache } from '../../../lib/dev/recommendations.js'
@@ -83,7 +83,8 @@ router.get(
  *   - tokens usage snapshot (placeholder until LLM telemetry lands)
  *   - code metrics (LoC by extension + large-files refactor candidates)
  *
- * Frontend may pass ?refresh=1 to bypass the code-metrics cache.
+ * Frontend may pass ?refresh=1 to queue a new periodic snapshot. This route
+ * always serves the last cache value and never runs a filesystem/git scan.
  */
 router.get(
   '/projects/:id/intelligence',
@@ -97,12 +98,12 @@ router.get(
       const project = await DevProject.findById(id).lean()
       if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
-      const force = req.query.refresh === '1' || req.query.refresh === 'true'
-      if (force) invalidateCodeMetricsCache()
+      const refresh = req.query.refresh === '1' || req.query.refresh === 'true'
+      if (refresh) void refreshProjectCodeMetrics(project.github ?? null)
 
       const [github, code] = await Promise.all([
         computeProjectGithubSummary({ _id: project._id, github: project.github ?? null }),
-        Promise.resolve(computeProjectCodeMetrics(project.github ?? null, { force })),
+        Promise.resolve(getCachedProjectCodeMetrics(project.github ?? null)),
       ])
       const tokens = computeProjectTokensSnapshot({
         _id: project._id,
@@ -140,11 +141,9 @@ router.get(
       const project = await DevProject.findById(id).lean()
       if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
-      const force = req.query.refresh === '1' || req.query.refresh === 'true'
-      const { resolved } = resolveRepoPath(project.github ?? null)
-      if (force && resolved) invalidateCodeMetricsCache(resolved)
-
-      const code = computeProjectCodeMetrics(project.github ?? null, { force })
+      const refresh = req.query.refresh === '1' || req.query.refresh === 'true'
+      if (refresh) void refreshProjectCodeMetrics(project.github ?? null)
+      const code = getCachedProjectCodeMetrics(project.github ?? null)
       res.json({
         projectId: String(project._id),
         available: code.available,

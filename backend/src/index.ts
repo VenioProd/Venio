@@ -78,6 +78,7 @@ import User from './models/User.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
+import { startRepoQualityScheduler } from './lib/dev/repoQualityScheduler.js'
 import { initSentry, Sentry } from './lib/sentry.js'
 import auth from './middleware/auth.js'
 import requireMfa from './middleware/mfa.js'
@@ -430,6 +431,8 @@ mongoose
       initAutomationEngine()
       // Verrouillage automatique des écritures comptables VALIDATED expirées
       startAutoLockScheduler()
+      // Snapshots repo/cockpit : jamais de scan lourd depuis une route HTTP.
+      startRepoQualityScheduler()
     })
   })
   .catch((err: unknown) => {

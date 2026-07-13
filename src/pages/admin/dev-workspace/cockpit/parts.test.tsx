@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { TimelineRow } from './parts'
+import { RepoQualityPanel, TimelineRow } from './parts'
 
 describe('TimelineRow', () => {
   it('renders persisted GitHub metadata and opens its linked issue', () => {
@@ -54,5 +54,49 @@ describe('TimelineRow', () => {
     )
 
     expect(screen.getByText('La CI est verte après le correctif.')).toBeInTheDocument()
+  })
+})
+
+describe('RepoQualityPanel', () => {
+  it('shows the observed denominator, sources and unavailable signals without inventing a score', () => {
+    render(
+      <RepoQualityPanel
+        quality={{
+          score: 72,
+          scoredPoints: 36,
+          scoredOutOf: 50,
+          formula: 'Score = somme des points observés / somme des maxima observés × 100.',
+          signals: [
+            {
+              id: 'large_files',
+              label: 'Fichiers trop gros',
+              status: 'warn',
+              points: 12,
+              maxPoints: 25,
+              value: '2 fichier(s) au-dessus des seuils par langage',
+              action: 'Découper les fichiers.',
+              source: 'scan filesystem',
+              checkedAt: '2026-07-13T10:00:00.000Z',
+            },
+            {
+              id: 'coverage',
+              label: 'Tests / coverage',
+              status: 'unavailable',
+              points: null,
+              maxPoints: 20,
+              value: 'Aucun artefact coverage-summary.json valide.',
+              action: null,
+              source: 'coverage/coverage-summary.json',
+              checkedAt: null,
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('72/100')).toBeInTheDocument()
+    expect(screen.getByText(/score sur 50 pts observés/i)).toBeInTheDocument()
+    expect(screen.getByText('Aucun artefact coverage-summary.json valide.')).toBeInTheDocument()
+    expect(screen.getByText('coverage/coverage-summary.json')).toBeInTheDocument()
   })
 })
