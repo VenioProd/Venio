@@ -16,6 +16,7 @@ Index de la documentation. Pour le démarrage rapide, voir le [README racine](..
 | [design/](./design/) | Arrière-plans, gradients, évolutions visuelles |
 | [operations/RUNBOOK.md](./operations/RUNBOOK.md) | Startup, health checks, backups, uploads, jobs, incidents et rollback |
 | [operations/ADMIN_ROLE_RECIPE.md](./operations/ADMIN_ROLE_RECIPE.md) | Recette de release admin multi-rôles (VENIO-104) |
+| [operations/EDUCATION_CLASS_EXPORTS.md](./operations/EDUCATION_CLASS_EXPORTS.md) | Exports CSV/JSON des classes pédagogiques (VENIO-26) |
 | [optimisation/](./optimisation/) | Performance GPU, SEO, bundles |
 | [public/ANALYTICS_SEO_QUALITY.md](./public/ANALYTICS_SEO_QUALITY.md) | Mesure privacy-first, Search Console et recette publique |
 | [security/DATA_GOVERNANCE.md](./security/DATA_GOVERNANCE.md) | Registre des données admin, rétention, exports, RGPD et réponse à incident |
