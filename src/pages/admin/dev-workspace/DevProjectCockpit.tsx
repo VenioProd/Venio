@@ -71,6 +71,7 @@ import {
   PieTooltip,
   BarTooltip,
   GithubPanel,
+  DeploymentPanel,
   TokensPanel,
   CodeMetricsPanel,
   LargeFilesPanel,
@@ -473,6 +474,12 @@ const DevProjectCockpit = () => {
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {intel && (
+        <section className="cockpit-row cockpit-row-single">
+          <DeploymentPanel deployment={intel.deployment} />
         </section>
       )}
 

@@ -9,6 +9,7 @@ import DevIssueComment from '../../../models/DevIssueComment.js'
 import DevProject from '../../../models/DevProject.js'
 import { getCachedProjectCodeMetrics, refreshProjectCodeMetrics } from '../../../lib/dev/codeMetrics.js'
 import { computeProjectGithubSummary } from '../../../lib/dev/githubSummary.js'
+import { computeProjectDeploymentSummary } from '../../../lib/dev/deploymentSummary.js'
 import { computeProjectTokensSnapshot } from '../../../lib/dev/tokens.js'
 import { computeProjectRecommendations, invalidateRecommendationsCache } from '../../../lib/dev/recommendations.js'
 
@@ -101,9 +102,10 @@ router.get(
       const refresh = req.query.refresh === '1' || req.query.refresh === 'true'
       if (refresh) void refreshProjectCodeMetrics(project.github ?? null)
 
-      const [github, code] = await Promise.all([
+      const [github, code, deployment] = await Promise.all([
         computeProjectGithubSummary({ _id: project._id, github: project.github ?? null }),
         Promise.resolve(getCachedProjectCodeMetrics(project.github ?? null)),
+        computeProjectDeploymentSummary({ _id: project._id, github: project.github ?? null }),
       ])
       const tokens = computeProjectTokensSnapshot({
         _id: project._id,
@@ -114,6 +116,7 @@ router.get(
       res.json({
         projectId: String(project._id),
         github,
+        deployment,
         tokens,
         code,
         generatedAt: new Date().toISOString(),

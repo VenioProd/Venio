@@ -677,11 +677,47 @@ export interface DevRepoQuality {
   signals: DevRepoQualitySignal[]
 }
 
+export type DevDeploymentObservationSource = 'timeline_deployment' | 'timeline_ci' | 'issue_github' | 'unavailable'
+export type DevDeploymentRunStatus = 'success' | 'failed' | 'running' | 'unknown'
+export type DevDeploymentHealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'unknown'
+
+export interface DevDeploymentSummary {
+  configured: boolean
+  reason: string | null
+  productionCommit: {
+    sha: string | null
+    observedAt: string | null
+    source: DevDeploymentObservationSource
+    url: string | null
+  }
+  ci: {
+    status: DevCiStatus | null
+    observedAt: string | null
+    source: DevDeploymentObservationSource
+    runUrl: string | null
+  }
+  deployment: {
+    status: DevDeploymentRunStatus
+    observedAt: string | null
+    source: DevDeploymentObservationSource
+    logsUrl: string | null
+  }
+  healthcheck: {
+    status: DevDeploymentHealthStatus
+    observedAt: string | null
+    source: DevDeploymentObservationSource
+  }
+  observedAt: string | null
+  freshness: 'fresh' | 'stale' | 'unknown'
+  freshnessThresholdHours: number
+}
+
 export interface DevProjectIntelligence {
   projectId: string
   github: DevGithubSummary
   tokens: DevTokensSnapshot
   code: DevCodeMetrics
+  deployment: DevDeploymentSummary
   generatedAt: string
 }
 

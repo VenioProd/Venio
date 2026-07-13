@@ -26,6 +26,8 @@ Index de la documentation. Pour le démarrage rapide, voir le [README racine](..
 
 ## Cible de déploiement
 
+- [Carte de déploiement du cockpit dev](operations/DEV_DEPLOYMENT_CARD.md) — sources, états inconnus et limites
+
 Le site est déployé sur **VPS Docker** via le workflow GitHub Actions [`.github/workflows/deploy-ionos.yml`](../.github/workflows/deploy-ionos.yml) (nom historique — la cible réelle est SSH + `docker compose -f docker-compose.prod.yml`). Le workflow suit une CI réussie sur `main` ou peut être lancé manuellement.
 
 - Dockerfile : [`/Dockerfile`](../Dockerfile)
