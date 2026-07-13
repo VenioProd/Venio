@@ -42,6 +42,11 @@ describe('education AI assistance — review-gated drafts', () => {
       { comments: 'Argumentation claire, mais sources à citer.', rubric: ['Argumentation', 'Sources'] },
       'feedback',
     ],
+    [
+      'class_council_prep',
+      { className: 'BTS 1', classSummary: '20 étudiants actifs, moyenne 13/20.', context: 'Préparer les priorités.' },
+      'councilPrep',
+    ],
     ['checklist_action_plan', { context: 'Préparer une activité de mise en pratique' }, 'checklist'],
   ] as const
 

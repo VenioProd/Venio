@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { generateEducationAiDraft, nextAttendanceState, reviewEducationAiDraft } from './education'
+import {
+  generateEducationAiDraft,
+  getClassCouncilPreparation,
+  nextAttendanceState,
+  reviewEducationAiDraft,
+} from './education'
 
 describe('nextAttendanceState', () => {
   it('passe NON_RENSEIGNE → PRESENT (premier tap)', () => {
@@ -11,6 +16,25 @@ describe('nextAttendanceState', () => {
     expect(nextAttendanceState('RETARD')).toBe('ABSENT')
     expect(nextAttendanceState('ABSENT')).toBe('EXCUSE')
     expect(nextAttendanceState('EXCUSE')).toBe('PRESENT')
+  })
+})
+
+describe('class council preparation API client', () => {
+  it('loads the factual report from the scoped class endpoint', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ class: {}, summary: {}, students: [], provenance: {} }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await getClassCouncilPreparation('class-1')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/education/classes/class-1/council-prep',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    )
+    fetchMock.mockRestore()
   })
 })
 

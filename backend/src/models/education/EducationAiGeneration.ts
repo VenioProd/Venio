@@ -4,6 +4,7 @@ export const EDUCATION_AI_MODES = [
   'session_plan',
   'session_synthesis',
   'assignment_feedback',
+  'class_council_prep',
   'checklist_action_plan',
 ] as const
 export type EducationAiMode = (typeof EDUCATION_AI_MODES)[number]

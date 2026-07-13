@@ -66,6 +66,29 @@ function draftFor(mode: EducationAiMode, input: Input): Draft | null {
     return { text: feedback, fields: { feedback } }
   }
 
+  if (mode === 'class_council_prep') {
+    const className = text(input.className)
+    const classSummary = text(input.classSummary)
+    const context = text(input.context)
+    if (!className || !classSummary) return null
+    const attention = context || 'À compléter par l’intervenant avant le conseil.'
+    const councilPrep = [
+      `Préparation du conseil de classe — ${className}`,
+      '',
+      'Bilan collectif',
+      classSummary,
+      '',
+      'Points d’attention et contexte de l’intervenant',
+      attention,
+      '',
+      'À aborder pendant le conseil',
+      '- Confirmer les progrès et les besoins collectifs.',
+      '- Examiner les situations nécessitant un suivi, avec les personnes concernées.',
+      '- Définir des actions pédagogiques et une date de réévaluation.',
+    ].join('\n')
+    return { text: councilPrep, fields: { councilPrep } }
+  }
+
   const context = text(input.context)
   if (!context) return null
   const items = [
