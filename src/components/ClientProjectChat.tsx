@@ -20,9 +20,10 @@ interface ChatMessage {
 
 interface ClientProjectChatProps {
   projectId: string
+  canComment?: boolean
 }
 
-const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
+const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatProps) => {
   const { user } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -39,9 +40,7 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
 
   const fetchMessages = async () => {
     try {
-      const data = await apiFetch<{ messages: ChatMessage[] }>(
-        `/api/projects/${projectId}/messages`
-      )
+      const data = await apiFetch<{ messages: ChatMessage[] }>(`/api/projects/${projectId}/messages`)
       setMessages(data.messages || [])
     } catch {
       // ignore fetch errors during polling
@@ -62,7 +61,7 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
 
   const handleSend = async () => {
     const content = newMessage.trim()
-    if (!content || sending) return
+    if (!content || sending || !canComment) return
 
     setSending(true)
     try {
@@ -142,16 +141,20 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
           <div className="project-chat-empty">
             <div className="project-chat-empty-icon">💬</div>
             <p>Aucun message pour le moment</p>
-            <p className="project-chat-empty-sub">Envoyez un message a votre equipe projet.</p>
+            <p className="project-chat-empty-sub">
+              {canComment ? 'Envoyez un message a votre equipe projet.' : 'Vous avez un accès en lecture seule.'}
+            </p>
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg._id}
-              className={`project-chat-message ${isOwnMessage(msg) ? 'own' : ''}`}
-            >
+            <div key={msg._id} className={`project-chat-message ${isOwnMessage(msg) ? 'own' : ''}`}>
               {!isOwnMessage(msg) && (
-                <UserAvatar name={msg.sender.name} avatarUrl={msg.sender.avatarUrl} className="project-chat-avatar" size={32} />
+                <UserAvatar
+                  name={msg.sender.name}
+                  avatarUrl={msg.sender.avatarUrl}
+                  className="project-chat-avatar"
+                  size={32}
+                />
               )}
               <div className="project-chat-bubble">
                 <div className="project-chat-sender">
@@ -164,7 +167,12 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
                 <div className="project-chat-time">{formatTime(msg.createdAt)}</div>
               </div>
               {isOwnMessage(msg) && (
-                <UserAvatar name={msg.sender.name} avatarUrl={msg.sender.avatarUrl} className="project-chat-avatar own" size={32} />
+                <UserAvatar
+                  name={msg.sender.name}
+                  avatarUrl={msg.sender.avatarUrl}
+                  className="project-chat-avatar own"
+                  size={32}
+                />
               )}
             </div>
           ))
@@ -174,27 +182,43 @@ const ClientProjectChat = ({ projectId }: ClientProjectChatProps) => {
       <div className="project-chat-input">
         <textarea
           className="project-chat-textarea"
-          placeholder="Ecrire un message..."
+          placeholder={canComment ? 'Ecrire un message...' : 'Lecture seule'}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          disabled={sending}
+          disabled={sending || !canComment}
         />
         <button
           className="project-chat-send"
           onClick={handleSend}
-          disabled={!newMessage.trim() || sending}
+          disabled={!newMessage.trim() || sending || !canComment}
         >
           {sending ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" opacity="0.3" />
               <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0 12 12"
+                  to="360 12 12"
+                  dur="1s"
+                  repeatCount="indefinite"
+                />
               </path>
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>

@@ -1,7 +1,11 @@
 import type { Document, Types } from 'mongoose'
 import type {
-  ProjectStatus, ProjectPriority, BillingStatus,
-  ItemType, ItemStatus,
+  ProjectStatus,
+  ProjectPriority,
+  BillingStatus,
+  ItemType,
+  ItemStatus,
+  ProjectMemberRole,
 } from '../enums.js'
 
 // ─── Project ───
@@ -44,6 +48,16 @@ export interface IProject extends Document {
   summary: string
   reminderAt: Date | null
   billing: IProjectBilling
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── Project collaboration ───
+export interface IProjectMember extends Document {
+  project: Types.ObjectId
+  user: Types.ObjectId
+  role: ProjectMemberRole
+  createdBy: Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }

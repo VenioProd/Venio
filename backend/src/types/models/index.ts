@@ -1,13 +1,11 @@
-export type {
-  IUserAddress,
-  IUser,
-} from './user.js'
+export type { IUserAddress, IUser } from './user.js'
 
 export type {
   IProjectDeadline,
   IProjectBudget,
   IProjectBilling,
   IProject,
+  IProjectMember,
   IProjectSection,
   IProjectItemFile,
   IProjectItem,
@@ -18,34 +16,15 @@ export type {
   IProjectUpdate,
 } from './project.js'
 
-export type {
-  ITaskAttachment,
-  ITask,
-  ITaskComment,
-} from './task.js'
+export type { ITaskAttachment, ITask, ITaskComment } from './task.js'
 
-export type {
-  ILead,
-  ILeadActivity,
-} from './lead.js'
+export type { ILead, ILeadActivity } from './lead.js'
 
-export type {
-  IBillingLine,
-  IBillingDocument,
-} from './billing.js'
+export type { IBillingLine, IBillingDocument } from './billing.js'
 
-export type {
-  IClientActivity,
-  IClientContact,
-  IClientNote,
-  IScoringWeights,
-  ICrmSettings,
-} from './crm.js'
+export type { IClientActivity, IClientContact, IClientNote, IScoringWeights, ICrmSettings } from './crm.js'
 
-export type {
-  IBriefDateCle,
-  IMissionBrief,
-} from './brief.js'
+export type { IBriefDateCle, IMissionBrief } from './brief.js'
 
 export type {
   IQualiopiSubElement,
@@ -57,14 +36,7 @@ export type {
   IQualiopiQuestionnaire,
 } from './qualiopi.js'
 
-export type {
-  ISequence,
-  IActivityLog,
-  IAuditLog,
-  IDocument,
-  IMessage,
-  INotification,
-} from './common.js'
+export type { ISequence, IActivityLog, IAuditLog, IDocument, IMessage, INotification } from './common.js'
 
 export type {
   IAddress,
@@ -88,10 +60,7 @@ export type {
   IClassificationRule,
 } from './accounting.js'
 
-export type {
-  IAgentToken,
-  IAgentIdempotencyKey,
-} from './agent.js'
+export type { IAgentToken, IAgentIdempotencyKey } from './agent.js'
 
 export type {
   IInternalConversation,

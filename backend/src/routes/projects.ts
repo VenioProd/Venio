@@ -5,6 +5,8 @@ import Document from '../models/Document.js'
 import ProjectUpdate from '../models/ProjectUpdate.js'
 import Task from '../models/Task.js'
 import ActivityLog from '../models/ActivityLog.js'
+import ProjectMember from '../models/ProjectMember.js'
+import { getProjectAccess } from '../lib/projectAccess.js'
 
 const router = express.Router()
 
@@ -16,7 +18,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const projects = await Project.find({ client: req.user!.id }).sort({ updatedAt: -1 })
+    const membershipProjectIds = await ProjectMember.distinct('project', { user: req.user!.id })
+    const projects = await Project.find({
+      $or: [{ client: req.user!.id }, { _id: { $in: membershipProjectIds } }],
+    }).sort({ updatedAt: -1 })
     return res.json({ projects })
   } catch (err) {
     return next(err)
@@ -30,8 +35,11 @@ router.get('/task-progress-all', async (req: Request, res: Response, next: NextF
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const projects = await Project.find({ client: req.user!.id }).select('_id')
-    const projectIds = projects.map(p => p._id)
+    const membershipProjectIds = await ProjectMember.distinct('project', { user: req.user!.id })
+    const projects = await Project.find({
+      $or: [{ client: req.user!.id }, { _id: { $in: membershipProjectIds } }],
+    }).select('_id')
+    const projectIds = projects.map((p) => p._id)
 
     const tasks = await Task.find({ project: { $in: projectIds } }).select('project status')
 
@@ -69,17 +77,17 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const project = await Project.findOne({ _id: req.params.id, client: req.user!.id })
-    if (!project) {
+    const access = await getProjectAccess(req.params.id, req.user!.id)
+    if (!access) {
       return res.status(404).json({ error: 'Project not found' })
     }
 
     const [documents, updates] = await Promise.all([
-      Document.find({ project: project._id }).sort({ uploadedAt: -1 }),
-      ProjectUpdate.find({ project: project._id }).sort({ createdAt: -1 }),
+      Document.find({ project: access.project._id }).sort({ uploadedAt: -1 }),
+      ProjectUpdate.find({ project: access.project._id }).sort({ createdAt: -1 }),
     ])
 
-    return res.json({ project, documents, updates })
+    return res.json({ project: access.project, documents, updates, accessRole: access.role })
   } catch (err) {
     return next(err)
   }
@@ -91,12 +99,12 @@ router.get('/:id/documents', async (req: Request, res: Response, next: NextFunct
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const project = await Project.findOne({ _id: req.params.id, client: req.user!.id })
-    if (!project) {
+    const access = await getProjectAccess(req.params.id, req.user!.id)
+    if (!access) {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    const documents = await Document.find({ project: project._id }).sort({ uploadedAt: -1 })
+    const documents = await Document.find({ project: access.project._id }).sort({ uploadedAt: -1 })
     return res.json({ documents })
   } catch (err) {
     return next(err)
@@ -110,12 +118,12 @@ router.get('/:id/task-progress', async (req: Request, res: Response, next: NextF
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const project = await Project.findOne({ _id: req.params.id, client: req.user!.id })
-    if (!project) {
+    const access = await getProjectAccess(req.params.id, req.user!.id)
+    if (!access) {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    const tasks = await Task.find({ project: project._id }).select('status')
+    const tasks = await Task.find({ project: access.project._id }).select('status')
     const total = tasks.length
     const byStatus: Record<string, number> = { A_FAIRE: 0, EN_COURS: 0, EN_REVIEW: 0, TERMINE: 0 }
     for (const t of tasks) {
@@ -136,8 +144,8 @@ router.get('/:id/activity', async (req: Request, res: Response, next: NextFuncti
       return res.status(403).json({ error: 'Forbidden' })
     }
 
-    const project = await Project.findOne({ _id: req.params.id, client: req.user!.id })
-    if (!project) {
+    const access = await getProjectAccess(req.params.id, req.user!.id)
+    if (!access) {
       return res.status(404).json({ error: 'Project not found' })
     }
 
@@ -153,15 +161,12 @@ router.get('/:id/activity', async (req: Request, res: Response, next: NextFuncti
 
     const { limit: limitStr, before } = req.query as Record<string, string | undefined>
     const limit = Math.min(parseInt(limitStr as string) || 20, 50)
-    const query: Record<string, unknown> = { project: project._id, action: { $in: clientVisibleActions } }
+    const query: Record<string, unknown> = { project: access.project._id, action: { $in: clientVisibleActions } }
     if (before) {
       query.createdAt = { $lt: new Date(before) }
     }
 
-    const activities = await ActivityLog.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .populate('actor', 'name')
+    const activities = await ActivityLog.find(query).sort({ createdAt: -1 }).limit(limit).populate('actor', 'name')
 
     return res.json({ activities })
   } catch (err) {

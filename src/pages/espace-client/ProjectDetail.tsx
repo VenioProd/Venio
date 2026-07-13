@@ -2,7 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../hooks/useTabState'
 import { apiDownload, apiFetch } from '../../lib/api'
-import type { Project, ProjectSection, ProjectItem, ProjectUpdate, ProjectDocument } from '../../types/project.types'
+import type {
+  Project,
+  ProjectSection,
+  ProjectItem,
+  ProjectUpdate,
+  ProjectDocument,
+  ProjectAccessRole,
+} from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
 import './ClientPortal.css'
@@ -31,6 +38,7 @@ const statusClass: Record<string, string> = {
 const ClientProjectDetail = () => {
   const { id } = useParams()
   const [project, setProject] = useState<Project | null>(null)
+  const [accessRole, setAccessRole] = useState<ProjectAccessRole>('OWNER')
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
   const [sections, setSections] = useState<ProjectSection[]>([])
@@ -46,9 +54,12 @@ const ClientProjectDetail = () => {
     const load = async () => {
       try {
         const [projectData, sectionsData, itemsData, progressData, activityData] = await Promise.all([
-          apiFetch<{ project: Project; documents?: ProjectDocument[]; updates?: ProjectUpdate[] }>(
-            `/api/projects/${id}`,
-          ),
+          apiFetch<{
+            project: Project
+            documents?: ProjectDocument[]
+            updates?: ProjectUpdate[]
+            accessRole?: ProjectAccessRole
+          }>(`/api/projects/${id}`),
           apiFetch<{ sections: ProjectSection[] }>(`/api/projects/${id}/sections`),
           apiFetch<{ items: ProjectItem[] }>(`/api/projects/${id}/items`),
           apiFetch<TaskProgress>(`/api/projects/${id}/task-progress`).catch(() => null),
@@ -57,6 +68,7 @@ const ClientProjectDetail = () => {
           })),
         ])
         setProject(projectData.project)
+        setAccessRole(projectData.accessRole || 'OWNER')
         setDocuments(projectData.documents || [])
         setUpdates(projectData.updates || [])
         setSections(sectionsData.sections || [])
@@ -626,7 +638,7 @@ const ClientProjectDetail = () => {
 
       {activeTab === 'messages' && id && (
         <div className="client-project-content">
-          <ClientProjectChat projectId={id} />
+          <ClientProjectChat projectId={id} canComment={accessRole !== 'VIEWER'} />
         </div>
       )}
     </div>
