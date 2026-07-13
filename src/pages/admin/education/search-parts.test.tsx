@@ -288,4 +288,212 @@ describe('VENIO-50 Quickfind document contexts', () => {
     expect(screen.getByText(/note parente indisponible/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ouvrir le contexte de Archive de note' })).toBeDisabled()
   })
+
+  it('loads a PDF preview only after the user requests it through the authenticated download route', async () => {
+    mockedApiDownload.mockResolvedValue({
+      blob: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
+      filename: 'bareme.pdf',
+      contentType: 'application/pdf',
+    })
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-preview',
+            parentType: 'assignment',
+            parentId: 'assignment-1',
+            title: 'Barème final',
+            originalName: 'bareme.pdf',
+            mimeType: 'application/pdf',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'assignment', id: 'assignment-1', label: 'Devoir final' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'barème' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+
+    expect(mockedApiDownload).not.toHaveBeenCalled()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Prévisualiser Barème final' }))
+    })
+
+    expect(mockedApiDownload.mock.calls[0][0]).toBe('/api/admin/education/documents/document-preview/download')
+    expect(screen.getByRole('dialog', { name: 'Aperçu : Barème final' })).toBeInTheDocument()
+    expect(screen.getByTitle('Aperçu PDF : Barème final')).toHaveAttribute('src', 'blob:quickfind-document')
+  })
+
+  it('keeps a clear download fallback for a non-previewable document format', async () => {
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-docx',
+            parentType: 'assignment',
+            parentId: 'assignment-1',
+            title: 'Consignes',
+            originalName: 'consignes.docx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'assignment', id: 'assignment-1', label: 'Devoir final' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'consignes' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+
+    expect(screen.getByText(/aperçu indisponible pour ce format.*téléchargez le fichier/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Prévisualiser Consignes' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Télécharger Consignes' })).toBeEnabled()
+  })
+
+  it('shows a non-disclosing preview error when the protected route refuses access', async () => {
+    mockedApiDownload.mockRejectedValue(new Error('Document introuvable'))
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-refused',
+            parentType: 'assignment',
+            parentId: 'assignment-1',
+            title: 'Barème final',
+            originalName: 'bareme.pdf',
+            mimeType: 'application/pdf',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'assignment', id: 'assignment-1', label: 'Devoir final' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'barème' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Prévisualiser Barème final' }))
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/impossible de charger l’aperçu/i)
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('closes the preview with Escape and revokes its object URL', async () => {
+    mockedApiDownload.mockResolvedValue({
+      blob: new Blob(['image'], { type: 'image/png' }),
+      filename: 'support.png',
+      contentType: 'image/png',
+    })
+    mockedSearchEducation.mockResolvedValue({
+      results: {
+        ...emptyResults,
+        documents: [
+          {
+            _id: 'document-image',
+            parentType: 'assignment',
+            parentId: 'assignment-1',
+            title: 'Support visuel',
+            originalName: 'support.png',
+            mimeType: 'image/png',
+            size: 1,
+            url: '',
+            tags: [],
+            createdAt: '',
+            updatedAt: '',
+            parentContext: {
+              state: 'available',
+              target: { kind: 'assignment', id: 'assignment-1', label: 'Devoir final' },
+            },
+          },
+        ],
+      },
+    })
+
+    render(
+      <SearchModal
+        onClose={vi.fn()}
+        onPickClass={vi.fn()}
+        onPickSession={vi.fn()}
+        onPickAssignment={vi.fn()}
+        onPickStudent={vi.fn()}
+        onPickNote={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByPlaceholderText(/rechercher classes/i), { target: { value: 'support' } })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Prévisualiser Support visuel' }))
+    })
+
+    const dialog = screen.getByRole('dialog', { name: 'Aperçu : Support visuel' })
+    expect(screen.getByRole('button', { name: 'Fermer l’aperçu de Support visuel' })).toHaveFocus()
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog', { name: 'Aperçu : Support visuel' })).not.toBeInTheDocument()
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:quickfind-document')
+  })
 })
