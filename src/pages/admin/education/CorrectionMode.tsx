@@ -16,6 +16,7 @@ import {
   type RubricCriterion,
   type SubmissionBulkUpdate,
 } from '../../../services/education'
+import { EducationAiDraftPanel } from './EducationAiDraft'
 
 /**
  * VENIO-30 — Mode correction groupée.
@@ -456,13 +457,25 @@ export function CorrectionMode({
           {!activeDraft || !activeSubmission ? (
             <div className="edu-empty">Sélectionne un étudiant à corriger.</div>
           ) : (
-            <CorrectionPanel
-              assignment={assignment}
-              submission={activeSubmission}
-              draft={activeDraft}
-              onChange={(patch) => patchDraft(activeDraft.studentId, patch)}
-              onApplyRubric={(scores) => applyRubric(activeDraft.studentId, scores)}
-            />
+            <>
+              <CorrectionPanel
+                assignment={assignment}
+                submission={activeSubmission}
+                draft={activeDraft}
+                onChange={(patch) => patchDraft(activeDraft.studentId, patch)}
+                onApplyRubric={(scores) => applyRubric(activeDraft.studentId, scores)}
+              />
+              <EducationAiDraftPanel
+                key={activeDraft.studentId}
+                mode="assignment_feedback"
+                initialText={activeDraft.feedback}
+                rubric={assignment.rubric.map((criterion) => criterion.label)}
+                onApply={(draft) => {
+                  const feedback = draft.fields.feedback
+                  if (typeof feedback === 'string') patchDraft(activeDraft.studentId, { feedback })
+                }}
+              />
+            </>
           )}
         </section>
 

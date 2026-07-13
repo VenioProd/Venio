@@ -10,6 +10,20 @@ export type AttendanceState = 'PRESENT' | 'ABSENT' | 'RETARD' | 'EXCUSE' | 'NON_
 export type EducationAssignmentStatus = 'DRAFT' | 'OUVERT' | 'EN_CORRECTION' | 'CLOS' | 'ARCHIVE'
 export type EducationAssignmentKind = 'DEVOIR' | 'PROJET' | 'EXPOSE' | 'QCM' | 'EXAMEN' | 'AUTRE'
 export type EducationSubmissionStatus = 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
+export type EducationAiMode = 'session_plan' | 'session_synthesis' | 'assignment_feedback' | 'checklist_action_plan'
+
+export interface EducationAiDraft {
+  text: string
+  fields: Record<string, string | string[]>
+}
+
+export interface EducationAiGeneration {
+  id: string
+  mode: EducationAiMode
+  engine: string
+  createdAt: string
+  reviewedAt?: string | null
+}
 
 export type NoteBlockType =
   | 'heading'
@@ -319,6 +333,30 @@ export const CLASS_COLOR_PALETTE = [
 // ─── API calls ──────────────────────────────────────────────────────────────
 
 const base = '/api/admin/education'
+
+/**
+ * Generates a transient review draft. The endpoint has no domain-write path;
+ * callers must explicitly acknowledge review before using the draft.
+ */
+export async function generateEducationAiDraft(
+  mode: EducationAiMode,
+  input: Record<string, unknown>,
+): Promise<{
+  generation: EducationAiGeneration
+  draft: EducationAiDraft
+  provenance: { reviewRequired: true; persistedInput: false; automaticActions: false }
+}> {
+  return await apiFetch(`${base}/ai/generate`, { method: 'POST', body: JSON.stringify({ mode, input }) })
+}
+
+export async function reviewEducationAiDraft(
+  id: string,
+): Promise<{ generation: Pick<EducationAiGeneration, 'id' | 'reviewedAt'> & { reviewed: true } }> {
+  return await apiFetch(`${base}/ai/generations/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ reviewed: true }),
+  })
+}
 
 export async function fetchDashboard(params: { school?: string } = {}): Promise<EducationDashboard> {
   const qs = new URLSearchParams()
