@@ -13,6 +13,7 @@ import type {
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
 import ProjectCollaborators from '../../components/ProjectCollaborators'
+import ProjectInvitations from '../../components/ProjectInvitations'
 import './ClientPortal.css'
 
 interface TaskProgress {
@@ -666,6 +667,7 @@ const ClientProjectDetail = () => {
       {activeTab === 'collaborators' && id && accessRole === 'OWNER' && (
         <div className="client-project-content">
           <ProjectCollaborators projectId={id} canManage={accessRole === 'OWNER'} />
+          <ProjectInvitations projectId={id} canManage={accessRole === 'OWNER'} />
         </div>
       )}
     </div>

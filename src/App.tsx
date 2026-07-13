@@ -56,6 +56,7 @@ const ClientShell = lazy(() => import('./components/ClientShell'))
 const ClientLogin = lazy(() => import('./pages/espace-client/Login'))
 const ClientDashboard = lazy(() => import('./pages/espace-client/Dashboard'))
 const ClientProjectDetail = lazy(() => import('./pages/espace-client/ProjectDetail'))
+const ClientProjectInvitationAccept = lazy(() => import('./pages/espace-client/ProjectInvitationAccept'))
 const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 
 // Lazy-loaded: Admin
@@ -193,6 +194,7 @@ function App() {
 
                 {/* Espace client */}
                 <Route path="/espace-client/login" element={<ClientLogin />} />
+                <Route path="/espace-client/invitation" element={<ClientProjectInvitationAccept />} />
                 <Route
                   path="/espace-client"
                   element={

@@ -11,6 +11,7 @@ import projectCollaborationRoutes from '../routes/client/collaboration.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import ProjectMember from '../models/ProjectMember.js'
+import ProjectInvitation from '../models/ProjectInvitation.js'
 import ProjectSection from '../models/ProjectSection.js'
 import ProjectItem from '../models/ProjectItem.js'
 import Message from '../models/Message.js'
@@ -22,6 +23,15 @@ let viewerId: string
 let outsiderId: string
 let projectId: string
 let otherProjectId: string
+
+async function createInvitation(role: 'VIEWER' | 'EDITOR' = 'VIEWER') {
+  const response = await request(app)
+    .post(`/api/projects/${projectId}/invitations`)
+    .set('Cookie', await cookieFor(ownerId))
+    .send({ role })
+    .expect(201)
+  return { response, token: response.body.invitationUrl.split('#')[1] as string }
+}
 
 async function cookieFor(userId: string): Promise<string> {
   const { token } = await createSession(userId)
@@ -216,5 +226,128 @@ describe('project collaboration', () => {
       .set('Cookie', await cookieFor(ownerId))
       .expect(200)
     expect(await ProjectMember.findById(member._id)).toBeNull()
+  })
+
+  it('creates short-lived hashed invitation links and keeps their metadata owner-only', async () => {
+    const previousClientUrl = process.env.CLIENT_URL
+    const previousCorsOrigin = process.env.CORS_ORIGIN
+    delete process.env.CLIENT_URL
+    process.env.CORS_ORIGIN = 'https://venio.paris'
+    let created: Awaited<ReturnType<typeof createInvitation>> | undefined
+    try {
+      created = await createInvitation('EDITOR')
+    } finally {
+      if (previousClientUrl === undefined) delete process.env.CLIENT_URL
+      else process.env.CLIENT_URL = previousClientUrl
+      if (previousCorsOrigin === undefined) delete process.env.CORS_ORIGIN
+      else process.env.CORS_ORIGIN = previousCorsOrigin
+    }
+    const { response, token } = created!
+    await ProjectMember.create({ project: projectId, user: editorId, role: 'EDITOR', createdBy: ownerId })
+
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    expect(response.body.invitationUrl).toMatch(/^https:\/\/venio\.paris\/espace-client\/invitation#/)
+    expect(response.body.invitation).toMatchObject({ role: 'EDITOR', revokedAt: null, usedAt: null })
+    expect(response.body.invitation).not.toHaveProperty('tokenHash')
+
+    const stored = await ProjectInvitation.findById(response.body.invitation._id).lean()
+    expect(stored).not.toHaveProperty('tokenHash')
+    const storedWithHash = await ProjectInvitation.findById(response.body.invitation._id).select('+tokenHash').lean()
+    expect(storedWithHash!.tokenHash).not.toBe(token)
+    expect(storedWithHash!.tokenHash).toMatch(/^[a-f0-9]{64}$/)
+    expect(new Date(response.body.invitation.expiresAt).getTime()).toBeGreaterThan(Date.now())
+
+    await request(app)
+      .get(`/api/projects/${projectId}/invitations`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(200)
+
+    await request(app)
+      .get(`/api/projects/${projectId}/invitations`)
+      .set('Cookie', await cookieFor(editorId))
+      .expect(403)
+    await request(app)
+      .post(`/api/projects/${projectId}/invitations`)
+      .set('Cookie', await cookieFor(editorId))
+      .send({ role: 'VIEWER' })
+      .expect(403)
+    await request(app)
+      .delete(`/api/projects/${projectId}/invitations/${response.body.invitation._id}`)
+      .set('Cookie', await cookieFor(editorId))
+      .expect(403)
+  })
+
+  it('accepts an invitation once and never widens access on replay or a concurrent accept', async () => {
+    const { token } = await createInvitation('EDITOR')
+    const outsiderCookie = await cookieFor(outsiderId)
+
+    const [first, concurrent] = await Promise.all([
+      request(app).post('/api/projects/invitations/accept').set('Cookie', outsiderCookie).send({ token }),
+      request(app).post('/api/projects/invitations/accept').set('Cookie', outsiderCookie).send({ token }),
+    ])
+    expect([first.status, concurrent.status].sort()).toEqual([201, 409])
+    expect(await ProjectMember.countDocuments({ project: projectId, user: outsiderId })).toBe(1)
+    expect((await ProjectMember.findOne({ project: projectId, user: outsiderId }))!.role).toBe('EDITOR')
+
+    const replay = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', outsiderCookie)
+      .send({ token })
+      .expect(409)
+    expect(replay.body.code).toBe('INVITATION_ALREADY_USED')
+  })
+
+  it('handles invalid, expired, revoked, owner, and existing-member invitation states safely', async () => {
+    await request(app)
+      .post('/api/projects/invitations/accept')
+      .send({ token: 'a'.repeat(43) })
+      .expect(401)
+
+    const invalid = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', await cookieFor(outsiderId))
+      .send({ token: 'not-an-invitation' })
+      .expect(404)
+    expect(invalid.body.code).toBe('INVITATION_INVALID')
+
+    const ownerInvitation = await createInvitation()
+    const ownerResult = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ token: ownerInvitation.token })
+      .expect(422)
+    expect(ownerResult.body.code).toBe('INVITATION_OWNER')
+
+    await ProjectMember.create({ project: projectId, user: viewerId, role: 'VIEWER', createdBy: ownerId })
+    const memberInvitation = await createInvitation()
+    const memberResult = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', await cookieFor(viewerId))
+      .send({ token: memberInvitation.token })
+      .expect(409)
+    expect(memberResult.body.code).toBe('INVITATION_ALREADY_MEMBER')
+
+    const expired = await createInvitation()
+    await ProjectInvitation.findByIdAndUpdate(expired.response.body.invitation._id, {
+      $set: { expiresAt: new Date(Date.now() - 1) },
+    })
+    const expiredResult = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', await cookieFor(outsiderId))
+      .send({ token: expired.token })
+      .expect(410)
+    expect(expiredResult.body.code).toBe('INVITATION_EXPIRED')
+
+    const revoked = await createInvitation()
+    await request(app)
+      .delete(`/api/projects/${projectId}/invitations/${revoked.response.body.invitation._id}`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(200)
+    const revokedResult = await request(app)
+      .post('/api/projects/invitations/accept')
+      .set('Cookie', await cookieFor(outsiderId))
+      .send({ token: revoked.token })
+      .expect(410)
+    expect(revokedResult.body.code).toBe('INVITATION_REVOKED')
   })
 })
