@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { apiDownload, apiFetch, apiUpload } from '../../lib/api'
+import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
-import { emptyForm, type Member, type Mission, type Project } from './internal-project-list/types'
+import { emptyForm, type Member, type Project } from './internal-project-list/types'
 import ArrowSectionEditorModal from './internal-project-list/ArrowSectionEditorModal'
 import ProjectFormDrawer from './internal-project-list/ProjectFormDrawer'
 import MissionDetailDrawer from './internal-project-list/MissionDetailDrawer'
@@ -14,6 +14,8 @@ import MissionFormDrawer from './internal-project-list/MissionFormDrawer'
 import ArrowTab from './internal-project-list/ArrowTab'
 import MissionsTab from './internal-project-list/MissionsTab'
 import { InternalProjectListProvider } from './internal-project-list/Context'
+import ProjectsTab from './internal-project-list/ProjectsTab'
+import { useMissions } from './internal-project-list/useMissions'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
 const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation']
@@ -24,19 +26,6 @@ const STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Terminé',
   ARCHIVE: 'Archivé',
 }
-const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  EN_COURS: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
-  EN_ATTENTE: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
-  TERMINE: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
-  ARCHIVE: { bg: 'rgba(100, 100, 100, 0.12)', border: 'rgba(100, 100, 100, 0.35)', text: '#9ca3af' },
-}
-const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#6ee7b7',
-  NORMALE: '#a5b4cf',
-  HAUTE: '#fbbf24',
-  URGENTE: '#f87171',
-}
-
 const DEFAULT_ARROW_PILOTAGE = {
   goals: [
     'Valider le cas d’usage prioritaire avec 5 retours utilisateurs',
@@ -91,29 +80,42 @@ export default function InternalProjectList() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [editTarget, setEditTarget] = useState<Project | null>(null)
 
-  // Missions state
-  const [missions, setMissions] = useState<Mission[]>([])
-  const [missionsLoading, setMissionsLoading] = useState(false)
-  const [selectedMission, setSelectedMission] = useState<string | null>(null)
-  const [missionStepInputs, setMissionStepInputs] = useState<Record<string, string>>({})
-  const [stepAssigneeInputs, setStepAssigneeInputs] = useState<Record<string, string>>({})
-  const [deliverableInputs, setDeliverableInputs] = useState<
-    Record<string, { title: string; description: string; assignedTo: string }>
-  >({})
-  const [expandedStep, setExpandedStep] = useState<string | null>(null)
-  const [stepDescInputs, setStepDescInputs] = useState<Record<string, string>>({})
-
-  const [uploadingMission, setUploadingMission] = useState<string | null>(null)
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [showMissionForm, setShowMissionForm] = useState(false)
-  const [missionForm, setMissionForm] = useState({
-    projectId: '',
-    title: '',
-    description: '',
-    assignedTo: [] as string[],
-    dueDate: '',
-  })
-  const [savingMission, setSavingMission] = useState(false)
+  const {
+    missions,
+    setMissions,
+    missionsLoading,
+    selectedMission,
+    setSelectedMission,
+    missionStepInputs,
+    setMissionStepInputs,
+    stepAssigneeInputs,
+    setStepAssigneeInputs,
+    deliverableInputs,
+    setDeliverableInputs,
+    expandedStep,
+    setExpandedStep,
+    uploadingMission,
+    fileInputRefs,
+    showMissionForm,
+    setShowMissionForm,
+    missionForm,
+    setMissionForm,
+    savingMission,
+    handleParticipantUpdate,
+    handleStepDescUpdate,
+    handleCreateMission,
+    handleMissionStatusUpdate,
+    handleMissionToggleStep,
+    handleMissionAddStep,
+    handleMissionFileUpload,
+    handleMissionFileDelete,
+    handleMissionFileOpen,
+    handleDeliverableAdd,
+    handleDeliverableToggle,
+    handleDeliverableDelete,
+    handleMissionProgressUpdate,
+    handleMissionDateUpdate,
+  } = useMissions({ viewTab, showToast })
   const [arrowPilotage, setArrowPilotage] = useState<ArrowPilotage>(DEFAULT_ARROW_PILOTAGE)
   const [editingArrowSection, setEditingArrowSection] = useState<ArrowPilotageSection | null>(null)
   const [arrowSectionDraft, setArrowSectionDraft] = useState('')
@@ -269,276 +271,6 @@ export default function InternalProjectList() {
   }
   const toggleMember = (id: string) => {
     setForm((f) => ({ ...f, members: f.members.includes(id) ? f.members.filter((m) => m !== id) : [...f.members, id] }))
-  }
-
-  useEffect(() => {
-    if (viewTab !== 'missions' && viewTab !== 'arrow') return
-    setMissionsLoading(true)
-    apiFetch<{ missions: Mission[] }>('/api/admin/internal-projects/missions')
-      .then((d) => setMissions(d.missions || []))
-      .catch(() => {})
-      .finally(() => setMissionsLoading(false))
-  }, [viewTab])
-
-  const handleParticipantUpdate = async (
-    missionId: string,
-    projectId: string,
-    userId: string,
-    fields: { progress?: number; status?: string; blocked?: boolean; blockedReason?: string },
-  ) => {
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}/my-progress`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ userId, ...fields }),
-        },
-      )
-      setMissions((ms) =>
-        ms.map((x) => (x._id === missionId ? { ...data.mission, internalProject: x.internalProject } : x)),
-      )
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleStepDescUpdate = async (
-    missionId: string,
-    projectId: string,
-    mission: Mission,
-    stepId: string,
-    description: string,
-  ) => {
-    const newSteps = mission.steps.map((s) => (s._id === stepId ? { ...s, description } : s))
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ steps: newSteps }),
-        },
-      )
-      setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleCreateMission = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!missionForm.projectId) {
-      showToast('Sélectionne un projet', 'error')
-      return
-    }
-    if (!missionForm.title.trim()) {
-      showToast('Le titre est requis', 'error')
-      return
-    }
-    if (missionForm.assignedTo.length === 0) {
-      showToast('Assigne la mission à au moins une personne', 'error')
-      return
-    }
-    setSavingMission(true)
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${missionForm.projectId}/missions`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            title: missionForm.title.trim(),
-            description: missionForm.description,
-            assignedTo: missionForm.assignedTo,
-            dueDate: missionForm.dueDate || null,
-          }),
-        },
-      )
-      setMissions((ms) => [data.mission, ...ms])
-      setShowMissionForm(false)
-      setMissionForm({ projectId: '', title: '', description: '', assignedTo: [], dueDate: '' })
-      showToast('Mission créée', 'success')
-    } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
-    } finally {
-      setSavingMission(false)
-    }
-  }
-
-  const handleMissionStatusUpdate = async (missionId: string, projectId: string, status: string) => {
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ status }),
-        },
-      )
-      setMissions((m) => m.map((x) => (x._id === missionId ? { ...x, status: data.mission.status } : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionToggleStep = async (missionId: string, projectId: string, mission: Mission, stepId: string) => {
-    const newSteps = mission.steps.map((s) => (s._id === stepId ? { ...s, done: !s.done } : s))
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ steps: newSteps }),
-        },
-      )
-      setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionAddStep = async (
-    missionId: string,
-    projectId: string,
-    mission: Mission,
-    title: string,
-    assignedTo?: string,
-  ) => {
-    const newStep: any = { title, done: false }
-    if (assignedTo) newStep.assignedTo = assignedTo
-    const newSteps = [...mission.steps, newStep]
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ steps: newSteps }),
-        },
-      )
-      setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
-      setMissionStepInputs((s) => ({ ...s, [missionId]: '' }))
-      setStepAssigneeInputs((s) => ({ ...s, [missionId]: '' }))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionFileUpload = async (missionId: string, projectId: string, file: File) => {
-    setUploadingMission(missionId)
-    const form = new FormData()
-    form.append('file', file)
-    try {
-      const data = await apiUpload<{ mission?: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}/files`,
-        form,
-      )
-      setMissions((m) => m.map((x) => (x._id === missionId ? { ...x, files: data.mission?.files ?? x.files } : x)))
-    } catch {
-      /* silent */
-    } finally {
-      setUploadingMission(null)
-    }
-  }
-
-  const handleMissionFileDelete = async (missionId: string, projectId: string, fileId: string) => {
-    try {
-      await apiFetch(`/api/admin/internal-projects/${projectId}/missions/${missionId}/files/${fileId}`, {
-        method: 'DELETE',
-      })
-      setMissions((m) =>
-        m.map((x) => (x._id === missionId ? { ...x, files: x.files.filter((f) => f._id !== fileId) } : x)),
-      )
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionFileOpen = async (missionId: string, projectId: string, fileId: string) => {
-    try {
-      const { blob } = await apiDownload(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}/files/${fileId}`,
-      )
-      window.open(URL.createObjectURL(blob), '_blank')
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleDeliverableAdd = async (missionId: string, projectId: string, mission: Mission) => {
-    const input = deliverableInputs[missionId]
-    if (!input?.title?.trim()) return
-    const newDeliverable: any = { title: input.title.trim(), description: input.description || '', done: false }
-    if (input.assignedTo) newDeliverable.assignedTo = input.assignedTo
-    const newDeliverables = [...(mission.deliverables || []), newDeliverable]
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ deliverables: newDeliverables }),
-        },
-      )
-      setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
-      setDeliverableInputs((s) => ({ ...s, [missionId]: { title: '', description: '', assignedTo: '' } }))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleDeliverableToggle = async (missionId: string, projectId: string, mission: Mission, delivId: string) => {
-    const newDeliverables = (mission.deliverables || []).map((d) => (d._id === delivId ? { ...d, done: !d.done } : d))
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ deliverables: newDeliverables }),
-        },
-      )
-      setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleDeliverableDelete = async (missionId: string, projectId: string, mission: Mission, delivId: string) => {
-    const newDeliverables = (mission.deliverables || []).filter((d) => d._id !== delivId)
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ deliverables: newDeliverables }),
-        },
-      )
-      setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionProgressUpdate = async (missionId: string, projectId: string, progress: number) => {
-    try {
-      await apiFetch(`/api/admin/internal-projects/${projectId}/missions/${missionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ progress }),
-      })
-      setMissions((ms) => ms.map((x) => (x._id === missionId ? { ...x, progress } : x)))
-    } catch {
-      /* silent */
-    }
-  }
-
-  const handleMissionDateUpdate = async (missionId: string, projectId: string, dueDate: string) => {
-    try {
-      const data = await apiFetch<{ mission: Mission }>(
-        `/api/admin/internal-projects/${projectId}/missions/${missionId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ dueDate: dueDate || null }),
-        },
-      )
-      setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
-    } catch {
-      /* silent */
-    }
   }
 
   const filtered = projects.filter(
@@ -873,172 +605,14 @@ export default function InternalProjectList() {
 
         {/* ─── PROJECTS TAB ─── */}
         {viewTab === 'projects' && (
-          <div style={{ marginTop: 20 }}>
-            {loading ? (
-              <div className="portal-card">
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="portal-card">
-                <div className="admin-empty-state">
-                  <div className="admin-empty-state-icon">🏗️</div>
-                  <p className="admin-empty-state-text">Aucun projet interne</p>
-                </div>
-              </div>
-            ) : (
-              <div className="admin-cards-grid">
-                {filtered.map((p) => {
-                  const sc = STATUS_COLORS[p.status] || STATUS_COLORS.ARCHIVE
-                  return (
-                    <div
-                      key={p._id}
-                      className="admin-member-card"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/admin/projets-internes/${p._id}`)}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 8,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            background: 'rgba(14, 165, 233, 0.12)',
-                            border: '1px solid rgba(14, 165, 233, 0.3)',
-                            color: 'var(--primary)',
-                          }}
-                        >
-                          {p.entity}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            background: sc.bg,
-                            border: `1px solid ${sc.border}`,
-                            color: sc.text,
-                          }}
-                        >
-                          {STATUS_LABELS[p.status] || p.status}
-                        </span>
-                      </div>
-                      <h3 className="client-card-name" style={{ marginBottom: 4 }}>
-                        {p.name}
-                      </h3>
-                      {p.description && (
-                        <p
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-secondary)',
-                            marginBottom: 8,
-                            lineHeight: 1.4,
-                            overflow: 'hidden',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-                          }}
-                        >
-                          {p.description}
-                        </p>
-                      )}
-                      {/* Poles */}
-                      {p.poles.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                          {p.poles.map((pole) => (
-                            <span
-                              key={pole}
-                              style={{
-                                fontSize: 11,
-                                padding: '2px 7px',
-                                borderRadius: 12,
-                                background: 'rgba(14, 165, 233, 0.12)',
-                                border: '1px solid rgba(14, 165, 233, 0.3)',
-                                color: 'var(--primary)',
-                              }}
-                            >
-                              {pole}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {/* Members */}
-                      {p.members.length > 0 && (
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-                          {p.members.slice(0, 4).map((m) => (
-                            <span
-                              key={m._id}
-                              style={{
-                                fontSize: 11,
-                                padding: '2px 7px',
-                                borderRadius: 12,
-                                background: 'rgba(16,185,129,0.1)',
-                                border: '1px solid rgba(16,185,129,0.25)',
-                                color: '#6ee7b7',
-                              }}
-                            >
-                              {m.name.split(' ')[0]}
-                            </span>
-                          ))}
-                          {p.members.length > 4 && (
-                            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                              +{p.members.length - 4}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: PRIORITY_COLORS[p.priority] || 'var(--text-secondary)',
-                            fontWeight: 600,
-                          }}
-                        >
-                          ● {p.priority.charAt(0) + p.priority.slice(1).toLowerCase()}
-                        </span>
-                        {p.endDate && (
-                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 'auto' }}>
-                            Fin : {new Date(p.endDate).toLocaleDateString('fr-FR')}
-                          </span>
-                        )}
-                      </div>
-                      <div
-                        className="admin-card-actions"
-                        style={{ marginTop: 12 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          className="admin-card-btn admin-card-btn--edit"
-                          type="button"
-                          onClick={() => openEdit(p)}
-                        >
-                          Modifier
-                        </button>
-                        {isSuperAdmin && (
-                          <button
-                            className="admin-card-btn admin-card-btn--delete"
-                            type="button"
-                            onClick={() => setDeleteTarget(p._id)}
-                          >
-                            Supprimer
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          <ProjectsTab
+            loading={loading}
+            projects={filtered}
+            isSuperAdmin={isSuperAdmin}
+            onOpenProject={(projectId) => navigate(`/admin/projets-internes/${projectId}`)}
+            onEdit={openEdit}
+            onDelete={setDeleteTarget}
+          />
         )}
 
         {/* ─── MODAL CRÉATION MISSION ─── */}
