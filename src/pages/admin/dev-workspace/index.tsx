@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Activity,
+  AlertTriangle,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -12,6 +13,7 @@ import {
   Layers3,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Target,
   Trash2,
   X,
@@ -25,6 +27,7 @@ import {
   listDevIssues,
   fetchDevStats,
   fetchDevOverview,
+  fetchDevDailyPriorities,
   createDevIssue,
   updateDevIssue,
   deleteDevIssue,
@@ -49,6 +52,7 @@ import {
   type DevIssueType,
   type DevStats,
   type DevOverview,
+  type DevDailyPriorities,
   type DevIssueGithubLink,
   type DevCiStatus,
   type IssueFilters,
@@ -112,6 +116,7 @@ const DevWorkspace = () => {
   const [projects, setProjects] = useState<DevProject[]>([])
   const [issues, setIssues] = useState<DevIssue[]>([])
   const [overview, setOverview] = useState<DevOverview | null>(null)
+  const [dailyPriorities, setDailyPriorities] = useState<DevDailyPriorities | null>(null)
   const [stats, setStats] = useState<DevStats | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -224,6 +229,14 @@ const DevWorkspace = () => {
     }
   }, [])
 
+  const loadDailyPriorities = useCallback(async () => {
+    try {
+      setDailyPriorities(await fetchDevDailyPriorities())
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
   useEffect(() => {
     loadProjects()
   }, [loadProjects])
@@ -236,6 +249,13 @@ const DevWorkspace = () => {
   useEffect(() => {
     loadOverview()
   }, [loadOverview])
+  useEffect(() => {
+    loadDailyPriorities()
+  }, [loadDailyPriorities])
+
+  const refreshWorkspace = useCallback(async () => {
+    await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
+  }, [loadIssues, loadStats, loadOverview, loadDailyPriorities])
 
   const loadIssueDetail = useCallback(
     async (id: string) => {
@@ -386,7 +406,7 @@ const DevWorkspace = () => {
         status: quickCreate.status,
       })
       setQuickCreate((q) => ({ ...q, title: '' }))
-      await Promise.all([loadIssues(), loadStats(), loadOverview()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
     } catch (err) {
       console.error(err)
     } finally {
@@ -399,7 +419,7 @@ const DevWorkspace = () => {
       const updated = await updateDevIssue(id, patch)
       setIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
       if (selectedIssue?._id === id) setSelectedIssue((prev) => (prev ? { ...prev, ...updated } : prev))
-      Promise.all([loadStats(), loadOverview()])
+      Promise.all([loadStats(), loadOverview(), loadDailyPriorities()])
     } catch (err) {
       console.error(err)
     }
@@ -415,13 +435,13 @@ const DevWorkspace = () => {
     setPendingDelete(null)
     try {
       await deleteDevIssue(pending.issue._id)
-      Promise.all([loadStats(), loadOverview()])
+      Promise.all([loadStats(), loadOverview(), loadDailyPriorities()])
     } catch (err) {
       console.error(err)
       setIssues((prev) => (prev.some((i) => i._id === pending.issue._id) ? prev : [...prev, pending.issue]))
       setDeleteError(`Échec de la suppression de ${issueIdentifier(pending.issue)} — issue restaurée`)
     }
-  }, [loadStats, loadOverview])
+  }, [loadStats, loadOverview, loadDailyPriorities])
 
   const undoDelete = () => {
     const pending = pendingDeleteRef.current
@@ -645,7 +665,7 @@ const DevWorkspace = () => {
         console.error(`Bulk : ${failed} mise(s) à jour en échec`, results)
         setBulkError(`${failed} mise(s) à jour en échec`)
       }
-      await Promise.all([loadIssues(), loadStats(), loadOverview()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
     } finally {
       setSelectedIds(new Set())
       setLastClickedId(null)
@@ -658,6 +678,7 @@ const DevWorkspace = () => {
 
   const projectOverview = useMemo(() => {
     if (!overview) return []
+    const dailyByProjectId = new Map(dailyPriorities?.projects.map((state) => [state.project._id, state]) ?? [])
     return [...overview.projects]
       .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
       .map((p) => {
@@ -671,9 +692,11 @@ const DevWorkspace = () => {
           blocked: p.counts.blocked,
           percent: p.progress,
           lastActivityAt: p.lastActivityAt,
+          nextAction: dailyByProjectId.get(p._id)?.nextAction ?? null,
+          healthState: dailyByProjectId.get(p._id)?.state ?? null,
         }
       })
-  }, [overview])
+  }, [overview, dailyPriorities])
 
   const visibleProjectOverview = showAllProjects ? projectOverview : projectOverview.slice(0, 6)
 
@@ -749,7 +772,7 @@ const DevWorkspace = () => {
           </span>
         </div>
         <div className="dev-header-actions">
-          <button className="dev-btn subtle" onClick={loadIssues} title="Rafraîchir">
+          <button className="dev-btn subtle" onClick={refreshWorkspace} title="Rafraîchir le cockpit">
             <RefreshCw size={13} />
           </button>
           {(stats?.byStatus?.IN_REVIEW ?? 0) > 0 && (
@@ -804,6 +827,83 @@ const DevWorkspace = () => {
             </div>
           </section>
 
+          {dailyPriorities && (
+            <section className="dev-daily-priorities" aria-label="Priorités du jour">
+              <header className="dev-daily-header">
+                <div>
+                  <span className="dev-kicker">P0 · Aujourd’hui</span>
+                  <h2>Priorités opérationnelles</h2>
+                </div>
+                <span className="dev-daily-freshness">
+                  Sources vérifiées {formatRelative(dailyPriorities.generatedAt)}
+                </span>
+              </header>
+              {dailyPriorities.items.length === 0 ? (
+                <div className="dev-daily-empty">
+                  <ShieldCheck size={16} aria-hidden />
+                  Aucun bloquant, build cassé ou signal prioritaire détecté sur les projets actifs.
+                </div>
+              ) : (
+                <ol className="dev-daily-list">
+                  {dailyPriorities.items.map((item) => (
+                    <li key={item.id} className={`dev-daily-item severity-${item.severity}`}>
+                      <span className="dev-daily-icon" aria-hidden>
+                        {item.kind === 'build_failure' ? (
+                          <AlertTriangle size={15} />
+                        ) : item.kind === 'pr_review' ? (
+                          <GitPullRequest size={15} />
+                        ) : (
+                          <CircleDot size={15} />
+                        )}
+                      </span>
+                      <div className="dev-daily-main">
+                        <div className="dev-daily-title-row">
+                          <strong>{item.title}</strong>
+                          <span
+                            className="dev-daily-project"
+                            style={{ ['--project-color' as never]: item.project.color }}
+                          >
+                            {item.project.key}
+                          </span>
+                        </div>
+                        <span>{item.description}</span>
+                        <small>
+                          Source :{' '}
+                          {item.source.type === 'ci'
+                            ? 'CI'
+                            : item.source.type === 'pull_request'
+                              ? 'PR'
+                              : item.source.type === 'freshness'
+                                ? 'Fraîcheur'
+                                : 'Issue'}{' '}
+                          · mise à jour {formatRelative(item.source.observedAt)}
+                        </small>
+                      </div>
+                      {item.action.href ? (
+                        <a
+                          className="dev-daily-action"
+                          href={item.action.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.action.label}
+                        </a>
+                      ) : (
+                        <button
+                          className="dev-daily-action"
+                          type="button"
+                          onClick={() => navigate(`/admin/dev/issues/${item.issue._id}`)}
+                        >
+                          {item.action.label}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          )}
+
           {projectOverview.length > 0 && (
             <section className="dev-project-overview-block" aria-label="Projets triés par dernière modification">
               <div className="dev-project-strip-header">
@@ -818,7 +918,18 @@ const DevWorkspace = () => {
               </div>
               <div className={'dev-project-strip' + (showAllProjects ? ' expanded' : '')}>
                 {visibleProjectOverview.map(
-                  ({ project, total, done, active, urgent, blocked, percent, lastActivityAt }) => (
+                  ({
+                    project,
+                    total,
+                    done,
+                    active,
+                    urgent,
+                    blocked,
+                    percent,
+                    lastActivityAt,
+                    nextAction,
+                    healthState,
+                  }) => (
                     <button
                       key={project._id}
                       type="button"
@@ -841,6 +952,11 @@ const DevWorkspace = () => {
                         <span className={blocked ? 'warn' : ''}>
                           {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
                         </span>
+                      </span>
+                      <span className={`dev-project-next-action${healthState === 'healthy' ? ' healthy' : ''}`}>
+                        {nextAction
+                          ? `Prochaine action : ${nextAction.issue.identifier}`
+                          : 'État sain · aucune action P0'}
                       </span>
                     </button>
                   ),

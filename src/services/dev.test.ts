@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import {
-  computeWeightedProgress,
-  fetchDevProjectCockpit,
-  type DevIssueStatus,
-} from './dev'
+import { computeWeightedProgress, fetchDevDailyPriorities, fetchDevProjectCockpit, type DevIssueStatus } from './dev'
 
 const empty = (): Record<DevIssueStatus, number> => ({
   BACKLOG: 0,
@@ -75,5 +71,26 @@ describe('fetchDevProjectCockpit', () => {
     const calledUrl = fetchMock.mock.calls[0]![0] as string
     expect(calledUrl).toContain('/api/admin/dev/projects/507f1f77bcf86cd799439011/dashboard')
     expect(res.project.key).toBe('VEN')
+  })
+})
+
+describe('fetchDevDailyPriorities', () => {
+  const ORIGINAL_FETCH = global.fetch
+  afterEach(() => {
+    global.fetch = ORIGINAL_FETCH
+  })
+
+  it('hits the daily priorities endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ generatedAt: '2026-07-13T00:00:00.000Z', items: [], projects: [] }),
+    })
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    await fetchDevDailyPriorities()
+
+    expect(fetchMock.mock.calls[0]![0]).toContain('/api/admin/dev/priorities')
   })
 })

@@ -291,7 +291,9 @@ export function listDevIssues(filters: IssueFilters = {}): Promise<{ issues: Dev
   return apiFetch(`/api/admin/dev/issues${qs(filters as Record<string, string | undefined>)}`)
 }
 
-export function getDevIssue(id: string): Promise<{ issue: DevIssue; comments: DevIssueComment[]; events: DevIssueEvent[] }> {
+export function getDevIssue(
+  id: string,
+): Promise<{ issue: DevIssue; comments: DevIssueComment[]; events: DevIssueEvent[] }> {
   return apiFetch(`/api/admin/dev/issues/${id}`)
 }
 
@@ -321,7 +323,7 @@ export function createDevIssue(data: {
 
 export function updateDevIssue(
   id: string,
-  data: Partial<DevIssue> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null }
+  data: Partial<DevIssue> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null },
 ): Promise<DevIssue> {
   return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
@@ -385,6 +387,48 @@ export interface DevOverview {
 
 export function fetchDevOverview(): Promise<DevOverview> {
   return apiFetch('/api/admin/dev/overview')
+}
+
+// Daily command center — normalized P0 signals across active projects.
+export type DevDailyPriorityKind = 'build_failure' | 'blocker' | 'pr_review' | 'overdue' | 'stale' | 'priority'
+export type DevDailyPrioritySeverity = 'critical' | 'high' | 'medium'
+
+export interface DevDailyPriorityItem {
+  id: string
+  kind: DevDailyPriorityKind
+  severity: DevDailyPrioritySeverity
+  rank: number
+  title: string
+  description: string
+  project: { _id: string; key: string; name: string; color: string }
+  issue: {
+    _id: string
+    identifier: string
+    title: string
+    status: DevIssueStatus
+    priority: DevIssuePriority
+    updatedAt: string
+  }
+  action: { label: string; href: string | null }
+  source: { type: 'ci' | 'issue' | 'pull_request' | 'freshness'; observedAt: string }
+}
+
+export interface DevDailyProjectState {
+  project: { _id: string; key: string; name: string; color: string }
+  state: 'attention' | 'healthy'
+  nextAction: DevDailyPriorityItem | null
+  reason: string
+}
+
+export interface DevDailyPriorities {
+  generatedAt: string
+  staleAfterDays: number
+  items: DevDailyPriorityItem[]
+  projects: DevDailyProjectState[]
+}
+
+export function fetchDevDailyPriorities(): Promise<DevDailyPriorities> {
+  return apiFetch('/api/admin/dev/priorities')
 }
 
 // Project cockpit (per-project dashboard)
@@ -580,7 +624,7 @@ export interface DevLargeFilesSnapshot {
 
 export function fetchDevProjectIntelligence(
   projectId: string,
-  opts: { refresh?: boolean } = {}
+  opts: { refresh?: boolean } = {},
 ): Promise<DevProjectIntelligence> {
   const refresh = opts.refresh ? '?refresh=1' : ''
   return apiFetch(`/api/admin/dev/projects/${projectId}/intelligence${refresh}`)
@@ -588,7 +632,7 @@ export function fetchDevProjectIntelligence(
 
 export function fetchDevProjectLargeFiles(
   projectId: string,
-  opts: { refresh?: boolean } = {}
+  opts: { refresh?: boolean } = {},
 ): Promise<DevLargeFilesSnapshot> {
   const refresh = opts.refresh ? '?refresh=1' : ''
   return apiFetch(`/api/admin/dev/projects/${projectId}/large-files${refresh}`)
@@ -656,7 +700,7 @@ export interface DevRecommendationsPayload {
 
 export function fetchDevProjectRecommendations(
   projectId: string,
-  opts: { refresh?: boolean } = {}
+  opts: { refresh?: boolean } = {},
 ): Promise<DevRecommendationsPayload> {
   const refresh = opts.refresh ? '?refresh=1' : ''
   return apiFetch(`/api/admin/dev/projects/${projectId}/recommendations${refresh}`)
@@ -666,14 +710,16 @@ export function fetchDevProjectDetail(id: string): Promise<DevProjectDetail> {
   return apiFetch(`/api/admin/dev/projects/${id}/detail`)
 }
 
-export function fetchDevActivity(opts: { project?: string; limit?: number } = {}): Promise<{ entries: DevActivityEntry[] }> {
+export function fetchDevActivity(
+  opts: { project?: string; limit?: number } = {},
+): Promise<{ entries: DevActivityEntry[] }> {
   return apiFetch(
-    `/api/admin/dev/activity${qs({ project: opts.project, limit: opts.limit ? String(opts.limit) : undefined })}`
+    `/api/admin/dev/activity${qs({ project: opts.project, limit: opts.limit ? String(opts.limit) : undefined })}`,
   )
 }
 
 export function fetchDevRoadmap(
-  opts: { includeArchived?: boolean; upcomingLimit?: number; recentLimit?: number; activeLimit?: number } = {}
+  opts: { includeArchived?: boolean; upcomingLimit?: number; recentLimit?: number; activeLimit?: number } = {},
 ): Promise<DevRoadmapResponse> {
   return apiFetch(
     `/api/admin/dev/roadmap${qs({
@@ -681,7 +727,7 @@ export function fetchDevRoadmap(
       upcomingLimit: opts.upcomingLimit ? String(opts.upcomingLimit) : undefined,
       recentLimit: opts.recentLimit ? String(opts.recentLimit) : undefined,
       activeLimit: opts.activeLimit ? String(opts.activeLimit) : undefined,
-    })}`
+    })}`,
   )
 }
 
@@ -708,7 +754,16 @@ export const STATUS_COLOR: Record<DevIssueStatus, string> = {
   CANCELLED: '#475569',
 }
 
-export const STATUS_ORDER: DevIssueStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE', 'DUPLICATE', 'CANCELLED']
+export const STATUS_ORDER: DevIssueStatus[] = [
+  'BACKLOG',
+  'TODO',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'BLOCKED',
+  'DONE',
+  'DUPLICATE',
+  'CANCELLED',
+]
 
 export const PRIORITY_LABEL: Record<DevIssuePriority, string> = {
   NO_PRIORITY: 'Aucune',
