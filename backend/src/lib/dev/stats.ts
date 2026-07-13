@@ -8,6 +8,7 @@ import DevIssue, {
   type DevIssueType,
 } from '../../models/DevIssue.js'
 import DevIssueComment from '../../models/DevIssueComment.js'
+import DevIssueEvent, { type DevIssueEventType } from '../../models/DevIssueEvent.js'
 import DevProject from '../../models/DevProject.js'
 import { CLOSED_ISSUE_STATUSES } from './issueMutations.js'
 
@@ -371,6 +372,20 @@ export interface CockpitActivityEvent {
   actor: { _id: string; name: string; email: string } | null
 }
 
+export type CockpitTimelineCategory = 'change' | 'comment' | 'github' | 'agent' | 'deployment'
+
+export interface CockpitTimelineEvent {
+  _id: string
+  type: DevIssueEventType | 'comment'
+  category: CockpitTimelineCategory
+  at: string
+  summary: string
+  metadata: Record<string, unknown>
+  commentBody: string | null
+  issue: { _id: string; identifier: string; title: string; status: DevIssueStatus } | null
+  actor: { _id: string; name: string; email: string } | null
+}
+
 export interface CockpitAssigneeRow {
   user: { _id: string; name: string; email: string; avatarUrl?: string } | null
   open: number
@@ -401,7 +416,16 @@ export interface CockpitPayload {
   nextDue: CockpitIssueRef[]
   recentlyDone: CockpitIssueRef[]
   activity: CockpitActivityEvent[]
+  timeline: CockpitTimelineEvent[]
   assignees: CockpitAssigneeRow[]
+}
+
+function timelineCategory(type: DevIssueEventType | 'comment'): CockpitTimelineCategory {
+  if (type === 'comment' || type === 'commented') return 'comment'
+  if (type === 'github_linked' || type === 'ci_changed') return 'github'
+  if (type === 'agent_started' || type === 'agent_blocked' || type === 'agent_done') return 'agent'
+  if (type === 'deployed') return 'deployment'
+  return 'change'
 }
 
 function emptyByStatusType<T extends string>(keys: readonly T[]): Record<T, number> {
@@ -504,6 +528,7 @@ export async function computeProjectCockpit(
     recentlyDoneRaw,
     recentIssuesRaw,
     recentCommentsRaw,
+    recentEventsRaw,
     assigneesAgg,
   ] = await Promise.all([
     DevIssue.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
@@ -595,7 +620,13 @@ export async function computeProjectCockpit(
       .populate('author', 'name email')
       .populate('issue', 'identifier title status')
       .sort({ createdAt: -1 })
-      .limit(15)
+      .limit(100)
+      .lean(),
+    DevIssueEvent.find({ project: id })
+      .populate('actor', 'name email')
+      .populate('issue', 'identifier title status')
+      .sort({ createdAt: -1 })
+      .limit(100)
       .lean(),
     DevIssue.aggregate([
       { $match: match },
@@ -678,9 +709,85 @@ export async function computeProjectCockpit(
   const nextDue = nextDueRaw.map((i) => shapeIssueRef(i as never))
   const recentlyDone = recentlyDoneRaw.map((i) => shapeIssueRef(i as never))
 
-  // Activity stream — merge issue events + comments, keep last 20
+  // Timeline — DevIssueEvent is the source of truth. Comments created before
+  // event tracking are added as a backwards-compatible fallback only.
+  type TimelineIssue = {
+    _id: mongoose.Types.ObjectId
+    identifier: string
+    title: string
+    status: DevIssueStatus
+  }
+  type TimelineComment = {
+    _id: mongoose.Types.ObjectId
+    createdAt: Date
+    body: string
+    author: PopulatedUserRef | null
+    issue: TimelineIssue | null
+  }
+  const comments = recentCommentsRaw as unknown as TimelineComment[]
+  const commentsById = new Map(comments.map((comment) => [String(comment._id), comment]))
+  const eventCommentIds = new Set<string>()
+  const timeline: CockpitTimelineEvent[] = []
+
+  for (const event of recentEventsRaw as unknown as Array<{
+    _id: mongoose.Types.ObjectId
+    type: DevIssueEventType
+    summary: string
+    metadata: Record<string, unknown>
+    createdAt: Date
+    actor: PopulatedUserRef | null
+    issue: TimelineIssue | null
+  }>) {
+    const commentId = typeof event.metadata?.commentId === 'string' ? event.metadata.commentId : null
+    if (commentId) eventCommentIds.add(commentId)
+    const comment = commentId ? commentsById.get(commentId) : null
+    timeline.push({
+      _id: String(event._id),
+      type: event.type,
+      category: timelineCategory(event.type),
+      at: new Date(event.createdAt).toISOString(),
+      summary: event.summary || 'Événement technique',
+      metadata: event.metadata || {},
+      commentBody: comment?.body.slice(0, 2_000) || null,
+      issue: event.issue
+        ? {
+            _id: String(event.issue._id),
+            identifier: event.issue.identifier,
+            title: event.issue.title,
+            status: event.issue.status,
+          }
+        : null,
+      actor: userRef(event.actor),
+    })
+  }
+
+  for (const comment of comments) {
+    if (eventCommentIds.has(String(comment._id))) continue
+    timeline.push({
+      _id: `comment-${comment._id}`,
+      type: 'comment',
+      category: 'comment',
+      at: new Date(comment.createdAt).toISOString(),
+      summary: 'Commentaire ajouté',
+      metadata: { commentId: String(comment._id), legacy: true },
+      commentBody: comment.body.slice(0, 2_000),
+      issue: comment.issue
+        ? {
+            _id: String(comment.issue._id),
+            identifier: comment.issue.identifier,
+            title: comment.issue.title,
+            status: comment.issue.status,
+          }
+        : null,
+      actor: userRef(comment.author),
+    })
+  }
+  timeline.sort((a, b) => b.at.localeCompare(a.at))
+  const timelineCapped = timeline.slice(0, 100)
+
+  // Legacy compact activity stream — kept for dashboard API compatibility.
   const activity: CockpitActivityEvent[] = []
-  for (const c of recentCommentsRaw as unknown as Array<{
+  for (const c of comments as Array<{
     createdAt: Date
     author: PopulatedUserRef | null
     issue: {
@@ -762,7 +869,7 @@ export async function computeProjectCockpit(
     }))
     .sort((a, b) => b.open - a.open || b.urgent - a.urgent)
 
-  const lastActivityAt = activityCapped[0]?.at || new Date(projectDoc.updatedAt).toISOString()
+  const lastActivityAt = timelineCapped[0]?.at || activityCapped[0]?.at || new Date(projectDoc.updatedAt).toISOString()
 
   const project: CockpitProject = {
     _id: String(projectDoc._id),
@@ -811,6 +918,7 @@ export async function computeProjectCockpit(
     nextDue,
     recentlyDone,
     activity: activityCapped,
+    timeline: timelineCapped,
     assignees,
   }
 }

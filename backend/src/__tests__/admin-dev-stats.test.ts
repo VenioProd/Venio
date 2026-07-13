@@ -199,7 +199,7 @@ describe('GET /api/admin/dev/projects/:id/dashboard', () => {
     const { default: DevProject } = await import('../models/DevProject.js')
     const { default: DevIssue } = await import('../models/DevIssue.js')
     const p = await DevProject.create({ key: 'VEN', name: 'Venio', createdBy: systemUserId })
-    await DevIssue.create({
+    const issueA = await DevIssue.create({
       project: p._id,
       identifier: 'VEN-1',
       title: 'A',
@@ -220,6 +220,64 @@ describe('GET /api/admin/dev/projects/:id/dashboard', () => {
       reporter: systemUserId,
       completedAt: new Date(),
     })
+    const { default: DevIssueComment } = await import('../models/DevIssueComment.js')
+    const { default: DevIssueEvent } = await import('../models/DevIssueEvent.js')
+    const comment = await DevIssueComment.create({
+      project: p._id,
+      issue: issueA._id,
+      author: systemUserId,
+      body: 'CI investiguée, correctif en cours.',
+    })
+    await DevIssueEvent.create([
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'status_changed',
+        summary: 'VEN-1 TODO → IN_PROGRESS',
+        metadata: { from: 'TODO', to: 'IN_PROGRESS' },
+      },
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'priority_changed',
+        summary: 'VEN-1 priorité MEDIUM → URGENT',
+        metadata: { from: 'MEDIUM', to: 'URGENT' },
+      },
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'github_linked',
+        summary: 'VEN-1 lien GitHub mis à jour',
+        metadata: { github: { prUrl: 'https://github.com/acme/venio/pull/49', commitSha: 'abcdef1234567890' } },
+      },
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'agent_done',
+        summary: 'Agent a terminé le correctif',
+        metadata: {},
+      },
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'deployed',
+        summary: 'Déployé en staging',
+        metadata: { environment: 'staging' },
+      },
+      {
+        project: p._id,
+        issue: issueA._id,
+        actor: systemUserId,
+        type: 'commented',
+        summary: 'Commentaire ajouté',
+        metadata: { commentId: String(comment._id) },
+      },
+    ])
     const res = await request(app).get(`/api/admin/dev/projects/${p._id}/dashboard`).expect(200)
     expect(res.body.project.key).toBe('VEN')
     expect(res.body.counts.total).toBe(2)
@@ -229,5 +287,16 @@ describe('GET /api/admin/dev/projects/:id/dashboard', () => {
     expect(res.body.byType.BUG).toBe(1)
     expect(res.body.velocity.days).toHaveLength(14)
     expect(res.body.urgent).toHaveLength(1)
+    expect(res.body.timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'status_changed', category: 'change' }),
+        expect.objectContaining({ type: 'priority_changed', category: 'change' }),
+        expect.objectContaining({ type: 'github_linked', category: 'github' }),
+        expect.objectContaining({ type: 'agent_done', category: 'agent' }),
+        expect.objectContaining({ type: 'deployed', category: 'deployment' }),
+        expect.objectContaining({ type: 'commented', category: 'comment', commentBody: comment.body }),
+      ]),
+    )
+    expect(res.body.timeline.filter((event: { metadata: { commentId?: string } }) => event.metadata.commentId === String(comment._id))).toHaveLength(1)
   })
 })
