@@ -80,6 +80,12 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
     user.mfaGraceUntil = null
     await user.save()
 
+    // The code has just been verified: rotate any enrollment-only or stale
+    // session into a normal, freshly stepped-up session.
+    const mfaVerifiedAt = new Date()
+    await revokeSession(readSessionCookie(req.headers.cookie))
+    await setSessionCookie(res, user._id.toString(), { mfaVerifiedAt })
+
     AuditLog.create({
       userId: user._id,
       email: user.email,

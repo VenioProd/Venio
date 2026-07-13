@@ -116,4 +116,32 @@ describe('api client', () => {
       payload: 'Service indisponible',
     })
   })
+
+  it('redirects an expired admin session to the MFA enrollment flow once', async () => {
+    const replace = vi.fn()
+    vi.stubGlobal('window', {
+      location: {
+        pathname: '/admin/comptabilite',
+        search: '?periode=2026',
+        replace,
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ error: 'MFA_SETUP_REQUIRED', message: 'Configurez la MFA avant de continuer.' }),
+            { status: 403, headers: { 'content-type': 'application/json' } },
+          ),
+        ),
+    )
+
+    await expect(apiFetch('/api/admin/accounting/entries')).rejects.toMatchObject({
+      status: 403,
+      message: 'Configurez la MFA avant de continuer.',
+    })
+    expect(replace).toHaveBeenCalledWith('/admin/mfa-setup?returnTo=%2Fadmin%2Fcomptabilite%3Fperiode%3D2026')
+  })
 })

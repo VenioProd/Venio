@@ -76,6 +76,8 @@ export interface User {
 export interface LoginResult {
   user?: User | null
   requires2FA?: boolean
+  mfaEnrollmentRequired?: boolean
+  mfaGraceUntil?: string
 }
 
 export interface AuthContextValue {

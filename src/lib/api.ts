@@ -45,14 +45,32 @@ async function readResponsePayload(response: Response): Promise<unknown> {
 function errorMessage(payload: unknown, fallback: string): string {
   if (typeof payload === 'object' && payload !== null) {
     const { error, message } = payload as Record<string, unknown>
-    if (typeof error === 'string' && error) return error
     if (typeof message === 'string' && message) return message
+    if (typeof error === 'string' && error) return error
   }
   return typeof payload === 'string' && payload ? payload : fallback
 }
 
+let mfaSetupRedirecting = false
+
+function handleMfaSetupRequired(response: Response, payload: unknown, path: string): void {
+  if (response.status !== 403 || typeof payload !== 'object' || payload === null) return
+  if ((payload as Record<string, unknown>).error !== 'MFA_SETUP_REQUIRED') return
+  if (path.startsWith('/api/admin/2fa/')) return
+  if (typeof window === 'undefined' || mfaSetupRedirecting) return
+  if (window.location.pathname === '/admin/mfa-setup') return
+
+  mfaSetupRedirecting = true
+  const returnTo = window.location.pathname.startsWith('/admin')
+    ? window.location.pathname + window.location.search
+    : ''
+  const target = `/admin/mfa-setup${returnTo && returnTo !== '/admin/login' ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`
+  window.location.replace(target)
+}
+
 function throwApiError(response: Response, payload: unknown, fallback: string, path: string): never {
   if (response.status === 401) handleAuth401(path)
+  handleMfaSetupRequired(response, payload, path)
   throw new ApiError(response.status, errorMessage(payload, fallback), payload)
 }
 

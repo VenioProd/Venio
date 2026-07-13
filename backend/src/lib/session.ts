@@ -38,7 +38,7 @@ export function readSessionCookie(cookieHeader: string | undefined): string | nu
 
 export async function createSession(
   userId: string,
-  options: { impersonatorId?: string; mfaVerifiedAt?: Date; ttlMs?: number } = {},
+  options: { impersonatorId?: string; mfaVerifiedAt?: Date; mfaEnrollmentOnly?: boolean; ttlMs?: number } = {},
 ): Promise<{ token: string; expiresAt: Date }> {
   const user = await User.findById(userId).select('sessionVersion').lean()
   if (!user) throw new Error('Cannot create a session for an unknown user')
@@ -52,6 +52,7 @@ export async function createSession(
     expiresAt,
     impersonatorId: options.impersonatorId ?? null,
     mfaVerifiedAt: options.mfaVerifiedAt ?? null,
+    mfaEnrollmentOnly: options.mfaEnrollmentOnly ?? false,
   })
   return { token, expiresAt }
 }
@@ -59,12 +60,18 @@ export async function createSession(
 export async function setSessionCookie(
   res: Response,
   userId: string,
-  options: { impersonatorId?: string; mfaVerifiedAt?: Date; impersonation?: boolean } = {},
+  options: {
+    impersonatorId?: string
+    mfaVerifiedAt?: Date
+    mfaEnrollmentOnly?: boolean
+    impersonation?: boolean
+  } = {},
 ): Promise<void> {
   const ttlMs = options.impersonation ? IMPERSONATION_TTL_MS : SESSION_TTL_MS
   const { token } = await createSession(userId, {
     impersonatorId: options.impersonatorId,
     mfaVerifiedAt: options.mfaVerifiedAt,
+    mfaEnrollmentOnly: options.mfaEnrollmentOnly,
     ttlMs,
   })
   // Use the requested TTL directly. Deriving it from the persisted expiry after
@@ -113,6 +120,7 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
     name: user.name,
     sessionVersion: user.sessionVersion ?? 0,
     mfaVerifiedAt: session.mfaVerifiedAt?.getTime(),
+    mfaEnrollmentOnly: session.mfaEnrollmentOnly || undefined,
     impersonatorId: session.impersonatorId ? String(session.impersonatorId) : undefined,
   }
 }

@@ -109,6 +109,7 @@ router.post(
       }
 
       let mfaVerifiedAt: number | undefined
+      let mfaEnrollmentOnly = false
       // Check 2FA, including a single-use recovery code when the authenticator
       // is unavailable. A recovery code is consumed atomically with the login.
       if (user.twoFactorEnabled && user.twoFactorSecret) {
@@ -143,9 +144,10 @@ router.post(
         // so existing administrators are never locked out by a release.
         if (!user.mfaGraceUntil) user.mfaGraceUntil = graceEndsAt()
         if (user.mfaGraceUntil.getTime() <= Date.now()) {
-          return res
-            .status(403)
-            .json({ error: 'MFA_SETUP_REQUIRED', message: 'La période d’enrôlement MFA est terminée.' })
+          // Issue a constrained browser session so the account can complete
+          // enrollment instead of becoming permanently locked out. The auth
+          // middleware limits this session to /me, logout and MFA setup APIs.
+          mfaEnrollmentOnly = true
         }
       }
 
@@ -165,6 +167,7 @@ router.post(
 
       await setSessionCookie(res, user._id.toString(), {
         ...(mfaVerifiedAt ? { mfaVerifiedAt: new Date(mfaVerifiedAt) } : {}),
+        ...(mfaEnrollmentOnly ? { mfaEnrollmentOnly: true } : {}),
       })
       return res.json({
         ...(requiresMfa(user.role) && !user.twoFactorEnabled

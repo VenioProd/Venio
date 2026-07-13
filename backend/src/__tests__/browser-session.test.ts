@@ -2,7 +2,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import bcrypt from 'bcryptjs'
 import express from 'express'
 import request from 'supertest'
+import { TOTP } from 'otpauth'
 import authRoutes, { resetTokens } from '../routes/auth.js'
+import twoFactorRoutes from '../routes/admin/twoFactor.js'
 import auth from '../middleware/auth.js'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
@@ -12,6 +14,7 @@ import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 const app = express()
 app.use(express.json())
 app.use('/api/auth', authRoutes)
+app.use('/api/admin/2fa', twoFactorRoutes)
 app.get('/protected', auth, (req, res) => res.json({ userId: req.user!.id }))
 
 beforeAll(async () => {
@@ -135,6 +138,41 @@ describe('browser sessions', () => {
       .expect(200)
 
     await request(app).get('/protected').set('Cookie', `venio_session=${token}`).expect(401)
+  })
+
+  it('confines expired privileged users to enrollment and unlocks them after TOTP verification', async () => {
+    const email = 'mfa-enrollment@example.test'
+    await User.create({
+      email,
+      name: 'MFA Enrollment',
+      role: 'ADMIN',
+      passwordHash: await bcrypt.hash('mfa-enrollment-password', 10),
+      twoFactorEnabled: false,
+      mfaGraceUntil: new Date(Date.now() - 60_000),
+    })
+
+    const agent = request.agent(app)
+    const login = await agent.post('/api/auth/login').send({ email, password: 'mfa-enrollment-password' }).expect(200)
+
+    expect(login.body).toMatchObject({ mfaEnrollmentRequired: true })
+    await agent.get('/api/auth/me').expect(200)
+    const blocked = await agent.get('/protected').expect(403)
+    expect(blocked.body).toMatchObject({ error: 'MFA_SETUP_REQUIRED' })
+
+    const setup = await agent.post('/api/admin/2fa/setup').expect(200)
+    const code = new TOTP({
+      issuer: 'Venio',
+      label: email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: setup.body.secret,
+    }).generate()
+    const verified = await agent.post('/api/admin/2fa/verify').send({ code }).expect(200)
+    expect(verified.body.enabled).toBe(true)
+    expect(verified.body.recoveryCodes).toHaveLength(10)
+
+    await agent.get('/protected').expect(200)
   })
 
   it('revokes a managed admin session after role, permission, or password changes', async () => {

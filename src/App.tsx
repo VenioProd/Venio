@@ -62,6 +62,7 @@ const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 // Lazy-loaded: Admin
 const AdminShell = lazy(() => import('./components/AdminShell'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const MfaSetup = lazy(() => import('./pages/admin/MfaSetup'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const SuperAdminDashboard = lazy(() => import('./pages/admin/SuperAdminDashboard'))
 const ClientAccountList = lazy(() => import('./pages/admin/ClientAccountList'))
@@ -211,6 +212,14 @@ function App() {
 
                 {/* Admin */}
                 <Route path="/admin/login" element={<AdminLogin />} />
+                <Route
+                  path="/admin/mfa-setup"
+                  element={
+                    <ProtectedRoute role={[...ADMIN_ROLES]} redirectTo="/admin/login">
+                      <MfaSetup />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/admin"
                   element={

@@ -9,6 +9,7 @@ export interface IAuthSession {
   revokedAt: Date | null
   impersonatorId: Types.ObjectId | null
   mfaVerifiedAt: Date | null
+  mfaEnrollmentOnly: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -27,6 +28,9 @@ const authSessionSchema = new mongoose.Schema<IAuthSession>(
     revokedAt: { type: Date, default: null, index: true },
     impersonatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     mfaVerifiedAt: { type: Date, default: null },
+    // A password-authenticated privileged user whose enrollment grace period
+    // expired may only call the MFA enrollment endpoints until verification.
+    mfaEnrollmentOnly: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },
 )

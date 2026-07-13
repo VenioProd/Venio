@@ -40,6 +40,10 @@ const AdminLogin = () => {
         setLoading(false)
         return
       }
+      if (result.mfaEnrollmentRequired) {
+        navigate('/admin/mfa-setup', { replace: true })
+        return
+      }
       if (!result.user || !isAdminRole(result.user.role)) {
         await logout()
         setError('Accès réservé aux administrateurs')

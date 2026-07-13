@@ -158,7 +158,7 @@ describe('VENIO-104 — login et MFA', () => {
     }
   })
 
-  it('refuses a privileged account whose MFA enrollment grace period has expired', async () => {
+  it('issues a constrained enrollment session when the MFA grace period has expired', async () => {
     const admin = userFor('ADMIN')
     await User.findByIdAndUpdate(admin.id, {
       twoFactorEnabled: false,
@@ -167,8 +167,14 @@ describe('VENIO-104 — login et MFA', () => {
     })
 
     const response = await request(app).post('/api/auth/login').send({ email: admin.email, password })
-    expect(response.status).toBe(403)
-    expect(response.body).toMatchObject({ error: 'MFA_SETUP_REQUIRED' })
+    expect(response.status).toBe(200)
+    expect(response.body).toMatchObject({ mfaEnrollmentRequired: true })
+
+    const protectedResponse = await request(app)
+      .get('/api/admin/accounting/entries')
+      .set('Cookie', response.headers['set-cookie']?.[0] ?? '')
+    expect(protectedResponse.status).toBe(403)
+    expect(protectedResponse.body).toMatchObject({ error: 'MFA_SETUP_REQUIRED' })
   })
 
   it('refuses a privileged accounting request when the session has not completed MFA step-up', async () => {
