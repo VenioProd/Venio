@@ -1,9 +1,20 @@
 export type ProjectStatus = 'EN_COURS' | 'EN_ATTENTE' | 'TERMINE'
 export type ProjectPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
-export type ItemType = 'LIVRABLE' | 'DEVIS' | 'FACTURE' | 'CONTRAT' | 'CAHIER_DES_CHARGES' | 'MAQUETTE' | 'DOCUMENTATION' | 'LIEN' | 'NOTE' | 'AUTRE'
+export type ItemType =
+  | 'LIVRABLE'
+  | 'DEVIS'
+  | 'FACTURE'
+  | 'CONTRAT'
+  | 'CAHIER_DES_CHARGES'
+  | 'MAQUETTE'
+  | 'DOCUMENTATION'
+  | 'LIEN'
+  | 'NOTE'
+  | 'AUTRE'
 export type ItemStatus = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINE' | 'VALIDE'
 export type DocumentType = 'DEVIS' | 'FACTURE' | 'FICHIER_PROJET'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
+export type ProjectAccessRole = 'OWNER' | 'EDITOR' | 'VIEWER'
 
 export interface Project {
   _id: string

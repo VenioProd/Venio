@@ -20,6 +20,7 @@ export type UserSource = 'REFERRAL' | 'INBOUND' | 'OUTBOUND' | 'PARTNER' | 'AUTR
 export type ProjectStatus = 'EN_COURS' | 'EN_ATTENTE' | 'TERMINE'
 export type ProjectPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
+export type ProjectMemberRole = 'VIEWER' | 'EDITOR'
 
 // ─── Task ───
 export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE' | 'VALIDE' | 'NON_VALIDE' | 'A_MODIFIER'

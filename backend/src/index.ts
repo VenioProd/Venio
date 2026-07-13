@@ -74,6 +74,7 @@ import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import adminWorkspaceRoutes from './routes/admin/workspace.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
+import clientCollaborationRoutes from './routes/client/collaboration.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
@@ -327,6 +328,7 @@ app.use('/api/admin/education', adminEducationRoutes)
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
 app.use('/api/projects', clientMessageRoutes)
+app.use('/api/projects', clientCollaborationRoutes)
 
 // This must stay after every /api mount and before static files / the SPA
 // fallback. app.all covers the namespace root, unknown GET, mutations and
