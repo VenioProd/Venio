@@ -90,9 +90,10 @@ codes observables incluent `MISSING_TOKEN`, `INVALID_TOKEN`, `EXPIRED_TOKEN`,
 
 Chaque `POST`, `PATCH`, `PUT` ou `DELETE` exige `Idempotency-Key`. La clé doit
 être alphanumérique avec tirets et avoir entre 8 et 255 caractères ; un UUID
-convient. Pour un retry d'une même opération, réutiliser exactement la clé et
-le body : la réponse mémorisée (statut et JSON) est alors rejouée. Une même
-clé avec un body différent renvoie `409 IDEMPOTENCY_CONFLICT`.
+convient. Pour un retry de la même méthode et du même endpoint, réutiliser
+exactement la clé et le body : la réponse mémorisée (statut et JSON) est alors
+rejouée. Réutiliser cette clé sur une autre opération, ou avec un body
+différent, renvoie `409 IDEMPOTENCY_CONFLICT`.
 
 Les enregistrements d'idempotence sont isolés par token et expirent après
 24 heures. Cette garantie ne remplace pas la vérification fonctionnelle du

@@ -87,7 +87,7 @@ const PUBLIC_PATHS = new Set(['/openapi.json'])
  *
  * Format minimal mais utile pour discovery par Kuro :
  *   - chaque path/method a un operationId + summary + security
- *   - les path params sont déclarés
+ *   - les path params et le header Idempotency-Key sont déclarés
  *   - réponses : 200/201/204 OK générique + 400/401/403/404/429/500 par défaut
  */
 export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unknown> {
@@ -108,11 +108,20 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
       required: true,
       schema: { type: 'string' },
     }))
+    const idempotencyParameter = {
+      name: 'Idempotency-Key',
+      in: 'header' as const,
+      required: true,
+      description: 'Clé unique à réutiliser uniquement pour le retry de cette même opération.',
+      schema: { type: 'string', minLength: 8, maxLength: 255, pattern: '^[A-Za-z0-9_-]+$' },
+    }
 
     paths[openApiPath]![method] = {
       operationId,
       summary: makeSummary(method, r.path),
-      ...(pathParams.length > 0 ? { parameters: pathParams } : {}),
+      ...(pathParams.length > 0 || isMutation
+        ? { parameters: isMutation ? [...pathParams, idempotencyParameter] : pathParams }
+        : {}),
       ...(isPublic ? {} : { security: [{ BearerAuth: [] }] }),
       ...(isMutation && !isPublic
         ? {
@@ -135,7 +144,7 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
               '409': {
-                description: 'Conflit (idempotency / contrainte)',
+                description: 'Conflit (clé d’idempotence réutilisée pour une autre opération, body modifié, ou contrainte)',
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
             }
