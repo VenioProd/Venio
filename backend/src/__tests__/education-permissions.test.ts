@@ -49,7 +49,7 @@ beforeEach(async () => {
 })
 
 describe('education access — super-admin only', () => {
-  it('VIEWER ne peut pas lire le dashboard', async () => {
+  it('VIEWER ne peut pas lire le dashboard ni ses alertes de suivi', async () => {
     await request(app).get('/api/admin/education/dashboard').expect(403)
   })
 

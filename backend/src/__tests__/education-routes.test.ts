@@ -204,4 +204,49 @@ describe('education routes', () => {
     expect(dash.body.counters.activeClasses).toBe(1)
     expect(dash.body.counters.todaySessions).toBe(1)
   })
+
+  it('dashboard: expose des signaux de suivi bornés et filtrés par école', async () => {
+    const { EducationStudent } = await import('../models/education/index.js')
+    const { body: emaClass } = await request(app)
+      .post('/api/admin/education/classes')
+      .send({ name: 'BTS EMA', school: 'EMA' })
+      .expect(201)
+    const { body: ggiClass } = await request(app)
+      .post('/api/admin/education/classes')
+      .send({ name: 'BTS GGI', school: 'GGI' })
+      .expect(201)
+
+    const { body: emaStudent } = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId: emaClass.class._id, firstName: 'Lina', lastName: 'Martin' })
+      .expect(201)
+    await EducationStudent.updateOne({ _id: emaStudent.student._id }, { absenceCount: 3, lateCount: 3 })
+
+    const overdue = await request(app)
+      .post('/api/admin/education/assignments')
+      .send({
+        classId: emaClass.class._id,
+        title: 'Dossier à rendre',
+        status: 'OUVERT',
+        deadline: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .expect(201)
+    expect(overdue.body.assignment._id).toBeDefined()
+
+    const { body: ggiStudent } = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId: ggiClass.class._id, firstName: 'Noah', lastName: 'Durand' })
+      .expect(201)
+    await EducationStudent.updateOne({ _id: ggiStudent.student._id }, { absenceCount: 4 })
+
+    const dash = await request(app).get('/api/admin/education/dashboard?school=EMA').expect(200)
+    const alerts = dash.body.alerts as Array<{ type: string; student: { _id: string }; class: { school: string } }>
+    expect(alerts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'ABSENCES_REPETEES', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
+      expect.objectContaining({ type: 'RETARDS_REPETES', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
+      expect.objectContaining({ type: 'DEVOIRS_NON_RENDUS', student: expect.objectContaining({ _id: emaStudent.student._id }) }),
+    ]))
+    expect(alerts).toHaveLength(3)
+    expect(alerts.every((alert) => alert.class.school === 'EMA')).toBe(true)
+  })
 })
