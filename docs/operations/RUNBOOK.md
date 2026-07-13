@@ -103,7 +103,9 @@ En cas d'échec d'upload : vérifier l'état de santé admin, l'espace disque, l
 droits d'écriture du volume et les logs. Les clients frontend envoient du
 multipart via `apiUpload` sans définir le `Content-Type`. Les documents agent
 emploient du JSON base64 et sont limités à 5 MiB décodés, dans une requête
-agent limitée à 8 MiB.
+agent limitée à 8 MiB. Un dépassement est renvoyé sous la forme
+`413 PAYLOAD_TOO_LARGE` ; un JSON invalide renvoie `400 MALFORMED_JSON`, avec
+un `requestId` à fournir lors d'une investigation.
 
 ## Jobs et automatisations
 

@@ -104,6 +104,7 @@ Format uniforme :
 
 | HTTP | Code                       | Cas                                          |
 |------|----------------------------|----------------------------------------------|
+| 400  | `MALFORMED_JSON`           | corps JSON invalide avant authentification   |
 | 400  | `MISSING_IDEMPOTENCY_KEY`  | header obligatoire absent sur POST/PATCH/DELETE |
 | 400  | `VALIDATION_ERROR`         | body parsé mais champs invalides             |
 | 401  | `MISSING_TOKEN`            | Authorization absent ou mal formé            |
@@ -113,6 +114,7 @@ Format uniforme :
 | 404  | `NOT_FOUND`                | ressource inconnue                           |
 | 409  | `IDEMPOTENCY_CONFLICT`     | clé réutilisée sur une autre opération ou avec un body différent |
 | 422  | `UNPROCESSABLE`            | sémantique invalide (ex : doublon contrainte) |
+| 413  | `PAYLOAD_TOO_LARGE`        | corps JSON agent supérieur à 8 MiB           |
 | 429  | `RATE_LIMITED`             | quota dépassé (header `Retry-After`)         |
 | 500  | `INTERNAL`                 | erreur serveur                               |
 

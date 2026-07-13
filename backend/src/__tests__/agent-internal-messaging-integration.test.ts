@@ -2,12 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
 import AgentToken from '../models/AgentToken.js'
@@ -67,9 +62,7 @@ describe('Agent × Messagerie interne', () => {
     await createInternalHuman('ADMIN', 'Alice')
     await createInternalHuman('SUPER_ADMIN', 'Bob')
 
-    const res = await request(app)
-      .get('/api/v1/agent/messaging/users')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/messaging/users').set('Authorization', `Bearer ${plainSecret}`)
 
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.users)).toBe(true)
@@ -81,9 +74,7 @@ describe('Agent × Messagerie interne', () => {
 
   it('GET /messaging/users sans scope read renvoie 403', async () => {
     const { plainSecret } = await createAgentTokenWithUser(['read:crm'])
-    const res = await request(app)
-      .get('/api/v1/agent/messaging/users')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/messaging/users').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('INSUFFICIENT_SCOPE')
   })
@@ -100,7 +91,7 @@ describe('Agent × Messagerie interne', () => {
     expect(slugs).toContain('general')
   })
 
-  it('POST /messaging/conversations crée un channel privé et l\'agent est OWNER', async () => {
+  it("POST /messaging/conversations crée un channel privé et l'agent est OWNER", async () => {
     const { plainSecret, agentUser } = await createAgentTokenWithUser(['write:internal-messaging'])
     const human = await createInternalHuman('ADMIN', 'Bob')
 
@@ -142,7 +133,7 @@ describe('Agent × Messagerie interne', () => {
   })
 
   // ── Task 20: GET messages + POST message texte ────────────────────────────
-  it('Envoi puis lecture d\'un message texte dans une conv', async () => {
+  it("Envoi puis lecture d'un message texte dans une conv", async () => {
     const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
     const human = await createInternalHuman('ADMIN', 'Dana')
 
@@ -192,7 +183,12 @@ describe('Agent × Messagerie interne', () => {
     const { plainSecret } = await createAgentTokenWithUser(['read:internal-messaging', 'write:internal-messaging'])
     const human = await createInternalHuman('ADMIN', 'Eve')
 
-    const dm = await InternalConversation.create({ type: 'DM', visibility: 'PRIVATE', memberKey: 'x', createdBy: human._id })
+    const dm = await InternalConversation.create({
+      type: 'DM',
+      visibility: 'PRIVATE',
+      memberKey: 'x',
+      createdBy: human._id,
+    })
     await InternalConversationMember.create({ conversation: dm._id, user: human._id, role: 'OWNER' })
 
     const agentUser = await User.findOne({ role: 'AGENT' })
@@ -262,7 +258,7 @@ describe('Agent × Messagerie interne', () => {
     expect(patch.body.message.editedAt).toBeTruthy()
   })
 
-  it('PATCH message d\'un autre user → 404', async () => {
+  it("PATCH message d'un autre user → 404", async () => {
     const { plainSecret } = await createAgentTokenWithUser(['write:internal-messaging'])
     const human = await createInternalHuman('ADMIN', 'Hugo')
 
@@ -364,7 +360,9 @@ describe('Agent × Messagerie interne', () => {
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
       .send({ participantId: String(human._id) })
 
-    const big = Buffer.alloc(6 * 1024 * 1024).toString('base64') // 6 Mo brut
+    // 5.2 MiB décodés reste sous le plafond JSON agent (8 MiB encodés), tout
+    // en dépassant la limite fonctionnelle de 5 MiB par pièce jointe.
+    const big = Buffer.alloc(Math.floor(5.2 * 1024 * 1024)).toString('base64')
 
     const res = await request(app)
       .post(`/api/v1/agent/messaging/conversations/${dm.body.conversation._id}/attachments`)
@@ -387,7 +385,9 @@ describe('Agent × Messagerie interne', () => {
 
     const tiny = Buffer.from('x').toString('base64')
     const files = Array.from({ length: 6 }, (_, i) => ({
-      filename: `f${i}.txt`, mimeType: 'text/plain', contentBase64: tiny,
+      filename: `f${i}.txt`,
+      mimeType: 'text/plain',
+      contentBase64: tiny,
     }))
 
     const res = await request(app)
