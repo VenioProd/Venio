@@ -607,7 +607,7 @@ export interface DevCodeMetricsLargeFile {
 
 export interface DevCodeMetrics {
   available: boolean
-  source: 'filesystem' | 'unconfigured' | 'error'
+  source: 'filesystem' | 'unconfigured' | 'error' | 'pending'
   resolvedPath: string | null
   scannedAt: string | null
   durationMs: number | null
@@ -616,6 +616,31 @@ export interface DevCodeMetrics {
   byExtension: DevCodeMetricsExtension[]
   largeFiles: DevCodeMetricsLargeFile[]
   topFilesGlobal: Array<{ path: string; ext: string; language: string; lines: number; bytes: number }>
+  typescriptDebt: { explicitAny: number; tsIgnore: number; tsNoCheck: number } | null
+  quality: DevRepoQuality
+}
+
+export type DevRepoQualitySignalStatus = 'ok' | 'warn' | 'critical' | 'unavailable'
+
+export interface DevRepoQualitySignal {
+  id: 'large_files' | 'typescript_debt' | 'coverage' | 'vulnerabilities' | 'dormant_branches' | 'commit_frequency'
+  label: string
+  status: DevRepoQualitySignalStatus
+  points: number | null
+  maxPoints: number
+  value: string
+  action: string | null
+  source: string
+  checkedAt: string | null
+  limitation?: string
+}
+
+export interface DevRepoQuality {
+  score: number | null
+  scoredPoints: number
+  scoredOutOf: number
+  formula: string
+  signals: DevRepoQualitySignal[]
 }
 
 export interface DevProjectIntelligence {

@@ -56,6 +56,7 @@ import {
   type DevProjectGithubConfig,
   type DevProjectIntelligence,
   type DevLargeFilesSnapshot,
+  type DevRepoQuality,
 } from '../../../../services/dev'
 import { clamp01, formatBytes, formatNumber, formatRelative, formatShortDate, relativeFR, userInitial } from './helpers'
 
@@ -137,11 +138,7 @@ export const ActivityRow = ({ event, onOpen }: ActivityRowProps) => {
       <span className="cockpit-activity-actor">{event.actor?.name || event.actor?.email || 'Système'}</span>
       <span className="cockpit-activity-action">{ACTIVITY_LABEL[event.type]}</span>
       {event.issue && (
-        <button
-          type="button"
-          className="cockpit-activity-issue"
-          onClick={() => event.issue && onOpen(event.issue._id)}
-        >
+        <button type="button" className="cockpit-activity-issue" onClick={() => event.issue && onOpen(event.issue._id)}>
           {event.issue.identifier} <span className="cockpit-activity-issue-title">{event.issue.title}</span>
         </button>
       )}
@@ -196,7 +193,9 @@ export const TimelineRow = ({ event, onOpen }: TimelineRowProps) => {
   const github = githubMeta(event.metadata)
   return (
     <div className={`cockpit-timeline-row tone-${event.category}`}>
-      <span className="cockpit-timeline-icon"><Icon size={12} /></span>
+      <span className="cockpit-timeline-icon">
+        <Icon size={12} />
+      </span>
       <div className="cockpit-timeline-main">
         <div className="cockpit-timeline-topline">
           <span className="cockpit-timeline-label">{TIMELINE_LABEL[event.type]}</span>
@@ -236,8 +235,12 @@ export const VelocityTooltip = ({ active, payload }: { active?: boolean; payload
   return (
     <div className="cockpit-chart-tooltip">
       <strong>{point.date}</strong>
-      <span><CheckCircle2 size={10} style={{ color: '#10b981' }} /> Terminées : {point.completed ?? 0}</span>
-      <span><Plus size={10} style={{ color: '#7c5cff' }} /> Créées : {point.created ?? 0}</span>
+      <span>
+        <CheckCircle2 size={10} style={{ color: '#10b981' }} /> Terminées : {point.completed ?? 0}
+      </span>
+      <span>
+        <Plus size={10} style={{ color: '#7c5cff' }} /> Créées : {point.created ?? 0}
+      </span>
     </div>
   )
 }
@@ -300,14 +303,19 @@ export const GithubPanel = ({
   return (
     <div className="cockpit-card cockpit-intel-card">
       <div className="cockpit-card-header">
-        <span className="cockpit-card-kicker"><GithubIcon size={11} /> GitHub</span>
+        <span className="cockpit-card-kicker">
+          <GithubIcon size={11} /> GitHub
+        </span>
         <span className="cockpit-card-meta">
           {configured ? (
             <>
-              <GitPullRequest size={11} /> {pullRequests.counts.open} ouvertes ·{' '}
-              <GitMerge size={11} /> {pullRequests.counts.merged} mergées
+              <GitPullRequest size={11} /> {pullRequests.counts.open} ouvertes · <GitMerge size={11} />{' '}
+              {pullRequests.counts.merged} mergées
               {pullRequests.counts.failing > 0 && (
-                <> · <XCircle size={11} style={{ color: '#fca5a5' }} /> {pullRequests.counts.failing} CI fail</>
+                <>
+                  {' '}
+                  · <XCircle size={11} style={{ color: '#fca5a5' }} /> {pullRequests.counts.failing} CI fail
+                </>
               )}
             </>
           ) : (
@@ -475,10 +483,10 @@ export const TokensPanel = ({ tokens }: { tokens: DevProjectIntelligence['tokens
   return (
     <div className="cockpit-card cockpit-intel-card">
       <div className="cockpit-card-header">
-        <span className="cockpit-card-kicker"><Coins size={11} /> Tokens LLM</span>
-        <span className="cockpit-card-meta">
-          {tokens.available ? 'mesuré' : 'non disponible'}
+        <span className="cockpit-card-kicker">
+          <Coins size={11} /> Tokens LLM
         </span>
+        <span className="cockpit-card-meta">{tokens.available ? 'mesuré' : 'non disponible'}</span>
       </div>
       {tokens.available ? (
         <div className="cockpit-tokens-grid">
@@ -525,12 +533,14 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
   return (
     <div className="cockpit-card cockpit-intel-card">
       <div className="cockpit-card-header">
-        <span className="cockpit-card-kicker"><Code2 size={11} /> Code</span>
+        <span className="cockpit-card-kicker">
+          <Code2 size={11} /> Code
+        </span>
         <span className="cockpit-card-meta">
           {code.available ? (
             <>
-              <Files size={11} /> {formatNumber(code.totals.files)} fichiers ·{' '}
-              {formatNumber(code.totals.lines)} lignes · {formatBytes(code.totals.bytes)}
+              <Files size={11} /> {formatNumber(code.totals.files)} fichiers · {formatNumber(code.totals.lines)} lignes
+              · {formatBytes(code.totals.bytes)}
             </>
           ) : (
             <span style={{ color: '#94a3b8' }}>non disponible</span>
@@ -554,7 +564,9 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
                       {formatNumber(ext.files)} · {formatNumber(ext.lines)} l
                     </span>
                   </div>
-                  <span className="cockpit-code-lang-bar"><span style={{ width: `${pct}%` }} /></span>
+                  <span className="cockpit-code-lang-bar">
+                    <span style={{ width: `${pct}%` }} />
+                  </span>
                 </li>
               )
             })}
@@ -575,13 +587,66 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
             </details>
           )}
           {code.reason && (
-            <div className="cockpit-code-warn"><AlertTriangle size={11} /> {code.reason}</div>
+            <div className="cockpit-code-warn">
+              <AlertTriangle size={11} /> {code.reason}
+            </div>
           )}
         </div>
       ) : (
-        <div className="cockpit-code-empty">
-          {code.reason || 'Scan code non disponible.'}
-        </div>
+        <div className="cockpit-code-empty">{code.reason || 'Scan code non disponible.'}</div>
+      )}
+    </div>
+  )
+}
+
+const QUALITY_STATUS_LABEL = {
+  ok: 'OK',
+  warn: 'À suivre',
+  critical: 'À traiter',
+  unavailable: 'Indisponible',
+} as const
+
+/** Compact, source-first view: unavailable signals never turn into green points. */
+export const RepoQualityPanel = ({ quality }: { quality: DevRepoQuality }) => {
+  const actionable = quality.signals.filter((signal) => signal.status === 'warn' || signal.status === 'critical')
+  return (
+    <div className="cockpit-card cockpit-intel-card cockpit-quality">
+      <div className="cockpit-card-header">
+        <span className="cockpit-card-kicker">
+          <Activity size={11} /> Qualité du repo
+        </span>
+        <span className="cockpit-card-meta">
+          {quality.score === null ? 'score indisponible' : `score sur ${quality.scoredOutOf} pts observés`}
+        </span>
+      </div>
+      <div className="cockpit-quality-summary">
+        <strong className={`cockpit-quality-score${quality.score === null ? ' unavailable' : ''}`}>
+          {quality.score === null ? '—' : `${quality.score}/100`}
+        </strong>
+        <span>{quality.score === null ? 'Aucune donnée fiable collectée.' : quality.formula}</span>
+      </div>
+      <ul className="cockpit-quality-signals">
+        {quality.signals.map((signal) => (
+          <li key={signal.id} className={`tone-${signal.status}`}>
+            <span className="cockpit-quality-status">{QUALITY_STATUS_LABEL[signal.status]}</span>
+            <span className="cockpit-quality-main">
+              <strong>{signal.label}</strong>
+              <span>{signal.value}</span>
+              {signal.action && <em>{signal.action}</em>}
+              {signal.limitation && <small>{signal.limitation}</small>}
+            </span>
+            <span className="cockpit-quality-points">
+              {signal.points === null ? '—' : `${signal.points}/${signal.maxPoints}`}
+            </span>
+            <span className="cockpit-quality-source" title={signal.source}>
+              {signal.source}
+              {signal.checkedAt ? ` · ${formatRelative(signal.checkedAt)}` : ''}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {actionable.length > 0 && (
+        <div className="cockpit-quality-action">{actionable.length} signal(aux) actionnable(s) ci-dessus.</div>
       )}
     </div>
   )
@@ -610,9 +675,12 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
             <>
               {snapshot.largeFiles.length} candidat(s)
               {snapshot.scannedAt && (
-                <> · scanné <RelativeTime iso={snapshot.scannedAt} /></>
-              )}
-              {' '}· prochaine vérif {nextRefreshIn}s
+                <>
+                  {' '}
+                  · scanné <RelativeTime iso={snapshot.scannedAt} />
+                </>
+              )}{' '}
+              · prochaine vérif {nextRefreshIn}s
             </>
           ) : (
             <span style={{ color: '#94a3b8' }}>non disponible</span>
@@ -622,8 +690,8 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
             className="cockpit-icon-btn"
             onClick={onRefresh}
             disabled={loading}
-            title="Forcer un nouveau scan"
-            aria-label="Rafraîchir"
+            title="Demander une nouvelle collecte en arrière-plan"
+            aria-label="Demander une nouvelle collecte"
           >
             <RefreshCw size={11} className={loading ? 'cockpit-spin' : undefined} />
           </button>
@@ -652,7 +720,8 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
                     <span className="cockpit-large-path">{f.path}</span>
                   )}
                   <span className="cockpit-large-meta">
-                    {f.language}{f.ext ? ` · ${f.ext}` : ''} · seuil {f.threshold}
+                    {f.language}
+                    {f.ext ? ` · ${f.ext}` : ''} · seuil {f.threshold}
                   </span>
                 </span>
                 <span className="cockpit-large-lines">{formatNumber(f.lines)} l</span>

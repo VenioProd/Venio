@@ -74,6 +74,7 @@ import {
   TokensPanel,
   CodeMetricsPanel,
   LargeFilesPanel,
+  RepoQualityPanel,
   RelativeTime,
 } from './cockpit/parts'
 
@@ -472,6 +473,12 @@ const DevProjectCockpit = () => {
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {intel && (
+        <section className="cockpit-row cockpit-row-single">
+          <RepoQualityPanel quality={intel.code.quality} />
         </section>
       )}
 

@@ -1,12 +1,28 @@
 import fs from 'fs'
 import path from 'path'
+import { promisify } from 'util'
+import { execFile } from 'child_process'
 import type { DevProjectGithubConfig } from '../../models/DevProject.js'
+
+const execFileAsync = promisify(execFile)
 
 export interface FileEntry {
   path: string // relative to repo root, forward-slash normalized
-  ext: string  // lowercased, with leading dot ('.ts'), or '' for files without ext
+  ext: string // lowercased, with leading dot ('.ts'), or '' for files without ext
   lines: number
   bytes: number
+  typescriptDebt?: TypeScriptDebt
+}
+
+/**
+ * Deliberately syntax-only debt indicators. This is not a TypeScript compiler
+ * diagnostic: only constructs that can be counted reliably from source text
+ * are included, and the UI names that limitation.
+ */
+export interface TypeScriptDebt {
+  explicitAny: number
+  tsIgnore: number
+  tsNoCheck: number
 }
 
 export interface ExtensionStat {
@@ -31,7 +47,7 @@ export interface LargeFile {
 
 export interface CodeMetricsSummary {
   available: boolean
-  source: 'filesystem' | 'unconfigured' | 'error'
+  source: 'filesystem' | 'unconfigured' | 'error' | 'pending'
   resolvedPath: string | null
   scannedAt: string | null
   durationMs: number | null
@@ -44,29 +60,123 @@ export interface CodeMetricsSummary {
   byExtension: ExtensionStat[]
   largeFiles: LargeFile[]
   topFilesGlobal: Array<{ path: string; ext: string; language: string; lines: number; bytes: number }>
+  typescriptDebt: TypeScriptDebt | null
+  quality: RepoQualitySummary
+}
+
+export type RepoQualitySignalStatus = 'ok' | 'warn' | 'critical' | 'unavailable'
+
+export interface RepoQualitySignal {
+  id: 'large_files' | 'typescript_debt' | 'coverage' | 'vulnerabilities' | 'dormant_branches' | 'commit_frequency'
+  label: string
+  status: RepoQualitySignalStatus
+  points: number | null
+  maxPoints: number
+  value: string
+  action: string | null
+  source: string
+  checkedAt: string | null
+  limitation?: string
+}
+
+export interface RepoQualitySummary {
+  /**
+   * Transparent score: sum(points) / sum(maxPoints of available signals).
+   * Unavailable data is excluded rather than assumed healthy.
+   */
+  score: number | null
+  scoredPoints: number
+  scoredOutOf: number
+  formula: string
+  signals: RepoQualitySignal[]
 }
 
 // Directories never scanned — generated artefacts, vendor, version control, env, caches…
 const IGNORE_DIRS = new Set([
-  'node_modules', 'dist', 'build', 'coverage', '.git', '.next', '.nuxt', '.cache', '.parcel-cache',
-  '.turbo', '.vercel', '.netlify', '.idea', '.vscode', '.svelte-kit', 'out', 'tmp', 'temp', '.tmp',
-  '__pycache__', '.pytest_cache', 'venv', '.venv', 'env', 'logs', 'public/build',
-  'storybook-static', 'fonts', 'uploads',
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.git',
+  '.next',
+  '.nuxt',
+  '.cache',
+  '.parcel-cache',
+  '.turbo',
+  '.vercel',
+  '.netlify',
+  '.idea',
+  '.vscode',
+  '.svelte-kit',
+  'out',
+  'tmp',
+  'temp',
+  '.tmp',
+  '__pycache__',
+  '.pytest_cache',
+  'venv',
+  '.venv',
+  'env',
+  'logs',
+  'public/build',
+  'storybook-static',
+  'fonts',
+  'uploads',
 ])
 
 // Files / patterns we treat as binary, lockfiles, generated. Keyed by base name or extension.
 const IGNORE_FILE_NAMES = new Set([
-  'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'composer.lock', 'poetry.lock',
-  'Cargo.lock', 'Gemfile.lock', '.DS_Store',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+  'composer.lock',
+  'poetry.lock',
+  'Cargo.lock',
+  'Gemfile.lock',
+  '.DS_Store',
 ])
 
 const BINARY_EXTS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.icns', '.tiff', '.svg',
-  '.woff', '.woff2', '.ttf', '.otf', '.eot',
-  '.mp3', '.wav', '.ogg', '.mp4', '.mov', '.webm', '.avi', '.mkv',
-  '.pdf', '.zip', '.gz', '.tar', '.tgz', '.rar', '.7z',
-  '.exe', '.dll', '.so', '.dylib', '.bin', '.dat',
-  '.psd', '.ai', '.sketch', '.fig',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.ico',
+  '.icns',
+  '.tiff',
+  '.svg',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.otf',
+  '.eot',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.mp4',
+  '.mov',
+  '.webm',
+  '.avi',
+  '.mkv',
+  '.pdf',
+  '.zip',
+  '.gz',
+  '.tar',
+  '.tgz',
+  '.rar',
+  '.7z',
+  '.exe',
+  '.dll',
+  '.so',
+  '.dylib',
+  '.bin',
+  '.dat',
+  '.psd',
+  '.ai',
+  '.sketch',
+  '.fig',
 ])
 
 const LANGUAGE_BY_EXT: Record<string, string> = {
@@ -173,14 +283,34 @@ function isBinary(ext: string): boolean {
   return BINARY_EXTS.has(ext)
 }
 
-function countLines(filePath: string, byteLimit: number): { lines: number; bytes: number; approx: boolean } {
+function inspectTypeScriptDebt(content: string): TypeScriptDebt {
+  return {
+    // `any` in comments/strings may be counted too. The signal is intentionally
+    // presented as a review cue, not as a compiler-quality claim.
+    explicitAny: (content.match(/(?:\bas\s+any\b|:\s*any\b|<any>)/g) || []).length,
+    tsIgnore: (content.match(/@ts-ignore\b/g) || []).length,
+    tsNoCheck: (content.match(/@ts-nocheck\b/g) || []).length,
+  }
+}
+
+function countLines(
+  filePath: string,
+  byteLimit: number,
+  inspectTypescript: boolean,
+): { lines: number; bytes: number; approx: boolean; typescriptDebt?: TypeScriptDebt } {
   let stat: fs.Stats
   try {
     stat = fs.statSync(filePath)
   } catch {
     return { lines: 0, bytes: 0, approx: false }
   }
-  if (stat.size === 0) return { lines: 0, bytes: 0, approx: false }
+  if (stat.size === 0)
+    return {
+      lines: 0,
+      bytes: 0,
+      approx: false,
+      ...(inspectTypescript ? { typescriptDebt: { explicitAny: 0, tsIgnore: 0, tsNoCheck: 0 } } : {}),
+    }
   if (stat.size > byteLimit) {
     // Approximate: average line ~64 bytes works for typical source.
     return { lines: Math.round(stat.size / 64), bytes: stat.size, approx: true }
@@ -191,7 +321,12 @@ function countLines(filePath: string, byteLimit: number): { lines: number; bytes
     for (let i = 0; i < buf.length; i++) if (buf[i] === 0x0a) n++
     // Count the trailing partial line if file doesn't end with \n
     if (buf.length > 0 && buf[buf.length - 1] !== 0x0a) n++
-    return { lines: n, bytes: stat.size, approx: false }
+    return {
+      lines: n,
+      bytes: stat.size,
+      approx: false,
+      ...(inspectTypescript ? { typescriptDebt: inspectTypeScriptDebt(buf.toString('utf8')) } : {}),
+    }
   } catch {
     return { lines: 0, bytes: stat.size, approx: false }
   }
@@ -238,8 +373,8 @@ function scanFs(root: string, opts: ScanOptions): ScanResult {
         truncated = true
         break
       }
-      const counted = countLines(abs, opts.maxBytesPerFile)
-      files.push({ path: rel, ext, lines: counted.lines, bytes: counted.bytes })
+      const counted = countLines(abs, opts.maxBytesPerFile, ext === '.ts' || ext === '.tsx')
+      files.push({ path: rel, ext, lines: counted.lines, bytes: counted.bytes, typescriptDebt: counted.typescriptDebt })
     }
     if (files.length >= opts.maxFiles) {
       truncated = true
@@ -255,6 +390,7 @@ function aggregate(files: FileEntry[]): {
   byExtension: ExtensionStat[]
   largeFiles: LargeFile[]
   topFilesGlobal: CodeMetricsSummary['topFilesGlobal']
+  typescriptDebt: TypeScriptDebt | null
 } {
   const byExt = new Map<string, FileEntry[]>()
   let totalLines = 0
@@ -267,22 +403,23 @@ function aggregate(files: FileEntry[]): {
     byExt.get(key)!.push(f)
   }
 
-  const byExtension: ExtensionStat[] = [...byExt.entries()].map(([ext, list]) => {
-    const lines = list.reduce((s, f) => s + f.lines, 0)
-    const bytes = list.reduce((s, f) => s + f.bytes, 0)
-    const largestFiles = [...list]
-      .sort((a, b) => b.lines - a.lines)
-      .slice(0, 5)
-      .map((f) => ({ path: f.path, lines: f.lines, bytes: f.bytes }))
-    return {
-      ext,
-      language: language(ext),
-      files: list.length,
-      lines,
-      bytes,
-      largestFiles,
-    }
-  })
+  const byExtension: ExtensionStat[] = [...byExt.entries()]
+    .map(([ext, list]) => {
+      const lines = list.reduce((s, f) => s + f.lines, 0)
+      const bytes = list.reduce((s, f) => s + f.bytes, 0)
+      const largestFiles = [...list]
+        .sort((a, b) => b.lines - a.lines)
+        .slice(0, 5)
+        .map((f) => ({ path: f.path, lines: f.lines, bytes: f.bytes }))
+      return {
+        ext,
+        language: language(ext),
+        files: list.length,
+        lines,
+        bytes,
+        largestFiles,
+      }
+    })
     .sort((a, b) => b.lines - a.lines)
 
   // Large files needing refactor — apply per-ext thresholds, compute criticality.
@@ -296,9 +433,11 @@ function aggregate(files: FileEntry[]): {
     const ratio = f.lines / threshold
     const score = Math.min(100, Math.round(((ratio - 1) / 3) * 100))
     const reason =
-      ratio >= 3 ? 'Très volumineux, dépasse largement la cible.'
-      : ratio >= 2 ? 'Volumineux, devrait être découpé.'
-      : 'Au-dessus du seuil, candidat à un refactor.'
+      ratio >= 3
+        ? 'Très volumineux, dépasse largement la cible.'
+        : ratio >= 2
+          ? 'Volumineux, devrait être découpé.'
+          : 'Au-dessus du seuil, candidat à un refactor.'
     largeFiles.push({
       path: f.path,
       ext: f.ext,
@@ -322,12 +461,316 @@ function aggregate(files: FileEntry[]): {
       bytes: f.bytes,
     }))
 
+  const typescriptFiles = files.filter((file) => file.ext === '.ts' || file.ext === '.tsx')
+  const typescriptDebt =
+    typescriptFiles.length === 0
+      ? null
+      : typescriptFiles.reduce(
+          (total, file) => ({
+            explicitAny: total.explicitAny + (file.typescriptDebt?.explicitAny || 0),
+            tsIgnore: total.tsIgnore + (file.typescriptDebt?.tsIgnore || 0),
+            tsNoCheck: total.tsNoCheck + (file.typescriptDebt?.tsNoCheck || 0),
+          }),
+          { explicitAny: 0, tsIgnore: 0, tsNoCheck: 0 },
+        )
+
   return {
     totals: { files: files.length, lines: totalLines, bytes: totalBytes },
     byExtension,
     largeFiles: largeFiles.slice(0, 30),
     topFilesGlobal,
+    typescriptDebt,
   }
+}
+
+const QUALITY_FORMULA =
+  'Score = somme des points observés / somme des maxima observés × 100. Les métriques indisponibles sont exclues.'
+const LOCAL_REPORT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+
+function unavailableSignal(
+  id: RepoQualitySignal['id'],
+  label: string,
+  maxPoints: number,
+  source: string,
+  value: string,
+): RepoQualitySignal {
+  return { id, label, status: 'unavailable', points: null, maxPoints, value, action: null, source, checkedAt: null }
+}
+
+function emptyRepoQuality(reason: string): RepoQualitySummary {
+  const signals: RepoQualitySignal[] = [
+    unavailableSignal('large_files', 'Fichiers trop gros', 25, 'scan filesystem', reason),
+    unavailableSignal('typescript_debt', 'Dette TypeScript', 20, 'scan syntaxique TypeScript', reason),
+    unavailableSignal('coverage', 'Tests / coverage', 20, 'artefact coverage local', reason),
+    unavailableSignal('vulnerabilities', 'Dépendances vulnérables', 20, 'rapport npm audit local', reason),
+    unavailableSignal('dormant_branches', 'Branches dormantes', 8, 'git local', reason),
+    unavailableSignal('commit_frequency', 'Fréquence de commits', 7, 'git local', reason),
+  ]
+  return { score: null, scoredPoints: 0, scoredOutOf: 0, formula: QUALITY_FORMULA, signals }
+}
+
+function scoreRepoQuality(signals: RepoQualitySignal[]): RepoQualitySummary {
+  const observed = signals.filter((signal) => signal.points !== null)
+  const scoredPoints = observed.reduce((total, signal) => total + (signal.points || 0), 0)
+  const scoredOutOf = observed.reduce((total, signal) => total + signal.maxPoints, 0)
+  return {
+    score: scoredOutOf > 0 ? Math.round((scoredPoints / scoredOutOf) * 100) : null,
+    scoredPoints,
+    scoredOutOf,
+    formula: QUALITY_FORMULA,
+    signals,
+  }
+}
+
+function statMtimeIso(filePath: string): string | null {
+  try {
+    return fs.statSync(filePath).mtime.toISOString()
+  } catch {
+    return null
+  }
+}
+
+function localReportIsFresh(filePath: string): boolean {
+  try {
+    return Date.now() - fs.statSync(filePath).mtime.getTime() <= LOCAL_REPORT_MAX_AGE_MS
+  } catch {
+    return false
+  }
+}
+
+function staleLocalReportSignal(
+  id: 'coverage' | 'vulnerabilities',
+  label: string,
+  maxPoints: number,
+  source: string,
+  filePath: string,
+): RepoQualitySignal {
+  return {
+    id,
+    label,
+    status: 'unavailable',
+    points: null,
+    maxPoints,
+    value: 'Artefact local trop ancien (plus de 7 jours).',
+    action: 'Rafraîchir le rapport local avant de l’utiliser.',
+    source,
+    checkedAt: statMtimeIso(filePath),
+  }
+}
+
+function readCoverageSignal(root: string): RepoQualitySignal {
+  const candidates = ['coverage/coverage-summary.json', 'coverage-summary.json']
+  for (const relative of candidates) {
+    const filePath = path.join(root, relative)
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as { total?: { lines?: { pct?: unknown } } }
+      const pct = parsed.total?.lines?.pct
+      if (typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 100) continue
+      if (!localReportIsFresh(filePath)) {
+        return staleLocalReportSignal('coverage', 'Tests / coverage', 20, relative, filePath)
+      }
+      const points = pct >= 80 ? 20 : pct >= 60 ? 14 : pct >= 40 ? 8 : 0
+      return {
+        id: 'coverage',
+        label: 'Tests / coverage',
+        status: pct >= 80 ? 'ok' : pct >= 60 ? 'warn' : 'critical',
+        points,
+        maxPoints: 20,
+        value: `${pct.toFixed(1)} % de lignes couvertes`,
+        action: pct < 80 ? 'Augmenter la couverture de lignes vers 80 %.' : null,
+        source: relative,
+        checkedAt: statMtimeIso(filePath),
+      }
+    } catch {
+      // A file with this conventional name but invalid content is not a source.
+    }
+  }
+  return unavailableSignal(
+    'coverage',
+    'Tests / coverage',
+    20,
+    'coverage/coverage-summary.json',
+    'Aucun artefact coverage-summary.json valide.',
+  )
+}
+
+function readVulnerabilitySignal(root: string): RepoQualitySignal {
+  // These are explicit local report locations. We never launch `npm audit` from
+  // a request or silently infer vulnerability data from a lockfile.
+  const candidates = ['.venio/npm-audit.json', 'reports/npm-audit.json']
+  for (const relative of candidates) {
+    const filePath = path.join(root, relative)
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as {
+        metadata?: {
+          vulnerabilities?: Partial<Record<'info' | 'low' | 'moderate' | 'high' | 'critical' | 'total', unknown>>
+        }
+      }
+      const vuln = parsed.metadata?.vulnerabilities
+      const total = Number(vuln?.total)
+      const high = Number(vuln?.high || 0)
+      const critical = Number(vuln?.critical || 0)
+      if (!Number.isFinite(total) || total < 0 || !Number.isFinite(high) || !Number.isFinite(critical)) continue
+      if (!localReportIsFresh(filePath)) {
+        return staleLocalReportSignal('vulnerabilities', 'Dépendances vulnérables', 20, relative, filePath)
+      }
+      const points = critical > 0 ? 0 : high > 0 ? 5 : total > 0 ? 12 : 20
+      return {
+        id: 'vulnerabilities',
+        label: 'Dépendances vulnérables',
+        status: critical > 0 ? 'critical' : high > 0 || total > 0 ? 'warn' : 'ok',
+        points,
+        maxPoints: 20,
+        value: `${total} vulnérabilité(s), dont ${critical} critique(s) et ${high} haute(s)`,
+        action: total > 0 ? 'Traiter les vulnérabilités critiques et hautes du rapport.' : null,
+        source: relative,
+        checkedAt: statMtimeIso(filePath),
+      }
+    } catch {
+      // Same rule as coverage: malformed data is unavailable, never guessed.
+    }
+  }
+  return unavailableSignal(
+    'vulnerabilities',
+    'Dépendances vulnérables',
+    20,
+    '.venio/npm-audit.json',
+    'Aucun rapport npm audit local valide.',
+  )
+}
+
+async function runGit(root: string, args: string[]): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync('git', args, { cwd: root, timeout: 5000, maxBuffer: 512 * 1024 })
+    return stdout.trim()
+  } catch {
+    return null
+  }
+}
+
+async function readGitSignals(
+  root: string,
+  defaultBranch: string | null | undefined,
+): Promise<[RepoQualitySignal, RepoQualitySignal]> {
+  const [branchesRaw, commitsRaw] = await Promise.all([
+    runGit(root, ['for-each-ref', 'refs/heads', '--format=%(refname:short)%00%(committerdate:unix)']),
+    runGit(root, ['rev-list', '--count', '--since=30.days', 'HEAD']),
+  ])
+  const branch = defaultBranch?.trim() || null
+  let branches: RepoQualitySignal
+  if (branchesRaw === null) {
+    branches = unavailableSignal(
+      'dormant_branches',
+      'Branches dormantes',
+      8,
+      'git local',
+      'Dépôt git local indisponible.',
+    )
+  } else {
+    const cutoff = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
+    const dormant = branchesRaw
+      .split('\n')
+      .map((line) => line.split('\u0000'))
+      .filter(([name, timestamp]) => Boolean(name) && name !== branch && Number(timestamp) < cutoff)
+    const points = dormant.length === 0 ? 8 : dormant.length <= 2 ? 4 : 0
+    branches = {
+      id: 'dormant_branches',
+      label: 'Branches dormantes',
+      status: dormant.length === 0 ? 'ok' : dormant.length <= 2 ? 'warn' : 'critical',
+      points,
+      maxPoints: 8,
+      value: `${dormant.length} branche(s) locale(s) inactive(s) depuis plus de 30 j`,
+      action: dormant.length ? 'Vérifier puis fusionner ou supprimer les branches locales dormantes.' : null,
+      source: 'git for-each-ref (branches locales)',
+      checkedAt: new Date().toISOString(),
+      limitation: 'Branches distantes et statut de merge non analysés.',
+    }
+  }
+  let commits: RepoQualitySignal
+  if (commitsRaw === null || !/^\d+$/.test(commitsRaw)) {
+    commits = unavailableSignal(
+      'commit_frequency',
+      'Fréquence de commits',
+      7,
+      'git local',
+      'Historique git local indisponible.',
+    )
+  } else {
+    const count = Number(commitsRaw)
+    const points = count >= 8 ? 7 : count >= 3 ? 4 : count >= 1 ? 2 : 0
+    commits = {
+      id: 'commit_frequency',
+      label: 'Fréquence de commits',
+      status: count >= 3 ? 'ok' : count >= 1 ? 'warn' : 'critical',
+      points,
+      maxPoints: 7,
+      value: `${count} commit(s) sur les 30 derniers jours`,
+      action: count < 3 ? 'Confirmer l’activité du projet ou mettre à jour son statut.' : null,
+      source: 'git rev-list (HEAD local)',
+      checkedAt: new Date().toISOString(),
+      limitation: 'Mesure l’historique local disponible, pas l’activité distante.',
+    }
+  }
+  return [branches, commits]
+}
+
+async function buildRepoQuality(
+  root: string,
+  code: Pick<CodeMetricsSummary, 'largeFiles' | 'typescriptDebt'>,
+  defaultBranch: string | null | undefined,
+): Promise<RepoQualitySummary> {
+  const tsDebt = code.typescriptDebt
+  const largeCount = code.largeFiles.length
+  const largestScore = code.largeFiles[0]?.score || 0
+  const largeFiles: RepoQualitySignal = {
+    id: 'large_files',
+    label: 'Fichiers trop gros',
+    status: largestScore >= 66 ? 'critical' : largeCount > 0 ? 'warn' : 'ok',
+    points: largestScore >= 66 ? 0 : largeCount > 0 ? 12 : 25,
+    maxPoints: 25,
+    value: `${largeCount} fichier(s) au-dessus des seuils par langage`,
+    action: largeCount ? 'Découper en priorité les fichiers les plus volumineux.' : null,
+    source: 'scan filesystem (seuils par extension)',
+    checkedAt: new Date().toISOString(),
+  }
+  const typescript =
+    tsDebt === null
+      ? unavailableSignal(
+          'typescript_debt',
+          'Dette TypeScript',
+          20,
+          'scan syntaxique TypeScript',
+          'Aucun fichier .ts ou .tsx analysé.',
+        )
+      : {
+          id: 'typescript_debt' as const,
+          label: 'Dette TypeScript',
+          status:
+            tsDebt.tsIgnore + tsDebt.tsNoCheck > 0
+              ? ('critical' as const)
+              : tsDebt.explicitAny > 10
+                ? ('warn' as const)
+                : ('ok' as const),
+          points: tsDebt.tsIgnore + tsDebt.tsNoCheck > 0 ? 0 : tsDebt.explicitAny > 10 ? 10 : 20,
+          maxPoints: 20,
+          value: `${tsDebt.explicitAny} any explicite(s) · ${tsDebt.tsIgnore} @ts-ignore · ${tsDebt.tsNoCheck} @ts-nocheck`,
+          action:
+            tsDebt.tsIgnore + tsDebt.tsNoCheck > 0
+              ? 'Supprimer les contournements TypeScript avant d’ajouter de nouvelles exceptions.'
+              : tsDebt.explicitAny > 10
+                ? 'Réduire les any explicites dans les zones les plus touchées.'
+                : null,
+          source: 'scan syntaxique .ts/.tsx',
+          checkedAt: new Date().toISOString(),
+          limitation: 'Comptage lexical : ce n’est ni un typecheck ni une mesure de bugs.',
+        }
+  const gitSignals = readGitSignals(root, defaultBranch)
+  const [coverage, vulnerabilities, [dormantBranches, commitFrequency]] = await Promise.all([
+    Promise.resolve(readCoverageSignal(root)),
+    Promise.resolve(readVulnerabilitySignal(root)),
+    gitSignals,
+  ])
+  return scoreRepoQuality([largeFiles, typescript, coverage, vulnerabilities, dormantBranches, commitFrequency])
 }
 
 /**
@@ -367,7 +810,7 @@ export function resolveRepoPath(github: DevProjectGithubConfig | null | undefine
           return { resolved: null, reason: 'repoPath cible un lien sortant de DEV_REPO_ROOT (refusé).' }
         }
         const stat = fs.statSync(real)
-        if (!stat.isDirectory()) return { resolved: null, reason: 'repoPath n\'est pas un dossier.' }
+        if (!stat.isDirectory()) return { resolved: null, reason: "repoPath n'est pas un dossier." }
         return { resolved: real, reason: null }
       } catch {
         return { resolved: null, reason: 'repoPath introuvable sur le serveur.' }
@@ -377,7 +820,9 @@ export function resolveRepoPath(github: DevProjectGithubConfig | null | undefine
       try {
         const real = fs.realpathSync(fallback)
         if (fs.statSync(real).isDirectory()) return { resolved: real, reason: null }
-      } catch {/* fall through */}
+      } catch {
+        /* fall through */
+      }
     }
     return { resolved: null, reason: 'Aucun repoPath renseigné pour ce projet.' }
   }
@@ -386,7 +831,9 @@ export function resolveRepoPath(github: DevProjectGithubConfig | null | undefine
     try {
       const real = fs.realpathSync(fallback)
       if (fs.statSync(real).isDirectory()) return { resolved: real, reason: null }
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }
 
   return {
@@ -396,13 +843,15 @@ export function resolveRepoPath(github: DevProjectGithubConfig | null | undefine
   }
 }
 
-// In-memory cache keyed by (resolved path). TTL kept short so the UI feels alive.
-const CACHE_TTL_MS = 60_000
+// In-memory cache keyed by resolved repository. Routes read this snapshot only;
+// the scheduler below owns refreshes so a dashboard request never starts a scan.
+const CACHE_TTL_MS = 10 * 60_000
 interface CacheEntry {
   at: number
   payload: CodeMetricsSummary
 }
 const cache = new Map<string, CacheEntry>()
+const refreshes = new Map<string, Promise<void>>()
 
 export function invalidateCodeMetricsCache(resolvedPath?: string): void {
   if (resolvedPath) cache.delete(resolvedPath)
@@ -415,24 +864,34 @@ export interface ComputeOptions {
   limits?: Partial<ScanOptions>
 }
 
+function unavailableCodeMetrics(
+  source: CodeMetricsSummary['source'],
+  reason: string,
+  resolvedPath: string | null = null,
+): CodeMetricsSummary {
+  return {
+    available: false,
+    source,
+    resolvedPath,
+    scannedAt: null,
+    durationMs: null,
+    reason,
+    totals: { files: 0, lines: 0, bytes: 0 },
+    byExtension: [],
+    largeFiles: [],
+    topFilesGlobal: [],
+    typescriptDebt: null,
+    quality: emptyRepoQuality(reason),
+  }
+}
+
 export function computeProjectCodeMetrics(
   github: DevProjectGithubConfig | null | undefined,
-  opts: ComputeOptions = {}
+  opts: ComputeOptions = {},
 ): CodeMetricsSummary {
   const { resolved, reason } = resolveRepoPath(github)
   if (!resolved) {
-    return {
-      available: false,
-      source: 'unconfigured',
-      resolvedPath: null,
-      scannedAt: null,
-      durationMs: null,
-      reason: reason || 'Métriques non disponibles.',
-      totals: { files: 0, lines: 0, bytes: 0 },
-      byExtension: [],
-      largeFiles: [],
-      topFilesGlobal: [],
-    }
+    return unavailableCodeMetrics('unconfigured', reason || 'Métriques non disponibles.')
   }
 
   if (!opts.force) {
@@ -445,7 +904,7 @@ export function computeProjectCodeMetrics(
   const scanOpts = { ...DEFAULT_OPTS, ...(opts.limits || {}) }
   try {
     const { files, durationMs, truncated } = scanFs(resolved, scanOpts)
-    const { totals, byExtension, largeFiles, topFilesGlobal } = aggregate(files)
+    const { totals, byExtension, largeFiles, topFilesGlobal, typescriptDebt } = aggregate(files)
     const payload: CodeMetricsSummary = {
       available: true,
       source: 'filesystem',
@@ -457,21 +916,51 @@ export function computeProjectCodeMetrics(
       byExtension,
       largeFiles,
       topFilesGlobal,
+      typescriptDebt,
+      quality: emptyRepoQuality('Collecte qualité en attente.'),
     }
     cache.set(resolved, { at: Date.now(), payload })
     return payload
   } catch (err) {
-    return {
-      available: false,
-      source: 'error',
-      resolvedPath: resolved,
-      scannedAt: new Date().toISOString(),
-      durationMs: null,
-      reason: (err as Error).message,
-      totals: { files: 0, lines: 0, bytes: 0 },
-      byExtension: [],
-      largeFiles: [],
-      topFilesGlobal: [],
-    }
+    return unavailableCodeMetrics('error', (err as Error).message, resolved)
   }
+}
+
+/** Return the last periodic snapshot without scanning from an HTTP request. */
+export function getCachedProjectCodeMetrics(github: DevProjectGithubConfig | null | undefined): CodeMetricsSummary {
+  const { resolved, reason } = resolveRepoPath(github)
+  if (!resolved) return unavailableCodeMetrics('unconfigured', reason || 'Métriques non disponibles.')
+  const cached = cache.get(resolved)
+  if (cached) return cached.payload
+  return unavailableCodeMetrics(
+    'pending',
+    'Collecte repo en attente du prochain rafraîchissement périodique.',
+    resolved,
+  )
+}
+
+/**
+ * Refresh a repository snapshot outside the request path. Calls for the same
+ * repository coalesce so a manual refresh cannot start overlapping scans.
+ */
+export function refreshProjectCodeMetrics(
+  github: DevProjectGithubConfig | null | undefined,
+  opts: ComputeOptions = {},
+): Promise<void> {
+  const { resolved } = resolveRepoPath(github)
+  if (!resolved) return Promise.resolve()
+  const inFlight = refreshes.get(resolved)
+  if (inFlight) return inFlight
+  const task = Promise.resolve()
+    .then(async () => {
+      const code = computeProjectCodeMetrics(github, { ...opts, force: true })
+      if (!code.available || !code.resolvedPath) return
+      code.quality = await buildRepoQuality(code.resolvedPath, code, github?.defaultBranch)
+      cache.set(code.resolvedPath, { at: Date.now(), payload: code })
+    })
+    .finally(() => {
+      refreshes.delete(resolved)
+    })
+  refreshes.set(resolved, task)
+  return task
 }

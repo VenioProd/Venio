@@ -4,7 +4,9 @@ import os from 'os'
 import path from 'path'
 import {
   computeProjectCodeMetrics,
+  getCachedProjectCodeMetrics,
   resolveRepoPath,
+  refreshProjectCodeMetrics,
   invalidateCodeMetricsCache,
 } from '../lib/dev/codeMetrics.js'
 
@@ -20,16 +22,19 @@ function writeRepo(base: string) {
   fs.mkdirSync(path.join(base, 'node_modules/junk'), { recursive: true })
   fs.mkdirSync(path.join(base, 'dist'), { recursive: true })
   // 50-line ts file
-  fs.writeFileSync(path.join(base, 'src/components/Small.ts'), Array.from({ length: 50 }, (_, i) => `// line ${i}`).join('\n'))
+  fs.writeFileSync(
+    path.join(base, 'src/components/Small.ts'),
+    Array.from({ length: 50 }, (_, i) => `// line ${i}`).join('\n'),
+  )
   // 800-line tsx file (way over threshold 350)
   fs.writeFileSync(
     path.join(base, 'src/pages/Huge.tsx'),
-    Array.from({ length: 800 }, (_, i) => `// line ${i}`).join('\n')
+    Array.from({ length: 800 }, (_, i) => `// line ${i}`).join('\n'),
   )
   // 400-line css file (within threshold)
   fs.writeFileSync(
     path.join(base, 'src/components/styles.css'),
-    Array.from({ length: 400 }, (_, i) => `/* line ${i} */`).join('\n')
+    Array.from({ length: 400 }, (_, i) => `/* line ${i} */`).join('\n'),
   )
   // ignored content
   fs.writeFileSync(path.join(base, 'node_modules/junk/index.js'), 'should not be scanned')
@@ -154,5 +159,54 @@ describe('computeProjectCodeMetrics', () => {
     await new Promise((r) => setTimeout(r, 10))
     const third = computeProjectCodeMetrics(null, { force: true })
     expect(third.scannedAt).not.toBe(first.scannedAt)
+  })
+
+  it('keeps HTTP readers on an explicit pending snapshot until the periodic collector completes', async () => {
+    process.env.DEV_DEFAULT_REPO_PATH = repoDir
+    const pending = getCachedProjectCodeMetrics(null)
+    expect(pending.available).toBe(false)
+    expect(pending.source).toBe('pending')
+    expect(pending.quality.score).toBeNull()
+
+    await refreshProjectCodeMetrics(null)
+    const refreshed = getCachedProjectCodeMetrics(null)
+    expect(refreshed.available).toBe(true)
+    expect(refreshed.quality.signals).toHaveLength(6)
+  })
+
+  it('uses only local coverage and audit reports and excludes missing signals from the score', async () => {
+    process.env.DEV_DEFAULT_REPO_PATH = repoDir
+    fs.mkdirSync(path.join(repoDir, 'coverage'), { recursive: true })
+    fs.mkdirSync(path.join(repoDir, '.venio'), { recursive: true })
+    fs.writeFileSync(
+      path.join(repoDir, 'coverage/coverage-summary.json'),
+      JSON.stringify({ total: { lines: { pct: 82 } } }),
+    )
+    fs.writeFileSync(
+      path.join(repoDir, '.venio/npm-audit.json'),
+      JSON.stringify({ metadata: { vulnerabilities: { total: 1, high: 1, critical: 0 } } }),
+    )
+
+    await refreshProjectCodeMetrics(null)
+    const quality = getCachedProjectCodeMetrics(null).quality
+    const coverage = quality.signals.find((signal) => signal.id === 'coverage')!
+    const vulnerabilities = quality.signals.find((signal) => signal.id === 'vulnerabilities')!
+    expect(coverage).toMatchObject({ status: 'ok', points: 20, source: 'coverage/coverage-summary.json' })
+    expect(vulnerabilities).toMatchObject({ status: 'warn', points: 5, source: '.venio/npm-audit.json' })
+    expect(quality.scoredOutOf).toBeGreaterThan(0)
+  })
+
+  it('excludes stale local reports instead of treating them as healthy evidence', async () => {
+    process.env.DEV_DEFAULT_REPO_PATH = repoDir
+    const report = path.join(repoDir, 'coverage/coverage-summary.json')
+    fs.mkdirSync(path.dirname(report), { recursive: true })
+    fs.writeFileSync(report, JSON.stringify({ total: { lines: { pct: 100 } } }))
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+    fs.utimesSync(report, old, old)
+
+    await refreshProjectCodeMetrics(null)
+    const coverage = getCachedProjectCodeMetrics(null).quality.signals.find((signal) => signal.id === 'coverage')!
+    expect(coverage).toMatchObject({ status: 'unavailable', points: null, source: 'coverage/coverage-summary.json' })
+    expect(coverage.value).toMatch(/trop ancien/i)
   })
 })

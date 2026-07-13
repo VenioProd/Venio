@@ -7,7 +7,7 @@ import DevProject, { DEV_PROJECT_STATUSES, type DevProjectGithubConfig } from '.
 import DevIssue, { DEV_ISSUE_STATUSES, DEV_ISSUE_PRIORITIES, DEV_ISSUE_TYPES } from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import { notifyUsers } from '../../../lib/notifyHelpers.js'
-import { invalidateCodeMetricsCache } from '../../../lib/dev/codeMetrics.js'
+import { invalidateCodeMetricsCache, refreshProjectCodeMetrics } from '../../../lib/dev/codeMetrics.js'
 import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
 
 const router = express.Router()
@@ -342,7 +342,10 @@ router.patch(
 
       await project.save()
       // Drop any cached code-metrics if the repo configuration changed.
-      if (githubPatch !== undefined) invalidateCodeMetricsCache()
+      if (githubPatch !== undefined) {
+        invalidateCodeMetricsCache()
+        void refreshProjectCodeMetrics(project.github ?? null)
+      }
 
       // Notif nouveaux membres / nouveau lead
       const newMembers = project.members.map((id) => String(id))
