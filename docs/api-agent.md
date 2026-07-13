@@ -63,8 +63,8 @@ Comportement :
 
 - À l'entrée du handler, `findOne({ tokenId, key })`.
 - Si trouvé :
-  - `requestHash` identique (sha256 du body) → **rejouer** la réponse stockée (mêmes status + body).
-  - `requestHash` différent → `409 IDEMPOTENCY_CONFLICT`.
+  - même méthode, même endpoint et `requestHash` identique (sha256 du body) → **rejouer** la réponse stockée (mêmes status + body).
+  - autre méthode ou endpoint, ou `requestHash` différent → `409 IDEMPOTENCY_CONFLICT`.
 - Sinon : exécuter, puis stocker `{ status, body }` avec TTL Mongo 24h (`expireAfterSeconds`).
 
 Modèle séparé `AgentIdempotencyKey` avec index unique `(tokenId, key)`.
@@ -111,7 +111,7 @@ Format uniforme :
 | 401  | `EXPIRED_TOKEN`            | `expiresAt < now`                            |
 | 403  | `INSUFFICIENT_SCOPE`       | scope manquant (renvoie `required` + `granted`) |
 | 404  | `NOT_FOUND`                | ressource inconnue                           |
-| 409  | `IDEMPOTENCY_CONFLICT`     | clé réutilisée avec un body différent        |
+| 409  | `IDEMPOTENCY_CONFLICT`     | clé réutilisée sur une autre opération ou avec un body différent |
 | 422  | `UNPROCESSABLE`            | sémantique invalide (ex : doublon contrainte) |
 | 429  | `RATE_LIMITED`             | quota dépassé (header `Retry-After`)         |
 | 500  | `INTERNAL`                 | erreur serveur                               |

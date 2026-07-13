@@ -17,9 +17,10 @@ const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
  *   - Méthode non mutante (GET, HEAD, OPTIONS) → pass-through, pas de check.
  *   - Mutation sans header Idempotency-Key → 400 MISSING_IDEMPOTENCY_KEY.
  *   - Mutation avec key invalide (regex) → 400 INVALID_IDEMPOTENCY_KEY.
- *   - Mutation avec key déjà vue + même requestHash → on REJOUE la réponse
- *     stockée (mêmes status + body).
- *   - Mutation avec key déjà vue + hash différent → 409 IDEMPOTENCY_CONFLICT.
+ *   - Mutation avec key déjà vue sur la même méthode et route, et le même
+ *     requestHash → on REJOUE la réponse stockée (mêmes status + body).
+ *   - Réutilisation sur une autre opération, ou avec un hash différent →
+ *     409 IDEMPOTENCY_CONFLICT.
  *   - Sinon : on wrappe res.json pour stocker la réponse après envoi avec
  *     TTL Mongo 24h.
  *
@@ -64,6 +65,8 @@ export default async function agentIdempotency(
   }
 
   const requestHash = computeRequestHash(req.body)
+  const method = req.method.toUpperCase()
+  const path = req.originalUrl.split('?')[0] || req.path
 
   let existing
   try {
@@ -78,12 +81,12 @@ export default async function agentIdempotency(
   }
 
   if (existing) {
-    if (existing.requestHash !== requestHash) {
+    if (existing.method !== method || existing.path !== path || existing.requestHash !== requestHash) {
       respondError(
         res,
         409,
         'IDEMPOTENCY_CONFLICT',
-        'Idempotency-Key déjà utilisée avec un body différent',
+        'Idempotency-Key déjà utilisée pour une autre opération ou avec un body différent',
         {
           previousMethod: existing.method,
           previousPath: existing.path,
@@ -98,8 +101,6 @@ export default async function agentIdempotency(
 
   // Wrap res.json pour capturer la réponse et la persister après envoi.
   const tokenObjId = new mongoose.Types.ObjectId(token.id)
-  const method = req.method.toUpperCase()
-  const path = req.originalUrl.split('?')[0] || req.path
 
   const originalJson = res.json.bind(res)
   res.json = function wrappedJson(body: unknown): Response {

@@ -227,6 +227,30 @@ describe('Agent integration / idempotency', () => {
     expect(r2.status).toBe(409)
     expect(r2.body.code).toBe('IDEMPOTENCY_CONFLICT')
   })
+
+  it('rejects reuse of a key on a different endpoint instead of replaying another operation', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['write:crm', 'read:crm'])
+    const key = uniqueIdempotencyKey()
+    const body = { email: 'endpoint@x.com', name: 'Endpoint' }
+
+    const created = await request(app)
+      .post('/api/v1/agent/clients')
+      .set(authHeaders(plainSecret, { idempotencyKey: key }))
+      .send(body)
+    expect(created.status).toBe(201)
+    await new Promise((r) => setTimeout(r, 80))
+
+    const reused = await request(app)
+      .post('/api/v1/agent/leads')
+      .set(authHeaders(plainSecret, { idempotencyKey: key }))
+      .send(body)
+    expect(reused.status).toBe(409)
+    expect(reused.body).toMatchObject({
+      code: 'IDEMPOTENCY_CONFLICT',
+      details: { previousMethod: 'POST', previousPath: '/api/v1/agent/clients' },
+    })
+    expect(reused.body._id).toBeUndefined()
+  })
 })
 
 // ───────────────────────────────────────────────────────────────────────────

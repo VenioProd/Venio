@@ -7,8 +7,9 @@ import type { IAgentIdempotencyKey } from '../types/models/index.js'
  *
  * Stockage : (tokenId, key) unique. À chaque mutation :
  *   1. findOne({ tokenId, key })
- *   2. si trouvé + requestHash identique → rejouer responseStatus + responseBody
- *   3. si trouvé + requestHash différent → 409 IDEMPOTENCY_CONFLICT
+ *   2. si trouvé sur la même méthode, route et requestHash → rejouer
+ *      responseStatus + responseBody
+ *   3. sinon → 409 IDEMPOTENCY_CONFLICT
  *   4. sinon → exécuter, puis insérer { status, body }
  *
  * TTL : 24h via index Mongo natif (`expireAfterSeconds: 86400` sur createdAt).

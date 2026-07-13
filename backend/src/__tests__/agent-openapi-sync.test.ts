@@ -195,4 +195,19 @@ describe('Agent OpenAPI / buildOpenApiSpec unit tests', () => {
     expect(responses['409']).toBeDefined()
     expect(responses['201']).toBeDefined()
   })
+
+  it('declares the required Idempotency-Key header on mutations only', () => {
+    const s = buildOpenApiSpec([
+      { method: 'GET', path: '/clients/:id' },
+      { method: 'PATCH', path: '/clients/:id' },
+    ]) as Record<string, unknown>
+    const paths = s.paths as Record<string, Record<string, Record<string, unknown>>>
+    const get = paths['/clients/{id}']!.get
+    const patch = paths['/clients/{id}']!.patch
+
+    expect(get?.parameters).toEqual([{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }])
+    expect(patch?.parameters).toContainEqual(
+      expect.objectContaining({ name: 'Idempotency-Key', in: 'header', required: true }),
+    )
+  })
 })
