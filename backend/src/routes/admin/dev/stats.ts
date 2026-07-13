@@ -3,20 +3,14 @@ import mongoose from 'mongoose'
 import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../../lib/dev/stats.js'
+import { computeDailyPriorities } from '../../../lib/dev/dailyPriorities.js'
 import DevIssue from '../../../models/DevIssue.js'
 import DevIssueComment from '../../../models/DevIssueComment.js'
 import DevProject from '../../../models/DevProject.js'
-import {
-  computeProjectCodeMetrics,
-  invalidateCodeMetricsCache,
-  resolveRepoPath,
-} from '../../../lib/dev/codeMetrics.js'
+import { computeProjectCodeMetrics, invalidateCodeMetricsCache, resolveRepoPath } from '../../../lib/dev/codeMetrics.js'
 import { computeProjectGithubSummary } from '../../../lib/dev/githubSummary.js'
 import { computeProjectTokensSnapshot } from '../../../lib/dev/tokens.js'
-import {
-  computeProjectRecommendations,
-  invalidateRecommendationsCache,
-} from '../../../lib/dev/recommendations.js'
+import { computeProjectRecommendations, invalidateRecommendationsCache } from '../../../lib/dev/recommendations.js'
 
 const router = express.Router()
 
@@ -35,7 +29,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -48,7 +42,19 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
+)
+
+router.get(
+  '/priorities',
+  requirePermission(PERMISSIONS.VIEW_DEV),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.json(await computeDailyPriorities())
+    } catch (err) {
+      next(err)
+    }
+  },
 )
 
 router.get(
@@ -66,7 +72,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -96,9 +102,7 @@ router.get(
 
       const [github, code] = await Promise.all([
         computeProjectGithubSummary({ _id: project._id, github: project.github ?? null }),
-        Promise.resolve(
-          computeProjectCodeMetrics(project.github ?? null, { force })
-        ),
+        Promise.resolve(computeProjectCodeMetrics(project.github ?? null, { force })),
       ])
       const tokens = computeProjectTokensSnapshot({
         _id: project._id,
@@ -116,7 +120,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -154,7 +158,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -180,89 +184,97 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // GET /api/admin/dev/activity?limit=30 — feed d'activité (issues créées/terminées + commentaires)
-router.get('/activity', requirePermission(PERMISSIONS.VIEW_DEV), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const limitRaw = Number(req.query.limit)
-    const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 100 ? Math.floor(limitRaw) : 30
+router.get(
+  '/activity',
+  requirePermission(PERMISSIONS.VIEW_DEV),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limitRaw = Number(req.query.limit)
+      const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 100 ? Math.floor(limitRaw) : 30
 
-    const projectFilter: Record<string, unknown> = {}
-    if (typeof req.query.project === 'string' && mongoose.isValidObjectId(req.query.project)) {
-      projectFilter.project = new mongoose.Types.ObjectId(req.query.project)
+      const projectFilter: Record<string, unknown> = {}
+      if (typeof req.query.project === 'string' && mongoose.isValidObjectId(req.query.project)) {
+        projectFilter.project = new mongoose.Types.ObjectId(req.query.project)
+      }
+
+      const [createdIssues, completedIssues, comments] = await Promise.all([
+        DevIssue.find(projectFilter)
+          .populate('reporter', 'name email avatarUrl')
+          .populate('project', 'key name color')
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
+        DevIssue.find({ ...projectFilter, status: 'DONE', completedAt: { $ne: null } })
+          .populate('assignee', 'name email avatarUrl')
+          .populate('project', 'key name color')
+          .sort({ completedAt: -1 })
+          .limit(limit)
+          .lean(),
+        DevIssueComment.find(projectFilter)
+          .populate('author', 'name email avatarUrl')
+          .populate({
+            path: 'issue',
+            select: 'identifier title number project',
+            populate: { path: 'project', select: 'key name color' },
+          })
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
+      ])
+
+      type Entry = {
+        kind: 'created' | 'completed' | 'comment'
+        at: string
+        user: { _id: string; name?: string; email?: string; avatarUrl?: string } | null
+        issue: { _id: string; identifier: string; number: number; title: string }
+        project: { _id: string; key: string; name: string; color?: string } | null
+        body?: string
+      }
+
+      const entries: Entry[] = []
+
+      for (const i of createdIssues) {
+        entries.push({
+          kind: 'created',
+          at: (i.createdAt as Date).toISOString(),
+          user: (i.reporter as any) || null,
+          issue: { _id: String(i._id), identifier: i.identifier, number: i.number, title: i.title },
+          project: (i.project as any) || null,
+        })
+      }
+      for (const i of completedIssues) {
+        if (!i.completedAt) continue
+        entries.push({
+          kind: 'completed',
+          at: (i.completedAt as Date).toISOString(),
+          user: (i.assignee as any) || null,
+          issue: { _id: String(i._id), identifier: i.identifier, number: i.number, title: i.title },
+          project: (i.project as any) || null,
+        })
+      }
+      for (const c of comments) {
+        const issue: any = c.issue
+        if (!issue) continue
+        entries.push({
+          kind: 'comment',
+          at: (c.createdAt as Date).toISOString(),
+          user: (c.author as any) || null,
+          issue: { _id: String(issue._id), identifier: issue.identifier, number: issue.number, title: issue.title },
+          project: (issue.project as any) || null,
+          body: c.body?.slice(0, 240),
+        })
+      }
+
+      entries.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+      res.json({ entries: entries.slice(0, limit) })
+    } catch (err) {
+      next(err)
     }
-
-    const [createdIssues, completedIssues, comments] = await Promise.all([
-      DevIssue.find(projectFilter)
-        .populate('reporter', 'name email avatarUrl')
-        .populate('project', 'key name color')
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean(),
-      DevIssue.find({ ...projectFilter, status: 'DONE', completedAt: { $ne: null } })
-        .populate('assignee', 'name email avatarUrl')
-        .populate('project', 'key name color')
-        .sort({ completedAt: -1 })
-        .limit(limit)
-        .lean(),
-      DevIssueComment.find(projectFilter)
-        .populate('author', 'name email avatarUrl')
-        .populate({ path: 'issue', select: 'identifier title number project', populate: { path: 'project', select: 'key name color' } })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean(),
-    ])
-
-    type Entry = {
-      kind: 'created' | 'completed' | 'comment'
-      at: string
-      user: { _id: string; name?: string; email?: string; avatarUrl?: string } | null
-      issue: { _id: string; identifier: string; number: number; title: string }
-      project: { _id: string; key: string; name: string; color?: string } | null
-      body?: string
-    }
-
-    const entries: Entry[] = []
-
-    for (const i of createdIssues) {
-      entries.push({
-        kind: 'created',
-        at: (i.createdAt as Date).toISOString(),
-        user: (i.reporter as any) || null,
-        issue: { _id: String(i._id), identifier: i.identifier, number: i.number, title: i.title },
-        project: (i.project as any) || null,
-      })
-    }
-    for (const i of completedIssues) {
-      if (!i.completedAt) continue
-      entries.push({
-        kind: 'completed',
-        at: (i.completedAt as Date).toISOString(),
-        user: (i.assignee as any) || null,
-        issue: { _id: String(i._id), identifier: i.identifier, number: i.number, title: i.title },
-        project: (i.project as any) || null,
-      })
-    }
-    for (const c of comments) {
-      const issue: any = c.issue
-      if (!issue) continue
-      entries.push({
-        kind: 'comment',
-        at: (c.createdAt as Date).toISOString(),
-        user: (c.author as any) || null,
-        issue: { _id: String(issue._id), identifier: issue.identifier, number: issue.number, title: issue.title },
-        project: (issue.project as any) || null,
-        body: c.body?.slice(0, 240),
-      })
-    }
-
-    entries.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
-    res.json({ entries: entries.slice(0, limit) })
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
 
 export default router
