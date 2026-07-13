@@ -109,10 +109,11 @@ const SUGGESTED_SHORTCUTS = [
 ]
 
 function isSafeShortcutLink(link: string): boolean {
-  return link.startsWith('/') || /^https:\/\//i.test(link)
+  return (link.startsWith('/') && !link.startsWith('//')) || /^https:\/\//i.test(link)
 }
 
 function ShortcutLink({ shortcut }: { shortcut: Shortcut }) {
+  if (!isSafeShortcutLink(shortcut.link)) return null
   if (/^https:\/\//i.test(shortcut.link)) {
     return (
       <a href={shortcut.link} target="_blank" rel="noreferrer">

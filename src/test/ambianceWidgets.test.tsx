@@ -67,6 +67,19 @@ describe('Ambiance widgets', () => {
     )
     expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute('href', '/admin/messages')
   })
+  it('ShortcutsWidget refuse les liens externes non HTTPS et protocol-relative', async () => {
+    render(
+      <MemoryRouter>
+        <ShortcutsWidget />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Aucun raccourci configuré')
+    fireEvent.change(screen.getByLabelText('Libellé du raccourci'), { target: { value: 'Externe' } })
+    fireEvent.change(screen.getByLabelText('Lien du raccourci'), { target: { value: '//example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un raccourci' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('lien interne ou HTTPS valide')
+    expect(saveLayout).not.toHaveBeenCalled()
+  })
   it('ShortcutsWidget affiche l’erreur de chargement et peut réessayer', async () => {
     getLayout
       .mockRejectedValueOnce(new Error('network'))
