@@ -10,6 +10,7 @@ vi.mock('../middleware/auth.js', () => ({
 }))
 vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
+  requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
 
@@ -23,14 +24,19 @@ beforeAll(async () => {
   app.use(express.json())
   app.use('/api/admin/dev', devRoutes)
 })
-afterAll(async () => { await teardownMongo() })
+afterAll(async () => {
+  await teardownMongo()
+})
 
 beforeEach(async () => {
   await clearDb()
   invalidateRecommendationsCache()
   const { default: User } = await import('../models/User.js')
   const u = await User.create({
-    email: 'sys@test.local', name: 'Sys', role: 'SUPER_ADMIN', passwordHash: 'x',
+    email: 'sys@test.local',
+    name: 'Sys',
+    role: 'SUPER_ADMIN',
+    passwordHash: 'x',
   })
   systemUserId = u._id as mongoose.Types.ObjectId
 })
@@ -142,8 +148,20 @@ describe('GET /api/admin/dev/projects/:id/recommendations', () => {
 
   it('surfaces open FEATURE issues in the add section sorted by priority', async () => {
     const p = await makeProject()
-    await makeIssue({ project: p._id, identifier: 'REC-201', title: 'Feature mineure', type: 'FEATURE', priority: 'LOW' })
-    await makeIssue({ project: p._id, identifier: 'REC-202', title: 'Feature critique', type: 'FEATURE', priority: 'URGENT' })
+    await makeIssue({
+      project: p._id,
+      identifier: 'REC-201',
+      title: 'Feature mineure',
+      type: 'FEATURE',
+      priority: 'LOW',
+    })
+    await makeIssue({
+      project: p._id,
+      identifier: 'REC-202',
+      title: 'Feature critique',
+      type: 'FEATURE',
+      priority: 'URGENT',
+    })
 
     const res = await request(app).get(`/api/admin/dev/projects/${p._id}/recommendations`).expect(200)
     const add = res.body.sections.add
@@ -164,9 +182,7 @@ describe('GET /api/admin/dev/projects/:id/recommendations', () => {
     expect(b.body.cacheAgeSeconds).toBeGreaterThanOrEqual(0)
     expect(b.body.generatedAt).toBe(a.body.generatedAt)
 
-    const c = await request(app)
-      .get(`/api/admin/dev/projects/${p._id}/recommendations?refresh=1`)
-      .expect(200)
+    const c = await request(app).get(`/api/admin/dev/projects/${p._id}/recommendations?refresh=1`).expect(200)
     expect(c.body.fromCache).toBe(false)
     expect(c.body.generatedAt).not.toBe(a.body.generatedAt)
   })

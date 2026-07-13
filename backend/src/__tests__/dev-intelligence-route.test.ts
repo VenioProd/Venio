@@ -9,6 +9,7 @@ vi.mock('../middleware/auth.js', () => ({
 }))
 vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
+  requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
 
@@ -22,13 +23,18 @@ beforeAll(async () => {
   app.use(express.json())
   app.use('/api/admin/dev', devRoutes)
 })
-afterAll(async () => { await teardownMongo() })
+afterAll(async () => {
+  await teardownMongo()
+})
 
 beforeEach(async () => {
   await clearDb()
   const { default: User } = await import('../models/User.js')
   const u = await User.create({
-    email: 'sys@test.local', name: 'Sys', role: 'SUPER_ADMIN', passwordHash: 'x',
+    email: 'sys@test.local',
+    name: 'Sys',
+    role: 'SUPER_ADMIN',
+    passwordHash: 'x',
   })
   systemUserId = u._id as mongoose.Types.ObjectId
 })
@@ -78,9 +84,7 @@ describe('GET /api/admin/dev/projects/:id/intelligence', () => {
       })
       .expect(200)
 
-    const res = await request(app)
-      .get(`/api/admin/dev/projects/${p._id}/intelligence`)
-      .expect(200)
+    const res = await request(app).get(`/api/admin/dev/projects/${p._id}/intelligence`).expect(200)
     expect(res.body.github.configured).toBe(true)
     expect(res.body.github.owner).toBe('venio')
     expect(res.body.github.links.repoUrl).toBe('https://github.com/venio/app')

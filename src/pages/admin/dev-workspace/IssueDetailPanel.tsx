@@ -14,6 +14,7 @@ import {
 } from '../../../services/dev'
 import { formatRelative } from './helpers'
 import GithubLinkPanel from './GithubLinkPanel'
+import AgentLaunchControl from './AgentLaunchControl'
 
 interface User {
   _id?: string
@@ -56,8 +57,8 @@ export default function IssueDetailPanel({
     <aside className="dev-detail">
       <div className="dev-detail-header">
         <span className="dev-detail-id">
-          {typeof issue.project === 'object' ? issue.project.key : ''}-{issue.number}{' '}
-          · {issue.reporter?.name || issue.reporter?.email || ''}
+          {typeof issue.project === 'object' ? issue.project.key : ''}-{issue.number} ·{' '}
+          {issue.reporter?.name || issue.reporter?.email || ''}
         </span>
         <button className="dev-detail-close" onClick={onClose} aria-label="Fermer">
           <X size={16} />
@@ -81,7 +82,9 @@ export default function IssueDetailPanel({
               onChange={(e) => onPatch(issue._id, { status: e.target.value as DevIssueStatus })}
             >
               {STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
               ))}
             </select>
           </span>
@@ -94,7 +97,9 @@ export default function IssueDetailPanel({
               onChange={(e) => onPatch(issue._id, { priority: e.target.value as DevIssuePriority })}
             >
               {PRIORITY_ORDER.map((p) => (
-                <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>
+                <option key={p} value={p}>
+                  {PRIORITY_LABEL[p]}
+                </option>
               ))}
             </select>
           </span>
@@ -106,7 +111,11 @@ export default function IssueDetailPanel({
               value={issue.type}
               onChange={(e) => onPatch(issue._id, { type: e.target.value as DevIssueType })}
             >
-              {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(TYPE_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
             </select>
           </span>
 
@@ -235,12 +244,29 @@ export default function IssueDetailPanel({
           onBlur={() => canManage && onPatch(issue._id, { description: issue.description })}
         />
 
+        {typeof issue.project === 'object' && (
+          <div className="dev-detail-section">
+            Agent cadré
+            <div style={{ marginTop: 8 }}>
+              <AgentLaunchControl
+                projectId={issue.project._id}
+                issueId={issue._id}
+                issueIdentifier={issue.identifier}
+                issueTitle={issue.title}
+                onLaunched={() => undefined}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="dev-detail-section">Commentaires ({comments.length})</div>
         <div className="dev-comments">
           {comments.map((c) => (
             <div key={c._id} className="dev-comment">
               <div className="dev-comment-meta">
-                <span>{c.author?.name || c.author?.email || 'Inconnu'} · {formatRelative(c.createdAt)}</span>
+                <span>
+                  {c.author?.name || c.author?.email || 'Inconnu'} · {formatRelative(c.createdAt)}
+                </span>
                 {(canManage || c.author?._id === user?._id) && (
                   <button className="dev-comment-delete" onClick={() => onDeleteComment(c._id)}>
                     supprimer
@@ -250,9 +276,7 @@ export default function IssueDetailPanel({
               <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
             </div>
           ))}
-          {comments.length === 0 && (
-            <div style={{ color: '#64748b', fontSize: 12.5 }}>Aucun commentaire</div>
-          )}
+          {comments.length === 0 && <div style={{ color: '#64748b', fontSize: 12.5 }}>Aucun commentaire</div>}
         </div>
 
         {canManage && (

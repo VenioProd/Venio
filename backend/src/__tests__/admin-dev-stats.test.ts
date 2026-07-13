@@ -9,6 +9,7 @@ vi.mock('../middleware/auth.js', () => ({
 }))
 vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
+  requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
 
@@ -297,6 +298,10 @@ describe('GET /api/admin/dev/projects/:id/dashboard', () => {
         expect.objectContaining({ type: 'commented', category: 'comment', commentBody: comment.body }),
       ]),
     )
-    expect(res.body.timeline.filter((event: { metadata: { commentId?: string } }) => event.metadata.commentId === String(comment._id))).toHaveLength(1)
+    expect(
+      res.body.timeline.filter(
+        (event: { metadata: { commentId?: string } }) => event.metadata.commentId === String(comment._id),
+      ),
+    ).toHaveLength(1)
   })
 })
