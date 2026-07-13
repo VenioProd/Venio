@@ -18,6 +18,7 @@ import ProjectDetailsTab from './ProjectDetailsTab'
 import ProjectContentTab from './ProjectContentTab'
 import ProjectUpdatesTab from './ProjectUpdatesTab'
 import ProjectDocumentsTab from './ProjectDocumentsTab'
+import { useProjectContent } from './hooks/useProjectContent'
 
 const AdminProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -54,23 +55,6 @@ const AdminProjectDetail = () => {
   const [deliverableTypeInput, setDeliverableTypeInput] = useState<string>('')
   const [tagInput, setTagInput] = useState<string>('')
   const [updateForm, setUpdateForm] = useState<{ title: string; description: string }>({ title: '', description: '' })
-  const [sectionForm, setSectionForm] = useState<{ title: string; description: string; isVisible: boolean }>({
-    title: '',
-    description: '',
-    isVisible: true,
-  })
-  const [itemForm, setItemForm] = useState<Record<string, string | boolean>>({
-    section: '',
-    type: 'LIVRABLE',
-    title: '',
-    description: '',
-    url: '',
-    content: '',
-    isVisible: true,
-    isDownloadable: true,
-    status: 'EN_ATTENTE',
-  })
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([])
   const [error, setError] = useState<string>('')
@@ -211,6 +195,16 @@ const AdminProjectDetail = () => {
       setError((err as Error).message || 'Erreur chargement projet')
     }
   }
+
+  const projectContent = useProjectContent({
+    projectId: id,
+    canEditContent,
+    canViewContent,
+    confirm,
+    ensurePermission,
+    load,
+    setError,
+  })
 
   useEffect(() => {
     load()
@@ -421,132 +415,6 @@ const AdminProjectDetail = () => {
     }
   }
 
-  const handleAddSection = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    try {
-      await apiFetch(`/api/admin/projects/${id}/sections`, {
-        method: 'POST',
-        body: JSON.stringify(sectionForm),
-      })
-      setSectionForm({ title: '', description: '', isVisible: true })
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout section')
-    }
-  }
-
-  const handleDeleteSection = async (sectionId: string) => {
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!(await confirm({ message: 'Supprimer cette section ?', title: 'Suppression' }))) return
-    setError('')
-    try {
-      await apiFetch(`/api/admin/projects/${id}/sections/${sectionId}`, {
-        method: 'DELETE',
-      })
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression section')
-    }
-  }
-
-  const handleToggleSectionVisibility = async (section: ProjectSection) => {
-    setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    try {
-      await apiFetch(`/api/admin/projects/${id}/sections/${section._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isVisible: !section.isVisible }),
-      })
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour section')
-    }
-  }
-
-  const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    try {
-      const formData = new FormData()
-
-      Object.keys(itemForm).forEach((key) => {
-        if (itemForm[key] !== '' && itemForm[key] !== null) {
-          formData.append(key, String(itemForm[key]))
-        }
-      })
-
-      if (selectedFile) {
-        formData.append('file', selectedFile)
-      }
-
-      await apiUpload(`/api/admin/projects/${id}/items`, formData)
-
-      setItemForm({
-        section: '',
-        type: 'LIVRABLE',
-        title: '',
-        description: '',
-        url: '',
-        content: '',
-        isVisible: true,
-        isDownloadable: true,
-        status: 'EN_ATTENTE',
-      })
-      setSelectedFile(null)
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout item')
-    }
-  }
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!(await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' }))) return
-    setError('')
-    try {
-      await apiFetch(`/api/admin/projects/${id}/items/${itemId}`, {
-        method: 'DELETE',
-      })
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression item')
-    }
-  }
-
-  const handleToggleItemVisibility = async (item: ProjectItem) => {
-    setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    try {
-      await apiFetch(`/api/admin/projects/${id}/items/${item._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isVisible: !item.isVisible }),
-      })
-      await load()
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour item')
-    }
-  }
-
-  const handleDownloadItem = async (itemId: string, fileName: string) => {
-    if (!ensurePermission(canViewContent, 'Accès en lecture seule.')) return
-    try {
-      const { blob, filename } = await apiDownload(`/api/admin/projects/${id}/items/${itemId}/download`)
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename ?? fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Téléchargement impossible')
-    }
-  }
-
   return (
     <div className="portal-container">
       {ConfirmDialog}
@@ -692,21 +560,21 @@ const AdminProjectDetail = () => {
           projectId={id}
           sections={sections}
           items={items}
-          sectionForm={sectionForm}
-          setSectionForm={setSectionForm}
-          itemForm={itemForm}
-          setItemForm={setItemForm}
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
+          sectionForm={projectContent.sectionForm}
+          setSectionForm={projectContent.setSectionForm}
+          itemForm={projectContent.itemForm}
+          setItemForm={projectContent.setItemForm}
+          selectedFile={projectContent.selectedFile}
+          setSelectedFile={projectContent.setSelectedFile}
           canEditContent={canEditContent}
           canViewContent={canViewContent}
-          onAddSection={handleAddSection}
-          onDeleteSection={handleDeleteSection}
-          onToggleSectionVisibility={handleToggleSectionVisibility}
-          onAddItem={handleAddItem}
-          onDeleteItem={handleDeleteItem}
-          onToggleItemVisibility={handleToggleItemVisibility}
-          onDownloadItem={handleDownloadItem}
+          onAddSection={projectContent.handleAddSection}
+          onDeleteSection={projectContent.handleDeleteSection}
+          onToggleSectionVisibility={projectContent.handleToggleSectionVisibility}
+          onAddItem={projectContent.handleAddItem}
+          onDeleteItem={projectContent.handleDeleteItem}
+          onToggleItemVisibility={projectContent.handleToggleItemVisibility}
+          onDownloadItem={projectContent.handleDownloadItem}
         />
       )}
 
