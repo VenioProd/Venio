@@ -1,9 +1,11 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
+import mongoose from 'mongoose'
 import {
   EducationClass,
   EducationStudent,
   EducationSession,
   EducationAssignment,
+  EducationSubmission,
   EducationNote,
   CLASS_PROPERTY_TYPES,
 } from '../../../models/education/index.js'
@@ -92,6 +94,121 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     await logActivity(req.user!.id, req.user!.id, 'class', created._id, 'CREATE', { name: created.name })
     res.status(201).json({ class: created })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * GET /:id/council-prep — données factuelles pour préparer un bilan de classe
+ * et un conseil. Cette route est volontairement en lecture seule : elle ne
+ * crée ni note, ni action de suivi, ni communication vers un tiers.
+ */
+router.get('/:id/council-prep', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const klass = await EducationClass.findOne({ _id: req.params.id, ...ownerFilter(req) })
+    if (!klass) return res.status(404).json({ error: 'Classe introuvable' })
+
+    const students = await EducationStudent.find({
+      classId: klass._id,
+      ...ownerFilter(req),
+      status: 'ACTIVE',
+    })
+      .select('_id firstName lastName attendanceCount absenceCount lateCount averageGrade')
+      .sort({ lastName: 1, firstName: 1 })
+      .lean()
+    const studentIds = students.map((student) => student._id)
+
+    const [sessions, assignments, submissionRows] = await Promise.all([
+      EducationSession.find({ classId: klass._id, ...ownerFilter(req) })
+        .select('status recap')
+        .lean(),
+      EducationAssignment.find({ classId: klass._id, ...ownerFilter(req) })
+        .select('status')
+        .lean(),
+      studentIds.length
+        ? EducationSubmission.aggregate<{
+            _id: mongoose.Types.ObjectId
+            pending: number
+            late: number
+          }>([
+            {
+              $match: {
+                owner: new mongoose.Types.ObjectId(req.user!.id),
+                deletedAt: null,
+                studentId: { $in: studentIds },
+              },
+            },
+            {
+              $group: {
+                _id: '$studentId',
+                pending: {
+                  $sum: {
+                    $cond: [{ $in: ['$status', ['NON_RENDU', 'EN_RETARD']] }, 1, 0],
+                  },
+                },
+                late: {
+                  $sum: {
+                    $cond: [{ $or: [{ $eq: ['$status', 'EN_RETARD'] }, '$isLate'] }, 1, 0],
+                  },
+                },
+              },
+            },
+          ])
+        : [],
+    ])
+
+    const submissionsByStudent = new Map(submissionRows.map((row) => [String(row._id), row]))
+    const grades = students
+      .map((student) => student.averageGrade)
+      .filter((grade): grade is number => typeof grade === 'number')
+    const attendance = students.reduce(
+      (totals, student) => ({
+        recorded: totals.recorded + student.attendanceCount,
+        absences: totals.absences + student.absenceCount,
+        late: totals.late + student.lateCount,
+      }),
+      { recorded: 0, absences: 0, late: 0 },
+    )
+
+    res.json({
+      class: { _id: klass._id, name: klass.name, school: klass.school, level: klass.level },
+      summary: {
+        activeStudents: students.length,
+        sessions: {
+          total: sessions.length,
+          completed: sessions.filter((session) => session.status === 'TERMINEE').length,
+          withRecap: sessions.filter((session) => Boolean(session.recap.trim())).length,
+        },
+        assignments: {
+          total: assignments.length,
+          open: assignments.filter((assignment) => ['OUVERT', 'EN_CORRECTION'].includes(assignment.status)).length,
+        },
+        attendance,
+        grades: {
+          gradedStudents: grades.length,
+          average: grades.length
+            ? Number((grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(2))
+            : null,
+        },
+      },
+      students: students.map((student) => {
+        const submissions = submissionsByStudent.get(String(student._id))
+        return {
+          _id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          attendanceCount: student.attendanceCount,
+          absenceCount: student.absenceCount,
+          lateCount: student.lateCount,
+          averageGrade: student.averageGrade,
+          pendingAssignments: submissions?.pending ?? 0,
+          lateAssignments: submissions?.late ?? 0,
+        }
+      }),
+      provenance: { generatedAt: new Date().toISOString(), automaticActions: false },
+    })
   } catch (err) {
     next(err)
   }

@@ -23,6 +23,11 @@ const COPY: Record<EducationAiMode, { title: string; label: string; placeholder:
     label: 'Commentaires pour l’étudiant',
     placeholder: 'Points observés, axes de progrès…',
   },
+  class_council_prep: {
+    title: 'Préparer le conseil de classe',
+    label: 'Contexte complémentaire de l’intervenant',
+    placeholder: 'Ex. progrès observés, points à aborder, décisions à préparer…',
+  },
   checklist_action_plan: {
     title: 'Créer une checklist',
     label: 'Contexte et résultat attendu',
@@ -53,11 +58,13 @@ export function EducationAiDraftPanel({
   mode,
   initialText = '',
   rubric = [],
+  councilSummary,
   onApply,
 }: {
   mode: EducationAiMode
   initialText?: string
   rubric?: string[]
+  councilSummary?: { className: string; summary: string }
   onApply: (draft: EducationAiDraft) => void
 }) {
   const [input, setInput] = useState(initialText)
@@ -77,7 +84,9 @@ export function EducationAiDraftPanel({
             ? { instructorNotes: input }
             : mode === 'assignment_feedback'
               ? { comments: input, rubric }
-              : { context: input }
+              : mode === 'class_council_prep'
+                ? { className: councilSummary?.className, classSummary: councilSummary?.summary, context: input }
+                : { context: input }
       const response = await generateEducationAiDraft(mode, payload)
       setResult({ generationId: response.generation.id, draft: response.draft, engine: response.generation.engine })
     } catch (err) {
@@ -96,6 +105,7 @@ export function EducationAiDraftPanel({
       const fields = { ...result.draft.fields }
       if (mode === 'session_synthesis') fields.recap = result.draft.text
       if (mode === 'assignment_feedback') fields.feedback = result.draft.text
+      if (mode === 'class_council_prep') fields.councilPrep = result.draft.text
       if (mode === 'checklist_action_plan') {
         fields.checklist = result.draft.text
           .split('\n')

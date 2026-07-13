@@ -10,7 +10,12 @@ export type AttendanceState = 'PRESENT' | 'ABSENT' | 'RETARD' | 'EXCUSE' | 'NON_
 export type EducationAssignmentStatus = 'DRAFT' | 'OUVERT' | 'EN_CORRECTION' | 'CLOS' | 'ARCHIVE'
 export type EducationAssignmentKind = 'DEVOIR' | 'PROJET' | 'EXPOSE' | 'QCM' | 'EXAMEN' | 'AUTRE'
 export type EducationSubmissionStatus = 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
-export type EducationAiMode = 'session_plan' | 'session_synthesis' | 'assignment_feedback' | 'checklist_action_plan'
+export type EducationAiMode =
+  | 'session_plan'
+  | 'session_synthesis'
+  | 'assignment_feedback'
+  | 'class_council_prep'
+  | 'checklist_action_plan'
 export type EducationFollowUpType = 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
 
 export interface EducationFollowUpAcknowledgement {
@@ -282,6 +287,29 @@ export interface EducationDashboard {
   }>
 }
 
+export interface EducationCouncilPreparation {
+  class: Pick<EducationClass, '_id' | 'name' | 'school' | 'level'>
+  summary: {
+    activeStudents: number
+    sessions: { total: number; completed: number; withRecap: number }
+    assignments: { total: number; open: number }
+    attendance: { recorded: number; absences: number; late: number }
+    grades: { gradedStudents: number; average: number | null }
+  }
+  students: Array<{
+    _id: string
+    firstName: string
+    lastName: string
+    attendanceCount: number
+    absenceCount: number
+    lateCount: number
+    averageGrade: number | null
+    pendingAssignments: number
+    lateAssignments: number
+  }>
+  provenance: { generatedAt: string; automaticActions: false }
+}
+
 // ─── Labels & couleurs ──────────────────────────────────────────────────────
 
 export const CLASS_STATUS_LABEL: Record<EducationClassStatus, string> = {
@@ -412,6 +440,11 @@ export async function getClass(id: string): Promise<{
   nextSession: EducationSession | null
 }> {
   return await apiFetch(`${base}/classes/${id}`)
+}
+
+/** Données de bilan en lecture seule, utilisées avant un conseil de classe. */
+export async function getClassCouncilPreparation(id: string): Promise<EducationCouncilPreparation> {
+  return await apiFetch(`${base}/classes/${id}/council-prep`)
 }
 
 export async function createClass(data: Partial<EducationClass>): Promise<{ class: EducationClass }> {
@@ -633,10 +666,7 @@ export async function downloadSessionExport(sessionId: string): Promise<void> {
   saveDownload(blob, filename ?? 'presences.csv')
 }
 
-export async function downloadClassWorkspaceExport(
-  classId: string,
-  format: EducationClassExportFormat,
-): Promise<void> {
+export async function downloadClassWorkspaceExport(classId: string, format: EducationClassExportFormat): Promise<void> {
   const { blob, filename } = await apiDownload(classWorkspaceExportUrl(classId, format), {
     headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.EDUCATION_CLASS_EXPORT),
   })

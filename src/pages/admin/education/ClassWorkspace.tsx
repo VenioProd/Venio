@@ -45,8 +45,9 @@ import { NoteEditor } from './NoteEditor'
 import { StudentsTab } from './student-parts'
 import { SessionsTab } from './session-parts'
 import { AssignmentsTab } from './assignment-parts'
+import { CouncilPreparationPanel } from './CouncilPreparationPanel'
 
-type WorkspaceTab = 'page' | 'students' | 'sessions' | 'assignments'
+type WorkspaceTab = 'page' | 'students' | 'sessions' | 'assignments' | 'council'
 
 const COMMON_EMOJIS = [
   '📚',
@@ -402,6 +403,12 @@ export function ClassWorkspace({
               active={tab === 'assignments'}
               onClick={() => setTab('assignments')}
             />
+            <TabBtn
+              icon={FileText}
+              label="Bilan & conseil"
+              active={tab === 'council'}
+              onClick={() => setTab('council')}
+            />
           </div>
 
           {/* Contenu */}
@@ -437,6 +444,7 @@ export function ClassWorkspace({
                 }}
               />
             )}
+            {tab === 'council' && <CouncilPreparationPanel classId={classId} />}
           </div>
         </>
       ) : (
