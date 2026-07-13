@@ -41,7 +41,7 @@ export function respondError(
   status: number,
   code: string,
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): void {
   const payload: AgentErrorPayload = { error: message, code }
   if (res.req?.requestId) payload.requestId = res.req.requestId
@@ -61,7 +61,10 @@ export function generateRequestId(): string {
  * Middleware d'entrée : assigne un requestId à chaque requête agent.
  */
 export function requestIdMiddleware(req: Request, _res: Response, next: NextFunction): void {
-  req.requestId = generateRequestId()
+  // Le parser JSON agent est monté avant le routeur afin que ses erreurs soient
+  // normalisées. Il doit donc pouvoir attribuer un requestId en amont sans que
+  // le routeur en crée un second lorsqu'il prend ensuite la main.
+  req.requestId ||= generateRequestId()
   next()
 }
 
@@ -69,14 +72,13 @@ export function requestIdMiddleware(req: Request, _res: Response, next: NextFunc
  * Error handler terminal monté en fin de router agent. Capture AgentApiError
  * et toute autre erreur, et renvoie un JSON standardisé.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function agentErrorHandler(
   err: Error & { status?: number; code?: string; details?: Record<string, unknown> },
   _req: Request,
   res: Response,
   // _next n'est pas utilisé mais Express exige un middleware d'arity 4 pour
   // être considéré comme un error handler
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
   if (res.headersSent) {
     return
@@ -87,8 +89,6 @@ export function agentErrorHandler(
   }
   const status = err.status || 500
   const code = err.code || 'INTERNAL'
-  const message = status >= 500
-    ? 'Erreur interne du serveur'
-    : err.message || 'Erreur inconnue'
+  const message = status >= 500 ? 'Erreur interne du serveur' : err.message || 'Erreur inconnue'
   respondError(res, status, code, message, err.details)
 }

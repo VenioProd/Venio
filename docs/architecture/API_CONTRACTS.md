@@ -55,7 +55,10 @@ gestionnaire global masque le détail d'une erreur 5xx en production.
   binaire.
 - L'API agent reçoit ses documents et pièces jointes en JSON base64, pas en
   multipart. Un document agent ne peut pas dépasser 5 MiB après décodage ; la
-  requête JSON de l'API agent est plafonnée à 8 MiB.
+  requête JSON de l'API agent est plafonnée à 8 MiB. Un JSON invalide renvoie
+  `400 MALFORMED_JSON` et un body qui dépasse cette limite renvoie
+  `413 PAYLOAD_TOO_LARGE`, toujours avec le format d'erreur agent et un
+  `requestId`.
 
 Les limites d'upload peuvent varier selon la route humaine. Ne pas présenter
 une limite d'une route comme une limite globale.
@@ -116,7 +119,8 @@ token. Il est appliqué en mémoire, donc par processus ; les réponses exposent
 ## Limites applicatives transverses
 
 - Le parser JSON général est limité à 2 MiB ; le parser dédié de l'API agent
-  est limité à 8 MiB.
+  est limité à 8 MiB. Ses erreurs de syntaxe et de taille restent normalisées
+  (`MALFORMED_JSON` / `PAYLOAD_TOO_LARGE`) pour les consommateurs agent.
 - Le backend applique un quota global de 200 requêtes par minute et par IP.
 - Les tentatives de connexion sont limitées à 5 par IP sur 15 minutes, en ne
   comptant pas les réponses réussies. Les demandes de réinitialisation de mot

@@ -1,6 +1,8 @@
 import express, { type Express } from 'express'
 import AgentToken from '../../models/AgentToken.js'
 import { generateAgentToken } from '../../lib/agent/tokens.js'
+import { requestIdMiddleware } from '../../routes/agent/_middleware/errors.js'
+import { agentJsonBodyParser } from '../../routes/agent/_middleware/jsonBody.js'
 
 /**
  * Crée une instance Express minimale pour tester les routes agent contre
@@ -19,11 +21,9 @@ export async function createTestApp(): Promise<Express> {
   // à la Mongo en mémoire au moment du import.
   const { default: agentRoutes } = await import('../../routes/agent/index.js')
   const app = express()
-  // Limite volontairement supérieure à la limite applicative (5 Mo/fichier)
-  // pour que le body parser laisse passer les payloads de test jusqu'à ~6 Mo
-  // en base64 (~8 Mo JSON) et que notre handler applicatif puisse renvoyer
-  // FILE_TOO_LARGE avec le bon code d'erreur.
-  app.use('/api/v1/agent', express.json({ limit: '12mb' }), agentRoutes)
+  // Même chaîne de parsing que la production : les tests de contrat couvrent
+  // ainsi aussi les erreurs JSON 400/413 normalisées par l'API agent.
+  app.use('/api/v1/agent', requestIdMiddleware, agentJsonBodyParser, agentRoutes)
   return app
 }
 

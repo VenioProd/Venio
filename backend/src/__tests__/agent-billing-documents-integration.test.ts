@@ -5,19 +5,13 @@ import bcrypt from 'bcryptjs'
 import fs from 'fs/promises'
 import path from 'path'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import BillingDocument from '../models/BillingDocument.js'
 import Document from '../models/Document.js'
 
 let app: Express
-let clientId: string
 let projectId: string
 
 beforeAll(async () => {
@@ -46,7 +40,6 @@ beforeEach(async () => {
     name: 'Cl',
     role: 'CLIENT',
   })
-  clientId = String(client._id)
   const project = await Project.create({
     name: 'Test project',
     client: client._id,
@@ -284,8 +277,8 @@ describe('Agent Documents / upload + download + delete', () => {
 
   it('rejects oversized files (>5 MB applicative limit)', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:documents'])
-    // 5.2 MB de zéros : passe sous la limite JSON 8 MB (≈6.93 MB base64)
-    // mais dépasse la limite applicative 5 MB → FILE_TOO_LARGE par notre handler.
+    // 5.2 MiB de zéros : passe sous la limite JSON 8 MiB (≈6.93 MiB base64)
+    // mais dépasse la limite applicative 5 MiB → FILE_TOO_LARGE par notre handler.
     const bigBuf = Buffer.alloc(Math.floor(5.2 * 1024 * 1024), 0)
     const res = await request(app)
       .post('/api/v1/agent/documents')
@@ -299,6 +292,26 @@ describe('Agent Documents / upload + download + delete', () => {
       })
     expect(res.status).toBe(413)
     expect(res.body.code).toBe('FILE_TOO_LARGE')
+  })
+
+  it('normalizes a payload above the agent JSON limit', async () => {
+    const payloadAboveLimit = 'a'.repeat(8 * 1024 * 1024)
+    const res = await request(app)
+      .post('/api/v1/agent/documents')
+      .set('Content-Type', 'application/json')
+      .send({ contentBase64: payloadAboveLimit })
+
+    expect(res.status).toBe(413)
+    expect(res.body).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+    expect(res.body.requestId).toMatch(/^req_/)
+  })
+
+  it('normalizes malformed JSON before authentication', async () => {
+    const res = await request(app).post('/api/v1/agent/documents').set('Content-Type', 'application/json').send('{')
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ code: 'MALFORMED_JSON' })
+    expect(res.body.requestId).toMatch(/^req_/)
   })
 
   it('rejects when type unknown', async () => {
@@ -366,9 +379,7 @@ describe('Agent Documents / upload + download + delete', () => {
           contentBase64: 'aGVsbG8=',
         })
     }
-    const all = await request(app)
-      .get('/api/v1/agent/documents')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const all = await request(app).get('/api/v1/agent/documents').set('Authorization', `Bearer ${plainSecret}`)
     expect(all.body.total).toBe(3)
 
     const factures = await request(app)

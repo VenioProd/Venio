@@ -66,6 +66,8 @@ import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
 import agentRoutes from './routes/agent/index.js'
+import { requestIdMiddleware } from './routes/agent/_middleware/errors.js'
+import { agentJsonBodyParser } from './routes/agent/_middleware/jsonBody.js'
 import adminMessagingRoutes from './routes/admin/messaging.js'
 import adminHealthRoutes from './routes/admin/health.js'
 import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
@@ -175,10 +177,11 @@ app.use(
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
 
-// API agent : limite body plus haute (8mb) pour permettre l'upload de documents
-// en base64 (jusqu'à ~5 Mo bruts ≈ 6.7 Mo encodés). Doit être monté AVANT
-// le express.json global sinon le parser global rejette à 2mb d'abord.
-app.use('/api/v1/agent', express.json({ limit: '8mb' }), agentRoutes)
+// API agent : limite body plus haute (8 MiB) pour permettre l'upload de
+// documents en base64 (jusqu'à ~5 MiB bruts ≈ 6,7 MiB encodés). Le wrapper
+// conserve le format d'erreur agent pour les JSON invalides et les payloads
+// trop volumineux. Il doit être monté avant le parser global (2 MiB).
+app.use('/api/v1/agent', requestIdMiddleware, agentJsonBodyParser, agentRoutes)
 
 app.use(express.json({ limit: '2mb' }))
 
