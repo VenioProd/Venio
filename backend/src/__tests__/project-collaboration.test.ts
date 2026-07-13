@@ -65,11 +65,11 @@ beforeEach(async () => {
 })
 
 describe('project collaboration', () => {
-  it('lets the owner grant read or edit access without a share secret', async () => {
+  it('lets the owner grant read or edit access by normalized exact email without a share secret', async () => {
     const response = await request(app)
       .post(`/api/projects/${projectId}/collaborators`)
       .set('Cookie', await cookieFor(ownerId))
-      .send({ userId: editorId, role: 'EDITOR' })
+      .send({ email: '  EDITOR@EXAMPLE.TEST  ', role: 'EDITOR' })
       .expect(201)
 
     expect(response.body.collaborator).toMatchObject({ role: 'EDITOR', user: { _id: editorId, name: 'Editor' } })
@@ -79,7 +79,7 @@ describe('project collaboration', () => {
     await request(app)
       .post(`/api/projects/${projectId}/collaborators`)
       .set('Cookie', await cookieFor(ownerId))
-      .send({ userId: viewerId, role: 'VIEWER' })
+      .send({ email: 'viewer@example.test', role: 'VIEWER' })
       .expect(201)
 
     const ownerList = await request(app)
@@ -115,7 +115,12 @@ describe('project collaboration', () => {
     await request(app)
       .post(`/api/projects/${projectId}/collaborators`)
       .set('Cookie', await cookieFor(editorId))
-      .send({ userId: viewerId, role: 'VIEWER' })
+      .send({ email: 'viewer@example.test', role: 'VIEWER' })
+      .expect(403)
+
+    await request(app)
+      .get(`/api/projects/${projectId}/collaborators`)
+      .set('Cookie', await cookieFor(editorId))
       .expect(403)
 
     await request(app)
@@ -172,5 +177,44 @@ describe('project collaboration', () => {
       .get(`/api/projects/${projectId}/sections`)
       .set('Cookie', await cookieFor(viewerId))
       .expect(404)
+  })
+
+  it('lets only the owner update and revoke a collaborator', async () => {
+    await ProjectMember.create({
+      project: projectId,
+      user: editorId,
+      role: 'EDITOR',
+      createdBy: ownerId,
+    })
+    const member = await ProjectMember.create({
+      project: projectId,
+      user: viewerId,
+      role: 'VIEWER',
+      createdBy: ownerId,
+    })
+
+    await request(app)
+      .patch(`/api/projects/${projectId}/collaborators/${member._id}`)
+      .set('Cookie', await cookieFor(editorId))
+      .send({ role: 'EDITOR' })
+      .expect(403)
+
+    const updated = await request(app)
+      .patch(`/api/projects/${projectId}/collaborators/${member._id}`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ role: 'EDITOR' })
+      .expect(200)
+    expect(updated.body.collaborator).toMatchObject({ _id: String(member._id), role: 'EDITOR' })
+
+    await request(app)
+      .delete(`/api/projects/${projectId}/collaborators/${member._id}`)
+      .set('Cookie', await cookieFor(editorId))
+      .expect(403)
+
+    await request(app)
+      .delete(`/api/projects/${projectId}/collaborators/${member._id}`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(200)
+    expect(await ProjectMember.findById(member._id)).toBeNull()
   })
 })

@@ -758,6 +758,121 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   gap: 24px;
 }
 
+.client-collaborators {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.client-collaborators-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.client-collaborators-header p,
+.client-collaborators-status {
+  color: var(--text-muted);
+  margin: 8px 0 0;
+}
+
+.client-collaborators-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.client-collaborators-form label,
+.client-collaborator-role {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.client-collaborators-form input,
+.client-collaborators-form select,
+.client-collaborator-role select {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.client-collaborators-error {
+  margin: 16px 0 0;
+  color: #fca5a5;
+}
+
+.client-collaborators-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.client-collaborators-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.client-collaborator-identity {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.client-collaborator-identity strong {
+  color: var(--text-primary);
+}
+
+.client-collaborator-identity span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-collaborators-revoke {
+  min-height: 38px;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-radius: 8px;
+  background: transparent;
+  color: #fca5a5;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0 12px;
+}
+
+.client-collaborators-revoke:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+@media (max-width: 640px) {
+  .client-collaborators-form,
+  .client-collaborators-item {
+    grid-template-columns: 1fr;
+  }
+
+  .client-collaborators-form .portal-button,
+  .client-collaborators-revoke {
+    width: 100%;
+  }
+}
+
 .client-project-section {
   background: var(--bg-card);
   border: 1px solid var(--border-color);

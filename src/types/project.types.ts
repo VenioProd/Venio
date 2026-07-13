@@ -15,6 +15,19 @@ export type ItemStatus = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINE' | 'VALIDE'
 export type DocumentType = 'DEVIS' | 'FACTURE' | 'FICHIER_PROJET'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
 export type ProjectAccessRole = 'OWNER' | 'EDITOR' | 'VIEWER'
+export type ProjectCollaboratorRole = 'EDITOR' | 'VIEWER'
+
+export interface ProjectCollaborator {
+  _id: string
+  user: {
+    _id: string
+    name: string
+    email: string
+    avatarUrl?: string
+  }
+  role: ProjectCollaboratorRole
+  createdAt: string
+}
 
 export interface Project {
   _id: string
