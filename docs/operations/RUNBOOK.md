@@ -1,189 +1,184 @@
 # Runbook Venio
 
-## Démarrage
+Ce runbook décrit les opérations du déploiement actuel. Il ne remplace pas une
+stratégie de sauvegarde vérifiée ni la gestion sécurisée des accès VPS.
 
-### Local dev
+## Démarrage local
+
+Prérequis : Node.js 22 et MongoDB accessible. Créer les environnements depuis
+les exemples, renseigner `MONGODB_URI` dans `backend/.env`, puis lancer :
+
 ```bash
-# Terminal 1
-cd backend && npm run dev   # :3000
-# Terminal 2
-npm run dev                 # :5501
+# Terminal 1 : backend Express, port 3000 par défaut
+npm --prefix backend run dev
+
+# Terminal 2 : frontend Vite, port 5501
+npm run dev
 ```
 
-### Prod (VPS)
-Le déploiement passe par `.github/workflows/deploy-ionos.yml` qui :
-1. SSH sur le VPS
-2. `git fetch origin main && git reset --hard origin/main`
-3. Restaure `.env` sauvegardé avant le reset
-4. `docker compose -f docker-compose.prod.yml build --no-cache`
-5. Swap container
+En développement, Vite envoie `/api` et `/socket.io` vers
+`VITE_API_PROXY_TARGET`, qui vaut `http://localhost:3000` sans surcharge. Une
+valeur différente se configure dans le `.env` racine. Ne pas déposer de valeur
+secrète dans les fichiers suivis par Git.
 
-Déclencheur : push sur la branche `main` (hors `README.md` et `docs/**`).
+## Démarrage et déploiement VPS
+
+La production utilise un seul service Compose, `venio`, avec `network_mode:
+host`. L'image Docker compile le frontend Vite, compile le backend TypeScript,
+puis Express sert les assets générés et l'API sur le port 3000. Le reverse proxy
+VPS est la couche d'accès public.
+
+Le workflow [deploy-ionos.yml](../../.github/workflows/deploy-ionos.yml) se
+déclenche après une CI réussie sur `main` ou manuellement. Il :
+
+1. se connecte au VPS en SSH ;
+2. sauvegarde le `.env` présent, récupère `origin/main` puis le restaure ;
+3. construit `docker-compose.prod.yml` sans cache alors que l'ancien
+   conteneur reste en ligne ;
+4. arrête puis recrée le conteneur ;
+5. attend 20 secondes côté GitHub Actions et vérifie `https://venio.paris`.
+
+Le remplacement implique une courte interruption. Le workflow ne restaure pas
+automatiquement un commit précédent en cas d'échec après le swap.
+
+Commandes de diagnostic sur le VPS :
+
+```bash
+cd /opt/docker/openclaw/config/workspace/projects/venio
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f venio
+curl -fsS http://localhost:3000/api/health
+```
 
 ## Health checks
 
-### Endpoint public `/api/health` (enrichi en chantier #5)
-```bash
-curl -s https://venio.paris/api/health | jq
-# {
-#   "status": "ok" | "degraded",
-#   "version": "1.0.0",
-#   "uptime": 42,
-#   "mongo": { "ok": true, "state": 1, "pingMs": 3 },
-#   "checkedAt": "2026-05-26T..."
-# }
-```
-Codes retour :
-- **200** si tout va bien (`status: "ok"` + `mongo.ok: true` + ping < 1s)
-- **503** si Mongo est down ou unreachable (`status: "degraded"`)
+### Endpoint public
 
-Convient parfaitement pour un load balancer ou un monitoring externe (UptimeRobot, etc.).
-
-### Endpoint admin `/api/admin/health` (auth requise)
-Détail complet (SMTP, push, uploads, schedulers). Ne pas exposer publiquement.
-
-### Logs structurés (pino)
-Le backend log en JSON (prod) ou pretty-print (dev) via `pino`. Niveau configurable par `LOG_LEVEL`.
+`GET /api/health` est sans authentification. Il répond `200` avec
+`status: "ok"` lorsque MongoDB est connecté et que son ping réussit ; sinon il
+répond `503` avec `status: "degraded"`. La réponse contient la version,
+l'uptime, l'état MongoDB, la latence de ping et la date de contrôle.
 
 ```bash
-# Container Docker en prod
-docker compose -f docker-compose.prod.yml logs -f venio | jq '. | select(.level >= 40)'
-# 40 = warn et plus
+curl -fsS http://localhost:3000/api/health
 ```
 
-Les champs `Authorization`, `cookie`, `password*`, `token*` sont auto-redactés.
+Le Dockerfile et le compose interrogent cet endpoint toutes les 30 secondes
+(délai 5 s, trois essais, période de démarrage 20 s).
 
-### Monitoring d'erreurs (Sentry — chantier #6)
-Configuré si `SENTRY_DSN` / `VITE_SENTRY_DSN` sont définis. Sinon désactivé silencieusement.
-- 5xx remontent dans Sentry, pas les 4xx (filtrés par `beforeSend`)
-- 10% de tracing en prod, 100% en dev
+### Endpoint admin
 
-### Mongo
-Vérifier au démarrage dans les logs backend : `{ level: 30, msg: "Connected to Mongo" }`.
+`GET /api/admin/health` exige une session et la permission de gestion des
+administrateurs. Il donne un état sans secrets de MongoDB, email, push,
+automatisations, uploads et erreurs récentes. Ne pas l'exposer comme un
+healthcheck public.
 
-## Backups
+## Sauvegardes et restauration
 
-- Sauvegarder régulièrement la base MongoDB (`mongodump`) avant toute opération destructive
-- Le `.env` est sauvegardé automatiquement par le workflow GitHub Actions avant chaque `git reset --hard`
+Sauvegarder séparément MongoDB et les fichiers uploadés avant une migration,
+un cleanup démo ou un rollback risqué.
 
-## Uploads
+- MongoDB : exécuter `mongodump` depuis un environnement où l'outil est
+  installé et où `MONGODB_URI` est disponible ; stocker le résultat hors du
+  conteneur et tester périodiquement un `mongorestore` dans un environnement
+  isolé.
+- Uploads : sauvegarder le volume Docker `venio-uploads` monté sur
+  `/app/uploads`. Il contient les fichiers locaux applicatifs.
+- L'endpoint admin de sauvegarde appelle aussi `mongodump`, conserve au plus 7
+  sauvegardes par défaut et dépend d'un binaire disponible dans son processus.
+  Le compose ne monte pas de volume `backups` : ne pas le considérer comme une
+  politique de rétention durable sans configuration complémentaire.
 
-- Stockage local : `backend/uploads/` (tickets, projets, messagerie, etc.)
-- Sync optionnelle vers Nextcloud via `backend/src/lib/nextcloud.ts`
-- Les uploads sont servis par routes Express dédiées (vérification de chemin pour éviter directory traversal)
+Avant une restauration, arrêter les écritures, conserver l'état à remplacer,
+restaurer MongoDB et les uploads cohérents, puis relancer et contrôler
+`/api/health` ainsi que les parcours concernés.
 
-## Jobs / schedulers
+## Uploads et espace disque
 
-Au boot serveur :
-- `startScheduler()` — CRM automation legacy
-- `initAutomationEngine()` — moteur d'automatisation
-- `startAutoLockScheduler()` — verrouillage auto des écritures comptables VALIDATED expirées
+Les fichiers sont relatifs au répertoire `uploads/` du backend. En production,
+le volume nommé `venio-uploads` évite leur perte lors d'une recréation ordinaire
+du conteneur ; il n'est pas une sauvegarde.
 
-## Migrations one-shot
+En cas d'échec d'upload : vérifier l'état de santé admin, l'espace disque, les
+droits d'écriture du volume et les logs. Les clients frontend envoient du
+multipart via `apiUpload` sans définir le `Content-Type`. Les documents agent
+emploient du JSON base64 et sont limités à 5 MiB décodés, dans une requête
+agent limitée à 8 MiB.
 
-Les migrations historiques ont été **sorties du boot** (chantier #5 / audit 2026-05-26).
-Elles sont maintenant des scripts standalone versionnés dans `backend/scripts/migrations/`.
+## Jobs et automatisations
 
-```bash
-# Local dev
-cd backend
-MONGODB_URI=... npx tsx scripts/migrations/001-unset-plain-password.ts
+Après la connexion MongoDB et l'écoute HTTP, le backend démarre :
 
-# Prod (depuis le container)
-docker compose -f docker-compose.prod.yml exec venio \
-  node --experimental-strip-types --experimental-detect-module \
-  scripts/migrations/001-unset-plain-password.ts
-```
+- le planificateur CRM ;
+- le moteur d'automatisation ;
+- le verrouillage automatique d'écritures comptables validées.
 
-Toutes les migrations sont **idempotentes** (réexécutables sans risque). Voir [`backend/scripts/migrations/README.md`](../../backend/scripts/migrations/README.md).
+Les deux premiers planificateurs vérifient leurs tâches chaque minute. Le
+verrouillage comptable s'exécute au démarrage puis toutes les six heures ; son
+seuil dépend de `ACCOUNTING_LOCK_VALIDATED_AFTER_DAYS` (0 le désactive).
 
-## Cleanup démo
+Contrôler l'endpoint admin de santé et les logs après un redémarrage. Une
+automatisation en erreur ou un scheduler non démarré demande une investigation
+avant de déclencher manuellement des opérations métier.
 
-⚠️ Le cleanup démo n'est **plus** exécuté au boot serveur (Phase 2 / VEN-353).
+## Nettoyage explicite des données de démo
 
-Usage manuel :
+Le cleanup ne s'exécute jamais au boot. Il cible uniquement les identifiants de
+démo définis par son script et exige `MONGODB_URI` ainsi que
+`ALLOW_DEMO_CLEANUP=true`.
+
 ```bash
 cd backend
 
-# Toujours commencer par un dry-run
+# Toujours vérifier la sélection d'abord
 ALLOW_DEMO_CLEANUP=true npm run cleanup:demo:dry
 
-# Si le dry-run est satisfaisant, lancer le nettoyage effectif
+# Seulement après backup et validation du dry-run
 ALLOW_DEMO_CLEANUP=true npm run cleanup:demo
 ```
 
-La variable `ALLOW_DEMO_CLEANUP=true` est **obligatoire** — sans elle, le script lève une erreur immédiatement.
+Sans cette variable, le script s'arrête avant toute connexion MongoDB. La
+suppression réelle est irréversible ; en production, effectuer et vérifier une
+sauvegarde MongoDB avant l'opération.
 
-**Ne jamais lancer en prod sans backup MongoDB préalable.**
+## Incidents usuels
 
-## Incidents typiques
+| Symptôme | Première action |
+| --- | --- |
+| `503` sur `/api/health` | Vérifier la disponibilité/URI MongoDB et les logs du conteneur. |
+| Conteneur unhealthy | Consulter `docker compose ... logs venio`, puis l'état MongoDB ; le healthcheck dépend de `/api/health`. |
+| 401 utilisateur | Reconnecter l'utilisateur ; la session serveur peut être expirée, révoquée ou invalide. |
+| 401/403 agent | Vérifier l'URL `/api/v1/agent`, `Authorization: Bearer …` et les scopes du token. |
+| 429 agent | Respecter `Retry-After` et réduire le débit ; le quota est par token et par processus. |
+| Upload échoué | Vérifier disque, volume `venio-uploads`, permissions, taille et format attendus par la route. |
+| Automatisations absentes | Contrôler `/api/admin/health`, les logs de démarrage et la configuration métier concernée. |
 
-| Symptôme | Action |
-|---|---|
-| 401 en boucle sur le front | Inspecter le `localStorage.auth_token`. Token expiré ou invalide → logout + relogin. |
-| Backend ne démarre pas | Vérifier connexion MongoDB (`MONGODB_URI`), variables d'env (`JWT_SECRET`, `SUPER_ADMIN_*`) |
-| Upload qui échoue silencieusement | Vérifier le quota disque, les permissions sur `backend/uploads/`, et que le client utilise bien `apiUpload` (sans forcer `Content-Type`) |
-| Bundle trop gros | `npm run build` + comparer aux chunks documentés dans `docs/optimisation/BUNDLE_AUDIT_*.md` |
-| Tests qui échouent en local mais pas en CI | Ne pas confondre `npm test` (frontend seul) et `npm run test:all` (frontend + backend) |
-| Warnings duplicate index au démarrage | Normalement corrigés (Phase 4 / VEN-355). Si réapparus, vérifier `ExternalSource` et `QualiopiCriterion` |
+## Rollback applicatif
 
-## Tests
+Le rollback replace le code et le conteneur ; il ne restaure ni MongoDB ni les
+uploads. Avant de l'effectuer, noter le SHA actif et confirmer la compatibilité
+de schéma avec les données actuelles.
 
 ```bash
-# Frontend uniquement (racine)
-npm test                   # 62 tests environ
+cd /opt/docker/openclaw/config/workspace/projects/venio
+git fetch origin
+git reset --hard <sha-déjà-validé>
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+curl -fsS http://localhost:3000/api/health
+```
 
-# Backend uniquement (lent — MongoMemoryServer non parallèle)
-cd backend && npm test     # 313 tests environ
+Si le problème vient d'une donnée ou d'une migration, restaurer la sauvegarde
+testée plutôt que compter sur un rollback de code seul.
 
-# Tout (frontend puis backend)
+## Vérifications avant livraison
+
+```bash
+npm run typecheck:all
 npm run test:all
+npm run format:check
+git diff --check
 ```
 
-Voir [docs/superpowers/plans/2026-05-18-venio-optimization.md](../superpowers/plans/2026-05-18-venio-optimization.md) pour le plan d'optimisation complet.
-
-### Recette admin multi-rôles
-
-Pour la preuve de release des rôles administrateur, exécuter depuis la racine :
-
-```bash
-npm run recipe:admin-roles
-```
-
-La commande vérifie les rôles `SUPER_ADMIN`, `ADMIN`, `COMMERCIAL`, `RH`,
-`COMPTABLE`, `VIEWER` et `STAGIAIRE`, puis génère un rapport JSON horodaté
-dans `artifacts/admin-role-recipe/`. Voir
-[ADMIN_ROLE_RECIPE.md](./ADMIN_ROLE_RECIPE.md) pour la matrice, les données
-synthétiques et le smoke production contrôlé restant.
-
-## CI/CD
-
-### CI (chantier #3 — audit 2026-05-26)
-Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) qui s'exécute sur :
-- `pull_request` vers `main`
-- `push` sur `main`
-- `workflow_dispatch` (manuel)
-
-Jobs :
-- **quality** : `npm ci` (root + backend) + `typecheck:all` + `lint`
-- **tests** : `npm ci` (root + backend) + `test:all`
-
-Concurrency group + cancel-in-progress pour éviter les builds doublons.
-
-### Déploiement gaté
-[`deploy-ionos.yml`](../../.github/workflows/deploy-ionos.yml) ne s'exécute QUE si CI verte (`workflow_run` après CI completed/success sur `main`). `workflow_dispatch` reste possible pour déploiement manuel.
-
-## Sécurité (chantier #6)
-
-### CSP
-Headers Helmet en prod avec CSP stricte (pas de `'unsafe-inline'` sur scriptSrc) :
-- scriptSrc : `'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net`
-- connectSrc : auto-inclut l'origine Sentry si `SENTRY_DSN` défini
-- styleSrc : `'unsafe-inline'` conservé (à durcir séparément)
-
-### Secrets
-Stockés dans `.env` (jamais commité). Variables clés :
-- Backend : `JWT_SECRET`, `MONGODB_URI`, `SUPER_ADMIN_*`, `SENTRY_DSN`, `NEXTCLOUD_*`, `VAPID_*`, `SMTP_*`
-- Frontend : `VITE_SENTRY_DSN`, `VITE_EMAILJS_*`
-
-Voir [`backend/.env.example`](../../backend/.env.example) et [`.env.example`](../../.env.example) racine pour la liste exhaustive.
+La CI exécute les typechecks, le lint, les tests frontend/backend et la recette
+du site public selon le workflow [ci.yml](../../.github/workflows/ci.yml).

@@ -1,83 +1,85 @@
-# Venio — Plateforme métier (site public + back-office)
+# Venio — plateforme métier
 
-## Architecture
+Venio réunit le site public, l'espace client et le back-office dans une même
+application frontend. Le backend expose l'API métier, les flux temps réel et
+l'API agent.
 
-- Site public (React 18 + Vite 5 + React Router 7) — port dev 5501
-- Espace client + back-office admin (même app frontend)
-- API backend Express 5 + MongoDB (Mongoose) — port dev 3000
-- Messagerie interne temps réel (Socket.IO)
-- API agent (Bearer tokens) avec idempotency
-- Modules: CRM, projets, comptabilité, Qualiopi, tickets, ressources, automatisations
-- Intégrations: nodemailer, web-push, Nextcloud sync, jsPDF (lazy)
+## Points d'entrée
 
-## Stack
+- [README_PROJET.md](README_PROJET.md) — architecture, démarrage et scripts
+- [docs/README.md](docs/README.md) — index de toute la documentation
+- [docs/architecture/API_CONTRACTS.md](docs/architecture/API_CONTRACTS.md) — contrats HTTP
+- [docs/operations/RUNBOOK.md](docs/operations/RUNBOOK.md) — exploitation et incidents
+- [docs/deploiement/README.md](docs/deploiement/README.md) — déploiement VPS
 
-| Couche | Technos |
-|---|---|
-| Frontend | React 18, Vite 5, TypeScript, React Router 7, Recharts, Socket.IO client, jsPDF (lazy) |
-| Backend | Node, Express 5, Mongoose, JWT, bcryptjs, Multer, Helmet, express-rate-limit, Socket.IO, nodemailer, web-push, otpauth (2FA), pdfkit, qrcode |
-| Tests | Vitest (frontend + backend séparés), supertest, mongodb-memory-server |
+## Architecture actuelle
 
-## Démarrage rapide
+| Couche          | Implémentation                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| Frontend        | React 18, TypeScript, Vite 5, React Router 7 et Socket.IO client                                  |
+| Backend         | Node.js, Express 5, MongoDB via Mongoose et Socket.IO                                             |
+| API agent       | `/api/v1/agent`, tokens Bearer à scopes et idempotence des mutations                              |
+| Automatisations | Planificateur CRM, moteur d'automatisation et verrouillage comptable au démarrage du backend      |
+| Production      | Image Docker unique : build Vite servi statiquement par Express, derrière le reverse proxy du VPS |
 
-### Prérequis
-- Node 20+ (recommandé)
-- Une instance MongoDB locale ou distante (URI dans `.env`)
+## Démarrage local
 
-### Frontend
+Prérequis : Node.js 22 (version des images Docker et de la CI) et une instance
+MongoDB accessible.
+
 ```bash
+# Dépendances et configuration frontend
 npm install
-npm run dev   # http://localhost:5501
+cp .env.example .env
+
+# Dépendances et configuration backend
+npm --prefix backend install
+cp backend/.env.example backend/.env
 ```
 
-### Backend
+Renseigner au minimum `MONGODB_URI` dans `backend/.env`, sans jamais commiter
+ce fichier, puis lancer deux terminaux :
+
 ```bash
-cd backend
-npm install
-cp .env.example .env  # à ajuster
-npm run dev   # http://localhost:3000
+# Terminal 1 — API Express : http://localhost:3000
+npm --prefix backend run dev
+
+# Terminal 2 — Vite : http://localhost:5501
+npm run dev
 ```
 
-Le frontend proxy `/api/*` et `/socket.io/*` vers `VITE_API_PROXY_TARGET` (défaut http://localhost:3000).
+Vite écoute sur le port **5501** et proxyfie `/api` et `/socket.io` vers
+`VITE_API_PROXY_TARGET`. Sa valeur par défaut est `http://localhost:3000` ;
+la définir dans `.env` permet de viser un autre backend de développement. Le
+backend écoute sur le port **3000** par défaut (`PORT` peut le remplacer).
 
-## Scripts
+## Scripts courants
 
-### Frontend (racine)
-| Script | Effet |
-|---|---|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Build prod (`dist/`) + sitemap |
-| `npm run test` / `npm run test:frontend` | Tests frontend uniquement |
-| `npm run test:backend` | `npm --prefix backend test` |
-| `npm run test:all` | Frontend puis backend |
-| `npm run typecheck` | TS strict |
+| Contexte | Commande                             | Rôle                                              |
+| -------- | ------------------------------------ | ------------------------------------------------- |
+| Frontend | `npm run dev`                        | Démarre Vite sur `:5501`                          |
+| Frontend | `npm run build`                      | Produit `dist/`, puis génère prerender et sitemap |
+| Frontend | `npm run typecheck`                  | Vérifie TypeScript sans émettre de fichiers       |
+| Frontend | `npm run test:frontend`              | Lance Vitest frontend une fois                    |
+| Frontend | `npm run lint`                       | Lance ESLint à la racine                          |
+| Frontend | `npm run format:check`               | Vérifie Prettier sur les formats configurés       |
+| Backend  | `npm --prefix backend run dev`       | Démarre `tsx --watch` sur `:3000`                 |
+| Backend  | `npm --prefix backend run build`     | Compile TypeScript vers `backend/dist/`           |
+| Backend  | `npm --prefix backend run typecheck` | Vérifie TypeScript sans émettre de fichiers       |
+| Backend  | `npm --prefix backend test`          | Lance Vitest backend une fois                     |
+| Ensemble | `npm run typecheck:all`              | Typecheck frontend puis backend                   |
+| Ensemble | `npm run test:all`                   | Tests frontend puis backend                       |
 
-### Backend (`cd backend`)
-| Script | Effet |
-|---|---|
-| `npm run dev` | tsx --watch |
-| `npm run build` | Compile TypeScript |
-| `npm start` | `node dist/index.js` |
-| `npm test` | Vitest backend |
-| `npm run seed:demo` / `seed:client-projects` | Données de démo |
-| `npm run cleanup:demo:dry` / `cleanup:demo` | Nettoyage démo (garde `ALLOW_DEMO_CLEANUP=true`) |
-| `npm run accounting:migrate-billing` | Migration billing |
+Le nettoyage démo est détaillé dans le
+[runbook](docs/operations/RUNBOOK.md) et n'est jamais exécuté au démarrage.
 
-## Permissions
+## Déploiement
 
-Source de vérité = `rbac-matrix.json` (rôles, 30 permissions et navigation). Le frontend l'importe directement ; `backend/src/__tests__/rbac-matrix.test.ts` vérifie que le backend applique la même matrice et `src/lib/__tests__/permissions-sync.test.ts` détecte toute dérive des valeurs frontend/backend.
-
-Toutes les routes admin sensibles sont protégées par `<RequirePermission>` côté frontend ET filtrées côté backend (cf. tickets).
-
-## Documentation détaillée
-
-- [docs/README.md](docs/README.md) — index général
-- [docs/api-agent.md](docs/api-agent.md) — API agent (Bearer + scopes + idempotency)
-- [docs/architecture/API_CONTRACTS.md](docs/architecture/API_CONTRACTS.md) — conventions d'API
-- [docs/operations/RUNBOOK.md](docs/operations/RUNBOOK.md) — exploitation
-- [docs/deploiement/](docs/deploiement/) — déploiement VPS (Docker + GitHub Actions)
-- [docs/optimisation/](docs/optimisation/) — bundles, perf, SEO
-- [docs/accounting/](docs/accounting/), [docs/admin/](docs/admin/), [docs/projet/](docs/projet/) — modules
+La CI s'exécute sur les pull requests vers `main` et les pushes sur `main`. Le
+workflow de déploiement s'exécute après une CI réussie, ou manuellement, et
+met à jour le checkout VPS avant de reconstruire `docker-compose.prod.yml`.
+Il y a une courte interruption lors du remplacement du conteneur. Les détails
+opérationnels et le rollback sont dans le [runbook](docs/operations/RUNBOOK.md).
 
 ## Licence
 
