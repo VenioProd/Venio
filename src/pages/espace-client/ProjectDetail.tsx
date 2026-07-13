@@ -12,6 +12,7 @@ import type {
 } from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
 import ClientProjectChat from '../../components/ClientProjectChat'
+import ProjectCollaborators from '../../components/ProjectCollaborators'
 import './ClientPortal.css'
 
 interface TaskProgress {
@@ -364,6 +365,26 @@ const ClientProjectDetail = () => {
               </svg>
               <span>Messages</span>
             </button>
+            {accessRole === 'OWNER' && (
+              <button
+                className={`client-project-tab ${activeTab === 'collaborators' ? 'active' : ''}`}
+                onClick={() => setActiveTab('collaborators')}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Collaborateurs</span>
+              </button>
+            )}
           </div>
         </>
       )}
@@ -639,6 +660,12 @@ const ClientProjectDetail = () => {
       {activeTab === 'messages' && id && (
         <div className="client-project-content">
           <ClientProjectChat projectId={id} canComment={accessRole !== 'VIEWER'} />
+        </div>
+      )}
+
+      {activeTab === 'collaborators' && id && accessRole === 'OWNER' && (
+        <div className="client-project-content">
+          <ProjectCollaborators projectId={id} canManage={accessRole === 'OWNER'} />
         </div>
       )}
     </div>

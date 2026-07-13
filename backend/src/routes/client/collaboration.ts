@@ -57,7 +57,11 @@ router.get('/:projectId/collaborators', async (req: Request, res: Response, next
 router.post(
   '/:projectId/collaborators',
   param('projectId').isMongoId(),
-  body('userId').isMongoId().withMessage('userId doit être un ObjectId valide'),
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('email doit être une adresse valide')
+    .customSanitizer((value) => String(value).toLowerCase()),
   body('role').isIn(['VIEWER', 'EDITOR']).withMessage('role doit être VIEWER ou EDITOR'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -65,11 +69,15 @@ router.post(
       const access = await ownerAccess(req, res)
       if (!access) return
 
-      if (req.body.userId === req.user!.id) {
+      // This is an exact, normalized lookup only. Deliberately do not expose a
+      // client directory or a search endpoint from the project space.
+      const email = String(req.body.email).trim().toLowerCase()
+      const user = await User.findOne({ email, role: 'CLIENT', isActive: { $ne: false } }).select('_id')
+      if (!user) return res.status(422).json({ error: 'Client actif introuvable pour cette adresse' })
+
+      if (String(user._id) === req.user!.id) {
         return res.status(422).json({ error: 'Le propriétaire a déjà accès au projet' })
       }
-      const user = await User.findOne({ _id: req.body.userId, role: 'CLIENT', isActive: { $ne: false } }).select('_id')
-      if (!user) return res.status(422).json({ error: 'Le collaborateur doit être un client actif' })
 
       const collaborator = await ProjectMember.create({
         project: access.project._id,
