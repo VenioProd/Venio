@@ -63,6 +63,10 @@ const schema = new Schema<IEducationSession>(
 )
 
 schema.index({ owner: 1, classId: 1, date: -1, deletedAt: 1 })
+// Cockpit/calendar queries span classes but always scope the owner and active records.
+schema.index({ owner: 1, deletedAt: 1, date: 1 })
+// Attendance edits recalculate one learner's counters from their past sessions.
+schema.index({ owner: 1, 'attendance.studentId': 1, deletedAt: 1 })
 schema.index({ title: 'text', theme: 'text', recap: 'text' })
 
 export default mongoose.model<IEducationSession>('EducationSession', schema)
