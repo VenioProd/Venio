@@ -31,7 +31,7 @@ Les listes par classe, recherches `$text`, liens notes/documents et contraintes 
 ## Sauvegarde cohérente
 
 1. Prévoir une courte fenêtre sans import ni modification pédagogique, ou placer l'application en maintenance, afin que MongoDB et les uploads soient capturés au même instant logique.
-2. Préparer les variables. `MONGODB_URI` et la clé publique `age` viennent du gestionnaire de secrets et ne sont pas imprimés par ces commandes.
+2. Préparer les variables. `MONGODB_URI` est l'URI complète de la base Venio (par exemple avec `/venio` avant les paramètres) ; ne pas lui ajouter une seconde fois le nom de base. L'URI et la clé publique `age` viennent du gestionnaire de secrets et ne sont pas imprimées par ces commandes.
 
 ```bash
 set -euo pipefail
@@ -58,7 +58,7 @@ collections=(
 
 ```bash
 mongodump --version >"$backup_dir/mongodump-version.txt"
-mongosh "$MONGODB_URI/$MONGODB_DB" --quiet --eval '
+mongosh "$MONGODB_URI" --quiet --eval '
   const names = ["educationclasses", "educationstudents", "educationsessions", "educationassignments", "educationsubmissions", "educationnotes", "educationdocuments", "educationtemplates", "educationactivitylogs", "educationaigenerations"];
   print(JSON.stringify({ capturedAt: new Date().toISOString(), serverVersion: db.version(), collections: Object.fromEntries(names.map((name) => [name, db.getCollection(name).countDocuments({})])) }, null, 2));
 ' >"$backup_dir/mongo-inventory.json"
@@ -108,9 +108,20 @@ Ne supprimer la copie locale qu'après réception et test de lecture de la copie
 
 Répéter cet exercice après un changement de schéma notable et à la cadence RPO de l'équipe.
 
-1. Télécharger l'objet chiffré vers une machine d'administration isolée, déchiffrer avec une identité `age` protégée, puis vérifier les empreintes avant toute restauration.
+1. Télécharger l'objet chiffré vers une machine d'administration isolée, définir explicitement le lot et les chemins de cette session, déchiffrer avec une identité `age` protégée, puis vérifier les empreintes avant toute restauration.
 
 ```bash
+set -euo pipefail
+umask 077
+export BACKUP_ROOT='/var/backups/venio/education'
+export BACKUP_LABEL='<label-du-manifeste>'
+export EDUCATION_UPLOADS_DIR='/chemin/isole/vers/uploads/education'
+collections=(
+  educationclasses educationstudents educationsessions
+  educationassignments educationsubmissions educationnotes educationdocuments
+  educationtemplates educationactivitylogs educationaigenerations
+)
+
 age --decrypt --identity "$AGE_IDENTITY_FILE" --output restored.tar.gz "$BACKUP_LABEL.tar.gz.age"
 mkdir -p "$BACKUP_ROOT/restore-$BACKUP_LABEL"
 tar -C "$BACKUP_ROOT/restore-$BACKUP_LABEL" -xzf restored.tar.gz
