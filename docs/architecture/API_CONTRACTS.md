@@ -126,5 +126,8 @@ token. Il est appliqué en mémoire, donc par processus ; les réponses exposent
   comptant pas les réponses réussies. Les demandes de réinitialisation de mot
   de passe sont limitées à 3 par IP sur 15 minutes.
 
-Des limites supplémentaires existent par route. Les clients doivent traiter les
-réponses 4xx/429, plutôt que supposer qu'une taille ou un débit est illimité.
+Pour les routes humaines et administratives qui utilisent ce parser général,
+un JSON invalide répond `400 MALFORMED_JSON` et un body qui dépasse 2 MiB
+répond `413 PAYLOAD_TOO_LARGE`, sous la forme `{ error, code }`. Des limites
+supplémentaires existent par route. Les clients doivent traiter les réponses
+4xx/429, plutôt que supposer qu'une taille ou un débit est illimité.

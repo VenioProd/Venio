@@ -85,6 +85,7 @@ import { initSentry, Sentry } from './lib/sentry.js'
 import auth from './middleware/auth.js'
 import requireMfa from './middleware/mfa.js'
 import apiNotFound from './middleware/apiNotFound.js'
+import { jsonBodyErrorHandler } from './middleware/jsonBodyErrors.js'
 
 dotenv.config()
 
@@ -384,6 +385,10 @@ app.get('{*path}', (req: Request, res: Response) => {
 // Sentry error handler — doit être AVANT le notre, capture les erreurs avant qu'on les
 // transforme en réponse JSON. No-op si Sentry désactivé (DSN absent).
 Sentry.setupExpressErrorHandler(app)
+
+// Erreurs du parser JSON général : contrat stable pour les clients humains et
+// administratifs. Les erreurs agent/external gardent leurs handlers dédiés.
+app.use(jsonBodyErrorHandler)
 
 // Global error handler — hide stack traces in production
 app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, res: Response, _next: NextFunction) => {
