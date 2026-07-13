@@ -146,7 +146,7 @@ export default function EducationWorkspace() {
   const [classesError, setClassesError] = useState<string | null>(null)
   const [profileState, setProfileState] = useState<{
     student: EducationStudent
-    followUpAlert: EducationDashboardAlert
+    followUpAlert: EducationDashboardAlert | null
   } | null>(null)
 
   const refreshDashboard = useCallback(async () => {
@@ -451,6 +451,25 @@ export default function EducationWorkspace() {
             setSelectedClassId(id)
             setSearchOpen(false)
             setView('classes')
+          }}
+          onPickSession={(id) => {
+            setPendingSessionId(id)
+            setSearchOpen(false)
+            setView('sessions')
+          }}
+          onPickAssignment={(id) => {
+            setPendingAssignmentId(id)
+            setSearchOpen(false)
+            setView('assignments')
+          }}
+          onPickStudent={async (id) => {
+            try {
+              const result = await getStudent(id)
+              setProfileState({ student: result.student, followUpAlert: null })
+              setSearchOpen(false)
+            } catch (err) {
+              setDashboardError(err instanceof Error ? err.message : 'Impossible d’ouvrir la fiche étudiant')
+            }
           }}
         />
       )}

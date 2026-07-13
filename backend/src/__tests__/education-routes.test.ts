@@ -178,6 +178,67 @@ describe('education routes', () => {
     expect(found.body.results.notes).toHaveLength(1)
   })
 
+  it('Quickfind: expose uniquement les contextes documentaires encore accessibles au propriétaire', async () => {
+    const { EducationClass, EducationDocument } = await import('../models/education/index.js')
+    await EducationDocument.init()
+
+    const { body: classBody } = await request(app)
+      .post('/api/admin/education/classes')
+      .send({ name: 'BTS Référence', school: 'EMA' })
+      .expect(201)
+    const classId = classBody.class._id
+    const { body: sessionBody } = await request(app)
+      .post('/api/admin/education/sessions')
+      .send({ classId, title: 'Séance Référence', date: new Date().toISOString() })
+      .expect(201)
+    const { body: assignmentBody } = await request(app)
+      .post('/api/admin/education/assignments')
+      .send({ classId, title: 'Devoir Référence' })
+      .expect(201)
+    const { body: studentBody } = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId, firstName: 'Lina', lastName: 'Référence' })
+      .expect(201)
+    const foreignClass = await EducationClass.create({
+      owner: new mongoose.Types.ObjectId(),
+      name: 'Classe privée',
+      school: 'Autre',
+    })
+
+    await EducationDocument.create([
+      { owner: OWNER_ID, title: 'Référence classe', parentType: 'class', parentId: classId },
+      { owner: OWNER_ID, title: 'Référence séance', parentType: 'session', parentId: sessionBody.session._id },
+      { owner: OWNER_ID, title: 'Référence devoir', parentType: 'assignment', parentId: assignmentBody.assignment._id },
+      { owner: OWNER_ID, title: 'Référence étudiant', parentType: 'student', parentId: studentBody.student._id },
+      { owner: OWNER_ID, title: 'Référence seule', parentType: 'standalone', parentId: null },
+      { owner: OWNER_ID, title: 'Référence privée', parentType: 'class', parentId: foreignClass._id },
+    ])
+
+    const found = await request(app).get('/api/admin/education/search?q=Référence').expect(200)
+    const documents = found.body.results.documents as Array<{ title: string; parentContext: Record<string, unknown> }>
+    const byTitle = new Map(documents.map((document) => [document.title, document.parentContext]))
+
+    expect(byTitle.get('Référence classe')).toEqual({
+      state: 'available',
+      target: { kind: 'class', id: classId, label: 'BTS Référence', school: 'EMA' },
+    })
+    expect(byTitle.get('Référence séance')).toEqual({
+      state: 'available',
+      target: { kind: 'session', id: sessionBody.session._id, label: 'Séance Référence' },
+    })
+    expect(byTitle.get('Référence devoir')).toEqual({
+      state: 'available',
+      target: { kind: 'assignment', id: assignmentBody.assignment._id, label: 'Devoir Référence' },
+    })
+    expect(byTitle.get('Référence étudiant')).toEqual({
+      state: 'available',
+      target: { kind: 'student', id: studentBody.student._id, label: 'Lina Référence' },
+    })
+    expect(byTitle.get('Référence seule')).toEqual({ state: 'unavailable', reason: 'NO_PARENT' })
+    // Aucun libellé ni identifiant de la classe étrangère ne doit fuiter.
+    expect(byTitle.get('Référence privée')).toEqual({ state: 'unavailable', reason: 'TARGET_UNAVAILABLE' })
+  })
+
   it('dashboard: counters cohérents', async () => {
     const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     await request(app)
