@@ -187,11 +187,12 @@ describe('PATCH /api/v1/agent/dev/issues/:id — labels + dueDate', () => {
 })
 
 describe('POST /api/v1/agent/dev/issues — labels + dueDate', () => {
-  it('persists labels and dueDate on create', async () => {
+  it('persists labels, dueDate and the exact creator model on create', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:dev'])
     const res = await request(app)
       .post('/api/v1/agent/dev/issues')
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .set('X-Agent-Model', 'openai/gpt-5.5-codex')
       .send({
         project: String(projectId),
         title: 'New issue with metadata',
@@ -202,6 +203,10 @@ describe('POST /api/v1/agent/dev/issues — labels + dueDate', () => {
     expect(res.body.labels).toEqual(['backend', 'p1'])
     expect(new Date(res.body.dueDate).toISOString().startsWith('2026-09-01')).toBe(true)
     expect(res.body.identifier).toMatch(/^VEN-\d+$/)
+    expect(res.body.createdByModel).toBe('openai/gpt-5.5-codex')
+
+    const stored = await DevIssue.findById(res.body._id).lean()
+    expect(stored?.createdByModel).toBe('openai/gpt-5.5-codex')
   })
 
   it('persists issue v2 metadata on create and records a created event', async () => {

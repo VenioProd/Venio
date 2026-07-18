@@ -68,6 +68,14 @@ function parseLabels(raw: unknown): string[] {
   ).slice(0, 16)
 }
 
+function parseCreatorModel(req: Request): string | null {
+  const header = req.headers['x-agent-model']
+  const raw = typeof header === 'string' ? header : req.body?.createdByModel
+  if (typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  return trimmed ? trimmed.slice(0, 160) : null
+}
+
 // ─── Stats & overview (read:dev) ─────────────────────────────────────────────
 
 router.get(
@@ -292,6 +300,7 @@ router.post(
         assignee,
         labels: parseLabels(req.body?.labels),
         dueDate,
+        createdByModel: parseCreatorModel(req),
       })
       const changed = applyIssueV2Patch(issue, req.body)
       if (changed.length) await issue.save()
@@ -302,7 +311,12 @@ router.post(
         actor: systemId,
         type: 'created',
         summary: `Issue ${issue.identifier} créée par agent`,
-        metadata: { status: issue.status, priority: issue.priority, type: issue.type },
+        metadata: {
+          status: issue.status,
+          priority: issue.priority,
+          type: issue.type,
+          createdByModel: issue.createdByModel,
+        },
       })
 
       res.locals.audit = {

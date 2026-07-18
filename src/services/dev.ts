@@ -88,6 +88,7 @@ export interface DevIssue {
   source: { kind: 'manual' | 'agent' | 'linear' | 'github' | 'import'; name: string | null } | null
   external: DevIssueExternalRef | null
   agentAssignee: string | null
+  createdByModel: string | null
   acceptanceCriteria: string[]
   subtasks: string[]
   blockedReason: string | null
@@ -312,6 +313,7 @@ export function createDevIssue(data: {
   cycle?: string | null
   external?: Partial<DevIssueExternalRef> | null
   agentAssignee?: string | null
+  createdByModel?: string | null
   acceptanceCriteria?: string[]
   subtasks?: string[]
   blockedReason?: string | null

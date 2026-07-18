@@ -187,6 +187,11 @@ export default function IssueDetailPanel({
             />
           </span>
 
+          <span className="dev-detail-meta-label">Modèle créateur</span>
+          <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: '#cbd5e1' }}>
+            {issue.createdByModel || 'Non renseigné'}
+          </span>
+
           <span className="dev-detail-meta-label">Blocage</span>
           <span className="dev-detail-meta-value">
             <input

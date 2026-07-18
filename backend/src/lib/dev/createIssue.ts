@@ -26,6 +26,7 @@ export interface CreateIssueInput {
   source?: IDevIssue['source']
   external?: IDevIssue['external']
   agentAssignee?: string | null
+  createdByModel?: string | null
   acceptanceCriteria?: string[]
   subtasks?: string[]
   blockedReason?: string | null
@@ -120,6 +121,7 @@ export async function createIssueWithRetry(input: CreateIssueInput): Promise<IDe
     source = null,
     external = null,
     agentAssignee = null,
+    createdByModel = null,
     acceptanceCriteria = [],
     subtasks = [],
     blockedReason = null,
@@ -151,6 +153,7 @@ export async function createIssueWithRetry(input: CreateIssueInput): Promise<IDe
         source,
         external,
         agentAssignee,
+        createdByModel,
         acceptanceCriteria,
         subtasks,
         blockedReason,

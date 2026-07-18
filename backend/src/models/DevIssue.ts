@@ -68,6 +68,7 @@ export interface IDevIssue extends Document {
   source: DevIssueSource | null
   external: DevIssueExternalRef | null
   agentAssignee: string | null
+  createdByModel: string | null
   acceptanceCriteria: string[]
   subtasks: string[]
   blockedReason: string | null
@@ -133,6 +134,7 @@ const devIssueSchema = new Schema<IDevIssue>(
       default: null,
     },
     agentAssignee: { type: String, default: null, trim: true, maxlength: 80, index: true },
+    createdByModel: { type: String, default: null, trim: true, maxlength: 160 },
     acceptanceCriteria: { type: [String], default: [] },
     subtasks: { type: [String], default: [] },
     blockedReason: { type: String, default: null, maxlength: 2000 },

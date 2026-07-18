@@ -101,6 +101,10 @@ function issueIdentifier(issue: DevIssue) {
   return project ? `${project.key}-${issue.number}` : issue.identifier
 }
 
+function creatorModelLabel(issue: DevIssue): string {
+  return issue.createdByModel || 'Non renseigné'
+}
+
 const DevWorkspace = () => {
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
@@ -748,6 +752,12 @@ const DevWorkspace = () => {
             </span>
           ))}
           {issue.labels.length > 2 && <span className="dev-row-label">+{issue.labels.length - 2}</span>}
+        </span>
+        <span
+          className={`dev-row-model${issue.createdByModel ? '' : ' unknown'}`}
+          title={`Modèle créateur : ${creatorModelLabel(issue)}`}
+        >
+          {creatorModelLabel(issue)}
         </span>
         <span className="dev-row-date">{formatRelative(issue.updatedAt)}</span>
         <span

@@ -224,6 +224,10 @@ Endpoints:
 - `POST /api/v1/agent/dev/issues/:id/comments`
 - `POST /api/v1/agent/dev/issues/:id/agent-status`
 
+À la création d'une issue par agent, transmettre le modèle exact via l'en-tête
+`X-Agent-Model` (par exemple `openai/gpt-5.5-codex`). La valeur est persistée
+dans `createdByModel` et affichée dans la colonne « Modèle » du tracker.
+
 Objectif:
 
 - Kuro peut creer une issue depuis Telegram ou une erreur CI.
