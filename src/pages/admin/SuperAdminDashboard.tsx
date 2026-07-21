@@ -1,36 +1,25 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from 'recharts'
 import { AlertTriangle, FolderKanban, Users, TrendingUp, Plus, ShieldCheck, Receipt, GitBranch } from 'lucide-react'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonRow } from '../../components/Skeleton'
 import {
   DashKpiCard,
-  DashAlertBanner,
   DashSection,
   InboxStream,
   TwoColumnGrid,
   PeriodSelector,
+  AttentionPanel,
+  StackedStatusBar,
+  HorizontalBarList,
   type Period,
+  type AttentionItem,
 } from '../../components/dashboard'
-import type { AlertItem } from '../../components/dashboard'
 import PulseStatus from '../../components/dashboard/PulseStatus'
-import KpiGrid2x2 from '../../components/dashboard/KpiGrid2x2'
 import FinancialChart from '../../components/dashboard/FinancialChart'
 import type { PulseCheck } from '../../components/dashboard/types'
+import { ACCENT, STATUS, PROJECT_STATUS_COLORS } from '../../lib/chartColors'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -121,11 +110,22 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   TERMINE: 'Terminé',
 }
 
-const STATUS_COLORS = ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b']
-
 const formatEUR = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k €` : `${n.toLocaleString('fr-FR')} €`)
 
 const formatMonth = (y: number, m: number) => new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' })
+
+/** hex (#rrggbb) → "r, g, b" — pour les variables CSS --dash-kpi-accent-rgb. */
+const hexToRgbTriplet = (hex: string): string => {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `${r}, ${g}, ${b}`
+}
+
+const ACCENT_RGB = hexToRgbTriplet(ACCENT)
+const WARNING_RGB = hexToRgbTriplet(STATUS.warning)
+const GOOD_RGB = hexToRgbTriplet(STATUS.good)
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth()
@@ -161,18 +161,29 @@ const SuperAdminDashboard = () => {
     }
   }, [refresh, period])
 
-  const alerts: AlertItem[] = useMemo(() => {
+  // ─── Attention requise : alertes mappées vers un niveau de gravité ───
+  const attentionItems: AttentionItem[] = useMemo(() => {
     if (!data) return []
     return [
-      { label: 'Tâches en retard', count: data.alerts.overdueTasks, to: '/admin/gestion' },
-      { label: 'Briefs P1 dépassés', count: data.alerts.overdueBriefsP1, to: '/admin/gestion?view=briefs' },
-      { label: 'Actions CRM en retard', count: data.alerts.overdueLeads, to: '/admin/crm' },
-      { label: 'Leads froids', count: data.alerts.coldLeads, to: '/admin/crm', tone: 'warning' },
-      { label: 'Projets sans activité 14j+', count: data.alerts.staleProjects, to: '/admin/gestion', tone: 'warning' },
+      {
+        label: 'Briefs P1 dépassés',
+        count: data.alerts.overdueBriefsP1,
+        severity: 'critical',
+        to: '/admin/gestion?view=briefs',
+      },
+      { label: 'Tâches en retard', count: data.alerts.overdueTasks, severity: 'serious', to: '/admin/gestion' },
+      { label: 'Actions CRM en retard', count: data.alerts.overdueLeads, severity: 'serious', to: '/admin/crm' },
+      { label: 'Leads froids', count: data.alerts.coldLeads, severity: 'warning', to: '/admin/crm' },
+      {
+        label: 'Projets sans activité 14j+',
+        count: data.alerts.staleProjects,
+        severity: 'warning',
+        to: '/admin/gestion',
+      },
     ]
   }, [data])
 
-  const trendData = useMemo(() => {
+  const revenueTrendSeries = useMemo(() => {
     if (!data) return []
     return data.business.revenueTrend.map((r) => ({
       month: formatMonth(r.year, r.month),
@@ -180,20 +191,27 @@ const SuperAdminDashboard = () => {
     }))
   }, [data])
 
-  const projectsPie = useMemo(() => {
+  const caSparkline = useMemo(() => data?.business.revenueTrend.map((r) => r.total) ?? [], [data])
+
+  // ─── Projets par statut : segments de la barre empilée ───
+  const projectStatusSegments = useMemo(() => {
     if (!data) return []
     return Object.entries(data.operations.projectsByStatus).map(([status, count]) => ({
-      name: PROJECT_STATUS_LABELS[status] || status,
-      value: count,
+      key: status,
+      label: PROJECT_STATUS_LABELS[status] || status,
+      count,
+      color: PROJECT_STATUS_COLORS[status] || STATUS.neutral,
     }))
   }, [data])
 
-  const teamLoadData = useMemo(() => {
+  // ─── Charge par admin : barres horizontales (magnitude = tâches ouvertes) ───
+  const teamLoadItems = useMemo(() => {
     if (!data) return []
     return data.team.load.map((m) => ({
-      name: m.name?.split(' ')[0] || m.email,
-      Tâches: m.total - m.overdue,
-      Retard: m.overdue,
+      key: m._id,
+      label: m.name?.split(' ')[0] || m.email,
+      value: m.total,
+      hint: m.overdue > 0 ? `${m.overdue} retard` : undefined,
     }))
   }, [data])
 
@@ -228,106 +246,88 @@ const SuperAdminDashboard = () => {
         </div>
       ) : data ? (
         <>
-          {/* ─── Alertes ─── */}
-          <DashAlertBanner alerts={alerts} />
+          {/* ─── 1. Rangée de KPI ─── */}
+          <div className="dash-kpi-row" style={{ marginTop: 20 }}>
+            <DashKpiCard
+              label="CA · mois"
+              value={formatEUR(data.kpis.ca.value)}
+              accentColor={ACCENT}
+              accentRgb={ACCENT_RGB}
+              delta={data.kpis.ca.delta}
+              objective={data.kpis.ca.objective}
+              sparkline={caSparkline}
+            />
+            <DashKpiCard
+              label="Pipeline"
+              value={formatEUR(data.kpis.pipeline.value)}
+              accentColor={ACCENT}
+              accentRgb={ACCENT_RGB}
+              delta={data.kpis.pipeline.delta}
+              to="/admin/crm"
+            />
+            <DashKpiCard
+              label="Leads chauds"
+              value={data.kpis.hotLeads.value}
+              accentColor={STATUS.warning}
+              accentRgb={WARNING_RGB}
+              to="/admin/crm"
+            />
+            <DashKpiCard
+              label="Projets actifs"
+              value={data.kpis.activeProjects.value}
+              accentColor={STATUS.good}
+              accentRgb={GOOD_RGB}
+            />
+          </div>
 
-          {/* ─── Inbox + Analytics (2-column) ─── */}
+          {/* ─── 2. Chiffre d'affaires ─── */}
+          <DashSection title="Chiffre d'affaires" icon={<TrendingUp size={16} />}>
+            {revenueTrendSeries.length > 0 ? (
+              <FinancialChart
+                data={revenueTrendSeries.map((t) => ({ ts: t.month, value: t.ca }))}
+                label="CA facturé · 6 mois"
+                currentValue={formatEUR(data.kpis.ca.value)}
+              />
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Aucune donnée de facturation</p>
+            )}
+          </DashSection>
+
+          {/* ─── 3. Attention requise ─── */}
+          <DashSection title="Attention requise" icon={<AlertTriangle size={16} />}>
+            <AttentionPanel items={attentionItems} />
+          </DashSection>
+
+          {/* ─── Inbox + Pulse (2-colonnes) ─── */}
           <TwoColumnGrid
             left={<InboxStream />}
             right={
-              <DashSection title="Analytics" icon={<TrendingUp size={16} />}>
+              <DashSection title="Pulse" icon={<TrendingUp size={16} />}>
                 <PulseStatus checks={data.pulseChecks} />
-                <div style={{ marginTop: 12 }}>
-                  <KpiGrid2x2
-                    kpis={[
-                      {
-                        label: 'CA · mois',
-                        value: formatEUR(data.kpis.ca.value),
-                        accentColor: 'var(--primary)',
-                        accentRgb: '14, 165, 233',
-                        delta: data.kpis.ca.delta,
-                        objective: data.kpis.ca.objective,
-                      },
-                      {
-                        label: 'Pipeline',
-                        value: formatEUR(data.kpis.pipeline.value),
-                        accentColor: 'var(--primary)',
-                        accentRgb: '14, 165, 233',
-                        delta: data.kpis.pipeline.delta,
-                        to: '/admin/crm',
-                      },
-                      {
-                        label: 'Leads chauds',
-                        value: data.kpis.hotLeads.value,
-                        accentColor: '#f59e0b',
-                        accentRgb: '245, 158, 11',
-                        to: '/admin/crm',
-                      },
-                      {
-                        label: 'Projets actifs',
-                        value: data.kpis.activeProjects.value,
-                        accentColor: '#22c55e',
-                        accentRgb: '34, 197, 94',
-                      },
-                    ]}
-                  />
-                </div>
-                {trendData.length > 0 && (
-                  <div style={{ marginTop: 12 }}>
-                    <FinancialChart
-                      data={trendData.map((t) => ({ ts: t.month, value: t.ca }))}
-                      label="CA + Volume · 6 mois"
-                      currentValue={formatEUR(data.kpis.ca.value)}
-                    />
-                  </div>
-                )}
               </DashSection>
             }
           />
 
-          {/* ─── Opérations ─── */}
+          {/* ─── 4 & Opérations ─── */}
           <DashSection title="Opérations" icon={<FolderKanban size={16} />}>
             <div className="dash-twocol-grid">
               <div className="dash-subcard">
                 <h3 className="dash-subcard__title">Projets par statut ({data.operations.activeProjects} actifs)</h3>
-                {projectsPie.length > 0 ? (
-                  <div style={{ height: 200 }}>
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie
-                          data={projectsPie}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={45}
-                          outerRadius={75}
-                          paddingAngle={2}
-                        >
-                          {projectsPie.map((_, i) => (
-                            <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Aucun projet actif</p>
-                )}
+                <StackedStatusBar segments={projectStatusSegments} />
               </div>
               <div className="dash-subcard">
                 <h3 className="dash-subcard__title">Briefs par priorité</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(['P1', 'P2', 'P3'] as const).map((p) => {
                     const count = data.operations.briefsByPriority[p] || 0
-                    const color = p === 'P1' ? '#ef4444' : p === 'P2' ? '#f59e0b' : '#64748b'
+                    const color = p === 'P1' ? 'var(--critical)' : p === 'P2' ? 'var(--warning)' : 'var(--text-muted)'
                     return (
                       <div key={p} className="dash-brief-row">
                         <span style={{ fontSize: 13 }}>
                           <strong style={{ color }}>{p}</strong> —{' '}
                           {p === 'P1' ? 'Urgent' : p === 'P2' ? 'Important' : 'Normal'}
                         </span>
-                        <strong style={{ color, fontSize: 16 }}>{count}</strong>
+                        <strong style={{ color, fontSize: 16, fontVariantNumeric: 'tabular-nums' }}>{count}</strong>
                       </div>
                     )
                   })}
@@ -336,48 +336,36 @@ const SuperAdminDashboard = () => {
             </div>
           </DashSection>
 
-          {/* ─── Équipe ─── */}
+          {/* ─── 5. Équipe / Charge par admin ─── */}
           <DashSection title="Équipe" icon={<Users size={16} />}>
             <div className="admin-stats-grid" style={{ marginBottom: 16 }}>
               <DashKpiCard
                 label="Clients"
                 value={data.team.clients}
-                accentColor="var(--primary)"
-                accentRgb="14, 165, 233"
+                accentColor={ACCENT}
+                accentRgb={ACCENT_RGB}
                 to="/admin/comptes-clients"
               />
               <DashKpiCard
                 label="Admins"
                 value={data.team.admins}
-                accentColor="var(--primary)"
-                accentRgb="14, 165, 233"
+                accentColor={ACCENT}
+                accentRgb={ACCENT_RGB}
                 to="/admin/comptes-admin"
                 icon={<ShieldCheck size={14} />}
               />
               <DashKpiCard
                 label="Stagiaires"
                 value={data.team.interns}
-                accentColor="#f59e0b"
-                accentRgb="245, 158, 11"
+                accentColor={STATUS.warning}
+                accentRgb={WARNING_RGB}
                 to="/admin/stagiaires"
               />
             </div>
-            {teamLoadData.length > 0 && (
+            {teamLoadItems.length > 0 && (
               <div className="dash-subcard">
                 <h3 className="dash-subcard__title">Charge par admin (tâches ouvertes)</h3>
-                <div style={{ height: 240 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={teamLoadData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
-                      <YAxis stroke="#94a3b8" fontSize={11} />
-                      <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="Tâches" stackId="a" fill="#0ea5e9" />
-                      <Bar dataKey="Retard" stackId="a" fill="#ef4444" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <HorizontalBarList items={teamLoadItems} color={ACCENT} />
               </div>
             )}
           </DashSection>

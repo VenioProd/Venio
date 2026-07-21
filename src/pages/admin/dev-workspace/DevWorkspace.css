@@ -1074,22 +1074,206 @@
   background: var(--primary);
 }
 
-.dev-command-metrics {
+/* ─── Mini-stats (command center) ───────────────────────────────────────── */
+
+.dev-viz-ministats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(84px, 1fr));
   gap: 8px;
-  color: #cbd5e1;
+}
+
+.dev-viz-ministat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-left: 2px solid rgba(148, 163, 184, 0.4);
+  border-radius: 0;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.dev-viz-ministat-value {
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dev-viz-ministat-label {
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dev-viz-ministat.tone-critical {
+  border-left-color: var(--critical);
+}
+
+.dev-viz-ministat.tone-critical .dev-viz-ministat-value {
+  color: var(--critical);
+}
+
+.dev-viz-ministat.tone-serious {
+  border-left-color: var(--serious);
+}
+
+.dev-viz-ministat.tone-serious .dev-viz-ministat-value {
+  color: var(--serious);
+}
+
+.dev-viz-ministat.tone-good {
+  border-left-color: var(--good);
+}
+
+.dev-viz-ministat.tone-good .dev-viz-ministat-value {
+  color: var(--good);
+}
+
+/* ─── Bandeau de visualisations ──────────────────────────────────────────── */
+
+.dev-viz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.dev-viz-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0;
+  background: var(--bg-card);
+}
+
+.dev-viz-card h3 {
+  margin: 0 0 6px;
+  color: #e2e8f0;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.dev-viz-loading,
+.dev-viz-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  color: #64748b;
   font-size: 12px;
 }
 
-.dev-command-metrics span {
+.dev-viz-tooltip {
+  display: grid;
+  gap: 3px;
+  padding: 7px 10px;
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-radius: 4px;
+  background: #000;
+  color: #cbd5e1;
+  font-size: 11px;
+  box-shadow: 0 0 18px rgba(14, 165, 233, 0.28);
+}
+
+.dev-viz-tooltip strong {
+  color: #f8fafc;
+  font-size: 11px;
+}
+
+/* Barre empilée par statut : segments avec 2px de gap, coins nets. */
+.dev-viz-stackbar-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.dev-viz-stackbar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.dev-viz-stackbar-seg {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+
+.dev-viz-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.dev-viz-legend li {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+}
+
+.dev-viz-legend b {
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+.dev-viz-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+/* Listes de barres horizontales (priorité / modèle créateur). */
+.dev-viz-barlist {
+  display: grid;
   gap: 7px;
-  padding: 8px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 0;
-  background: rgba(15, 23, 42, 0.55);
+}
+
+.dev-viz-barlist-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 30%) 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-viz-barlist-label {
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dev-viz-barlist-track {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.dev-viz-barlist-fill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+
+.dev-viz-barlist-value {
+  min-width: 20px;
+  color: #f8fafc;
+  font-size: 11.5px;
+  font-weight: 650;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .dev-daily-priorities {

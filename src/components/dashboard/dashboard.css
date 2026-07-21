@@ -112,18 +112,20 @@
   font-weight: 700;
   color: var(--dash-kpi-accent, var(--primary));
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .dash-kpi__delta {
   font-size: 11px;
-  color: #86efac;
+  color: var(--good);
   display: flex;
   align-items: center;
   gap: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .dash-kpi__delta--neg {
-  color: #fca5a5;
+  color: var(--critical);
 }
 .dash-kpi__delta--neutral {
   color: var(--text-muted);
@@ -647,4 +649,191 @@
 .dash-twocol-mobile__tab--active {
   color: var(--primary);
   border-bottom-color: var(--primary);
+}
+
+/* ── KPI tile row (bandeau haut de dashboard) ── */
+.dash-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .dash-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── AttentionPanel ("Attention requise") ── */
+.dash-attention {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-attention__empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dash-attention__link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.dash-attention__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-radius: 0;
+}
+
+.dash-attention__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.dash-attention__count {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-pill {
+  font-size: 9px;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.dash-pill--critical {
+  background: var(--critical-surface);
+  color: var(--critical);
+}
+.dash-pill--serious {
+  background: var(--serious-surface);
+  color: var(--serious);
+}
+.dash-pill--warning {
+  background: var(--warning-surface);
+  color: var(--warning);
+}
+
+/* ── StackedStatusBar ("Projets par statut") ── */
+.dash-status-bar {
+  display: flex;
+  height: 18px;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.dash-status-bar__segment {
+  height: 100%;
+  transition: opacity 0.15s;
+}
+
+.dash-status-bar__segment:hover {
+  opacity: 0.85;
+}
+
+.dash-status-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.dash-status-bar__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dash-status-bar__legend-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.dash-status-bar__legend-count {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── HorizontalBarList ("Charge par admin") ── */
+.dash-hbar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-hbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-hbar-row__label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-hbar-row__overdue {
+  font-size: 10px;
+  color: var(--critical);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dash-hbar-row__track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+.dash-hbar-row__fill {
+  display: block;
+  height: 100%;
+}
+
+.dash-hbar-row__value {
+  width: 30px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }

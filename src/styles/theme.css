@@ -4,6 +4,18 @@
 
 :root {
   --primary-fg: #fff;
+
+  /* Couleur sémantique de statut — état (good/warning/serious/critical),
+     séparée de l'accent cyan et jamais utilisée comme série de graphe.
+     Partagée par les deux thèmes. Miroir JS : src/lib/chartColors.ts */
+  --good: #22c55e;
+  --warning: #f59e0b;
+  --serious: #f97316;
+  --critical: #ef4444;
+  --good-surface: rgba(34, 197, 94, 0.13);
+  --warning-surface: rgba(245, 158, 11, 0.13);
+  --serious-surface: rgba(249, 115, 22, 0.13);
+  --critical-surface: rgba(239, 68, 68, 0.13);
 }
 
 [data-theme="dark"] {
