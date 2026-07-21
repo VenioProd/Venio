@@ -44,7 +44,11 @@ describe('ProjectInvitations', () => {
 
     render(<ProjectInvitations projectId="project-1" canManage />)
 
-    await screen.findByText('Lecteur')
+    // Wait for the initial GET to finish rendering the list (loading -> false) before
+    // interacting. The seeded invitation is an active VIEWER, so its "Révoquer" button
+    // only exists once the list is rendered — unlike the "Lecteur" role <option>, which is
+    // present from the first render and would let the test race ahead of the load.
+    await screen.findByRole('button', { name: 'Révoquer' })
     fireEvent.change(screen.getByLabelText('Rôle accordé'), { target: { value: 'EDITOR' } })
     fireEvent.click(screen.getByRole('button', { name: 'Générer un lien' }))
 
