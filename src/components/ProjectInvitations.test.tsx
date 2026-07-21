@@ -11,7 +11,7 @@ const activeInvitation = {
   _id: 'invitation-1',
   role: 'VIEWER' as const,
   createdAt: '2026-07-13T12:00:00.000Z',
-  expiresAt: '2026-07-20T12:00:00.000Z',
+  expiresAt: '2030-07-20T12:00:00.000Z',
   revokedAt: null,
   usedAt: null,
   usedBy: null,
