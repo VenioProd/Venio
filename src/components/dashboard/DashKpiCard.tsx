@@ -28,20 +28,26 @@ interface DashKpiCardProps {
 }
 
 const DashKpiCard = ({
-  label, value, accentColor, accentRgb, icon, to, delta, objective, sparkline, hint,
+  label,
+  value,
+  accentColor,
+  accentRgb,
+  icon,
+  to,
+  delta,
+  objective,
+  sparkline,
+  hint,
 }: DashKpiCardProps) => {
-  const arrow = delta
-    ? (delta.direction === 'up' ? '↗' : delta.direction === 'down' ? '↘' : '=')
-    : ''
+  const arrow = delta ? (delta.direction === 'up' ? '▲' : delta.direction === 'down' ? '▼' : '=') : ''
   const sign = delta && delta.value > 0 ? '+' : ''
-  const deltaClass = delta?.direction === 'down'
-    ? 'dash-kpi__delta dash-kpi__delta--neg'
-    : delta?.direction === 'flat'
-      ? 'dash-kpi__delta dash-kpi__delta--neutral'
-      : 'dash-kpi__delta'
-  const objPct = objective
-    ? Math.min(100, Math.round((objective.current / objective.target) * 100))
-    : 0
+  const deltaClass =
+    delta?.direction === 'down'
+      ? 'dash-kpi__delta dash-kpi__delta--neg'
+      : delta?.direction === 'flat'
+        ? 'dash-kpi__delta dash-kpi__delta--neutral'
+        : 'dash-kpi__delta'
+  const objPct = objective ? Math.min(100, Math.round((objective.current / objective.target) * 100)) : 0
 
   const card = (
     <div
@@ -58,12 +64,15 @@ const DashKpiCard = ({
       <div className="dash-kpi__value">{value}</div>
       {delta && (
         <div className={deltaClass}>
-          {arrow} {sign}{delta.value}{delta.suffix ?? '%'}
+          {arrow} {sign}
+          {delta.value}
+          {delta.suffix ?? '%'}
         </div>
       )}
       {objective && (
         <div className="dash-kpi__objective">
-          {objective.label ?? 'Objectif'} : {objPct}% ({objective.current.toLocaleString('fr-FR')} / {objective.target.toLocaleString('fr-FR')})
+          {objective.label ?? 'Objectif'} : {objPct}% ({objective.current.toLocaleString('fr-FR')} /{' '}
+          {objective.target.toLocaleString('fr-FR')})
           <div className="dash-kpi__objective-bar">
             <div className="dash-kpi__objective-bar__fill" style={{ width: `${objPct}%` }} />
           </div>
@@ -78,7 +87,13 @@ const DashKpiCard = ({
     </div>
   )
 
-  return to ? <Link to={to} style={{ textDecoration: 'none' }}>{card}</Link> : card
+  return to ? (
+    <Link to={to} style={{ textDecoration: 'none' }}>
+      {card}
+    </Link>
+  ) : (
+    card
+  )
 }
 
 export default DashKpiCard

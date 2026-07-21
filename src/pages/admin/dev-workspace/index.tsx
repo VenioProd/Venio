@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
-  Activity,
   AlertTriangle,
   Check,
   CheckCircle2,
@@ -10,7 +9,6 @@ import {
   CircleDot,
   GitBranch,
   GitPullRequest,
-  Layers3,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -22,6 +20,7 @@ import {
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
+import { ACCENT, DEV_PRIORITY_COLORS, DEV_STATUS_COLORS } from '../../../lib/chartColors'
 import {
   listDevProjects,
   listDevIssues,
@@ -63,6 +62,12 @@ import ProjectCreateModal from './ProjectCreateModal'
 import IssueDetailPanel from './IssueDetailPanel'
 import { ReviewQueue } from './ReviewQueue'
 import CommandPalette from './CommandPalette'
+import { CompletionRing } from './charts/CompletionRing'
+import { MiniStats, type MiniStatItem } from './charts/MiniStats'
+import { VelocityChart } from './charts/VelocityChart'
+import { StatusBreakdownBar } from './charts/StatusBreakdownBar'
+import { HorizontalBarList } from './charts/HorizontalBarList'
+import { buildVelocitySeries, buildCreatorModelRows } from './charts/aggregate'
 import './DevWorkspace.css'
 
 // Persistance des filtres & préférences d'affichage (A4).
@@ -122,6 +127,11 @@ const DevWorkspace = () => {
   const [overview, setOverview] = useState<DevOverview | null>(null)
   const [dailyPriorities, setDailyPriorities] = useState<DevDailyPriorities | null>(null)
   const [stats, setStats] = useState<DevStats | null>(null)
+  // Population complète (tous statuts) du projet courant — alimente les visualisations
+  // dérivées (vélocité par jour, répartition par modèle créateur) qui ont besoin de
+  // voir les issues DONE/CANCELLED masquées par les filtres par défaut de la liste.
+  const [analyticsIssues, setAnalyticsIssues] = useState<DevIssue[]>([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(true)
 
   const [loading, setLoading] = useState(true)
   // Init paresseuse depuis localStorage ; le deep link ?project= garde la priorité.
@@ -224,6 +234,18 @@ const DevWorkspace = () => {
     }
   }, [filters.project])
 
+  const loadAnalyticsIssues = useCallback(async () => {
+    setAnalyticsLoading(true)
+    try {
+      const data = await listDevIssues({ project: filters.project, status: 'all', includeArchived: 'true' })
+      setAnalyticsIssues(data.issues)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [filters.project])
+
   const loadOverview = useCallback(async () => {
     try {
       const data = await fetchDevOverview()
@@ -251,6 +273,9 @@ const DevWorkspace = () => {
     loadStats()
   }, [loadStats])
   useEffect(() => {
+    loadAnalyticsIssues()
+  }, [loadAnalyticsIssues])
+  useEffect(() => {
     loadOverview()
   }, [loadOverview])
   useEffect(() => {
@@ -258,8 +283,8 @@ const DevWorkspace = () => {
   }, [loadDailyPriorities])
 
   const refreshWorkspace = useCallback(async () => {
-    await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
-  }, [loadIssues, loadStats, loadOverview, loadDailyPriorities])
+    await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
+  }, [loadIssues, loadStats, loadOverview, loadDailyPriorities, loadAnalyticsIssues])
 
   const loadIssueDetail = useCallback(
     async (id: string) => {
@@ -410,7 +435,7 @@ const DevWorkspace = () => {
         status: quickCreate.status,
       })
       setQuickCreate((q) => ({ ...q, title: '' }))
-      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
     } catch (err) {
       console.error(err)
     } finally {
@@ -423,7 +448,7 @@ const DevWorkspace = () => {
       const updated = await updateDevIssue(id, patch)
       setIssues((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)))
       if (selectedIssue?._id === id) setSelectedIssue((prev) => (prev ? { ...prev, ...updated } : prev))
-      Promise.all([loadStats(), loadOverview(), loadDailyPriorities()])
+      Promise.all([loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
     } catch (err) {
       console.error(err)
     }
@@ -439,13 +464,13 @@ const DevWorkspace = () => {
     setPendingDelete(null)
     try {
       await deleteDevIssue(pending.issue._id)
-      Promise.all([loadStats(), loadOverview(), loadDailyPriorities()])
+      Promise.all([loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
     } catch (err) {
       console.error(err)
       setIssues((prev) => (prev.some((i) => i._id === pending.issue._id) ? prev : [...prev, pending.issue]))
       setDeleteError(`Échec de la suppression de ${issueIdentifier(pending.issue)} — issue restaurée`)
     }
-  }, [loadStats, loadOverview, loadDailyPriorities])
+  }, [loadStats, loadOverview, loadDailyPriorities, loadAnalyticsIssues])
 
   const undoDelete = () => {
     const pending = pendingDeleteRef.current
@@ -669,7 +694,7 @@ const DevWorkspace = () => {
         console.error(`Bulk : ${failed} mise(s) à jour en échec`, results)
         setBulkError(`${failed} mise(s) à jour en échec`)
       }
-      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities()])
+      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
     } finally {
       setSelectedIds(new Set())
       setLastClickedId(null)
@@ -705,6 +730,46 @@ const DevWorkspace = () => {
   const visibleProjectOverview = showAllProjects ? projectOverview : projectOverview.slice(0, 6)
 
   const globalCompletion = stats ? computeWeightedProgress(stats.byStatus as Record<DevIssueStatus, number>) : 0
+
+  // Bandeau de visualisations — dérivé de `stats` (agrégats serveur) pour les
+  // répartitions statut/priorité, et de `analyticsIssues` (population complète,
+  // tous statuts) pour la vélocité et la répartition par modèle créateur.
+  const miniStats: MiniStatItem[] = useMemo(() => {
+    if (!stats) return []
+    return [
+      { key: 'open', label: 'Ouvertes', value: stats.open, tone: 'neutral' },
+      { key: 'urgent', label: 'Urgentes', value: stats.byPriority.URGENT || 0, tone: 'critical' },
+      { key: 'blocked', label: 'Bloquées', value: stats.byStatus.BLOCKED || 0, tone: 'serious' },
+      { key: 'done14', label: 'Finies · 14j', value: stats.completedRecent, tone: 'good' },
+    ]
+  }, [stats])
+
+  const statusSegments = useMemo(() => {
+    if (!stats) return []
+    return STATUS_ORDER.map((s) => ({
+      key: s,
+      label: STATUS_LABEL[s],
+      value: stats.byStatus[s] || 0,
+      color: DEV_STATUS_COLORS[s],
+    }))
+  }, [stats])
+
+  const priorityRows = useMemo(() => {
+    if (!stats) return []
+    return PRIORITY_ORDER.map((p) => ({
+      key: p,
+      label: PRIORITY_LABEL[p],
+      value: stats.byPriority[p] || 0,
+      color: DEV_PRIORITY_COLORS[p],
+    })).filter((r) => r.value > 0)
+  }, [stats])
+
+  const velocitySeries = useMemo(() => buildVelocitySeries(analyticsIssues, 14), [analyticsIssues])
+
+  const creatorModelRows = useMemo(() => {
+    const rows = buildCreatorModelRows(analyticsIssues, 6)
+    return rows.map((r) => ({ ...r, color: ACCENT }))
+  }, [analyticsIssues])
 
   const renderRow = (issue: DevIssue) => {
     const project = typeof issue.project === 'object' ? issue.project : null
@@ -813,27 +878,45 @@ const DevWorkspace = () => {
           <section className="dev-command-card">
             <div className="dev-command-card-main">
               <span className="dev-kicker">Command center</span>
-              <div className="dev-command-title-row">
-                <h2>{globalCompletion}%</h2>
-                <span>complétion globale</span>
-              </div>
-              <div className="dev-progress-track" aria-label={'Complétion globale ' + globalCompletion + '%'}>
-                <span style={{ width: globalCompletion + '%' }} />
+              <div className="dev-command-ring-row">
+                <CompletionRing percent={globalCompletion} />
+                <div className="dev-command-ring-caption">
+                  <span className="dev-command-ring-value">{globalCompletion}%</span>
+                  <span className="dev-command-ring-label">complétion globale</span>
+                </div>
               </div>
             </div>
-            <div className="dev-command-metrics">
-              <span>
-                <Layers3 size={14} /> {stats.totalProjects} projets
-              </span>
-              <span>
-                <CircleDot size={14} /> {stats.open} ouvertes
-              </span>
-              <span>
-                <Activity size={14} /> {stats.byStatus.IN_PROGRESS + stats.byStatus.IN_REVIEW} actives
-              </span>
-              <span>
-                <Target size={14} /> {stats.completedRecent} finies / 14j
-              </span>
+            <MiniStats items={miniStats} />
+          </section>
+
+          <section className="dev-viz-grid" aria-label="Visualisations du suivi développement">
+            <div className="dev-viz-card">
+              <span className="dev-kicker">Vélocité · 14 derniers jours</span>
+              <h3>Issues terminées / jour</h3>
+              {analyticsLoading ? (
+                <div className="dev-viz-loading">Chargement…</div>
+              ) : (
+                <VelocityChart data={velocitySeries} />
+              )}
+            </div>
+            <div className="dev-viz-card">
+              <span className="dev-kicker">Répartition</span>
+              <h3>Issues par statut</h3>
+              <StatusBreakdownBar segments={statusSegments} />
+            </div>
+            <div className="dev-viz-card">
+              <span className="dev-kicker">Sévérité</span>
+              <h3>Issues par priorité</h3>
+              <HorizontalBarList rows={priorityRows} ariaLabel="Issues par priorité" />
+            </div>
+            <div className="dev-viz-card">
+              <span className="dev-kicker">Origine</span>
+              <h3>Issues par modèle créateur</h3>
+              {analyticsLoading ? (
+                <div className="dev-viz-loading">Chargement…</div>
+              ) : (
+                <HorizontalBarList rows={creatorModelRows} ariaLabel="Issues par modèle créateur" />
+              )}
             </div>
           </section>
 
