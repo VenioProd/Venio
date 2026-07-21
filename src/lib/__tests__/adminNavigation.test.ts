@@ -19,18 +19,18 @@ function user(role: UserRole): User {
 }
 
 describe('VENIO-99 — navigation et cockpit RBAC', () => {
-  it('regroups every visible module into at most five task-oriented zones', () => {
+  it('regroups every visible module into declared task-oriented zones', () => {
     for (const role of ['SUPER_ADMIN', 'ADMIN', 'COMMERCIAL', 'RH', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as UserRole[]) {
       const zones = getVisibleNavigationZones(user(role))
-      expect(zones.length).toBeLessThanOrEqual(5)
+      expect(zones.length).toBeLessThanOrEqual(ADMIN_NAVIGATION_ZONES.length)
       expect(zones.every((zone) => ADMIN_NAVIGATION_ZONES.includes(zone.id))).toBe(true)
     }
   })
 
-  it('keeps the system console exclusive to SUPER_ADMIN in the role matrix', () => {
-    expect(getVisibleNavigationZones(user('SUPER_ADMIN')).some((zone) => zone.id === 'Console système')).toBe(true)
+  it('keeps the administration zone exclusive to SUPER_ADMIN in the role matrix', () => {
+    expect(getVisibleNavigationZones(user('SUPER_ADMIN')).some((zone) => zone.id === 'Administration')).toBe(true)
     for (const role of ['ADMIN', 'COMMERCIAL', 'RH', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as UserRole[]) {
-      expect(getVisibleNavigationZones(user(role)).some((zone) => zone.id === 'Console système')).toBe(false)
+      expect(getVisibleNavigationZones(user(role)).some((zone) => zone.id === 'Administration')).toBe(false)
     }
   })
 

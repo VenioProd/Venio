@@ -4,10 +4,12 @@ import { getVisibleNavigation, NAVIGATION } from './rbac'
 
 export const ADMIN_NAVIGATION_ZONES = [
   'Pilotage',
-  'Relation & projets',
-  'Conformité & finance',
-  'Équipe & produit',
-  'Console système',
+  'Clients & projets',
+  'Contenu & outils',
+  'Finance & conformité',
+  'Équipe',
+  'Analyse & rapports',
+  'Administration',
 ] as const
 
 export type AdminNavigationZone = (typeof ADMIN_NAVIGATION_ZONES)[number]
@@ -15,39 +17,55 @@ type NavigationItem = (typeof NAVIGATION)[number]
 type NavigationId = NavigationItem['id']
 
 /**
+ * Tiroirs déployés par défaut à l'ouverture de la sidebar. Vide : tout est
+ * replié au chargement. Les tiroirs s'ouvrent au survol (desktop, via CSS) ou
+ * au clic/tap de l'en-tête (tactile & clavier) ; seul celui de la page active
+ * reste ouvert.
+ */
+export const DEFAULT_OPEN_ZONES: AdminNavigationZone[] = []
+
+/**
+ * Modules rendus dans le pied de la sidebar (aide, support) plutôt que dans
+ * un tiroir. Ils restent soumis au RBAC comme n'importe quel autre module.
+ */
+const FOOTER_NAVIGATION_IDS: NavigationId[] = ['guide']
+
+/**
  * Task-oriented information architecture. Access remains exclusively defined
  * by rbac-matrix.json; this mapping only changes how authorised modules are
- * grouped and prioritised.
+ * grouped and prioritised. Le regroupement suit l'usage (fréquence + tâche),
+ * pas la permission : `dev` (partagé) ne rejoint donc jamais la zone
+ * Administration, réservée aux outils `manage_admins`/super-admin.
  */
 const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> = {
   home: 'Pilotage',
   dashboard: 'Pilotage',
   'activity-center': 'Pilotage',
   messages: 'Pilotage',
-  reports: 'Pilotage',
-  analytics: 'Pilotage',
-  decisions: 'Pilotage',
-  guide: 'Pilotage',
-  clients: 'Relation & projets',
-  crm: 'Relation & projets',
-  projects: 'Relation & projets',
-  calendar: 'Relation & projets',
-  templates: 'Relation & projets',
-  resources: 'Relation & projets',
-  tickets: 'Relation & projets',
-  'internal-projects': 'Relation & projets',
-  accounting: 'Conformité & finance',
-  qualiopi: 'Conformité & finance',
-  audit: 'Conformité & finance',
-  interns: 'Équipe & produit',
-  emails: 'Équipe & produit',
-  dev: 'Équipe & produit',
-  education: 'Équipe & produit',
-  subsidiaries: 'Équipe & produit',
-  'tool-access': 'Console système',
-  'admin-accounts': 'Console système',
-  agents: 'Console système',
-  health: 'Console système',
+  crm: 'Clients & projets',
+  clients: 'Clients & projets',
+  arrow: 'Clients & projets',
+  projects: 'Clients & projets',
+  tickets: 'Clients & projets',
+  calendar: 'Clients & projets',
+  templates: 'Contenu & outils',
+  resources: 'Contenu & outils',
+  education: 'Contenu & outils',
+  'internal-projects': 'Contenu & outils',
+  dev: 'Contenu & outils',
+  accounting: 'Finance & conformité',
+  qualiopi: 'Finance & conformité',
+  audit: 'Finance & conformité',
+  interns: 'Équipe',
+  emails: 'Équipe',
+  analytics: 'Analyse & rapports',
+  reports: 'Analyse & rapports',
+  decisions: 'Analyse & rapports',
+  'tool-access': 'Administration',
+  'admin-accounts': 'Administration',
+  agents: 'Administration',
+  health: 'Administration',
+  subsidiaries: 'Administration',
 }
 
 export interface NavigationZone {
@@ -57,8 +75,8 @@ export interface NavigationZone {
 
 export function getNavigationZone(item: NavigationItem): AdminNavigationZone {
   // A future matrix entry remains visible only when RBAC allows it and lands
-  // in the product zone until it receives an explicit task classification.
-  return ZONE_BY_NAVIGATION_ID[item.id] ?? 'Équipe & produit'
+  // in the tools zone until it receives an explicit task classification.
+  return ZONE_BY_NAVIGATION_ID[item.id] ?? 'Contenu & outils'
 }
 
 export function getVisibleNavigationZones(user: User | null): NavigationZone[] {
@@ -66,12 +84,19 @@ export function getVisibleNavigationZones(user: User | null): NavigationZone[] {
   for (const zone of ADMIN_NAVIGATION_ZONES) itemsByZone.set(zone, [])
 
   for (const item of getVisibleNavigation(user)) {
+    if (FOOTER_NAVIGATION_IDS.includes(item.id)) continue
     itemsByZone.get(getNavigationZone(item))?.push(item)
   }
 
   return ADMIN_NAVIGATION_ZONES.map((id) => ({ id, items: itemsByZone.get(id) || [] })).filter(
     (zone) => zone.items.length > 0,
   )
+}
+
+/** Modules d'aide/support rendus dans le pied de la sidebar (hors tiroirs). */
+export function getFooterNavigation(user: User | null): NavigationItem[] {
+  const visible = getVisibleNavigation(user)
+  return FOOTER_NAVIGATION_IDS.flatMap((id) => visible.filter((item) => item.id === id))
 }
 
 const MOBILE_NAVIGATION_PRIORITY: NavigationId[] = ['home', 'messages', 'projects', 'crm']

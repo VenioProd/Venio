@@ -4,9 +4,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useMessaging } from '../context/MessagingContext'
 import { NAVIGATION } from '../lib/rbac'
-import { getVisibleNavigationZones } from '../lib/adminNavigation'
+import { DEFAULT_OPEN_ZONES, getFooterNavigation, getVisibleNavigationZones } from '../lib/adminNavigation'
 import { trackAdminEvent } from '../lib/adminAnalytics'
 import {
+  ChevronDown,
   LayoutDashboard,
   Activity,
   BarChart3,
@@ -117,6 +118,20 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
 
   const unreadTotal = useMemo(() => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0), [conversations])
 
+  // Tiroirs fermés au chargement. Ils s'ouvrent au survol (desktop) ou au
+  // focus (clavier) via CSS ; ce state gère l'ouverture au clic/tap, utile en
+  // tactile où le survol n'existe pas. Non persisté : on repart toujours fermé.
+  const [openZones, setOpenZones] = useState<Set<string>>(() => new Set<string>(DEFAULT_OPEN_ZONES))
+
+  const toggleZone = (zone: string) => {
+    setOpenZones((prev) => {
+      const next = new Set(prev)
+      if (next.has(zone)) next.delete(zone)
+      else next.add(zone)
+      return next
+    })
+  }
+
   const [pendingDecisionsCount, setPendingDecisionsCount] = useState(0)
   const drawerRef = useRef<HTMLElement>(null)
   const drawerCloseRef = useRef<HTMLButtonElement>(null)
@@ -167,51 +182,84 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   }
 
   const visibleSections = getVisibleSections(user)
+  const footerNav = getFooterNavigation(user)
+
+  // Zone contenant la page active : elle reste dépliée même si l'utilisateur
+  // l'avait refermée, pour que l'item courant soit toujours visible.
+  const activeZone = useMemo(() => {
+    let bestLabel = ''
+    let bestLength = -1
+    for (const section of visibleSections) {
+      for (const item of section.items) {
+        const matches = item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)
+        if (matches && item.to.length > bestLength) {
+          bestLength = item.to.length
+          bestLabel = section.label
+        }
+      }
+    }
+    return bestLabel
+  }, [visibleSections, location.pathname])
 
   const navSections = (
     <>
-      {visibleSections.map((section) => (
-        <div key={section.label} className="admin-sb-section">
-          <span className="admin-sb-section-label">{section.label}</span>
-          {section.items.map((item) => {
-            const Icon = item.icon
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                title={item.label}
-                className={({ isActive }) => `admin-sb-item${isActive ? ' active' : ''}`}
-                onClick={() =>
-                  trackAdminEvent(
-                    'admin_navigation_selected',
-                    item.to.replace('/admin/', '').replace('/admin', 'home').replace(/-/g, '_'),
+      {visibleSections.map((section) => {
+        const isOpen = collapsed || openZones.has(section.label) || section.label === activeZone
+        return (
+          <div key={section.label} className={`admin-sb-section${isOpen ? ' open' : ''}`}>
+            <button
+              type="button"
+              className="admin-sb-section-header"
+              aria-expanded={isOpen}
+              onClick={() => toggleZone(section.label)}
+            >
+              <span className="admin-sb-section-label">{section.label}</span>
+              <ChevronDown size={13} className="admin-sb-section-chevron" aria-hidden />
+            </button>
+            <div className="admin-sb-section-body">
+              <div className="admin-sb-section-items">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      title={item.label}
+                      className={({ isActive }) => `admin-sb-item${isActive ? ' active' : ''}`}
+                      onClick={() =>
+                        trackAdminEvent(
+                          'admin_navigation_selected',
+                          item.to.replace('/admin/', '').replace('/admin', 'home').replace(/-/g, '_'),
+                        )
+                      }
+                    >
+                      <Icon size={17} className="admin-sb-icon" aria-hidden />
+                      <span className="admin-sb-label">{item.label}</span>
+                      {item.to === '/admin/messages' && unreadTotal > 0 && (
+                        <span
+                          className="admin-sb-badge"
+                          aria-label={`${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
+                        >
+                          {unreadTotal > 99 ? '99+' : unreadTotal}
+                        </span>
+                      )}
+                      {item.to === '/admin/decisions' && pendingDecisionsCount > 0 && (
+                        <span
+                          className="admin-sb-badge"
+                          aria-label={`${pendingDecisionsCount} décision${pendingDecisionsCount > 1 ? 's' : ''} en attente`}
+                        >
+                          {pendingDecisionsCount > 99 ? '99+' : pendingDecisionsCount}
+                        </span>
+                      )}
+                    </NavLink>
                   )
-                }
-              >
-                <Icon size={17} className="admin-sb-icon" aria-hidden />
-                <span className="admin-sb-label">{item.label}</span>
-                {item.to === '/admin/messages' && unreadTotal > 0 && (
-                  <span
-                    className="admin-sb-badge"
-                    aria-label={`${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
-                  >
-                    {unreadTotal > 99 ? '99+' : unreadTotal}
-                  </span>
-                )}
-                {item.to === '/admin/decisions' && pendingDecisionsCount > 0 && (
-                  <span
-                    className="admin-sb-badge"
-                    aria-label={`${pendingDecisionsCount} décision${pendingDecisionsCount > 1 ? 's' : ''} en attente`}
-                  >
-                    {pendingDecisionsCount > 99 ? '99+' : pendingDecisionsCount}
-                  </span>
-                )}
-              </NavLink>
-            )
-          })}
-        </div>
-      ))}
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </>
   )
 
@@ -247,6 +295,21 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
         </div>
 
         <div className="admin-sb-footer">
+          {footerNav.map((item) => {
+            const Icon = ICONS[item.id]
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="admin-sb-footer-btn"
+                title={item.label}
+                onClick={() => navigate(item.screen)}
+              >
+                <Icon size={15} aria-hidden />
+                <span className="admin-sb-label">{item.label}</span>
+              </button>
+            )
+          })}
           <button
             type="button"
             className="admin-sb-footer-btn"
@@ -316,6 +379,23 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                     <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
                   </div>
                 </div>
+                {footerNav.map((item) => {
+                  const Icon = ICONS[item.id]
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="admin-sb-footer-btn"
+                      onClick={() => {
+                        onDrawerClose?.()
+                        navigate(item.screen)
+                      }}
+                    >
+                      <Icon size={15} aria-hidden />
+                      <span>{item.label}</span>
+                    </button>
+                  )
+                })}
                 <button
                   type="button"
                   className="admin-sb-footer-btn"
