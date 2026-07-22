@@ -1,192 +1,176 @@
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import {
-  OFFER_IDS,
-  OFFER_LABELS,
-  PUBLIC_CASE_STUDIES,
-  PUBLIC_TESTIMONIALS,
-  type OfferId,
-} from '../content/publicProofs'
+import { PORTFOLIO_PROJECTS, type PortfolioFilter } from '../content/portfolioProjects'
 import { useReveal } from '../hooks/useReveal'
-import '../styles/monolithe-pages.css'
+import './Realisations.css'
 
-const isOfferId = (value: string | null): value is OfferId => value !== null && OFFER_IDS.includes(value as OfferId)
+const filters: Array<{ key: 'all' | PortfolioFilter; label: string }> = [
+  { key: 'all', label: 'Tous' },
+  { key: 'site', label: 'Sites & marques' },
+  { key: 'product', label: 'Produits' },
+  { key: 'b2b', label: 'B2B' },
+]
 
 const Realisations = () => {
-  useReveal('.mp-page .mp-reveal', 'mp-visible')
-  const [searchParams] = useSearchParams()
-  const requestedOffer = searchParams.get('offre')
-  const selectedOffer = isOfferId(requestedOffer) ? requestedOffer : null
-  const caseStudies = selectedOffer
-    ? PUBLIC_CASE_STUDIES.filter((caseStudy) => caseStudy.relatedOffers.includes(selectedOffer))
-    : PUBLIC_CASE_STUDIES
-  const testimonials = selectedOffer
-    ? PUBLIC_TESTIMONIALS.filter((testimonial) => testimonial.relatedOffers.includes(selectedOffer))
-    : PUBLIC_TESTIMONIALS
+  useReveal('.portfolio-page .portfolio-reveal', 'is-visible')
+  const [activeFilter, setActiveFilter] = useState<'all' | PortfolioFilter>('all')
+  const projects =
+    activeFilter === 'all'
+      ? PORTFOLIO_PROJECTS
+      : PORTFOLIO_PROJECTS.filter((project) => project.filters.includes(activeFilter))
 
   return (
-    <div className="mp-page">
+    <main className="portfolio-page">
       <SEO
-        title="Réalisations et témoignages vérifiables — Venio"
-        description="Les études de cas et témoignages Venio sont publiés uniquement avec accord client et éléments vérifiables."
-        keywords="réalisations Venio, portfolio, études de cas, témoignages, références"
+        title="Réalisations — Venio"
+        description="Sites, identités, produits et expériences numériques signés Venio. Découvrez une sélection de réalisations publiées."
+        keywords="réalisations Venio, portfolio, sites web, branding, produits numériques"
       />
       <StructuredData type="realisations" />
 
-      <section className="mp-hero">
-        <div className="mp-hero-lines" aria-hidden="true" />
-        <div className="mp-container mp-hero-content">
-          <p className="mp-eyebrow">Venio · Réalisations</p>
-          <h1 className="mp-title">Des preuves, pas des promesses.</h1>
-          <p className="mp-lede">Chaque preuve publiée doit être autorisée, attribuée et vérifiable.</p>
-        </div>
-      </section>
-
-      <section className="mp-block">
-        <div className="mp-container">
-          <div className="mp-head mp-reveal">
-            <span className="mp-index" aria-hidden="true">
-              I
-            </span>
-            <span className="mp-kicker">Études de cas</span>
-          </div>
-          <div className="mp-prose mp-reveal">
-            <p className="mp-strong">
-              Nous ne publions pas de cas client nominatif sans accord et sans éléments vérifiables.
-            </p>
-            {selectedOffer && (
-              <p>
-                Preuves associées au palier <b>{OFFER_LABELS[selectedOffer]}</b>.
-              </p>
-            )}
-          </div>
-
-          {caseStudies.length > 0 ? (
-            <div className="mp-projets mp-reveal" aria-label="Études de cas publiées">
-              {caseStudies.map((caseStudy) => (
-                <article className="mp-projet" key={caseStudy.slug}>
-                  <div>
-                    <div className="mp-projet-tags">
-                      {caseStudy.relatedOffers.map((offer) => (
-                        <span className="mp-projet-tag" key={offer}>
-                          {OFFER_LABELS[offer]}
-                        </span>
-                      ))}
-                    </div>
-                    <h2 className="mp-projet-titre">{caseStudy.title}</h2>
-                    <p className="mp-projet-client">{caseStudy.clientName}</p>
-                    <p className="mp-projet-desc">{caseStudy.summary}</p>
-                  </div>
-                  <div>
-                    <Link className="mp-btn mp-projet-link" to={`/realisations/${caseStudy.slug}`}>
-                      Lire l&apos;étude de cas <span className="mp-ar">→</span>
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="mp-proof-empty mp-reveal" aria-label="Aucune étude de cas publiée">
-              <span className="mp-projet-tag">Publication responsable</span>
-              <h2>Études de cas à publier</h2>
-              <p>
-                Aucune étude de cas publique autorisée n&apos;est présente dans ce dépôt. Nous la publierons seulement
-                après avoir réuni l&apos;accord écrit, le périmètre et les éléments vérifiables.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mp-block">
-        <div className="mp-container">
-          <div className="mp-head mp-reveal">
-            <span className="mp-index" aria-hidden="true">
-              II
-            </span>
-            <span className="mp-kicker">Témoignages</span>
-          </div>
-          {testimonials.length > 0 ? (
-            <div className="mp-testimonials mp-reveal">
-              {testimonials.map((testimonial) => (
-                <figure className="mp-testimonial" key={`${testimonial.authorName}-${testimonial.quote}`}>
-                  <blockquote>« {testimonial.quote} »</blockquote>
-                  <figcaption>
-                    <strong>{testimonial.authorName}</strong>, {testimonial.authorRole} — {testimonial.clientName}
-                  </figcaption>
-                  <div className="mp-projet-tags">
-                    {testimonial.relatedOffers.map((offer) => (
-                      <span className="mp-projet-tag" key={offer}>
-                        {OFFER_LABELS[offer]}
-                      </span>
-                    ))}
-                  </div>
-                </figure>
-              ))}
-            </div>
-          ) : (
-            <div className="mp-proof-empty mp-reveal" aria-label="Aucun témoignage publié">
-              <span className="mp-projet-tag">Attribution requise</span>
-              <h2>Aucun témoignage public pour le moment</h2>
-              <p>
-                Nous ne publions ni avis anonyme, ni citation sans nom, fonction, organisation et validation de la
-                personne citée.
-              </p>
-            </div>
-          )}
-
-          <div className="mp-prose mp-reveal" style={{ marginTop: 'var(--mp-sp-l)' }}>
+      <section className="portfolio-hero">
+        <div className="portfolio-shell portfolio-reveal">
+          <p className="portfolio-eyebrow">Venio · Réalisations</p>
+          <h1>
+            Des idées qui <span>prennent forme.</span>
+          </h1>
+          <div className="portfolio-hero-bottom">
             <p>
-              Vous souhaitez vérifier l&apos;adéquation d&apos;une offre à votre besoin ? Consultez{' '}
-              <Link to="/services/sites">les paliers</Link> et <Link to="/methode">notre méthode</Link>, ou{' '}
-              <a href="mailto:contact@venio.paris">contactez-nous</a> pour échanger dans le cadre approprié.
+              Sites identitaires, outils métier et produits numériques. Une sélection de projets réellement en ligne,
+              conçus pour être clairs, crédibles et mémorables.
+            </p>
+            <dl className="portfolio-stats" aria-label="Chiffres clés du portfolio">
+              <div>
+                <dt>09</dt>
+                <dd>réalisations</dd>
+              </div>
+              <div>
+                <dt>06</dt>
+                <dd>univers</dd>
+              </div>
+              <div>
+                <dt>100%</dt>
+                <dd>liens actifs</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section className="portfolio-selection">
+        <div className="portfolio-shell">
+          <div className="portfolio-selection-head portfolio-reveal">
+            <div>
+              <p className="portfolio-eyebrow">Travaux choisis</p>
+              <h2>
+                Du concret,
+                <br />
+                pas des mocks.
+              </h2>
+            </div>
+            <div className="portfolio-filters" aria-label="Filtrer les réalisations">
+              {filters.map((filter) => (
+                <button
+                  className={activeFilter === filter.key ? 'is-active' : ''}
+                  key={filter.key}
+                  onClick={() => setActiveFilter(filter.key)}
+                  type="button"
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="portfolio-grid" aria-live="polite">
+            {projects.map((project, index) => (
+              <article
+                className={`portfolio-card portfolio-card--${project.layout} portfolio-reveal`}
+                key={project.slug}
+              >
+                <div className="portfolio-visual">
+                  <span className="portfolio-index">{String(index + 1).padStart(2, '0')}/09</span>
+                  <img
+                    className="portfolio-desktop-shot"
+                    src={project.desktopImage}
+                    alt={`${project.title} sur ordinateur`}
+                  />
+                  <img className="portfolio-phone-shot" src={project.mobileImage} alt={`${project.title} sur mobile`} />
+                </div>
+                <div className="portfolio-card-content">
+                  <div className="portfolio-card-top">
+                    <span>{project.eyebrow}</span>
+                    <span>2026</span>
+                  </div>
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                  <ul className="portfolio-tags" aria-label={`Expertises ${project.title}`}>
+                    {project.tags.map((tag) => (
+                      <li key={tag}>{tag}</li>
+                    ))}
+                  </ul>
+                  <a className="portfolio-link" href={project.url} target="_blank" rel="noreferrer">
+                    {project.linkLabel} <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="portfolio-principles">
+        <div className="portfolio-shell portfolio-principles-grid portfolio-reveal">
+          <div>
+            <p className="portfolio-eyebrow">Fil conducteur</p>
+            <h2>
+              Pas un style.
+              <br />
+              Une méthode.
+            </h2>
+          </div>
+          <div className="portfolio-principles-list">
+            <p>
+              <b>01</b>
+              <span>
+                <strong>Comprendre avant de décorer.</strong>Chaque interface part d’un rôle, d’un contexte et d’une
+                décision à rendre plus simple.
+              </span>
+            </p>
+            <p>
+              <b>02</b>
+              <span>
+                <strong>Créer une vraie singularité.</strong>Le design doit appartenir au projet — pas au template
+                utilisé la semaine précédente.
+              </span>
+            </p>
+            <p>
+              <b>03</b>
+              <span>
+                <strong>Construire pour de vrai.</strong>Responsive, contenu, intégrations et exploitation : la promesse
+                ne s’arrête pas à la maquette.
+              </span>
             </p>
           </div>
         </div>
       </section>
-    </div>
+
+      <section className="portfolio-cta">
+        <div className="portfolio-shell portfolio-reveal">
+          <p>Un projet qui mérite mieux qu’un site interchangeable ?</p>
+          <Link to="/contact">
+            Parlons-en <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
+    </main>
   )
 }
 
 export const CaseStudyDetail = () => {
-  const { slug } = useParams()
-  const caseStudy = PUBLIC_CASE_STUDIES.find((item) => item.slug === slug)
-
-  if (!caseStudy) {
-    return <Realisations />
-  }
-
-  return (
-    <div className="mp-page">
-      <SEO title={`${caseStudy.title} — Étude de cas | Venio`} description={caseStudy.summary} />
-      <StructuredData type="realisations" />
-      <section className="mp-hero">
-        <div className="mp-hero-lines" aria-hidden="true" />
-        <div className="mp-container mp-hero-content">
-          <p className="mp-eyebrow">Venio · Étude de cas</p>
-          <h1 className="mp-title">{caseStudy.title}</h1>
-          <p className="mp-lede">{caseStudy.summary}</p>
-        </div>
-      </section>
-      <section className="mp-block">
-        <div className="mp-container">
-          <div className="mp-prose">
-            <p className="mp-strong">Périmètre publié</p>
-            <ul className="mp-case-scope">
-              {caseStudy.scope.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <p>Offres concernées : {caseStudy.relatedOffers.map((offer) => OFFER_LABELS[offer]).join(', ')}.</p>
-            <Link className="mp-btn" to="/realisations">
-              Toutes les preuves <span className="mp-ar">→</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
+  useParams()
+  return <Realisations />
 }
 
 export default Realisations
