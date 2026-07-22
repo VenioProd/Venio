@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import { Trash2, X } from 'lucide-react'
 import {
+  DEV_AI_MODEL_LABEL,
+  DEV_ISSUE_COMMENT_KIND_LABEL,
+  DEV_REASONING_EFFORT_LABEL,
   STATUS_LABEL,
   STATUS_ORDER,
   PRIORITY_LABEL,
@@ -8,7 +12,11 @@ import {
   type DevIssue,
   type DevIssueComment,
   type DevIssueGithubLink,
+  type DevAiModel,
+  type DevIssueCommentKind,
+  type DevIssueExecutionProfile,
   type DevIssuePriority,
+  type DevReasoningEffort,
   type DevIssueStatus,
   type DevIssueType,
 } from '../../../services/dev'
@@ -34,7 +42,7 @@ interface Props {
     patch: Partial<DevIssue> & { assignee?: string | null; github?: DevIssueGithubLink | null },
   ) => void | Promise<void>
   onClose: () => void
-  onAddComment: () => void
+  onAddComment: (comment: { body: string; kind: DevIssueCommentKind; context: string }) => void
   onDeleteComment: (id: string) => void
   onDeleteIssue: (id: string) => void
 }
@@ -53,6 +61,21 @@ export default function IssueDetailPanel({
   onDeleteComment,
   onDeleteIssue,
 }: Props) {
+  const [commentKind, setCommentKind] = useState<DevIssueCommentKind>('NOTE')
+  const [commentContext, setCommentContext] = useState('')
+  const executionProfile: DevIssueExecutionProfile = issue.executionProfile ?? {
+    recommendedModel: null,
+    reasoningEffort: null,
+    context: '',
+    executionPlan: '',
+    verificationPlan: '',
+    handoff: '',
+  }
+  const updateExecutionProfile = (patch: Partial<DevIssueExecutionProfile>) => {
+    const next = { ...executionProfile, ...patch }
+    setIssue((previous) => (previous ? { ...previous, executionProfile: next } : previous))
+    return next
+  }
   return (
     <aside className="dev-detail">
       <div className="dev-detail-header">
@@ -192,6 +215,44 @@ export default function IssueDetailPanel({
             {issue.createdByModel || 'Non renseigné'}
           </span>
 
+          <span className="dev-detail-meta-label">Modèle conseillé</span>
+          <span className="dev-detail-meta-value">
+            <select
+              disabled={!canManage}
+              value={executionProfile.recommendedModel ?? ''}
+              onChange={(e) =>
+                updateExecutionProfile({ recommendedModel: (e.target.value || null) as DevAiModel | null })
+              }
+              onBlur={() => canManage && onPatch(issue._id, { executionProfile: issue.executionProfile })}
+            >
+              <option value="">Auto / non renseigné</option>
+              {Object.entries(DEV_AI_MODEL_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </span>
+
+          <span className="dev-detail-meta-label">Raisonnement</span>
+          <span className="dev-detail-meta-value">
+            <select
+              disabled={!canManage}
+              value={executionProfile.reasoningEffort ?? ''}
+              onChange={(e) =>
+                updateExecutionProfile({ reasoningEffort: (e.target.value || null) as DevReasoningEffort | null })
+              }
+              onBlur={() => canManage && onPatch(issue._id, { executionProfile: issue.executionProfile })}
+            >
+              <option value="">Auto / non renseigné</option>
+              {Object.entries(DEV_REASONING_EFFORT_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </span>
+
           <span className="dev-detail-meta-label">Blocage</span>
           <span className="dev-detail-meta-value">
             <input
@@ -249,6 +310,29 @@ export default function IssueDetailPanel({
           onBlur={() => canManage && onPatch(issue._id, { description: issue.description })}
         />
 
+        <div className="dev-detail-section">Brief d'exécution IA</div>
+        {(
+          [
+            ['context', 'Contexte utile à l’agent', 'Contraintes, historique, décisions déjà prises…'],
+            ['executionPlan', 'Plan d’exécution', 'Étapes attendues, périmètre et hors-périmètre…'],
+            ['verificationPlan', 'Validation attendue', 'Tests, CI, smoke test, preuve de sortie…'],
+            ['handoff', 'Handoff attendu', 'État final, références et prochaine action…'],
+          ] as const
+        ).map(([field, label, placeholder]) => (
+          <label key={field} className="dev-detail-meta-label" style={{ display: 'block', marginTop: 10 }}>
+            {label}
+            <textarea
+              className="dev-detail-description"
+              style={{ minHeight: 72, marginTop: 5 }}
+              disabled={!canManage}
+              placeholder={placeholder}
+              value={executionProfile[field]}
+              onChange={(e) => updateExecutionProfile({ [field]: e.target.value })}
+              onBlur={() => canManage && onPatch(issue._id, { executionProfile: issue.executionProfile })}
+            />
+          </label>
+        ))}
+
         {typeof issue.project === 'object' && (
           <div className="dev-detail-section">
             Agent cadré
@@ -270,7 +354,8 @@ export default function IssueDetailPanel({
             <div key={c._id} className="dev-comment">
               <div className="dev-comment-meta">
                 <span>
-                  {c.author?.name || c.author?.email || 'Inconnu'} · {formatRelative(c.createdAt)}
+                  {DEV_ISSUE_COMMENT_KIND_LABEL[c.kind] || 'Note'} · {c.author?.name || c.author?.email || 'Inconnu'} ·{' '}
+                  {formatRelative(c.createdAt)}
                 </span>
                 {(canManage || c.author?._id === user?._id) && (
                   <button className="dev-comment-delete" onClick={() => onDeleteComment(c._id)}>
@@ -278,6 +363,7 @@ export default function IssueDetailPanel({
                   </button>
                 )}
               </div>
+              {c.context && <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>{c.context}</div>}
               <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
             </div>
           ))}
@@ -286,13 +372,34 @@ export default function IssueDetailPanel({
 
         {canManage && (
           <div className="dev-comment-form">
+            <div className="dev-comment-form-actions">
+              <select value={commentKind} onChange={(e) => setCommentKind(e.target.value as DevIssueCommentKind)}>
+                {Object.entries(DEV_ISSUE_COMMENT_KIND_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={commentContext}
+                onChange={(e) => setCommentContext(e.target.value)}
+                placeholder="Contexte court (optionnel)"
+              />
+            </div>
             <textarea
-              placeholder="Ajouter un commentaire…"
+              placeholder="Fait, décision, risque, preuve ou handoff…"
               value={commentDraft}
               onChange={(e) => setCommentDraft(e.target.value)}
             />
             <div className="dev-comment-form-actions">
-              <button className="dev-btn primary" onClick={onAddComment} disabled={!commentDraft.trim()}>
+              <button
+                className="dev-btn primary"
+                onClick={() => {
+                  onAddComment({ body: commentDraft.trim(), kind: commentKind, context: commentContext.trim() })
+                  setCommentContext('')
+                }}
+                disabled={!commentDraft.trim()}
+              >
                 Commenter
               </button>
             </div>

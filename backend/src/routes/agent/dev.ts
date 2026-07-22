@@ -5,12 +5,8 @@ import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
 import DevProject, { DEV_PROJECT_STATUSES } from '../../models/DevProject.js'
-import DevIssue, {
-  DEV_ISSUE_STATUSES,
-  DEV_ISSUE_PRIORITIES,
-  DEV_ISSUE_TYPES,
-} from '../../models/DevIssue.js'
-import DevIssueComment from '../../models/DevIssueComment.js'
+import DevIssue, { DEV_ISSUE_STATUSES, DEV_ISSUE_PRIORITIES, DEV_ISSUE_TYPES } from '../../models/DevIssue.js'
+import DevIssueComment, { DEV_ISSUE_COMMENT_KINDS } from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
@@ -63,8 +59,8 @@ function parseLabels(raw: unknown): string[] {
       raw
         .filter((l): l is string => typeof l === 'string')
         .map((l) => l.trim().toLowerCase())
-        .filter((l) => l.length > 0 && l.length <= 32)
-    )
+        .filter((l) => l.length > 0 && l.length <= 32),
+    ),
   ).slice(0, 16)
 }
 
@@ -76,38 +72,38 @@ function parseCreatorModel(req: Request): string | null {
   return trimmed ? trimmed.slice(0, 160) : null
 }
 
+function parseCommentKind(raw: unknown) {
+  return typeof raw === 'string' && (DEV_ISSUE_COMMENT_KINDS as readonly string[]).includes(raw) ? raw : 'NOTE'
+}
+
+function parseCommentContext(raw: unknown): string {
+  return typeof raw === 'string' ? raw.trim().slice(0, 2000) : ''
+}
+
 // ─── Stats & overview (read:dev) ─────────────────────────────────────────────
 
-router.get(
-  '/dev/stats',
-  requireScope('read:dev'),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const match: Record<string, unknown> = {}
-      const { project } = req.query
-      if (isObjectId(project)) {
-        match.project = new mongoose.Types.ObjectId(project)
-      }
-      const stats = await computeStats(match)
-      res.json(stats)
-    } catch (err) {
-      next(err)
+router.get('/dev/stats', requireScope('read:dev'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const match: Record<string, unknown> = {}
+    const { project } = req.query
+    if (isObjectId(project)) {
+      match.project = new mongoose.Types.ObjectId(project)
     }
+    const stats = await computeStats(match)
+    res.json(stats)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.get(
-  '/dev/overview',
-  requireScope('read:dev'),
-  async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      const overview = await computeOverview()
-      res.json(overview)
-    } catch (err) {
-      next(err)
-    }
+router.get('/dev/overview', requireScope('read:dev'), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const overview = await computeOverview()
+    res.json(overview)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -115,7 +111,10 @@ router.get('/dev/projects', requireScope('read:dev'), async (req: Request, res: 
   try {
     const pag = parsePagination(req)
     const filter: Record<string, unknown> = {}
-    if (typeof req.query.status === 'string' && (DEV_PROJECT_STATUSES as readonly string[]).includes(req.query.status)) {
+    if (
+      typeof req.query.status === 'string' &&
+      (DEV_PROJECT_STATUSES as readonly string[]).includes(req.query.status)
+    ) {
       filter.status = req.query.status
     }
     const [items, total] = await Promise.all([
@@ -149,9 +148,7 @@ router.post(
         name: String(req.body.name).trim().slice(0, 120),
         description: typeof req.body?.description === 'string' ? req.body.description.trim().slice(0, 2000) : '',
         color:
-          typeof req.body?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(req.body.color)
-            ? req.body.color
-            : '#7c5cff',
+          typeof req.body?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(req.body.color) ? req.body.color : '#7c5cff',
         createdBy: systemId,
       })
       res.locals.audit = {
@@ -165,7 +162,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get('/dev/projects/:id', requireScope('read:dev'), param('id').isMongoId(), async (req, res, next) => {
@@ -179,21 +176,16 @@ router.get('/dev/projects/:id', requireScope('read:dev'), param('id').isMongoId(
   }
 })
 
-router.get(
-  '/dev/projects/:id/dashboard',
-  requireScope('read:dev'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const payload = await computeProjectCockpit(String(req.params.id))
-      if (!payload) return respondError(res, 404, 'NOT_FOUND', 'Projet introuvable')
-      res.json(payload)
-    } catch (err) {
-      next(err)
-    }
+router.get('/dev/projects/:id/dashboard', requireScope('read:dev'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const payload = await computeProjectCockpit(String(req.params.id))
+    if (!payload) return respondError(res, 404, 'NOT_FOUND', 'Projet introuvable')
+    res.json(payload)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // ─── Issues ──────────────────────────────────────────────────────────────────
 
@@ -209,7 +201,10 @@ router.get('/dev/issues', requireScope('read:dev'), async (req: Request, res: Re
       if (req.query.status === 'open') filter.status = { $nin: CLOSED_ISSUE_STATUSES }
       else if ((DEV_ISSUE_STATUSES as readonly string[]).includes(req.query.status)) filter.status = req.query.status
     }
-    if (typeof req.query.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.query.priority)) {
+    if (
+      typeof req.query.priority === 'string' &&
+      (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.query.priority)
+    ) {
       filter.priority = req.query.priority
     }
     if (typeof req.query.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.query.type)) {
@@ -223,10 +218,9 @@ router.get('/dev/issues', requireScope('read:dev'), async (req: Request, res: Re
           res,
           400,
           'UNSUPPORTED_FILTER',
-          "assignee=me n'est pas supporté pour un token agent (pas d'utilisateur lié). Passez l'ID utilisateur explicitement."
+          "assignee=me n'est pas supporté pour un token agent (pas d'utilisateur lié). Passez l'ID utilisateur explicitement.",
         )
-      }
-      else if (isObjectId(req.query.assignee)) filter.assignee = req.query.assignee
+      } else if (isObjectId(req.query.assignee)) filter.assignee = req.query.assignee
     }
     if (typeof req.query.label === 'string' && req.query.label.trim()) {
       filter.labels = req.query.label.trim().toLowerCase()
@@ -285,15 +279,15 @@ router.post(
         project: projectDoc._id,
         projectKey: projectDoc.key,
         title: String(req.body.title).trim().slice(0, 200),
-        description:
-          typeof req.body?.description === 'string' ? req.body.description.trim().slice(0, 20000) : '',
+        description: typeof req.body?.description === 'string' ? req.body.description.trim().slice(0, 20000) : '',
         type:
           typeof req.body?.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.body.type)
             ? (req.body.type as (typeof DEV_ISSUE_TYPES)[number])
             : 'TASK',
         status,
         priority:
-          typeof req.body?.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)
+          typeof req.body?.priority === 'string' &&
+          (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)
             ? (req.body.priority as (typeof DEV_ISSUE_PRIORITIES)[number])
             : 'NO_PRIORITY',
         reporter: systemId,
@@ -330,116 +324,114 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/dev/issues/:id',
-  requireScope('write:dev'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const issue = await DevIssue.findById(req.params.id)
-      if (!issue) return respondError(res, 404, 'NOT_FOUND', 'Issue introuvable')
-      const before = issue.toObject()
-      const oldStatus = issue.status
-      const oldPriority = issue.priority
-      const oldType = issue.type
-      const oldAssignee = issue.assignee ? String(issue.assignee) : null
-      const oldGithub = issue.github ? JSON.stringify(issue.github) : null
+router.patch('/dev/issues/:id', requireScope('write:dev'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const issue = await DevIssue.findById(req.params.id)
+    if (!issue) return respondError(res, 404, 'NOT_FOUND', 'Issue introuvable')
+    const before = issue.toObject()
+    const oldStatus = issue.status
+    const oldPriority = issue.priority
+    const oldType = issue.type
+    const oldAssignee = issue.assignee ? String(issue.assignee) : null
+    const oldGithub = issue.github ? JSON.stringify(issue.github) : null
 
-      if (typeof req.body?.title === 'string' && req.body.title.trim()) issue.title = req.body.title.trim().slice(0, 200)
-      if (typeof req.body?.description === 'string') issue.description = req.body.description.slice(0, 20000)
-      if (typeof req.body?.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.body.type)) {
-        issue.type = req.body.type as typeof issue.type
-      }
-      if (typeof req.body?.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(req.body.status)) {
-        const next = req.body.status as typeof issue.status
-        applyStatusTimestamps(issue, next)
-      }
-      if (typeof req.body?.priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)) {
-        issue.priority = req.body.priority as typeof issue.priority
-      }
-      if (req.body?.assignee === null) issue.assignee = null
-      else if (isObjectId(req.body?.assignee)) issue.assignee = new mongoose.Types.ObjectId(req.body.assignee)
-      if (Array.isArray(req.body?.labels)) issue.labels = parseLabels(req.body.labels)
-      if (req.body?.dueDate === null) issue.dueDate = null
-      else if (typeof req.body?.dueDate === 'string') {
-        const d = new Date(req.body.dueDate)
-        if (!Number.isNaN(d.getTime())) issue.dueDate = d
-      }
-      const githubPatch = parseGithubPatch(req.body?.github)
-      if (githubPatch === null) issue.github = null
-      else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
-      const metadataChanged = applyIssueV2Patch(issue, req.body)
-
-      await issue.save()
-      const systemId = await resolveSystemUserId()
-      const eventBase = { issue: issue._id, project: issue.project, actor: systemId }
-      if (oldStatus !== issue.status) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'status_changed',
-          summary: `${issue.identifier} ${oldStatus} → ${issue.status}`,
-          metadata: { from: oldStatus, to: issue.status },
-        })
-      }
-      if (oldPriority !== issue.priority) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'priority_changed',
-          summary: `${issue.identifier} priorité ${oldPriority} → ${issue.priority}`,
-          metadata: { from: oldPriority, to: issue.priority },
-        })
-      }
-      if (oldType !== issue.type) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'type_changed',
-          summary: `${issue.identifier} type ${oldType} → ${issue.type}`,
-          metadata: { from: oldType, to: issue.type },
-        })
-      }
-      const newAssignee = issue.assignee ? String(issue.assignee) : null
-      if (oldAssignee !== newAssignee) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'assigned',
-          summary: `${issue.identifier} assignation modifiée`,
-          metadata: { from: oldAssignee, to: newAssignee },
-        })
-      }
-      const newGithub = issue.github ? JSON.stringify(issue.github) : null
-      if (oldGithub !== newGithub) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'github_linked',
-          summary: `${issue.identifier} lien GitHub mis à jour`,
-          metadata: { github: issue.github },
-        })
-      }
-      if (metadataChanged.length) {
-        await recordIssueEvent({
-          ...eventBase,
-          type: 'metadata_changed',
-          summary: `${issue.identifier} métadonnées mises à jour`,
-          metadata: { fields: metadataChanged },
-        })
-      }
-      res.locals.audit = {
-        entityType: 'DevIssue',
-        entityId: String(issue._id),
-        entityRef: issue.identifier,
-        before,
-        after: issue.toObject(),
-      }
-      res.json(issue.toObject())
-    } catch (err) {
-      next(err)
+    if (typeof req.body?.title === 'string' && req.body.title.trim()) issue.title = req.body.title.trim().slice(0, 200)
+    if (typeof req.body?.description === 'string') issue.description = req.body.description.slice(0, 20000)
+    if (typeof req.body?.type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(req.body.type)) {
+      issue.type = req.body.type as typeof issue.type
     }
+    if (typeof req.body?.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(req.body.status)) {
+      const next = req.body.status as typeof issue.status
+      applyStatusTimestamps(issue, next)
+    }
+    if (
+      typeof req.body?.priority === 'string' &&
+      (DEV_ISSUE_PRIORITIES as readonly string[]).includes(req.body.priority)
+    ) {
+      issue.priority = req.body.priority as typeof issue.priority
+    }
+    if (req.body?.assignee === null) issue.assignee = null
+    else if (isObjectId(req.body?.assignee)) issue.assignee = new mongoose.Types.ObjectId(req.body.assignee)
+    if (Array.isArray(req.body?.labels)) issue.labels = parseLabels(req.body.labels)
+    if (req.body?.dueDate === null) issue.dueDate = null
+    else if (typeof req.body?.dueDate === 'string') {
+      const d = new Date(req.body.dueDate)
+      if (!Number.isNaN(d.getTime())) issue.dueDate = d
+    }
+    const githubPatch = parseGithubPatch(req.body?.github)
+    if (githubPatch === null) issue.github = null
+    else if (githubPatch !== undefined) issue.github = mergeGithubLink(issue.github, githubPatch)
+    const metadataChanged = applyIssueV2Patch(issue, req.body)
+
+    await issue.save()
+    const systemId = await resolveSystemUserId()
+    const eventBase = { issue: issue._id, project: issue.project, actor: systemId }
+    if (oldStatus !== issue.status) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'status_changed',
+        summary: `${issue.identifier} ${oldStatus} → ${issue.status}`,
+        metadata: { from: oldStatus, to: issue.status },
+      })
+    }
+    if (oldPriority !== issue.priority) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'priority_changed',
+        summary: `${issue.identifier} priorité ${oldPriority} → ${issue.priority}`,
+        metadata: { from: oldPriority, to: issue.priority },
+      })
+    }
+    if (oldType !== issue.type) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'type_changed',
+        summary: `${issue.identifier} type ${oldType} → ${issue.type}`,
+        metadata: { from: oldType, to: issue.type },
+      })
+    }
+    const newAssignee = issue.assignee ? String(issue.assignee) : null
+    if (oldAssignee !== newAssignee) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'assigned',
+        summary: `${issue.identifier} assignation modifiée`,
+        metadata: { from: oldAssignee, to: newAssignee },
+      })
+    }
+    const newGithub = issue.github ? JSON.stringify(issue.github) : null
+    if (oldGithub !== newGithub) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'github_linked',
+        summary: `${issue.identifier} lien GitHub mis à jour`,
+        metadata: { github: issue.github },
+      })
+    }
+    if (metadataChanged.length) {
+      await recordIssueEvent({
+        ...eventBase,
+        type: 'metadata_changed',
+        summary: `${issue.identifier} métadonnées mises à jour`,
+        metadata: { fields: metadataChanged },
+      })
+    }
+    res.locals.audit = {
+      entityType: 'DevIssue',
+      entityId: String(issue._id),
+      entityRef: issue.identifier,
+      before,
+      after: issue.toObject(),
+    }
+    res.json(issue.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/dev/issues/:id/comments',
@@ -459,6 +451,8 @@ router.post(
         project: issue.project,
         author: systemId,
         body: String(req.body.body).trim().slice(0, 10000),
+        kind: parseCommentKind(req.body?.kind),
+        context: parseCommentContext(req.body?.context),
       })
       await DevIssue.updateOne({ _id: issue._id }, { $set: { updatedAt: new Date() } })
       await recordIssueEvent({
@@ -466,22 +460,22 @@ router.post(
         project: issue.project,
         actor: systemId,
         type: 'commented',
-        summary: 'Commentaire ajouté par agent',
-        metadata: { commentId: String(comment._id) },
+        summary: `${comment.kind} ajouté par agent`,
+        metadata: { commentId: String(comment._id), kind: comment.kind, context: comment.context },
       })
 
       res.locals.audit = {
         entityType: 'DevIssueComment',
         entityId: String(comment._id),
         entityRef: issue.identifier,
-        summary: `Commentaire ajouté sur ${issue.identifier}`,
+        summary: `${comment.kind} ajouté sur ${issue.identifier}`,
         after: comment.toObject(),
       }
       res.status(201).json(comment.toObject())
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

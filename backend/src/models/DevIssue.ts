@@ -15,11 +15,34 @@ export type DevIssueStatus = (typeof DEV_ISSUE_STATUSES)[number]
 export const DEV_ISSUE_PRIORITIES = ['NO_PRIORITY', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const
 export type DevIssuePriority = (typeof DEV_ISSUE_PRIORITIES)[number]
 
-export const DEV_ISSUE_TYPES = ['FEATURE', 'BUG', 'CHORE', 'TASK', 'REFACTOR', 'SECURITY', 'CI', 'DEPLOY', 'DOC'] as const
+export const DEV_ISSUE_TYPES = [
+  'FEATURE',
+  'BUG',
+  'CHORE',
+  'TASK',
+  'REFACTOR',
+  'SECURITY',
+  'CI',
+  'DEPLOY',
+  'DOC',
+] as const
 export type DevIssueType = (typeof DEV_ISSUE_TYPES)[number]
 
 export const DEV_CI_STATUSES = ['PENDING', 'RUNNING', 'SUCCESS', 'FAILURE', 'UNKNOWN'] as const
 export type DevCiStatus = (typeof DEV_CI_STATUSES)[number]
+
+export const DEV_AI_MODELS = [
+  'CLAUDE_SONNET',
+  'CLAUDE_OPUS',
+  'CLAUDE_FABLE',
+  'GPT_5_6_LUNA',
+  'GPT_5_6_TERRA',
+  'GPT_5_6_SOL',
+] as const
+export type DevAiModel = (typeof DEV_AI_MODELS)[number]
+
+export const DEV_REASONING_EFFORTS = ['LOW', 'MEDIUM', 'HIGH', 'MAX'] as const
+export type DevReasoningEffort = (typeof DEV_REASONING_EFFORTS)[number]
 
 export interface DevIssueGithubLink {
   repo: string | null
@@ -47,6 +70,15 @@ export interface DevIssueSource {
   name: string | null
 }
 
+export interface DevIssueExecutionProfile {
+  recommendedModel: DevAiModel | null
+  reasoningEffort: DevReasoningEffort | null
+  context: string
+  executionPlan: string
+  verificationPlan: string
+  handoff: string
+}
+
 export interface IDevIssue extends Document {
   _id: mongoose.Types.ObjectId
   project: mongoose.Types.ObjectId
@@ -69,6 +101,7 @@ export interface IDevIssue extends Document {
   external: DevIssueExternalRef | null
   agentAssignee: string | null
   createdByModel: string | null
+  executionProfile: DevIssueExecutionProfile | null
   acceptanceCriteria: string[]
   subtasks: string[]
   blockedReason: string | null
@@ -107,7 +140,7 @@ const devIssueSchema = new Schema<IDevIssue>(
             type: { type: String, enum: ['blocks', 'blocked_by', 'relates_to', 'duplicates'], required: true },
             issue: { type: Schema.Types.ObjectId, ref: 'DevIssue', required: true },
           },
-          { _id: false }
+          { _id: false },
         ),
       ],
       default: [],
@@ -118,7 +151,7 @@ const devIssueSchema = new Schema<IDevIssue>(
           kind: { type: String, enum: ['manual', 'agent', 'linear', 'github', 'import'], default: 'manual' },
           name: { type: String, default: null, maxlength: 120 },
         },
-        { _id: false }
+        { _id: false },
       ),
       default: null,
     },
@@ -129,12 +162,26 @@ const devIssueSchema = new Schema<IDevIssue>(
           linearUrl: { type: String, default: null, maxlength: 500 },
           linearIdentifier: { type: String, default: null, maxlength: 80 },
         },
-        { _id: false }
+        { _id: false },
       ),
       default: null,
     },
     agentAssignee: { type: String, default: null, trim: true, maxlength: 80, index: true },
     createdByModel: { type: String, default: null, trim: true, maxlength: 160 },
+    executionProfile: {
+      type: new Schema<DevIssueExecutionProfile>(
+        {
+          recommendedModel: { type: String, enum: [...DEV_AI_MODELS, null], default: null },
+          reasoningEffort: { type: String, enum: [...DEV_REASONING_EFFORTS, null], default: null },
+          context: { type: String, default: '', maxlength: 6000 },
+          executionPlan: { type: String, default: '', maxlength: 6000 },
+          verificationPlan: { type: String, default: '', maxlength: 4000 },
+          handoff: { type: String, default: '', maxlength: 4000 },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
     acceptanceCriteria: { type: [String], default: [] },
     subtasks: { type: [String], default: [] },
     blockedReason: { type: String, default: null, maxlength: 2000 },
@@ -155,12 +202,12 @@ const devIssueSchema = new Schema<IDevIssue>(
           ciStatus: { type: String, enum: [...DEV_CI_STATUSES, null], default: null },
           mergedAt: { type: Date, default: null },
         },
-        { _id: false }
+        { _id: false },
       ),
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 devIssueSchema.index({ project: 1, number: 1 }, { unique: true })

@@ -45,6 +45,41 @@ export interface DevProject {
 }
 
 export type DevCiStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'UNKNOWN'
+export type DevAiModel =
+  | 'CLAUDE_SONNET'
+  | 'CLAUDE_OPUS'
+  | 'CLAUDE_FABLE'
+  | 'GPT_5_6_LUNA'
+  | 'GPT_5_6_TERRA'
+  | 'GPT_5_6_SOL'
+export type DevReasoningEffort = 'LOW' | 'MEDIUM' | 'HIGH' | 'MAX'
+export type DevIssueCommentKind = 'NOTE' | 'CONTEXT' | 'PROGRESS' | 'DECISION' | 'EVIDENCE' | 'BLOCKER' | 'HANDOFF'
+
+export const DEV_AI_MODEL_LABEL: Record<DevAiModel, string> = {
+  CLAUDE_SONNET: 'Claude Sonnet',
+  CLAUDE_OPUS: 'Claude Opus',
+  CLAUDE_FABLE: 'Claude Fable',
+  GPT_5_6_LUNA: 'ChatGPT 5.6 Luna',
+  GPT_5_6_TERRA: 'ChatGPT 5.6 Terra',
+  GPT_5_6_SOL: 'ChatGPT 5.6 Sol',
+}
+
+export const DEV_REASONING_EFFORT_LABEL: Record<DevReasoningEffort, string> = {
+  LOW: 'Bas',
+  MEDIUM: 'Moyen',
+  HIGH: 'Élevé',
+  MAX: 'Maximum',
+}
+
+export const DEV_ISSUE_COMMENT_KIND_LABEL: Record<DevIssueCommentKind, string> = {
+  NOTE: 'Note',
+  CONTEXT: 'Contexte',
+  PROGRESS: 'Progression',
+  DECISION: 'Décision',
+  EVIDENCE: 'Preuve',
+  BLOCKER: 'Blocage',
+  HANDOFF: 'Handoff',
+}
 
 export interface DevIssueGithubLink {
   repo: string | null
@@ -60,6 +95,15 @@ export interface DevIssueExternalRef {
   linearId: string | null
   linearUrl: string | null
   linearIdentifier: string | null
+}
+
+export interface DevIssueExecutionProfile {
+  recommendedModel: DevAiModel | null
+  reasoningEffort: DevReasoningEffort | null
+  context: string
+  executionPlan: string
+  verificationPlan: string
+  handoff: string
 }
 
 export interface DevIssueRelation {
@@ -89,6 +133,7 @@ export interface DevIssue {
   external: DevIssueExternalRef | null
   agentAssignee: string | null
   createdByModel: string | null
+  executionProfile: DevIssueExecutionProfile | null
   acceptanceCriteria: string[]
   subtasks: string[]
   blockedReason: string | null
@@ -109,6 +154,8 @@ export interface DevIssueComment {
   project: string
   author: UserRef
   body: string
+  kind: DevIssueCommentKind
+  context: string
   createdAt: string
   updatedAt: string
 }
@@ -308,6 +355,7 @@ export function createDevIssue(data: {
   assignee?: string | null
   labels?: string[]
   dueDate?: string | null
+  executionProfile?: DevIssueExecutionProfile | null
   estimate?: number | null
   rank?: string | null
   cycle?: string | null
@@ -334,8 +382,12 @@ export function deleteDevIssue(id: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'DELETE' })
 }
 
-export function addDevIssueComment(id: string, body: string): Promise<DevIssueComment> {
-  return apiFetch(`/api/admin/dev/issues/${id}/comments`, { method: 'POST', body: JSON.stringify({ body }) })
+export function addDevIssueComment(
+  id: string,
+  comment: string | { body: string; kind?: DevIssueCommentKind; context?: string },
+): Promise<DevIssueComment> {
+  const payload = typeof comment === 'string' ? { body: comment } : comment
+  return apiFetch(`/api/admin/dev/issues/${id}/comments`, { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function deleteDevIssueComment(issueId: string, commentId: string): Promise<{ ok: boolean }> {

@@ -46,6 +46,7 @@ import {
   type DevProject,
   type DevIssue,
   type DevIssueComment,
+  type DevIssueCommentKind,
   type DevIssueStatus,
   type DevIssuePriority,
   type DevIssueType,
@@ -518,10 +519,10 @@ const DevWorkspace = () => {
     }
   }, [])
 
-  const handleAddComment = async () => {
-    if (!commentDraft.trim() || !selectedIssue) return
+  const handleAddComment = async (comment: { body: string; kind: DevIssueCommentKind; context: string }) => {
+    if (!comment.body || !selectedIssue) return
     try {
-      const c = await addDevIssueComment(selectedIssue._id, commentDraft.trim())
+      const c = await addDevIssueComment(selectedIssue._id, comment)
       setComments((prev) => [...prev, c])
       setCommentDraft('')
     } catch (err) {

@@ -1,5 +1,13 @@
 import mongoose from 'mongoose'
-import type { IDevIssue, DevIssueExternalRef, DevIssueRelation, DevIssueSource } from '../../models/DevIssue.js'
+import {
+  DEV_AI_MODELS,
+  DEV_REASONING_EFFORTS,
+  type IDevIssue,
+  type DevIssueExecutionProfile,
+  type DevIssueExternalRef,
+  type DevIssueRelation,
+  type DevIssueSource,
+} from '../../models/DevIssue.js'
 import DevIssueEvent, { type DevIssueEventType } from '../../models/DevIssueEvent.js'
 
 export const CLOSED_ISSUE_STATUSES = ['DONE', 'DUPLICATE', 'CANCELLED'] as const
@@ -54,6 +62,30 @@ function cleanRelations(raw: unknown): DevIssueRelation[] | null {
     .filter((r) => allowed.has(r.type) && mongoose.isValidObjectId(r.issue))
     .slice(0, 24)
     .map((r) => ({ type: r.type as DevIssueRelation['type'], issue: new mongoose.Types.ObjectId(r.issue) }))
+}
+
+function cleanExecutionProfile(raw: unknown): DevIssueExecutionProfile | null {
+  if (!raw || typeof raw !== 'object') return null
+  const profile = raw as Partial<DevIssueExecutionProfile>
+  const model =
+    typeof profile.recommendedModel === 'string' &&
+    (DEV_AI_MODELS as readonly string[]).includes(profile.recommendedModel)
+      ? profile.recommendedModel
+      : null
+  const reasoningEffort =
+    typeof profile.reasoningEffort === 'string' &&
+    (DEV_REASONING_EFFORTS as readonly string[]).includes(profile.reasoningEffort)
+      ? profile.reasoningEffort
+      : null
+  return {
+    recommendedModel: model as DevIssueExecutionProfile['recommendedModel'],
+    reasoningEffort: reasoningEffort as DevIssueExecutionProfile['reasoningEffort'],
+    context: typeof profile.context === 'string' ? profile.context.trim().slice(0, 6000) : '',
+    executionPlan: typeof profile.executionPlan === 'string' ? profile.executionPlan.trim().slice(0, 6000) : '',
+    verificationPlan:
+      typeof profile.verificationPlan === 'string' ? profile.verificationPlan.trim().slice(0, 4000) : '',
+    handoff: typeof profile.handoff === 'string' ? profile.handoff.trim().slice(0, 4000) : '',
+  }
 }
 
 export function applyIssueV2Patch(issue: IDevIssue, body: Record<string, unknown>): string[] {
@@ -136,6 +168,17 @@ export function applyIssueV2Patch(issue: IDevIssue, body: Record<string, unknown
     if (agentAssignee !== null) {
       issue.agentAssignee = agentAssignee
       changed.push('agentAssignee')
+    }
+  }
+
+  if (body.executionProfile === null) {
+    issue.executionProfile = null
+    changed.push('executionProfile')
+  } else {
+    const executionProfile = cleanExecutionProfile(body.executionProfile)
+    if (executionProfile) {
+      issue.executionProfile = executionProfile
+      changed.push('executionProfile')
     }
   }
 
