@@ -23,7 +23,7 @@ describe('Realisations', () => {
   it('renders the selected published portfolio without the removed V&A catalogue', () => {
     renderPage()
 
-    expect(screen.getByRole('heading', { name: /des idées qui prennent forme/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /nos réalisations/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Decisio' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /voir le site/i })[0]).toHaveAttribute('target', '_blank')
     expect(screen.queryByText(/catalogue v&a/i)).not.toBeInTheDocument()
