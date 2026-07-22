@@ -14,7 +14,9 @@ export interface PortfolioProject {
   layout: 'wide' | 'standard'
 }
 
-const shot = (name: string) => `/realisations/portfolio/${name}.jpg`
+// Keep these files outside a prerendered route directory: the prerender step
+// recreates /realisations and would otherwise remove its nested static files.
+const shot = (name: string) => `/portfolio/${name}.jpg`
 
 // Every entry below links to a reachable published experience. No mock project is
 // intentionally included in the public portfolio.

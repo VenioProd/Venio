@@ -34,7 +34,7 @@ const Realisations = () => {
         <div className="portfolio-shell portfolio-reveal">
           <p className="portfolio-eyebrow">Venio · Réalisations</p>
           <h1>
-            Des idées qui <span>prennent forme.</span>
+            Nos <span>réalisations.</span>
           </h1>
           <div className="portfolio-hero-bottom">
             <p>
@@ -65,9 +65,9 @@ const Realisations = () => {
             <div>
               <p className="portfolio-eyebrow">Travaux choisis</p>
               <h2>
-                Du concret,
+                Des projets,
                 <br />
-                pas des mocks.
+                pas des promesses.
               </h2>
             </div>
             <div className="portfolio-filters" aria-label="Filtrer les réalisations">
