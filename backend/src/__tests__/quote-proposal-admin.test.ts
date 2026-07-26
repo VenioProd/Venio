@@ -115,3 +115,71 @@ describe('reprise de génération', () => {
       .expect(403)
   })
 })
+
+describe('administration des propositions', () => {
+  it('crée un brouillon puis l’envoie', async () => {
+    const cookie = await cookieFor(adminId)
+    const created = await request(app)
+      .post('/api/admin/quote-proposals')
+      .set('Cookie', cookie)
+      .send({
+        project: projectId,
+        title: 'Refonte',
+        lines: [{ description: 'Conception', quantity: 1, unitPrice: 1000, taxRate: 20, isOptional: false }],
+      })
+      .expect(201)
+
+    expect(created.body.proposal.status).toBe('DRAFT')
+
+    const sent = await request(app)
+      .post(`/api/admin/quote-proposals/${created.body.proposal._id}/send`)
+      .set('Cookie', cookie)
+      .expect(200)
+
+    expect(sent.body.proposal.status).toBe('SENT')
+  })
+
+  it('refuse de modifier une proposition signée', async () => {
+    const proposal = await QuoteProposal.create({
+      project: projectId,
+      client: clientId,
+      createdBy: adminId,
+      title: 'Signée',
+      status: 'SIGNED',
+    })
+    await request(app)
+      .patch(`/api/admin/quote-proposals/${proposal._id}`)
+      .set('Cookie', await cookieFor(adminId))
+      .send({ title: 'Modifiée' })
+      .expect(409)
+  })
+
+  it('annule une proposition envoyée', async () => {
+    const proposal = await QuoteProposal.create({
+      project: projectId,
+      client: clientId,
+      createdBy: adminId,
+      title: 'À annuler',
+      status: 'SENT',
+    })
+    const response = await request(app)
+      .post(`/api/admin/quote-proposals/${proposal._id}/cancel`)
+      .set('Cookie', await cookieFor(adminId))
+      .expect(200)
+
+    expect(response.body.proposal.status).toBe('CANCELLED')
+  })
+
+  it('liste les propositions d’un projet, tous statuts confondus', async () => {
+    await QuoteProposal.create([
+      { project: projectId, client: clientId, createdBy: adminId, title: 'A', status: 'DRAFT' },
+      { project: projectId, client: clientId, createdBy: adminId, title: 'B', status: 'SENT' },
+    ])
+    const response = await request(app)
+      .get(`/api/admin/quote-proposals?project=${projectId}`)
+      .set('Cookie', await cookieFor(adminId))
+      .expect(200)
+
+    expect(response.body.proposals).toHaveLength(2)
+  })
+})
