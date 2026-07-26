@@ -3,6 +3,8 @@ import path from 'path'
 import auth from '../middleware/auth.js'
 import Document from '../models/Document.js'
 import Project from '../models/Project.js'
+import { getProjectAccess } from '../lib/projectAccess.js'
+import { isAdminRole } from '../lib/permissions.js'
 
 const router = express.Router()
 
@@ -20,7 +22,15 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    if (req.user!.role === 'CLIENT' && project.client.toString() !== req.user!.id) {
+    if (req.user!.role === 'CLIENT') {
+      // Owner *and* invited collaborators (ProjectMember) may download, exactly
+      // like the document list returned by GET /api/projects/:id.
+      const access = await getProjectAccess(project._id.toString(), req.user!.id)
+      if (!access) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    } else if (!isAdminRole(req.user!.role)) {
+      // Non-client, non-admin sessions (e.g. AGENT) have no document scope here.
       return res.status(403).json({ error: 'Forbidden' })
     }
 
