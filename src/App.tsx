@@ -59,6 +59,7 @@ const ClientProjectDetail = lazy(() => import('./pages/espace-client/ProjectDeta
 const ClientProjectInvitationAccept = lazy(() => import('./pages/espace-client/ProjectInvitationAccept'))
 const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 const ClientQuoteProposal = lazy(() => import('./pages/espace-client/QuoteProposal'))
+const ClientBilling = lazy(() => import('./pages/espace-client/Billing'))
 
 // Lazy-loaded: Admin
 const AdminShell = lazy(() => import('./components/AdminShell'))
@@ -210,6 +211,7 @@ function App() {
                   <Route path="profil" element={<ClientProfile />} />
                   <Route path="projets/:id" element={<ClientProjectDetail />} />
                   <Route path="projets/:projectId/propositions/:proposalId" element={<ClientQuoteProposal />} />
+                  <Route path="projets/:projectId/facturation" element={<ClientBilling />} />
                 </Route>
 
                 {/* Admin */}
