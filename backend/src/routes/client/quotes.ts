@@ -1,7 +1,10 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
+import fs from 'fs'
+import path from 'path'
 import { body, param, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import AuditLog from '../../models/AuditLog.js'
+import BillingDocument from '../../models/BillingDocument.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
@@ -265,6 +268,66 @@ router.post(
       }).catch(() => {})
 
       return res.status(201).json({ billingDocument: billingDocument.toObject() })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PAID']
+
+router.get('/:projectId/billing', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'CLIENT') return res.status(403).json({ error: 'Forbidden' })
+    const access = await getProjectAccess(req.params.projectId as string, req.user!.id)
+    if (!access) return res.status(404).json({ error: 'Projet non trouvé' })
+
+    const documents = await BillingDocument.find({
+      project: access.project._id,
+      status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+    })
+      .sort({ issuedAt: -1, createdAt: -1 })
+      .select('-pdfStoragePath -createdBy')
+      .lean()
+
+    return res.json({ documents })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+router.get(
+  '/:projectId/billing/:documentId/pdf',
+  param('projectId').isMongoId(),
+  param('documentId').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (validationFailed(req, res)) return
+      if (req.user!.role !== 'CLIENT') return res.status(403).json({ error: 'Forbidden' })
+      const access = await getProjectAccess(req.params.projectId as string, req.user!.id)
+      if (!access) return res.status(404).json({ error: 'Projet non trouvé' })
+
+      const document = await BillingDocument.findOne({
+        _id: req.params.documentId,
+        project: access.project._id,
+        status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+      }).lean()
+      if (!document?.pdfStoragePath) {
+        return res.status(404).json({ error: 'Document non disponible' })
+      }
+
+      const uploadsDir = path.resolve(process.cwd(), 'uploads')
+      const filePath = path.resolve(process.cwd(), document.pdfStoragePath)
+      if (!filePath.startsWith(uploadsDir + path.sep) || !fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Document non disponible' })
+      }
+
+      // `res.download` s'appuie sur `send`, qui refuse tout chemin absolu
+      // contenant un segment commençant par un point — un dépôt logé sous un
+      // dossier masqué suffit à le déclencher.
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="${document.number}.pdf"`)
+      return fs.createReadStream(filePath).pipe(res)
     } catch (err) {
       return next(err)
     }

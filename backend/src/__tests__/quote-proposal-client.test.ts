@@ -9,6 +9,7 @@ import User from '../models/User.js'
 import Project from '../models/Project.js'
 import ProjectMember from '../models/ProjectMember.js'
 import QuoteProposal from '../models/QuoteProposal.js'
+import BillingDocument from '../models/BillingDocument.js'
 
 let app: Express
 let ownerId: string
@@ -180,5 +181,59 @@ describe('mutations client', () => {
       .set('Cookie', await cookieFor(ownerId))
       .send({ selectedOptionalLineIds: [] })
       .expect(409)
+  })
+})
+
+describe('vitrine facturation', () => {
+  it('expose les documents émis et masque brouillons et annulés', async () => {
+    await BillingDocument.create([
+      { type: 'INVOICE', number: 'FAC-001', project: projectId, client: ownerId, status: 'PAID', createdBy: ownerId },
+      { type: 'QUOTE', number: 'DEV-001', project: projectId, client: ownerId, status: 'DRAFT', createdBy: ownerId },
+      {
+        type: 'QUOTE',
+        number: 'DEV-002',
+        project: projectId,
+        client: ownerId,
+        status: 'CANCELLED',
+        createdBy: ownerId,
+      },
+    ])
+
+    const response = await request(app)
+      .get(`/api/projects/${projectId}/billing`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(200)
+
+    expect(response.body.documents).toHaveLength(1)
+    expect(response.body.documents[0].number).toBe('FAC-001')
+  })
+
+  // Le corps est asserté, pas seulement le statut : un 404 par défaut d'Express
+  // sur une route absente passerait autrement pour un contrôle d'accès réussi.
+  it('refuse un client étranger au projet', async () => {
+    const response = await request(app)
+      .get(`/api/projects/${projectId}/billing`)
+      .set('Cookie', await cookieFor(outsiderId))
+      .expect(404)
+
+    expect(response.body.error).toBe('Projet non trouvé')
+  })
+
+  it('renvoie 404 quand le PDF n’a pas été généré', async () => {
+    const doc = await BillingDocument.create({
+      type: 'INVOICE',
+      number: 'FAC-010',
+      project: projectId,
+      client: ownerId,
+      status: 'SENT',
+      createdBy: ownerId,
+    })
+
+    const response = await request(app)
+      .get(`/api/projects/${projectId}/billing/${doc._id}/pdf`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(404)
+
+    expect(response.body.error).toBe('Document non disponible')
   })
 })
