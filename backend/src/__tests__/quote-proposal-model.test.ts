@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import mongoose from 'mongoose'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import QuoteProposal from '../models/QuoteProposal.js'
+import AuditLog from '../models/AuditLog.js'
 
 beforeAll(setupMongo)
 afterAll(teardownMongo)
@@ -26,6 +27,15 @@ describe('modèle QuoteProposal', () => {
     expect(proposal.lines[0]!.isOptional).toBe(false)
     expect(proposal.lines[1]!._id).toBeDefined()
     expect(proposal.specification.isManual).toBe(false)
+  })
+
+  // Les écritures de journal sont volontairement en `.catch(() => {})` pour ne
+  // jamais bloquer une requête : une action absente de l'énumération d'AuditLog
+  // échouerait donc en silence. Ce test verrouille les trois actions du lot.
+  it('accepte les actions de journal des propositions', async () => {
+    for (const action of ['QUOTE_PROPOSAL_VIEWED', 'QUOTE_PROPOSAL_SIGNED', 'QUOTE_PROPOSAL_EXPIRED']) {
+      await expect(AuditLog.create({ action, metadata: { proposalId: 'x' } })).resolves.toBeDefined()
+    }
   })
 
   it('refuse un statut hors énumération', async () => {

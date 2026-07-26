@@ -60,6 +60,10 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'AGENT_AUTH_FAIL',
         'AGENT_API_MUTATION',
         'SENSITIVE_ACTION_EXECUTED',
+        // ── Propositions commerciales ──
+        'QUOTE_PROPOSAL_VIEWED',
+        'QUOTE_PROPOSAL_SIGNED',
+        'QUOTE_PROPOSAL_EXPIRED',
       ],
     },
     ip: { type: String, default: '' },
