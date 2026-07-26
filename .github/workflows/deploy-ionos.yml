@@ -7,14 +7,21 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: venio-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Build et déploiement sur VPS
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # N'exécute que si la CI a réussi (workflow_run) ou en dispatch manuel.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
     steps:
       - name: 🔐 Configurer SSH
@@ -22,63 +29,163 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: 🚀 Déployer via SSH
+        shell: bash
         run: |
+          set -uo pipefail
+
           for attempt in 1 2 3; do
             echo "Tentative de déploiement SSH ${attempt}/3"
-            if ssh \
-              -o StrictHostKeyChecking=no \
+            set +e
+            ssh \
+              -o StrictHostKeyChecking=yes \
               -o ConnectTimeout=30 \
               -o ServerAliveInterval=15 \
               -o ServerAliveCountMax=4 \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
-            set -e
-            PROJECT_DIR="/opt/docker/openclaw/config/workspace/projects/venio"
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "DEPLOY_SHA='$DEPLOY_SHA' bash -s" << 'DEPLOY'
+            set -Eeuo pipefail
 
-            # Recreer le dossier si necessaire
-            if [ ! -d "$PROJECT_DIR/.git" ]; then
-              echo "📂 Dossier projet introuvable, re-clonage..."
-              mkdir -p "$(dirname $PROJECT_DIR)"
-              rm -rf "$PROJECT_DIR"
-              git clone https://github.com/raphaelbentv/Venio.git "$PROJECT_DIR"
+            PROJECT_DIR="/opt/docker/openclaw/config/workspace/projects/venio"
+            SHARED_DIR="/opt/docker/venio-shared"
+            SHARED_ENV="$SHARED_DIR/.env"
+            COMPOSE_FILE="$PROJECT_DIR/docker-compose.prod.yml"
+            SERVICE="venio"
+            CONTAINER="venio-app"
+            OLD_IMAGE=""
+            TARGET_IMAGE=""
+
+            fail() {
+              echo "❌ $*" >&2
+              exit 1
+            }
+
+            wait_for_health() {
+              local timeout="${1:-120}"
+              local elapsed=0
+              local status=""
+
+              while [ "$elapsed" -lt "$timeout" ]; do
+                status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$CONTAINER" 2>/dev/null || true)"
+                case "$status" in
+                  healthy)
+                    return 0
+                    ;;
+                  exited|dead)
+                    echo "❌ Le conteneur est $status"
+                    return 1
+                    ;;
+                esac
+                sleep 5
+                elapsed=$((elapsed + 5))
+              done
+
+              echo "❌ Healthcheck non validé après ${timeout}s (état: ${status:-absent})"
+              return 1
+            }
+
+            rollback() {
+              echo "↩️ Échec du nouveau déploiement, restauration de l'image précédente..."
+              if [ -z "$OLD_IMAGE" ] || [ -z "$TARGET_IMAGE" ]; then
+                echo "❌ Rollback impossible : aucune image précédente n'a été identifiée"
+                return 1
+              fi
+
+              docker tag "$OLD_IMAGE" "$TARGET_IMAGE"
+              docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate --no-build "$SERVICE"
+              wait_for_health 120
+            }
+
+            [ "$DEPLOY_SHA" != "" ] || fail "SHA de déploiement absent"
+            [ -d "$PROJECT_DIR/.git" ] || fail "Dépôt absent dans $PROJECT_DIR — aucun dossier ne sera supprimé automatiquement"
+
+            # Le secret vit hors du checkout Git. Migration unique depuis les
+            # emplacements historiques, avant toute modification du service.
+            mkdir -p "$SHARED_DIR"
+            chmod 700 "$SHARED_DIR"
+            if [ ! -s "$SHARED_ENV" ]; then
+              for candidate in \
+                "$PROJECT_DIR/.env" \
+                "$PROJECT_DIR/.env.backup" \
+                "/opt/docker/venio/.env" \
+                "/opt/docker/venio/.env.backup"
+              do
+                if [ -s "$candidate" ] && [ ! -L "$candidate" ]; then
+                  install -m 600 "$candidate" "$SHARED_ENV"
+                  echo "✅ Environnement persistant initialisé"
+                  break
+                fi
+              done
             fi
+            [ -s "$SHARED_ENV" ] || fail "Aucun .env valide trouvé — l'ancien conteneur reste intact"
+            chmod 600 "$SHARED_ENV"
 
             cd "$PROJECT_DIR"
+            echo "📥 Récupération du commit testé $DEPLOY_SHA..."
+            git fetch --quiet origin main
+            git fetch --quiet origin "$DEPLOY_SHA"
 
-            # Sauvegarder le .env existant
-            if [ -f .env ]; then
-              cp .env .env.backup
-            fi
-
-            echo "📥 Pull du code..."
-            git fetch origin main
-            git reset --hard origin/main
-
-            # Restaurer le .env apres le reset
-            if [ -f .env.backup ]; then
-              mv .env.backup .env
-            fi
-
-            # Builder la nouvelle image PENDANT que l'ancien container tourne
-            echo "🏗️ Build de la nouvelle image (l'ancien container reste en ligne)..."
-            if ! docker compose -f docker-compose.prod.yml build --no-cache; then
-              echo "❌ Build échoué — l'ancien container reste en ligne"
-              exit 1
-            fi
-
-            # Swap rapide : down + up (quelques secondes de coupure max)
-            echo "🔄 Swap du container..."
-            docker compose -f docker-compose.prod.yml down 2>/dev/null || true
-            docker stop venio-app 2>/dev/null || true
-            docker rm venio-app 2>/dev/null || true
-            docker compose -f docker-compose.prod.yml up -d
-
-            echo "✅ Déploiement terminé"
-          DEPLOY
-            then
+            CURRENT_MAIN="$(git rev-parse origin/main)"
+            if [ "$DEPLOY_SHA" != "$CURRENT_MAIN" ]; then
+              echo "⏭️ Commit devenu obsolète ($DEPLOY_SHA, main=$CURRENT_MAIN) — déploiement ignoré"
               exit 0
+            fi
+
+            git reset --hard "$DEPLOY_SHA"
+            ln -sfn "$SHARED_ENV" "$PROJECT_DIR/.env"
+
+            [ -f "$COMPOSE_FILE" ] || fail "Fichier Compose absent"
+            docker compose -f "$COMPOSE_FILE" config --quiet
+            TARGET_IMAGE="$(docker compose -f "$COMPOSE_FILE" config --images | head -n 1)"
+            [ -n "$TARGET_IMAGE" ] || fail "Nom de l'image Compose introuvable"
+            OLD_IMAGE="$(docker inspect --format='{{.Image}}' "$CONTAINER" 2>/dev/null || true)"
+
+            # Le build se fait pendant que l'ancien conteneur continue de servir.
+            echo "🏗️ Build de la nouvelle image (production toujours en ligne)..."
+            docker compose -f "$COMPOSE_FILE" build --pull "$SERVICE"
+
+            echo "🔄 Remplacement atomique du service..."
+            if ! docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate --no-build "$SERVICE"; then
+              rollback || true
+              fail "Le nouveau conteneur n'a pas démarré"
+            fi
+
+            if ! wait_for_health 120; then
+              rollback || true
+              fail "Le nouveau conteneur n'est pas healthy"
+            fi
+
+            # Vérifie également le chemin public avant de considérer le swap réussi.
+            public_ok=false
+            for check in 1 2 3 4 5 6; do
+              if curl --fail --silent --show-error --max-time 10 https://venio.paris/api/health >/dev/null; then
+                public_ok=true
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$public_ok" != "true" ]; then
+              rollback || true
+              fail "Le healthcheck public a échoué"
+            fi
+
+            echo "✅ Déploiement de $DEPLOY_SHA validé (Docker healthy + endpoint public)"
+          DEPLOY
+            status=$?
+            set -e
+
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+
+            # 255 indique une rupture SSH. Une erreur applicative ne doit pas
+            # relancer tout le déploiement et masquer la cause initiale.
+            if [ "$status" -ne 255 ]; then
+              echo "❌ Déploiement interrompu avec le code $status"
+              exit "$status"
             fi
 
             if [ "$attempt" -lt 3 ]; then
@@ -87,15 +194,21 @@ jobs:
             fi
           done
 
-          echo "❌ Déploiement SSH échoué après 3 tentatives"
+          echo "❌ Connexion SSH impossible après 3 tentatives"
           exit 1
 
-      - name: ✅ Vérifier le site
+      - name: ✅ Vérifier le site depuis GitHub
+        shell: bash
         run: |
-          sleep 20
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venio.paris)
-          if [ "$STATUS" = "200" ]; then
-            echo "✅ Site en ligne sur https://venio.paris (HTTP $STATUS)"
-          else
-            echo "⚠️ Le site a répondu avec HTTP $STATUS"
-          fi
+          for check in 1 2 3 4 5 6; do
+            STATUS="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 https://venio.paris/api/health || true)"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Site en ligne sur https://venio.paris (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attente du site (${check}/6, HTTP ${STATUS:-aucun})..."
+            sleep 5
+          done
+
+          echo "❌ Le healthcheck public n'a pas répondu 200"
+          exit 1
