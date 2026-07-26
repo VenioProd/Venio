@@ -28,6 +28,7 @@ import adminAdminsRoutes from './routes/admin/admins.js'
 // (core, sections, items, tasks, messages) — avant ce refactor, 5 mounts distincts.
 import adminProjectsRouter from './routes/admin/projects/index.js'
 import adminBillingRoutes from './routes/admin/billing.js'
+import adminQuoteProposalRoutes from './routes/admin/quoteProposals.js'
 import adminCrmRoutes from './routes/admin/crm.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
@@ -75,6 +76,7 @@ import adminWorkspaceRoutes from './routes/admin/workspace.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import clientCollaborationRoutes from './routes/client/collaboration.js'
+import clientQuoteRoutes from './routes/client/quotes.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
@@ -281,6 +283,7 @@ app.use('/api/admin/admins', auth, requireMfa, adminAdminsRoutes)
 // Un seul mount pour /api/admin/projects — voir routes/admin/projects/index.ts
 app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
+app.use('/api/admin/quote-proposals', adminQuoteProposalRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
@@ -329,6 +332,18 @@ app.use('/api/admin/education', adminEducationRoutes)
 app.use('/api/projects', clientProjectContentRoutes)
 app.use('/api/projects', clientMessageRoutes)
 app.use('/api/projects', clientCollaborationRoutes)
+// Signature de devis : 10 tentatives /15 min /IP, aligné sur l'acceptation d'invitation.
+app.use(
+  '/api/projects/:projectId/proposals/:id/sign',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de tentatives de signature. Réessayez plus tard.' },
+  }),
+)
+app.use('/api/projects', clientQuoteRoutes)
 
 // This must stay after every /api mount and before static files / the SPA
 // fallback. app.all covers the namespace root, unknown GET, mutations and

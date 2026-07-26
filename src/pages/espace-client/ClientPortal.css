@@ -31,15 +31,15 @@
 }
 
 /* Icônes calendrier/heure visibles sur fond sombre */
-input.portal-input[type="date"],
-input.portal-input[type="datetime-local"] {
+input.portal-input[type='date'],
+input.portal-input[type='datetime-local'] {
   color-scheme: dark;
   padding-right: 40px;
   position: relative;
 }
 
-input.portal-input[type="date"]::-webkit-calendar-picker-indicator,
-input.portal-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+input.portal-input[type='date']::-webkit-calendar-picker-indicator,
+input.portal-input[type='datetime-local']::-webkit-calendar-picker-indicator {
   position: absolute;
   right: 0;
   width: 36px;
@@ -50,13 +50,13 @@ input.portal-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-div:has(> input.portal-input[type="date"]),
-div:has(> input.portal-input[type="datetime-local"]) {
+div:has(> input.portal-input[type='date']),
+div:has(> input.portal-input[type='datetime-local']) {
   position: relative;
 }
 
-div:has(> input.portal-input[type="date"])::after,
-div:has(> input.portal-input[type="datetime-local"])::after {
+div:has(> input.portal-input[type='date'])::after,
+div:has(> input.portal-input[type='datetime-local'])::after {
   content: '';
   position: absolute;
   right: 12px;
@@ -65,7 +65,8 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   width: 22px;
   height: 22px;
   pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") no-repeat center;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E")
+    no-repeat center;
   background-size: 22px 22px;
 }
 
@@ -203,28 +204,32 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.client-dashboard-logout[title="Mon profil"] {
+.client-dashboard-logout[title='Mon profil'] {
   border-color: rgba(16, 185, 129, 0.2);
   background: rgba(16, 185, 129, 0.08);
 }
 
-.client-dashboard-logout[title="Mon profil"]:hover {
+.client-dashboard-logout[title='Mon profil']:hover {
   transform: translateY(-2px);
   border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.15);
+  box-shadow:
+    0 4px 20px rgba(16, 185, 129, 0.2),
+    0 0 0 1px rgba(16, 185, 129, 0.15);
   color: #fff;
 }
 
-.client-dashboard-logout[title="Déconnexion"] {
+.client-dashboard-logout[title='Déconnexion'] {
   border-color: rgba(239, 68, 68, 0.35);
   background: rgba(239, 68, 68, 0.14);
   color: rgba(252, 129, 129, 0.95);
 }
 
-.client-dashboard-logout[title="Déconnexion"]:hover {
+.client-dashboard-logout[title='Déconnexion']:hover {
   transform: translateY(-2px);
   border-color: rgba(239, 68, 68, 0.5);
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.15);
+  box-shadow:
+    0 4px 20px rgba(239, 68, 68, 0.2),
+    0 0 0 1px rgba(239, 68, 68, 0.15);
   color: #fca5a5;
 }
 
@@ -392,6 +397,30 @@ div:has(> input.portal-input[type="datetime-local"])::after {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+}
+
+/* La carte est elle-même un lien : le lien facturation vit donc à côté,
+   dans ce conteneur, plutôt qu'imbriqué dans une autre ancre. */
+.client-project-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.client-project-card-billing-link {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.client-project-card-billing-link:hover {
+  color: var(--text-primary);
+  border-color: var(--primary);
 }
 
 .client-project-card {
@@ -569,7 +598,9 @@ div:has(> input.portal-input[type="datetime-local"])::after {
 }
 
 @keyframes client-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .client-dashboard-error {
@@ -1665,44 +1696,44 @@ div:has(> input.portal-input[type="datetime-local"])::after {
    CLIENT PORTAL — LIGHT MODE OVERRIDES
    ═══════════════════════════════════════════════════════ */
 
-[data-theme="light"] .portal-card {
+[data-theme='light'] .portal-card {
   background: #ffffff;
   border-color: #e2e8f0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .portal-input {
+[data-theme='light'] .portal-input {
   border-color: #e2e8f0;
   background: #ffffff;
   color: #1e293b;
 }
 
-[data-theme="light"] .portal-input::placeholder {
+[data-theme='light'] .portal-input::placeholder {
   color: #94a3b8;
 }
 
-[data-theme="light"] .portal-input:focus {
+[data-theme='light'] .portal-input:focus {
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
-[data-theme="light"] input.portal-input[type="date"],
-[data-theme="light"] input.portal-input[type="datetime-local"] {
+[data-theme='light'] input.portal-input[type='date'],
+[data-theme='light'] input.portal-input[type='datetime-local'] {
   color-scheme: light;
 }
 
-[data-theme="light"] .portal-button {
+[data-theme='light'] .portal-button {
   background: rgba(var(--primary-rgb), 0.08);
   border-color: #bae6fd;
   color: var(--primary-dark);
 }
 
-[data-theme="light"] .portal-button:hover:not(:disabled) {
+[data-theme='light'] .portal-button:hover:not(:disabled) {
   background: rgba(var(--primary-rgb), 0.15);
   border-color: var(--primary);
   color: #0369a1;
 }
 
-[data-theme="light"] .portal-action-link {
+[data-theme='light'] .portal-action-link {
   color: #475569;
   border-color: #e2e8f0;
 }

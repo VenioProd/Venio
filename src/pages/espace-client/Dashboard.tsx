@@ -52,21 +52,22 @@ const ClientDashboard = () => {
     load()
   }, [])
 
-  const activeProjects = projects.filter(p => p.status === 'EN_COURS')
-  const completedProjects = projects.filter(p => p.status === 'TERMINE')
-  const pendingProjects = projects.filter(p => p.status === 'EN_ATTENTE')
+  const activeProjects = projects.filter((p) => p.status === 'EN_COURS')
+  const completedProjects = projects.filter((p) => p.status === 'TERMINE')
+  const pendingProjects = projects.filter((p) => p.status === 'EN_ATTENTE')
 
   const filteredProjects = useMemo(() => {
     let result = [...projects]
     if (statusFilter !== 'ALL') {
-      result = result.filter(p => p.status === statusFilter)
+      result = result.filter((p) => p.status === statusFilter)
     }
     if (search.trim()) {
       const q = search.toLowerCase()
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q) ||
-        (p.summary || '').toLowerCase().includes(q)
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.summary || '').toLowerCase().includes(q),
       )
     }
     if (sortBy === 'name') {
@@ -82,16 +83,16 @@ const ClientDashboard = () => {
     <div className="portal-container client-dashboard">
       <section className="client-dashboard-hero">
         <div className="client-dashboard-hero-content">
-          <h1 className="client-dashboard-title">
-            Bonjour, {user?.name?.split(' ')[0] || 'vous'} 👋
-          </h1>
-          <p className="client-dashboard-subtitle">
-            Retrouvez ici vos projets et les documents associés.
-          </p>
+          <h1 className="client-dashboard-title">Bonjour, {user?.name?.split(' ')[0] || 'vous'} 👋</h1>
+          <p className="client-dashboard-subtitle">Retrouvez ici vos projets et les documents associés.</p>
         </div>
         <div className="client-dashboard-hero-decoration">
           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M45.3,-58.8C57.5,-48.2,65.4,-32.7,68.9,-16.3C72.4,0.1,71.5,17.4,64.3,31.8C57.1,46.2,43.6,57.7,28.3,63.8C13,69.9,-4.1,70.6,-20.3,66.3C-36.5,62,-51.8,52.7,-61.3,39.3C-70.8,25.9,-74.5,8.4,-72.3,-8.2C-70.1,-24.8,-62,-40.5,-49.8,-51.1C-37.6,-61.7,-21.2,-67.2,-3.8,-62.5C13.6,-57.8,33.1,-69.4,45.3,-58.8Z" transform="translate(100 100)" />
+            <path
+              fill="currentColor"
+              d="M45.3,-58.8C57.5,-48.2,65.4,-32.7,68.9,-16.3C72.4,0.1,71.5,17.4,64.3,31.8C57.1,46.2,43.6,57.7,28.3,63.8C13,69.9,-4.1,70.6,-20.3,66.3C-36.5,62,-51.8,52.7,-61.3,39.3C-70.8,25.9,-74.5,8.4,-72.3,-8.2C-70.1,-24.8,-62,-40.5,-49.8,-51.1C-37.6,-61.7,-21.2,-67.2,-3.8,-62.5C13.6,-57.8,33.1,-69.4,45.3,-58.8Z"
+              transform="translate(100 100)"
+            />
           </svg>
         </div>
       </section>
@@ -121,7 +122,14 @@ const ClientDashboard = () => {
           <div className="client-dashboard-stats">
             <div className="client-dashboard-stat">
               <div className="client-dashboard-stat-icon">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
@@ -134,7 +142,14 @@ const ClientDashboard = () => {
             </div>
             <div className="client-dashboard-stat">
               <div className="client-dashboard-stat-icon active">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
               </div>
@@ -145,7 +160,14 @@ const ClientDashboard = () => {
             </div>
             <div className="client-dashboard-stat">
               <div className="client-dashboard-stat-icon done">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
@@ -156,7 +178,14 @@ const ClientDashboard = () => {
             </div>
             <div className="client-dashboard-stat">
               <div className="client-dashboard-stat-icon pending">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                <svg
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  stroke="currentColor"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
@@ -171,16 +200,33 @@ const ClientDashboard = () => {
           <section className="client-dashboard-projects">
             <div className="client-dashboard-section-header">
               <h2 className="client-dashboard-section-title">Mes projets</h2>
-              <p className="client-dashboard-section-subtitle">
-                Suivez l'avancement de vos projets en temps réel
-              </p>
+              <p className="client-dashboard-section-subtitle">Suivez l'avancement de vos projets en temps réel</p>
             </div>
 
             {projects.length > 0 && (
-              <div className="client-dashboard-filters" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
+              <div
+                className="client-dashboard-filters"
+                style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}
+              >
                 <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '200px' }}>
-                  <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', stroke: 'var(--text-secondary)', fill: 'none', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <svg
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '16px',
+                      height: '16px',
+                      stroke: 'var(--text-secondary)',
+                      fill: 'none',
+                      strokeWidth: 2,
+                      strokeLinecap: 'round',
+                      strokeLinejoin: 'round',
+                    }}
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                   <input
                     className="portal-input"
@@ -231,57 +277,62 @@ const ClientDashboard = () => {
             ) : (
               <div className="client-dashboard-grid">
                 {filteredProjects.map((project) => (
-                  <Link
-                    key={project._id}
-                    to={`/espace-client/projets/${project._id}`}
-                    className="client-project-card"
-                  >
-                    <div className="client-project-card-header">
-                      <span className="client-project-card-icon">◈</span>
-                      <span
-                        className={`client-project-card-badge ${statusClass[project.status] || 'client-status-pending'}`}
-                      >
-                        {statusLabels[project.status] || project.status}
-                      </span>
-                    </div>
-                    <h3 className="client-project-card-title">{project.name}</h3>
-                    {project.summary && (
-                      <p className="client-project-card-summary">{project.summary}</p>
-                    )}
-                    <p className="client-project-card-desc">
-                      {project.description || 'Aucune description'}
-                    </p>
-                    {project.serviceTypes && project.serviceTypes.length > 0 && (
-                      <div className="client-project-card-tags">
-                        {project.serviceTypes.slice(0, 3).map((service, idx) => (
-                          <span key={idx} className="client-project-card-tag">{service}</span>
-                        ))}
-                        {project.serviceTypes.length > 3 && (
-                          <span className="client-project-card-tag-more">+{project.serviceTypes.length - 3}</span>
-                        )}
+                  <div key={project._id} className="client-project-card-wrapper">
+                    <Link to={`/espace-client/projets/${project._id}`} className="client-project-card">
+                      <div className="client-project-card-header">
+                        <span className="client-project-card-icon">◈</span>
+                        <span
+                          className={`client-project-card-badge ${statusClass[project.status] || 'client-status-pending'}`}
+                        >
+                          {statusLabels[project.status] || project.status}
+                        </span>
                       </div>
-                    )}
-                    {taskProgress[project._id] && taskProgress[project._id].total > 0 && (
-                      <div className="client-project-card-progress">
-                        <div className="client-project-card-progress-header">
-                          <span className="client-project-card-progress-label">Avancement</span>
-                          <span className="client-project-card-progress-value">{taskProgress[project._id].percent}%</span>
+                      <h3 className="client-project-card-title">{project.name}</h3>
+                      {project.summary && <p className="client-project-card-summary">{project.summary}</p>}
+                      <p className="client-project-card-desc">{project.description || 'Aucune description'}</p>
+                      {project.serviceTypes && project.serviceTypes.length > 0 && (
+                        <div className="client-project-card-tags">
+                          {project.serviceTypes.slice(0, 3).map((service, idx) => (
+                            <span key={idx} className="client-project-card-tag">
+                              {service}
+                            </span>
+                          ))}
+                          {project.serviceTypes.length > 3 && (
+                            <span className="client-project-card-tag-more">+{project.serviceTypes.length - 3}</span>
+                          )}
                         </div>
-                        <div className="client-project-card-progress-bar">
-                          <div
-                            className="client-project-card-progress-fill"
-                            style={{ width: `${taskProgress[project._id].percent}%` }}
-                          />
+                      )}
+                      {taskProgress[project._id] && taskProgress[project._id].total > 0 && (
+                        <div className="client-project-card-progress">
+                          <div className="client-project-card-progress-header">
+                            <span className="client-project-card-progress-label">Avancement</span>
+                            <span className="client-project-card-progress-value">
+                              {taskProgress[project._id].percent}%
+                            </span>
+                          </div>
+                          <div className="client-project-card-progress-bar">
+                            <div
+                              className="client-project-card-progress-fill"
+                              style={{ width: `${taskProgress[project._id].percent}%` }}
+                            />
+                          </div>
                         </div>
+                      )}
+                      <div className="client-project-card-footer">
+                        <span className="client-project-card-cta">
+                          Voir le détail
+                          <span className="client-project-card-cta-arrow">→</span>
+                        </span>
                       </div>
-                    )}
-                    <div className="client-project-card-footer">
-                      <span className="client-project-card-cta">
-                        Voir le détail
-                        <span className="client-project-card-cta-arrow">→</span>
-                      </span>
-                    </div>
-                  </Link>
+                    </Link>
+                    {/* Hors de la carte : imbriquer une ancre dans une autre est invalide. */}
+                    <Link
+                      to={`/espace-client/projets/${project._id}/facturation`}
+                      className="client-project-card-billing-link"
+                    >
+                      Devis et factures
+                    </Link>
+                  </div>
                 ))}
               </div>
             )}
