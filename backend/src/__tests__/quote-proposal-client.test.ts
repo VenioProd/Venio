@@ -120,3 +120,65 @@ describe('lecture des propositions côté client', () => {
     await request(app).get(`/api/projects/${projectId}/proposals`).expect(401)
   })
 })
+
+describe('mutations client', () => {
+  it('enregistre les réponses et régénère le cahier des charges', async () => {
+    const proposal = await createProposal({
+      questions: [{ type: 'text', label: 'Délai ?', required: true, order: 0 }],
+    })
+    const questionId = String(proposal.questions[0]!._id)
+
+    const response = await request(app)
+      .patch(`/api/projects/${projectId}/proposals/${proposal._id}/answers`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ answers: [{ question: questionId, value: 'Trois mois' }] })
+      .expect(200)
+
+    expect(response.body.proposal.answers[0].value).toBe('Trois mois')
+    expect(response.body.proposal.specification.content).toContain('Trois mois')
+  })
+
+  it('recalcule le total après un arbitrage et ignore tout montant posté', async () => {
+    const proposal = await createProposal()
+    const optionalId = String(proposal.lines[1]!._id)
+
+    const response = await request(app)
+      .patch(`/api/projects/${projectId}/proposals/${proposal._id}/selection`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ selectedOptionalLineIds: [optionalId], total: 1 })
+      .expect(200)
+
+    expect(response.body.totals).toEqual({ subtotal: 2600, taxTotal: 520, total: 3120 })
+  })
+
+  it('rejette la sélection d’une ligne obligatoire', async () => {
+    const proposal = await createProposal()
+    const mandatoryId = String(proposal.lines[0]!._id)
+
+    const response = await request(app)
+      .patch(`/api/projects/${projectId}/proposals/${proposal._id}/selection`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ selectedOptionalLineIds: [mandatoryId] })
+      .expect(422)
+
+    expect(response.body.code).toBe('INVALID_LINE_SELECTION')
+  })
+
+  it('interdit à un collaborateur invité d’arbitrer', async () => {
+    const proposal = await createProposal()
+    await request(app)
+      .patch(`/api/projects/${projectId}/proposals/${proposal._id}/selection`)
+      .set('Cookie', await cookieFor(viewerId))
+      .send({ selectedOptionalLineIds: [] })
+      .expect(403)
+  })
+
+  it('refuse toute mutation sur une proposition signée', async () => {
+    const proposal = await createProposal({ status: 'SIGNED' })
+    await request(app)
+      .patch(`/api/projects/${projectId}/proposals/${proposal._id}/selection`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ selectedOptionalLineIds: [] })
+      .expect(409)
+  })
+})

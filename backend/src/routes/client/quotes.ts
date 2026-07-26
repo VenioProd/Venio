@@ -1,10 +1,11 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
-import { param, validationResult } from 'express-validator'
+import { body, param, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import AuditLog from '../../models/AuditLog.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
-import { computeQuoteTotals } from '../../lib/quoteTotals.js'
+import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
+import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 
 const router = express.Router()
@@ -99,6 +100,107 @@ router.get(
       }).catch(() => {})
 
       return res.json({ proposal: loaded.proposal.toObject(), totals: totalsOf(loaded.proposal) })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/**
+ * Arbitrer et signer engagent financièrement : réservé au propriétaire, même
+ * si un collaborateur EDITOR peut par ailleurs modifier le contenu du projet.
+ */
+async function loadEditableProposal(req: Request, res: Response) {
+  const loaded = await loadProposalForClient(req, res)
+  if (!loaded) return null
+  if (loaded.access.role !== 'OWNER') {
+    res
+      .status(403)
+      .json({ error: 'Seul le propriétaire du projet peut valider une proposition', code: 'OWNER_REQUIRED' })
+    return null
+  }
+  if (loaded.proposal.status === 'EXPIRED') {
+    res.status(410).json({ error: 'Cette proposition a expiré', code: 'PROPOSAL_EXPIRED' })
+    return null
+  }
+  if (loaded.proposal.status !== 'SENT') {
+    res.status(409).json({ error: 'Cette proposition n’est plus modifiable', code: 'PROPOSAL_ALREADY_SIGNED' })
+    return null
+  }
+  return loaded
+}
+
+function refreshSpecification(proposal: IQuoteProposal): void {
+  if (proposal.specification.isManual) return
+  proposal.specification.content = buildSpecificationMarkdown({
+    title: proposal.title,
+    questions: proposal.questions.toObject(),
+    answers: proposal.answers.toObject(),
+    lines: proposal.lines.toObject(),
+    selectedOptionalLineIds: proposal.selectedOptionalLineIds,
+  })
+  proposal.specification.updatedAt = new Date()
+}
+
+router.patch(
+  '/:projectId/proposals/:id/answers',
+  param('projectId').isMongoId(),
+  param('id').isMongoId(),
+  body('answers').isArray().withMessage('answers doit être un tableau'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (validationFailed(req, res)) return
+      const loaded = await loadEditableProposal(req, res)
+      if (!loaded) return
+      const { proposal } = loaded
+
+      const knownQuestions = new Set(proposal.questions.map((question) => String(question._id)))
+      const incoming = req.body.answers as { question?: string; value?: unknown }[]
+      const unknown = incoming.filter((answer) => !knownQuestions.has(String(answer.question)))
+      if (unknown.length > 0) {
+        return res.status(422).json({ error: 'Question inconnue', code: 'UNKNOWN_QUESTION' })
+      }
+
+      proposal.set(
+        'answers',
+        incoming.map((answer) => ({ question: answer.question, value: String(answer.value ?? '') })),
+      )
+      refreshSpecification(proposal)
+      await proposal.save()
+
+      return res.json({ proposal: proposal.toObject(), totals: totalsOf(proposal) })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.patch(
+  '/:projectId/proposals/:id/selection',
+  param('projectId').isMongoId(),
+  param('id').isMongoId(),
+  body('selectedOptionalLineIds').isArray().withMessage('selectedOptionalLineIds doit être un tableau'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (validationFailed(req, res)) return
+      const loaded = await loadEditableProposal(req, res)
+      if (!loaded) return
+      const { proposal } = loaded
+
+      const selection = (req.body.selectedOptionalLineIds as string[]).map(String)
+      const check = validateSelection(proposal.lines.toObject(), selection)
+      if (!check.valid) {
+        return res
+          .status(422)
+          .json({ error: 'Sélection invalide', code: 'INVALID_LINE_SELECTION', invalidIds: check.invalidIds })
+      }
+
+      // Le corps de requête peut contenir un total : il n'est jamais lu.
+      proposal.set('selectedOptionalLineIds', selection)
+      refreshSpecification(proposal)
+      await proposal.save()
+
+      return res.json({ proposal: proposal.toObject(), totals: totalsOf(proposal) })
     } catch (err) {
       return next(err)
     }
