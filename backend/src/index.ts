@@ -330,6 +330,17 @@ app.use('/api/admin/education', adminEducationRoutes)
 app.use('/api/projects', clientProjectContentRoutes)
 app.use('/api/projects', clientMessageRoutes)
 app.use('/api/projects', clientCollaborationRoutes)
+// Signature de devis : 10 tentatives /15 min /IP, aligné sur l'acceptation d'invitation.
+app.use(
+  '/api/projects/:projectId/proposals/:id/sign',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de tentatives de signature. Réessayez plus tard.' },
+  }),
+)
 app.use('/api/projects', clientQuoteRoutes)
 
 // This must stay after every /api mount and before static files / the SPA

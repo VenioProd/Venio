@@ -6,6 +6,7 @@ import QuoteProposal from '../../models/QuoteProposal.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
+import { buildBillingDocumentForProposal, lockProposalForSignature } from '../../lib/quoteSignature.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 
 const router = express.Router()
@@ -201,6 +202,69 @@ router.patch(
       await proposal.save()
 
       return res.json({ proposal: proposal.toObject(), totals: totalsOf(proposal) })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+const CONSENT_TEXT =
+  'Je reconnais avoir pris connaissance du périmètre et du montant de cette proposition, et je l’accepte sans réserve.'
+
+router.post(
+  '/:projectId/proposals/:id/sign',
+  param('projectId').isMongoId(),
+  param('id').isMongoId(),
+  body('signerName').trim().isLength({ min: 2 }).withMessage('Nom du signataire requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (validationFailed(req, res)) return
+      const loaded = await loadEditableProposal(req, res)
+      if (!loaded) return
+      const { proposal } = loaded
+
+      if (req.body.consent !== true) {
+        return res.status(422).json({ error: 'Consentement explicite requis', code: 'CONSENT_REQUIRED' })
+      }
+
+      const answered = new Map(proposal.answers.map((answer) => [String(answer.question), answer.value.trim()]))
+      const missingQuestionIds = proposal.questions
+        .filter((question) => question.required && !answered.get(String(question._id)))
+        .map((question) => String(question._id))
+      if (missingQuestionIds.length > 0) {
+        return res.status(422).json({
+          error: 'Certaines questions obligatoires sont sans réponse',
+          code: 'MISSING_REQUIRED_ANSWERS',
+          missingQuestionIds,
+        })
+      }
+
+      const ipHeader = req.headers['x-forwarded-for'] || req.ip || 'inconnue'
+      const ip = Array.isArray(ipHeader) ? ipHeader[0]! : String(ipHeader)
+      const locked = await lockProposalForSignature(String(proposal._id), {
+        signerUserId: req.user!.id,
+        signerName: String(req.body.signerName).trim(),
+        signerEmail: req.user!.email,
+        ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+        consentText: CONSENT_TEXT,
+      })
+      if (!locked) {
+        return res.status(409).json({ error: 'Cette proposition a déjà été signée', code: 'PROPOSAL_ALREADY_SIGNED' })
+      }
+
+      const billingDocument = await buildBillingDocumentForProposal(locked)
+
+      AuditLog.create({
+        userId: req.user!.id,
+        email: req.user!.email,
+        action: 'QUOTE_PROPOSAL_SIGNED',
+        ip,
+        userAgent: req.headers['user-agent'] || '',
+        metadata: { proposalId: String(locked._id), billingDocumentId: String(billingDocument._id) },
+      }).catch(() => {})
+
+      return res.status(201).json({ billingDocument: billingDocument.toObject() })
     } catch (err) {
       return next(err)
     }
