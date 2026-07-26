@@ -23,6 +23,17 @@ export type { ILead, ILeadActivity } from './lead.js'
 
 export type { IBillingLine, IBillingDocument } from './billing.js'
 
+export type {
+  QuoteProposalStatus,
+  QuoteQuestionType,
+  IQuoteQuestion,
+  IQuoteAnswer,
+  IQuoteLine,
+  IQuoteSignature,
+  IQuoteSpecification,
+  IQuoteProposal,
+} from './quote.js'
+
 export type { IClientActivity, IClientContact, IClientNote, IScoringWeights, ICrmSettings } from './crm.js'
 
 export type { IBriefDateCle, IMissionBrief } from './brief.js'
