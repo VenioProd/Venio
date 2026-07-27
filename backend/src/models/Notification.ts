@@ -28,9 +28,19 @@ const notificationSchema = new mongoose.Schema<INotification>(
     isRead: { type: Boolean, default: false },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 })
+notificationSchema.index(
+  { recipient: 1, 'metadata.dedupeKey': 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      isRead: false,
+      'metadata.dedupeKey': { $type: 'string' },
+    },
+  },
+)
 
 export default mongoose.model<INotification>('Notification', notificationSchema)

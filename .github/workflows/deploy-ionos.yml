@@ -121,6 +121,8 @@ jobs:
             fi
             [ -s "$SHARED_ENV" ] || fail "Aucun .env valide trouvé — l'ancien conteneur reste intact"
             chmod 600 "$SHARED_ENV"
+            grep -qE '^VAPID_PUBLIC_KEY=.+$' "$SHARED_ENV" || fail "VAPID_PUBLIC_KEY absente — l'ancien conteneur reste intact"
+            grep -qE '^VAPID_PRIVATE_KEY=.+$' "$SHARED_ENV" || fail "VAPID_PRIVATE_KEY absente — l'ancien conteneur reste intact"
 
             cd "$PROJECT_DIR"
             echo "📥 Récupération du commit testé $DEPLOY_SHA..."

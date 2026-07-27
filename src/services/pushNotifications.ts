@@ -14,8 +14,20 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return output
 }
 
+export function subscriptionUsesKey(subscription: PushSubscription, publicKey: string): boolean {
+  const currentKey = subscription.options.applicationServerKey
+  if (!currentKey) return false
+
+  const current = new Uint8Array(currentKey)
+  const expected = urlBase64ToUint8Array(publicKey)
+  if (current.length !== expected.length) return false
+  return current.every((value, index) => value === expected[index])
+}
+
 export function isPushSupported(): boolean {
-  return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  return (
+    typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  )
 }
 
 export function getCurrentPermission(): NotificationPermission | 'unsupported' {
@@ -61,9 +73,7 @@ export async function subscribePush(): Promise<{ ok: boolean; reason?: string }>
     return { ok: false, reason: 'Permission refusée par l’utilisateur' }
   }
 
-  const permission = Notification.permission === 'granted'
-    ? 'granted'
-    : await Notification.requestPermission()
+  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
 
   if (permission !== 'granted') {
     return { ok: false, reason: 'Permission non accordée' }
@@ -79,8 +89,15 @@ export async function subscribePush(): Promise<{ ok: boolean; reason?: string }>
     return { ok: false, reason: 'Push non configuré côté serveur' }
   }
 
-  // Si déjà subscribed, on renvoie le succès directement
+  // Une rotation VAPID invalide les anciens abonnements côté push provider.
+  // Le navigateur conserve pourtant encore l'ancien objet local : on le
+  // remplace automatiquement avec la clé serveur courante.
   let subscription = await registration.pushManager.getSubscription()
+  if (subscription && !subscriptionUsesKey(subscription, publicKey)) {
+    await subscription.unsubscribe().catch(() => false)
+    subscription = null
+  }
+
   if (!subscription) {
     const applicationServerKey = urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer
     subscription = await registration.pushManager.subscribe({
@@ -132,7 +149,18 @@ export async function getPushStatus(): Promise<PushStatus> {
   if (!isPushSupported()) {
     return { supported: false, permission: 'unsupported', subscribed: false }
   }
-  const subscription = await getExistingSubscription()
+  let subscription = await getExistingSubscription()
+
+  // La permission est déjà acquise : une rotation de clé peut être réparée
+  // silencieusement au prochain chargement de la PWA, sans nouvelle invite.
+  if (subscription && Notification.permission === 'granted') {
+    const publicKey = await fetchVapidPublicKey()
+    if (publicKey && !subscriptionUsesKey(subscription, publicKey)) {
+      const result = await subscribePush()
+      subscription = result.ok ? await getExistingSubscription() : null
+    }
+  }
+
   return {
     supported: true,
     permission: Notification.permission,

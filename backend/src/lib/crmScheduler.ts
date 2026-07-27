@@ -5,7 +5,6 @@ import CrmSettings from '../models/CrmSettings.js'
 import BillingDocument from '../models/BillingDocument.js'
 import Project from '../models/Project.js'
 import MissionBrief from '../models/MissionBrief.js'
-import { ADMIN_ROLES } from './permissions.js'
 import {
   getDaysSinceContact,
   getDaysOverdue,
@@ -21,7 +20,6 @@ import {
   sendEscalationEmail,
   sendProposalReminderEmail,
   sendWeeklyReportEmail,
-  sendTaskAssignedEmail,
   sendInvoiceReminderEmail,
   sendTaskReminderEmail,
   sendBriefReminderEmail,
@@ -414,6 +412,7 @@ export async function processOverdueTasks(): Promise<OverdueTasksResult> {
         title: 'Tâche en retard',
         message: `"${task.title}" dans ${project?.name || 'un projet'} est en retard`,
         link: `/admin/projets/${project?._id}?tab=tasks`,
+        dedupeKey: `crm:task-overdue:${task._id}`,
       }).catch(() => {})
 
       notified++
@@ -512,6 +511,7 @@ export async function processTaskDeadlineReminders(): Promise<TaskReminderResult
         title: 'Tâche bientôt à échéance',
         message: `"${task.title}" dans ${project?.name || 'un projet'} arrive à échéance demain`,
         link: `/admin/projets/${project?._id}?tab=tasks`,
+        dedupeKey: `crm:task-deadline:${task._id}:${task.dueDate!.toISOString()}`,
       }).catch(() => {})
 
       // Send email
@@ -567,6 +567,7 @@ export async function processProjectDeadlineAlerts(): Promise<ProjectDeadlineRes
         title: 'Échéance projet proche',
         message: `Le projet "${project.name}" arrive à échéance dans ${daysLeft} jour(s)`,
         link: `/admin/projets/${project._id}`,
+        dedupeKey: `crm:project-deadline:${project._id}:${project.endDate!.toISOString()}`,
       }).catch(() => {})
 
       notified++
@@ -610,6 +611,7 @@ export async function processBriefDeadlineReminders(): Promise<BriefReminderResu
         title: 'Brief bientôt à échéance',
         message: `Le brief "${brief.intitule}" arrive à échéance le ${deadlineStr}`,
         link: '/admin/gestion',
+        dedupeKey: `crm:brief-deadline:${brief._id}:${brief.deadline.toISOString()}`,
       }).catch(() => {})
 
       // Send email
