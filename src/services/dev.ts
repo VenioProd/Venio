@@ -330,7 +330,7 @@ export function updateDevProject(id: string, data: Partial<DevProject>): Promise
   return apiFetch(`/api/admin/dev/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
-export function deleteDevProject(id: string): Promise<{ ok: boolean }> {
+export function deleteDevProject(id: string): Promise<{ ok: boolean; archived: boolean; archivedIssues: number }> {
   return apiFetch(`/api/admin/dev/projects/${id}`, { method: 'DELETE' })
 }
 

@@ -115,6 +115,29 @@ export interface EducationStudent {
   updatedAt: string
 }
 
+export interface EducationStudentImportResult {
+  dryRun?: true
+  totalRows?: number
+  valid?: number
+  inserted?: number
+  skipped: number
+  errors: Array<{ row: number; error: string }>
+  preview?: Array<Pick<EducationStudent, 'firstName' | 'lastName' | 'email' | 'externalId'>>
+}
+
+export interface EducationStudentOverview {
+  attendanceTotal: number
+  assignmentsTotal: number
+  attendance: Array<{
+    session: Pick<EducationSession, '_id' | 'title' | 'date'>
+    state: AttendanceState
+  }>
+  grades: Array<{
+    assignment: Pick<EducationAssignment, '_id' | 'title' | 'deadline' | 'maxGrade' | 'status'>
+    submission: EducationSubmission | null
+  }>
+}
+
 export interface AttendanceEntry {
   studentId: string | { _id: string; firstName: string; lastName: string }
   state: AttendanceState
@@ -466,17 +489,24 @@ export async function getClassHome(classId: string): Promise<{ note: EducationNo
 
 // Students
 export async function listStudents(
-  params: { classId?: string; status?: string; search?: string } = {},
+  params: { classId?: string; status?: string; search?: string; limit?: number; skip?: number; sort?: string } = {},
 ): Promise<{ students: EducationStudent[]; total: number }> {
   const qs = new URLSearchParams()
   if (params.classId) qs.set('classId', params.classId)
   if (params.status) qs.set('status', params.status)
   if (params.search) qs.set('search', params.search)
+  if (params.limit !== undefined) qs.set('limit', String(params.limit))
+  if (params.skip !== undefined) qs.set('skip', String(params.skip))
+  if (params.sort) qs.set('sort', params.sort)
   return await apiFetch(`${base}/students${qs.toString() ? '?' + qs.toString() : ''}`)
 }
 
 export async function getStudent(id: string): Promise<{ student: EducationStudent }> {
   return await apiFetch(`${base}/students/${id}`)
+}
+
+export async function getStudentOverview(id: string): Promise<EducationStudentOverview> {
+  return await apiFetch(`${base}/students/${id}/overview`)
 }
 
 export async function createStudent(
@@ -488,10 +518,11 @@ export async function createStudent(
 export async function importStudentsCsv(
   classId: string,
   csv: string,
-): Promise<{ inserted: number; students: EducationStudent[] }> {
+  options: { dryRun?: boolean } = {},
+): Promise<EducationStudentImportResult> {
   return await apiFetch(`${base}/students/import`, {
     method: 'POST',
-    body: JSON.stringify({ classId, csv }),
+    body: JSON.stringify({ classId, csv, dryRun: options.dryRun === true }),
   })
 }
 

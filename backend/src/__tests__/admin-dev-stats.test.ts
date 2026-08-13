@@ -5,7 +5,13 @@ import mongoose from 'mongoose'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 
 vi.mock('../middleware/auth.js', () => ({
-  default: (_req: Request, _res: Response, next: NextFunction) => next(),
+  default: (req: Request, _res: Response, next: NextFunction) => {
+    req.user = { id: String(systemUserId), role: 'SUPER_ADMIN' } as Request['user']
+    next()
+  },
+}))
+vi.mock('../lib/security/sensitiveActions.js', () => ({
+  sensitiveAction: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
 vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
@@ -95,7 +101,7 @@ describe('GET /api/admin/dev/priorities', () => {
     const { default: DevProject } = await import('../models/DevProject.js')
     const { default: DevIssue } = await import('../models/DevIssue.js')
     const active = await DevProject.create({ key: 'VEN', name: 'Venio', createdBy: systemUserId })
-    const healthy = await DevProject.create({ key: 'OPS', name: 'Ops', createdBy: systemUserId })
+    await DevProject.create({ key: 'OPS', name: 'Ops', createdBy: systemUserId })
     const routine = await DevProject.create({ key: 'RUN', name: 'Run', createdBy: systemUserId })
     const paused = await DevProject.create({
       key: 'OLD',
@@ -183,6 +189,74 @@ describe('GET /api/admin/dev/priorities', () => {
     expect(activeState).toMatchObject({ state: 'attention', nextAction: { kind: 'build_failure' } })
     expect(healthyState).toMatchObject({ state: 'healthy', nextAction: null })
     expect(routineState).toMatchObject({ state: 'attention', nextAction: { issue: { identifier: 'RUN-1' } } })
+  })
+
+  it('ne perd pas une priorité ancienne quand plus de 500 issues sont ouvertes', async () => {
+    const { default: DevProject } = await import('../models/DevProject.js')
+    const { default: DevIssue } = await import('../models/DevIssue.js')
+    const project = await DevProject.create({ key: 'BIG', name: 'Large backlog', createdBy: systemUserId })
+    await DevIssue.insertMany(
+      Array.from({ length: 500 }, (_, index) => ({
+        project: project._id,
+        identifier: `BIG-${index + 1}`,
+        number: index + 1,
+        title: `Routine ${index + 1}`,
+        status: 'TODO',
+        priority: 'MEDIUM',
+        type: 'TASK',
+        reporter: systemUserId,
+      })),
+    )
+    const oldUrgent = await DevIssue.create({
+      project: project._id,
+      identifier: 'BIG-501',
+      number: 501,
+      title: 'Ancienne priorité urgente',
+      status: 'TODO',
+      priority: 'URGENT',
+      type: 'BUG',
+      reporter: systemUserId,
+    })
+    await DevIssue.updateOne(
+      { _id: oldUrgent._id },
+      { $set: { updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      { timestamps: false },
+    )
+
+    const res = await request(app).get('/api/admin/dev/priorities').expect(200)
+    expect(res.body.items.some((item: { issue: { identifier: string } }) => item.issue.identifier === 'BIG-501')).toBe(
+      true,
+    )
+  })
+})
+
+describe('DELETE /api/admin/dev/projects/:id', () => {
+  it('archive le projet et ses issues sans effacer les commentaires ni les événements', async () => {
+    const { default: DevProject } = await import('../models/DevProject.js')
+    const { default: DevIssue } = await import('../models/DevIssue.js')
+    const { default: DevIssueComment } = await import('../models/DevIssueComment.js')
+    const { default: DevIssueEvent } = await import('../models/DevIssueEvent.js')
+    const project = await DevProject.create({ key: 'ARC', name: 'Archive me', createdBy: systemUserId })
+    const issue = await DevIssue.create({
+      project: project._id,
+      identifier: 'ARC-1',
+      number: 1,
+      title: 'Keep history',
+      reporter: systemUserId,
+    })
+    await DevIssueComment.create({ project: project._id, issue: issue._id, author: systemUserId, body: 'Evidence' })
+    await DevIssueEvent.create({ project: project._id, issue: issue._id, type: 'created', summary: 'Created' })
+
+    const res = await request(app).delete(`/api/admin/dev/projects/${project._id}`).expect(200)
+    expect(res.body).toMatchObject({ ok: true, archived: true, archivedIssues: 1 })
+    expect((await DevProject.findById(project._id))?.status).toBe('ARCHIVED')
+    expect((await DevIssue.findById(issue._id))?.archivedAt).not.toBeNull()
+    expect(await DevIssueComment.countDocuments({ issue: issue._id })).toBe(1)
+    expect(await DevIssueEvent.countDocuments({ issue: issue._id })).toBe(1)
+    const activeList = await request(app).get('/api/admin/dev/projects').expect(200)
+    expect(activeList.body.projects).toEqual([])
+    const archivedList = await request(app).get('/api/admin/dev/projects?status=ARCHIVED').expect(200)
+    expect(archivedList.body.projects).toHaveLength(1)
   })
 })
 

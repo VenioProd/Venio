@@ -223,8 +223,6 @@ export async function computeDailyPriorities(): Promise<DailyPrioritiesPayload> 
     status: { $nin: CLOSED_ISSUE_STATUSES },
   })
     .select('_id project identifier title status priority labels dueDate updatedAt github')
-    .sort({ updatedAt: -1 })
-    .limit(500)
     .lean()) as unknown as IssueWithProject[]
 
   const candidates = issues

@@ -8,7 +8,7 @@ export const SUBMISSION_STATUSES = [
   'CORRIGE',
   'NON_VALIDE',
 ] as const
-export type EducationSubmissionStatus = typeof SUBMISSION_STATUSES[number]
+export type EducationSubmissionStatus = (typeof SUBMISSION_STATUSES)[number]
 
 export interface ISubmissionFile {
   originalName: string
@@ -54,17 +54,20 @@ const schema = new Schema<IEducationSubmission>(
       ],
       default: [],
     },
-    url: { type: String, default: '' },
-    textBody: { type: String, default: '' },
-    grade: { type: Number, default: null },
-    feedback: { type: String, default: '' },
+    url: { type: String, default: '', maxlength: 2000 },
+    textBody: { type: String, default: '', maxlength: 20000 },
+    grade: { type: Number, default: null, min: 0 },
+    feedback: { type: String, default: '', maxlength: 10000 },
     isLate: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null, index: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
-schema.index({ owner: 1, assignmentId: 1, studentId: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } })
+schema.index(
+  { owner: 1, assignmentId: 1, studentId: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+)
 schema.index({ owner: 1, status: 1, deletedAt: 1 })
 // Grade averages and follow-up checks read a learner's active submissions across assignments.
 schema.index({ owner: 1, studentId: 1, deletedAt: 1 })

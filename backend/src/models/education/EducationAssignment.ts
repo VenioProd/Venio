@@ -1,10 +1,10 @@
 import mongoose, { Schema } from 'mongoose'
 
 export const ASSIGNMENT_STATUSES = ['DRAFT', 'OUVERT', 'EN_CORRECTION', 'CLOS', 'ARCHIVE'] as const
-export type EducationAssignmentStatus = typeof ASSIGNMENT_STATUSES[number]
+export type EducationAssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number]
 
 export const ASSIGNMENT_KINDS = ['DEVOIR', 'PROJET', 'EXPOSE', 'QCM', 'EXAMEN', 'AUTRE'] as const
-export type EducationAssignmentKind = typeof ASSIGNMENT_KINDS[number]
+export type EducationAssignmentKind = (typeof ASSIGNMENT_KINDS)[number]
 
 export interface IRubricCriterion {
   label: string
@@ -41,8 +41,8 @@ const schema = new Schema<IEducationAssignment>(
     kind: { type: String, enum: ASSIGNMENT_KINDS, default: 'DEVOIR' },
     instructions: { type: String, default: '' },
     deadline: { type: Date, default: null, index: true },
-    maxGrade: { type: Number, default: 20 },
-    weight: { type: Number, default: 1 },
+    maxGrade: { type: Number, default: 20, min: 0.01, max: 1000 },
+    weight: { type: Number, default: 1, min: 0, max: 1000 },
     status: { type: String, enum: ASSIGNMENT_STATUSES, default: 'DRAFT', index: true },
     expectedDeliverables: { type: [String], default: [] },
     rubric: {
@@ -59,7 +59,7 @@ const schema = new Schema<IEducationAssignment>(
     tags: { type: [String], default: [] },
     deletedAt: { type: Date, default: null, index: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 schema.index({ owner: 1, classId: 1, status: 1, deadline: 1, deletedAt: 1 })

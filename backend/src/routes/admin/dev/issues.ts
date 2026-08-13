@@ -14,6 +14,7 @@ import {
   applyStatusTimestamps,
   CLOSED_ISSUE_STATUSES,
   recordIssueEvent,
+  validateIssueReferences,
 } from '../../../lib/dev/issueMutations.js'
 
 const router = express.Router()
@@ -112,6 +113,8 @@ router.post(
 
       const title = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
       if (!title) return res.status(400).json({ error: 'title requis' })
+      const relationError = await validateIssueReferences({ projectId: projectDoc._id, body: req.body })
+      if (relationError) return res.status(400).json({ error: relationError })
 
       const description = typeof req.body?.description === 'string' ? req.body.description.trim() : ''
       const status =
@@ -218,6 +221,12 @@ router.patch(
       if (!isObjectId(req.params.id)) return res.status(400).json({ error: 'ID invalide' })
       const issue = await DevIssue.findById(req.params.id)
       if (!issue) return res.status(404).json({ error: 'Issue introuvable' })
+      const relationError = await validateIssueReferences({
+        projectId: issue.project,
+        issueId: issue._id,
+        body: req.body,
+      })
+      if (relationError) return res.status(400).json({ error: relationError })
 
       const oldStatus = issue.status
       const oldPriority = issue.priority
@@ -439,7 +448,9 @@ router.delete(
         return res.status(400).json({ error: 'ID invalide' })
       }
       const comment = await DevIssueComment.findById(req.params.commentId)
-      if (!comment) return res.status(404).json({ error: 'Commentaire introuvable' })
+      if (!comment || comment.issue.toString() !== req.params.id) {
+        return res.status(404).json({ error: 'Commentaire introuvable' })
+      }
 
       // Auteur OU SUPER_ADMIN peuvent supprimer
       if (comment.author.toString() !== req.user!.id && req.user!.role !== 'SUPER_ADMIN') {

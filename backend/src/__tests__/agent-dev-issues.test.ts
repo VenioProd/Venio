@@ -189,6 +189,73 @@ describe('PATCH /api/v1/agent/dev/issues/:id — labels + dueDate', () => {
   })
 })
 
+describe('issue links — project integrity and cycle prevention', () => {
+  it('accepts a parent from the same project and rejects a cross-project link', async () => {
+    const parent = await DevIssue.create({
+      project: projectId,
+      identifier: 'VEN-1',
+      number: 1,
+      title: 'Parent',
+      reporter: systemUserId,
+    })
+    const foreignProject = await DevProject.create({ key: 'OTH', name: 'Other', createdBy: systemUserId })
+    const foreignIssue = await DevIssue.create({
+      project: foreignProject._id,
+      identifier: 'OTH-1',
+      number: 1,
+      title: 'Foreign',
+      reporter: systemUserId,
+    })
+    const { plainSecret } = await createAgentTokenInDb(['write:dev'])
+
+    const created = await request(app)
+      .post('/api/v1/agent/dev/issues')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ project: String(projectId), title: 'Child', parent: String(parent._id) })
+      .expect(201)
+    expect(created.body.parent).toBe(String(parent._id))
+
+    const rejected = await request(app)
+      .patch(`/api/v1/agent/dev/issues/${created.body._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ blockedBy: [String(foreignIssue._id)] })
+      .expect(400)
+    expect(rejected.body.code).toBe('INVALID_RELATION')
+  })
+
+  it('rejects self references and parent cycles', async () => {
+    const first = await DevIssue.create({
+      project: projectId,
+      identifier: 'VEN-1',
+      number: 1,
+      title: 'First',
+      reporter: systemUserId,
+    })
+    const second = await DevIssue.create({
+      project: projectId,
+      identifier: 'VEN-2',
+      number: 2,
+      title: 'Second',
+      reporter: systemUserId,
+      parent: first._id,
+    })
+    const { plainSecret } = await createAgentTokenInDb(['write:dev'])
+
+    await request(app)
+      .patch(`/api/v1/agent/dev/issues/${first._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ blockedBy: [String(first._id)] })
+      .expect(400)
+
+    const cycle = await request(app)
+      .patch(`/api/v1/agent/dev/issues/${first._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ parent: String(second._id) })
+      .expect(400)
+    expect(cycle.body.error).toContain('cycle')
+  })
+})
+
 describe('POST /api/v1/agent/dev/issues/:id/comments — enriched context', () => {
   it('persists a typed comment and compact execution context', async () => {
     const issue = await DevIssue.create({

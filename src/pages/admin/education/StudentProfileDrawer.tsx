@@ -5,19 +5,14 @@ import {
   ATTENDANCE_LABEL,
   SUBMISSION_STATUS_LABEL,
   formatDate,
-  getAssignment,
-  listAssignments,
-  listSessions,
+  getStudentOverview,
   studentDisplayName,
   updateStudent,
   acknowledgeStudentFollowUp,
-  type AttendanceState,
-  type EducationAssignment,
   type EducationDashboardAlert,
-  type EducationSession,
   type EducationStudent,
   type EducationStudentStatus,
-  type EducationSubmission,
+  type EducationStudentOverview,
 } from '../../../services/education'
 import { Kpi } from './class-parts'
 
@@ -36,12 +31,8 @@ const STUDENT_STATUS_LABEL: Record<EducationStudentStatus, string> = {
 const MAX_SESSIONS_SHOWN = 30
 const MAX_ASSIGNMENTS = 20
 
-function idOf(ref: string | { _id: string }): string {
-  return typeof ref === 'string' ? ref : ref._id
-}
-
-type AttendanceRow = { session: EducationSession; state: AttendanceState }
-type GradeRow = { assignment: EducationAssignment; submission: EducationSubmission | null }
+type AttendanceRow = EducationStudentOverview['attendance'][number]
+type GradeRow = EducationStudentOverview['grades'][number]
 
 export function StudentProfileDrawer({
   student,
@@ -54,8 +45,6 @@ export function StudentProfileDrawer({
   onChanged: () => void
   followUpAlert?: EducationDashboardAlert | null
 }) {
-  const classId = idOf(student.classId)
-
   const [status, setStatus] = useState<EducationStudentStatus>(student.status)
   const [notes, setNotes] = useState(student.notes || '')
   const [notesSaved, setNotesSaved] = useState(false)
@@ -66,55 +55,34 @@ export function StudentProfileDrawer({
   // Historique de présence.
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[] | null>(null)
   const [attendanceError, setAttendanceError] = useState<string | null>(null)
+  const [attendanceTotal, setAttendanceTotal] = useState(0)
 
   // Notes par devoir.
   const [gradeRows, setGradeRows] = useState<GradeRow[] | null>(null)
   const [gradesError, setGradesError] = useState<string | null>(null)
   const [assignmentsTotal, setAssignmentsTotal] = useState(0)
 
-  const loadAttendance = useCallback(async () => {
-    setAttendanceRows(null)
-    setAttendanceError(null)
+  const loadOverview = useCallback(async () => {
     try {
-      const r = await listSessions({ classId })
-      const rows = r.sessions
-        .slice()
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .map((session) => {
-          const entry = session.attendance.find((a) => idOf(a.studentId) === student._id)
-          return entry ? { session, state: entry.state } : null
-        })
-        .filter((x): x is AttendanceRow => x !== null)
-        .slice(0, MAX_SESSIONS_SHOWN)
-      setAttendanceRows(rows)
+      const overview = await getStudentOverview(student._id)
+      setAttendanceError(null)
+      setGradesError(null)
+      setAttendanceRows(overview.attendance)
+      setAttendanceTotal(overview.attendanceTotal)
+      setGradeRows(overview.grades)
+      setAssignmentsTotal(overview.assignmentsTotal)
     } catch (err) {
-      setAttendanceError(err instanceof Error ? err.message : 'Impossible de charger les séances')
+      const message = err instanceof Error ? err.message : 'Impossible de charger la fiche étudiant'
+      setAttendanceError(message)
+      setGradesError(message)
     }
-  }, [classId, student._id])
-
-  const loadGrades = useCallback(async () => {
-    setGradeRows(null)
-    setGradesError(null)
-    try {
-      const r = await listAssignments({ classId })
-      setAssignmentsTotal(r.assignments.length)
-      const details = await Promise.all(r.assignments.slice(0, MAX_ASSIGNMENTS).map((a) => getAssignment(a._id)))
-      const rows = details.map((d) => ({
-        assignment: d.assignment,
-        submission: d.submissions.find((s) => idOf(s.studentId) === student._id) ?? null,
-      }))
-      setGradeRows(rows)
-    } catch (err) {
-      setGradesError(err instanceof Error ? err.message : 'Impossible de charger les devoirs')
-    }
-  }, [classId, student._id])
+  }, [student._id])
 
   useEffect(() => {
-    loadAttendance()
-  }, [loadAttendance])
-  useEffect(() => {
-    loadGrades()
-  }, [loadGrades])
+    // The drawer must refresh when its student changes; state updates happen after the request settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadOverview()
+  }, [loadOverview])
 
   async function saveStatus(next: EducationStudentStatus) {
     const prev = status
@@ -160,10 +128,16 @@ export function StudentProfileDrawer({
   return (
     <>
       <div className="edu-drawer-backdrop" onClick={onClose} />
-      <div className="edu-drawer" style={{ width: 'min(720px, 96vw)' }}>
+      <div
+        className="edu-drawer"
+        style={{ width: 'min(720px, 96vw)' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-profile-title"
+      >
         <div className="edu-drawer-head">
           <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
+            <h2 id="student-profile-title" className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
               {studentDisplayName(student)}
             </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
@@ -184,7 +158,7 @@ export function StudentProfileDrawer({
                 </option>
               ))}
             </select>
-            <button className="edu-btn-icon" onClick={onClose}>
+            <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer la fiche étudiant">
               <X size={18} />
             </button>
           </div>
@@ -236,7 +210,7 @@ export function StudentProfileDrawer({
           {gradesError ? (
             <div className="edu-banner-error" role="alert">
               {gradesError}
-              <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadGrades}>
+              <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadOverview}>
                 Réessayer
               </button>
             </div>
@@ -282,11 +256,19 @@ export function StudentProfileDrawer({
             </table>
           )}
 
-          <h2 className="edu-h2">Historique de présence</h2>
+          <h2 className="edu-h2">
+            Historique de présence
+            {attendanceTotal > MAX_SESSIONS_SHOWN && (
+              <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>
+                {' '}
+                ({MAX_SESSIONS_SHOWN} plus récentes)
+              </span>
+            )}
+          </h2>
           {attendanceError ? (
             <div className="edu-banner-error" role="alert">
               {attendanceError}
-              <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadAttendance}>
+              <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadOverview}>
                 Réessayer
               </button>
             </div>

@@ -3,8 +3,9 @@ import mongoose from 'mongoose'
 import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import DevProject from '../../../models/DevProject.js'
-import DevIssue from '../../../models/DevIssue.js'
+import DevIssue, { DEV_ISSUE_STATUSES, type DevIssueStatus } from '../../../models/DevIssue.js'
 import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
+import { computeProgress } from '../../../lib/dev/stats.js'
 
 const router = express.Router()
 
@@ -43,13 +44,7 @@ router.get(
 
       // Agregations massivement parallelisables : un seul appel par requete,
       // toutes scopees sur les projets renvoyes.
-      const [
-        countsByProjectStatus,
-        overdueByProject,
-        activeRaw,
-        upcomingRaw,
-        recentRaw,
-      ] = await Promise.all([
+      const [countsByProjectStatus, overdueByProject, activeRaw, upcomingRaw, recentRaw] = await Promise.all([
         DevIssue.aggregate([
           { $match: { project: { $in: projectIds }, archivedAt: null } },
           { $group: { _id: { project: '$project', status: '$status' }, count: { $sum: 1 } } },
@@ -142,7 +137,10 @@ router.get(
         const backlog = counts.BACKLOG || 0
         const total = done + duplicate + cancelled + inProgress + inReview + blocked + todo + backlog
         const open = inProgress + inReview + blocked + todo + backlog
-        const progress = total > 0 ? Math.round((done / total) * 100) : 0
+        const progressCounts = Object.fromEntries(
+          DEV_ISSUE_STATUSES.map((status) => [status, counts[status] || 0]),
+        ) as Record<DevIssueStatus, number>
+        const progress = computeProgress(progressCounts)
 
         return {
           project: {
@@ -178,8 +176,9 @@ router.get(
       out.sort((a, b) => {
         if (a.project.status !== b.project.status) {
           const order = { ACTIVE: 0, PAUSED: 1, ARCHIVED: 2 } as const
-          return (order[a.project.status as keyof typeof order] ?? 3) -
-            (order[b.project.status as keyof typeof order] ?? 3)
+          return (
+            (order[a.project.status as keyof typeof order] ?? 3) - (order[b.project.status as keyof typeof order] ?? 3)
+          )
         }
         const aActivity = a.summary.inProgress + a.summary.inReview
         const bActivity = b.summary.inProgress + b.summary.inReview
@@ -191,7 +190,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -229,7 +228,7 @@ function groupByProject(rows: RawIssue[], perProjectLimit: number) {
   const out = new Map<string, ReturnType<typeof slim>[]>()
   for (const row of rows) {
     const projectId = String(
-      typeof row.project === 'object' && row.project && '_id' in row.project ? row.project._id : row.project
+      typeof row.project === 'object' && row.project && '_id' in row.project ? row.project._id : row.project,
     )
     if (!out.has(projectId)) out.set(projectId, [])
     const bucket = out.get(projectId)!

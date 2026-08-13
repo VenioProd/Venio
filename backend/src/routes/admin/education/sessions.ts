@@ -1,9 +1,23 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
-import { EducationSession, EducationClass, EducationStudent } from '../../../models/education/index.js'
-import { logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
+import { Types } from 'mongoose'
+import {
+  ATTENDANCE_STATES,
+  SESSION_STATUSES,
+  EducationSession,
+  EducationClass,
+  EducationStudent,
+  type AttendanceState,
+} from '../../../models/education/index.js'
+import { invalidStudentIdsForClass, logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
+
+interface AttendancePatchEntry {
+  studentId?: unknown
+  state?: unknown
+  comment?: unknown
+}
 
 // GET / — list ; query: classId, from, to, status
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -35,6 +49,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (!validId(classId)) return res.status(400).json({ error: 'classId invalide' })
     if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
     if (!date) return res.status(400).json({ error: 'La date est requise' })
+    if (status !== undefined && !(SESSION_STATUSES as readonly string[]).includes(status)) {
+      return res.status(400).json({ error: 'Statut de séance invalide' })
+    }
 
     const klass = await EducationClass.findOne({ _id: classId, ...ownerFilter(req) })
     if (!klass) return res.status(404).json({ error: 'Classe introuvable' })
@@ -70,9 +87,14 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
     const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
-      .populate('classId', 'name color')
-      .populate('attendance.studentId', 'firstName lastName')
     if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+    const classId = item.classId
+    await item.populate('classId', 'name color')
+    await item.populate({
+      path: 'attendance.studentId',
+      select: 'firstName lastName',
+      match: { owner: req.user!.id, classId, deletedAt: null },
+    })
     res.json({ session: item })
   } catch (err) {
     next(err)
@@ -94,7 +116,12 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     if (date !== undefined) item.date = new Date(date)
     if (durationMin !== undefined) item.durationMin = durationMin
     if (location !== undefined) item.location = location
-    if (status !== undefined) item.status = status
+    if (status !== undefined) {
+      if (!(SESSION_STATUSES as readonly string[]).includes(status)) {
+        return res.status(400).json({ error: 'Statut de séance invalide' })
+      }
+      item.status = status
+    }
     if (recap !== undefined) item.recap = recap
     if (Array.isArray(supports)) item.supports = supports
     if (Array.isArray(tags)) item.tags = tags
@@ -113,30 +140,61 @@ router.patch('/:id/attendance', async (req: Request, res: Response, next: NextFu
     const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!item) return res.status(404).json({ error: 'Séance introuvable' })
 
-    const entries = Array.isArray(req.body?.attendance) ? req.body.attendance : []
-    for (const entry of entries) {
-      if (!entry?.studentId) continue
+    const entries: AttendancePatchEntry[] = Array.isArray(req.body?.attendance) ? req.body.attendance : []
+    if (entries.length > 500) return res.status(400).json({ error: 'Maximum 500 présences par lot' })
+    if (entries.some((entry: AttendancePatchEntry) => !entry || typeof entry !== 'object')) {
+      return res.status(400).json({ error: 'Format de présence invalide' })
+    }
+    if (
+      entries.some(
+        (entry: AttendancePatchEntry) =>
+          entry.state !== undefined &&
+          (typeof entry.state !== 'string' || !(ATTENDANCE_STATES as readonly string[]).includes(entry.state)),
+      )
+    ) {
+      return res.status(400).json({ error: 'Statut de présence invalide' })
+    }
+
+    const studentIds = entries.map((entry: AttendancePatchEntry) => entry.studentId)
+    const normalizedStudentIds = studentIds.map((id: unknown) => (typeof id === 'string' ? id : String(id ?? '')))
+    if (new Set(normalizedStudentIds).size !== normalizedStudentIds.length) {
+      return res.status(400).json({ error: 'Un étudiant ne peut apparaître qu’une fois par lot' })
+    }
+    const invalidStudentIds = await invalidStudentIdsForClass(req, item.classId, studentIds)
+    if (invalidStudentIds.length > 0) {
+      return res.status(400).json({ error: 'Étudiant absent de la classe', invalidStudentIds })
+    }
+
+    const normalizedEntries = entries.map((entry: AttendancePatchEntry) => ({
+      studentId: String(entry.studentId),
+      state:
+        typeof entry.state === 'string' && (ATTENDANCE_STATES as readonly string[]).includes(entry.state)
+          ? (entry.state as AttendanceState)
+          : ('NON_RENSEIGNE' as AttendanceState),
+      comment: typeof entry.comment === 'string' ? entry.comment.trim().slice(0, 2000) : '',
+    }))
+
+    for (const entry of normalizedEntries) {
       const idx = item.attendance.findIndex((a) => a.studentId.toString() === String(entry.studentId))
       if (idx === -1) {
         item.attendance.push({
-          studentId: entry.studentId,
-          state: entry.state || 'NON_RENSEIGNE',
-          comment: entry.comment || '',
+          studentId: new Types.ObjectId(entry.studentId),
+          state: entry.state,
+          comment: entry.comment,
         })
       } else {
-        if (entry.state) item.attendance[idx].state = entry.state
-        if (entry.comment !== undefined) item.attendance[idx].comment = entry.comment
+        item.attendance[idx].state = entry.state
+        item.attendance[idx].comment = entry.comment
       }
     }
     await item.save()
 
     // Recalculer les compteurs étudiants impactés
-    const studentIds = entries.map((e: { studentId: string }) => e.studentId).filter(Boolean)
-    if (studentIds.length > 0) {
-      for (const sid of studentIds) {
-        if (!validId(sid)) continue
+    if (normalizedStudentIds.length > 0) {
+      for (const sid of normalizedStudentIds) {
         const sessions = await EducationSession.find({
           'attendance.studentId': sid,
+          classId: item.classId,
           owner: req.user!.id,
           deletedAt: null,
         }).select('attendance')
@@ -151,7 +209,7 @@ router.patch('/:id/attendance', async (req: Request, res: Response, next: NextFu
           else if (att.state === 'RETARD') late++
         }
         await EducationStudent.updateOne(
-          { _id: sid, owner: req.user!.id },
+          { _id: sid, classId: item.classId, owner: req.user!.id, deletedAt: null },
           { attendanceCount: present, absenceCount: absent, lateCount: late },
         )
       }
@@ -186,24 +244,26 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
-      const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate(
-        'classId',
-        'name school',
-      )
+      const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
       if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+      const classId = item.classId
+      await item.populate('classId', 'name school')
 
       const students = await EducationStudent.find({
         _id: { $in: item.attendance.map((a) => a.studentId) },
+        classId,
         ...ownerFilter(req),
       }).select('firstName lastName email externalId')
       const map = new Map(students.map((s) => [s._id.toString(), s]))
 
       const headers = ['Etudiant', 'Email', 'Identifiant', 'Présence', 'Commentaire']
-      const rows = item.attendance.map((a) => {
-        const stu = map.get(a.studentId.toString())
-        const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
-        return [name, stu?.email || '', stu?.externalId || '', a.state, a.comment || '']
-      })
+      const rows = item.attendance
+        .filter((entry) => map.has(entry.studentId.toString()))
+        .map((a) => {
+          const stu = map.get(a.studentId.toString())
+          const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
+          return [name, stu?.email || '', stu?.externalId || '', a.state, a.comment || '']
+        })
 
       const csv = toCsv([headers, ...rows])
       const klassName =

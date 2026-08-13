@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import {
+import DevIssue, {
   DEV_AI_MODELS,
   DEV_REASONING_EFFORTS,
   type IDevIssue,
@@ -219,6 +219,121 @@ export function applyIssueV2Patch(issue: IDevIssue, body: Record<string, unknown
   }
 
   return changed
+}
+
+const RELATION_TYPES = new Set(['blocks', 'blocked_by', 'relates_to', 'duplicates'])
+
+function parseReferenceIds(body: Record<string, unknown>): { ids: string[]; error: string | null } {
+  const ids: string[] = []
+  for (const field of ['parent', 'duplicateOf'] as const) {
+    const value = body[field]
+    if (value === undefined || value === null) continue
+    if (typeof value !== 'string' || !mongoose.isValidObjectId(value)) {
+      return { ids: [], error: `${field} invalide` }
+    }
+    ids.push(value)
+  }
+
+  if (body.blockedBy !== undefined) {
+    if (!Array.isArray(body.blockedBy) || body.blockedBy.length > 24) {
+      return { ids: [], error: 'blockedBy doit contenir au maximum 24 identifiants' }
+    }
+    for (const value of body.blockedBy) {
+      if (typeof value !== 'string' || !mongoose.isValidObjectId(value)) {
+        return { ids: [], error: 'blockedBy contient un identifiant invalide' }
+      }
+      ids.push(value)
+    }
+  }
+
+  if (body.relations !== undefined) {
+    if (!Array.isArray(body.relations) || body.relations.length > 24) {
+      return { ids: [], error: 'relations doit contenir au maximum 24 liens' }
+    }
+    for (const value of body.relations) {
+      if (!value || typeof value !== 'object') return { ids: [], error: 'Relation invalide' }
+      const relation = value as { type?: unknown; issue?: unknown }
+      if (
+        typeof relation.type !== 'string' ||
+        !RELATION_TYPES.has(relation.type) ||
+        typeof relation.issue !== 'string' ||
+        !mongoose.isValidObjectId(relation.issue)
+      ) {
+        return { ids: [], error: 'Relation invalide' }
+      }
+      ids.push(relation.issue)
+    }
+  }
+
+  return { ids, error: null }
+}
+
+async function chainReachesIssue(
+  startIds: string[],
+  field: 'parent' | 'blockedBy' | 'duplicateOf',
+  issueId: string,
+  projectId: mongoose.Types.ObjectId | string,
+): Promise<boolean> {
+  const pending = [...startIds]
+  const visited = new Set<string>()
+  while (pending.length > 0 && visited.size < 200) {
+    const current = pending.shift()!
+    if (current === issueId) return true
+    if (visited.has(current)) continue
+    visited.add(current)
+    const linked = await DevIssue.findOne({ _id: current, project: projectId, archivedAt: null }).select(field).lean()
+    if (!linked) continue
+    const raw = linked[field]
+    const next = Array.isArray(raw) ? raw : raw ? [raw] : []
+    pending.push(...next.map(String))
+  }
+  // A graph this deep is rejected conservatively instead of allowing an
+  // unverified link or spending unbounded time in a mutation request.
+  return pending.length > 0
+}
+
+/** Validate issue links before applying a patch so cross-project and cyclic graphs cannot be persisted. */
+export async function validateIssueReferences(input: {
+  projectId: mongoose.Types.ObjectId | string
+  issueId?: mongoose.Types.ObjectId | string
+  body: Record<string, unknown>
+}): Promise<string | null> {
+  const { ids, error } = parseReferenceIds(input.body)
+  if (error) return error
+  if (ids.length === 0) return null
+
+  const uniqueIds = [...new Set(ids)]
+  const issueId = input.issueId ? String(input.issueId) : null
+  if (issueId && uniqueIds.includes(issueId)) return 'Une issue ne peut pas se référencer elle-même'
+
+  const validCount = await DevIssue.countDocuments({
+    _id: { $in: uniqueIds },
+    project: input.projectId,
+    archivedAt: null,
+  })
+  if (validCount !== uniqueIds.length)
+    return 'Toutes les issues liées doivent appartenir au même projet et être actives'
+  if (!issueId) return null
+
+  const parent = input.body.parent
+  if (typeof parent === 'string' && (await chainReachesIssue([parent], 'parent', issueId, input.projectId))) {
+    return 'La relation parent créerait un cycle'
+  }
+  const blockedBy = input.body.blockedBy
+  if (
+    Array.isArray(blockedBy) &&
+    (await chainReachesIssue(blockedBy as string[], 'blockedBy', issueId, input.projectId))
+  ) {
+    return 'La relation de blocage créerait un cycle'
+  }
+  const duplicateOf = input.body.duplicateOf
+  if (
+    typeof duplicateOf === 'string' &&
+    (await chainReachesIssue([duplicateOf], 'duplicateOf', issueId, input.projectId))
+  ) {
+    return 'La relation de duplication créerait un cycle'
+  }
+  return null
 }
 
 export async function recordIssueEvent(input: {

@@ -169,7 +169,7 @@ describe('GET /api/admin/dev/roadmap', () => {
     expect(arrow.summary.backlog).toBe(1)
     expect(arrow.summary.open).toBe(5)
     expect(arrow.summary.overdue).toBe(1)
-    expect(arrow.summary.progress).toBe(Math.round((1 / 7) * 100))
+    expect(arrow.summary.progress).toBe(42)
   })
 
   it('returns IN_PROGRESS issues first in the active bucket', async () => {

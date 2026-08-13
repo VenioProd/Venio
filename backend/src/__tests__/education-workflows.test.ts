@@ -94,7 +94,7 @@ describe('VENIO-30 correction groupée — bulk submissions', () => {
     expect(stu0.body.student.averageGrade).toBe(14)
   })
 
-  it('rejette silencieusement les studentId invalides et compte uniquement les valides', async () => {
+  it('rejette atomiquement un lot contenant un studentId invalide', async () => {
     const { classId, studentIds } = await seedClassWithStudents('P', 'X', 2)
     const a = await request(app)
       .post('/api/admin/education/assignments')
@@ -102,7 +102,7 @@ describe('VENIO-30 correction groupée — bulk submissions', () => {
       .expect(201)
     const aid = a.body.assignment._id
 
-    const r = await request(app)
+    await request(app)
       .patch(`/api/admin/education/assignments/${aid}/submissions/bulk`)
       .send({
         updates: [
@@ -111,8 +111,31 @@ describe('VENIO-30 correction groupée — bulk submissions', () => {
           { studentId: studentIds[1], status: 'RENDU' },
         ],
       })
-      .expect(200)
-    expect(r.body.updated).toBe(2)
+      .expect(400)
+
+    const submissions = await request(app).get(`/api/admin/education/assignments/${aid}/submissions`).expect(200)
+    expect(
+      submissions.body.submissions.every((submission: { status: string }) => submission.status === 'NON_RENDU'),
+    ).toBe(true)
+  })
+
+  it('refuse un étudiant d’une autre classe et une note supérieure au barème', async () => {
+    const { classId, studentIds } = await seedClassWithStudents('Classe A', 'X', 1)
+    const { studentIds: foreignStudentIds } = await seedClassWithStudents('Classe B', 'X', 1)
+    const assignment = await request(app)
+      .post('/api/admin/education/assignments')
+      .send({ classId, title: 'Barème strict', status: 'OUVERT', maxGrade: 20 })
+      .expect(201)
+
+    await request(app)
+      .patch(`/api/admin/education/assignments/${assignment.body.assignment._id}/submissions/bulk`)
+      .send({ updates: [{ studentId: foreignStudentIds[0], status: 'CORRIGE', grade: 12 }] })
+      .expect(400)
+
+    await request(app)
+      .patch(`/api/admin/education/assignments/${assignment.body.assignment._id}/submissions/${studentIds[0]}`)
+      .send({ status: 'CORRIGE', grade: 21 })
+      .expect(400)
   })
 
   it("persiste la rubric et les feedbackSnippets sur l'assignment", async () => {

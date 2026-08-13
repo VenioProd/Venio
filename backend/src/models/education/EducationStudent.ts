@@ -38,18 +38,18 @@ const schema = new Schema<IEducationStudent>(
   {
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     classId: { type: Schema.Types.ObjectId, ref: 'EducationClass', required: true, index: true },
-    firstName: { type: String, default: '', trim: true },
-    lastName: { type: String, required: true, trim: true },
-    email: { type: String, default: '', trim: true, lowercase: true },
-    phone: { type: String, default: '', trim: true },
-    externalId: { type: String, default: '', trim: true },
+    firstName: { type: String, default: '', trim: true, maxlength: 120 },
+    lastName: { type: String, required: true, trim: true, maxlength: 120 },
+    email: { type: String, default: '', trim: true, lowercase: true, maxlength: 254 },
+    phone: { type: String, default: '', trim: true, maxlength: 64 },
+    externalId: { type: String, default: '', trim: true, maxlength: 120 },
     status: { type: String, enum: STUDENT_STATUSES, default: 'ACTIVE', index: true },
     tags: { type: [String], default: [] },
     attendanceCount: { type: Number, default: 0 },
     absenceCount: { type: Number, default: 0 },
     lateCount: { type: Number, default: 0 },
-    averageGrade: { type: Number, default: null },
-    notes: { type: String, default: '' },
+    averageGrade: { type: Number, default: null, min: 0 },
+    notes: { type: String, default: '', maxlength: 10000 },
     followUpAcknowledgements: {
       type: [
         {

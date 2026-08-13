@@ -16,6 +16,7 @@ import {
   applyStatusTimestamps,
   CLOSED_ISSUE_STATUSES,
   recordIssueEvent,
+  validateIssueReferences,
 } from '../../lib/dev/issueMutations.js'
 
 /**
@@ -258,6 +259,8 @@ router.post(
     try {
       const projectDoc = await DevProject.findById(req.body.project)
       if (!projectDoc) return respondError(res, 404, 'NOT_FOUND', 'Projet introuvable')
+      const relationError = await validateIssueReferences({ projectId: projectDoc._id, body: req.body })
+      if (relationError) return respondError(res, 400, 'INVALID_RELATION', relationError)
 
       const systemId = await resolveSystemUserId()
       if (!systemId) return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN pour reporter')
@@ -332,6 +335,12 @@ router.patch('/dev/issues/:id', requireScope('write:dev'), param('id').isMongoId
   try {
     const issue = await DevIssue.findById(req.params.id)
     if (!issue) return respondError(res, 404, 'NOT_FOUND', 'Issue introuvable')
+    const relationError = await validateIssueReferences({
+      projectId: issue.project,
+      issueId: issue._id,
+      body: req.body,
+    })
+    if (relationError) return respondError(res, 400, 'INVALID_RELATION', relationError)
     const before = issue.toObject()
     const oldStatus = issue.status
     const oldPriority = issue.priority

@@ -111,7 +111,7 @@ export const SENSITIVE_ACTIONS: Record<SensitiveActionId, SensitiveActionPolicy>
     level: 'HIGH',
     confirmation: 'TYPED',
     stepUp: 'SESSION',
-    summary: 'Suppression définitive d’un projet de développement',
+    summary: 'Archivage d’un projet de développement',
   },
   FEC_EXPORT: {
     level: 'HIGH',

@@ -27,6 +27,17 @@ let app: Express
 
 beforeAll(async () => {
   await setupMongo()
+  const educationModels = await import('../models/education/index.js')
+  for (const model of [
+    educationModels.EducationClass,
+    educationModels.EducationStudent,
+    educationModels.EducationSession,
+    educationModels.EducationAssignment,
+    educationModels.EducationNote,
+    educationModels.EducationDocument,
+  ]) {
+    await model.init()
+  }
   const { default: educationRoutes } = await import('../routes/admin/education/index.js')
   app = express()
   app.use(express.json())
@@ -92,6 +103,26 @@ describe('education routes', () => {
     expect(list.body.total).toBe(3)
   })
 
+  it('students: prévisualise un vrai CSV et ignore les doublons sans exposer les données importées', async () => {
+    const { body: classBody } = await request(app)
+      .post('/api/admin/education/classes')
+      .send({ name: 'Promo CSV' })
+      .expect(201)
+    const classId = classBody.class._id
+    const csv = 'prenom;nom;email\n"Marie, Anne";Curie;marie@ex.fr\nPierre;Curie;pierre@ex.fr\nBis;Curie;pierre@ex.fr'
+
+    const preview = await request(app)
+      .post('/api/admin/education/students/import')
+      .send({ classId, csv, dryRun: true })
+      .expect(200)
+    expect(preview.body).toMatchObject({ dryRun: true, totalRows: 3, valid: 2, skipped: 1 })
+    expect(preview.body.preview[0].firstName).toBe('Marie, Anne')
+
+    const imported = await request(app).post('/api/admin/education/students/import').send({ classId, csv }).expect(201)
+    expect(imported.body).toMatchObject({ inserted: 2, skipped: 1 })
+    expect(imported.body.students).toBeUndefined()
+  })
+
   it('sessions: create pré-remplit attendance ; PATCH attendance met à jour compteurs étudiant', async () => {
     const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     const classId = classBody.class._id
@@ -128,6 +159,36 @@ describe('education routes', () => {
     expect(stu2.student.absenceCount).toBe(1)
   })
 
+  it('sessions: refuse atomiquement une présence d’une autre classe', async () => {
+    const firstClass = await request(app).post('/api/admin/education/classes').send({ name: 'P1' }).expect(201)
+    const secondClass = await request(app).post('/api/admin/education/classes').send({ name: 'P2' }).expect(201)
+    const ownedStudent = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId: firstClass.body.class._id, lastName: 'Valide' })
+      .expect(201)
+    const foreignClassStudent = await request(app)
+      .post('/api/admin/education/students')
+      .send({ classId: secondClass.body.class._id, lastName: 'Hors classe' })
+      .expect(201)
+    const session = await request(app)
+      .post('/api/admin/education/sessions')
+      .send({ classId: firstClass.body.class._id, title: 'S1', date: new Date().toISOString() })
+      .expect(201)
+
+    await request(app)
+      .patch(`/api/admin/education/sessions/${session.body.session._id}/attendance`)
+      .send({
+        attendance: [
+          { studentId: ownedStudent.body.student._id, state: 'PRESENT' },
+          { studentId: foreignClassStudent.body.student._id, state: 'ABSENT' },
+        ],
+      })
+      .expect(400)
+
+    const unchanged = await request(app).get(`/api/admin/education/sessions/${session.body.session._id}`).expect(200)
+    expect(unchanged.body.session.attendance[0].state).toBe('NON_RENSEIGNE')
+  })
+
   it('assignments: passer de DRAFT à OUVERT crée les soumissions ; PATCH grade met à jour moyenne étudiant', async () => {
     const { body: classBody } = await request(app).post('/api/admin/education/classes').send({ name: 'P' }).expect(201)
     const classId = classBody.class._id
@@ -161,11 +222,25 @@ describe('education routes', () => {
     expect(stu1.student.averageGrade).toBe(16)
   })
 
-  // Flaky en suite complète (passe en isolation) — l'index $text sur EducationNote
-  // n'est pas systématiquement créé à temps avec mongodb-memory-server quand plusieurs
-  // fichiers de tests partagent la mémoire. À fixer en forçant Model.init() au beforeAll.
-  // Tracking : VENIO-52 (commentaire chantier #3 — CI).
-  it.skip('notes: blocks → markdown miroir + recherche full-text', async () => {
+  it('assignments: refuse une séance d’une autre classe et les statuts inconnus', async () => {
+    const firstClass = await request(app).post('/api/admin/education/classes').send({ name: 'A' }).expect(201)
+    const secondClass = await request(app).post('/api/admin/education/classes').send({ name: 'B' }).expect(201)
+    const session = await request(app)
+      .post('/api/admin/education/sessions')
+      .send({ classId: secondClass.body.class._id, title: 'Séance B', date: new Date().toISOString() })
+      .expect(201)
+
+    await request(app)
+      .post('/api/admin/education/assignments')
+      .send({ classId: firstClass.body.class._id, sessionId: session.body.session._id, title: 'Devoir A' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/education/assignments')
+      .send({ classId: firstClass.body.class._id, title: 'Devoir A', status: 'INCONNU' })
+      .expect(400)
+  })
+
+  it('notes: blocks → markdown miroir + recherche full-text', async () => {
     await request(app)
       .post('/api/admin/education/notes')
       .send({
@@ -183,7 +258,6 @@ describe('education routes', () => {
 
   it('Quickfind: expose uniquement les contextes documentaires encore accessibles au propriétaire', async () => {
     const { EducationClass, EducationDocument } = await import('../models/education/index.js')
-    await EducationDocument.init()
 
     const { body: classBody } = await request(app)
       .post('/api/admin/education/classes')
@@ -244,7 +318,6 @@ describe('education routes', () => {
 
   it('Quickfind: ouvre une note parente autorisée sans révéler les notes supprimées ou étrangères', async () => {
     const { EducationDocument, EducationNote } = await import('../models/education/index.js')
-    await EducationDocument.init()
 
     const note = await EducationNote.create({ owner: OWNER_ID, title: 'Préparation de cours' })
     const deletedNote = await EducationNote.create({

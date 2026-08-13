@@ -1,14 +1,84 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import {
+  ASSIGNMENT_KINDS,
+  ASSIGNMENT_STATUSES,
+  SUBMISSION_STATUSES,
   EducationAssignment,
   EducationSubmission,
   EducationStudent,
   EducationClass,
+  EducationSession,
+  type EducationSubmissionStatus,
 } from '../../../models/education/index.js'
-import { logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
+import { invalidStudentIdsForClass, logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 
 const router = express.Router()
+
+type SubmissionPatch = {
+  studentId?: unknown
+  status?: unknown
+  grade?: unknown
+  feedback?: unknown
+  url?: unknown
+  textBody?: unknown
+  submittedAt?: unknown
+}
+
+function normalizeSubmissionPatch(
+  raw: SubmissionPatch,
+  maxGrade: number,
+): { value?: Omit<SubmissionPatch, 'studentId'> & { status?: EducationSubmissionStatus }; error?: string } {
+  const value: Omit<SubmissionPatch, 'studentId'> & { status?: EducationSubmissionStatus } = {}
+  if (raw.status !== undefined) {
+    if (typeof raw.status !== 'string' || !(SUBMISSION_STATUSES as readonly string[]).includes(raw.status)) {
+      return { error: 'Statut de soumission invalide' }
+    }
+    value.status = raw.status as EducationSubmissionStatus
+  }
+  if (raw.grade !== undefined) {
+    if (
+      raw.grade !== null &&
+      (typeof raw.grade !== 'number' || !Number.isFinite(raw.grade) || raw.grade < 0 || raw.grade > maxGrade)
+    ) {
+      return { error: `La note doit être comprise entre 0 et ${maxGrade}` }
+    }
+    value.grade = raw.grade
+  }
+  if (raw.feedback !== undefined) {
+    if (typeof raw.feedback !== 'string') return { error: 'Feedback invalide' }
+    value.feedback = raw.feedback.trim().slice(0, 10000)
+  }
+  if (raw.url !== undefined) {
+    if (typeof raw.url !== 'string') return { error: 'URL invalide' }
+    value.url = raw.url.trim().slice(0, 2000)
+  }
+  if (raw.textBody !== undefined) {
+    if (typeof raw.textBody !== 'string') return { error: 'Contenu de rendu invalide' }
+    value.textBody = raw.textBody.slice(0, 20000)
+  }
+  if (raw.submittedAt !== undefined) {
+    if (raw.submittedAt === null || raw.submittedAt === '') value.submittedAt = null
+    else if (typeof raw.submittedAt === 'string' && !Number.isNaN(new Date(raw.submittedAt).getTime())) {
+      value.submittedAt = raw.submittedAt
+    } else return { error: 'Date de rendu invalide' }
+  }
+  return { value }
+}
+
+function applySubmissionPatch(
+  submission: InstanceType<typeof EducationSubmission>,
+  patch: Omit<SubmissionPatch, 'studentId'> & { status?: EducationSubmissionStatus },
+): void {
+  if (patch.status !== undefined) submission.status = patch.status
+  if (patch.grade !== undefined) submission.grade = patch.grade as number | null
+  if (patch.feedback !== undefined) submission.feedback = patch.feedback as string
+  if (patch.url !== undefined) submission.url = patch.url as string
+  if (patch.textBody !== undefined) submission.textBody = patch.textBody as string
+  if (patch.submittedAt !== undefined) {
+    submission.submittedAt = patch.submittedAt ? new Date(patch.submittedAt as string) : null
+  }
+}
 
 // GET / — list
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -48,9 +118,32 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     } = req.body
     if (!validId(classId)) return res.status(400).json({ error: 'classId invalide' })
     if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
+    if (kind !== undefined && !(ASSIGNMENT_KINDS as readonly string[]).includes(kind)) {
+      return res.status(400).json({ error: 'Type de devoir invalide' })
+    }
+    if (status !== undefined && !(ASSIGNMENT_STATUSES as readonly string[]).includes(status)) {
+      return res.status(400).json({ error: 'Statut de devoir invalide' })
+    }
+    if (
+      maxGrade !== undefined &&
+      (typeof maxGrade !== 'number' || !Number.isFinite(maxGrade) || maxGrade <= 0 || maxGrade > 1000)
+    ) {
+      return res.status(400).json({ error: 'Barème invalide' })
+    }
+    if (
+      weight !== undefined &&
+      (typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0 || weight > 1000)
+    ) {
+      return res.status(400).json({ error: 'Coefficient invalide' })
+    }
 
     const klass = await EducationClass.findOne({ _id: classId, ...ownerFilter(req) })
     if (!klass) return res.status(404).json({ error: 'Classe introuvable' })
+    if (sessionId !== undefined && sessionId !== null && sessionId !== '') {
+      if (!validId(sessionId)) return res.status(400).json({ error: 'Séance invalide' })
+      const linkedSession = await EducationSession.exists({ _id: sessionId, classId, ...ownerFilter(req) })
+      if (!linkedSession) return res.status(400).json({ error: 'La séance doit appartenir à la même classe' })
+    }
 
     const created = await EducationAssignment.create({
       owner: req.user!.id,
@@ -95,31 +188,35 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
-    const item = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate(
-      'classId',
-      'name color',
-    )
+    const item = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!item) return res.status(404).json({ error: 'Devoir introuvable' })
+    const classId = item.classId
+    await item.populate('classId', 'name color')
 
     const submissions = await EducationSubmission.find({
       assignmentId: item._id,
       ...ownerFilter(req),
-    }).populate('studentId', 'firstName lastName email')
+    }).populate({
+      path: 'studentId',
+      select: 'firstName lastName email',
+      match: { owner: req.user!.id, classId, deletedAt: null },
+    })
+    const accessibleSubmissions = submissions.filter((submission) => submission.studentId)
 
     const stats = {
-      total: submissions.length,
-      rendu: submissions.filter((s) => ['RENDU', 'EN_CORRECTION', 'CORRIGE'].includes(s.status)).length,
-      corrige: submissions.filter((s) => s.status === 'CORRIGE').length,
-      nonRendu: submissions.filter((s) => s.status === 'NON_RENDU').length,
-      retard: submissions.filter((s) => s.status === 'EN_RETARD' || s.isLate).length,
+      total: accessibleSubmissions.length,
+      rendu: accessibleSubmissions.filter((s) => ['RENDU', 'EN_CORRECTION', 'CORRIGE'].includes(s.status)).length,
+      corrige: accessibleSubmissions.filter((s) => s.status === 'CORRIGE').length,
+      nonRendu: accessibleSubmissions.filter((s) => s.status === 'NON_RENDU').length,
+      retard: accessibleSubmissions.filter((s) => s.status === 'EN_RETARD' || s.isLate).length,
       moyenne: (() => {
-        const graded = submissions.filter((s) => typeof s.grade === 'number')
+        const graded = accessibleSubmissions.filter((s) => typeof s.grade === 'number')
         if (graded.length === 0) return null
         return Number((graded.reduce((acc, s) => acc + (s.grade || 0), 0) / graded.length).toFixed(2))
       })(),
     }
 
-    res.json({ assignment: item, submissions, stats })
+    res.json({ assignment: item, submissions: accessibleSubmissions, stats })
   } catch (err) {
     next(err)
   }
@@ -150,13 +247,36 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     const { rubric, feedbackSnippets } = req.body
 
-    if (title !== undefined) item.title = title.trim()
-    if (kind !== undefined) item.kind = kind
+    if (title !== undefined) {
+      if (typeof title !== 'string' || !title.trim()) return res.status(400).json({ error: 'Titre invalide' })
+      item.title = title.trim()
+    }
+    if (kind !== undefined) {
+      if (!(ASSIGNMENT_KINDS as readonly string[]).includes(kind)) {
+        return res.status(400).json({ error: 'Type de devoir invalide' })
+      }
+      item.kind = kind
+    }
     if (instructions !== undefined) item.instructions = instructions
     if (deadline !== undefined) item.deadline = deadline ? new Date(deadline) : null
-    if (maxGrade !== undefined) item.maxGrade = maxGrade
-    if (weight !== undefined) item.weight = weight
-    if (status !== undefined) item.status = status
+    if (maxGrade !== undefined) {
+      if (typeof maxGrade !== 'number' || !Number.isFinite(maxGrade) || maxGrade <= 0 || maxGrade > 1000) {
+        return res.status(400).json({ error: 'Barème invalide' })
+      }
+      item.maxGrade = maxGrade
+    }
+    if (weight !== undefined) {
+      if (typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0 || weight > 1000) {
+        return res.status(400).json({ error: 'Coefficient invalide' })
+      }
+      item.weight = weight
+    }
+    if (status !== undefined) {
+      if (!(ASSIGNMENT_STATUSES as readonly string[]).includes(status)) {
+        return res.status(400).json({ error: 'Statut de devoir invalide' })
+      }
+      item.status = status
+    }
     if (Array.isArray(expectedDeliverables)) item.expectedDeliverables = expectedDeliverables
     if (Array.isArray(rubric)) {
       item.rubric = rubric
@@ -171,7 +291,19 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     }
     if (groupMode !== undefined) item.groupMode = !!groupMode
     if (Array.isArray(tags)) item.tags = tags
-    if (sessionId !== undefined) item.sessionId = validId(sessionId) ? sessionId : null
+    if (sessionId !== undefined) {
+      if (sessionId === null || sessionId === '') item.sessionId = null
+      else {
+        if (!validId(sessionId)) return res.status(400).json({ error: 'Séance invalide' })
+        const linkedSession = await EducationSession.exists({
+          _id: sessionId,
+          classId: item.classId,
+          ...ownerFilter(req),
+        })
+        if (!linkedSession) return res.status(400).json({ error: 'La séance doit appartenir à la même classe' })
+        item.sessionId = sessionId
+      }
+    }
 
     await item.save()
 
@@ -228,11 +360,17 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
 router.get('/:id/submissions', async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) }).select('classId')
+    if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
     const submissions = await EducationSubmission.find({
       assignmentId: req.params.id,
       ...ownerFilter(req),
-    }).populate('studentId', 'firstName lastName email')
-    res.json({ submissions })
+    }).populate({
+      path: 'studentId',
+      select: 'firstName lastName email',
+      match: { owner: req.user!.id, classId: assignment.classId, deletedAt: null },
+    })
+    res.json({ submissions: submissions.filter((submission) => submission.studentId) })
   } catch (err) {
     next(err)
   }
@@ -247,15 +385,32 @@ router.patch('/:id/submissions/bulk', async (req: Request, res: Response, next: 
     const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
 
-    const updates = Array.isArray(req.body?.updates) ? req.body.updates : []
+    const updates = Array.isArray(req.body?.updates) ? (req.body.updates as SubmissionPatch[]) : []
     if (updates.length === 0) return res.json({ updated: 0, submissions: [] })
+    if (updates.length > 500) return res.status(400).json({ error: 'Maximum 500 corrections par lot' })
+    if (updates.some((update) => !update || typeof update !== 'object')) {
+      return res.status(400).json({ error: 'Format de correction invalide' })
+    }
+
+    const studentIds = updates.map((update) => update.studentId)
+    const normalizedStudentIds = studentIds.map((id) => (typeof id === 'string' ? id : String(id ?? '')))
+    if (new Set(normalizedStudentIds).size !== normalizedStudentIds.length) {
+      return res.status(400).json({ error: 'Un étudiant ne peut apparaître qu’une fois par lot' })
+    }
+    const invalidStudentIds = await invalidStudentIdsForClass(req, assignment.classId, studentIds)
+    if (invalidStudentIds.length > 0) {
+      return res.status(400).json({ error: 'Étudiant absent de la classe', invalidStudentIds })
+    }
+    const normalizedUpdates = updates.map((update) => {
+      const normalized = normalizeSubmissionPatch(update, assignment.maxGrade)
+      return { studentId: String(update.studentId), ...normalized }
+    })
+    const invalidUpdate = normalizedUpdates.find((update) => update.error)
+    if (invalidUpdate?.error) return res.status(400).json({ error: invalidUpdate.error })
 
     const updated: unknown[] = []
-    for (const u of updates) {
-      if (!u || typeof u !== 'object') continue
-      const studentId = (u as { studentId?: unknown }).studentId
-      if (!validId(studentId)) continue
-
+    for (const update of normalizedUpdates) {
+      const studentId = update.studentId
       let sub = await EducationSubmission.findOne({
         assignmentId: req.params.id,
         studentId,
@@ -269,17 +424,7 @@ router.patch('/:id/submissions/bulk', async (req: Request, res: Response, next: 
           status: 'NON_RENDU',
         })
       }
-
-      const patch = u as {
-        status?: string
-        grade?: number | null
-        feedback?: string
-        submittedAt?: string | null
-      }
-      if (patch.status !== undefined) sub.status = patch.status as typeof sub.status
-      if (patch.grade !== undefined) sub.grade = patch.grade
-      if (patch.feedback !== undefined) sub.feedback = String(patch.feedback)
-      if (patch.submittedAt !== undefined) sub.submittedAt = patch.submittedAt ? new Date(patch.submittedAt) : null
+      applySubmissionPatch(sub, update.value!)
 
       if (sub.submittedAt && assignment.deadline) {
         sub.isLate = sub.submittedAt.getTime() > assignment.deadline.getTime()
@@ -289,13 +434,7 @@ router.patch('/:id/submissions/bulk', async (req: Request, res: Response, next: 
       updated.push(sub)
     }
 
-    const impactedStudents = Array.from(
-      new Set(
-        updates
-          .map((u: { studentId?: unknown }) => (validId(u.studentId) ? String(u.studentId) : null))
-          .filter(Boolean),
-      ),
-    ) as string[]
+    const impactedStudents = normalizedStudentIds
     for (const studentId of impactedStudents) {
       const graded = await EducationSubmission.find({
         studentId,
@@ -305,7 +444,7 @@ router.patch('/:id/submissions/bulk', async (req: Request, res: Response, next: 
       if (graded.length > 0) {
         const avg = graded.reduce((acc, s) => acc + (s.grade || 0), 0) / graded.length
         await EducationStudent.updateOne(
-          { _id: studentId, owner: req.user!.id },
+          { _id: studentId, classId: assignment.classId, owner: req.user!.id, deletedAt: null },
           { averageGrade: Number(avg.toFixed(2)) },
         )
       }
@@ -331,6 +470,11 @@ router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, 
     }
     const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
+    const invalidStudentIds = await invalidStudentIdsForClass(req, assignment.classId, [req.params.studentId])
+    if (invalidStudentIds.length > 0) return res.status(400).json({ error: 'Étudiant absent de la classe' })
+
+    const normalized = normalizeSubmissionPatch(req.body as SubmissionPatch, assignment.maxGrade)
+    if (normalized.error) return res.status(400).json({ error: normalized.error })
 
     let sub = await EducationSubmission.findOne({
       assignmentId: req.params.id,
@@ -346,13 +490,7 @@ router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, 
       })
     }
 
-    const { status, grade, feedback, url, textBody, submittedAt } = req.body
-    if (status !== undefined) sub.status = status
-    if (grade !== undefined) sub.grade = grade
-    if (feedback !== undefined) sub.feedback = feedback
-    if (url !== undefined) sub.url = url
-    if (textBody !== undefined) sub.textBody = textBody
-    if (submittedAt !== undefined) sub.submittedAt = submittedAt ? new Date(submittedAt) : null
+    applySubmissionPatch(sub, normalized.value!)
 
     // Calcul isLate
     if (sub.submittedAt && assignment.deadline) {
@@ -361,7 +499,8 @@ router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, 
     }
 
     await sub.save()
-    const action = typeof grade === 'number' ? 'GRADE' : status === 'RENDU' ? 'SUBMIT' : 'UPDATE'
+    const action =
+      typeof normalized.value?.grade === 'number' ? 'GRADE' : normalized.value?.status === 'RENDU' ? 'SUBMIT' : 'UPDATE'
     await logActivity(req.user!.id, req.user!.id, 'submission', sub._id, action, { assignmentId: req.params.id })
 
     // Refresh student average grade
@@ -373,7 +512,7 @@ router.patch('/:id/submissions/:studentId', async (req: Request, res: Response, 
     if (allGraded.length > 0) {
       const avg = allGraded.reduce((acc, s) => acc + (s.grade || 0), 0) / allGraded.length
       await EducationStudent.updateOne(
-        { _id: req.params.studentId, owner: req.user!.id },
+        { _id: req.params.studentId, classId: assignment.classId, owner: req.user!.id, deletedAt: null },
         { averageGrade: Number(avg.toFixed(2)) },
       )
     }
@@ -391,16 +530,19 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
-      const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) }).populate(
-        'classId',
-        'name school level',
-      )
+      const assignment = await EducationAssignment.findOne({ _id: req.params.id, ...ownerFilter(req) })
       if (!assignment) return res.status(404).json({ error: 'Devoir introuvable' })
+      const classId = assignment.classId
+      await assignment.populate('classId', 'name school level')
 
       const submissions = await EducationSubmission.find({
         assignmentId: req.params.id,
         ...ownerFilter(req),
-      }).populate('studentId', 'firstName lastName email externalId')
+      }).populate({
+        path: 'studentId',
+        select: 'firstName lastName email externalId',
+        match: { owner: req.user!.id, classId, deletedAt: null },
+      })
 
       const headers = [
         'Etudiant',
@@ -413,26 +555,28 @@ router.get(
         'En retard',
         'Feedback',
       ]
-      const rows = submissions.map((s) => {
-        const stu = s.studentId as unknown as {
-          firstName?: string
-          lastName?: string
-          email?: string
-          externalId?: string
-        } | null
-        const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
-        return [
-          name,
-          stu?.email || '',
-          stu?.externalId || '',
-          s.status,
-          s.submittedAt ? new Date(s.submittedAt).toISOString() : '',
-          s.grade != null ? String(s.grade) : '',
-          String(assignment.maxGrade),
-          s.isLate ? 'oui' : 'non',
-          s.feedback || '',
-        ]
-      })
+      const rows = submissions
+        .filter((submission) => submission.studentId)
+        .map((s) => {
+          const stu = s.studentId as unknown as {
+            firstName?: string
+            lastName?: string
+            email?: string
+            externalId?: string
+          } | null
+          const name = stu ? [stu.firstName || '', (stu.lastName || '').toUpperCase()].filter(Boolean).join(' ') : ''
+          return [
+            name,
+            stu?.email || '',
+            stu?.externalId || '',
+            s.status,
+            s.submittedAt ? new Date(s.submittedAt).toISOString() : '',
+            s.grade != null ? String(s.grade) : '',
+            String(assignment.maxGrade),
+            s.isLate ? 'oui' : 'non',
+            s.feedback || '',
+          ]
+        })
 
       const csv = toCsv([headers, ...rows])
       const klassName =

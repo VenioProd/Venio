@@ -5,10 +5,10 @@ import { PERMISSIONS } from '../../../lib/permissions.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 import DevProject, { DEV_PROJECT_STATUSES, type DevProjectGithubConfig } from '../../../models/DevProject.js'
 import DevIssue, { DEV_ISSUE_STATUSES, DEV_ISSUE_PRIORITIES, DEV_ISSUE_TYPES } from '../../../models/DevIssue.js'
-import DevIssueComment from '../../../models/DevIssueComment.js'
 import { notifyUsers } from '../../../lib/notifyHelpers.js'
 import { invalidateCodeMetricsCache, refreshProjectCodeMetrics } from '../../../lib/dev/codeMetrics.js'
 import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
+import { computeProgress } from '../../../lib/dev/stats.js'
 
 const router = express.Router()
 
@@ -84,7 +84,7 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_DEV),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = {}
+      const filter: Record<string, unknown> = { status: { $ne: 'ARCHIVED' } }
       const { status } = req.query
       if (typeof status === 'string' && (DEV_PROJECT_STATUSES as readonly string[]).includes(status)) {
         filter.status = status
@@ -276,7 +276,7 @@ router.get(
       const cancelled = byStatus.CANCELLED || 0
       const duplicate = byStatus.DUPLICATE || 0
       const open = total - done - duplicate - cancelled
-      const progress = total > 0 ? Math.round((done / total) * 100) : 0
+      const progress = computeProgress(byStatus as Record<(typeof DEV_ISSUE_STATUSES)[number], number>)
 
       res.json({
         project,
@@ -373,7 +373,7 @@ router.patch(
   },
 )
 
-// DELETE /api/admin/dev/projects/:id — supprime aussi les issues / commentaires associés
+// DELETE /api/admin/dev/projects/:id — archive le projet et ses issues sans effacer l'historique
 router.delete(
   '/projects/:id',
   requirePermission(PERMISSIONS.MANAGE_DEV),
@@ -384,11 +384,15 @@ router.delete(
       const project = await DevProject.findById(req.params.id)
       if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
-      await DevIssueComment.deleteMany({ project: project._id })
-      await DevIssue.deleteMany({ project: project._id })
-      await project.deleteOne()
+      const archivedAt = new Date()
+      project.status = 'ARCHIVED'
+      await project.save()
+      const archivedIssues = await DevIssue.updateMany(
+        { project: project._id, archivedAt: null },
+        { $set: { archivedAt } },
+      )
 
-      res.json({ ok: true })
+      res.json({ ok: true, archived: true, archivedIssues: archivedIssues.modifiedCount })
     } catch (err) {
       next(err)
     }
