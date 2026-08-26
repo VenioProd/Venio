@@ -49,31 +49,27 @@ router.get('/templates', requireScope('read:projects'), async (req, res, next) =
   }
 })
 
-router.get(
-  '/templates/:id',
-  requireScope('read:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const tpl = await ProjectTemplate.findById(req.params.id)
-        .populate('createdBy', 'name email')
-        .lean()
-      if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
-      res.json(tpl)
-    } catch (err) {
-      next(err)
-    }
+router.get('/templates/:id', requireScope('read:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const tpl = await ProjectTemplate.findById(req.params.id).populate('createdBy', 'name email').lean()
+    if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
+    res.json(tpl)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/templates',
   requireScope('write:projects'),
   body('name').isString().trim().isLength({ min: 1 }).withMessage('name requis'),
-  body('priority').optional().isIn(PRIORITIES as unknown as string[]),
+  body('priority')
+    .optional()
+    .isIn(PRIORITIES as unknown as string[]),
   body('defaultSections').optional().isArray(),
   body('defaultTasks').optional().isArray(),
+  body('defaultPhases').optional().isArray(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -90,6 +86,7 @@ router.post(
             : 'NORMALE',
         defaultSections: Array.isArray(req.body.defaultSections) ? req.body.defaultSections : [],
         defaultTasks: Array.isArray(req.body.defaultTasks) ? req.body.defaultTasks : [],
+        defaultPhases: Array.isArray(req.body.defaultPhases) ? req.body.defaultPhases : [],
         budget: req.body.budget && typeof req.body.budget === 'object' ? req.body.budget : undefined,
         createdBy: admin?._id,
       })
@@ -104,76 +101,69 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/templates/:id',
-  requireScope('write:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const tpl = await ProjectTemplate.findById(req.params.id)
-      if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
-      const before = tpl.toObject()
-      const stringFields = ['name', 'description']
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(tpl as unknown as Record<string, string>)[f] = req.body[f]
-        }
+router.patch('/templates/:id', requireScope('write:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const tpl = await ProjectTemplate.findById(req.params.id)
+    if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
+    const before = tpl.toObject()
+    const stringFields = ['name', 'description']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(tpl as unknown as Record<string, string>)[f] = req.body[f]
       }
-      if (Array.isArray(req.body.serviceTypes)) tpl.serviceTypes = req.body.serviceTypes
-      if (Array.isArray(req.body.deliverableTypes)) tpl.deliverableTypes = req.body.deliverableTypes
-      if (Array.isArray(req.body.tags)) tpl.tags = req.body.tags
-      if (Array.isArray(req.body.defaultSections)) {
-        tpl.defaultSections = req.body.defaultSections as unknown as typeof tpl.defaultSections
-      }
-      if (Array.isArray(req.body.defaultTasks)) {
-        tpl.defaultTasks = req.body.defaultTasks as unknown as typeof tpl.defaultTasks
-      }
-      if (typeof req.body.priority === 'string' && (PRIORITIES as readonly string[]).includes(req.body.priority)) {
-        tpl.priority = req.body.priority as typeof tpl.priority
-      }
-      if (req.body.budget && typeof req.body.budget === 'object') {
-        tpl.budget = req.body.budget as unknown as typeof tpl.budget
-      }
-      await tpl.save()
-      res.locals.audit = {
-        entityType: 'ProjectTemplate',
-        entityId: String(tpl._id),
-        before,
-        after: tpl.toObject(),
-      }
-      res.json(tpl.toObject())
-    } catch (err) {
-      next(err)
     }
+    if (Array.isArray(req.body.serviceTypes)) tpl.serviceTypes = req.body.serviceTypes
+    if (Array.isArray(req.body.deliverableTypes)) tpl.deliverableTypes = req.body.deliverableTypes
+    if (Array.isArray(req.body.tags)) tpl.tags = req.body.tags
+    if (Array.isArray(req.body.defaultSections)) {
+      tpl.defaultSections = req.body.defaultSections as unknown as typeof tpl.defaultSections
+    }
+    if (Array.isArray(req.body.defaultTasks)) {
+      tpl.defaultTasks = req.body.defaultTasks as unknown as typeof tpl.defaultTasks
+    }
+    if (Array.isArray(req.body.defaultPhases)) {
+      tpl.defaultPhases = req.body.defaultPhases as unknown as typeof tpl.defaultPhases
+    }
+    if (typeof req.body.priority === 'string' && (PRIORITIES as readonly string[]).includes(req.body.priority)) {
+      tpl.priority = req.body.priority as typeof tpl.priority
+    }
+    if (req.body.budget && typeof req.body.budget === 'object') {
+      tpl.budget = req.body.budget as unknown as typeof tpl.budget
+    }
+    await tpl.save()
+    res.locals.audit = {
+      entityType: 'ProjectTemplate',
+      entityId: String(tpl._id),
+      before,
+      after: tpl.toObject(),
+    }
+    res.json(tpl.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.delete(
-  '/templates/:id',
-  requireScope('write:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const tpl = await ProjectTemplate.findById(req.params.id)
-      if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
-      const before = tpl.toObject()
-      await ProjectTemplate.deleteOne({ _id: tpl._id })
-      res.locals.audit = {
-        entityType: 'ProjectTemplate',
-        entityId: String(tpl._id),
-        entityRef: tpl.name,
-        before,
-      }
-      res.json({ ok: true, deletedId: String(tpl._id) })
-    } catch (err) {
-      next(err)
+router.delete('/templates/:id', requireScope('write:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const tpl = await ProjectTemplate.findById(req.params.id)
+    if (!tpl) return respondError(res, 404, 'NOT_FOUND', 'Template introuvable')
+    const before = tpl.toObject()
+    await ProjectTemplate.deleteOne({ _id: tpl._id })
+    res.locals.audit = {
+      entityType: 'ProjectTemplate',
+      entityId: String(tpl._id),
+      entityRef: tpl.name,
+      before,
     }
+    res.json({ ok: true, deletedId: String(tpl._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

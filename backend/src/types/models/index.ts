@@ -15,6 +15,7 @@ export type {
   IProjectItem,
   ITemplateSection,
   ITemplateTask,
+  ITemplatePhase,
   ITemplateBudget,
   IProjectTemplate,
   IProjectUpdate,

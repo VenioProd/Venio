@@ -47,6 +47,7 @@ const ProjectForm = () => {
   const [serviceTypeInput, setServiceTypeInput] = useState<string>('')
   const [deliverableTypeInput, setDeliverableTypeInput] = useState<string>('')
   const [tagInput, setTagInput] = useState<string>('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [templates, setTemplates] = useState<ProjectTemplate[]>([])
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [error, setError] = useState<string>('')
@@ -72,6 +73,8 @@ const ProjectForm = () => {
   const applyTemplate = (templateId: string) => {
     const t = templates.find((tpl) => tpl._id === templateId)
     if (!t) return
+    // Mémorisé pour que le backend instancie defaultPhases à la création.
+    setSelectedTemplateId(templateId)
     setForm((prev) => ({
       ...prev,
       description: t.description || prev.description,
@@ -79,7 +82,9 @@ const ProjectForm = () => {
       deliverableTypes: t.deliverableTypes.length > 0 ? t.deliverableTypes : prev.deliverableTypes,
       tags: t.tags.length > 0 ? t.tags : prev.tags,
       priority: t.priority || prev.priority,
-      budget: t.budget?.amount ? { amount: t.budget.amount, currency: t.budget.currency || 'EUR', note: '' } : prev.budget,
+      budget: t.budget?.amount
+        ? { amount: t.budget.amount, currency: t.budget.currency || 'EUR', note: '' }
+        : prev.budget,
     }))
   }
 
@@ -158,6 +163,7 @@ const ProjectForm = () => {
         },
         reminderAt: form.reminderAt ? new Date(form.reminderAt).toISOString() : null,
         isArchived: form.isArchived,
+        ...(selectedTemplateId ? { templateId: selectedTemplateId } : {}),
       }
       if (Number.isNaN(payload.budget.amount)) payload.budget.amount = null
       if (Number.isNaN(payload.billing.amountInvoiced)) payload.billing.amountInvoiced = null
@@ -203,8 +209,13 @@ const ProjectForm = () => {
               <CustomSelect
                 className="portal-input"
                 value=""
-                onChange={(v) => { if (v) applyTemplate(v) }}
-                options={[{ value: '', label: '-- Aucun template (formulaire vide) --' }, ...templates.map((t) => ({ value: t._id, label: t.name }))]}
+                onChange={(v) => {
+                  if (v) applyTemplate(v)
+                }}
+                options={[
+                  { value: '', label: '-- Aucun template (formulaire vide) --' },
+                  ...templates.map((t) => ({ value: t._id, label: t.name })),
+                ]}
               />
             </div>
           </div>
@@ -236,15 +247,27 @@ const ProjectForm = () => {
           <ProjectBudgetSection form={form} setForm={setForm} />
         </div>
 
-        {error && <div className="admin-error" style={{ marginTop: 24 }}>{error}</div>}
+        {error && (
+          <div className="admin-error" style={{ marginTop: 24 }}>
+            {error}
+          </div>
+        )}
 
         {/* Submit Section */}
         <div className="project-form-submit">
           <div className="admin-button-group" style={{ justifyContent: 'center' }}>
-            <button className="portal-button" type="submit" style={{ minWidth: 200, fontSize: 16, padding: '14px 32px' }}>
+            <button
+              className="portal-button"
+              type="submit"
+              style={{ minWidth: 200, fontSize: 16, padding: '14px 32px' }}
+            >
               ✨ Créer le projet
             </button>
-            <Link className="portal-button secondary" to="/admin" style={{ minWidth: 120, fontSize: 16, padding: '14px 32px' }}>
+            <Link
+              className="portal-button secondary"
+              to="/admin"
+              style={{ minWidth: 120, fontSize: 16, padding: '14px 32px' }}
+            >
               Annuler
             </Link>
           </div>

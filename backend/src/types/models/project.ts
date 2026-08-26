@@ -163,6 +163,12 @@ export interface ITemplateTask {
   priority: ProjectPriority
 }
 
+export interface ITemplatePhase {
+  title: string
+  description: string
+  requiresClientValidation: boolean
+}
+
 export interface ITemplateBudget {
   amount: number | null
   currency: string
@@ -177,6 +183,7 @@ export interface IProjectTemplate extends Document {
   priority: ProjectPriority
   defaultSections: ITemplateSection[]
   defaultTasks: ITemplateTask[]
+  defaultPhases: ITemplatePhase[]
   budget: ITemplateBudget
   createdBy: Types.ObjectId
   createdAt: Date

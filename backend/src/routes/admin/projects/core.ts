@@ -24,6 +24,8 @@ import {
 import { createNotification } from '../../../lib/notifications.js'
 import { generateProjectRecapPdf } from '../../../lib/pdfProjectRecap.js'
 import ProjectSection from '../../../models/ProjectSection.js'
+import ProjectTemplate from '../../../models/ProjectTemplate.js'
+import ProjectPhase from '../../../models/ProjectPhase.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { syncUploadToNextcloud } from '../../../lib/nextcloud.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
@@ -235,7 +237,7 @@ router.post(
   requirePermission(PERMISSIONS.EDIT_PROJECTS),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { clientId, name, description, status } = req.body || {}
+      const { clientId, name, description, status, templateId } = req.body || {}
       if (!clientId || !name) {
         return res.status(400).json({ error: 'clientId and name are required' })
       }
@@ -246,6 +248,16 @@ router.post(
       }
       if (!['PROSPECT', 'ACTIF', 'EN_PAUSE'].includes(client.status || 'ACTIF')) {
         return res.status(422).json({ error: 'Client must be active before creating a project' })
+      }
+
+      // La résolution précède la création : un templateId invalide ne doit
+      // jamais laisser derrière lui un projet à moitié instancié.
+      let template = null
+      if (templateId) {
+        template = await ProjectTemplate.findById(templateId).catch(() => null)
+        if (!template) {
+          return res.status(400).json({ error: 'Template non trouvé' })
+        }
       }
 
       const options = normalizeOptions(req.body || {})
@@ -262,6 +274,23 @@ router.post(
         status: status || 'EN_COURS',
         ...options,
       })
+
+      if (template) {
+        const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
+        await ProjectPhase.insertMany(
+          defaultPhases.map((phase, index) => ({
+            project: project._id,
+            title: phase.title,
+            description: phase.description || '',
+            order: index,
+            dueAt: null,
+            status: 'A_VENIR',
+            requiresClientValidation: Boolean(phase.requiresClientValidation),
+            linkedItems: [],
+            createdBy: req.user!.id,
+          })),
+        )
+      }
 
       await logActivity({
         project: project._id,
