@@ -10,6 +10,7 @@ import User from '../../models/User.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { serveAttachment } from '../../lib/attachmentResponse.js'
 import {
   actorFromRequest,
   auditChangeRequest,
@@ -119,18 +120,11 @@ router.get('/files/:filename', async (req: Request, res: Response, next: NextFun
     if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
 
-    // `res.sendFile` s'appuie sur `send`, qui refuse tout chemin absolu
-    // contenant un segment commençant par un point — un dépôt logé sous un
-    // dossier masqué suffit à le déclencher (même contournement que le PDF
-    // de facturation dans client/quotes.ts).
     const attachment = await ChangeRequest.findOne(
       { ...visibilityFilter(req.user!.id), 'attachments.filename': filename },
       { 'attachments.$': 1 },
     ).lean()
-    const original = attachment?.attachments?.[0]
-    res.setHeader('Content-Type', original?.mimetype || 'application/octet-stream')
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(original?.originalName || filename)}"`)
-    return fs.createReadStream(filePath).pipe(res)
+    return serveAttachment(res, filePath, attachment?.attachments?.[0]?.originalName || filename)
   } catch (err) {
     return next(err)
   }

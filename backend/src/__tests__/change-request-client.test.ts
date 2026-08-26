@@ -295,6 +295,32 @@ describe('pièces jointes', () => {
       .expect(404)
   })
 
+  // Le mimetype vient du multipart, donc de l'uploadeur : le réémettre tel
+  // quel en `inline` permettrait à un client d'exécuter du script sur
+  // l'origine Venio dans la session de l'admin qui ouvre la pièce jointe.
+  it('sert toute pièce jointe en téléchargement opaque, jamais en rendu inline', async () => {
+    const created = await request(app)
+      .post('/api/client/change-requests')
+      .set('Cookie', await cookieFor(ownerId))
+      .field('title', 'Capture')
+      .field('description', 'Voir le rendu.')
+      .attach('files', Buffer.from('<script>alert(1)</script>'), {
+        filename: 'preuve.html',
+        contentType: 'text/html',
+      })
+      .expect(201)
+
+    const attachment = created.body.changeRequest.attachments[0]
+    const response = await request(app)
+      .get(`/api/client/change-requests/files/${attachment.filename}`)
+      .set('Cookie', await cookieFor(ownerId))
+      .expect(200)
+
+    expect(response.headers['content-type']).toBe('application/octet-stream')
+    expect(response.headers['content-disposition']).toMatch(/^attachment;/)
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+  })
+
   it('refuse un nom de fichier qui sort du répertoire', async () => {
     await request(app)
       .get('/api/client/change-requests/files/..%2F..%2Fpackage.json')

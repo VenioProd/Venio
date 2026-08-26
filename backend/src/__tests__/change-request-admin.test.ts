@@ -2,6 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
+import fs from 'fs'
+import path from 'path'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import { createSession } from '../lib/session.js'
 import adminChangeRequestRoutes from '../routes/admin/changeRequests.js'
@@ -255,6 +257,42 @@ describe('transitions admin', () => {
 
     expect(response.body.changeRequest.replies).toHaveLength(1)
     expect(await Notification.countDocuments({ type: 'CHANGE_REQUEST_REPLY', recipient: clientId })).toBe(1)
+  })
+})
+
+describe('service de fichiers admin', () => {
+  it('sert la pièce jointe d’une demande en téléchargement opaque', async () => {
+    const filename = `${Date.now()}-piege.html`
+    const uploadsDir = path.resolve('uploads/change-requests')
+    fs.mkdirSync(uploadsDir, { recursive: true })
+    fs.writeFileSync(path.join(uploadsDir, filename), '<script>alert(1)</script>')
+    await seedRequest({
+      attachments: [{ filename, originalName: 'piege.html', mimetype: 'text/html', size: 25 }],
+    })
+
+    const response = await request(app)
+      .get(`/api/admin/change-requests/files/${filename}`)
+      .set('Cookie', await cookieFor(adminId))
+      .expect(200)
+
+    expect(response.headers['content-type']).toBe('application/octet-stream')
+    expect(response.headers['content-disposition']).toMatch(/^attachment;/)
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+  })
+
+  it('renvoie 404 pour un fichier qui n’appartient à aucune demande', async () => {
+    await request(app)
+      .get('/api/admin/change-requests/files/inconnu.png')
+      .set('Cookie', await cookieFor(adminId))
+      .expect(404)
+  })
+
+  it('refuse le service de fichiers à un admin sans view_change_requests', async () => {
+    await User.findByIdAndUpdate(viewerId, { deniedPermissions: ['view_change_requests'] })
+    await request(app)
+      .get('/api/admin/change-requests/files/quelconque.png')
+      .set('Cookie', await cookieFor(viewerId))
+      .expect(403)
   })
 })
 

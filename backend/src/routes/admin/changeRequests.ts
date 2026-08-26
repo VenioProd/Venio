@@ -11,6 +11,7 @@ import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { findAttachmentMeta, serveAttachment } from '../../lib/attachmentResponse.js'
 import {
   actorFromRequest,
   auditChangeRequest,
@@ -121,28 +122,18 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filename = req.params.filename as string
-      const owner = await ChangeRequest.findOne(
-        {
-          $or: [{ attachments: { $elemMatch: { filename } } }, { 'replies.attachments': { $elemMatch: { filename } } }],
-        },
-        { 'attachments.$': 1 },
-      ).lean()
+      const owner = await ChangeRequest.findOne({
+        $or: [{ attachments: { $elemMatch: { filename } } }, { 'replies.attachments': { $elemMatch: { filename } } }],
+      })
+        .select('attachments replies')
+        .lean()
       if (!owner) return res.status(404).json({ error: 'Fichier introuvable' })
 
       const filePath = path.resolve(uploadsDir, filename)
       if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
       if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
 
-      // `res.sendFile` s'appuie sur `send`, qui refuse tout chemin absolu
-      // contenant un segment commençant par un point — un dépôt logé sous un
-      // dossier masqué suffit à le déclencher.
-      const original = owner.attachments?.[0]
-      res.setHeader('Content-Type', original?.mimetype || 'application/octet-stream')
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename="${encodeURIComponent(original?.originalName || filename)}"`,
-      )
-      return fs.createReadStream(filePath).pipe(res)
+      return serveAttachment(res, filePath, findAttachmentMeta(owner, filename)?.originalName || filename)
     } catch (err) {
       return next(err)
     }
