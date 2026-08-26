@@ -30,13 +30,20 @@ const projectTemplateSchema = new mongoose.Schema<IProjectTemplate>(
         },
       },
     ],
+    defaultPhases: [
+      {
+        title: { type: String, required: true },
+        description: { type: String, default: '' },
+        requiresClientValidation: { type: Boolean, default: false },
+      },
+    ],
     budget: {
       amount: { type: Number, default: null },
       currency: { type: String, default: 'EUR' },
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<IProjectTemplate>('ProjectTemplate', projectTemplateSchema)

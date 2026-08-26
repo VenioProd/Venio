@@ -18,7 +18,9 @@ import ProjectDetailsTab from './ProjectDetailsTab'
 import ProjectContentTab from './ProjectContentTab'
 import ProjectUpdatesTab from './ProjectUpdatesTab'
 import ProjectDocumentsTab from './ProjectDocumentsTab'
+import ProjectPhasesTab from './ProjectPhasesTab'
 import { useProjectContent } from './hooks/useProjectContent'
+import { useProjectPhases } from './hooks/useProjectPhases'
 
 const AdminProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -64,6 +66,8 @@ const AdminProjectDetail = () => {
   const canManageBilling = hasPermission(user, PERMISSIONS.MANAGE_BILLING)
   const canViewContent = hasPermission(user, PERMISSIONS.VIEW_CONTENT)
   const canViewBilling = hasPermission(user, PERMISSIONS.VIEW_BILLING)
+  const canViewPhases = hasPermission(user, PERMISSIONS.VIEW_PHASES)
+  const canManagePhases = hasPermission(user, PERMISSIONS.MANAGE_PHASES)
 
   const ensurePermission = (allowed: boolean, message: string): boolean => {
     if (!allowed) {
@@ -206,9 +210,23 @@ const AdminProjectDetail = () => {
     setError,
   })
 
+  const projectPhases = useProjectPhases({
+    projectId: id,
+    canViewPhases,
+    canManagePhases,
+    confirm,
+    ensurePermission,
+    setError,
+  })
+
   useEffect(() => {
     load()
   }, [id, canViewContent, canViewBilling])
+
+  const { loadPhases } = projectPhases
+  useEffect(() => {
+    loadPhases()
+  }, [loadPhases])
 
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -490,6 +508,14 @@ const AdminProjectDetail = () => {
         >
           Contenu du projet
         </button>
+        {canViewPhases && (
+          <button
+            className={`admin-tab ${activeTab === 'phases' ? 'active' : ''}`}
+            onClick={() => setActiveTab('phases')}
+          >
+            Étapes
+          </button>
+        )}
         <button className={`admin-tab ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
           Taches
         </button>
@@ -575,6 +601,24 @@ const AdminProjectDetail = () => {
           onDeleteItem={projectContent.handleDeleteItem}
           onToggleItemVisibility={projectContent.handleToggleItemVisibility}
           onDownloadItem={projectContent.handleDownloadItem}
+        />
+      )}
+
+      {activeTab === 'phases' && id && canViewPhases && (
+        <ProjectPhasesTab
+          phases={projectPhases.phases}
+          items={items}
+          phaseForm={projectPhases.phaseForm}
+          setPhaseForm={projectPhases.setPhaseForm}
+          editingPhaseId={projectPhases.editingPhaseId}
+          canManagePhases={canManagePhases}
+          onSubmitPhase={projectPhases.handleSubmitPhase}
+          onStartEdit={projectPhases.startEditPhase}
+          onCancelEdit={projectPhases.cancelEditPhase}
+          onDeletePhase={projectPhases.handleDeletePhase}
+          onTransition={projectPhases.handleTransition}
+          onMovePhase={projectPhases.handleMovePhase}
+          onResolveRevision={projectPhases.handleResolveRevision}
         />
       )}
 

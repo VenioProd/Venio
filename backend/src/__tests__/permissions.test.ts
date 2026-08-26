@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  PERMISSIONS,
-  ADMIN_ROLES,
-  isAdminRole,
-  hasPermission,
-  getPermissionsForRole,
-} from '../lib/permissions.js'
+import { PERMISSIONS, ADMIN_ROLES, isAdminRole, hasPermission, getPermissionsForRole } from '../lib/permissions.js'
 
 describe('permissions module', () => {
   describe('PERMISSIONS constant', () => {
@@ -22,6 +16,9 @@ describe('permissions module', () => {
         'EDIT_PROJECTS',
         'VIEW_CONTENT',
         'EDIT_CONTENT',
+        // Pipeline d'étapes de production
+        'VIEW_PHASES',
+        'MANAGE_PHASES',
         'VIEW_BILLING',
         'MANAGE_BILLING',
         'MANAGE_TASKS',

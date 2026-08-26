@@ -21,6 +21,7 @@ export type ProjectStatus = 'EN_COURS' | 'EN_ATTENTE' | 'TERMINE'
 export type ProjectPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
 export type ProjectMemberRole = 'VIEWER' | 'EDITOR'
+export type PhaseStatus = 'A_VENIR' | 'EN_COURS' | 'EN_ATTENTE_VALIDATION' | 'TERMINEE'
 
 // ─── Task ───
 export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_REVIEW' | 'TERMINE' | 'VALIDE' | 'NON_VALIDE' | 'A_MODIFIER'
@@ -68,6 +69,15 @@ export type ActivityAction =
   | 'ITEM_DELETED'
   | 'UPDATE_POSTED'
   | 'BILLING_CREATED'
+  // Étapes de production (pipeline projet)
+  | 'PHASE_CREATED'
+  | 'PHASE_UPDATED'
+  | 'PHASE_DELETED'
+  | 'PHASE_STATUS_CHANGED'
+  | 'PHASE_VALIDATION_REQUESTED'
+  | 'PHASE_VALIDATED'
+  | 'PHASE_REVISION_REQUESTED'
+  | 'PHASE_REVISION_RESOLVED'
 
 // ─── Notification ───
 export type NotificationType =
@@ -133,6 +143,10 @@ export type NotificationType =
   // Briefs (mission briefs)
   | 'BRIEF_ASSIGNED'
   | 'BRIEF_STATUS_CHANGED'
+  // Étapes de production (pipeline projet)
+  | 'PHASE_VALIDATION_REQUESTED'
+  | 'PHASE_VALIDATED'
+  | 'PHASE_REVISION_REQUESTED'
 
 // ─── Audit ───
 export type AuditAction =
@@ -211,6 +225,8 @@ export type Permission =
   | 'edit_projects'
   | 'view_content'
   | 'edit_content'
+  | 'view_phases'
+  | 'manage_phases'
   | 'view_billing'
   | 'manage_billing'
   | 'manage_tasks'

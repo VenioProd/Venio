@@ -9,6 +9,12 @@ export interface TemplateTask {
   priority: string
 }
 
+export interface TemplatePhase {
+  title: string
+  description: string
+  requiresClientValidation: boolean
+}
+
 export interface ProjectTemplate {
   _id: string
   name: string
@@ -19,6 +25,7 @@ export interface ProjectTemplate {
   priority: string
   defaultSections: TemplateSection[]
   defaultTasks: TemplateTask[]
+  defaultPhases: TemplatePhase[]
   budget: { amount: number | null; currency: string }
   createdAt: string
   updatedAt: string

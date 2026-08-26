@@ -6,6 +6,7 @@ import type {
   ItemType,
   ItemStatus,
   ProjectMemberRole,
+  PhaseStatus,
 } from '../enums.js'
 
 // ─── Project ───
@@ -88,6 +89,40 @@ export interface IProjectSection extends Document {
   updatedAt: Date
 }
 
+// ─── ProjectPhase ───
+export interface IPhaseValidation {
+  validatedBy: Types.ObjectId | null
+  validatedByName: string
+  validatedAt: Date | null
+  comment: string
+}
+
+export interface IPhaseRevisionRequest {
+  _id: Types.ObjectId
+  requestedBy: Types.ObjectId
+  requestedByName: string
+  comment: string
+  createdAt: Date
+  resolvedAt: Date | null
+  resolvedBy: Types.ObjectId | null
+}
+
+export interface IProjectPhase extends Document {
+  project: Types.ObjectId
+  title: string
+  description: string
+  order: number
+  dueAt: Date | null
+  status: PhaseStatus
+  requiresClientValidation: boolean
+  linkedItems: Types.ObjectId[]
+  validation: IPhaseValidation
+  revisionRequests: IPhaseRevisionRequest[]
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── ProjectItem ───
 export interface IProjectItemFile {
   originalName: string
@@ -128,6 +163,12 @@ export interface ITemplateTask {
   priority: ProjectPriority
 }
 
+export interface ITemplatePhase {
+  title: string
+  description: string
+  requiresClientValidation: boolean
+}
+
 export interface ITemplateBudget {
   amount: number | null
   currency: string
@@ -142,6 +183,7 @@ export interface IProjectTemplate extends Document {
   priority: ProjectPriority
   defaultSections: ITemplateSection[]
   defaultTasks: ITemplateTask[]
+  defaultPhases: ITemplatePhase[]
   budget: ITemplateBudget
   createdBy: Types.ObjectId
   createdAt: Date

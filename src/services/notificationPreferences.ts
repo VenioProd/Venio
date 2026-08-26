@@ -16,6 +16,9 @@ export type NotificationType =
   | 'TICKET_CREATED'
   | 'TICKET_REPLY'
   | 'INTERNAL_MESSAGE'
+  | 'PHASE_VALIDATION_REQUESTED'
+  | 'PHASE_VALIDATED'
+  | 'PHASE_REVISION_REQUESTED'
 
 export interface PreferencesResponse {
   preferences: Record<NotificationType, ChannelPreferences>
@@ -27,7 +30,7 @@ export async function fetchNotificationPreferences(): Promise<PreferencesRespons
 }
 
 export async function updateNotificationPreferences(
-  preferences: Partial<Record<NotificationType, Partial<ChannelPreferences>>>
+  preferences: Partial<Record<NotificationType, Partial<ChannelPreferences>>>,
 ): Promise<PreferencesResponse> {
   return apiFetch<PreferencesResponse>('/api/notification-preferences', {
     method: 'PATCH',
@@ -63,5 +66,17 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string;
   INTERNAL_MESSAGE: {
     label: 'Messagerie interne',
     description: 'Messages dans la messagerie interne (channels et DM).',
+  },
+  PHASE_VALIDATION_REQUESTED: {
+    label: 'Validation d’étape attendue',
+    description: 'Une étape de production attend ta validation.',
+  },
+  PHASE_VALIDATED: {
+    label: 'Étape validée',
+    description: 'Un client a validé une étape de production.',
+  },
+  PHASE_REVISION_REQUESTED: {
+    label: 'Retouches demandées',
+    description: 'Un client a demandé des retouches sur une étape.',
   },
 }
