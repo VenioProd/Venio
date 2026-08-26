@@ -6,6 +6,7 @@ import type {
   ItemType,
   ItemStatus,
   ProjectMemberRole,
+  PhaseStatus,
 } from '../enums.js'
 
 // ─── Project ───
@@ -83,6 +84,40 @@ export interface IProjectSection extends Document {
   description: string
   order: number
   isVisible: boolean
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── ProjectPhase ───
+export interface IPhaseValidation {
+  validatedBy: Types.ObjectId | null
+  validatedByName: string
+  validatedAt: Date | null
+  comment: string
+}
+
+export interface IPhaseRevisionRequest {
+  _id: Types.ObjectId
+  requestedBy: Types.ObjectId
+  requestedByName: string
+  comment: string
+  createdAt: Date
+  resolvedAt: Date | null
+  resolvedBy: Types.ObjectId | null
+}
+
+export interface IProjectPhase extends Document {
+  project: Types.ObjectId
+  title: string
+  description: string
+  order: number
+  dueAt: Date | null
+  status: PhaseStatus
+  requiresClientValidation: boolean
+  linkedItems: Types.ObjectId[]
+  validation: IPhaseValidation
+  revisionRequests: IPhaseRevisionRequest[]
   createdBy: Types.ObjectId
   createdAt: Date
   updatedAt: Date
