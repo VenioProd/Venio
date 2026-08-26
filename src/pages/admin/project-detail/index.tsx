@@ -223,9 +223,10 @@ const AdminProjectDetail = () => {
     load()
   }, [id, canViewContent, canViewBilling])
 
+  const { loadPhases } = projectPhases
   useEffect(() => {
-    projectPhases.loadPhases()
-  }, [projectPhases.loadPhases])
+    loadPhases()
+  }, [loadPhases])
 
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
