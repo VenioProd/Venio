@@ -7,7 +7,14 @@ import ProjectItem from '../../../models/ProjectItem.js'
 import ProjectPhase from '../../../models/ProjectPhase.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { logActivity } from '../../../lib/activityLog.js'
-import { isPhaseValidated } from '../../../lib/projectPhases.js'
+import { createNotification } from '../../../lib/notifications.js'
+import {
+  findBlockingPhase,
+  isPhaseValidated,
+  PHASE_STATUS_LABELS,
+  resolveAdminTransition,
+  type PhaseAdminAction,
+} from '../../../lib/projectPhases.js'
 import logger from '../../../lib/logger.js'
 import type { IProjectPhase } from '../../../types/models/index.js'
 
@@ -256,6 +263,112 @@ router.delete(
       })
 
       res.json({ message: 'Étape supprimée' })
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  },
+)
+
+/**
+ * Fabrique les cinq routes de transition admin : elles partagent la même
+ * mécanique (charger, arbitrer via la lib, écrire, journaliser) et ne diffèrent
+ * que par l'action et ses effets de bord.
+ */
+function registerTransition(action: PhaseAdminAction) {
+  router.post(
+    `/:projectId/phases/:phaseId/${action}`,
+    requirePermission(PERMISSIONS.MANAGE_PHASES),
+    async (req: Request, res: Response) => {
+      try {
+        const projectId = String(req.params.projectId)
+        const phase = await loadPhase(req, res)
+        if (!phase) return
+
+        const blockingPhase = action === 'start' ? await findBlockingPhase(projectId, phase.order) : null
+        const outcome = resolveAdminTransition(phase, action, blockingPhase)
+        if (!outcome.ok) {
+          return res.status(outcome.refusal.status).json(outcome.refusal.body)
+        }
+
+        const previousStatus = phase.status
+        phase.status = outcome.nextStatus
+        await phase.save()
+
+        if (action === 'request-validation') {
+          const project = await Project.findById(projectId).select('name client')
+          if (project?.client) {
+            await createNotification({
+              recipient: project.client,
+              type: 'PHASE_VALIDATION_REQUESTED',
+              title: `Validation attendue — ${project.name}`,
+              message: `L’étape « ${phase.title} » attend votre validation.`,
+              link: `/espace-client/projets/${projectId}?tab=progress`,
+              metadata: { projectId, phaseId: String(phase._id) },
+            }).catch(() => null)
+          }
+          await logActivity({
+            project: projectId,
+            action: 'PHASE_VALIDATION_REQUESTED',
+            actor: req.user!.id,
+            summary: `Validation client demandée pour l’étape « ${phase.title} »`,
+            metadata: { phaseId: String(phase._id), from: previousStatus, to: phase.status },
+          })
+        } else {
+          await logActivity({
+            project: projectId,
+            action: 'PHASE_STATUS_CHANGED',
+            actor: req.user!.id,
+            summary: `Étape « ${phase.title} » : ${PHASE_STATUS_LABELS[previousStatus]} → ${PHASE_STATUS_LABELS[phase.status]}`,
+            metadata: { phaseId: String(phase._id), from: previousStatus, to: phase.status },
+          })
+        }
+
+        await populatePhase(phase)
+        res.json({ phase })
+      } catch (err) {
+        logger.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+      }
+    },
+  )
+}
+
+for (const action of ['start', 'request-validation', 'complete', 'cancel-validation-request', 'revert'] as const) {
+  registerTransition(action)
+}
+
+// POST /api/admin/projects/:projectId/phases/:phaseId/revisions/:revisionId/resolve
+router.post(
+  '/:projectId/phases/:phaseId/revisions/:revisionId/resolve',
+  requirePermission(PERMISSIONS.MANAGE_PHASES),
+  async (req: Request, res: Response) => {
+    try {
+      const phase = await loadPhase(req, res)
+      if (!phase) return
+
+      const revision = phase.revisionRequests.find((entry) => String(entry._id) === String(req.params.revisionId))
+      if (!revision) return res.status(404).json({ error: 'Demande de retouches non trouvée' })
+      if (revision.resolvedAt) {
+        return res
+          .status(409)
+          .json({ error: 'Cette demande de retouches est déjà traitée', code: 'REVISION_ALREADY_RESOLVED' })
+      }
+
+      revision.resolvedAt = new Date()
+      revision.resolvedBy = req.user!.id as unknown as typeof revision.resolvedBy
+      await phase.save()
+
+      await logActivity({
+        project: String(req.params.projectId),
+        action: 'PHASE_REVISION_RESOLVED',
+        actor: req.user!.id,
+        summary: `Demande de retouches traitée sur l’étape « ${phase.title} »`,
+        metadata: { phaseId: String(phase._id), revisionId: String(req.params.revisionId) },
+      })
+
+      await populatePhase(phase)
+      res.json({ phase })
     } catch (err) {
       logger.error(err)
       res.status(500).json({ error: 'Erreur serveur' })
