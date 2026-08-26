@@ -18,6 +18,7 @@ import {
   listAdminClientDeliverables,
   listAdminClientNotes,
   listAdminClientProjects,
+  listAdminClientFiles,
   reactivateAdminClient,
   updateAdminClient,
   deleteAdminClientContact,
@@ -35,6 +36,7 @@ import type {
   CloudInfo,
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
+import type { AdminClientFile } from '../../../services/adminClients'
 import type { NoteOrActivity } from './types'
 import { TABS } from './types'
 import OverviewTab from './OverviewTab'
@@ -44,6 +46,7 @@ import DeliverablesTab from './DeliverablesTab'
 import ContactsTab from './ContactsTab'
 import NotesTab from './NotesTab'
 import BillingTab from './BillingTab'
+import FilesTab from './FilesTab'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -63,6 +66,7 @@ const ClientAccountDetail = () => {
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null)
   const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([])
   const [cloudInfo, setCloudInfo] = useState<CloudInfo | null>(null)
+  const [files, setFiles] = useState<AdminClientFile[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [saving, setSaving] = useState<boolean>(false)
@@ -172,6 +176,7 @@ const ClientAccountDetail = () => {
         billingSummaryRes,
         billingDocumentsRes,
         cloudRes,
+        filesRes,
       ] = (await Promise.all([
         getAdminClient(userId!),
         listAdminClientProjects(userId!),
@@ -183,7 +188,9 @@ const ClientAccountDetail = () => {
         getAdminClientBillingSummary(userId!).catch(() => ({ summary: null })),
         listAdminClientBillingDocuments(userId!).catch(() => ({ documents: [] })),
         getAdminClientCloud(userId!).catch(() => ({ cloud: null })),
+        listAdminClientFiles(userId!).catch(() => ({ files: [] })),
       ])) as [
+        Record<string, unknown>,
         Record<string, unknown>,
         Record<string, unknown>,
         Record<string, unknown>,
@@ -206,6 +213,7 @@ const ClientAccountDetail = () => {
       setBillingSummary((billingSummaryRes.summary as BillingSummary) || null)
       setBillingDocuments((billingDocumentsRes.documents as BillingDocument[]) || [])
       setCloudInfo((cloudRes.cloud as CloudInfo) || null)
+      setFiles((filesRes.files as AdminClientFile[]) || [])
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur chargement compte')
     } finally {
@@ -462,6 +470,8 @@ const ClientAccountDetail = () => {
                 saving={saving}
               />
             )}
+
+            {activeTab === 'files' && <FilesTab files={files} clientId={userId!} />}
 
             {activeTab === 'billing' && (
               <BillingTab billingSummary={billingSummary} billingDocuments={billingDocuments} />

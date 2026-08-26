@@ -28,6 +28,7 @@ const notificationSchema = new mongoose.Schema<INotification>(
         'CHANGE_REQUEST_QUOTE_SENT',
         'CHANGE_REQUEST_DELIVERED',
         'CHANGE_REQUEST_PLANNED',
+        'CLIENT_FILE_UPLOADED',
       ],
       required: true,
     },

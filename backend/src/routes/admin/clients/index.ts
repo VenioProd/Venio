@@ -6,6 +6,7 @@ import contactsRouter from './contacts.js'
 import notesRouter from './notes.js'
 import projectsRouter from './projects.js'
 import billingRouter from './billing.js'
+import filesRouter from './files.js'
 
 const router = express.Router()
 
@@ -17,5 +18,6 @@ router.use(contactsRouter)
 router.use(notesRouter)
 router.use(projectsRouter)
 router.use(billingRouter)
+router.use(filesRouter)
 
 export default router

@@ -97,3 +97,5 @@ export type {
   IPersonalTask,
   IWorkspaceNote,
 } from './workspace.js'
+
+export type { IClientUpload } from './upload.js'

@@ -82,6 +82,7 @@ export type ActivityAction =
   | 'CHANGE_REQUEST_CREATED'
   | 'CHANGE_REQUEST_QUALIFIED'
   | 'CHANGE_REQUEST_STATUS_CHANGED'
+  | 'FICHIER_CLIENT_DEPOSE'
 
 // ─── Notification ───
 export type NotificationType =
@@ -158,6 +159,7 @@ export type NotificationType =
   | 'CHANGE_REQUEST_QUOTE_SENT'
   | 'CHANGE_REQUEST_DELIVERED'
   | 'CHANGE_REQUEST_PLANNED'
+  | 'CLIENT_FILE_UPLOADED'
 
 // ─── Audit ───
 export type AuditAction =
@@ -316,3 +318,11 @@ export type PersonalTaskStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
 export type PersonalTaskPriority = 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
 export type WorkspaceNoteType = 'NOTE' | 'POSTIT' | 'DRAFT' | 'IDEA'
 export type WorkspaceNoteStatus = 'NEW' | 'CONVERTED'
+
+// ─── Client Vault ───
+export type ClientUploadCategory = 'LOGO' | 'TEXTE' | 'PHOTO' | 'BRIEF' | 'AUTRE'
+
+export type ClientVaultDocumentType = 'DEVIS' | 'FACTURE' | 'CONTRAT' | 'LIVRABLE' | 'FICHIER_PROJET'
+export type ClientVaultSource = 'BILLING' | 'PROJECT_ITEM' | 'DOCUMENT'
+
+export type ClientActionItemType = 'DEVIS_A_SIGNER' | 'FACTURE_A_PAYER' | 'ETAPE_A_VALIDER' | 'DEMANDE_A_CONFIRMER'

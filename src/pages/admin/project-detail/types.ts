@@ -91,4 +91,5 @@ export interface ProjectDocumentsTabProps {
   documents: ProjectDocument[]
   canEditProjects: boolean
   onUpload: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  projectId: string
 }

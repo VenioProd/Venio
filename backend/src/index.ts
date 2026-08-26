@@ -80,6 +80,8 @@ import clientMessageRoutes from './routes/client/messages.js'
 import clientCollaborationRoutes from './routes/client/collaboration.js'
 import clientQuoteRoutes from './routes/client/quotes.js'
 import clientChangeRequestRoutes from './routes/client/changeRequests.js'
+import clientVaultRoutes from './routes/client/vault.js'
+import clientFileRoutes from './routes/client/files.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
@@ -351,6 +353,9 @@ app.use(
 app.use('/api/projects', clientQuoteRoutes)
 // Ressource scopée compte (et non projet) : préfixe dédié /api/client.
 app.use('/api/client/change-requests', clientChangeRequestRoutes)
+
+app.use('/api/client', clientVaultRoutes)
+app.use('/api/client', clientFileRoutes)
 
 // This must stay after every /api mount and before static files / the SPA
 // fallback. app.all covers the namespace root, unknown GET, mutations and

@@ -36,6 +36,7 @@ const activityLogSchema = new mongoose.Schema<IActivityLog>(
         'CHANGE_REQUEST_CREATED',
         'CHANGE_REQUEST_QUALIFIED',
         'CHANGE_REQUEST_STATUS_CHANGED',
+        'FICHIER_CLIENT_DEPOSE',
       ],
     },
     actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

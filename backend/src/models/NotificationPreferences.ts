@@ -54,6 +54,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   'CHANGE_REQUEST_QUOTE_SENT',
   'CHANGE_REQUEST_DELIVERED',
   'CHANGE_REQUEST_PLANNED',
+  'CLIENT_FILE_UPLOADED',
 ]
 
 export function defaultChannelPrefs(): ChannelPreferences {

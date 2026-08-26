@@ -2,14 +2,24 @@ import { apiFetch } from '../lib/api'
 import type { PaginationMeta } from '../types/api.types'
 
 function extractData<T = unknown>(response: unknown): T {
-  if (response && typeof response === 'object' && 'data' in response && (response as Record<string, unknown>).data !== undefined) {
+  if (
+    response &&
+    typeof response === 'object' &&
+    'data' in response &&
+    (response as Record<string, unknown>).data !== undefined
+  ) {
     return (response as Record<string, unknown>).data as T
   }
   return response as T
 }
 
 function extractMeta(response: unknown): PaginationMeta | null {
-  if (response && typeof response === 'object' && 'meta' in response && (response as Record<string, unknown>).meta !== undefined) {
+  if (
+    response &&
+    typeof response === 'object' &&
+    'meta' in response &&
+    (response as Record<string, unknown>).meta !== undefined
+  ) {
     return (response as Record<string, unknown>).meta as PaginationMeta
   }
   return null
@@ -159,4 +169,25 @@ export async function getAdminClientBillingSummary(clientId: string) {
 export async function listAdminClientBillingDocuments(clientId: string) {
   const response = await apiFetch(`/api/admin/clients/${clientId}/billing/documents`)
   return extractData(response)
+}
+
+export interface AdminClientFile {
+  id: string
+  project: { id: string; name: string } | null
+  category: 'LOGO' | 'TEXTE' | 'PHOTO' | 'BRIEF' | 'AUTRE'
+  note: string
+  originalName: string
+  mimeType: string
+  size: number
+  createdAt: string
+  downloadedByAdminAt: string | null
+}
+
+export async function listAdminClientFiles(clientId: string) {
+  const response = await apiFetch(`/api/admin/clients/${clientId}/files`)
+  return extractData(response)
+}
+
+export function adminClientFileDownloadUrl(clientId: string, fileId: string): string {
+  return `/api/admin/clients/${clientId}/files/${fileId}/download`
 }
