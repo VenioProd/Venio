@@ -10,6 +10,7 @@ import express from 'express'
 import coreRouter from './core.js'
 import sectionsRouter from './sections.js'
 import itemsRouter from './items.js'
+import clientFilesRouter from './clientFiles.js'
 import tasksRouter from '../tasks/index.js'
 import messagesRouter from '../messages.js'
 
@@ -18,6 +19,7 @@ const router = express.Router()
 router.use(coreRouter)
 router.use(sectionsRouter)
 router.use(itemsRouter)
+router.use(clientFilesRouter)
 router.use(tasksRouter)
 router.use(messagesRouter)
 

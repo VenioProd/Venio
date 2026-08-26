@@ -117,7 +117,7 @@ describe('GET /api/admin/projects/:projectId/client-files', () => {
   it('exige VIEW_CONTENT, refuse un fileId non rattaché à ce projet (404)', async () => {
     const client = await makeUser('client4@example.test', 'CLIENT')
     const admin = await makeUser('admin3@example.test', 'SUPER_ADMIN')
-    const rh = await makeUser('rh@example.test', 'RH')
+    const comptable = await makeUser('comptable@example.test', 'COMPTABLE')
     const project = await Project.create({ name: 'Projet A', client: client._id })
     const otherProject = await Project.create({ name: 'Projet B', client: client._id })
 
@@ -132,7 +132,7 @@ describe('GET /api/admin/projects/:projectId/client-files', () => {
 
     await request(app)
       .get(`/api/admin/projects/${project._id}/client-files`)
-      .set('Cookie', await cookieFor(String(rh._id)))
+      .set('Cookie', await cookieFor(String(comptable._id)))
       .expect(403)
 
     const adminCookie = await cookieFor(String(admin._id))
