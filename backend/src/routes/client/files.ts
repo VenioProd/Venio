@@ -2,13 +2,15 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'node:crypto'
 import auth from '../../middleware/auth.js'
 import ClientUpload from '../../models/ClientUpload.js'
-import ActivityLog from '../../models/ActivityLog.js'
 import ClientActivity from '../../models/ClientActivity.js'
 import User from '../../models/User.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
+import { logActivity } from '../../lib/activityLog.js'
+import logger from '../../lib/logger.js'
 
 const router = express.Router()
 router.use(auth)
@@ -40,7 +42,7 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safeName}`)
+    cb(null, `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`)
   },
 })
 
@@ -91,6 +93,7 @@ router.post(
   },
   async (req: Request, res: Response, next: NextFunction) => {
     const files = (req.files as Express.Multer.File[]) || []
+    let persisted = false
     try {
       if (req.user!.role !== 'CLIENT') {
         await removeFiles(files)
@@ -126,6 +129,7 @@ router.post(
           size: file.size,
         })),
       )
+      persisted = true
 
       const clientUser = await User.findById(req.user!.id).select('name companyName').lean()
       const clientName = clientUser?.companyName || clientUser?.name || 'Client'
@@ -145,10 +149,12 @@ router.post(
         label: `${files.length} fichier(s) déposé(s)${project ? ` sur le projet ${project.name}` : ''}`,
         payload: { count: files.length, projectId: project ? String(project._id) : null },
         actorId: req.user!.id,
+      }).catch((err) => {
+        logger.error({ data: (err as Error).message }, '[ClientActivity] Failed to log activity:')
       })
 
       if (project) {
-        await ActivityLog.create({
+        await logActivity({
           project: project._id,
           action: 'FICHIER_CLIENT_DEPOSE',
           actor: req.user!.id,
@@ -170,7 +176,9 @@ router.post(
         })),
       })
     } catch (err) {
-      await removeFiles(files)
+      if (!persisted) {
+        await removeFiles(files)
+      }
       return next(err)
     }
   },

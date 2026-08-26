@@ -1,10 +1,14 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import path from 'path'
-import { requirePermission } from '../../../middleware/role.js'
+import auth from '../../../middleware/auth.js'
+import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import ClientUpload from '../../../models/ClientUpload.js'
 
 const router = express.Router()
+
+router.use(auth)
+router.use(requireAdmin)
 
 router.get(
   '/:projectId/client-files',

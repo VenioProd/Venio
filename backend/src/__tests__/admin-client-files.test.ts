@@ -44,6 +44,23 @@ describe('GET /api/admin/clients/:id/files', () => {
       .expect(403)
   })
 
+  it('exige MANAGE_CLIENTS, refuse un admin sans la permission au téléchargement (403)', async () => {
+    const client = await makeUser('client5@example.test', 'CLIENT')
+    const viewer = await makeUser('viewer2@example.test', 'VIEWER')
+    const file = await ClientUpload.create({
+      client: client._id,
+      originalName: 'e.pdf',
+      storagePath: 'uploads/client-files/x/e.pdf',
+      mimeType: 'application/pdf',
+      size: 1,
+    })
+
+    await request(app)
+      .get(`/api/admin/clients/${client._id}/files/${file._id}/download`)
+      .set('Cookie', await cookieFor(String(viewer._id)))
+      .expect(403)
+  })
+
   it('liste les fichiers du compte pour un SUPER_ADMIN, refuse un fileId étranger au téléchargement', async () => {
     const client = await makeUser('client2@example.test', 'CLIENT')
     const otherClient = await makeUser('other@example.test', 'CLIENT')

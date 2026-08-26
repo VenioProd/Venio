@@ -122,6 +122,22 @@ describe('POST /api/client/files', () => {
     expect(badMime.body.code).toBe('UNSUPPORTED_FILE_TYPE')
   })
 
+  it('refuse un fichier > 20 Mo avec une réponse JSON (413 LIMIT_FILE_SIZE)', async () => {
+    const client = await makeClient('trop-lourd@example.test')
+    const cookie = await cookieFor(String(client._id))
+    const oversized = Buffer.alloc(21 * 1024 * 1024)
+
+    const response = await request(app)
+      .post('/api/client/files')
+      .set('Cookie', cookie)
+      .attach('files', oversized, { filename: 'gros.pdf', contentType: 'application/pdf' })
+
+    expect(response.status).toBe(413)
+    expect(response.body.error).toBeDefined()
+    expect(response.body.code).toBe('FILE_TOO_LARGE')
+    expect(response.text).not.toContain('<html')
+  })
+
   it('crée une notification CLIENT_FILE_UPLOADED par SUPER_ADMIN actif, une seule par dépôt, dedupe au dépôt suivant', async () => {
     const client = await makeClient('notif@example.test')
     const passwordHash = await bcrypt.hash('x', 4)
