@@ -28,6 +28,8 @@ const CANONICAL_VALUES = [
   'view_tickets',
   'create_tickets',
   'manage_tickets',
+  'view_change_requests',
+  'manage_change_requests',
   'view_accounting',
   'manage_accounting',
   'lock_accounting',
@@ -61,6 +63,8 @@ const CANONICAL_KEYS = [
   'VIEW_TICKETS',
   'CREATE_TICKETS',
   'MANAGE_TICKETS',
+  'VIEW_CHANGE_REQUESTS',
+  'MANAGE_CHANGE_REQUESTS',
   'VIEW_ACCOUNTING',
   'MANAGE_ACCOUNTING',
   'LOCK_ACCOUNTING',
@@ -101,8 +105,8 @@ describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
   const frontValues = Object.values(PERMISSIONS) as string[]
   const frontKeys = Object.keys(PERMISSIONS)
 
-  it('has exactly 30 permissions', () => {
-    expect(frontValues.length).toBe(30)
+  it('has exactly 32 permissions', () => {
+    expect(frontValues.length).toBe(32)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
@@ -120,14 +124,11 @@ describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
 // Backend PERMISSIONS (parsed from source file)
 // --------------------------------------------------------------------------
 describe('Backend PERMISSIONS (backend/src/lib/permissions.ts)', () => {
-  const backendSrc = readFileSync(
-    resolve(__dirname, '../../../backend/src/lib/permissions.ts'),
-    'utf-8',
-  )
+  const backendSrc = readFileSync(resolve(__dirname, '../../../backend/src/lib/permissions.ts'), 'utf-8')
   const { keys: backendKeys, values: backendValues } = parseBackendPermissions(backendSrc)
 
-  it('has exactly 30 permissions', () => {
-    expect(backendValues.length).toBe(30)
+  it('has exactly 32 permissions', () => {
+    expect(backendValues.length).toBe(32)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
@@ -147,10 +148,7 @@ describe('Backend PERMISSIONS (backend/src/lib/permissions.ts)', () => {
 describe('Front/back synchronization', () => {
   const frontValues = Object.values(PERMISSIONS) as string[]
 
-  const backendSrc = readFileSync(
-    resolve(__dirname, '../../../backend/src/lib/permissions.ts'),
-    'utf-8',
-  )
+  const backendSrc = readFileSync(resolve(__dirname, '../../../backend/src/lib/permissions.ts'), 'utf-8')
   const { keys: backendKeys, values: backendValues } = parseBackendPermissions(backendSrc)
   const frontKeys = Object.keys(PERMISSIONS)
 
