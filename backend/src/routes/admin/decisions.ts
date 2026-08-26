@@ -51,13 +51,10 @@ async function notifyDecision(
   message: string,
   type: string,
   excludeUserId: string,
-  extraRecipientIds: string[] = []
+  extraRecipientIds: string[] = [],
 ) {
   const superAdmins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
-  const allIds = new Set([
-    ...superAdmins.map((a) => String(a._id)),
-    ...extraRecipientIds,
-  ])
+  const allIds = new Set([...superAdmins.map((a) => String(a._id)), ...extraRecipientIds])
   allIds.delete(excludeUserId)
   await Promise.allSettled(
     Array.from(allIds).map((id) =>
@@ -68,8 +65,8 @@ async function notifyDecision(
         message,
         link: `/admin/decisions`,
         metadata: { decisionId },
-      })
-    )
+      }),
+    ),
   )
 }
 
@@ -124,7 +121,8 @@ router.post(
       const errors = validationResult(req)
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
 
-      const { title, description, category, priority, context, options, recommendation, deadline, recipients } = req.body
+      const { title, description, category, priority, context, options, recommendation, deadline, recipients } =
+        req.body
 
       // Destinataires ciblés (JSON string ou tableau)
       let recipientIds: string[] = []
@@ -151,7 +149,13 @@ router.post(
         submittedBy: req.user!.id,
         submittedByName: req.user!.name || req.user!.email || 'Inconnu',
         context: context || null,
-        options: (() => { try { return JSON.parse(options || '[]') } catch { return [] } })().slice(0, 10),
+        options: (() => {
+          try {
+            return JSON.parse(options || '[]')
+          } catch {
+            return []
+          }
+        })().slice(0, 10),
         recommendation: recommendation || null,
         deadline: deadline ? new Date(deadline) : null,
         attachments,
@@ -165,14 +169,14 @@ router.post(
         `${submitterName} a soumis : "${title}"`,
         'DECISION_SUBMITTED',
         req.user!.id,
-        recipientIds
+        recipientIds,
       )
 
       return res.status(201).json({ decision })
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // GET /api/admin/decisions/:id/attachments/:index/download
@@ -193,13 +197,11 @@ router.get('/:id/attachments/:index/download', async (req: Request, res: Respons
     const dispositionType = req.query.download === '1' ? 'attachment' : 'inline'
     res.setHeader('Content-Type', inferMimeType(attachment))
     res.setHeader('Content-Length', String(stat.size))
-    res.setHeader(
-      'Content-Disposition',
-      `${dispositionType}; ${contentDispositionFilename(attachment.originalName)}`
-    )
+    res.setHeader('Content-Disposition', `${dispositionType}; ${contentDispositionFilename(attachment.originalName)}`)
     res.setHeader('X-Content-Type-Options', 'nosniff')
 
-    return res.sendFile(filePath)
+    // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+    return res.sendFile(filePath, { dotfiles: 'allow' })
   } catch (err) {
     return next(err)
   }
@@ -226,7 +228,7 @@ router.patch(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/admin/decisions/:id/approve
@@ -272,7 +274,8 @@ router.post('/:id/improve', requireSuperAdmin, async (req: Request, res: Respons
     decision.status = 'IMPROVEMENT'
     decision.decidedBy = req.user!.id as any
     decision.decidedByName = req.user!.name || req.user!.email || 'Super admin'
-    decision.decisionComment = typeof comment === 'string' && comment.trim() ? comment.trim() : decision.decisionComment || null
+    decision.decisionComment =
+      typeof comment === 'string' && comment.trim() ? comment.trim() : decision.decisionComment || null
     decision.decidedAt = new Date()
     await decision.save()
 

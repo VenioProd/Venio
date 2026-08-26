@@ -25,7 +25,6 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 const conventionsDir = path.resolve('uploads/conventions')
 if (!fs.existsSync(conventionsDir)) fs.mkdirSync(conventionsDir, { recursive: true })
 
-
 const conventionStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, conventionsDir),
   filename: (_req, file, cb) => {
@@ -42,7 +41,8 @@ router.get('/conventions/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(conventionsDir, req.params.filename as string)
   if (!filePath.startsWith(conventionsDir)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  res.sendFile(filePath)
+  // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+  res.sendFile(filePath, { dotfiles: 'allow' })
 })
 
 // Auth requis pour toutes les autres routes
@@ -131,7 +131,9 @@ router.get('/documents', requireAdmin, async (req: Request, res: Response) => {
       totalSize: allDocs.reduce((s, d) => s + d.size, 0),
       byType: {} as Record<string, number>,
     }
-    allDocs.forEach((d) => { stats.byType[d.fileType] = (stats.byType[d.fileType] || 0) + 1 })
+    allDocs.forEach((d) => {
+      stats.byType[d.fileType] = (stats.byType[d.fileType] || 0) + 1
+    })
 
     res.json({ documents, stats })
   } catch {
@@ -185,23 +187,28 @@ router.get('/kpis', requireAdmin, async (req: Request, res: Response) => {
         // Derniere activite
         const lastReport = allReports[0] || null
         const lastActivity = lastReport?.date || null
-        const joursP = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
-          ? intern.joursPresence as string[]
-          : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
-        const daysSinceLastReport = lastActivity
-          ? countWorkingDaysSince(new Date(lastActivity), now, joursP)
-          : null
+        const joursP =
+          Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+            ? (intern.joursPresence as string[])
+            : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+        const daysSinceLastReport = lastActivity ? countWorkingDaysSince(new Date(lastActivity), now, joursP) : null
 
         // Progression du stage
-        const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
-        const elapsedDays = Math.max(0, Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24)))
-        const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        const totalDays = Math.ceil(
+          (new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24),
+        )
+        const elapsedDays = Math.max(
+          0,
+          Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24)),
+        )
+        const daysRemaining = Math.max(
+          0,
+          Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+        )
         const progress = totalDays > 0 ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 0
 
         // Regularite : combien de jours distincts ont un rapport sur les 4 dernieres semaines
-        const uniqueReportDays = new Set(
-          recentReports.map((r) => new Date(r.date).toISOString().split('T')[0])
-        ).size
+        const uniqueReportDays = new Set(recentReports.map((r) => new Date(r.date).toISOString().split('T')[0])).size
         // Jours ouvres approximatifs sur 4 semaines = 20
         const regularite = Math.min(100, Math.round((uniqueReportDays / 20) * 100))
 
@@ -255,7 +262,7 @@ router.get('/kpis', requireAdmin, async (req: Request, res: Response) => {
           },
           weeks,
         }
-      })
+      }),
     )
 
     res.json(kpis)
@@ -299,17 +306,21 @@ router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
         ])
 
         const lastActivity = lastReport?.date || null
-        const joursP2 = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
-          ? intern.joursPresence as string[]
-          : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
-        const daysSinceLastReport = lastActivity
-          ? countWorkingDaysSince(new Date(lastActivity), now, joursP2)
-          : null
+        const joursP2 =
+          Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+            ? (intern.joursPresence as string[])
+            : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+        const daysSinceLastReport = lastActivity ? countWorkingDaysSince(new Date(lastActivity), now, joursP2) : null
 
-        const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+        const totalDays = Math.ceil(
+          (new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24),
+        )
         const elapsedDays = Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
         const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
-        const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        const daysRemaining = Math.max(
+          0,
+          Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+        )
 
         return {
           intern: {
@@ -339,7 +350,7 @@ router.get('/dashboard', requireAdmin, async (_req: Request, res: Response) => {
             elapsedDays,
           },
         }
-      })
+      }),
     )
 
     // Trier : les plus inactifs en premier (alerte)
@@ -372,10 +383,7 @@ router.get('/:id/detail', requireAdmin, async (req: Request, res: Response) => {
       ActivityReport.countDocuments({ internId: intern._id, date: { $gte: weekAgo } }),
       ActivityReport.countDocuments({ internId: intern._id, status: 'VALIDE' }),
       ActivityReport.countDocuments({ internId: intern._id, status: 'SOUMIS' }),
-      ActivityReport.find({ internId: intern._id })
-        .populate('validePar', 'name')
-        .sort({ date: -1 })
-        .limit(50),
+      ActivityReport.find({ internId: intern._id }).populate('validePar', 'name').sort({ date: -1 }).limit(50),
     ])
 
     const lastReport = reports[0] || null
@@ -384,10 +392,15 @@ router.get('/:id/detail', requireAdmin, async (req: Request, res: Response) => {
       ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
       : null
 
-    const totalDays = Math.ceil((new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+    const totalDays = Math.ceil(
+      (new Date(intern.dateFin).getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24),
+    )
     const elapsedDays = Math.ceil((now.getTime() - new Date(intern.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
     const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
-    const daysRemaining = Math.max(0, Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil((new Date(intern.dateFin).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    )
 
     res.json({
       intern,
@@ -432,7 +445,21 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Non autorise' })
     }
 
-    const { name, email, phone, poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, password, type } = req.body
+    const {
+      name,
+      email,
+      phone,
+      poste,
+      departement,
+      dateDebut,
+      dateFin,
+      tuteur,
+      ecole,
+      formation,
+      notes,
+      password,
+      type,
+    } = req.body
     if (!name || !email || !poste || !dateDebut || !dateFin) {
       return res.status(400).json({ error: 'Champs requis : nom, email, poste, date debut, date fin' })
     }
@@ -522,7 +549,8 @@ router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
     const intern = await Intern.findById(req.params.id)
     if (!intern) return res.status(404).json({ error: 'Stagiaire introuvable' })
 
-    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursPresence } = req.body
+    const { poste, departement, dateDebut, dateFin, tuteur, ecole, formation, notes, status, type, joursPresence } =
+      req.body
 
     if (type !== undefined && ['STAGIAIRE', 'ALTERNANT'].includes(type)) {
       intern.type = type
@@ -614,7 +642,7 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
     })
 
     if (!result.sent) {
-      return res.status(500).json({ error: result.error || 'Erreur lors de l\'envoi de l\'email.' })
+      return res.status(500).json({ error: result.error || "Erreur lors de l'envoi de l'email." })
     }
 
     // Notifier le stagiaire en in-app aussi (l'email peut être désactivé)
@@ -631,7 +659,6 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
-
 
 // POST /api/admin/interns/:id/convention — ajouter une convention
 router.post('/:id/convention', requireAdmin, uploadConvention.single('file'), async (req: Request, res: Response) => {
@@ -688,6 +715,5 @@ router.delete('/:id/convention/:filename', requireAdmin, async (req: Request, re
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
-
 
 export default router

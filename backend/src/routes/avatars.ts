@@ -29,7 +29,8 @@ router.get('/:filename', (req: Request, res: Response) => {
   }
 
   res.setHeader('Cache-Control', 'public, max-age=86400')
-  return res.sendFile(filePath, (err) => {
+  // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+  return res.sendFile(filePath, { dotfiles: 'allow' }, (err) => {
     if (err && !res.headersSent) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return res.status(404).json({ error: 'Avatar introuvable' })
