@@ -4,10 +4,24 @@ import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonStat, SkeletonGrid } from '../../components/Skeleton'
 import type { Project } from '../../types/project.types'
+import { listClientActionItems } from '../../services/clientVault'
+import type { ClientActionItem } from '../../types/clientVault.types'
 import './ClientPortal.css'
 
 interface TaskProgressMap {
   [projectId: string]: { total: number; done: number; percent: number }
+}
+
+const ACTION_ITEM_STYLE: Record<string, { icon: string; className: string }> = {
+  DEVIS_A_SIGNER: { icon: '✍️', className: 'client-action-item-primary' },
+  FACTURE_A_PAYER: { icon: '💳', className: 'client-action-item-alert' },
+}
+
+function formatDueDate(dueAt: string | null): { label: string; overdue: boolean } | null {
+  if (!dueAt) return null
+  const date = new Date(dueAt)
+  const overdue = date.getTime() < Date.now()
+  return { label: `avant le ${date.toLocaleDateString('fr-FR')}`, overdue }
 }
 
 const statusLabels: Record<string, string> = {
@@ -30,6 +44,7 @@ const ClientDashboard = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [taskProgress, setTaskProgress] = useState<TaskProgressMap>({})
+  const [actionItems, setActionItems] = useState<ClientActionItem[]>([])
   const [search, setSearch] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [sortBy, setSortBy] = useState<string>('recent')
@@ -37,12 +52,14 @@ const ClientDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [projectsData, progressData] = await Promise.all([
+        const [projectsData, progressData, actionItemsData] = await Promise.all([
           apiFetch<{ projects: Project[] }>('/api/projects'),
           apiFetch<{ progress: TaskProgressMap }>('/api/projects/task-progress-all').catch(() => ({ progress: {} })),
+          listClientActionItems().catch(() => ({ items: [] })),
         ])
         setProjects(projectsData.projects || [])
         setTaskProgress(progressData.progress || {})
+        setActionItems(actionItemsData.items || [])
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement projets')
       } finally {
@@ -96,6 +113,54 @@ const ClientDashboard = () => {
           </svg>
         </div>
       </section>
+
+      {!loading && !error && actionItems.length > 0 && (
+        <section className="client-dashboard-todo" style={{ padding: '0 24px', marginBottom: 24 }}>
+          <h2 className="client-dashboard-section-title">
+            À faire — {actionItems.length} action{actionItems.length > 1 ? 's' : ''} attendue
+            {actionItems.length > 1 ? 's' : ''} de votre part
+          </h2>
+          <div className="portal-list" style={{ marginTop: 12 }}>
+            {actionItems.map((item, index) => {
+              const style = ACTION_ITEM_STYLE[item.type] || { icon: '📌', className: 'client-action-item-neutral' }
+              const due = formatDueDate(item.dueAt)
+              return (
+                <div
+                  key={`${item.type}-${index}`}
+                  className={`portal-card ${style.className}`}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span aria-hidden style={{ fontSize: 20 }}>
+                      {style.icon}
+                    </span>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{item.title}</h3>
+                      {item.detail && (
+                        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>{item.detail}</p>
+                      )}
+                      {due && (
+                        <p
+                          style={{
+                            margin: '4px 0 0',
+                            fontSize: 13,
+                            color: due.overdue ? '#f87171' : 'var(--text-secondary)',
+                          }}
+                        >
+                          {due.label}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Link className="portal-button" to={item.link}>
+                    Voir
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {loading && (
         <div style={{ padding: '0 24px' }}>
