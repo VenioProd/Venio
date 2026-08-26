@@ -250,6 +250,9 @@ export type Permission =
   // ── Education (workspace pédagogique type Notion) ──
   | 'view_education'
   | 'manage_education'
+  // ── Demandes de changement client ──
+  | 'view_change_requests'
+  | 'manage_change_requests'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'
