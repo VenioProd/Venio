@@ -74,6 +74,7 @@ import adminHealthRoutes from './routes/admin/health.js'
 import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import adminWorkspaceRoutes from './routes/admin/workspace.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
+import clientProjectPhaseRoutes from './routes/client/projectPhases.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import clientCollaborationRoutes from './routes/client/collaboration.js'
 import clientQuoteRoutes from './routes/client/quotes.js'
@@ -330,6 +331,7 @@ app.use('/api/admin/education', adminEducationRoutes)
 
 // Routes client pour le contenu des projets
 app.use('/api/projects', clientProjectContentRoutes)
+app.use('/api/projects', clientProjectPhaseRoutes)
 app.use('/api/projects', clientMessageRoutes)
 app.use('/api/projects', clientCollaborationRoutes)
 // Signature de devis : 10 tentatives /15 min /IP, aligné sur l'acceptation d'invitation.

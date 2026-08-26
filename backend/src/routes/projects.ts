@@ -157,6 +157,9 @@ router.get('/:id/activity', async (req: Request, res: Response, next: NextFuncti
       'ITEM_CREATED',
       'TASK_CREATED',
       'TASK_MOVED',
+      'PHASE_STATUS_CHANGED',
+      'PHASE_VALIDATED',
+      'PHASE_REVISION_REQUESTED',
     ]
 
     const { limit: limitStr, before } = req.query as Record<string, string | undefined>
