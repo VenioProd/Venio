@@ -319,19 +319,12 @@ router.post('/:id/request-correction', async (req: Request, res: Response, next:
       to: 'EN_COURS',
       actor,
       note: comment,
+      // Le commentaire vit dans le fil ET dans l'historique — l'un se lit dans
+      // la conversation, l'autre dans la frise — et les deux sont écrits avec
+      // la transition : jamais de demande EN_COURS sans son motif.
+      reply: { message: comment },
     })
     if (!updated) return res.status(409).json({ error: 'Transition impossible', code: 'INVALID_TRANSITION' })
-
-    // Le commentaire vit dans le fil ET dans l'historique : l'un se lit dans
-    // la conversation, l'autre dans la frise.
-    updated.replies.push({
-      authorId: actor.id as unknown as IChangeRequest['client'],
-      authorName: actor.name,
-      message: comment,
-      attachments: [],
-      createdAt: new Date(),
-    })
-    await updated.save()
 
     auditChangeRequest({
       action: 'CHANGE_REQUEST_STATUS_CHANGED',

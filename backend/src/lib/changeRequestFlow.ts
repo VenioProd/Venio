@@ -1,4 +1,4 @@
-import ChangeRequest, { type IChangeRequest } from '../models/ChangeRequest.js'
+import ChangeRequest, { type IChangeRequest, type IChangeRequestFile } from '../models/ChangeRequest.js'
 import AuditLog from '../models/AuditLog.js'
 import { logActivity } from './activityLog.js'
 import { notifySuperAdmins } from './notifyHelpers.js'
@@ -46,6 +46,7 @@ export async function transitionChangeRequest({
   actor,
   note = '',
   set = {},
+  reply,
 }: {
   id: string
   from: ChangeRequestStatus
@@ -53,13 +54,28 @@ export async function transitionChangeRequest({
   actor: FlowActor
   note?: string
   set?: Record<string, unknown>
+  /** Message poussé dans le fil par la même écriture que la transition. */
+  reply?: { message: string; attachments?: IChangeRequestFile[] }
 }): Promise<IChangeRequest | null> {
+  const now = new Date()
+  const push: Record<string, unknown> = {
+    statusHistory: { status: to, at: now, byUserId: actor.id, byName: actor.name, note },
+  }
+  if (reply) {
+    push.replies = {
+      authorId: actor.id,
+      authorName: actor.name,
+      message: reply.message,
+      attachments: reply.attachments ?? [],
+      createdAt: now,
+    }
+  }
+
   return ChangeRequest.findOneAndUpdate(
     { _id: id, status: from },
-    {
-      $set: { status: to, ...set },
-      $push: { statusHistory: { status: to, at: new Date(), byUserId: actor.id, byName: actor.name, note } },
-    },
+    // `status: to` est posé APRÈS `set` : aucun appelant ne peut détourner la
+    // cible de la transition par un champ complémentaire.
+    { $set: { ...set, status: to }, $push: push },
     { new: true },
   )
 }

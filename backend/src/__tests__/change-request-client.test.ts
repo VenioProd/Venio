@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
@@ -256,6 +256,28 @@ describe('fil de discussion et actions client', () => {
     const history = response.body.changeRequest.statusHistory
     expect(history[history.length - 1].note).toBe('Le bouton renvoie vers la mauvaise page.')
     expect(await Notification.countDocuments({ type: 'CHANGE_REQUEST_REPLY' })).toBe(1)
+  })
+
+  // Transition et message doivent tomber ensemble : un échec entre les deux
+  // laisserait une demande EN_COURS sans commentaire, que le client ne pourrait
+  // plus rejouer (elle n'est plus LIVREE).
+  it('écrit la correction en une seule opération, sans demi-état', async () => {
+    const created = await seedRequest({ status: 'LIVREE', deliveredAt: new Date() })
+    const saveSpy = vi.spyOn(ChangeRequest.prototype, 'save')
+
+    await request(app)
+      .post(`/api/client/change-requests/${created._id}/request-correction`)
+      .set('Cookie', await cookieFor(ownerId))
+      .send({ comment: 'Le bouton renvoie vers la mauvaise page.' })
+      .expect(200)
+
+    expect(saveSpy, 'la correction ne doit pas nécessiter une seconde écriture').not.toHaveBeenCalled()
+    saveSpy.mockRestore()
+
+    const stored = await ChangeRequest.findById(created._id)
+    expect(stored!.status).toBe('EN_COURS')
+    expect(stored!.replies).toHaveLength(1)
+    expect(stored!.statusHistory.at(-1)!.note).toBe('Le bouton renvoie vers la mauvaise page.')
   })
 
   it('refuse une demande de correction sans commentaire', async () => {
