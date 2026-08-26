@@ -19,6 +19,8 @@ let editorId: string
 let viewerId: string
 let outsiderId: string
 let adminId: string
+let superAdminId: string
+let inactiveAdminId: string
 let projectId: string
 
 async function cookieFor(userId: string): Promise<string> {
@@ -49,18 +51,30 @@ afterAll(teardownMongo)
 beforeEach(async () => {
   await clearDb()
   const passwordHash = await bcrypt.hash('test', 4)
-  const [owner, editor, viewer, outsider, admin] = await User.create([
+  // Le responsable du projet n'est volontairement PAS super-admin : c'est ce qui
+  // permet de distinguer les deux catégories de destinataires exigées par la spec.
+  const [owner, editor, viewer, outsider, admin, superAdmin, inactiveAdmin] = await User.create([
     { name: 'Claire Corbel', email: 'owner@example.test', passwordHash, role: 'CLIENT' },
     { name: 'Éditeur', email: 'editor@example.test', passwordHash, role: 'CLIENT' },
     { name: 'Lecteur', email: 'viewer@example.test', passwordHash, role: 'CLIENT' },
     { name: 'Étranger', email: 'outsider@example.test', passwordHash, role: 'CLIENT' },
-    { name: 'Admin', email: 'admin@example.test', passwordHash, role: 'SUPER_ADMIN' },
+    { name: 'Responsable', email: 'admin@example.test', passwordHash, role: 'ADMIN' },
+    { name: 'Super admin', email: 'superadmin@example.test', passwordHash, role: 'SUPER_ADMIN' },
+    {
+      name: 'Super admin parti',
+      email: 'inactif@example.test',
+      passwordHash,
+      role: 'SUPER_ADMIN',
+      isActive: false,
+    },
   ])
   ownerId = String(owner._id)
   editorId = String(editor._id)
   viewerId = String(viewer._id)
   outsiderId = String(outsider._id)
   adminId = String(admin._id)
+  superAdminId = String(superAdmin._id)
+  inactiveAdminId = String(inactiveAdmin._id)
   const project = await Project.create({ name: 'Site', client: owner._id, assignedTo: admin._id })
   projectId = String(project._id)
   await ProjectMember.create([
@@ -146,9 +160,10 @@ describe('validation nominative', () => {
     expect(String(stored!.validation.validatedBy)).toBe(ownerId)
 
     const notifications = await Notification.find({ type: 'PHASE_VALIDATED' })
-    expect(notifications).toHaveLength(1)
-    expect(String(notifications[0].recipient)).toBe(adminId)
+    expect(notifications.map((n) => String(n.recipient)).sort()).toEqual([adminId, superAdminId].sort())
+    expect(notifications.map((n) => String(n.recipient))).not.toContain(inactiveAdminId)
     expect(notifications[0].link).toBe(`/admin/projets/${projectId}?tab=phases`)
+    expect(notifications[0].metadata).toMatchObject({ projectId, phaseId: String(phase._id) })
 
     const log = await ActivityLog.findOne({ project: projectId, action: 'PHASE_VALIDATED' })
     expect(log!.summary).toContain('Claire Corbel')
@@ -202,8 +217,11 @@ describe('demandes de retouches', () => {
     expect(response.body.phase.revisionRequests[0].requestedByName).toBe('Éditeur')
     expect(response.body.phase.revisionRequests[0].resolvedAt).toBeNull()
 
-    const notification = await Notification.findOne({ type: 'PHASE_REVISION_REQUESTED' })
-    expect(notification).not.toBeNull()
+    const notifications = await Notification.find({ type: 'PHASE_REVISION_REQUESTED' })
+    expect(notifications.map((n) => String(n.recipient)).sort()).toEqual([adminId, superAdminId].sort())
+    expect(notifications.map((n) => String(n.recipient))).not.toContain(inactiveAdminId)
+    expect(notifications[0].link).toBe(`/admin/projets/${projectId}?tab=phases`)
+    expect(notifications[0].metadata).toMatchObject({ projectId, phaseId: String(phase._id) })
     expect(await ActivityLog.countDocuments({ project: projectId, action: 'PHASE_REVISION_REQUESTED' })).toBe(1)
   })
 

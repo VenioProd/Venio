@@ -175,15 +175,20 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
               </div>
             )}
 
-            {openRevisions.length > 0 && (
+            {phase.revisionRequests.length > 0 && (
               <div className="client-phase-revisions">
-                {openRevisions.map((revision) => (
+                {/* L'historique complet reste visible côté admin : une demande traitée
+                    garde sa trace, seule l'action de traitement disparaît. */}
+                {phase.revisionRequests.map((revision) => (
                   <div key={revision._id} className="client-phase-revision">
                     <span className="client-phase-meta">
                       {revision.requestedByName} · {formatDate(revision.createdAt)}
                     </span>
+                    <span className={`client-phase-badge ${revision.resolvedAt ? 'is-done' : 'is-waiting'}`}>
+                      {revision.resolvedAt ? `Traitée le ${formatDate(revision.resolvedAt)}` : 'En attente'}
+                    </span>
                     <p className="client-phase-description">{revision.comment}</p>
-                    {canManagePhases && (
+                    {canManagePhases && !revision.resolvedAt && (
                       <button
                         type="button"
                         className="client-phase-button client-phase-button-ghost"

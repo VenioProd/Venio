@@ -114,6 +114,36 @@ describe('ProjectPhasesTab', () => {
     expect(onResolveRevision).toHaveBeenCalledWith('phase-1', 'rev-1')
   })
 
+  it('liste aussi les demandes traitées, avec leur état et sans bouton de traitement', () => {
+    renderTab([
+      phase({
+        revisionRequests: [
+          {
+            _id: 'rev-1',
+            requestedByName: 'Claire Corbel',
+            comment: 'Header trop dense',
+            createdAt: '2026-08-20T09:00:00.000Z',
+            resolvedAt: null,
+          },
+          {
+            _id: 'rev-2',
+            requestedByName: 'Claire Corbel',
+            comment: 'Logo trop petit',
+            createdAt: '2026-08-18T09:00:00.000Z',
+            resolvedAt: '2026-08-19T09:00:00.000Z',
+          },
+        ],
+      }),
+    ])
+
+    expect(screen.getByText('Header trop dense')).toBeInTheDocument()
+    expect(screen.getByText('Logo trop petit')).toBeInTheDocument()
+    expect(screen.getByText('En attente')).toBeInTheDocument()
+    expect(screen.getByText('Traitée le 19 août 2026')).toBeInTheDocument()
+    // Le bouton n'existe que pour la demande encore ouverte.
+    expect(screen.getAllByRole('button', { name: 'Marquer traitée' })).toHaveLength(1)
+  })
+
   it('avertit quand un livrable lié est masqué au client', () => {
     renderTab([phase({ linkedItems: [{ _id: 'item-2', title: 'Note interne', type: 'NOTE', isVisible: false }] })])
     // Deux occurrences attendues : la liste des livrables liés de l'étape et le
