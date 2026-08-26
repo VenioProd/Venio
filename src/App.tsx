@@ -59,6 +59,9 @@ const ClientProjectDetail = lazy(() => import('./pages/espace-client/ProjectDeta
 const ClientProjectInvitationAccept = lazy(() => import('./pages/espace-client/ProjectInvitationAccept'))
 const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
 const ClientQuoteProposal = lazy(() => import('./pages/espace-client/QuoteProposal'))
+const ClientChangeRequests = lazy(() => import('./pages/espace-client/ChangeRequests'))
+const ClientChangeRequestNew = lazy(() => import('./pages/espace-client/ChangeRequestNew'))
+const ClientChangeRequestDetail = lazy(() => import('./pages/espace-client/ChangeRequestDetail'))
 const ClientBilling = lazy(() => import('./pages/espace-client/Billing'))
 
 // Lazy-loaded: Admin
@@ -209,6 +212,10 @@ function App() {
                   <Route index element={<ClientDashboard />} />
                   <Route path="guide" element={<ClientGuide />} />
                   <Route path="profil" element={<ClientProfile />} />
+                  {/* « nouvelle » avant « :id » : sinon le mot serait capturé comme identifiant. */}
+                  <Route path="demandes" element={<ClientChangeRequests />} />
+                  <Route path="demandes/nouvelle" element={<ClientChangeRequestNew />} />
+                  <Route path="demandes/:id" element={<ClientChangeRequestDetail />} />
                   <Route path="projets/:id" element={<ClientProjectDetail />} />
                   <Route path="projets/:projectId/propositions/:proposalId" element={<ClientQuoteProposal />} />
                   <Route path="projets/:projectId/facturation" element={<ClientBilling />} />
