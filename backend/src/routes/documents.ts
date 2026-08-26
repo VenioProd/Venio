@@ -45,7 +45,8 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
     if (!filePath.startsWith(uploadsDir)) {
       return res.status(403).json({ error: 'Access denied' })
     }
-    return res.download(filePath, document.originalName)
+    // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+    return res.download(filePath, document.originalName, { dotfiles: 'allow' })
   } catch (err) {
     return next(err)
   }

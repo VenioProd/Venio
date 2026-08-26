@@ -31,7 +31,8 @@ router.get('/reports/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(uploadsDir, req.params.filename as string)
   if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  res.sendFile(filePath)
+  // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+  res.sendFile(filePath, { dotfiles: 'allow' })
 })
 
 // Auth requis pour les autres routes de ce router
@@ -91,9 +92,7 @@ router.get('/reports/mine', async (req: Request, res: Response) => {
       })
     }
 
-    const reports = await ActivityReport.find({ internId: intern._id })
-      .populate('validePar', 'name')
-      .sort({ date: -1 })
+    const reports = await ActivityReport.find({ internId: intern._id }).populate('validePar', 'name').sort({ date: -1 })
     res.json(reports)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -135,7 +134,11 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
 
     let parsedTaches: string[] = []
     if (taches) {
-      try { parsedTaches = JSON.parse(taches) } catch { parsedTaches = [taches] }
+      try {
+        parsedTaches = JSON.parse(taches)
+      } catch {
+        parsedTaches = [taches]
+      }
     }
 
     const report = await ActivityReport.create({
@@ -181,7 +184,7 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
       }).catch(() => {})
     }
 
-    files.forEach(f => syncUploadToNextcloud(f, 'rapports', intern._id.toString()))
+    files.forEach((f) => syncUploadToNextcloud(f, 'rapports', intern._id.toString()))
 
     res.status(201).json(report)
   } catch {
@@ -209,7 +212,11 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
 
     if (contenu !== undefined) report.contenu = contenu
     if (taches !== undefined) {
-      try { report.taches = JSON.parse(taches) } catch { report.taches = [taches] }
+      try {
+        report.taches = JSON.parse(taches)
+      } catch {
+        report.taches = [taches]
+      }
     }
 
     if (isAdmin) {

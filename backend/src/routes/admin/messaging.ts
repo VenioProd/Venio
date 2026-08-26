@@ -38,7 +38,9 @@ router.use(requirePermission(PERMISSIONS.VIEW_MESSAGING))
 router.get('/users', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({
-      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
+      role: {
+        $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'],
+      },
       isActive: { $ne: false },
     })
       .select('name email role')
@@ -87,7 +89,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -105,7 +107,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 router.get('/search', async (req: Request, res: Response, next: NextFunction) => {
@@ -146,7 +148,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -171,29 +173,33 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
-router.get('/messages/:messageId/attachments/:index/download', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const message = await InternalMessage.findById(req.params.messageId)
-    const index = Number(req.params.index)
-    const attachment = message?.attachments[index]
-    if (!message || !attachment) {
-      return res.status(404).json({ error: 'Fichier non trouvé' })
-    }
-    await listMessages(req.user!, message.conversation.toString(), { limit: 1 })
+router.get(
+  '/messages/:messageId/attachments/:index/download',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const message = await InternalMessage.findById(req.params.messageId)
+      const index = Number(req.params.index)
+      const attachment = message?.attachments[index]
+      if (!message || !attachment) {
+        return res.status(404).json({ error: 'Fichier non trouvé' })
+      }
+      await listMessages(req.user!, message.conversation.toString(), { limit: 1 })
 
-    const safeRoot = path.resolve(process.cwd(), 'uploads', 'internal-messaging')
-    const filePath = path.resolve(process.cwd(), attachment.storagePath)
-    if (!filePath.startsWith(safeRoot)) {
-      return res.status(403).json({ error: 'Access denied' })
+      const safeRoot = path.resolve(process.cwd(), 'uploads', 'internal-messaging')
+      const filePath = path.resolve(process.cwd(), attachment.storagePath)
+      if (!filePath.startsWith(safeRoot)) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
+      // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
+      return res.download(filePath, attachment.originalName, { dotfiles: 'allow' })
+    } catch (err) {
+      return next(err)
     }
-    return res.download(filePath, attachment.originalName)
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 router.post('/conversations/:conversationId/read', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -216,17 +222,21 @@ router.patch(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
-router.delete('/messages/:messageId', requirePermission(PERMISSIONS.SEND_MESSAGES), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const message = await softDeleteMessage(req.user!, String(req.params.messageId))
-    return res.json({ message })
-  } catch (err) {
-    return next(err)
-  }
-})
+router.delete(
+  '/messages/:messageId',
+  requirePermission(PERMISSIONS.SEND_MESSAGES),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const message = await softDeleteMessage(req.user!, String(req.params.messageId))
+      return res.json({ message })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 router.post(
   '/messages/:messageId/reactions',
@@ -240,7 +250,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 export default router

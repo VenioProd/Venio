@@ -150,13 +150,6 @@ describe('connexion espace client', () => {
   })
 })
 
-/**
- * Le transfert du fichier lui-même n'est pas asserté : `res.download` s'appuie
- * sur `send`, qui refuse tout chemin absolu contenant un segment commençant par
- * un point (un worktree sous `.claude/` suffit à le déclencher). On vérifie donc
- * la décision d'autorisation, matérialisée par le tampon `downloadedAt` posé
- * juste après le contrôle d'accès.
- */
 async function downloadAllowed(userId: string): Promise<boolean> {
   await Document.findByIdAndUpdate(documentId, { downloadedAt: null })
   const response = await request(app)
@@ -165,7 +158,11 @@ async function downloadAllowed(userId: string): Promise<boolean> {
   expect(response.status).not.toBe(401)
   const document = await Document.findById(documentId).select('downloadedAt').lean()
   const allowed = Boolean(document?.downloadedAt)
-  if (!allowed) expect(response.status).toBe(403)
+  if (allowed) {
+    expect(response.status).toBe(200)
+  } else {
+    expect(response.status).toBe(403)
+  }
   return allowed
 }
 
