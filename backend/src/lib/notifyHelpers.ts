@@ -10,12 +10,21 @@ interface BroadcastParams {
   link?: string
   metadata?: Record<string, unknown>
   excludeUserId?: string
+  dedupeKey?: string
 }
 
 /**
  * Notifie tous les SUPER_ADMIN actifs (sauf l'auteur optionnel).
  */
-export async function notifySuperAdmins({ type, title, message, link, metadata, excludeUserId }: BroadcastParams) {
+export async function notifySuperAdmins({
+  type,
+  title,
+  message,
+  link,
+  metadata,
+  excludeUserId,
+  dedupeKey,
+}: BroadcastParams) {
   const admins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
   await Promise.allSettled(
     admins
@@ -28,8 +37,9 @@ export async function notifySuperAdmins({ type, title, message, link, metadata, 
           message,
           link,
           metadata,
-        })
-      )
+          dedupeKey,
+        }),
+      ),
   )
 }
 
@@ -54,8 +64,8 @@ export async function notifyInternalAdmins({ type, title, message, link, metadat
           message,
           link,
           metadata,
-        })
-      )
+        }),
+      ),
   )
 }
 
@@ -64,14 +74,10 @@ export async function notifyInternalAdmins({ type, title, message, link, metadat
  */
 export async function notifyUsers(
   userIds: Array<string | Types.ObjectId | null | undefined>,
-  params: Omit<BroadcastParams, 'excludeUserId'> & { excludeUserId?: string }
+  params: Omit<BroadcastParams, 'excludeUserId'> & { excludeUserId?: string },
 ) {
   const cleanIds = Array.from(
-    new Set(
-      userIds
-        .filter((id): id is string | Types.ObjectId => Boolean(id))
-        .map((id) => String(id))
-    )
+    new Set(userIds.filter((id): id is string | Types.ObjectId => Boolean(id)).map((id) => String(id))),
   ).filter((id) => !params.excludeUserId || id !== params.excludeUserId)
 
   await Promise.allSettled(
@@ -83,7 +89,7 @@ export async function notifyUsers(
         message: params.message,
         link: params.link,
         metadata: params.metadata,
-      })
-    )
+      }),
+    ),
   )
 }
