@@ -184,3 +184,20 @@ git diff --check
 
 La CI exécute les typechecks, le lint, les tests frontend/backend et la recette
 du site public selon le workflow [ci.yml](../../.github/workflows/ci.yml).
+
+## Si un push sur main ne déclenche pas la CI
+
+Constaté le 2026-08-26 : l'événement `push` de `dd0354f..2bafb27` n'a produit
+aucun run (ni CI ni déploiement chaîné), sans trace « skipped » — événement
+perdu côté GitHub. Procédure de secours, dans l'ordre :
+
+```bash
+gh workflow run ci.yml --ref main
+gh run watch <run-ci> --exit-status
+gh workflow run deploy-ionos.yml --ref main   # si le workflow_run n'enchaîne pas
+gh run watch <run-deploy> --exit-status
+curl -fsS https://venio.paris/api/health      # uptime remis à zéro = bascule OK
+```
+
+Le dispatch de `deploy-ionos.yml` déploie le HEAD de `main` : ne l'utiliser
+qu'après une CI verte sur ce même SHA.
