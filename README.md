@@ -38,7 +38,10 @@ cp backend/.env.example backend/.env
 ```
 
 Renseigner au minimum `MONGODB_URI` dans `backend/.env`, sans jamais commiter
-ce fichier, puis lancer deux terminaux :
+ce fichier. `CREDENTIALS_KEY` chiffre les secrets stockés (identifiants de
+filiales, secrets des webhooks sortants — cf. `docs/webhooks-sortants.md`) et
+doit rester stable : la changer rend illisibles les secrets existants. Lancer
+ensuite deux terminaux :
 
 ```bash
 # Terminal 1 — API Express : http://localhost:3000
