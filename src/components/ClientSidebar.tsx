@@ -1,7 +1,17 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, FolderKanban, HelpCircle, LogOut, User, X, type LucideIcon } from 'lucide-react'
+import {
+  BookOpen,
+  FileText,
+  FolderKanban,
+  HelpCircle,
+  LogOut,
+  UploadCloud,
+  User,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import UserAvatar from './UserAvatar'
 import './ClientSidebar.css'
@@ -22,6 +32,8 @@ const NAV_ITEMS: ClientNavItem[] = [
     end: true,
     activePrefixes: ['/espace-client/projets'],
   },
+  { to: '/espace-client/documents', label: 'Mes documents', icon: FileText },
+  { to: '/espace-client/fichiers', label: 'Vos fichiers', icon: UploadCloud },
   { to: '/espace-client/guide', label: 'Guide', icon: BookOpen },
   { to: '/espace-client/profil', label: 'Profil', icon: User },
 ]

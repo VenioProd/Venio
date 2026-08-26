@@ -55,6 +55,8 @@ const PublicQuestionnaireBuilder = lazy(() => import('./pages/PublicQuestionnair
 const ClientShell = lazy(() => import('./components/ClientShell'))
 const ClientLogin = lazy(() => import('./pages/espace-client/Login'))
 const ClientDashboard = lazy(() => import('./pages/espace-client/Dashboard'))
+const ClientDocuments = lazy(() => import('./pages/espace-client/Documents'))
+const ClientMyFiles = lazy(() => import('./pages/espace-client/MyFiles'))
 const ClientProjectDetail = lazy(() => import('./pages/espace-client/ProjectDetail'))
 const ClientProjectInvitationAccept = lazy(() => import('./pages/espace-client/ProjectInvitationAccept'))
 const ClientProfile = lazy(() => import('./pages/espace-client/Profile'))
@@ -207,6 +209,8 @@ function App() {
                   }
                 >
                   <Route index element={<ClientDashboard />} />
+                  <Route path="documents" element={<ClientDocuments />} />
+                  <Route path="fichiers" element={<ClientMyFiles />} />
                   <Route path="guide" element={<ClientGuide />} />
                   <Route path="profil" element={<ClientProfile />} />
                   <Route path="projets/:id" element={<ClientProjectDetail />} />
