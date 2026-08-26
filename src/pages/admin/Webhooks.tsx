@@ -35,7 +35,9 @@ const Webhooks: React.FC = () => {
   // toasts n'est pas garantie stable, et une dépendance directe relancerait
   // l'effet de chargement en boucle.
   const toastRef = useRef(showToast)
-  toastRef.current = showToast
+  useEffect(() => {
+    toastRef.current = showToast
+  }, [showToast])
 
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([])
   const [eventTypes, setEventTypes] = useState<string[]>([])

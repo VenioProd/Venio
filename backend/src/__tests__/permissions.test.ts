@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  PERMISSIONS,
-  ADMIN_ROLES,
-  isAdminRole,
-  hasPermission,
-  getPermissionsForRole,
-} from '../lib/permissions.js'
+import { PERMISSIONS, ADMIN_ROLES, isAdminRole, hasPermission, getPermissionsForRole } from '../lib/permissions.js'
 
 describe('permissions module', () => {
   describe('PERMISSIONS constant', () => {
@@ -44,6 +38,9 @@ describe('permissions module', () => {
         // Education workspace (workspace pédagogique type Notion)
         'VIEW_EDUCATION',
         'MANAGE_EDUCATION',
+        // Webhooks sortants
+        'VIEW_WEBHOOKS',
+        'MANAGE_WEBHOOKS',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })

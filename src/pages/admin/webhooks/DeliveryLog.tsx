@@ -18,7 +18,9 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
   // Voir Webhooks.tsx : la fonction du contexte n'est pas garantie stable, on
   // la lit via une ref pour que `load` ne se recrée pas à chaque rendu.
   const toastRef = useRef(showToast)
-  toastRef.current = showToast
+  useEffect(() => {
+    toastRef.current = showToast
+  }, [showToast])
 
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([])
   const [page, setPage] = useState(1)
