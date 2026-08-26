@@ -36,7 +36,7 @@ import type {
   CloudInfo,
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
-import type { ClientUploadFile } from '../../../types/clientVault.types'
+import type { AdminClientFile } from '../../../services/adminClients'
 import type { NoteOrActivity } from './types'
 import { TABS } from './types'
 import OverviewTab from './OverviewTab'
@@ -66,7 +66,7 @@ const ClientAccountDetail = () => {
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null)
   const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([])
   const [cloudInfo, setCloudInfo] = useState<CloudInfo | null>(null)
-  const [files, setFiles] = useState<ClientUploadFile[]>([])
+  const [files, setFiles] = useState<AdminClientFile[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [saving, setSaving] = useState<boolean>(false)
@@ -213,7 +213,7 @@ const ClientAccountDetail = () => {
       setBillingSummary((billingSummaryRes.summary as BillingSummary) || null)
       setBillingDocuments((billingDocumentsRes.documents as BillingDocument[]) || [])
       setCloudInfo((cloudRes.cloud as CloudInfo) || null)
-      setFiles((filesRes.files as ClientUploadFile[]) || [])
+      setFiles((filesRes.files as AdminClientFile[]) || [])
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur chargement compte')
     } finally {

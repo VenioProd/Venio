@@ -171,6 +171,18 @@ export async function listAdminClientBillingDocuments(clientId: string) {
   return extractData(response)
 }
 
+export interface AdminClientFile {
+  id: string
+  project: { id: string; name: string } | null
+  category: 'LOGO' | 'TEXTE' | 'PHOTO' | 'BRIEF' | 'AUTRE'
+  note: string
+  originalName: string
+  mimeType: string
+  size: number
+  createdAt: string
+  downloadedByAdminAt: string | null
+}
+
 export async function listAdminClientFiles(clientId: string) {
   const response = await apiFetch(`/api/admin/clients/${clientId}/files`)
   return extractData(response)

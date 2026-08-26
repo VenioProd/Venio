@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import type { FilesTabProps } from './types'
 import { adminClientFileDownloadUrl } from '../../../services/adminClients'
 
@@ -34,7 +35,15 @@ const FilesTab: React.FC<FilesTabProps> = ({ files, clientId }) => (
                 </span>
               </h3>
               <p className="admin-list-item-subtitle">
-                {new Date(file.createdAt).toLocaleString('fr-FR')} · {formatSize(file.size)}
+                {new Date(file.createdAt).toLocaleString('fr-FR')}
+                {file.project && (
+                  <>
+                    {' · '}
+                    <Link to={`/admin/projets/${file.project.id}`}>{file.project.name}</Link>
+                  </>
+                )}
+                {' · '}
+                {formatSize(file.size)}
                 {file.note && ` · ${file.note}`}
                 {' · '}
                 {file.downloadedByAdminAt

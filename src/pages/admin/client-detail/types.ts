@@ -10,7 +10,7 @@ import type {
   CloudInfo,
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
-import type { ClientUploadFile } from '../../../types/clientVault.types'
+import type { AdminClientFile } from '../../../services/adminClients'
 
 export interface NoteOrActivity {
   _id: string
@@ -68,7 +68,7 @@ export interface BillingTabProps {
 }
 
 export interface FilesTabProps {
-  files: ClientUploadFile[]
+  files: AdminClientFile[]
   clientId: string
 }
 
