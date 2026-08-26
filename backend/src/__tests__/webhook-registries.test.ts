@@ -51,6 +51,7 @@ describe('registres du pipeline webhooks', () => {
   it('réserve les permissions webhook au SUPER_ADMIN dans la matrice', () => {
     const matrix = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../../rbac-matrix.json'), 'utf8')) as {
       rolePermissions: Record<string, string[]>
+      navigation: Array<{ id: string; screen: string; permission: string | null }>
     }
 
     expect(matrix.rolePermissions.SUPER_ADMIN).toEqual(expect.arrayContaining(['view_webhooks', 'manage_webhooks']))
@@ -58,5 +59,8 @@ describe('registres du pipeline webhooks', () => {
       expect(matrix.rolePermissions[role]).not.toContain('view_webhooks')
       expect(matrix.rolePermissions[role]).not.toContain('manage_webhooks')
     }
+
+    const entry = matrix.navigation.find((item) => item.id === 'webhooks')
+    expect(entry).toMatchObject({ screen: '/admin/webhooks', permission: 'view_webhooks' })
   })
 })

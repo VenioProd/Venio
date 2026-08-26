@@ -417,7 +417,15 @@
       "permission": null,
       "roles": []
     },
-    { "id": "guide", "section": "Admin", "screen": "/admin/guide", "label": "Guide", "permission": null, "roles": [] }
+    { "id": "guide", "section": "Admin", "screen": "/admin/guide", "label": "Guide", "permission": null, "roles": [] },
+    {
+      "id": "webhooks",
+      "section": "Admin",
+      "screen": "/admin/webhooks",
+      "label": "Webhooks",
+      "permission": "view_webhooks",
+      "roles": []
+    }
   ],
   "apiActions": [
     {
