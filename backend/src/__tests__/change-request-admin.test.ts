@@ -109,6 +109,46 @@ describe('file admin', () => {
   })
 })
 
+describe('validation des entrées', () => {
+  it('rejette un identifiant mal formé en 400', async () => {
+    const cookie = await cookieFor(adminId)
+    await request(app).get('/api/admin/change-requests/pas-un-objectid').set('Cookie', cookie).expect(400)
+    await request(app)
+      .post('/api/admin/change-requests/pas-un-objectid/qualify-include')
+      .set('Cookie', cookie)
+      .expect(400)
+  })
+
+  it('rejette un projectId mal formé sur qualify-quote', async () => {
+    const created = await seedRequest()
+    await request(app)
+      .post(`/api/admin/change-requests/${created._id}/qualify-quote`)
+      .set('Cookie', await cookieFor(adminId))
+      .send({ projectId: 'pas-un-objectid' })
+      .expect(400)
+    expect(await QuoteProposal.countDocuments()).toBe(0)
+  })
+
+  it('rejette une date d’expiration invalide sur qualify-quote', async () => {
+    const created = await seedRequest({ project: projectId })
+    await request(app)
+      .post(`/api/admin/change-requests/${created._id}/qualify-quote`)
+      .set('Cookie', await cookieFor(adminId))
+      .send({ expiresAt: 'la semaine prochaine' })
+      .expect(400)
+    expect(await QuoteProposal.countDocuments()).toBe(0)
+  })
+
+  it('ignore un filtre de statut inconnu au lieu de renvoyer une liste arbitraire', async () => {
+    await seedRequest()
+    const response = await request(app)
+      .get('/api/admin/change-requests?status=NIMPORTEQUOI')
+      .set('Cookie', await cookieFor(adminId))
+      .expect(400)
+    expect(response.body.error).toBeDefined()
+  })
+})
+
 describe('qualification', () => {
   it('inclut une demande : SOUMISE → PLANIFIEE avec qualification INCLUSE', async () => {
     const created = await seedRequest({ project: projectId })

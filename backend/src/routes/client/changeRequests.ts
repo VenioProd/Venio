@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
+import { param, validationResult } from 'express-validator'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
@@ -58,6 +59,19 @@ function attachmentsFrom(req: Request) {
     })),
   }
 }
+
+/**
+ * Un identifiant mal formé doit répondre 400, pas 500 : sans cette garde, le
+ * CastError de Mongoose remonte au handler d'erreur global (contrat d'erreurs
+ * de la spec, aligné sur client/quotes.ts).
+ */
+const validId = [
+  param('id').isMongoId().withMessage('Identifiant invalide'),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (validationResult(req).isEmpty()) return next()
+    return res.status(400).json({ error: 'Identifiant invalide' })
+  },
+]
 
 /** 404 et non 403 : ne jamais révéler l'existence d'une demande. */
 async function loadVisible(req: Request, res: Response): Promise<IChangeRequest | null> {
@@ -194,7 +208,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response, 
   }
 })
 
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', ...validId, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const changeRequest = await loadVisible(req, res)
     if (!changeRequest) return
@@ -223,44 +237,49 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-router.post('/:id/reply', upload.array('files', 10), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const message = String(req.body.message ?? '').trim()
-    if (!message) return res.status(400).json({ error: 'Message requis' })
+router.post(
+  '/:id/reply',
+  ...validId,
+  upload.array('files', 10),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const message = String(req.body.message ?? '').trim()
+      if (!message) return res.status(400).json({ error: 'Message requis' })
 
-    const changeRequest = await loadVisible(req, res)
-    if (!changeRequest) return
+      const changeRequest = await loadVisible(req, res)
+      if (!changeRequest) return
 
-    const actor = actorFromRequest(req.user!)
-    const { files, attachments } = attachmentsFrom(req)
+      const actor = actorFromRequest(req.user!)
+      const { files, attachments } = attachmentsFrom(req)
 
-    // Répondre ne change jamais le statut : le fil reste ouvert même sur un
-    // état terminal (question après refus, remerciement après validation).
-    changeRequest.replies.push({
-      authorId: actor.id as unknown as IChangeRequest['client'],
-      authorName: actor.name,
-      message,
-      attachments,
-      createdAt: new Date(),
-    })
-    await changeRequest.save()
+      // Répondre ne change jamais le statut : le fil reste ouvert même sur un
+      // état terminal (question après refus, remerciement après validation).
+      changeRequest.replies.push({
+        authorId: actor.id as unknown as IChangeRequest['client'],
+        authorName: actor.name,
+        message,
+        attachments,
+        createdAt: new Date(),
+      })
+      await changeRequest.save()
 
-    files.forEach((file) => syncUploadToNextcloud(file, 'demandes-client', String(changeRequest._id)))
-    await notifySuperAdmins({
-      type: 'CHANGE_REQUEST_REPLY',
-      title: `Réponse client : ${changeRequest.title}`,
-      message: `${actor.name} a répondu sur une demande`,
-      link: `/admin/demandes-clients/${changeRequest._id}`,
-      metadata: { changeRequestId: String(changeRequest._id) },
-    }).catch(() => {})
+      files.forEach((file) => syncUploadToNextcloud(file, 'demandes-client', String(changeRequest._id)))
+      await notifySuperAdmins({
+        type: 'CHANGE_REQUEST_REPLY',
+        title: `Réponse client : ${changeRequest.title}`,
+        message: `${actor.name} a répondu sur une demande`,
+        link: `/admin/demandes-clients/${changeRequest._id}`,
+        metadata: { changeRequestId: String(changeRequest._id) },
+      }).catch(() => {})
 
-    return res.json({ changeRequest: changeRequest.toObject() })
-  } catch (err) {
-    return next(err)
-  }
-})
+      return res.json({ changeRequest: changeRequest.toObject() })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
-router.post('/:id/validate', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/validate', ...validId, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const changeRequest = await loadVisible(req, res)
     if (!changeRequest) return
@@ -301,7 +320,7 @@ router.post('/:id/validate', async (req: Request, res: Response, next: NextFunct
   }
 })
 
-router.post('/:id/request-correction', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/request-correction', ...validId, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const comment = String(req.body.comment ?? '').trim()
     if (!comment) return res.status(400).json({ error: 'Commentaire requis' })

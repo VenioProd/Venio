@@ -143,6 +143,23 @@ describe('visibilité', () => {
     expect(filtered.body.changeRequests[0].title).toBe('Terminée')
   })
 
+  it('rejette un identifiant mal formé en 400, sans erreur serveur', async () => {
+    const cookie = await cookieFor(ownerId)
+    for (const path of [
+      '/api/client/change-requests/pas-un-objectid',
+      '/api/client/change-requests/pas-un-objectid/validate',
+    ]) {
+      const response = await request(app).get(path).set('Cookie', cookie)
+      if (response.status !== 404) expect(response.status).toBe(400)
+    }
+    await request(app).post('/api/client/change-requests/pas-un-objectid/validate').set('Cookie', cookie).expect(400)
+    await request(app)
+      .post('/api/client/change-requests/pas-un-objectid/reply')
+      .set('Cookie', cookie)
+      .field('message', 'Bonjour')
+      .expect(400)
+  })
+
   it('masque à un autre client la liste, le détail et interdit toute action', async () => {
     const created = await seedRequest()
     const cookie = await cookieFor(outsiderId)

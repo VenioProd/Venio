@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
+import { body, param, query, validationResult } from 'express-validator'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
@@ -40,6 +41,44 @@ const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
 
 const ACTIVE_STATUSES: ChangeRequestStatus[] = ['PLANIFIEE', 'EN_COURS', 'LIVREE']
 
+const ALL_STATUSES: ChangeRequestStatus[] = [
+  'SOUMISE',
+  'A_CHIFFRER',
+  'PLANIFIEE',
+  'EN_COURS',
+  'LIVREE',
+  'VALIDEE',
+  'REFUSEE',
+]
+
+/**
+ * Sans ces gardes, un identifiant ou une date mal formés remontent en
+ * CastError et répondent 500 au lieu de 400 (contrat d'erreurs de la spec).
+ * Les filtres de liste sont bornés à une allowlist : une valeur libre venant
+ * de la query string n'atteint jamais le filtre Mongo.
+ */
+function rejectInvalid(req: Request, res: Response, next: NextFunction) {
+  const errors = validationResult(req)
+  if (errors.isEmpty()) return next()
+  return res.status(400).json({ error: errors.array()[0]?.msg ?? 'Requête invalide' })
+}
+
+const validId = [param('id').isMongoId().withMessage('Identifiant invalide'), rejectInvalid]
+
+const validListFilters = [
+  query('status').optional().isIn(ALL_STATUSES).withMessage('Statut inconnu'),
+  query('client').optional().isMongoId().withMessage('Client invalide'),
+  query('project').optional().isMongoId().withMessage('Projet invalide'),
+  rejectInvalid,
+]
+
+const validQuotePayload = [
+  param('id').isMongoId().withMessage('Identifiant invalide'),
+  body('projectId').optional({ values: 'falsy' }).isMongoId().withMessage('Projet invalide'),
+  body('expiresAt').optional({ values: 'falsy' }).isISO8601().withMessage('Date de validité invalide'),
+  rejectInvalid,
+]
+
 async function loadOr404(req: Request, res: Response): Promise<IChangeRequest | null> {
   const found = await ChangeRequest.findById(req.params.id)
   if (!found) {
@@ -74,6 +113,7 @@ async function notifyRequesters(
 router.get(
   '/',
   requirePermission(PERMISSIONS.VIEW_CHANGE_REQUESTS),
+  ...validListFilters,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filter: Record<string, unknown> = {}
@@ -143,6 +183,7 @@ router.get(
 router.get(
   '/:id',
   requirePermission(PERMISSIONS.VIEW_CHANGE_REQUESTS),
+  ...validId,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const changeRequest = await loadOr404(req, res)
@@ -180,6 +221,7 @@ router.get(
 router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
+  ...validId,
   upload.array('files', 10),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -222,6 +264,7 @@ router.post(
 router.post(
   '/:id/qualify-include',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
+  ...validId,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const changeRequest = await loadOr404(req, res)
@@ -269,6 +312,7 @@ router.post(
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
   // La route crée un document de facturation : deux permissions chaînées.
   requirePermission(PERMISSIONS.MANAGE_BILLING),
+  ...validQuotePayload,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const changeRequest = await loadOr404(req, res)
@@ -349,6 +393,7 @@ router.post(
 router.post(
   '/:id/refuse',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
+  ...validId,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const reason = String(req.body.reason ?? '').trim()
@@ -402,6 +447,7 @@ router.post(
 router.post(
   '/:id/start',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
+  ...validId,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const changeRequest = await loadOr404(req, res)
@@ -434,6 +480,7 @@ router.post(
 router.post(
   '/:id/deliver',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
+  ...validId,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const changeRequest = await loadOr404(req, res)
