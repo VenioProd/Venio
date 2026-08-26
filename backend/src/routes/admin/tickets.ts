@@ -32,10 +32,7 @@ router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), asyn
   try {
     const filename = req.params.filename as string
     const filter: Record<string, unknown> = {
-      $or: [
-        { attachments: { $elemMatch: { filename } } },
-        { 'replies.attachments': { $elemMatch: { filename } } },
-      ],
+      $or: [{ attachments: { $elemMatch: { filename } } }, { 'replies.attachments': { $elemMatch: { filename } } }],
     }
     if (req.user!.role !== 'SUPER_ADMIN') filter.authorId = req.user!.id
 
@@ -45,7 +42,7 @@ router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), asyn
     const filePath = path.resolve(uploadsDir, filename)
     if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-    return res.sendFile(filePath)
+    return res.sendFile(filename, { root: uploadsDir })
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -70,7 +67,9 @@ router.get('/', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request
     const authorIds = [...new Set(tickets.map((t) => t.authorId.toString()))]
     const authors = await User.find({ _id: { $in: authorIds } }).select('_id avatarUrl')
     const avatarMap: Record<string, string> = {}
-    authors.forEach((u) => { avatarMap[u._id.toString()] = u.avatarUrl || '' })
+    authors.forEach((u) => {
+      avatarMap[u._id.toString()] = u.avatarUrl || ''
+    })
     const enriched = tickets.map((t) => ({
       ...t.toObject(),
       authorAvatarUrl: avatarMap[t.authorId.toString()] || '',
@@ -142,11 +141,15 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Requ
 
     // Par catégorie
     const byCategory: Record<string, number> = { QUESTION: 0, DEMANDE: 0, PROBLEME: 0 }
-    allTickets.forEach((t) => { byCategory[t.category] = (byCategory[t.category] || 0) + 1 })
+    allTickets.forEach((t) => {
+      byCategory[t.category] = (byCategory[t.category] || 0) + 1
+    })
 
     // Par priorité
     const byPriority: Record<string, number> = { BASSE: 0, NORMALE: 0, HAUTE: 0, URGENTE: 0 }
-    allTickets.forEach((t) => { byPriority[t.priority] = (byPriority[t.priority] || 0) + 1 })
+    allTickets.forEach((t) => {
+      byPriority[t.priority] = (byPriority[t.priority] || 0) + 1
+    })
 
     // Total réponses
     const totalReplies = allTickets.reduce((sum, t) => sum + t.replies.length, 0)
@@ -160,16 +163,19 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Requ
         responseTimes.push((firstReply - created) / (1000 * 60 * 60))
       }
     })
-    const avgResponseTime = responseTimes.length > 0
-      ? Math.round((responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) * 10) / 10
-      : null
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? Math.round((responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) * 10) / 10
+        : null
 
     // Taux de résolution
     const resolutionRate = totalCreated > 0 ? Math.round((resolved / totalCreated) * 100) : 0
 
     // Top auteurs
     const authorMap: Record<string, number> = {}
-    allTickets.forEach((t) => { authorMap[t.authorName] = (authorMap[t.authorName] || 0) + 1 })
+    allTickets.forEach((t) => {
+      authorMap[t.authorName] = (authorMap[t.authorName] || 0) + 1
+    })
     const topAuthors = Object.entries(authorMap)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
@@ -210,7 +216,9 @@ router.get('/:id', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Requ
     const allAuthorIds = [...new Set([ticket.authorId.toString(), ...replyAuthorIds])]
     const authors = await User.find({ _id: { $in: allAuthorIds } }).select('_id avatarUrl')
     const avatarMap: Record<string, string> = {}
-    authors.forEach((u) => { avatarMap[u._id.toString()] = u.avatarUrl || '' })
+    authors.forEach((u) => {
+      avatarMap[u._id.toString()] = u.avatarUrl || ''
+    })
 
     const ticketObj = ticket.toObject() as unknown as Record<string, unknown>
     ticketObj.authorAvatarUrl = avatarMap[ticket.authorId.toString()] || ''
@@ -228,105 +236,125 @@ router.get('/:id', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Requ
 })
 
 // POST /api/admin/tickets — create ticket
-router.post('/', requirePermission(PERMISSIONS.CREATE_TICKETS), upload.array('files', 10), async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    const { title, message, category, priority } = req.body
-    if (!message) return res.status(400).json({ error: 'Message requis' })
+router.post(
+  '/',
+  requirePermission(PERMISSIONS.CREATE_TICKETS),
+  upload.array('files', 10),
+  async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user
+      const { title, message, category, priority } = req.body
+      if (!message) return res.status(400).json({ error: 'Message requis' })
 
-    // Auto-générer le titre si non fourni
-    const CATEGORY_LABELS_GEN: Record<string, string> = { QUESTION: 'Question', DEMANDE: 'Demande', PROBLEME: 'Probleme' }
-    const cat = category || 'QUESTION'
-    const autoTitle = title || `${CATEGORY_LABELS_GEN[cat] || cat} — ${message.slice(0, 50).trim()}${message.length > 50 ? '...' : ''}`
+      // Auto-générer le titre si non fourni
+      const CATEGORY_LABELS_GEN: Record<string, string> = {
+        QUESTION: 'Question',
+        DEMANDE: 'Demande',
+        PROBLEME: 'Probleme',
+      }
+      const cat = category || 'QUESTION'
+      const autoTitle =
+        title ||
+        `${CATEGORY_LABELS_GEN[cat] || cat} — ${message.slice(0, 50).trim()}${message.length > 50 ? '...' : ''}`
 
-    const files = (req.files as Express.Multer.File[]) || []
-    const attachments = files.map((f) => ({
-      filename: f.filename,
-      originalName: f.originalname,
-      mimetype: f.mimetype,
-      size: f.size,
-    }))
+      const files = (req.files as Express.Multer.File[]) || []
+      const attachments = files.map((f) => ({
+        filename: f.filename,
+        originalName: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size,
+      }))
 
-    const ticket = await InternalTicket.create({
-      title: autoTitle, message,
-      category: cat,
-      priority: priority || 'NORMALE',
-      authorId: user.id,
-      authorName: user.name,
-      attachments,
-    })
+      const ticket = await InternalTicket.create({
+        title: autoTitle,
+        message,
+        category: cat,
+        priority: priority || 'NORMALE',
+        authorId: user.id,
+        authorName: user.name,
+        attachments,
+      })
 
-    files.forEach(f => syncUploadToNextcloud(f, 'tickets', ticket._id.toString()))
+      files.forEach((f) => syncUploadToNextcloud(f, 'tickets', ticket._id.toString()))
 
-    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id')
-    const CATEGORY_LABELS: Record<string, string> = { QUESTION: 'Question', DEMANDE: 'Demande', PROBLEME: 'Probleme' }
-    const catLabel = CATEGORY_LABELS[ticket.category] || ticket.category
-    for (const admin of superAdmins) {
-      if (admin._id.toString() === user.id) continue
-      createNotification({
-        recipient: admin._id,
-        type: 'TICKET_CREATED',
-        title: `Nouveau ticket : ${ticket.title}`,
-        message: `${user.name} a cree un ticket (${catLabel})`,
-        link: '/admin/tickets',
-      }).catch(() => {})
-    }
-
-    res.status(201).json(ticket)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
-
-// POST /api/admin/tickets/:id/reply
-router.post('/:id/reply', requirePermission(PERMISSIONS.MANAGE_TICKETS), upload.array('files', 10), async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user
-    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent repondre' })
-
-    const { message } = req.body
-    if (!message) return res.status(400).json({ error: 'Message requis' })
-
-    const ticket = await InternalTicket.findById(req.params.id)
-    if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
-
-    const files = (req.files as Express.Multer.File[]) || []
-    const attachments = files.map((f) => ({
-      filename: f.filename, originalName: f.originalname, mimetype: f.mimetype, size: f.size,
-    }))
-
-    ticket.replies.push({ authorId: user.id, authorName: user.name, message, attachments, createdAt: new Date() })
-    if (ticket.status === 'OUVERT') ticket.status = 'EN_COURS'
-    await ticket.save()
-
-    if (ticket.authorId.toString() !== user.id) {
-      // Notification on-site
-      createNotification({
-        recipient: ticket.authorId,
-        type: 'TICKET_REPLY',
-        title: `Reponse a votre ticket : ${ticket.title}`,
-        message: `${user.name} a repondu a votre ticket`,
-        link: '/admin/tickets',
-      }).catch(() => {})
-
-      // Notification email
-      const author = await User.findById(ticket.authorId).select('email name')
-      if (author?.email) {
-        sendTicketReplyEmail({
-          to: author.email,
-          authorName: author.name || ticket.authorName,
-          replierName: user.name,
-          ticketTitle: ticket.title,
-          replyMessage: message,
+      const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('_id')
+      const CATEGORY_LABELS: Record<string, string> = { QUESTION: 'Question', DEMANDE: 'Demande', PROBLEME: 'Probleme' }
+      const catLabel = CATEGORY_LABELS[ticket.category] || ticket.category
+      for (const admin of superAdmins) {
+        if (admin._id.toString() === user.id) continue
+        createNotification({
+          recipient: admin._id,
+          type: 'TICKET_CREATED',
+          title: `Nouveau ticket : ${ticket.title}`,
+          message: `${user.name} a cree un ticket (${catLabel})`,
+          link: '/admin/tickets',
         }).catch(() => {})
       }
-    }
 
-    res.json(ticket)
-  } catch {
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+      res.status(201).json(ticket)
+    } catch {
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  },
+)
+
+// POST /api/admin/tickets/:id/reply
+router.post(
+  '/:id/reply',
+  requirePermission(PERMISSIONS.MANAGE_TICKETS),
+  upload.array('files', 10),
+  async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user
+      if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent repondre' })
+
+      const { message } = req.body
+      if (!message) return res.status(400).json({ error: 'Message requis' })
+
+      const ticket = await InternalTicket.findById(req.params.id)
+      if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
+
+      const files = (req.files as Express.Multer.File[]) || []
+      const attachments = files.map((f) => ({
+        filename: f.filename,
+        originalName: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size,
+      }))
+
+      ticket.replies.push({ authorId: user.id, authorName: user.name, message, attachments, createdAt: new Date() })
+      if (ticket.status === 'OUVERT') ticket.status = 'EN_COURS'
+      await ticket.save()
+
+      if (ticket.authorId.toString() !== user.id) {
+        // Notification on-site
+        createNotification({
+          recipient: ticket.authorId,
+          type: 'TICKET_REPLY',
+          title: `Reponse a votre ticket : ${ticket.title}`,
+          message: `${user.name} a repondu a votre ticket`,
+          link: '/admin/tickets',
+        }).catch(() => {})
+
+        // Notification email
+        const author = await User.findById(ticket.authorId).select('email name')
+        if (author?.email) {
+          sendTicketReplyEmail({
+            to: author.email,
+            authorName: author.name || ticket.authorName,
+            replierName: user.name,
+            ticketTitle: ticket.title,
+            replyMessage: message,
+          }).catch(() => {})
+        }
+      }
+
+      res.json(ticket)
+    } catch {
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  },
+)
 
 // PATCH /api/admin/tickets/:id/mark-read — l'auteur marque comme lu → ferme + archive
 router.patch('/:id/mark-read', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
@@ -358,7 +386,8 @@ router.patch('/:id/mark-read', requirePermission(PERMISSIONS.VIEW_TICKETS), asyn
 router.patch('/:id/status', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
-    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent changer le statut' })
+    if (user.role !== 'SUPER_ADMIN')
+      return res.status(403).json({ error: 'Seuls les super admins peuvent changer le statut' })
 
     const { status } = req.body
     if (!['OUVERT', 'EN_COURS', 'RESOLU', 'FERME'].includes(status)) {
@@ -414,7 +443,7 @@ router.patch('/:id/unarchive', requirePermission(PERMISSIONS.MANAGE_TICKETS), as
     const ticket = await InternalTicket.findByIdAndUpdate(
       req.params.id,
       { isArchived: false, archivedAt: null },
-      { new: true }
+      { new: true },
     )
     if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' })
     res.json(ticket)
