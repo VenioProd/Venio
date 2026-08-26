@@ -62,6 +62,7 @@ import adminSubsidiaryRoutes from './routes/admin/subsidiaries.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
+import adminWebhookRoutes from './routes/admin/webhooks.js'
 import adminDevRoutes from './routes/admin/dev/index.js'
 import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
@@ -318,6 +319,9 @@ app.use('/api/admin/accounting', auth, requireMfa, adminAccountingRoutes)
 app.use('/api/admin/messaging', adminMessagingRoutes)
 app.use('/api/admin/health', adminHealthRoutes)
 app.use('/api/admin/activity-center', adminActivityCenterRoutes)
+
+// Webhooks sortants (pipeline d'événements vers Kuro) — UI : /admin/webhooks.
+app.use('/api/admin/webhooks', adminWebhookRoutes)
 
 // Gestion des tokens d'API agent (admin JWT) — UI : /admin/agents.
 // NB : l'API agent elle-même (/api/v1/agent) est montée plus haut, AVANT le
