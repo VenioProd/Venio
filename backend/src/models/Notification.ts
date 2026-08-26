@@ -19,6 +19,7 @@ const notificationSchema = new mongoose.Schema<INotification>(
         'DECISION_REJECTED',
         'DECISION_IMPROVEMENT',
         'SENSITIVE_ACTION_EXECUTED',
+        'CLIENT_FILE_UPLOADED',
       ],
       required: true,
     },
