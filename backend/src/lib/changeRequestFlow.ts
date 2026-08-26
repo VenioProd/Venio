@@ -57,6 +57,14 @@ export async function transitionChangeRequest({
   /** Message poussé dans le fil par la même écriture que la transition. */
   reply?: { message: string; attachments?: IChangeRequestFile[] }
 }): Promise<IChangeRequest | null> {
+  // La table n'aurait aucune valeur si le seul verrou était le prédicat d'état :
+  // celui-ci garantit que l'état source est bien celui attendu, pas que la
+  // transition demandée existe. Erreur de programmation, donc levée — aucun
+  // appelant légitime ne peut produire ce cas.
+  if (!canTransition(from, to)) {
+    throw new Error(`Transition interdite : ${from} → ${to}`)
+  }
+
   const now = new Date()
   const push: Record<string, unknown> = {
     statusHistory: { status: to, at: now, byUserId: actor.id, byName: actor.name, note },

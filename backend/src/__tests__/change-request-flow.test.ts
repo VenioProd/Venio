@@ -80,6 +80,35 @@ describe('transitionChangeRequest', () => {
     expect(updated!.statusHistory[0]!.note).toBe('Mise en ligne effectuée')
   })
 
+  // La table ALLOWED_TRANSITIONS ne vaut que si le helper l'applique : sans
+  // cela, elle n'est qu'une déclaration décorative que rien ne fait respecter.
+  it('refuse une transition absente de la table, même si l’état source correspond', async () => {
+    const created = await seedRequest({ status: 'VALIDEE' })
+
+    await expect(
+      transitionChangeRequest({ id: String(created._id), from: 'VALIDEE', to: 'EN_COURS', actor }),
+    ).rejects.toThrow(/transition/i)
+
+    const stored = await ChangeRequest.findById(created._id)
+    expect(stored!.status).toBe('VALIDEE')
+    expect(stored!.statusHistory).toHaveLength(0)
+  })
+
+  it('ne laisse pas un champ complémentaire détourner la cible de la transition', async () => {
+    const created = await seedRequest({ status: 'PLANIFIEE' })
+
+    const updated = await transitionChangeRequest({
+      id: String(created._id),
+      from: 'PLANIFIEE',
+      to: 'EN_COURS',
+      actor,
+      set: { status: 'VALIDEE' } as Record<string, unknown>,
+    })
+
+    expect(updated!.status).toBe('EN_COURS')
+    expect(updated!.statusHistory[0]!.status).toBe('EN_COURS')
+  })
+
   it('renvoie null quand l’état courant n’est pas celui attendu', async () => {
     const created = await seedRequest({ status: 'SOUMISE' })
     const updated = await transitionChangeRequest({
