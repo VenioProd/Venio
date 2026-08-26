@@ -25,13 +25,16 @@ const activityLogSchema = new mongoose.Schema<IActivityLog>(
         'ITEM_DELETED',
         'UPDATE_POSTED',
         'BILLING_CREATED',
+        'CHANGE_REQUEST_CREATED',
+        'CHANGE_REQUEST_QUALIFIED',
+        'CHANGE_REQUEST_STATUS_CHANGED',
       ],
     },
     actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     summary: { type: String, default: '' },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 activityLogSchema.index({ project: 1, createdAt: -1 })

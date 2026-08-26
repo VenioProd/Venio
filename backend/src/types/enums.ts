@@ -68,6 +68,10 @@ export type ActivityAction =
   | 'ITEM_DELETED'
   | 'UPDATE_POSTED'
   | 'BILLING_CREATED'
+  // ── Demandes de changement client ──
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_STATUS_CHANGED'
 
 // ─── Notification ───
 export type NotificationType =
@@ -133,6 +137,13 @@ export type NotificationType =
   // Briefs (mission briefs)
   | 'BRIEF_ASSIGNED'
   | 'BRIEF_STATUS_CHANGED'
+  // Demandes de changement client
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_REPLY'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_QUOTE_SENT'
+  | 'CHANGE_REQUEST_DELIVERED'
+  | 'CHANGE_REQUEST_PLANNED'
 
 // ─── Audit ───
 export type AuditAction =
@@ -191,6 +202,12 @@ export type AuditAction =
   | 'QUOTE_PROPOSAL_VIEWED'
   | 'QUOTE_PROPOSAL_SIGNED'
   | 'QUOTE_PROPOSAL_EXPIRED'
+  // ── Demandes de changement client ──
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_REFUSED'
+  | 'CHANGE_REQUEST_PLANNED'
+  | 'CHANGE_REQUEST_STATUS_CHANGED'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

@@ -417,18 +417,22 @@ export async function deleteNextcloudUser(username: string): Promise<void> {
 
 // ─── Upload de fichiers vers Nextcloud ───────────────────────────────────────
 
-export type UploadType =
-  | 'taches'
-  | 'projets'
-  | 'tickets'
-  | 'facturation'
-  | 'ressources'
-  | 'qualiopi'
-  | 'projets-internes'
-  | 'stagiaires'
-  | 'rapports'
-  | 'conventions'
-  | 'filiales'
+export const UPLOAD_TYPES = [
+  'taches',
+  'projets',
+  'tickets',
+  'facturation',
+  'ressources',
+  'qualiopi',
+  'projets-internes',
+  'stagiaires',
+  'rapports',
+  'conventions',
+  'filiales',
+  'demandes-client',
+] as const
+
+export type UploadType = (typeof UPLOAD_TYPES)[number]
 
 const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
   taches: 'Tâches',
@@ -442,6 +446,7 @@ const UPLOAD_FOLDER_LABELS: Record<UploadType, string> = {
   rapports: 'Rapports',
   conventions: 'Conventions',
   filiales: 'Filiales',
+  'demandes-client': 'Demandes-Client',
 }
 
 /**

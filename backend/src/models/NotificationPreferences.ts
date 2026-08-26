@@ -21,7 +21,7 @@ const channelSchema = new mongoose.Schema<ChannelPreferences>(
     push: { type: Boolean, default: true },
     email: { type: Boolean, default: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const notificationPreferencesSchema = new mongoose.Schema(
@@ -32,7 +32,7 @@ const notificationPreferencesSchema = new mongoose.Schema(
       default: () => ({}),
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model('NotificationPreferences', notificationPreferencesSchema)
@@ -45,6 +45,12 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   'TICKET_CREATED',
   'TICKET_REPLY',
   'INTERNAL_MESSAGE',
+  'CHANGE_REQUEST_CREATED',
+  'CHANGE_REQUEST_REPLY',
+  'CHANGE_REQUEST_QUALIFIED',
+  'CHANGE_REQUEST_QUOTE_SENT',
+  'CHANGE_REQUEST_DELIVERED',
+  'CHANGE_REQUEST_PLANNED',
 ]
 
 export function defaultChannelPrefs(): ChannelPreferences {
