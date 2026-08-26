@@ -32,6 +32,23 @@ describe('RBAC matrix / API enforcement', () => {
     }
   })
 
+  it('déclare les permissions du pipeline d’étapes avec la même portée que le contenu projet', () => {
+    expect(matrix.permissions.VIEW_PHASES).toBe('view_phases')
+    expect(matrix.permissions.MANAGE_PHASES).toBe('manage_phases')
+    expect(PERMISSIONS.VIEW_PHASES).toBe('view_phases')
+    expect(PERMISSIONS.MANAGE_PHASES).toBe('manage_phases')
+
+    for (const role of matrix.roles.all) {
+      const permissions = new Set(getPermissionsForRole(role as UserRole))
+      expect(permissions.has('view_phases'), `${role} / view_phases`).toBe(
+        new Set(matrix.rolePermissions[role]).has('view_content'),
+      )
+      expect(permissions.has('manage_phases'), `${role} / manage_phases`).toBe(
+        new Set(matrix.rolePermissions[role]).has('edit_content'),
+      )
+    }
+  })
+
   it('keeps API agents out of human RBAC, even if an ad-hoc grant exists', () => {
     expect(resolvePermissions('AGENT', ['manage_admins'], [])).toEqual([])
     expect(hasPermissionResolved('AGENT', PERMISSIONS.MANAGE_ADMINS, ['manage_admins'], [])).toBe(false)
