@@ -47,6 +47,7 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   arrow: 'Clients & projets',
   projects: 'Clients & projets',
   tickets: 'Clients & projets',
+  'change-requests': 'Clients & projets',
   calendar: 'Clients & projets',
   templates: 'Contenu & outils',
   resources: 'Contenu & outils',

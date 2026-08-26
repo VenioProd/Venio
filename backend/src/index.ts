@@ -49,6 +49,7 @@ import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import publicContactRoutes from './routes/public/contact.js'
 import publicAnalyticsRoutes from './routes/public/analytics.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
+import adminChangeRequestRoutes from './routes/admin/changeRequests.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
 import adminToolAccessRoutes from './routes/admin/toolAccess.js'
@@ -78,6 +79,7 @@ import clientProjectPhaseRoutes from './routes/client/projectPhases.js'
 import clientMessageRoutes from './routes/client/messages.js'
 import clientCollaborationRoutes from './routes/client/collaboration.js'
 import clientQuoteRoutes from './routes/client/quotes.js'
+import clientChangeRequestRoutes from './routes/client/changeRequests.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
@@ -304,6 +306,7 @@ app.use('/api/questionnaire', publicQuestionnaireRoutes)
 app.use('/api/contact', publicContactRoutes)
 app.use('/api/public/analytics', publicAnalyticsRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
+app.use('/api/admin/change-requests', adminChangeRequestRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/admin/tool-access', auth, requireMfa, adminToolAccessRoutes)
@@ -346,6 +349,8 @@ app.use(
   }),
 )
 app.use('/api/projects', clientQuoteRoutes)
+// Ressource scopée compte (et non projet) : préfixe dédié /api/client.
+app.use('/api/client/change-requests', clientChangeRequestRoutes)
 
 // This must stay after every /api mount and before static files / the SPA
 // fallback. app.all covers the namespace root, unknown GET, mutations and

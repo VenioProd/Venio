@@ -27,6 +27,9 @@ describe('permissions module', () => {
         'VIEW_TICKETS',
         'CREATE_TICKETS',
         'MANAGE_TICKETS',
+        // Demandes de changement client
+        'VIEW_CHANGE_REQUESTS',
+        'MANAGE_CHANGE_REQUESTS',
         // Comptabilité
         'VIEW_ACCOUNTING',
         'MANAGE_ACCOUNTING',

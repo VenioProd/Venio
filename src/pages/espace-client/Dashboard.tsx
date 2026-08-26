@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { SkeletonStat, SkeletonGrid } from '../../components/Skeleton'
+import { listChangeRequests } from '../../services/changeRequests'
+import type { ClientChangeRequest } from '../../types/changeRequest.types'
+import { ACTIVE_CLIENT_STATUSES, CLIENT_STATUS_CONFIG, formatChangeRequestDate } from './changeRequestStatus'
 import type { Project } from '../../types/project.types'
 import './ClientPortal.css'
 
@@ -30,6 +33,7 @@ const ClientDashboard = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [taskProgress, setTaskProgress] = useState<TaskProgressMap>({})
+  const [changeRequests, setChangeRequests] = useState<ClientChangeRequest[]>([])
   const [search, setSearch] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [sortBy, setSortBy] = useState<string>('recent')
@@ -37,12 +41,16 @@ const ClientDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [projectsData, progressData] = await Promise.all([
+        const [projectsData, progressData, changeRequestsData] = await Promise.all([
           apiFetch<{ projects: Project[] }>('/api/projects'),
           apiFetch<{ progress: TaskProgressMap }>('/api/projects/task-progress-all').catch(() => ({ progress: {} })),
+          // Silencieux comme task-progress-all : une demande indisponible ne
+          // doit jamais empêcher l'affichage des projets.
+          listChangeRequests().catch(() => ({ changeRequests: [] })),
         ])
         setProjects(projectsData.projects || [])
         setTaskProgress(progressData.progress || {})
+        setChangeRequests(changeRequestsData.changeRequests || [])
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement projets')
       } finally {
@@ -55,6 +63,7 @@ const ClientDashboard = () => {
   const activeProjects = projects.filter((p) => p.status === 'EN_COURS')
   const completedProjects = projects.filter((p) => p.status === 'TERMINE')
   const pendingProjects = projects.filter((p) => p.status === 'EN_ATTENTE')
+  const openChangeRequests = changeRequests.filter((request) => ACTIVE_CLIENT_STATUSES.includes(request.status))
 
   const filteredProjects = useMemo(() => {
     let result = [...projects]
@@ -196,6 +205,48 @@ const ClientDashboard = () => {
               </div>
             </div>
           </div>
+
+          {changeRequests.length > 0 && (
+            <section className="client-dashboard-projects">
+              <div className="client-dashboard-section-header">
+                <h2 className="client-dashboard-section-title">Vos demandes en cours</h2>
+                <p className="client-dashboard-section-subtitle">
+                  Retouches et évolutions en cours de traitement chez Venio
+                </p>
+              </div>
+
+              <div className="portal-list">
+                {openChangeRequests.slice(0, 3).map((request) => {
+                  const status = CLIENT_STATUS_CONFIG[request.status]
+                  return (
+                    <Link
+                      key={request._id}
+                      to={`/espace-client/demandes/${request._id}`}
+                      className="portal-card"
+                      style={{ display: 'flex', gap: 16, alignItems: 'center', textDecoration: 'none' }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700 }}>{request.title}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                          {formatChangeRequestDate(request.createdAt)}
+                        </div>
+                      </div>
+                      <span className={`client-project-card-badge ${status.className}`}>{status.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+                <Link to="/espace-client/demandes" className="portal-link">
+                  Toutes vos demandes →
+                </Link>
+                <Link to="/espace-client/demandes/nouvelle" className="portal-badge" style={{ padding: '8px 14px' }}>
+                  + Nouvelle demande
+                </Link>
+              </div>
+            </section>
+          )}
 
           <section className="client-dashboard-projects">
             <div className="client-dashboard-section-header">

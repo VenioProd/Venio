@@ -78,6 +78,10 @@ export type ActivityAction =
   | 'PHASE_VALIDATED'
   | 'PHASE_REVISION_REQUESTED'
   | 'PHASE_REVISION_RESOLVED'
+  // ── Demandes de changement client ──
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_STATUS_CHANGED'
 
 // ─── Notification ───
 export type NotificationType =
@@ -147,6 +151,13 @@ export type NotificationType =
   | 'PHASE_VALIDATION_REQUESTED'
   | 'PHASE_VALIDATED'
   | 'PHASE_REVISION_REQUESTED'
+  // Demandes de changement client
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_REPLY'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_QUOTE_SENT'
+  | 'CHANGE_REQUEST_DELIVERED'
+  | 'CHANGE_REQUEST_PLANNED'
 
 // ─── Audit ───
 export type AuditAction =
@@ -205,6 +216,12 @@ export type AuditAction =
   | 'QUOTE_PROPOSAL_VIEWED'
   | 'QUOTE_PROPOSAL_SIGNED'
   | 'QUOTE_PROPOSAL_EXPIRED'
+  // ── Demandes de changement client ──
+  | 'CHANGE_REQUEST_CREATED'
+  | 'CHANGE_REQUEST_QUALIFIED'
+  | 'CHANGE_REQUEST_REFUSED'
+  | 'CHANGE_REQUEST_PLANNED'
+  | 'CHANGE_REQUEST_STATUS_CHANGED'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'
@@ -249,6 +266,9 @@ export type Permission =
   // ── Education (workspace pédagogique type Notion) ──
   | 'view_education'
   | 'manage_education'
+  // ── Demandes de changement client ──
+  | 'view_change_requests'
+  | 'manage_change_requests'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'

@@ -36,6 +36,8 @@
     "VIEW_TICKETS": "view_tickets",
     "CREATE_TICKETS": "create_tickets",
     "MANAGE_TICKETS": "manage_tickets",
+    "VIEW_CHANGE_REQUESTS": "view_change_requests",
+    "MANAGE_CHANGE_REQUESTS": "manage_change_requests",
     "VIEW_ACCOUNTING": "view_accounting",
     "MANAGE_ACCOUNTING": "manage_accounting",
     "LOCK_ACCOUNTING": "lock_accounting",
@@ -81,7 +83,9 @@
       "view_dev",
       "manage_dev",
       "view_education",
-      "manage_education"
+      "manage_education",
+      "view_change_requests",
+      "manage_change_requests"
     ],
     "ADMIN": [
       "manage_clients",
@@ -107,7 +111,9 @@
       "manage_vat",
       "export_fec",
       "view_dev",
-      "manage_dev"
+      "manage_dev",
+      "view_change_requests",
+      "manage_change_requests"
     ],
     "MANAGER": [
       "manage_clients",
@@ -132,7 +138,9 @@
       "view_vat",
       "manage_vat",
       "view_dev",
-      "manage_dev"
+      "manage_dev",
+      "view_change_requests",
+      "manage_change_requests"
     ],
     "COMPTABLE": [
       "view_accounting",
@@ -170,7 +178,8 @@
       "view_messaging",
       "send_messages",
       "view_tickets",
-      "create_tickets"
+      "create_tickets",
+      "view_change_requests"
     ],
     "VIEWER": [
       "view_projects",
@@ -183,7 +192,8 @@
       "send_messages",
       "view_tickets",
       "create_tickets",
-      "view_dev"
+      "view_dev",
+      "view_change_requests"
     ],
     "STAGIAIRE": [
       "view_projects",
@@ -343,6 +353,14 @@
       "screen": "/admin/tickets",
       "label": "Tickets",
       "permission": "view_tickets",
+      "roles": []
+    },
+    {
+      "id": "change-requests",
+      "section": "Suivi",
+      "screen": "/admin/demandes-clients",
+      "label": "Demandes clients",
+      "permission": "view_change_requests",
       "roles": []
     },
     {

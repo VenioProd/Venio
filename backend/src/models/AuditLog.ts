@@ -64,6 +64,12 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'QUOTE_PROPOSAL_VIEWED',
         'QUOTE_PROPOSAL_SIGNED',
         'QUOTE_PROPOSAL_EXPIRED',
+        // ── Demandes de changement client ──
+        'CHANGE_REQUEST_CREATED',
+        'CHANGE_REQUEST_QUALIFIED',
+        'CHANGE_REQUEST_REFUSED',
+        'CHANGE_REQUEST_PLANNED',
+        'CHANGE_REQUEST_STATUS_CHANGED',
       ],
     },
     ip: { type: String, default: '' },
