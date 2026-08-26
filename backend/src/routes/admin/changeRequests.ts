@@ -313,8 +313,11 @@ router.post(
         set: { qualification: 'A_CHIFFRER', quoteProposal: proposal._id, project: targetProjectId },
       })
       if (!updated) {
-        // Course perdue : le devis créé ne doit pas rester orphelin.
-        await QuoteProposal.findByIdAndDelete(proposal._id)
+        // Course perdue : le devis créé ne doit pas rester orphelin. Le
+        // prédicat `status: 'DRAFT'` est indispensable — entre la création et
+        // ici, un autre admin a pu l'envoyer, voire le client le signer : un
+        // engagement transmis ne doit jamais être effacé par une compensation.
+        await QuoteProposal.findOneAndDelete({ _id: proposal._id, status: 'DRAFT' })
         return res.status(409).json({ error: 'Transition impossible', code: 'INVALID_TRANSITION' })
       }
 

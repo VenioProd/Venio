@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import * as changeRequestFlow from '../lib/changeRequestFlow.js'
 import { createSession } from '../lib/session.js'
 import adminChangeRequestRoutes from '../routes/admin/changeRequests.js'
 import ChangeRequest from '../models/ChangeRequest.js'
@@ -202,6 +203,45 @@ describe('qualification', () => {
       .send({ reason: 'Devis expiré' })
       .expect(200)
     expect(second.body.changeRequest.status).toBe('REFUSEE')
+  })
+})
+
+describe('compensation de qualify-quote', () => {
+  it('ne supprime pas un devis qui a quitté l’état DRAFT pendant la course', async () => {
+    const created = await seedRequest({ project: projectId })
+
+    // Simule la course : la transition échoue alors que le devis vient d'être
+    // envoyé au client par un autre admin. Le devis engage désormais Venio.
+    const spy = vi.spyOn(changeRequestFlow, 'transitionChangeRequest').mockImplementation(async () => {
+      await QuoteProposal.updateMany({}, { $set: { status: 'SENT' } })
+      return null
+    })
+
+    const response = await request(app)
+      .post(`/api/admin/change-requests/${created._id}/qualify-quote`)
+      .set('Cookie', await cookieFor(adminId))
+      .send({})
+      .expect(409)
+    spy.mockRestore()
+
+    expect(response.body.code).toBe('INVALID_TRANSITION')
+    const survivor = await QuoteProposal.findOne({})
+    expect(survivor, 'un devis déjà envoyé ne doit jamais être supprimé').not.toBeNull()
+    expect(survivor!.status).toBe('SENT')
+  })
+
+  it('supprime le devis resté brouillon quand la transition échoue', async () => {
+    const created = await seedRequest({ project: projectId })
+    const spy = vi.spyOn(changeRequestFlow, 'transitionChangeRequest').mockResolvedValue(null)
+
+    await request(app)
+      .post(`/api/admin/change-requests/${created._id}/qualify-quote`)
+      .set('Cookie', await cookieFor(adminId))
+      .send({})
+      .expect(409)
+    spy.mockRestore()
+
+    expect(await QuoteProposal.countDocuments()).toBe(0)
   })
 })
 
