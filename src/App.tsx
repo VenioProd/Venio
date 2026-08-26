@@ -87,6 +87,8 @@ const AuditLog = lazy(() => import('./pages/admin/AuditLog'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
 const TicketList = lazy(() => import('./pages/admin/TicketList'))
+const AdminChangeRequests = lazy(() => import('./pages/admin/change-requests'))
+const AdminChangeRequestDetail = lazy(() => import('./pages/admin/change-requests/ChangeRequestDetail'))
 const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
 const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
 const Messaging = lazy(() => import('./pages/admin/Messaging'))
@@ -400,6 +402,22 @@ function App() {
                     element={
                       <RequirePermission permission={PERMISSIONS.VIEW_TICKETS} redirectTo="/admin">
                         <TicketList />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="demandes-clients"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_CHANGE_REQUESTS} redirectTo="/admin">
+                        <AdminChangeRequests />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="demandes-clients/:id"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_CHANGE_REQUESTS} redirectTo="/admin">
+                        <AdminChangeRequestDetail />
                       </RequirePermission>
                     }
                   />

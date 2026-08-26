@@ -44,6 +44,7 @@ import {
 } from 'lucide-react'
 import UserAvatar from './UserAvatar'
 import { apiFetch } from '../lib/api'
+import { hasPermission } from '../lib/permissions'
 import { useModalA11y } from '../hooks/useModalA11y'
 import './AdminSidebar.css'
 
@@ -135,6 +136,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   }
 
   const [pendingDecisionsCount, setPendingDecisionsCount] = useState(0)
+  const [changeRequestsToQualify, setChangeRequestsToQualify] = useState(0)
   const drawerRef = useRef<HTMLElement>(null)
   const drawerCloseRef = useRef<HTMLButtonElement>(null)
 
@@ -161,6 +163,29 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
       clearInterval(id)
     }
   }, [user?.role])
+
+  // Compteur du badge « Demandes clients » — même cadence que les décisions.
+  useEffect(() => {
+    if (!hasPermission(user, 'view_change_requests')) {
+      setChangeRequestsToQualify(0)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const stats = await apiFetch<{ aTraiter: number }>('/api/admin/change-requests/stats')
+        if (!cancelled) setChangeRequestsToQualify(stats?.aTraiter ?? 0)
+      } catch {
+        // silencieux
+      }
+    }
+    load()
+    const id = setInterval(load, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [user])
 
   // Ferme le drawer mobile à la navigation
   useEffect(() => {
@@ -252,6 +277,14 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                           aria-label={`${pendingDecisionsCount} décision${pendingDecisionsCount > 1 ? 's' : ''} en attente`}
                         >
                           {pendingDecisionsCount > 99 ? '99+' : pendingDecisionsCount}
+                        </span>
+                      )}
+                      {item.to === '/admin/demandes-clients' && changeRequestsToQualify > 0 && (
+                        <span
+                          className="admin-sb-badge"
+                          aria-label={`${changeRequestsToQualify} demande${changeRequestsToQualify > 1 ? 's' : ''} à qualifier`}
+                        >
+                          {changeRequestsToQualify > 99 ? '99+' : changeRequestsToQualify}
                         </span>
                       )}
                     </NavLink>
