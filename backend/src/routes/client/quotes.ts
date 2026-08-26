@@ -10,6 +10,7 @@ import { getProjectAccess } from '../../lib/projectAccess.js'
 import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import { buildBillingDocumentForProposal, lockProposalForSignature } from '../../lib/quoteSignature.js'
+import { promoteChangeRequestOnSignature } from '../../lib/changeRequestFlow.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 
 const router = express.Router()
@@ -255,6 +256,12 @@ router.post(
       if (!locked) {
         return res.status(409).json({ error: 'Cette proposition a déjà été signée', code: 'PROPOSAL_ALREADY_SIGNED' })
       }
+
+      // Une demande de changement adossée à ce devis passe en PLANIFIEE dès la
+      // signature. Best-effort et placé avant la génération du document : un
+      // échec de PDF (rattrapable via rebuild-document) ne doit pas laisser la
+      // demande bloquée en A_CHIFFRER.
+      promoteChangeRequestOnSignature(locked, req.user!).catch(() => {})
 
       const billingDocument = await buildBillingDocumentForProposal(locked)
 

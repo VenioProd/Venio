@@ -7,6 +7,8 @@ import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
+import ChangeRequest from '../../models/ChangeRequest.js'
+import { notifyUsers } from '../../lib/notifyHelpers.js'
 
 const router = express.Router()
 
@@ -147,6 +149,20 @@ router.post(
       }
       proposal.status = 'SENT'
       await proposal.save()
+
+      // Le client suit sa demande depuis l'espace client : on l'y ramène avec
+      // un lien direct vers le devis. Best-effort.
+      const changeRequest = await ChangeRequest.findOne({ quoteProposal: proposal._id })
+      if (changeRequest) {
+        await notifyUsers([changeRequest.client, changeRequest.createdBy], {
+          type: 'CHANGE_REQUEST_QUOTE_SENT',
+          title: `Devis à signer : ${changeRequest.title}`,
+          message: 'Votre devis est disponible dans votre espace client.',
+          link: `/espace-client/projets/${proposal.project}/propositions/${proposal._id}`,
+          metadata: { changeRequestId: String(changeRequest._id), proposalId: String(proposal._id) },
+        }).catch(() => {})
+      }
+
       return res.json({ proposal: proposal.toObject() })
     } catch (err) {
       return next(err)
