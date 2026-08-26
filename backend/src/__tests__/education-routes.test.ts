@@ -39,6 +39,16 @@ beforeAll(async () => {
     await model.init()
   }
   const { default: educationRoutes } = await import('../routes/admin/education/index.js')
+  const { EducationClass, EducationStudent, EducationSession, EducationAssignment, EducationNote, EducationDocument } =
+    await import('../models/education/index.js')
+  await Promise.all([
+    EducationClass.init(),
+    EducationStudent.init(),
+    EducationSession.init(),
+    EducationAssignment.init(),
+    EducationNote.init(),
+    EducationDocument.init(),
+  ])
   app = express()
   app.use(express.json())
   app.use('/api/admin/education', educationRoutes)
