@@ -25,9 +25,9 @@ router.get(
           id: String(doc._id),
           client: doc.client
             ? {
-                id: String((doc.client as { _id: unknown })._id),
-                name: (doc.client as { name: string }).name,
-                companyName: (doc.client as { companyName?: string }).companyName || '',
+                id: String((doc.client as unknown as { _id: unknown })._id),
+                name: (doc.client as unknown as { name: string }).name,
+                companyName: (doc.client as unknown as { companyName?: string }).companyName || '',
               }
             : null,
           category: doc.category,
