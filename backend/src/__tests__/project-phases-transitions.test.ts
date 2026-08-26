@@ -151,6 +151,67 @@ describe('fin d’étape et retours arrière', () => {
   })
 })
 
+describe('le réordonnancement ne peut pas servir à contourner le verrou', () => {
+  const reorder = (phaseIds: string[]) =>
+    request(app).patch(`/api/admin/projects/${projectId}/phases/reorder`).set('Cookie', adminCookie).send({ phaseIds })
+
+  it('refuse de placer une étape démarrée derrière un jalon non validé', async () => {
+    const production = await createPhase({ title: 'Développement', order: 0, status: 'EN_COURS' })
+    const jalon = await createPhase({ title: 'Maquettes', order: 1, requiresClientValidation: true })
+
+    const response = await reorder([String(jalon._id), String(production._id)]).expect(409)
+
+    expect(response.body.code).toBe('PHASE_LOCKED')
+    expect(response.body.blockingPhase).toEqual({ _id: String(jalon._id), title: 'Maquettes' })
+    // L'ordre d'origine est préservé.
+    expect((await ProjectPhase.findById(production._id))!.order).toBe(0)
+  })
+
+  it('ferme l’aller-retour reorder → start → reorder', async () => {
+    const jalon = await createPhase({ title: 'Maquettes', order: 0, requiresClientValidation: true })
+    const production = await createPhase({ title: 'Développement', order: 1 })
+
+    // 1. On fait passer l'étape devant le jalon : légal, elle n'a pas démarré.
+    await reorder([String(production._id), String(jalon._id)]).expect(200)
+    // 2. Elle démarre : plus aucun jalon devant elle.
+    await post(`/${production._id}/start`).expect(200)
+    // 3. La remettre derrière le jalon recréerait l'incohérence : refusé.
+    const response = await reorder([String(jalon._id), String(production._id)]).expect(409)
+    expect(response.body.code).toBe('PHASE_LOCKED')
+  })
+
+  it('laisse réordonner librement des étapes non démarrées', async () => {
+    const jalon = await createPhase({ title: 'Maquettes', order: 0, requiresClientValidation: true })
+    const suivante = await createPhase({ title: 'Développement', order: 1 })
+
+    const response = await reorder([String(suivante._id), String(jalon._id)]).expect(200)
+    expect(response.body.phases.map((p: { title: string }) => p.title)).toEqual(['Développement', 'Maquettes'])
+  })
+
+  it('n’interdit pas de réordonner un pipeline déjà incohérent', async () => {
+    // Incohérence préexistante (créée hors API, ou héritée d'un import) : le
+    // réordonnancement ne doit pas devenir impossible pour autant.
+    const jalon = await createPhase({ title: 'Maquettes', order: 0, requiresClientValidation: true })
+    const production = await createPhase({ title: 'Développement', order: 1, status: 'EN_COURS' })
+    const recette = await createPhase({ title: 'Recette', order: 2 })
+
+    await reorder([String(jalon._id), String(recette._id), String(production._id)]).expect(200)
+  })
+
+  it('autorise le réordonnancement une fois le jalon validé', async () => {
+    const jalon = await createPhase({
+      title: 'Maquettes',
+      order: 0,
+      requiresClientValidation: true,
+      status: 'TERMINEE',
+      validation: { validatedByName: 'Claire', validatedAt: new Date() },
+    })
+    const production = await createPhase({ title: 'Développement', order: 1, status: 'EN_COURS' })
+
+    await reorder([String(production._id), String(jalon._id)]).expect(200)
+  })
+})
+
 describe('résolution des demandes de retouches', () => {
   it('horodate la résolution puis refuse 409 la seconde', async () => {
     const phase = await createPhase({ status: 'EN_COURS' })

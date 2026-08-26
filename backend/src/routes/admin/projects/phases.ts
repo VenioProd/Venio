@@ -50,6 +50,40 @@ async function loadPhase(req: Request, res: Response): Promise<IProjectPhase | n
   return phase
 }
 
+/**
+ * Étapes déjà démarrées qui se retrouveraient derrière un jalon client non
+ * validé sous un ordre donné, indexées par id d'étape fautive.
+ */
+function lockViolations(phases: IProjectPhase[], orderOf: (id: string) => number): Map<string, IProjectPhase> {
+  const violations = new Map<string, IProjectPhase>()
+  for (const phase of phases) {
+    if (phase.status === 'A_VENIR') continue
+    const blockers = phases
+      .filter(
+        (candidate) =>
+          candidate.requiresClientValidation &&
+          !isPhaseValidated(candidate) &&
+          orderOf(String(candidate._id)) < orderOf(String(phase._id)),
+      )
+      .sort((a, b) => orderOf(String(a._id)) - orderOf(String(b._id)))
+    if (blockers.length > 0) violations.set(String(phase._id), blockers[0])
+  }
+  return violations
+}
+
+/** Jalon bloquant qu'un réordonnancement introduirait, s'il en introduit un. */
+function findNewLockViolation(phases: IProjectPhase[], orderedIds: string[]): IProjectPhase | null {
+  const currentOrder = new Map(phases.map((phase) => [String(phase._id), phase.order]))
+  const nextOrder = new Map(orderedIds.map((id, index) => [id, index]))
+  const before = lockViolations(phases, (id) => currentOrder.get(id) ?? 0)
+  const after = lockViolations(phases, (id) => nextOrder.get(id) ?? 0)
+
+  for (const [phaseId, blocker] of after) {
+    if (!before.has(phaseId)) return blocker
+  }
+  return null
+}
+
 /** Vérifie que chaque livrable lié appartient bien au projet. */
 async function normalizeLinkedItems(projectId: string, linkedItems: unknown): Promise<string[] | null> {
   if (!Array.isArray(linkedItems)) return []
@@ -143,7 +177,7 @@ router.patch(
       const project = await Project.findById(projectId)
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
 
-      const existing = await ProjectPhase.find({ project: projectId }).select('_id')
+      const existing = await ProjectPhase.find({ project: projectId })
       const existingIds = existing.map((phase) => String(phase._id))
       const submitted = Array.isArray(phaseIds) ? phaseIds.map(String) : []
 
@@ -155,10 +189,26 @@ router.patch(
           .json({ error: 'La liste doit contenir exactement les étapes du projet', code: 'INVALID_PHASE_LIST' })
       }
 
-      await Promise.all(
-        submitted.map((id, index) =>
-          ProjectPhase.updateOne({ _id: id, project: projectId }, { $set: { order: index } }),
-        ),
+      // Le verrou se calcule sur l'ordre courant : sans ce contrôle, un
+      // aller-retour de réordonnancement suffirait à démarrer une étape puis à
+      // la replacer derrière un jalon non validé. On refuse donc les
+      // réorganisations qui CRÉENT une incohérence, sans bloquer celles d'un
+      // pipeline déjà incohérent.
+      const newViolation = findNewLockViolation(existing, submitted)
+      if (newViolation) {
+        return res.status(409).json({
+          error: `L’étape « ${newViolation.title} » doit d’abord être validée par le client`,
+          code: 'PHASE_LOCKED',
+          blockingPhase: { _id: String(newViolation._id), title: newViolation.title },
+        })
+      }
+
+      // Une seule commande plutôt que N updateOne concurrents : en cas
+      // d'échec, le pipeline reste plus proche d'un état cohérent.
+      await ProjectPhase.bulkWrite(
+        submitted.map((id, index) => ({
+          updateOne: { filter: { _id: id, project: projectId }, update: { $set: { order: index } } },
+        })),
       )
 
       const phases = await ProjectPhase.find({ project: projectId })
@@ -202,32 +252,91 @@ router.patch(
         })
       }
 
+      const changedFields: string[] = []
+      const updates: Record<string, unknown> = {}
+      // La spec assume une échappatoire : désactiver la validation client pour
+      // pouvoir clôturer un jalon. Elle n'est acceptable que si le journal
+      // permet de démontrer le geste — d'où l'avant/après explicite.
+      const previousRequiresValidation = phase.requiresClientValidation
+
       if (linkedItems !== undefined) {
         const normalizedItems = await normalizeLinkedItems(String(req.params.projectId), linkedItems)
         if (normalizedItems === null) {
           return res.status(422).json({ error: 'Livrables liés invalides', code: 'INVALID_LINKED_ITEMS' })
         }
-        phase.linkedItems = normalizedItems as unknown as typeof phase.linkedItems
+        updates.linkedItems = normalizedItems
+        changedFields.push('linkedItems')
       }
-      if (title !== undefined) phase.title = String(title)
-      if (description !== undefined) phase.description = String(description)
-      if (dueAt !== undefined) phase.dueAt = dueAt ? new Date(dueAt) : null
-      if (requiresClientValidation !== undefined) phase.requiresClientValidation = Boolean(requiresClientValidation)
-      if (order !== undefined) phase.order = Number(order)
+      if (title !== undefined) {
+        updates.title = String(title)
+        changedFields.push('title')
+      }
+      if (description !== undefined) {
+        updates.description = String(description)
+        changedFields.push('description')
+      }
+      if (dueAt !== undefined) {
+        updates.dueAt = dueAt ? new Date(dueAt) : null
+        changedFields.push('dueAt')
+      }
+      if (requiresClientValidation !== undefined) {
+        updates.requiresClientValidation = Boolean(requiresClientValidation)
+        changedFields.push('requiresClientValidation')
+      }
+      if (order !== undefined) {
+        updates.order = Number(order)
+        changedFields.push('order')
+      }
       // `status` et `validation` ne sont jamais modifiables par cette route.
 
-      await phase.save()
+      if (changedFields.length === 0) {
+        await populatePhase(phase)
+        return res.json({ phase })
+      }
+
+      // Le réordonnancement d'affichage reste permis sur une étape validée ;
+      // toute autre modification exige que l'étape ne soit pas validée AU
+      // MOMENT DE L'ÉCRITURE, pas seulement au moment de la lecture.
+      const touchesContent = changedFields.some((field) => (IMMUTABLE_FIELDS as readonly string[]).includes(field))
+      const filter: Record<string, unknown> = { _id: phase._id, project: String(req.params.projectId) }
+      if (touchesContent) filter['validation.validatedAt'] = null
+
+      const updatedPhase = await ProjectPhase.findOneAndUpdate(filter, { $set: updates }, { new: true })
+      if (!updatedPhase) {
+        return res.status(409).json({
+          error: 'Une étape validée par le client ne peut plus être modifiée',
+          code: 'VALIDATED_PHASE_IMMUTABLE',
+        })
+      }
+
+      const validationToggled =
+        changedFields.includes('requiresClientValidation') &&
+        updatedPhase.requiresClientValidation !== previousRequiresValidation
+      const summary = validationToggled
+        ? `Étape « ${updatedPhase.title} » : validation client ${updatedPhase.requiresClientValidation ? 'activée' : 'désactivée'}`
+        : `Étape « ${updatedPhase.title} » modifiée`
 
       await logActivity({
         project: String(req.params.projectId),
         action: 'PHASE_UPDATED',
         actor: req.user!.id,
-        summary: `Étape « ${phase.title} » modifiée`,
-        metadata: { phaseId: String(phase._id) },
+        summary,
+        metadata: {
+          phaseId: String(updatedPhase._id),
+          changedFields,
+          ...(validationToggled
+            ? {
+                requiresClientValidation: {
+                  from: previousRequiresValidation,
+                  to: updatedPhase.requiresClientValidation,
+                },
+              }
+            : {}),
+        },
       })
 
-      await populatePhase(phase)
-      res.json({ phase })
+      await populatePhase(updatedPhase)
+      res.json({ phase: updatedPhase })
     } catch (err) {
       logger.error(err)
       res.status(500).json({ error: 'Erreur serveur' })
@@ -252,7 +361,19 @@ router.delete(
       }
 
       const title = phase.title
-      await phase.deleteOne()
+      // Conditionnelle : une validation arrivée entre la lecture et ici ne doit
+      // pas pouvoir être effacée par cette suppression.
+      const result = await ProjectPhase.deleteOne({
+        _id: phase._id,
+        project: String(req.params.projectId),
+        'validation.validatedAt': null,
+      })
+      if (result.deletedCount === 0) {
+        return res.status(409).json({
+          error: 'Une étape validée par le client ne peut pas être supprimée',
+          code: 'VALIDATED_PHASE_IMMUTABLE',
+        })
+      }
 
       await logActivity({
         project: String(req.params.projectId),
@@ -292,8 +413,21 @@ function registerTransition(action: PhaseAdminAction) {
         }
 
         const previousStatus = phase.status
-        phase.status = outcome.nextStatus
-        await phase.save()
+        // Écriture conditionnelle : la transition n'est appliquée que si le
+        // statut n'a pas bougé depuis la lecture, et que le client n'a pas
+        // validé l'étape entre-temps.
+        const updated = await ProjectPhase.findOneAndUpdate(
+          { _id: phase._id, project: projectId, status: previousStatus, 'validation.validatedAt': null },
+          { $set: { status: outcome.nextStatus } },
+          { new: true },
+        )
+        if (!updated) {
+          return res.status(409).json({
+            error: 'L’étape a changé entre-temps, rechargez la page',
+            code: 'PHASE_CONFLICT',
+          })
+        }
+        phase.status = updated.status
 
         if (action === 'request-validation') {
           const project = await Project.findById(projectId).select('name client')
@@ -355,9 +489,27 @@ router.post(
           .json({ error: 'Cette demande de retouches est déjà traitée', code: 'REVISION_ALREADY_RESOLVED' })
       }
 
-      revision.resolvedAt = new Date()
-      revision.resolvedBy = req.user!.id as unknown as typeof revision.resolvedBy
-      await phase.save()
+      // Marquage atomique : deux admins qui traitent la même demande en même
+      // temps ne peuvent pas obtenir deux 200 avec un resolvedBy arbitraire.
+      const resolved = await ProjectPhase.findOneAndUpdate(
+        {
+          _id: phase._id,
+          project: String(req.params.projectId),
+          revisionRequests: { $elemMatch: { _id: revision._id, resolvedAt: null } },
+        },
+        {
+          $set: {
+            'revisionRequests.$[rev].resolvedAt': new Date(),
+            'revisionRequests.$[rev].resolvedBy': req.user!.id,
+          },
+        },
+        { new: true, arrayFilters: [{ 'rev._id': revision._id }] },
+      )
+      if (!resolved) {
+        return res
+          .status(409)
+          .json({ error: 'Cette demande de retouches est déjà traitée', code: 'REVISION_ALREADY_RESOLVED' })
+      }
 
       await logActivity({
         project: String(req.params.projectId),
@@ -367,8 +519,8 @@ router.post(
         metadata: { phaseId: String(phase._id), revisionId: String(req.params.revisionId) },
       })
 
-      await populatePhase(phase)
-      res.json({ phase })
+      await populatePhase(resolved)
+      res.json({ phase: resolved })
     } catch (err) {
       logger.error(err)
       res.status(500).json({ error: 'Erreur serveur' })

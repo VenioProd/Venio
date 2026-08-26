@@ -277,19 +277,28 @@ router.post(
 
       if (template) {
         const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
-        await ProjectPhase.insertMany(
-          defaultPhases.map((phase, index) => ({
-            project: project._id,
-            title: phase.title,
-            description: phase.description || '',
-            order: index,
-            dueAt: null,
-            status: 'A_VENIR',
-            requiresClientValidation: Boolean(phase.requiresClientValidation),
-            linkedItems: [],
-            createdBy: req.user!.id,
-          })),
-        )
+        try {
+          await ProjectPhase.insertMany(
+            defaultPhases.map((phase, index) => ({
+              project: project._id,
+              title: phase.title,
+              description: phase.description || '',
+              order: index,
+              dueAt: null,
+              status: 'A_VENIR',
+              requiresClientValidation: Boolean(phase.requiresClientValidation),
+              linkedItems: [],
+              createdBy: req.user!.id,
+            })),
+          )
+        } catch (err) {
+          // Faute de transaction, on compense : un projet sans son pipeline
+          // serait un demi-état que l'appelant ne peut pas rattraper, sa
+          // relance créant un second projet.
+          await ProjectPhase.deleteMany({ project: project._id }).catch(() => null)
+          await Project.deleteOne({ _id: project._id }).catch(() => null)
+          throw err
+        }
       }
 
       await logActivity({

@@ -106,23 +106,47 @@ router.post('/:projectId/phases/:phaseId/validate', async (req: Request, res: Re
       return res.status(409).json({ error: 'Cette étape n’attend pas de validation', code: 'INVALID_TRANSITION' })
     }
 
-    phase.validation = {
-      validatedBy: req.user!.id,
-      validatedByName: req.user!.name || '',
-      validatedAt: new Date(),
-      comment: typeof req.body?.comment === 'string' ? req.body.comment.trim() : '',
-    } as unknown as typeof phase.validation
-    phase.status = 'TERMINEE'
-    await phase.save()
+    // Écriture conditionnelle : le statut lu plus haut doit encore être celui
+    // en base au moment de l'écriture. Sans cela, deux requêtes concurrentes
+    // (double validation, ou validation + demande de retouches) passeraient
+    // toutes deux le contrôle et produiraient un état incohérent.
+    const validated = await ProjectPhase.findOneAndUpdate(
+      { _id: phaseId, project: projectId, status: 'EN_ATTENTE_VALIDATION' },
+      {
+        $set: {
+          status: 'TERMINEE',
+          validation: {
+            validatedBy: req.user!.id,
+            validatedByName: req.user!.name || '',
+            validatedAt: new Date(),
+            comment: typeof req.body?.comment === 'string' ? req.body.comment.trim() : '',
+          },
+        },
+      },
+      { new: true },
+    )
+    if (!validated) {
+      return res.status(409).json({ error: 'Cette étape n’attend pas de validation', code: 'INVALID_TRANSITION' })
+    }
 
     const project = access.project
-    await notifyUsers(await phaseAdminRecipients(project), {
-      type: 'PHASE_VALIDATED',
-      title: `Étape validée — ${project.name}`,
-      message: `${req.user!.name} a validé l’étape « ${phase.title} ».`,
-      link: `/admin/projets/${projectId}?tab=phases`,
-      metadata: { projectId, phaseId: String(phase._id) },
-    }).catch(() => null)
+    // L'étape est déjà écrite : aucun effet de bord ne doit transformer ce
+    // succès en 500 (le client relancerait et prendrait un 409). Le await sur
+    // phaseAdminRecipients doit donc vivre DANS le try, pas dans l'argument.
+    try {
+      await notifyUsers(await phaseAdminRecipients(project), {
+        type: 'PHASE_VALIDATED',
+        title: `Étape validée — ${project.name}`,
+        message: `${req.user!.name} a validé l’étape « ${phase.title} ».`,
+        link: `/admin/projets/${projectId}?tab=phases`,
+        metadata: { projectId, phaseId: String(phase._id) },
+      })
+    } catch (err) {
+      logger.warn(
+        { data: { phaseId: String(phase._id), err: (err as Error).message } },
+        '[phases] notification validation',
+      )
+    }
 
     await logActivity({
       project: projectId,
@@ -164,23 +188,40 @@ router.post('/:projectId/phases/:phaseId/revisions', async (req: Request, res: R
       return res.status(409).json({ error: 'Cette étape n’attend pas de validation', code: 'INVALID_TRANSITION' })
     }
 
-    phase.revisionRequests.push({
-      requestedBy: req.user!.id,
-      requestedByName: req.user!.name || '',
-      comment,
-      createdAt: new Date(),
-    } as never)
-    phase.status = 'EN_COURS'
-    await phase.save()
+    const revised = await ProjectPhase.findOneAndUpdate(
+      { _id: phaseId, project: projectId, status: 'EN_ATTENTE_VALIDATION' },
+      {
+        $set: { status: 'EN_COURS' },
+        $push: {
+          revisionRequests: {
+            requestedBy: req.user!.id,
+            requestedByName: req.user!.name || '',
+            comment,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true },
+    )
+    if (!revised) {
+      return res.status(409).json({ error: 'Cette étape n’attend pas de validation', code: 'INVALID_TRANSITION' })
+    }
 
     const project = access.project
-    await notifyUsers(await phaseAdminRecipients(project), {
-      type: 'PHASE_REVISION_REQUESTED',
-      title: `Retouches demandées — ${project.name}`,
-      message: `${req.user!.name} a demandé des retouches sur l’étape « ${phase.title} ».`,
-      link: `/admin/projets/${projectId}?tab=phases`,
-      metadata: { projectId, phaseId: String(phase._id) },
-    }).catch(() => null)
+    try {
+      await notifyUsers(await phaseAdminRecipients(project), {
+        type: 'PHASE_REVISION_REQUESTED',
+        title: `Retouches demandées — ${project.name}`,
+        message: `${req.user!.name} a demandé des retouches sur l’étape « ${phase.title} ».`,
+        link: `/admin/projets/${projectId}?tab=phases`,
+        metadata: { projectId, phaseId: String(phase._id) },
+      })
+    } catch (err) {
+      logger.warn(
+        { data: { phaseId: String(phase._id), err: (err as Error).message } },
+        '[phases] notification retouches',
+      )
+    }
 
     await logActivity({
       project: projectId,
