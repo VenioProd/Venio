@@ -44,7 +44,9 @@
     "VIEW_DEV": "view_dev",
     "MANAGE_DEV": "manage_dev",
     "VIEW_EDUCATION": "view_education",
-    "MANAGE_EDUCATION": "manage_education"
+    "MANAGE_EDUCATION": "manage_education",
+    "VIEW_WEBHOOKS": "view_webhooks",
+    "MANAGE_WEBHOOKS": "manage_webhooks"
   },
   "rolePermissions": {
     "SUPER_ADMIN": [
@@ -77,7 +79,9 @@
       "view_dev",
       "manage_dev",
       "view_education",
-      "manage_education"
+      "manage_education",
+      "view_webhooks",
+      "manage_webhooks"
     ],
     "ADMIN": [
       "manage_clients",

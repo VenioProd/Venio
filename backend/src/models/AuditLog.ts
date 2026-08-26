@@ -64,6 +64,13 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'QUOTE_PROPOSAL_VIEWED',
         'QUOTE_PROPOSAL_SIGNED',
         'QUOTE_PROPOSAL_EXPIRED',
+        // ── Webhooks sortants ──
+        'WEBHOOK_ENDPOINT_CREATE',
+        'WEBHOOK_ENDPOINT_UPDATE',
+        'WEBHOOK_ENDPOINT_DELETE',
+        'WEBHOOK_ENDPOINT_ROTATE',
+        'WEBHOOK_TEST_SENT',
+        'WEBHOOK_DELIVERY_REPLAY',
       ],
     },
     ip: { type: String, default: '' },

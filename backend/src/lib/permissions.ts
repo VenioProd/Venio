@@ -45,6 +45,9 @@ export const PERMISSIONS: Record<string, Permission> = {
   // ── Education (workspace pédagogique type Notion) ──
   VIEW_EDUCATION: 'view_education',
   MANAGE_EDUCATION: 'manage_education',
+  // ── Webhooks sortants ──
+  VIEW_WEBHOOKS: 'view_webhooks',
+  MANAGE_WEBHOOKS: 'manage_webhooks',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {

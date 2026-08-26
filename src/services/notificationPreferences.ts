@@ -16,6 +16,8 @@ export type NotificationType =
   | 'TICKET_CREATED'
   | 'TICKET_REPLY'
   | 'INTERNAL_MESSAGE'
+  | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'WEBHOOK_TEST'
 
 export interface PreferencesResponse {
   preferences: Record<NotificationType, ChannelPreferences>
@@ -27,7 +29,7 @@ export async function fetchNotificationPreferences(): Promise<PreferencesRespons
 }
 
 export async function updateNotificationPreferences(
-  preferences: Partial<Record<NotificationType, Partial<ChannelPreferences>>>
+  preferences: Partial<Record<NotificationType, Partial<ChannelPreferences>>>,
 ): Promise<PreferencesResponse> {
   return apiFetch<PreferencesResponse>('/api/notification-preferences', {
     method: 'PATCH',
@@ -63,5 +65,13 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string;
   INTERNAL_MESSAGE: {
     label: 'Messagerie interne',
     description: 'Messages dans la messagerie interne (channels et DM).',
+  },
+  WEBHOOK_ENDPOINT_DISABLED: {
+    label: 'Webhook désactivé',
+    description: 'Un endpoint de webhook a été désactivé après des échecs répétés.',
+  },
+  WEBHOOK_TEST: {
+    label: 'Test de webhook',
+    description: 'Événement réservé aux envois de test depuis la page Webhooks.',
   },
 }

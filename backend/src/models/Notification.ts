@@ -19,6 +19,9 @@ const notificationSchema = new mongoose.Schema<INotification>(
         'DECISION_REJECTED',
         'DECISION_IMPROVEMENT',
         'SENSITIVE_ACTION_EXECUTED',
+        // ── Webhooks sortants ──
+        'WEBHOOK_ENDPOINT_DISABLED',
+        'WEBHOOK_TEST',
       ],
       required: true,
     },

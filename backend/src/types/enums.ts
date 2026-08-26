@@ -133,6 +133,9 @@ export type NotificationType =
   // Briefs (mission briefs)
   | 'BRIEF_ASSIGNED'
   | 'BRIEF_STATUS_CHANGED'
+  // Webhooks sortants
+  | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'WEBHOOK_TEST'
 
 // ─── Audit ───
 export type AuditAction =
@@ -191,6 +194,13 @@ export type AuditAction =
   | 'QUOTE_PROPOSAL_VIEWED'
   | 'QUOTE_PROPOSAL_SIGNED'
   | 'QUOTE_PROPOSAL_EXPIRED'
+  // ── Webhooks sortants ──
+  | 'WEBHOOK_ENDPOINT_CREATE'
+  | 'WEBHOOK_ENDPOINT_UPDATE'
+  | 'WEBHOOK_ENDPOINT_DELETE'
+  | 'WEBHOOK_ENDPOINT_ROTATE'
+  | 'WEBHOOK_TEST_SENT'
+  | 'WEBHOOK_DELIVERY_REPLAY'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'
@@ -233,6 +243,9 @@ export type Permission =
   // ── Education (workspace pédagogique type Notion) ──
   | 'view_education'
   | 'manage_education'
+  // ── Webhooks sortants ──
+  | 'view_webhooks'
+  | 'manage_webhooks'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'
