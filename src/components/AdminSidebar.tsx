@@ -39,6 +39,7 @@ import {
   Inbox,
   LogOut,
   User,
+  Webhook,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -93,6 +94,7 @@ const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
   health: ShieldCheck,
   decisions: ClipboardCheck,
   guide: HelpCircle,
+  webhooks: Webhook,
 }
 
 function getVisibleSections(user: ReturnType<typeof useAuth>['user']): NavSection[] {

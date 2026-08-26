@@ -113,8 +113,8 @@ describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
   const frontValues = Object.values(PERMISSIONS) as string[]
   const frontKeys = Object.keys(PERMISSIONS)
 
-  it('has exactly 32 permissions', () => {
-    expect(frontValues.length).toBe(32)
+  it('has exactly 36 permissions', () => {
+    expect(frontValues.length).toBe(36)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
@@ -135,8 +135,8 @@ describe('Backend PERMISSIONS (backend/src/lib/permissions.ts)', () => {
   const backendSrc = readFileSync(resolve(__dirname, '../../../backend/src/lib/permissions.ts'), 'utf-8')
   const { keys: backendKeys, values: backendValues } = parseBackendPermissions(backendSrc)
 
-  it('has exactly 32 permissions', () => {
-    expect(backendValues.length).toBe(32)
+  it('has exactly 36 permissions', () => {
+    expect(backendValues.length).toBe(36)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
