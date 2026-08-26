@@ -5,6 +5,7 @@ import { sendPushToUser } from './webPush.js'
 import { shouldNotify } from './notificationPreferences.js'
 import { getIo } from '../realtime/ioSingleton.js'
 import logger from './logger.js'
+import { emitWebhookEventInBackground } from './webhookEvents.js'
 
 interface CreateNotificationParams {
   recipient: Types.ObjectId | string
@@ -19,6 +20,12 @@ interface CreateNotificationParams {
    * lieu de créer une nouvelle ligne et un nouveau push.
    */
   dedupeKey?: string
+  /**
+   * Réservé aux broadcasts de notifyHelpers : ils émettent l'événement
+   * sortant UNE fois pour tout le fan-out, donc chaque createNotification
+   * interne doit rester muet côté webhooks.
+   */
+  skipWebhook?: boolean
 }
 
 export async function createNotification({
@@ -29,6 +36,7 @@ export async function createNotification({
   link,
   metadata,
   dedupeKey,
+  skipWebhook,
 }: CreateNotificationParams) {
   if (!recipient) return null
 
@@ -135,6 +143,14 @@ export async function createNotification({
       .catch((err) => {
         logger.warn({ data: { recipientId, err: err?.message } }, '[notifications] push fail')
       })
+  }
+
+  // Pipeline sortant. Règle 1 : les broadcasts ont déjà émis pour tout le
+  // fan-out. Règle 4 : une alerte à dedupeKey ne réémet que si une ligne a
+  // été créée. Règle 3 : sans dedupeKey, on émet même si la préférence
+  // in-app a empêché la création — le filtre du pipeline, c'est eventTypes.
+  if (!skipWebhook && (!normalizedDedupeKey || created)) {
+    emitWebhookEventInBackground({ type, title, message, link, metadata })
   }
 
   return notification

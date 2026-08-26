@@ -48,7 +48,9 @@
     "VIEW_DEV": "view_dev",
     "MANAGE_DEV": "manage_dev",
     "VIEW_EDUCATION": "view_education",
-    "MANAGE_EDUCATION": "manage_education"
+    "MANAGE_EDUCATION": "manage_education",
+    "VIEW_WEBHOOKS": "view_webhooks",
+    "MANAGE_WEBHOOKS": "manage_webhooks"
   },
   "rolePermissions": {
     "SUPER_ADMIN": [
@@ -85,7 +87,9 @@
       "view_education",
       "manage_education",
       "view_change_requests",
-      "manage_change_requests"
+      "manage_change_requests",
+      "view_webhooks",
+      "manage_webhooks"
     ],
     "ADMIN": [
       "manage_clients",
@@ -449,6 +453,14 @@
       "screen": "/admin/guide",
       "label": "Guide",
       "permission": null,
+      "roles": []
+    },
+    {
+      "id": "webhooks",
+      "section": "Admin",
+      "screen": "/admin/webhooks",
+      "label": "Webhooks",
+      "permission": "view_webhooks",
       "roles": []
     }
   ],

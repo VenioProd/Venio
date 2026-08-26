@@ -1,5 +1,6 @@
 import User from '../models/User.js'
 import { createNotification } from './notifications.js'
+import { emitWebhookEventInBackground } from './webhookEvents.js'
 import type { NotificationType } from '../types/enums.js'
 import type { Types } from 'mongoose'
 
@@ -25,6 +26,9 @@ export async function notifySuperAdmins({
   excludeUserId,
   dedupeKey,
 }: BroadcastParams) {
+  // Un événement logique = une livraison par endpoint, pas une par
+  // destinataire : on émet ici, les createNotification en aval sont muets.
+  emitWebhookEventInBackground({ type, title, message, link, metadata })
   const admins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
   await Promise.allSettled(
     admins
@@ -38,6 +42,7 @@ export async function notifySuperAdmins({
           link,
           metadata,
           dedupeKey,
+          skipWebhook: true,
         }),
       ),
   )
@@ -47,6 +52,9 @@ export async function notifySuperAdmins({
  * Notifie tous les admins internes actifs (SUPER_ADMIN + ADMIN + RH + VIEWER).
  */
 export async function notifyInternalAdmins({ type, title, message, link, metadata, excludeUserId }: BroadcastParams) {
+  // Un événement logique = une livraison par endpoint, pas une par
+  // destinataire : on émet ici, les createNotification en aval sont muets.
+  emitWebhookEventInBackground({ type, title, message, link, metadata })
   const admins = await User.find({
     role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH', 'VIEWER'] },
     isActive: true,
@@ -64,6 +72,7 @@ export async function notifyInternalAdmins({ type, title, message, link, metadat
           message,
           link,
           metadata,
+          skipWebhook: true,
         }),
       ),
   )
@@ -76,6 +85,15 @@ export async function notifyUsers(
   userIds: Array<string | Types.ObjectId | null | undefined>,
   params: Omit<BroadcastParams, 'excludeUserId'> & { excludeUserId?: string },
 ) {
+  // Idem : une seule émission pour l'ensemble des destinataires visés.
+  emitWebhookEventInBackground({
+    type: params.type,
+    title: params.title,
+    message: params.message,
+    link: params.link,
+    metadata: params.metadata,
+  })
+
   const cleanIds = Array.from(
     new Set(userIds.filter((id): id is string | Types.ObjectId => Boolean(id)).map((id) => String(id))),
   ).filter((id) => !params.excludeUserId || id !== params.excludeUserId)
@@ -89,6 +107,7 @@ export async function notifyUsers(
         message: params.message,
         link: params.link,
         metadata: params.metadata,
+        skipWebhook: true,
       }),
     ),
   )

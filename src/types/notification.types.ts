@@ -1,4 +1,13 @@
-export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'PROJECT_UPDATE' | 'DOCUMENT_ADDED' | 'TICKET_CREATED' | 'TICKET_REPLY' | 'INTERNAL_MESSAGE'
+export type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'TASK_UPDATED'
+  | 'PROJECT_UPDATE'
+  | 'DOCUMENT_ADDED'
+  | 'TICKET_CREATED'
+  | 'TICKET_REPLY'
+  | 'INTERNAL_MESSAGE'
+  | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'WEBHOOK_TEST'
 
 export interface AppNotification {
   _id: string

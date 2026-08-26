@@ -33,6 +33,8 @@ export type Permission =
   | 'manage_dev'
   | 'view_education'
   | 'manage_education'
+  | 'view_webhooks'
+  | 'manage_webhooks'
 
 export interface User {
   _id: string

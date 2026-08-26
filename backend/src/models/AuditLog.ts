@@ -70,6 +70,13 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'CHANGE_REQUEST_REFUSED',
         'CHANGE_REQUEST_PLANNED',
         'CHANGE_REQUEST_STATUS_CHANGED',
+        // ── Webhooks sortants ──
+        'WEBHOOK_ENDPOINT_CREATE',
+        'WEBHOOK_ENDPOINT_UPDATE',
+        'WEBHOOK_ENDPOINT_DELETE',
+        'WEBHOOK_ENDPOINT_ROTATE',
+        'WEBHOOK_TEST_SENT',
+        'WEBHOOK_DELIVERY_REPLAY',
       ],
     },
     ip: { type: String, default: '' },

@@ -43,6 +43,8 @@ const CANONICAL_VALUES = [
   'manage_dev',
   'view_education',
   'manage_education',
+  'view_webhooks',
+  'manage_webhooks',
 ]
 
 const CANONICAL_KEYS = [
@@ -80,6 +82,8 @@ const CANONICAL_KEYS = [
   'MANAGE_DEV',
   'VIEW_EDUCATION',
   'MANAGE_EDUCATION',
+  'VIEW_WEBHOOKS',
+  'MANAGE_WEBHOOKS',
 ]
 
 // --------------------------------------------------------------------------

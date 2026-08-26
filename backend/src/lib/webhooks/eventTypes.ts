@@ -1,0 +1,64 @@
+import type { NotificationType } from '../../types/enums.js'
+
+/**
+ * Catalogue des types d'événement abonnables par un endpoint, servi à l'UI
+ * admin pour le sélecteur de filtre.
+ *
+ * Typé `NotificationType[]` : ajouter ici un type qui n'existe pas dans
+ * l'union casse la compilation, ce qui évite une dérive silencieuse entre le
+ * catalogue et les types réellement émis. Les types WEBHOOK_* en sont exclus
+ * par construction (anti-boucle : ils ne partent jamais dans le pipeline).
+ */
+export const WEBHOOK_EVENT_TYPE_CATALOG: NotificationType[] = [
+  'TASK_ASSIGNED',
+  'TASK_UPDATED',
+  'PROJECT_UPDATE',
+  'DOCUMENT_ADDED',
+  'TICKET_CREATED',
+  'TICKET_REPLY',
+  'TICKET_STATUS_CHANGED',
+  'TICKET_ASSIGNED',
+  'INTERNAL_MESSAGE',
+  'DECISION_SUBMITTED',
+  'DECISION_APPROVED',
+  'DECISION_REJECTED',
+  'DECISION_IMPROVEMENT',
+  'INTERN_CREATED',
+  'INTERN_REPORT_SUBMITTED',
+  'INTERN_REPORT_UPDATED',
+  'INTERN_CONVENTION_ADDED',
+  'INTERN_CREDENTIALS_SENT',
+  'INTERNAL_PROJECT_CREATED',
+  'INTERNAL_MISSION_ASSIGNED',
+  'INTERNAL_MISSION_REVIEW_REQUESTED',
+  'INTERNAL_MISSION_VALIDATED',
+  'INTERNAL_MISSION_FILE_ADDED',
+  'BILLING_QUOTE_CREATED',
+  'BILLING_INVOICE_CREATED',
+  'BILLING_DOCUMENT_SENT',
+  'BILLING_DOCUMENT_PAID',
+  'CRM_LEAD_CREATED',
+  'CRM_LEAD_ASSIGNED',
+  'CRM_LEAD_STATUS_CHANGED',
+  'CRM_LEAD_CONVERTED',
+  'DEV_ISSUE_ASSIGNED',
+  'DEV_ISSUE_STATUS_CHANGED',
+  'QUALIOPI_INDICATOR_UPDATED',
+  'QUALIOPI_QUESTIONNAIRE_RECEIVED',
+  'CLIENT_CREATED',
+  'CLIENT_NOTE_ADDED',
+  'PROJECT_ITEM_CREATED',
+  'PROJECT_ITEM_VALIDATED',
+  'TOOL_ACCESS_GRANTED',
+  'RESOURCE_REQUESTED',
+  'ADMIN_CREATED',
+  'ADMIN_ROLE_CHANGED',
+  'ADMIN_PERMISSIONS_CHANGED',
+  'TWO_FACTOR_ENABLED',
+  'TWO_FACTOR_DISABLED',
+  'AGENT_TOKEN_CREATED',
+  'AGENT_TOKEN_REVOKED',
+  'SENSITIVE_ACTION_EXECUTED',
+  'BRIEF_ASSIGNED',
+  'BRIEF_STATUS_CHANGED',
+]

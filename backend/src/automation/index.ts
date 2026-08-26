@@ -66,6 +66,9 @@ import { register as registerNextcloudArchiveCompleted } from './jobs/nextcloudA
 // Interns
 import { register as registerInternReportReminder } from './jobs/internReportReminder.js'
 
+// Webhooks sortants
+import { register as registerWebhookDeliveryRetry } from './jobs/webhookDeliveryRetry.js'
+
 import { startAutomationScheduler, stopAutomationScheduler } from './scheduler.js'
 import { getAllAutomations } from './registry.js'
 import logger from '../lib/logger.js'
@@ -140,6 +143,9 @@ export function initAutomationEngine(): void {
 
   // ── Interns ───────────────────────────────────────────────
   registerInternReportReminder()
+
+  // ── Webhooks sortants ─────────────────────────────────────
+  registerWebhookDeliveryRetry()
 
   const registered = getAllAutomations()
   logger.info(`[AUTOMATION] ${registered.length} automation(s) registered:`)

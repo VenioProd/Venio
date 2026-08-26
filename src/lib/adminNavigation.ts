@@ -67,6 +67,7 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   agents: 'Administration',
   health: 'Administration',
   subsidiaries: 'Administration',
+  webhooks: 'Administration',
 }
 
 export interface NavigationZone {

@@ -29,6 +29,9 @@ const notificationSchema = new mongoose.Schema<INotification>(
         'CHANGE_REQUEST_DELIVERED',
         'CHANGE_REQUEST_PLANNED',
         'CLIENT_FILE_UPLOADED',
+        // ── Webhooks sortants ──
+        'WEBHOOK_ENDPOINT_DISABLED',
+        'WEBHOOK_TEST',
       ],
       required: true,
     },

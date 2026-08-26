@@ -160,6 +160,9 @@ export type NotificationType =
   | 'CHANGE_REQUEST_DELIVERED'
   | 'CHANGE_REQUEST_PLANNED'
   | 'CLIENT_FILE_UPLOADED'
+  // Webhooks sortants
+  | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'WEBHOOK_TEST'
 
 // ─── Audit ───
 export type AuditAction =
@@ -224,6 +227,13 @@ export type AuditAction =
   | 'CHANGE_REQUEST_REFUSED'
   | 'CHANGE_REQUEST_PLANNED'
   | 'CHANGE_REQUEST_STATUS_CHANGED'
+  // ── Webhooks sortants ──
+  | 'WEBHOOK_ENDPOINT_CREATE'
+  | 'WEBHOOK_ENDPOINT_UPDATE'
+  | 'WEBHOOK_ENDPOINT_DELETE'
+  | 'WEBHOOK_ENDPOINT_ROTATE'
+  | 'WEBHOOK_TEST_SENT'
+  | 'WEBHOOK_DELIVERY_REPLAY'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'
@@ -271,6 +281,9 @@ export type Permission =
   // ── Demandes de changement client ──
   | 'view_change_requests'
   | 'manage_change_requests'
+  // ── Webhooks sortants ──
+  | 'view_webhooks'
+  | 'manage_webhooks'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'

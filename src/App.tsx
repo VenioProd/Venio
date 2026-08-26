@@ -109,6 +109,7 @@ const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 const SubsidiaryList = lazy(() => import('./pages/admin/SubsidiaryList'))
 const SubsidiaryDetail = lazy(() => import('./pages/admin/SubsidiaryDetail'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
+const Webhooks = lazy(() => import('./pages/admin/Webhooks'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
 const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
@@ -309,6 +310,16 @@ function App() {
                     element={
                       <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
                         <AgentTokensList />
+                      </RequirePermission>
+                    }
+                  />
+
+                  {/* Webhooks sortants (pipeline d'événements vers Kuro) */}
+                  <Route
+                    path="webhooks"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_WEBHOOKS} redirectTo="/admin">
+                        <Webhooks />
                       </RequirePermission>
                     }
                   />

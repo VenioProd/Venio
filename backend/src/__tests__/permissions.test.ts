@@ -44,6 +44,9 @@ describe('permissions module', () => {
         // Education workspace (workspace pédagogique type Notion)
         'VIEW_EDUCATION',
         'MANAGE_EDUCATION',
+        // Webhooks sortants
+        'VIEW_WEBHOOKS',
+        'MANAGE_WEBHOOKS',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })

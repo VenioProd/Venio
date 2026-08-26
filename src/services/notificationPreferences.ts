@@ -19,6 +19,8 @@ export type NotificationType =
   | 'PHASE_VALIDATION_REQUESTED'
   | 'PHASE_VALIDATED'
   | 'PHASE_REVISION_REQUESTED'
+  | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'WEBHOOK_TEST'
 
 export interface PreferencesResponse {
   preferences: Record<NotificationType, ChannelPreferences>
@@ -78,5 +80,13 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string;
   PHASE_REVISION_REQUESTED: {
     label: 'Retouches demandées',
     description: 'Un client a demandé des retouches sur une étape.',
+  },
+  WEBHOOK_ENDPOINT_DISABLED: {
+    label: 'Webhook désactivé',
+    description: 'Un endpoint de webhook a été désactivé après des échecs répétés.',
+  },
+  WEBHOOK_TEST: {
+    label: 'Test de webhook',
+    description: 'Événement réservé aux envois de test depuis la page Webhooks.',
   },
 }

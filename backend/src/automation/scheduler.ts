@@ -14,10 +14,19 @@ let lastFailureAt: string | null = null
 
 /**
  * Parse schedule string and check if it should run now.
- * Supports: "HH:MM", "monday:HH:MM", "daily HH:MM"
+ * Supports: "HH:MM", "monday:HH:MM", "daily HH:MM", "* * * * *", "*\/N * * * *"
  */
-function shouldRunNow(schedule: string | undefined, now: Date): boolean {
+export function shouldRunNow(schedule: string | undefined, now: Date): boolean {
   if (!schedule) return false
+
+  // Expressions cron à la minute : le tick du scheduler étant de 60 s, une
+  // expression "* * * * *" est due à chaque passage, "*/N" une minute sur N.
+  const everyMinute = schedule.match(/^\*(?:\/(\d{1,2}))?\s+\*\s+\*\s+\*\s+\*$/)
+  if (everyMinute) {
+    const step = Number(everyMinute[1] || 1)
+    if (!Number.isFinite(step) || step <= 1) return true
+    return now.getMinutes() % step === 0
+  }
 
   const hours = now.getHours()
   const minutes = now.getMinutes()
