@@ -69,6 +69,15 @@ export type ActivityAction =
   | 'ITEM_DELETED'
   | 'UPDATE_POSTED'
   | 'BILLING_CREATED'
+  // Étapes de production (pipeline projet)
+  | 'PHASE_CREATED'
+  | 'PHASE_UPDATED'
+  | 'PHASE_DELETED'
+  | 'PHASE_STATUS_CHANGED'
+  | 'PHASE_VALIDATION_REQUESTED'
+  | 'PHASE_VALIDATED'
+  | 'PHASE_REVISION_REQUESTED'
+  | 'PHASE_REVISION_RESOLVED'
 
 // ─── Notification ───
 export type NotificationType =
@@ -134,6 +143,10 @@ export type NotificationType =
   // Briefs (mission briefs)
   | 'BRIEF_ASSIGNED'
   | 'BRIEF_STATUS_CHANGED'
+  // Étapes de production (pipeline projet)
+  | 'PHASE_VALIDATION_REQUESTED'
+  | 'PHASE_VALIDATED'
+  | 'PHASE_REVISION_REQUESTED'
 
 // ─── Audit ───
 export type AuditAction =
