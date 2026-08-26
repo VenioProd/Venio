@@ -1933,3 +1933,29 @@ div:has(> input.portal-input[type='datetime-local'])::after {
   flex-direction: column;
   gap: 10px;
 }
+
+/* ── Onglet « Étapes » du détail projet admin (réutilise les primitives ci-dessus) ── */
+.admin-phase-row {
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 0;
+}
+
+.admin-phase-items,
+.admin-phase-items-picker {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-phase-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
