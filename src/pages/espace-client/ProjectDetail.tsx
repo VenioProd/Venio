@@ -6,11 +6,13 @@ import type {
   Project,
   ProjectSection,
   ProjectItem,
+  ProjectPhase,
   ProjectUpdate,
   ProjectDocument,
   ProjectAccessRole,
 } from '../../types/project.types'
 import ItemCard from '../../components/ItemCard'
+import ClientProjectPhases from './ClientProjectPhases'
 import ClientProjectChat from '../../components/ClientProjectChat'
 import ProjectCollaborators from '../../components/ProjectCollaborators'
 import ProjectInvitations from '../../components/ProjectInvitations'
@@ -45,6 +47,7 @@ const ClientProjectDetail = () => {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
   const [sections, setSections] = useState<ProjectSection[]>([])
   const [items, setItems] = useState<ProjectItem[]>([])
+  const [phases, setPhases] = useState<ProjectPhase[]>([])
   const [taskProgress, setTaskProgress] = useState<TaskProgress | null>(null)
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
@@ -55,7 +58,7 @@ const ClientProjectDetail = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [projectData, sectionsData, itemsData, progressData, activityData] = await Promise.all([
+        const [projectData, sectionsData, itemsData, progressData, activityData, phasesData] = await Promise.all([
           apiFetch<{
             project: Project
             documents?: ProjectDocument[]
@@ -68,6 +71,7 @@ const ClientProjectDetail = () => {
           apiFetch<{ activities: ActivityEntry[] }>(`/api/projects/${id}/activity?limit=15`).catch(() => ({
             activities: [],
           })),
+          apiFetch<{ phases: ProjectPhase[] }>(`/api/projects/${id}/phases`).catch(() => ({ phases: [] })),
         ])
         setProject(projectData.project)
         setAccessRole(projectData.accessRole || 'OWNER')
@@ -77,6 +81,7 @@ const ClientProjectDetail = () => {
         setItems(itemsData.items || [])
         if (progressData) setTaskProgress(progressData)
         setActivities(activityData.activities || [])
+        setPhases(phasesData.phases || [])
       } catch (err: unknown) {
         setError((err as Error).message || 'Erreur chargement projet')
       } finally {
@@ -136,6 +141,37 @@ const ClientProjectDetail = () => {
     }
   }
 
+  const reloadPhases = useCallback(async () => {
+    const data = await apiFetch<{ phases: ProjectPhase[] }>(`/api/projects/${id}/phases`)
+    setPhases(data.phases || [])
+  }, [id])
+
+  const validatePhase = async (phaseId: string, comment: string) => {
+    setError('')
+    try {
+      await apiFetch(`/api/projects/${id}/phases/${phaseId}/validate`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      })
+      await reloadPhases()
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Validation impossible')
+    }
+  }
+
+  const requestPhaseRevision = async (phaseId: string, comment: string) => {
+    setError('')
+    try {
+      await apiFetch(`/api/projects/${id}/phases/${phaseId}/revisions`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      })
+      await reloadPhases()
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Demande de retouches impossible')
+    }
+  }
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'EN_COURS':
@@ -170,6 +206,9 @@ const ClientProjectDetail = () => {
       ITEM_CREATED: 'Élément ajouté',
       TASK_CREATED: 'Tâche créée',
       TASK_MOVED: 'Tâche déplacée',
+      PHASE_STATUS_CHANGED: 'Étape mise à jour',
+      PHASE_VALIDATED: 'Étape validée',
+      PHASE_REVISION_REQUESTED: 'Retouches demandées',
     }
     return labels[action] || action
   }
@@ -182,6 +221,9 @@ const ClientProjectDetail = () => {
       ITEM_CREATED: '➕',
       TASK_CREATED: '✅',
       TASK_MOVED: '📋',
+      PHASE_STATUS_CHANGED: '🚩',
+      PHASE_VALIDATED: '✔️',
+      PHASE_REVISION_REQUESTED: '✍️',
     }
     return icons[action] || '📌'
   }
@@ -468,6 +510,14 @@ const ClientProjectDetail = () => {
 
       {activeTab === 'progress' && (
         <div className="client-project-content">
+          <ClientProjectPhases
+            phases={phases}
+            accessRole={accessRole}
+            onDownloadItem={downloadItem}
+            onValidate={validatePhase}
+            onRequestRevision={requestPhaseRevision}
+          />
+
           {/* Project Info */}
           {project && (
             <div className="client-progress-info">

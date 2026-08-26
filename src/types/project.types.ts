@@ -15,6 +15,7 @@ export type ItemStatus = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINE' | 'VALIDE'
 export type DocumentType = 'DEVIS' | 'FACTURE' | 'FICHIER_PROJET'
 export type BillingStatus = 'NON_FACTURE' | 'PARTIEL' | 'FACTURE'
 export type ProjectAccessRole = 'OWNER' | 'EDITOR' | 'VIEWER'
+export type PhaseStatus = 'A_VENIR' | 'EN_COURS' | 'EN_ATTENTE_VALIDATION' | 'TERMINEE'
 export type ProjectCollaboratorRole = 'EDITOR' | 'VIEWER'
 
 export interface ProjectCollaborator {
@@ -116,4 +117,38 @@ export interface ProjectDocument {
   _id: string
   type: string
   originalName: string
+}
+
+/** Livrable lié à une étape : peuplé partiellement selon l'appelant (admin ou client). */
+export interface PhaseLinkedItem extends Partial<ProjectItem> {
+  _id: string
+  title: string
+  type: string
+}
+
+export interface PhaseValidation {
+  validatedByName: string
+  validatedAt: string | null
+  comment: string
+}
+
+export interface PhaseRevisionRequest {
+  _id: string
+  requestedByName: string
+  comment: string
+  createdAt: string
+  resolvedAt: string | null
+}
+
+export interface ProjectPhase {
+  _id: string
+  title: string
+  description?: string
+  order: number
+  dueAt: string | null
+  status: PhaseStatus
+  requiresClientValidation: boolean
+  linkedItems: PhaseLinkedItem[]
+  validation: PhaseValidation
+  revisionRequests: PhaseRevisionRequest[]
 }
