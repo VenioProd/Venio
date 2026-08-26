@@ -602,7 +602,12 @@ const AdminProjectDetail = () => {
       )}
 
       {activeTab === 'documents' && (
-        <ProjectDocumentsTab documents={documents} canEditProjects={canEditProjects} onUpload={handleUpload} />
+        <ProjectDocumentsTab
+          documents={documents}
+          canEditProjects={canEditProjects}
+          onUpload={handleUpload}
+          projectId={id ?? ''}
+        />
       )}
 
       {activeTab === 'messages' && id && (
