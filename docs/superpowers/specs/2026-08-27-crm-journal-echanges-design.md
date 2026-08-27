@@ -112,11 +112,15 @@ seulement des destinataires a reçu le message.
 `POST /crm/leads/:id/notes`, ajouté par le chantier précédent, est remplacé par
 `POST /interactions/LEAD/:id` ; la file de travail est mise à jour en conséquence.
 
-**Migration** — `backend/scripts/migrations/003-client-notes-to-interactions.ts`, sur le modèle des
+**Migration** — `backend/scripts/migrations/003-notes-to-interactions.ts`, sur le modèle des
 deux migrations existantes : idempotente, rejouable, exécutée à la main. Elle copie chaque
 `ClientNote` en `Interaction(NOTE, CLIENT)` en conservant `content`, `pinned`, `createdBy` et
 `createdAt`, puis fait de même pour les `LeadActivity` de type `NOTE`. L'idempotence repose sur
-`migratedFrom`, qui porte l'identifiant d'origine et est indexé en `sparse`. Les documents sources
+`migratedFrom`, qui porte l'identifiant d'origine sous un index **unique partiel**
+(`partialFilterExpression: { migratedFrom: { $type: 'string' } }`) et non `sparse` : `sparse`
+n'écarte que les documents où le champ est absent, si bien qu'une valeur par défaut `null` ferait
+entrer en collision deux interactions ordinaires. La migration 002 du dépôt corrigeait déjà
+exactement ce piège sur les conversations. Les documents sources
 ne sont pas supprimés : la migration doit pouvoir être vérifiée avant qu'on efface quoi que ce soit.
 
 ### Frontend
