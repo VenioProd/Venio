@@ -30,6 +30,7 @@ import adminProjectsRouter from './routes/admin/projects/index.js'
 import adminBillingRoutes from './routes/admin/billing.js'
 import adminQuoteProposalRoutes from './routes/admin/quoteProposals.js'
 import adminCrmRoutes from './routes/admin/crm.js'
+import adminInteractionRoutes from './routes/admin/interactions.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
 import notificationPreferencesRoutes from './routes/notificationPreferences.js'
@@ -291,6 +292,7 @@ app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
 app.use('/api/admin/quote-proposals', adminQuoteProposalRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
+app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
 app.use('/api/admin/workspace', adminWorkspaceRoutes)

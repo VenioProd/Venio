@@ -23,6 +23,7 @@ import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
+import { leadScopeFilter, isLeadOutOfScope } from '../../lib/crmScope.js'
 
 const router = express.Router()
 
@@ -30,22 +31,7 @@ router.use(auth)
 router.use(requireAdmin)
 
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
-const NOTE_MAX_LENGTH = 2000
 const DEFAULT_FOLLOW_UP_DAYS = 3
-
-// Scope leads to the current commercial (SUPER_ADMIN sees all)
-function scopeFilter(req: Request): Record<string, unknown> {
-  if (req.user!.role === 'SUPER_ADMIN') return {}
-  return { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }
-}
-
-// Vrai si le lead est hors du périmètre de l'utilisateur (un non super-admin ne
-// voit que les leads qui lui sont assignés ou qu'il a créés).
-function isOutOfScope(req: Request, lead: { assignedTo?: unknown; createdBy?: unknown }): boolean {
-  if (req.user!.role === 'SUPER_ADMIN') return false
-  const userId = req.user!.id
-  return lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId
-}
 
 function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, any> {
   const payload: Record<string, any> = {}
@@ -157,7 +143,7 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const scope = scopeFilter(req)
+      const scope = leadScopeFilter(req)
       const filter: Record<string, unknown> = { ...scope }
       if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
       if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
@@ -192,7 +178,7 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const leads = await Lead.find(scopeFilter(req)).sort({ updatedAt: -1 })
+      const leads = await Lead.find(leadScopeFilter(req)).sort({ updatedAt: -1 })
       const columns = CRM_STATUSES.map((status) => ({
         status,
         leads: leads.filter((lead) => lead.status === status),
@@ -319,7 +305,7 @@ router.patch(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (isOutOfScope(req, lead)) {
+      if (isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
 
@@ -471,7 +457,7 @@ router.get(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (isOutOfScope(req, lead)) {
+      if (isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       return res.json({ lead })
@@ -491,7 +477,7 @@ router.delete(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (isOutOfScope(req, lead)) {
+      if (isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       await lead.deleteOne()
@@ -511,43 +497,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
-      if (!lead || isOutOfScope(req, lead)) {
+      if (!lead || isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       const activities = await LeadActivity.find({ leadId: req.params.id })
         .sort({ createdAt: -1 })
         .populate('actorId', 'name email')
       return res.json({ activities })
-    } catch (err) {
-      return next(err)
-    }
-  },
-)
-
-// Ajouter une note datée sur un lead. Elle vit dans LeadActivity et non dans un
-// champ texte du Lead : c'est la première brique de la timeline d'échanges.
-// Non soumise à `activityLogging`, qui ne gouverne que la journalisation
-// automatique — une note est une saisie délibérée de l'utilisateur.
-router.post(
-  '/leads/:id/notes',
-  requirePermission(PERMISSIONS.MANAGE_CRM),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
-      if (!lead || isOutOfScope(req, lead)) {
-        return res.status(404).json({ error: 'Lead not found' })
-      }
-
-      const text = String(req.body?.text ?? '').trim()
-      if (!text) {
-        return res.status(400).json({ error: 'La note ne peut pas être vide' })
-      }
-      if (text.length > NOTE_MAX_LENGTH) {
-        return res.status(400).json({ error: `La note dépasse ${NOTE_MAX_LENGTH} caractères` })
-      }
-
-      const activity = await logLeadActivity(lead._id, 'NOTE', text, {}, req.user!.id)
-      return res.status(201).json({ activity })
     } catch (err) {
       return next(err)
     }
@@ -564,7 +520,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const settings = await CrmSettings.getSettings()
-      const leads = await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...scopeFilter(req) }).lean()
+      const leads = await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) }).lean()
 
       const thresholds = {
         coldEnabled: settings.coldLeadAlertEnabled,

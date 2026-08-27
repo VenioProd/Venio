@@ -6,7 +6,7 @@ import User from '../../models/User.js'
 import Lead from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import ClientContact from '../../models/ClientContact.js'
-import ClientNote from '../../models/ClientNote.js'
+import { findClientNote, listClientNotes, logInteraction, toClientNoteShape } from '../../lib/interactions.js'
 import ClientActivity from '../../models/ClientActivity.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
@@ -153,7 +153,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -194,7 +194,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -237,7 +237,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -304,7 +304,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -312,9 +312,15 @@ router.post(
   requireScope('write:crm'),
   body('company').isString().trim().isLength({ min: 1 }).withMessage('Le nom de société est requis'),
   body('contactEmail').optional({ checkFalsy: true }).isEmail().withMessage('Email invalide'),
-  body('status').optional().isIn(CRM_STATUSES as unknown as string[]),
-  body('priority').optional().isIn(PRIORITIES as unknown as string[]),
-  body('leadTemperature').optional().isIn(TEMPERATURES as unknown as string[]),
+  body('status')
+    .optional()
+    .isIn(CRM_STATUSES as unknown as string[]),
+  body('priority')
+    .optional()
+    .isIn(PRIORITIES as unknown as string[]),
+  body('leadTemperature')
+    .optional()
+    .isIn(TEMPERATURES as unknown as string[]),
   body('budget').optional({ nullable: true }).isNumeric(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
@@ -342,7 +348,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -373,7 +379,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -398,7 +404,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -414,14 +420,12 @@ router.get(
     try {
       const client = await User.exists({ _id: req.params.id, role: 'CLIENT' })
       if (!client) return respondError(res, 404, 'NOT_FOUND', 'Client introuvable')
-      const items = await ClientContact.find({ clientId: req.params.id })
-        .sort({ isMain: -1, updatedAt: -1 })
-        .lean()
+      const items = await ClientContact.find({ clientId: req.params.id }).sort({ isMain: -1, updatedAt: -1 }).lean()
       res.json({ items })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -436,10 +440,7 @@ router.post(
       if (!client) return respondError(res, 404, 'NOT_FOUND', 'Client introuvable')
       const { firstName, lastName, email, phone, role: contactRole, isMain, notes } = req.body || {}
       if (isMain === true) {
-        await ClientContact.updateMany(
-          { clientId: req.params.id, isMain: true },
-          { $set: { isMain: false } }
-        )
+        await ClientContact.updateMany({ clientId: req.params.id, isMain: true }, { $set: { isMain: false } })
       }
       const contact = await ClientContact.create({
         clientId: req.params.id,
@@ -461,7 +462,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -490,10 +491,7 @@ router.patch(
         contact.email = typeof req.body.email === 'string' ? req.body.email.toLowerCase().trim() : ''
       }
       if (req.body.isMain === true && !contact.isMain) {
-        await ClientContact.updateMany(
-          { clientId: req.params.id, isMain: true },
-          { $set: { isMain: false } }
-        )
+        await ClientContact.updateMany({ clientId: req.params.id, isMain: true }, { $set: { isMain: false } })
         contact.isMain = true
       } else if (req.body.isMain === false) {
         contact.isMain = false
@@ -509,7 +507,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -537,7 +535,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -553,15 +551,13 @@ router.get(
     try {
       const client = await User.exists({ _id: req.params.id, role: 'CLIENT' })
       if (!client) return respondError(res, 404, 'NOT_FOUND', 'Client introuvable')
-      const items = await ClientNote.find({ clientId: req.params.id })
-        .sort({ pinned: -1, createdAt: -1 })
-        .populate('createdBy', 'name email')
-        .lean()
-      res.json({ items })
+      // Les notes vivent dans Interaction(NOTE, CLIENT) ; la forme renvoyée
+      // reste celle de l'ancien modèle ClientNote.
+      res.json({ items: await listClientNotes(req.params.id as string) })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -580,23 +576,27 @@ router.post(
       if (!admin) {
         return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN trouvé pour attribuer la note')
       }
-      const note = await ClientNote.create({
-        clientId: req.params.id,
-        content: String(req.body.content).trim(),
-        createdBy: admin._id,
+      const note = await logInteraction({
+        subjectType: 'CLIENT',
+        subjectId: req.params.id as string,
+        kind: 'NOTE',
+        body: String(req.body.content).trim(),
         pinned: Boolean(req.body.pinned),
+        author: String(admin._id),
       })
+      await note.populate('author', 'name email')
+      const shaped = toClientNoteShape(note.toObject())
       res.locals.audit = {
         entityType: 'ClientNote',
         entityId: String(note._id),
-        summary: `Ajout d'une note client (${note.content.slice(0, 60)}…)`,
-        after: note.toObject(),
+        summary: `Ajout d'une note client (${shaped.content.slice(0, 60)}…)`,
+        after: shaped,
       }
-      res.status(201).json(note.toObject())
+      res.status(201).json(shaped)
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -607,13 +607,10 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
-      const note = await ClientNote.findOne({
-        _id: req.params.noteId,
-        clientId: req.params.id,
-      })
+      const note = await findClientNote(req.params.id as string, req.params.noteId as string)
       if (!note) return respondError(res, 404, 'NOT_FOUND', 'Note introuvable')
-      const before = note.toObject()
-      await ClientNote.deleteOne({ _id: note._id })
+      const before = toClientNoteShape(note.toObject())
+      await note.deleteOne()
       res.locals.audit = {
         entityType: 'ClientNote',
         entityId: String(note._id),
@@ -623,7 +620,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -651,7 +648,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -663,29 +660,21 @@ router.get(
     try {
       const pag = parsePagination(req)
       const [items, total] = await Promise.all([
-        LeadActivity.find({ leadId: req.params.id })
-          .sort({ createdAt: -1 })
-          .skip(pag.skip)
-          .limit(pag.limit)
-          .lean(),
+        LeadActivity.find({ leadId: req.params.id }).sort({ createdAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
         LeadActivity.countDocuments({ leadId: req.params.id }),
       ])
       res.json(paginatedResponse(items, pag, total))
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
 // Sort parsing helper (whitelist par ressource)
 // ───────────────────────────────────────────────────────────────────────────
 
-function parseSort(
-  raw: unknown,
-  fallback: Record<string, 1 | -1>,
-  whitelist: string[]
-): Record<string, 1 | -1> {
+function parseSort(raw: unknown, fallback: Record<string, 1 | -1>, whitelist: string[]): Record<string, 1 | -1> {
   if (typeof raw !== 'string' || !raw) return fallback
   const desc = raw.startsWith('-')
   const field = desc ? raw.slice(1) : raw

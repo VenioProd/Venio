@@ -145,45 +145,8 @@ describe('GET /api/admin/crm/worklist', () => {
   })
 })
 
-describe('POST /api/admin/crm/leads/:id/notes', () => {
-  it('crée une LeadActivity de type NOTE attribuée à son auteur', async () => {
-    const { default: LeadActivity } = await import('../models/LeadActivity.js')
-    const lead = await createLead()
-
-    actAs(commercialId, 'COMMERCIAL')
-    const response = await request(app)
-      .post(`/api/admin/crm/leads/${lead._id}/notes`)
-      .send({ text: '  Rappelé, rappeler lundi  ' })
-      .expect(201)
-
-    expect(response.body.activity.type).toBe('NOTE')
-    const stored = await LeadActivity.find({ leadId: lead._id })
-    expect(stored).toHaveLength(1)
-    expect(stored[0].label).toBe('Rappelé, rappeler lundi')
-    expect(stored[0].actorId?.toString()).toBe(commercialId.toString())
-  })
-
-  it('refuse une note vide', async () => {
-    const lead = await createLead()
-    actAs(commercialId, 'COMMERCIAL')
-    await request(app).post(`/api/admin/crm/leads/${lead._id}/notes`).send({ text: '   ' }).expect(400)
-  })
-
-  it('refuse une note trop longue', async () => {
-    const lead = await createLead()
-    actAs(commercialId, 'COMMERCIAL')
-    await request(app)
-      .post(`/api/admin/crm/leads/${lead._id}/notes`)
-      .send({ text: 'a'.repeat(2001) })
-      .expect(400)
-  })
-
-  it('renvoie 404 sur un lead hors du périmètre du commercial', async () => {
-    const lead = await createLead({ assignedTo: otherCommercialId })
-    actAs(commercialId, 'COMMERCIAL')
-    await request(app).post(`/api/admin/crm/leads/${lead._id}/notes`).send({ text: 'Coucou' }).expect(404)
-  })
-})
+// Les notes de lead ont migré vers POST /api/admin/interactions/LEAD/:id
+// (chantier « journal des échanges ») : voir interactions-routes.test.ts.
 
 describe('GET /api/admin/crm/leads/:id/activities', () => {
   it('renvoie 404 sur un lead hors du périmètre du commercial', async () => {
