@@ -9,18 +9,22 @@ import { sendLeadAssignmentEmail } from './email.js'
 // For production, consider storing in DB or Redis
 let lastAssignedIndex = -1
 
-interface LeadData {
+export interface LeadSignalFields {
+  status?: string
+  priority?: string
+  score?: number | null
+  nextActionAt?: Date | string | null
+  lastContactAt?: Date | string | null
+  statusChangedAt?: Date | string | null
+}
+
+interface LeadData extends LeadSignalFields {
   company: string
   contactName?: string
   contactEmail?: string
   contactPhone?: string
   source?: string
-  status?: string
-  priority?: string
   budget?: number | null
-  lastContactAt?: Date | string | null
-  statusChangedAt?: Date | string | null
-  nextActionAt?: Date | string | null
   updatedAt?: Date | string | null
   notes?: string
   serviceType?: string
@@ -113,10 +117,10 @@ export function shouldAutoQualify(lead: LeadData): boolean {
 /**
  * Check if a lead is "cold" (no contact for X days)
  */
-export function isLeadCold(lead: LeadData, days: number = 7): boolean {
+export function isLeadCold(lead: LeadSignalFields, days: number = 7, now: Date = new Date()): boolean {
   if (!lead.lastContactAt) return false
   if (lead.status && ['WON', 'LOST'].includes(lead.status)) return false
-  const threshold = new Date()
+  const threshold = new Date(now)
   threshold.setDate(threshold.getDate() - days)
   return new Date(lead.lastContactAt) < threshold
 }
@@ -124,10 +128,10 @@ export function isLeadCold(lead: LeadData, days: number = 7): boolean {
 /**
  * Check if a lead is "stale" (stuck in same status for X days)
  */
-export function isLeadStale(lead: LeadData, days: number = 14): boolean {
+export function isLeadStale(lead: LeadSignalFields, days: number = 14, now: Date = new Date()): boolean {
   if (!lead.statusChangedAt) return false
   if (lead.status && ['WON', 'LOST'].includes(lead.status)) return false
-  const threshold = new Date()
+  const threshold = new Date(now)
   threshold.setDate(threshold.getDate() - days)
   return new Date(lead.statusChangedAt) < threshold
 }
@@ -135,7 +139,7 @@ export function isLeadStale(lead: LeadData, days: number = 14): boolean {
 /**
  * Get number of days since last contact
  */
-export function getDaysSinceContact(lead: LeadData): number | null {
+export function getDaysSinceContact(lead: LeadSignalFields): number | null {
   if (!lead.lastContactAt) return null
   const now = new Date()
   const lastContact = new Date(lead.lastContactAt)
@@ -145,7 +149,7 @@ export function getDaysSinceContact(lead: LeadData): number | null {
 /**
  * Get number of days since status change
  */
-export function getDaysSinceStatusChange(lead: LeadData): number | null {
+export function getDaysSinceStatusChange(lead: LeadSignalFields): number | null {
   if (!lead.statusChangedAt) return null
   const now = new Date()
   const statusChanged = new Date(lead.statusChangedAt)
@@ -155,10 +159,109 @@ export function getDaysSinceStatusChange(lead: LeadData): number | null {
 /**
  * Check if lead has overdue next action
  */
-export function isNextActionOverdue(lead: LeadData): boolean {
+export function isNextActionOverdue(lead: LeadSignalFields, now: Date = new Date()): boolean {
   if (!lead.nextActionAt) return false
   if (lead.status && ['WON', 'LOST'].includes(lead.status)) return false
-  return new Date(lead.nextActionAt) < new Date()
+  return new Date(lead.nextActionAt) < now
+}
+
+/**
+ * Réglages d'alerte lus par la file de travail. Sous-ensemble de CrmSettings :
+ * la file n'a pas besoin du reste, et ce typage étroit permet de la tester
+ * sans construire un document Mongoose complet.
+ */
+export interface WorklistSettings {
+  coldLeadAlertEnabled: boolean
+  coldLeadThresholdDays: number
+  overdueAlertEnabled: boolean
+  staleLeadAlertEnabled: boolean
+  staleLeadThresholdDays: number
+}
+
+export interface WorklistGroups<T> {
+  overdue: T[]
+  today: T[]
+  upcoming: T[]
+  drifting: T[]
+}
+
+/** Fenêtre du groupe « à venir », en jours après aujourd'hui. */
+const UPCOMING_WINDOW_DAYS = 7
+
+const PRIORITY_RANK: Record<string, number> = { URGENTE: 0, HAUTE: 1, NORMALE: 2, BASSE: 3 }
+const DEFAULT_PRIORITY_RANK = PRIORITY_RANK.NORMALE
+
+function compareWorklistLeads(a: LeadSignalFields, b: LeadSignalFields): number {
+  // Les leads sans échéance passent après ceux qui en ont une.
+  const dueA = a.nextActionAt ? new Date(a.nextActionAt).getTime() : Number.POSITIVE_INFINITY
+  const dueB = b.nextActionAt ? new Date(b.nextActionAt).getTime() : Number.POSITIVE_INFINITY
+  if (dueA !== dueB) return dueA - dueB
+
+  const rankA = PRIORITY_RANK[a.priority ?? ''] ?? DEFAULT_PRIORITY_RANK
+  const rankB = PRIORITY_RANK[b.priority ?? ''] ?? DEFAULT_PRIORITY_RANK
+  if (rankA !== rankB) return rankA - rankB
+
+  return (b.score ?? 0) - (a.score ?? 0)
+}
+
+/**
+ * Range les leads actifs dans les quatre groupes de la file de travail
+ * commerciale, en appliquant les seuils configurés dans CrmSettings.
+ *
+ * Un lead n'apparaît que dans un seul groupe : son échéance le classe en
+ * priorité, et il ne retombe dans « dérive » que si aucune échéance ne l'a
+ * déjà pris en charge. Un retard dont l'alerte est désactivée reste donc
+ * candidat à la dérive s'il est froid ou bloqué par ailleurs — désactiver
+ * une alerte n'en éteint pas une autre.
+ *
+ * Les bornes de « aujourd'hui » sont celles du jour civil local, et non un
+ * delta de 24 h : sinon une échéance fixée ce matin basculerait en retard
+ * selon l'heure à laquelle le commercial ouvre sa file.
+ */
+export function buildWorklist<T extends LeadSignalFields>(
+  leads: T[],
+  settings: WorklistSettings,
+  now: Date = new Date(),
+): WorklistGroups<T> {
+  const startOfToday = new Date(now)
+  startOfToday.setHours(0, 0, 0, 0)
+  const startOfTomorrow = new Date(startOfToday)
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1)
+  const endOfWindow = new Date(startOfToday)
+  endOfWindow.setDate(endOfWindow.getDate() + UPCOMING_WINDOW_DAYS + 1)
+
+  const groups: WorklistGroups<T> = { overdue: [], today: [], upcoming: [], drifting: [] }
+
+  for (const lead of leads) {
+    if (lead.status && ['WON', 'LOST'].includes(lead.status)) continue
+
+    const due = lead.nextActionAt ? new Date(lead.nextActionAt) : null
+    if (due && !Number.isNaN(due.getTime())) {
+      if (due < startOfToday) {
+        if (settings.overdueAlertEnabled) {
+          groups.overdue.push(lead)
+          continue
+        }
+      } else if (due < startOfTomorrow) {
+        groups.today.push(lead)
+        continue
+      } else if (due < endOfWindow) {
+        groups.upcoming.push(lead)
+        continue
+      }
+    }
+
+    const isCold = settings.coldLeadAlertEnabled && isLeadCold(lead, settings.coldLeadThresholdDays, now)
+    const isStale = settings.staleLeadAlertEnabled && isLeadStale(lead, settings.staleLeadThresholdDays, now)
+    if (isCold || isStale) groups.drifting.push(lead)
+  }
+
+  groups.overdue.sort(compareWorklistLeads)
+  groups.today.sort(compareWorklistLeads)
+  groups.upcoming.sort(compareWorklistLeads)
+  groups.drifting.sort(compareWorklistLeads)
+
+  return groups
 }
 
 /**
@@ -236,7 +339,7 @@ export async function checkDuplicateLead(
     const normalizedPhone = leadData.contactPhone.replace(/[\s.()-]/g, '')
     if (normalizedPhone.length >= 8) {
       conditions.push({
-        contactPhone: { $regex: new RegExp(escapeRegex(normalizedPhone).replace(/^0/, '(0|\\+33)'), 'i') }
+        contactPhone: { $regex: new RegExp(escapeRegex(normalizedPhone).replace(/^0/, '(0|\\+33)'), 'i') },
       })
     }
   }

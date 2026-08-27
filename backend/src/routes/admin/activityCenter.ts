@@ -9,6 +9,13 @@ import InternalConversationMember from '../../models/InternalConversationMember.
 import InternalConversation from '../../models/InternalConversation.js'
 import InternalMessage from '../../models/InternalMessage.js'
 import Lead from '../../models/Lead.js'
+import CrmSettings from '../../models/CrmSettings.js'
+import {
+  buildWorklist,
+  type LeadSignalFields,
+  getDaysSinceContact,
+  getDaysSinceStatusChange,
+} from '../../lib/crmAutomations.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import Project from '../../models/Project.js'
 import Task from '../../models/Task.js'
@@ -41,8 +48,10 @@ function takePage<T>(documents: T[], limit: number): { entries: T[]; hasMore: bo
   return { entries: documents.slice(0, limit), hasMore: documents.length > limit }
 }
 
-function formatDate(value: Date | null | undefined): string {
-  return value ? value.toISOString() : ''
+function formatDate(value: Date | string | null | undefined): string {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString()
 }
 
 async function getPermissions(req: Request): Promise<Set<string>> {
@@ -127,34 +136,55 @@ async function getOverdueTasks(limit: number): Promise<ActivitySection> {
   }
 }
 
-async function getOverdueLeads(
+// Partage la logique de la file de travail du CRM plutôt que de recoder un
+// « en retard » avec ses propres seuils : le Centre d'activité remonte donc les
+// relances dues ET les leads qui dérivent, selon les seuils configurés.
+async function getCrmWorklist(
   userId: mongoose.Types.ObjectId,
   isSuperAdmin: boolean,
   limit: number,
 ): Promise<ActivitySection> {
+  const href = '/admin/crm?mode=file'
+  const settings = await CrmSettings.getSettings()
   const leads = await Lead.find({
-    nextActionAt: { $lte: new Date(), $ne: null },
     status: { $nin: ['WON', 'LOST'] },
     ...(isSuperAdmin ? {} : { $or: [{ assignedTo: userId }, { createdBy: userId }] }),
   })
-    .sort({ nextActionAt: 1 })
-    .limit(limit + 1)
-    .select('company contactName nextActionAt priority')
+    .select('company contactName status priority score nextActionAt lastContactAt statusChangedAt')
     .lean()
-  const page = takePage(leads, limit)
+
+  const groups = buildWorklist(leads, {
+    coldLeadAlertEnabled: settings.coldLeadAlertEnabled,
+    coldLeadThresholdDays: settings.coldLeadThresholdDays,
+    overdueAlertEnabled: settings.overdueAlertEnabled,
+    staleLeadAlertEnabled: settings.staleLeadAlertEnabled,
+    staleLeadThresholdDays: settings.staleLeadThresholdDays,
+  })
+
+  // Les retards d'abord : ce sont les seules entrées réellement dues.
+  const page = takePage([...groups.overdue, ...groups.drifting], limit)
   return {
     key: 'crm',
     label: 'Relances CRM',
-    href: '/admin/crm',
+    href,
     hasMore: page.hasMore,
     entries: page.entries.map((lead) => ({
       id: String(lead._id),
       title: lead.company || lead.contactName || 'Lead sans nom',
-      meta: `Relance ${formatDate(lead.nextActionAt)}`,
-      href: '/admin/crm',
+      meta: describeWorklistReason(lead),
+      href,
       dueAt: formatDate(lead.nextActionAt),
     })),
   }
+}
+
+function describeWorklistReason(lead: LeadSignalFields): string {
+  if (lead.nextActionAt) return `Relance ${formatDate(lead.nextActionAt)}`
+  const daysSinceContact = getDaysSinceContact(lead)
+  if (daysSinceContact !== null) return `Sans contact depuis ${daysSinceContact} j`
+  const daysSinceStatus = getDaysSinceStatusChange(lead)
+  if (daysSinceStatus !== null) return `Bloqué depuis ${daysSinceStatus} j`
+  return 'À traiter'
 }
 
 async function getCriticalInvoices(limit: number): Promise<ActivitySection> {
@@ -252,7 +282,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     if (permissions.has(PERMISSIONS.VIEW_PROJECTS)) {
       sections.push(getOverdueTasks(limit), getProjectRisks(limit))
     }
-    if (permissions.has(PERMISSIONS.VIEW_CRM)) sections.push(getOverdueLeads(userId, isSuperAdmin, limit))
+    if (permissions.has(PERMISSIONS.VIEW_CRM)) sections.push(getCrmWorklist(userId, isSuperAdmin, limit))
     if (permissions.has(PERMISSIONS.VIEW_BILLING)) sections.push(getCriticalInvoices(limit))
     if (permissions.has(PERMISSIONS.VIEW_TICKETS)) sections.push(getOpenTickets(userId, isSuperAdmin, limit))
 

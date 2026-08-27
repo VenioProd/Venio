@@ -17,6 +17,7 @@ import {
   calculateLeadScore,
   checkDuplicateLead,
   autoCreateProjectFromLead,
+  buildWorklist,
 } from '../../lib/crmAutomations.js'
 import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
@@ -29,11 +30,20 @@ router.use(auth)
 router.use(requireAdmin)
 
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
+const NOTE_MAX_LENGTH = 2000
 
 // Scope leads to the current commercial (SUPER_ADMIN sees all)
 function scopeFilter(req: Request): Record<string, unknown> {
   if (req.user!.role === 'SUPER_ADMIN') return {}
   return { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }
+}
+
+// Vrai si le lead est hors du périmètre de l'utilisateur (un non super-admin ne
+// voit que les leads qui lui sont assignés ou qu'il a créés).
+function isOutOfScope(req: Request, lead: { assignedTo?: unknown; createdBy?: unknown }): boolean {
+  if (req.user!.role === 'SUPER_ADMIN') return false
+  const userId = req.user!.id
+  return lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId
 }
 
 function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, any> {
@@ -63,7 +73,11 @@ function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, an
   return payload
 }
 
-async function ensureClientForWonLead(lead: any, actorId: string | null = null, enableActivityLog: boolean = true): Promise<any> {
+async function ensureClientForWonLead(
+  lead: any,
+  actorId: string | null = null,
+  enableActivityLog: boolean = true,
+): Promise<any> {
   if (!lead || lead.status !== 'WON') return null
 
   const normalizedEmail = (lead.contactEmail || '').trim().toLowerCase()
@@ -129,7 +143,7 @@ async function ensureClientForWonLead(lead: any, actorId: string | null = null, 
       'CONVERTED',
       `Lead converti en client: ${client.name}`,
       { clientId: client._id },
-      actorId
+      actorId,
     )
   }
 
@@ -137,419 +151,484 @@ async function ensureClientForWonLead(lead: any, actorId: string | null = null, 
 }
 
 // List leads with filters
-router.get('/leads', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const scope = scopeFilter(req)
-    const filter: Record<string, unknown> = { ...scope }
-    if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
-    if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
-    if (req.query.search) {
-      const q = String(req.query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const searchOr = [
-        { company: { $regex: q, $options: 'i' } },
-        { contactName: { $regex: q, $options: 'i' } },
-        { contactEmail: { $regex: q, $options: 'i' } },
-      ]
-      // Merge search $or with scope $or using $and
-      if (filter.$or) {
-        filter.$and = [{ $or: filter.$or as Record<string, unknown>[] }, { $or: searchOr }]
-        delete filter.$or
-      } else {
-        filter.$or = searchOr
+router.get(
+  '/leads',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const scope = scopeFilter(req)
+      const filter: Record<string, unknown> = { ...scope }
+      if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
+      if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
+      if (req.query.search) {
+        const q = String(req.query.search)
+          .trim()
+          .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const searchOr = [
+          { company: { $regex: q, $options: 'i' } },
+          { contactName: { $regex: q, $options: 'i' } },
+          { contactEmail: { $regex: q, $options: 'i' } },
+        ]
+        // Merge search $or with scope $or using $and
+        if (filter.$or) {
+          filter.$and = [{ $or: filter.$or as Record<string, unknown>[] }, { $or: searchOr }]
+          delete filter.$or
+        } else {
+          filter.$or = searchOr
+        }
       }
+      const leads = await Lead.find(filter).sort({ updatedAt: -1 })
+      return res.json({ leads })
+    } catch (err) {
+      return next(err)
     }
-    const leads = await Lead.find(filter).sort({ updatedAt: -1 })
-    return res.json({ leads })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // Pipeline grouped by status
-router.get('/pipeline', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const leads = await Lead.find(scopeFilter(req)).sort({ updatedAt: -1 })
-    const columns = CRM_STATUSES.map((status) => ({
-      status,
-      leads: leads.filter((lead) => lead.status === status),
-    }))
-    return res.json({ columns })
-  } catch (err) {
-    return next(err)
-  }
-})
+router.get(
+  '/pipeline',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const leads = await Lead.find(scopeFilter(req)).sort({ updatedAt: -1 })
+      const columns = CRM_STATUSES.map((status) => ({
+        status,
+        leads: leads.filter((lead) => lead.status === status),
+      }))
+      return res.json({ columns })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // Create lead
 router.post(
   '/leads',
   requirePermission(PERMISSIONS.MANAGE_CRM),
-  body('company').trim().notEmpty().withMessage('Le nom de l\'entreprise est requis'),
+  body('company').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('Email de contact invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
-    }
-
-    const payload: Record<string, any> = normalizeLeadPayload(req.body || {})
-
-    // Load settings for automation control
-    const settings = await CrmSettings.getSettings()
-
-    // Auto-assign to self for non-SUPER_ADMIN
-    if (!payload.assignedTo && req.user!.role !== 'SUPER_ADMIN') {
-      payload.assignedTo = req.user!.id
-    }
-    // Round-robin assignment (if enabled and still no assignee)
-    if (!payload.assignedTo && settings.roundRobinEnabled) {
-      payload.assignedTo = await getRoundRobinAssignee()
-    }
-    payload.createdBy = req.user!.id
-
-    // Set initial statusChangedAt
-    payload.statusChangedAt = new Date()
-
-    // Automations de base (controlled by settings)
-    if (payload.status === 'CONTACTED' && !payload.lastContactAt && settings.autoLastContactOnContacted) {
-      payload.lastContactAt = new Date()
-    }
-    if (payload.status === 'PROPOSAL' && !payload.nextActionAt && settings.autoNextActionOnProposal) {
-      const nextDate = new Date()
-      nextDate.setDate(nextDate.getDate() + (settings.proposalFollowUpDays || 3))
-      payload.nextActionAt = nextDate
-    }
-    // DEMO: set nextActionAt for follow-up (if enabled)
-    if (payload.status === 'DEMO' && !payload.nextActionAt && settings.autoNextActionOnDemo) {
-      const nextDate = new Date()
-      nextDate.setDate(nextDate.getDate() + (settings.demoFollowUpDays || 1))
-      payload.nextActionAt = nextDate
-    }
-    if (['WON', 'LOST'].includes(payload.status) && settings.clearNextActionOnClose) {
-      payload.nextActionAt = null
-    }
-
-    // Auto-qualification: if budget AND source are set, upgrade to QUALIFIED (if enabled)
-    if (settings.autoQualifyEnabled && shouldAutoQualify(payload as any) && (!payload.status || payload.status === 'LEAD')) {
-      payload.status = 'QUALIFIED'
-    }
-
-    // Calculate lead score if scoring is enabled
-    if (settings.scoringEnabled) {
-      payload.score = calculateLeadScore(payload as any, settings.scoringWeights)
-    }
-
-    const lead = await Lead.create(payload)
-
-    // Log creation activity (if enabled)
-    if (settings.activityLogging) {
-      await logLeadActivity(lead._id, 'CREATED', 'Lead créé', { company: lead.company }, req.user!.id)
-    }
-
-    // Send email notification to assigned commercial (if enabled)
-    if (lead.assignedTo && settings.emailOnAssignment) {
-      const assignee = await User.findById(lead.assignedTo)
-      if (assignee) {
-        notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
-      }
-    }
-
-    // Notif in-app à l'assigné (toujours, même si email désactivé)
-    if (lead.assignedTo && String(lead.assignedTo) !== req.user!.id) {
-      createNotification({
-        recipient: lead.assignedTo,
-        type: 'CRM_LEAD_ASSIGNED',
-        title: `Nouveau lead assigné`,
-        message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
-        link: `/admin/crm/leads/${lead._id}`,
-        metadata: { leadId: String(lead._id) },
-      }).catch(() => {})
-    }
-
-    // Auto-create client account when lead is WON
-    if (lead.status === 'WON') {
-      await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
-      // Auto-create project from won lead (fire-and-forget)
-      autoCreateProjectFromLead(lead, req.user!.id).catch(() => {})
-    }
-
-    return res.status(201).json({ lead })
-  } catch (err) {
-    return next(err)
-  }
-  }
-)
-
-// Update lead
-router.patch('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const lead = await Lead.findById(req.params.id)
-    if (!lead) {
-      return res.status(404).json({ error: 'Lead not found' })
-    }
-    // Scope check for non-SUPER_ADMIN
-    if (req.user!.role !== 'SUPER_ADMIN') {
-      const userId = req.user!.id
-      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
-        return res.status(404).json({ error: 'Lead not found' })
-      }
-    }
-
-    // Load settings for automation control
-    const settings = await CrmSettings.getSettings()
-
-    const oldStatus = lead.status
-    const oldAssignee = lead.assignedTo?.toString() || null
-
-    const payload = normalizeLeadPayload(req.body || {})
-    Object.assign(lead, payload)
-
-    // Automations de base sur changement de statut
-    if (payload.status && payload.status !== oldStatus) {
-      // Update statusChangedAt when status changes
-      lead.statusChangedAt = new Date()
-
-      // Log status change (if enabled)
-      if (settings.activityLogging) {
-        await logLeadActivity(
-          lead._id,
-          'STATUS_CHANGE',
-          `Statut: ${oldStatus} → ${payload.status}`,
-          { from: oldStatus, to: payload.status },
-          req.user!.id
-        )
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
       }
 
-      if (payload.status === 'CONTACTED' && !lead.lastContactAt && settings.autoLastContactOnContacted) {
-        lead.lastContactAt = new Date()
+      const payload: Record<string, any> = normalizeLeadPayload(req.body || {})
+
+      // Load settings for automation control
+      const settings = await CrmSettings.getSettings()
+
+      // Auto-assign to self for non-SUPER_ADMIN
+      if (!payload.assignedTo && req.user!.role !== 'SUPER_ADMIN') {
+        payload.assignedTo = req.user!.id
       }
-      if (payload.status === 'PROPOSAL' && !lead.nextActionAt && settings.autoNextActionOnProposal) {
+      // Round-robin assignment (if enabled and still no assignee)
+      if (!payload.assignedTo && settings.roundRobinEnabled) {
+        payload.assignedTo = await getRoundRobinAssignee()
+      }
+      payload.createdBy = req.user!.id
+
+      // Set initial statusChangedAt
+      payload.statusChangedAt = new Date()
+
+      // Automations de base (controlled by settings)
+      if (payload.status === 'CONTACTED' && !payload.lastContactAt && settings.autoLastContactOnContacted) {
+        payload.lastContactAt = new Date()
+      }
+      if (payload.status === 'PROPOSAL' && !payload.nextActionAt && settings.autoNextActionOnProposal) {
         const nextDate = new Date()
         nextDate.setDate(nextDate.getDate() + (settings.proposalFollowUpDays || 3))
-        lead.nextActionAt = nextDate
+        payload.nextActionAt = nextDate
       }
       // DEMO: set nextActionAt for follow-up (if enabled)
-      if (payload.status === 'DEMO' && !lead.nextActionAt && settings.autoNextActionOnDemo) {
+      if (payload.status === 'DEMO' && !payload.nextActionAt && settings.autoNextActionOnDemo) {
         const nextDate = new Date()
         nextDate.setDate(nextDate.getDate() + (settings.demoFollowUpDays || 1))
-        lead.nextActionAt = nextDate
+        payload.nextActionAt = nextDate
       }
       if (['WON', 'LOST'].includes(payload.status) && settings.clearNextActionOnClose) {
-        lead.nextActionAt = null
+        payload.nextActionAt = null
       }
 
-      if (payload.status === 'WON') {
-        await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
-        // Auto-create project from won lead (fire-and-forget)
-        autoCreateProjectFromLead(lead, req.user!.id).catch(() => {})
-
-        // Trigger automation: auto-convert won lead
-        triggerAutomations(
-          ['crm.auto_convert_won_lead'],
-          { leadId: lead._id.toString(), newStatus: 'WON', actorId: req.user!.id }
-        )
-
-        // Notif super admins : nouveau client signé 🎉
-        notifySuperAdmins({
-          type: 'CRM_LEAD_CONVERTED',
-          title: `🎉 Nouveau client signé`,
-          message: `${lead.company} (lead converti en WON)`,
-          link: `/admin/crm/leads/${lead._id}`,
-          metadata: { leadId: String(lead._id) },
-          excludeUserId: req.user!.id,
-        }).catch(() => {})
-      } else {
-        // Notif au créateur et à l'assigné du changement de statut
-        const recipients = new Set<string>()
-        if (lead.assignedTo) recipients.add(String(lead.assignedTo))
-        if (lead.createdBy) recipients.add(String(lead.createdBy))
-        recipients.delete(req.user!.id)
-        for (const recipientId of recipients) {
-          createNotification({
-            recipient: recipientId,
-            type: 'CRM_LEAD_STATUS_CHANGED',
-            title: `Lead ${lead.company} — ${payload.status}`,
-            message: `Statut passé de ${oldStatus} à ${payload.status}`,
-            link: `/admin/crm/leads/${lead._id}`,
-            metadata: { leadId: String(lead._id) },
-          }).catch(() => {})
-        }
+      // Auto-qualification: if budget AND source are set, upgrade to QUALIFIED (if enabled)
+      if (
+        settings.autoQualifyEnabled &&
+        shouldAutoQualify(payload as any) &&
+        (!payload.status || payload.status === 'LEAD')
+      ) {
+        payload.status = 'QUALIFIED'
       }
-    }
 
-    // Check if assignee changed
-    const newAssignee = lead.assignedTo?.toString() || null
-    if (payload.assignedTo !== undefined && newAssignee !== oldAssignee) {
+      // Calculate lead score if scoring is enabled
+      if (settings.scoringEnabled) {
+        payload.score = calculateLeadScore(payload as any, settings.scoringWeights)
+      }
+
+      const lead = await Lead.create(payload)
+
+      // Log creation activity (if enabled)
       if (settings.activityLogging) {
-        await logLeadActivity(
-          lead._id,
-          'ASSIGNED',
-          'Lead réassigné',
-          { from: oldAssignee, to: newAssignee },
-          req.user!.id
-        )
+        await logLeadActivity(lead._id, 'CREATED', 'Lead créé', { company: lead.company }, req.user!.id)
       }
-      // Send email to new assignee (if enabled)
-      if (newAssignee && settings.emailOnAssignment) {
-        const assignee = await User.findById(newAssignee)
+
+      // Send email notification to assigned commercial (if enabled)
+      if (lead.assignedTo && settings.emailOnAssignment) {
+        const assignee = await User.findById(lead.assignedTo)
         if (assignee) {
           notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
         }
       }
 
-      // Notif in-app au nouvel assigné (toujours)
-      if (newAssignee && newAssignee !== req.user!.id) {
+      // Notif in-app à l'assigné (toujours, même si email désactivé)
+      if (lead.assignedTo && String(lead.assignedTo) !== req.user!.id) {
         createNotification({
-          recipient: newAssignee,
+          recipient: lead.assignedTo,
           type: 'CRM_LEAD_ASSIGNED',
-          title: `Lead réassigné à vous`,
+          title: `Nouveau lead assigné`,
           message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
           link: `/admin/crm/leads/${lead._id}`,
           metadata: { leadId: String(lead._id) },
         }).catch(() => {})
       }
-    }
 
-    // Auto-qualification: if budget + source are now set and status is still LEAD (if enabled)
-    if (settings.autoQualifyEnabled && lead.status === 'LEAD' && shouldAutoQualify(lead)) {
-      lead.status = 'QUALIFIED'
-      lead.statusChangedAt = new Date()
-      if (settings.activityLogging) {
-        await logLeadActivity(lead._id, 'AUTO_QUALIFIED', 'Lead auto-qualifié', {}, req.user!.id)
+      // Auto-create client account when lead is WON
+      if (lead.status === 'WON') {
+        await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+        // Auto-create project from won lead (fire-and-forget)
+        autoCreateProjectFromLead(lead, req.user!.id).catch(() => {})
       }
-    }
 
-    // Recalculate score if scoring is enabled
-    if (settings.scoringEnabled) {
-      lead.score = calculateLeadScore(lead, settings.scoringWeights)
+      return res.status(201).json({ lead })
+    } catch (err) {
+      return next(err)
     }
+  },
+)
 
-    await lead.save()
-    return res.json({ lead })
-  } catch (err) {
-    return next(err)
-  }
-})
+// Update lead
+router.patch(
+  '/leads/:id',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id)
+      if (!lead) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+      if (isOutOfScope(req, lead)) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+
+      // Load settings for automation control
+      const settings = await CrmSettings.getSettings()
+
+      const oldStatus = lead.status
+      const oldAssignee = lead.assignedTo?.toString() || null
+
+      const payload = normalizeLeadPayload(req.body || {})
+      Object.assign(lead, payload)
+
+      // Automations de base sur changement de statut
+      if (payload.status && payload.status !== oldStatus) {
+        // Update statusChangedAt when status changes
+        lead.statusChangedAt = new Date()
+
+        // Log status change (if enabled)
+        if (settings.activityLogging) {
+          await logLeadActivity(
+            lead._id,
+            'STATUS_CHANGE',
+            `Statut: ${oldStatus} → ${payload.status}`,
+            { from: oldStatus, to: payload.status },
+            req.user!.id,
+          )
+        }
+
+        if (payload.status === 'CONTACTED' && !lead.lastContactAt && settings.autoLastContactOnContacted) {
+          lead.lastContactAt = new Date()
+        }
+        if (payload.status === 'PROPOSAL' && !lead.nextActionAt && settings.autoNextActionOnProposal) {
+          const nextDate = new Date()
+          nextDate.setDate(nextDate.getDate() + (settings.proposalFollowUpDays || 3))
+          lead.nextActionAt = nextDate
+        }
+        // DEMO: set nextActionAt for follow-up (if enabled)
+        if (payload.status === 'DEMO' && !lead.nextActionAt && settings.autoNextActionOnDemo) {
+          const nextDate = new Date()
+          nextDate.setDate(nextDate.getDate() + (settings.demoFollowUpDays || 1))
+          lead.nextActionAt = nextDate
+        }
+        if (['WON', 'LOST'].includes(payload.status) && settings.clearNextActionOnClose) {
+          lead.nextActionAt = null
+        }
+
+        if (payload.status === 'WON') {
+          await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+          // Auto-create project from won lead (fire-and-forget)
+          autoCreateProjectFromLead(lead, req.user!.id).catch(() => {})
+
+          // Trigger automation: auto-convert won lead
+          triggerAutomations(['crm.auto_convert_won_lead'], {
+            leadId: lead._id.toString(),
+            newStatus: 'WON',
+            actorId: req.user!.id,
+          })
+
+          // Notif super admins : nouveau client signé 🎉
+          notifySuperAdmins({
+            type: 'CRM_LEAD_CONVERTED',
+            title: `🎉 Nouveau client signé`,
+            message: `${lead.company} (lead converti en WON)`,
+            link: `/admin/crm/leads/${lead._id}`,
+            metadata: { leadId: String(lead._id) },
+            excludeUserId: req.user!.id,
+          }).catch(() => {})
+        } else {
+          // Notif au créateur et à l'assigné du changement de statut
+          const recipients = new Set<string>()
+          if (lead.assignedTo) recipients.add(String(lead.assignedTo))
+          if (lead.createdBy) recipients.add(String(lead.createdBy))
+          recipients.delete(req.user!.id)
+          for (const recipientId of recipients) {
+            createNotification({
+              recipient: recipientId,
+              type: 'CRM_LEAD_STATUS_CHANGED',
+              title: `Lead ${lead.company} — ${payload.status}`,
+              message: `Statut passé de ${oldStatus} à ${payload.status}`,
+              link: `/admin/crm/leads/${lead._id}`,
+              metadata: { leadId: String(lead._id) },
+            }).catch(() => {})
+          }
+        }
+      }
+
+      // Check if assignee changed
+      const newAssignee = lead.assignedTo?.toString() || null
+      if (payload.assignedTo !== undefined && newAssignee !== oldAssignee) {
+        if (settings.activityLogging) {
+          await logLeadActivity(
+            lead._id,
+            'ASSIGNED',
+            'Lead réassigné',
+            { from: oldAssignee, to: newAssignee },
+            req.user!.id,
+          )
+        }
+        // Send email to new assignee (if enabled)
+        if (newAssignee && settings.emailOnAssignment) {
+          const assignee = await User.findById(newAssignee)
+          if (assignee) {
+            notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
+          }
+        }
+
+        // Notif in-app au nouvel assigné (toujours)
+        if (newAssignee && newAssignee !== req.user!.id) {
+          createNotification({
+            recipient: newAssignee,
+            type: 'CRM_LEAD_ASSIGNED',
+            title: `Lead réassigné à vous`,
+            message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
+            link: `/admin/crm/leads/${lead._id}`,
+            metadata: { leadId: String(lead._id) },
+          }).catch(() => {})
+        }
+      }
+
+      // Auto-qualification: if budget + source are now set and status is still LEAD (if enabled)
+      if (settings.autoQualifyEnabled && lead.status === 'LEAD' && shouldAutoQualify(lead)) {
+        lead.status = 'QUALIFIED'
+        lead.statusChangedAt = new Date()
+        if (settings.activityLogging) {
+          await logLeadActivity(lead._id, 'AUTO_QUALIFIED', 'Lead auto-qualifié', {}, req.user!.id)
+        }
+      }
+
+      // Recalculate score if scoring is enabled
+      if (settings.scoringEnabled) {
+        lead.score = calculateLeadScore(lead, settings.scoringWeights)
+      }
+
+      await lead.save()
+      return res.json({ lead })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // Get single lead
-router.get('/leads/:id', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const lead = await Lead.findById(req.params.id)
-    if (!lead) {
-      return res.status(404).json({ error: 'Lead not found' })
-    }
-    // Scope check for non-SUPER_ADMIN
-    if (req.user!.role !== 'SUPER_ADMIN') {
-      const userId = req.user!.id
-      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
+router.get(
+  '/leads/:id',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id)
+      if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
+      if (isOutOfScope(req, lead)) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+      return res.json({ lead })
+    } catch (err) {
+      return next(err)
     }
-    return res.json({ lead })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // Delete lead
-router.delete('/leads/:id', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const lead = await Lead.findById(req.params.id)
-    if (!lead) {
-      return res.status(404).json({ error: 'Lead not found' })
-    }
-    // Scope check for non-SUPER_ADMIN
-    if (req.user!.role !== 'SUPER_ADMIN') {
-      const userId = req.user!.id
-      if (lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId) {
+router.delete(
+  '/leads/:id',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id)
+      if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
+      if (isOutOfScope(req, lead)) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+      await lead.deleteOne()
+      // Also delete related activities
+      await LeadActivity.deleteMany({ leadId: req.params.id })
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
     }
-    await lead.deleteOne()
-    // Also delete related activities
-    await LeadActivity.deleteMany({ leadId: req.params.id })
-    return res.json({ success: true })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // Get lead activities (history)
-router.get('/leads/:id/activities', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const activities = await LeadActivity.find({ leadId: req.params.id })
-      .sort({ createdAt: -1 })
-      .populate('actorId', 'name email')
-    return res.json({ activities })
-  } catch (err) {
-    return next(err)
-  }
-})
+router.get(
+  '/leads/:id/activities',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
+      if (!lead || isOutOfScope(req, lead)) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+      const activities = await LeadActivity.find({ leadId: req.params.id })
+        .sort({ createdAt: -1 })
+        .populate('actorId', 'name email')
+      return res.json({ activities })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
-// Get CRM alerts (cold leads, overdue actions, stale leads)
-router.get('/alerts', requirePermission(PERMISSIONS.VIEW_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const now = new Date()
-    const coldThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const staleThreshold = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+// Ajouter une note datée sur un lead. Elle vit dans LeadActivity et non dans un
+// champ texte du Lead : c'est la première brique de la timeline d'échanges.
+// Non soumise à `activityLogging`, qui ne gouverne que la journalisation
+// automatique — une note est une saisie délibérée de l'utilisateur.
+router.post(
+  '/leads/:id/notes',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
+      if (!lead || isOutOfScope(req, lead)) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
 
-    const scope = scopeFilter(req)
-    const activeFilter = { status: { $nin: ['WON', 'LOST'] }, ...scope }
+      const text = String(req.body?.text ?? '').trim()
+      if (!text) {
+        return res.status(400).json({ error: 'La note ne peut pas être vide' })
+      }
+      if (text.length > NOTE_MAX_LENGTH) {
+        return res.status(400).json({ error: `La note dépasse ${NOTE_MAX_LENGTH} caractères` })
+      }
 
-    const [coldLeads, overdueLeads, staleLeads] = await Promise.all([
-      // Cold leads: no contact for 7+ days
-      Lead.find({
-        ...activeFilter,
-        lastContactAt: { $lt: coldThreshold },
-      }).sort({ lastContactAt: 1 }),
+      const activity = await logLeadActivity(lead._id, 'NOTE', text, {}, req.user!.id)
+      return res.status(201).json({ activity })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
-      // Overdue leads: nextActionAt is in the past
-      Lead.find({
-        ...activeFilter,
-        nextActionAt: { $lt: now },
-      }).sort({ nextActionAt: 1 }),
+// File de travail commerciale : échéances (en retard, aujourd'hui, à venir) et
+// signaux de dérive (froid, bloqué), groupés selon les seuils configurés.
+// Remplace l'ancien GET /alerts, qui codait ses seuils en dur et n'était
+// consommé par aucun client.
+router.get(
+  '/worklist',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const settings = await CrmSettings.getSettings()
+      const leads = await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...scopeFilter(req) }).lean()
 
-      // Stale leads: stuck in same status for 14+ days
-      Lead.find({
-        ...activeFilter,
-        statusChangedAt: { $lt: staleThreshold },
-      }).sort({ statusChangedAt: 1 }),
-    ])
+      const thresholds = {
+        coldEnabled: settings.coldLeadAlertEnabled,
+        coldDays: settings.coldLeadThresholdDays,
+        overdueEnabled: settings.overdueAlertEnabled,
+        staleEnabled: settings.staleLeadAlertEnabled,
+        staleDays: settings.staleLeadThresholdDays,
+      }
 
-    return res.json({ coldLeads, overdueLeads, staleLeads })
-  } catch (err) {
-    return next(err)
-  }
-})
+      const groups = buildWorklist(leads, {
+        coldLeadAlertEnabled: thresholds.coldEnabled,
+        coldLeadThresholdDays: thresholds.coldDays,
+        overdueAlertEnabled: thresholds.overdueEnabled,
+        staleLeadAlertEnabled: thresholds.staleEnabled,
+        staleLeadThresholdDays: thresholds.staleDays,
+      })
+
+      return res.json({
+        groups,
+        thresholds,
+        counts: {
+          overdue: groups.overdue.length,
+          today: groups.today.length,
+          upcoming: groups.upcoming.length,
+          drifting: groups.drifting.length,
+        },
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // Convert WON lead to client
-router.post('/leads/:id/convert-to-client', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const settings = await CrmSettings.getSettings()
-    const lead = await Lead.findById(req.params.id)
-    if (!lead) {
-      return res.status(404).json({ error: 'Lead not found' })
+router.post(
+  '/leads/:id/convert-to-client',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const settings = await CrmSettings.getSettings()
+      const lead = await Lead.findById(req.params.id)
+      if (!lead) {
+        return res.status(404).json({ error: 'Lead not found' })
+      }
+      if (lead.status !== 'WON') {
+        return res.status(400).json({ error: 'Only WON leads can be converted to clients' })
+      }
+      const alreadyLinked = Boolean(lead.clientAccountId)
+      const client = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+      return res.status(alreadyLinked ? 200 : 201).json({ client, lead })
+    } catch (err) {
+      return next(err)
     }
-    if (lead.status !== 'WON') {
-      return res.status(400).json({ error: 'Only WON leads can be converted to clients' })
-    }
-    const alreadyLinked = Boolean(lead.clientAccountId)
-    const client = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
-    return res.status(alreadyLinked ? 200 : 201).json({ client, lead })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // Helper to map lead source to client source enum
 function mapLeadSourceToClientSource(leadSource: string): string {
   const sourceMap: Record<string, string> = {
-    'Ads': 'INBOUND',
-    'Site': 'INBOUND',
-    'Referral': 'REFERRAL',
+    Ads: 'INBOUND',
+    Site: 'INBOUND',
+    Referral: 'REFERRAL',
     'Réseaux sociaux': 'INBOUND',
-    'Email': 'OUTBOUND',
-    'Autre': 'AUTRE',
+    Email: 'OUTBOUND',
+    Autre: 'AUTRE',
   }
   return sourceMap[leadSource] || 'AUTRE'
 }
@@ -559,49 +638,57 @@ function mapLeadSourceToClientSource(leadSource: string): string {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Get CRM settings
-router.get('/settings', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const settings = await CrmSettings.getSettings()
-    return res.json({ settings })
-  } catch (err) {
-    return next(err)
-  }
-})
+router.get(
+  '/settings',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const settings = await CrmSettings.getSettings()
+      return res.json({ settings })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // Update CRM settings
-router.patch('/settings', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const updates = req.body || {}
-    // Remove fields that shouldn't be updated directly
-    delete updates._id
-    delete updates.createdAt
-    delete updates.updatedAt
+router.patch(
+  '/settings',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const updates = req.body || {}
+      // Remove fields that shouldn't be updated directly
+      delete updates._id
+      delete updates.createdAt
+      delete updates.updatedAt
 
-    const settings = await CrmSettings.updateSettings(updates)
-    return res.json({ settings })
-  } catch (err) {
-    return next(err)
-  }
-})
+      const settings = await CrmSettings.updateSettings(updates)
+      return res.json({ settings })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // Check for duplicate leads
-router.post('/check-duplicate', requirePermission(PERMISSIONS.MANAGE_CRM), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const settings = await CrmSettings.getSettings()
-    if (!settings.duplicateDetectionEnabled) {
-      return res.json({ duplicates: [], enabled: false })
-    }
+router.post(
+  '/check-duplicate',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const settings = await CrmSettings.getSettings()
+      if (!settings.duplicateDetectionEnabled) {
+        return res.json({ duplicates: [], enabled: false })
+      }
 
-    const { company, contactEmail, contactPhone, excludeId } = req.body
-    const duplicates = await checkDuplicateLead(
-      { company, contactEmail, contactPhone },
-      settings,
-      excludeId
-    )
-    return res.json({ duplicates, enabled: true })
-  } catch (err) {
-    return next(err)
-  }
-})
+      const { company, contactEmail, contactPhone, excludeId } = req.body
+      const duplicates = await checkDuplicateLead({ company, contactEmail, contactPhone }, settings, excludeId)
+      return res.json({ duplicates, enabled: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 export default router
