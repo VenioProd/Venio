@@ -7882,10 +7882,6 @@ a.portal-button {
   border-bottom-color: var(--line-faint);
 }
 
-[data-theme='light'] .crm-modal-header h2 {
-  color: var(--ink-strong);
-}
-
 [data-theme='light'] .crm-modal-close {
   color: var(--ink-ghost);
 }
@@ -7917,10 +7913,6 @@ a.portal-button {
 
 [data-theme='light'] .crm-modal-quick-field label {
   color: var(--ink-faint);
-}
-
-[data-theme='light'] .crm-modal-label {
-  color: var(--ink-strong);
 }
 
 [data-theme='light'] .crm-modal-textarea {
@@ -8882,9 +8874,6 @@ a.portal-button {
   background: rgba(255, 0, 128, 0.04);
   border-color: rgba(255, 0, 128, 0.2);
 }
-[data-theme='light'] .qq-card-title {
-  color: var(--ink-body);
-}
 [data-theme='light'] .qq-card-meta {
   color: var(--ink-ghost);
 }
@@ -8914,12 +8903,10 @@ a.portal-button {
 [data-theme='light'] .qq-question-label {
   background: #fff;
   border-color: var(--line-soft);
-  color: var(--ink-body);
 }
 [data-theme='light'] .qq-option-row input {
   background: #fff;
   border-color: var(--line-soft);
-  color: var(--ink-body);
 }
 [data-theme='light'] .qq-link-box {
   background: rgba(255, 0, 128, 0.04);
@@ -8936,9 +8923,6 @@ a.portal-button {
 [data-theme='light'] .qq-response-card {
   background: #fff;
   border-color: var(--line-soft);
-}
-[data-theme='light'] .qq-response-name {
-  color: var(--ink-body);
 }
 [data-theme='light'] .qq-answer-text {
   color: var(--ink-soft);

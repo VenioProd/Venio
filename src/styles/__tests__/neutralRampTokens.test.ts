@@ -42,7 +42,7 @@ describe('rampe neutre', () => {
   it('définit les 14 tokens dans les deux thèmes', () => {
     const css = read('src/styles/theme.css')
     for (const theme of ['dark', 'light']) {
-      const block = css.match(new RegExp(`\\[data-theme="${theme}"\\] \\{([\\s\\S]*?)\\n\\}`))?.[1]
+      const block = css.match(new RegExp(`\\[data-theme=['"]${theme}['"]\\]\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1]
       expect(block, `[data-theme="${theme}"] est introuvable`).toBeTruthy()
       for (const token of RAMP) {
         expect(block, `[data-theme="${theme}"] doit définir ${token}`).toContain(`${token}:`)
@@ -53,7 +53,7 @@ describe('rampe neutre', () => {
   it('miroir strict : aucune valeur partagée entre dark et light hors --ink-faint', () => {
     const css = read('src/styles/theme.css')
     const valuesFor = (theme: string) => {
-      const block = css.match(new RegExp(`\\[data-theme="${theme}"\\] \\{([\\s\\S]*?)\\n\\}`))![1]
+      const block = css.match(new RegExp(`\\[data-theme=['"]${theme}['"]\\]\\s*\\{([\\s\\S]*?)\\n\\}`))![1]
       return Object.fromEntries(RAMP.map((t) => [t, block.match(new RegExp(`${t}:\\s*([^;]+);`))![1].trim()]))
     }
     const dark = valuesFor('dark')

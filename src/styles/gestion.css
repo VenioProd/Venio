@@ -1315,12 +1315,7 @@
   color: var(--ink-body);
 }
 
-[data-theme='light'] .gestion-cell-project {
-  color: var(--ink-faint);
-}
-
 [data-theme='light'] .gestion-assignee-badge {
-  background: var(--surface-raised);
   color: var(--ink-soft);
 }
 
@@ -1342,16 +1337,8 @@
   background: var(--surface-strong);
 }
 
-[data-theme='light'] .gestion-progress-text {
-  color: var(--ink-dim);
-}
-
 [data-theme='light'] .gestion-empty {
   color: var(--ink-ghost);
-}
-
-[data-theme='light'] .gestion-loading {
-  color: var(--ink-faint);
 }
 
 /* Expandable Row Details */
@@ -1362,18 +1349,6 @@
 [data-theme='light'] .gestion-task-details {
   background: var(--surface-sunken);
   border-top-color: var(--line-soft);
-}
-
-[data-theme='light'] .gestion-detail-label {
-  color: var(--ink-faint);
-}
-
-[data-theme='light'] .gestion-detail-text {
-  color: var(--ink-soft);
-}
-
-[data-theme='light'] .gestion-detail-empty {
-  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .gestion-detail-tag {
@@ -1390,10 +1365,6 @@
 [data-theme='light'] .gestion-attachment-item:hover {
   background: var(--surface-sunken);
   border-color: var(--primary);
-}
-
-[data-theme='light'] .gestion-attachment-name {
-  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-upload-btn {
@@ -1454,15 +1425,6 @@
   border-bottom-color: var(--line-soft);
 }
 
-[data-theme='light'] .gestion-kanban-title {
-  color: var(--ink-body);
-}
-
-[data-theme='light'] .gestion-kanban-count {
-  background: var(--surface-raised);
-  color: var(--ink-dim);
-}
-
 [data-theme='light'] .gestion-kanban-card {
   background: #ffffff;
   border-color: var(--line-soft);
@@ -1471,14 +1433,6 @@
 
 [data-theme='light'] .gestion-kanban-card:hover {
   box-shadow: none;
-}
-
-[data-theme='light'] .gestion-kanban-card-title {
-  color: var(--ink-body);
-}
-
-[data-theme='light'] .gestion-kanban-project {
-  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kanban-assignee {
@@ -1518,10 +1472,6 @@
   border-color: var(--line-soft);
 }
 
-[data-theme='light'] .gantt-range-label {
-  color: var(--ink-body);
-}
-
 [data-theme='light'] .gantt-container {
   background: #ffffff;
 }
@@ -1557,7 +1507,6 @@
 }
 
 [data-theme='light'] .gantt-list-header {
-  background: var(--surface-sunken);
   color: var(--ink-dim);
   border-bottom-color: var(--line-soft);
 }
@@ -1566,16 +1515,8 @@
   border-bottom-color: var(--line-faint);
 }
 
-[data-theme='light'] .gantt-list-title {
-  color: var(--ink-body);
-}
-
 [data-theme='light'] .gantt-list-project {
   color: var(--ink-ghost);
-}
-
-[data-theme='light'] .gantt-list-dates {
-  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gantt-col-header {
@@ -1642,10 +1583,6 @@
   border-color: var(--line-soft);
 }
 
-[data-theme='light'] .gestion-brief-form h3 {
-  color: var(--ink-body);
-}
-
 [data-theme='light'] .gestion-brief-field label {
   color: var(--ink-dim);
 }
@@ -1676,10 +1613,6 @@
 
 /* Kanban project tag & progress tag backgrounds */
 [data-theme='light'] .gestion-kanban-project {
-  background: var(--surface-raised);
-}
-
-[data-theme='light'] .gestion-kanban-progress {
   background: var(--surface-raised);
 }
 
@@ -1750,20 +1683,12 @@
   border-color: var(--line-soft);
 }
 
-[data-theme='light'] .gestion-kpi-section h3 {
-  color: var(--ink-body);
-}
-
 [data-theme='light'] .gestion-kpi-bar-label {
   color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kpi-bar-track {
   background: var(--surface-strong);
-}
-
-[data-theme='light'] .gestion-kpi-bar-value {
-  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-kpi-periods {
