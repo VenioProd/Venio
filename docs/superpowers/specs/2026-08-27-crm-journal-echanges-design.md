@@ -172,3 +172,8 @@ partiel, préservation de la saisie en cas d'échec.
 - Pas de pagination de la timeline dans un premier temps ; un plafond de 200 entrées est appliqué et
   signalé dans la réponse plutôt que tronqué en silence.
 - `LeadActivity` et `ClientActivity` restent deux modèles identiques et distincts.
+- `listAdminClientNotes`, `createAdminClientNote` et `deleteAdminClientNote` restent dans
+  `services/adminClients.ts` sans appelant front : les routes qu'elles servent existent toujours et
+  sont maintenues pour les consommateurs externes.
+- Le geste « marquer contacté » de la file de travail journalise une note et non un appel : rien ne
+  dit par quel canal le contact a eu lieu, et l'inventer serait faux.

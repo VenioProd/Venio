@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { exportToCsv } from '../../../lib/exportCsv'
+import { logInteraction } from '../../../services/interactions'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import ConfirmModal from '../../../components/ConfirmModal'
@@ -287,17 +288,12 @@ const CrmBoard = () => {
         body: JSON.stringify({ lastContactAt: new Date().toISOString(), nextActionAt: payload.nextActionAt }),
       })
       if (payload.note) {
-        await apiFetch(`/api/admin/crm/leads/${leadId}/notes`, {
-          method: 'POST',
-          body: JSON.stringify({ text: payload.note }),
-        })
+        await logInteraction('LEAD', leadId, { kind: 'NOTE', body: payload.note })
       }
     })
 
   const handleAddNote = (leadId: string, text: string) =>
-    runLeadAction(leadId, () =>
-      apiFetch(`/api/admin/crm/leads/${leadId}/notes`, { method: 'POST', body: JSON.stringify({ text }) }),
-    )
+    runLeadAction(leadId, () => logInteraction('LEAD', leadId, { kind: 'NOTE', body: text }))
 
   // Flatten all leads from columns
   const allLeads = useMemo(() => {
