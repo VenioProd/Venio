@@ -216,7 +216,7 @@ function QuickfindDocumentPreview({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: preview.kind === 'pdf' ? '#1e293b' : '#090b0e',
+            background: preview.kind === 'pdf' ? 'var(--surface-raised)' : '#090b0e',
           }}
         >
           {preview.status === 'loading' && (

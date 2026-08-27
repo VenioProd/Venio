@@ -539,168 +539,168 @@
 
 /* ── Light Mode ── */
 [data-theme='light'] .task-board-loading {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-column {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .task-column-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-column-count {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .task-add-btn {
   background: #fafbfc;
-  border-color: #e2e8f0;
-  color: #94a3b8;
+  border-color: var(--line-soft);
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-add-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #cbd5e1;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
+  border-color: var(--line-strong);
 }
 
 [data-theme='light'] .task-card {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .task-card:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--surface-sunken);
+  border-color: var(--line-strong);
 }
 
 [data-theme='light'] .task-card-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-card-delete {
-  color: #cbd5e1;
+  color: var(--ink-whisper);
 }
 
 [data-theme='light'] .task-card-desc {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .task-assignee {
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--ink-dim);
+  background: var(--surface-raised);
 }
 
 [data-theme='light'] .task-due {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-modal {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   box-shadow: none;
 }
 
 [data-theme='light'] .task-modal h3 {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-form-group label {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .task-form-group input,
 [data-theme='light'] .task-form-group select,
 [data-theme='light'] .task-form-group textarea {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: var(--line-soft);
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .task-attachments-section {
-  border-top-color: #f1f5f9;
+  border-top-color: var(--line-faint);
 }
 
 [data-theme='light'] .task-attachments-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-attachments-empty {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-attachment-item {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .task-attachment-name {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .task-attachment-size {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-attachment-upload-btn {
   background: #fafbfc;
-  border-color: #e2e8f0;
-  color: #94a3b8;
+  border-color: var(--line-soft);
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-attachment-upload-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #cbd5e1;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
+  border-color: var(--line-strong);
 }
 
 [data-theme='light'] .task-attachment-delete {
-  color: #cbd5e1;
+  color: var(--ink-whisper);
 }
 
 [data-theme='light'] .task-readonly-value {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .task-comments-section {
-  border-top-color: #f1f5f9;
+  border-top-color: var(--line-faint);
 }
 
 [data-theme='light'] .task-comments-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-comments-empty {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-comment {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .task-comment-author {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .task-comment-time {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .task-comment-delete {
-  color: #cbd5e1;
+  color: var(--ink-whisper);
 }
 
 [data-theme='light'] .task-comment-content {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .task-comment-input textarea {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: var(--line-soft);
+  color: var(--ink-body);
 }

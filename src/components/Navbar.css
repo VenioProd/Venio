@@ -1065,15 +1065,15 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 }
 
 [data-theme='light'] .dropdown-menu {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-color: #e2e8f0;
+  background: linear-gradient(135deg, #ffffff 0%, var(--surface-sunken) 100%);
+  border-color: var(--line-soft);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme='light'] .dropdown-menu::before {
-  border-bottom-color: #e2e8f0;
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .dropdown-menu::after {
@@ -1081,39 +1081,39 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 }
 
 [data-theme='light'] .dropdown-item {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .dropdown-item:hover {
-  background: #f1f5f9;
+  background: var(--surface-raised);
   color: var(--primary);
 }
 
 [data-theme='light'] .dropdown-item-pole .pole-name {
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .dropdown-item-pole .pole-description {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .dropdown-item-pole:hover .pole-description {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .nav-portal {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .nav-link-icon .nav-link-text {
   background: #ffffff;
-  color: #1e293b;
-  border-color: #e2e8f0;
+  color: var(--ink-body);
+  border-color: var(--line-soft);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme='light'] .nav-link-icon .nav-link-text::before {
-  border-bottom-color: #e2e8f0;
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .nav-link-icon .nav-link-text::after {
@@ -1137,42 +1137,42 @@ body.gpu-off .dropdown:hover .nav-link-icon .nav-link-text {
 
 [data-theme='light'] .mobile-menu-header {
   background: rgba(255, 255, 255, 0.98);
-  border-bottom-color: #e2e8f0;
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .mobile-menu-title {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .mobile-nav-link {
   background: transparent;
-  border-color: #f1f5f9;
-  color: #334155;
+  border-color: var(--line-faint);
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .mobile-nav-link:hover {
-  background: #f1f5f9;
+  background: var(--surface-raised);
   border-color: #bae6fd;
 }
 
 [data-theme='light'] .mobile-nav-portal:first-of-type {
-  border-top-color: #e2e8f0;
+  border-top-color: var(--line-soft);
 }
 
 [data-theme='light'] .mobile-dropdown-item {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .mobile-dropdown-item .pole-name {
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .mobile-dropdown-item .pole-description {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .mobile-dropdown-item:hover .pole-description {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .mobile-dropdown-menu {

@@ -129,7 +129,7 @@ export default function InternCard({
             {intern.status === 'ACTIF' && (
               <button
                 className="ticket-back-btn"
-                style={{ color: '#64748b' }}
+                style={{ color: 'var(--ink-faint)' }}
                 onClick={() => onStatusChange(intern._id, 'TERMINE')}
               >
                 Marquer termine

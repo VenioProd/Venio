@@ -321,7 +321,7 @@ export const GithubPanel = ({
               )}
             </>
           ) : (
-            <span style={{ color: '#94a3b8' }}>non configuré</span>
+            <span style={{ color: 'var(--ink-dim)' }}>non configuré</span>
           )}
         </span>
       </div>
@@ -545,7 +545,7 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
               · {formatBytes(code.totals.bytes)}
             </>
           ) : (
-            <span style={{ color: '#94a3b8' }}>non disponible</span>
+            <span style={{ color: 'var(--ink-dim)' }}>non disponible</span>
           )}
         </span>
       </div>
@@ -841,7 +841,7 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
               · prochaine vérif {nextRefreshIn}s
             </>
           ) : (
-            <span style={{ color: '#94a3b8' }}>non disponible</span>
+            <span style={{ color: 'var(--ink-dim)' }}>non disponible</span>
           )}
           <button
             type="button"

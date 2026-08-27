@@ -216,33 +216,33 @@
 }
 
 [data-theme='light'] .notif-bell-icon {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .notif-dropdown {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   box-shadow: none;
 }
 
 [data-theme='light'] .notif-dropdown-header {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: var(--line-faint);
 }
 
 [data-theme='light'] .notif-dropdown-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .notif-empty {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .notif-item {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: var(--line-faint);
 }
 
 [data-theme='light'] .notif-item:hover {
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 [data-theme='light'] .notif-item-unread {
@@ -250,13 +250,13 @@
 }
 
 [data-theme='light'] .notif-item-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .notif-item-message {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .notif-item-time {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }

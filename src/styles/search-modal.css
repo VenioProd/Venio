@@ -186,73 +186,73 @@
 
 [data-theme='light'] .search-modal {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   box-shadow: none;
 }
 
 [data-theme='light'] .search-input-wrapper {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: var(--line-faint);
 }
 
 [data-theme='light'] .search-input-icon {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .search-input {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .search-input::placeholder {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .search-kbd {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #64748b;
+  background: var(--surface-raised);
+  border-color: var(--line-soft);
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .search-loading,
 [data-theme='light'] .search-empty {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .search-result-item {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .search-result-item:hover,
 [data-theme='light'] .search-result-item.selected {
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 [data-theme='light'] .search-result-icon {
-  background: #f1f5f9;
+  background: var(--surface-raised);
 }
 
 [data-theme='light'] .search-result-title {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .search-result-subtitle {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .search-result-type {
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--ink-faint);
+  background: var(--surface-raised);
 }
 
 [data-theme='light'] .search-hints p {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .search-hints-shortcuts span {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .search-hints-shortcuts kbd {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #475569;
+  background: var(--surface-raised);
+  border-color: var(--line-soft);
+  color: var(--ink-dim);
 }

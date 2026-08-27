@@ -334,7 +334,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #475569;
+  color: var(--ink-ghost);
 }
 .clock-time {
   font-size: 32px;

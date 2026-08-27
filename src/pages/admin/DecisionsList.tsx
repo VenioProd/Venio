@@ -124,7 +124,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--bg-card,#1e293b)',
+          background: 'var(--bg-card, var(--surface-raised))',
           borderRadius: 16,
           overflow: 'hidden',
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
@@ -229,7 +229,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                 alignItems: 'center',
                 gap: 16,
                 padding: 48,
-                background: 'var(--bg-card,#1e293b)',
+                background: 'var(--bg-card, var(--surface-raised))',
               }}
             >
               <Paperclip size={48} style={{ color: 'var(--text-muted)' }} />
