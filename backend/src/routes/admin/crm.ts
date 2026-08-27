@@ -31,6 +31,7 @@ router.use(requireAdmin)
 
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
 const NOTE_MAX_LENGTH = 2000
+const DEFAULT_FOLLOW_UP_DAYS = 3
 
 // Scope leads to the current commercial (SUPER_ADMIN sees all)
 function scopeFilter(req: Request): Record<string, unknown> {
@@ -584,6 +585,13 @@ router.get(
       return res.json({
         groups,
         thresholds,
+        // Délais de relance pré-remplis par la file quand on marque un lead
+        // contacté : mêmes réglages que les automatisations de statut.
+        followUp: {
+          demoDays: settings.demoFollowUpDays,
+          proposalDays: settings.proposalFollowUpDays,
+          defaultDays: DEFAULT_FOLLOW_UP_DAYS,
+        },
         counts: {
           overdue: groups.overdue.length,
           today: groups.today.length,
