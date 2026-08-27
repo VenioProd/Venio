@@ -91,7 +91,9 @@ du scope, lit `CrmSettings`, renvoie :
 ```
 
 `thresholds` sert au front à afficher « Froid (12 j) » et à alimenter `getLeadAlerts` sans jamais
-recalculer un seuil de son côté.
+recalculer un seuil de son côté. La réponse porte aussi `followUp` (`demoDays`, `proposalDays`,
+`defaultDays`), les délais de relance pré-remplis au moment de marquer un contact : ils vivent dans
+`CrmSettings`, que `VIEW_CRM` ne peut pas lire directement.
 
 **`GET /api/admin/crm/alerts`** — **supprimé**. Aucun consommateur, seuils faux, pas de limite. Son
 rôle est repris par `/worklist`. Le type front `CrmAlerts` disparaît avec lui.
@@ -99,6 +101,9 @@ rôle est repris par `/worklist`. Le type front `CrmAlerts` disparaît avec lui.
 **`POST /api/admin/crm/leads/:id/notes`** — permission `MANAGE_CRM`, scope vérifié comme sur le
 `PATCH` existant. Corps `{ text }`, non vide, borné à 2000 caractères. Crée une `LeadActivity` de
 type `NOTE`. Retourne l'activité créée.
+
+Au passage, `GET /leads/:id/activities` ne vérifiait aucun périmètre : n'importe quel admin pouvait
+lire l'historique de n'importe quel lead. Il est aligné sur les autres routes de la ressource.
 
 **`getOverdueLeads`** du Centre d'activité réutilise `buildWorklist` : il cesse d'ignorer les seuils
 et remonte désormais retards + dérives dans sa section CRM. Ses entrées pointent vers
@@ -133,6 +138,11 @@ Prospection.
 
 Le mode est réglable par l'URL (`?mode=file`) pour que le Centre d'activité puisse y renvoyer.
 
+`/crm/worklist` est appelé au chargement du board, pas à l'entrée dans le mode File : les badges des
+vues Tableau et Kanban dépendent des mêmes seuils. Ceux-ci descendent par `CrmThresholdsContext`
+plutôt qu'en props — ils sont consommés au fond de l'arbre, par des composants dont ce n'est pas une
+donnée.
+
 ## Les quatre gestes
 
 **Reporter** — +1 j, +3 j, +1 sem. ou date au choix. `PATCH { nextActionAt }`.
@@ -153,13 +163,16 @@ la note par sa propre `LeadActivity`.
 
 ## Erreurs et rechargement
 
-Mise à jour optimiste locale, retour arrière visible et bandeau d'erreur si l'appel échoue. Le board
-actuel avale ses erreurs dans des `catch {}` vides
+Une action verrouille sa ligne le temps de l'aller-retour, puis recharge la file seule. En cas
+d'échec, ce même rechargement remet la ligne dans son état réel et le bandeau d'erreur reste
+affiché. On a préféré ce verrouillage à une mise à jour optimiste : le geste est court, et une
+écriture optimiste ouvrirait une fenêtre où l'affichage ment. Le board actuel, lui, avale ses
+erreurs dans des `catch {}` vides
 ([`index.tsx:69`](../../../src/pages/admin/crm-board/index.tsx) et suivants) ; la file ne reproduit
 pas ce défaut.
 
-Après une action réussie, seule la file est rechargée — pas le pipeline entier — pour que traiter dix
-lignes ne déclenche pas dix rechargements complets du board.
+Le pipeline n'est pas rechargé à chaque geste — traiter dix relances déclencherait dix rechargements
+complets du board. Il est marqué périmé et rechargé au retour sur une vue qui l'affiche.
 
 ## Tests
 

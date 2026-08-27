@@ -1,4 +1,4 @@
-import type { CrmStatusConfig, Lead, LeadAlert } from '../../../types/crm.types'
+import type { CrmStatusConfig, Lead, LeadAlert, WorklistThresholds } from '../../../types/crm.types'
 
 export const CRM_STATUSES = [
   { key: 'LEAD', label: 'Lead', color: '#6366f1' },
@@ -28,7 +28,9 @@ export const CRM_TEMPERATURES = [
 
 export const STATUS_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, s]))
 export const PRIORITY_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_PRIORITIES.map((p) => [p.key, p]))
-export const TEMPERATURE_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_TEMPERATURES.map((t) => [t.key, t]))
+export const TEMPERATURE_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(
+  CRM_TEMPERATURES.map((t) => [t.key, t]),
+)
 
 export const EMPTY_FORM = {
   company: '',
@@ -47,29 +49,45 @@ export const EMPTY_FORM = {
   assignedTo: '',
 }
 
-// Helper to calculate lead alerts
-export const getLeadAlerts = (lead: Lead): LeadAlert[] => {
-  const alerts: LeadAlert[] = []
-  const now = new Date()
+// Seuils utilisés tant que le serveur n'a pas répondu. Ils reproduisent les
+// valeurs par défaut de CrmSettings ; dès que /crm/worklist a répondu, ce sont
+// les seuils réellement configurés qui s'appliquent.
+export const DEFAULT_WORKLIST_THRESHOLDS: WorklistThresholds = {
+  coldEnabled: true,
+  coldDays: 7,
+  overdueEnabled: true,
+  staleEnabled: true,
+  staleDays: 14,
+}
 
-  // Lead froid (7+ jours sans contact)
-  if (lead.lastContactAt && !['WON', 'LOST'].includes(lead.status)) {
-    const daysSince = Math.floor((now.getTime() - new Date(lead.lastContactAt).getTime()) / (1000 * 60 * 60 * 24))
-    if (daysSince >= 7) {
-      alerts.push({ type: 'cold', label: `Froid (${daysSince}j)`, color: '#64748b' })
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+
+const daysSince = (value: string) => Math.floor((Date.now() - new Date(value).getTime()) / MS_PER_DAY)
+
+// Badges d'alerte d'un lead, selon les seuils configurés dans
+// /admin/crm/settings — et non selon des constantes en dur.
+export const getLeadAlerts = (
+  lead: Lead,
+  thresholds: WorklistThresholds = DEFAULT_WORKLIST_THRESHOLDS,
+): LeadAlert[] => {
+  const alerts: LeadAlert[] = []
+  if (['WON', 'LOST'].includes(lead.status)) return alerts
+
+  if (thresholds.coldEnabled && lead.lastContactAt) {
+    const days = daysSince(lead.lastContactAt)
+    if (days >= thresholds.coldDays) {
+      alerts.push({ type: 'cold', label: `Froid (${days}j)`, color: '#64748b' })
     }
   }
 
-  // Action en retard
-  if (lead.nextActionAt && new Date(lead.nextActionAt) < now && !['WON', 'LOST'].includes(lead.status)) {
+  if (thresholds.overdueEnabled && lead.nextActionAt && new Date(lead.nextActionAt) < new Date()) {
     alerts.push({ type: 'overdue', label: 'En retard', color: '#ef4444' })
   }
 
-  // Statut bloqu\u00e9 (14+ jours)
-  if (lead.statusChangedAt && !['WON', 'LOST'].includes(lead.status)) {
-    const daysSince = Math.floor((now.getTime() - new Date(lead.statusChangedAt).getTime()) / (1000 * 60 * 60 * 24))
-    if (daysSince >= 14) {
-      alerts.push({ type: 'stale', label: `Bloqu\u00e9 (${daysSince}j)`, color: '#f59e0b' })
+  if (thresholds.staleEnabled && lead.statusChangedAt) {
+    const days = daysSince(lead.statusChangedAt)
+    if (days >= thresholds.staleDays) {
+      alerts.push({ type: 'stale', label: `Bloqué (${days}j)`, color: '#f59e0b' })
     }
   }
 

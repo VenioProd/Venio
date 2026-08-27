@@ -9,6 +9,7 @@ import {
   TEMPERATURE_MAP,
   getLeadAlerts,
 } from './constants'
+import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadTableRowProps {
   lead: Lead
@@ -48,7 +49,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
   const priorityInfo = PRIORITY_MAP[lead.priority || '']
-  const alerts = getLeadAlerts(lead)
+  const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
 
