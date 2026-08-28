@@ -245,12 +245,21 @@
 .mh-home .mh-method-link:hover .mh-ar {
   transform: translateX(4px);
 }
+.mh-home .mh-methode-headline {
+  font-size: clamp(24px, 3.4vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  margin-bottom: var(--mh-sp-l);
+  max-width: 20ch;
+}
 .mh-home .mh-piliers {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
 }
 .mh-home .mh-pilier {
-  padding: var(--mh-sp-l) var(--mh-sp-m);
+  padding: var(--mh-sp-m);
   border-left: 1px solid var(--border-color);
 }
 .mh-home .mh-pilier:first-child {
@@ -278,21 +287,10 @@
   line-height: 1.55;
   font-weight: 500;
 }
-.mh-home .mh-refus {
+.mh-home .mh-methode-close {
   margin-top: var(--mh-sp-l);
   padding-top: var(--mh-sp-l);
   border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: baseline;
-  gap: var(--mh-sp-m);
-  flex-wrap: wrap;
-}
-.mh-home .mh-refus-no {
-  font-size: clamp(15px, 1.6vw, 19px);
-  font-weight: 800;
-  color: var(--text-muted);
-}
-.mh-home .mh-refus-yes {
   font-size: clamp(15px, 1.6vw, 19px);
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -301,7 +299,7 @@
   align-items: baseline;
   gap: 12px;
 }
-.mh-home .mh-refus-yes::before {
+.mh-home .mh-methode-close::before {
   content: '';
   width: 8px;
   height: 8px;
@@ -332,8 +330,16 @@
   color: var(--text-secondary);
   max-width: 54ch;
   line-height: 1.55;
-  margin-bottom: var(--mh-sp-l);
+  margin-bottom: var(--mh-sp-s);
   font-weight: 500;
+}
+.mh-home .mh-sites-meta {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--mh-sp-l);
 }
 
 .mh-home .mh-pricing {
@@ -420,12 +426,11 @@
   content: '—';
   color: var(--text-muted);
 }
-.mh-home .mh-price-devis {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+.mh-home .mh-price-pourqui {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-style: italic;
 }
 .mh-home .mh-price-cta {
   font-size: 11px;
@@ -562,13 +567,6 @@
   gap: var(--mh-sp-m);
   flex-wrap: wrap;
 }
-.mh-home .mh-metier-meta {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
 .mh-home .mh-metier-go {
   font-size: 11px;
   font-weight: 800;
@@ -647,6 +645,14 @@
 }
 .mh-home .mh-cta-go:hover .mh-ar {
   transform: translateX(6px);
+}
+.mh-home .mh-cta-note {
+  margin-top: var(--mh-sp-m);
+  font-size: clamp(13px, 1.2vw, 15px);
+  color: var(--text-secondary);
+  max-width: 48ch;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 /* ─── RESPONSIVE ─── */
