@@ -24,6 +24,15 @@ import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
 import { leadScopeFilter, isLeadOutOfScope } from '../../lib/crmScope.js'
+import {
+  assessCoverage,
+  buildFunnel,
+  buildLossBreakdown,
+  computeVelocity,
+  groupPerformance,
+  type PilotageLead,
+  type StatusTransition,
+} from '../../lib/crmPilotage.js'
 
 const router = express.Router()
 
@@ -56,6 +65,8 @@ function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, an
     payload.leadTemperature = body.leadTemperature
   }
   if (body.interactionNotes !== undefined) payload.interactionNotes = String(body.interactionNotes || '')
+  if (body.lostReason !== undefined) payload.lostReason = String(body.lostReason || '').trim()
+  if (body.lostComment !== undefined) payload.lostComment = String(body.lostComment || '')
   if (body.assignedTo !== undefined) payload.assignedTo = body.assignedTo || null
   return payload
 }
@@ -316,6 +327,16 @@ router.patch(
       const oldAssignee = lead.assignedTo?.toString() || null
 
       const payload = normalizeLeadPayload(req.body || {})
+
+      // La liste des motifs est fermée : accepter une valeur hors liste la
+      // rendrait ouverte et les statistiques de perte inexploitables.
+      if (payload.lostReason && !settings.lostReasons.includes(payload.lostReason)) {
+        return res.status(400).json({
+          error: 'Motif de perte inconnu',
+          allowed: settings.lostReasons,
+        })
+      }
+
       Object.assign(lead, payload)
 
       // Automations de base sur changement de statut
@@ -504,6 +525,84 @@ router.get(
         .sort({ createdAt: -1 })
         .populate('actorId', 'name email')
       return res.json({ activities })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// ─── Pilotage commercial ─────────────────────────────────────────────────────
+
+const PILOTAGE_PERIODS: Record<string, number> = { '30d': 30, '90d': 90, '12m': 365 }
+const DEFAULT_PILOTAGE_PERIOD = '90d'
+
+/** Début de la fenêtre d'analyse. `ytd` part du 1er janvier de l'année courante. */
+function resolvePeriod(raw: unknown, now: Date): { period: string; since: Date } {
+  const period = typeof raw === 'string' && (raw === 'ytd' || raw in PILOTAGE_PERIODS) ? raw : DEFAULT_PILOTAGE_PERIOD
+  if (period === 'ytd') return { period, since: new Date(now.getFullYear(), 0, 1) }
+  const since = new Date(now)
+  since.setDate(since.getDate() - PILOTAGE_PERIODS[period]!)
+  return { period, since }
+}
+
+router.get(
+  '/pilotage',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const now = new Date()
+      const { period, since } = resolvePeriod(req.query.period, now)
+      const seesEveryone = req.user!.role === 'SUPER_ADMIN'
+
+      // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
+      // sur deux populations différentes ne veut rien dire — c'est l'erreur que
+      // corrige ce chantier.
+      const leadDocs = await Lead.find({ createdAt: { $gte: since }, ...leadScopeFilter(req) })
+        .select('status createdAt source budget assignedTo lostReason')
+        .lean()
+
+      const leads: PilotageLead[] = leadDocs.map((lead) => ({
+        _id: String(lead._id),
+        status: lead.status,
+        createdAt: lead.createdAt,
+        source: lead.source,
+        budget: lead.budget,
+        assignedTo: lead.assignedTo ? String(lead.assignedTo) : null,
+        lostReason: lead.lostReason,
+      }))
+
+      const activities = await LeadActivity.find({
+        leadId: { $in: leadDocs.map((lead) => lead._id) },
+        type: 'STATUS_CHANGE',
+      })
+        .select('leadId payload createdAt')
+        .lean()
+
+      const transitions: StatusTransition[] = activities
+        .map((activity) => {
+          const payload = (activity.payload ?? {}) as { from?: unknown; to?: unknown }
+          return {
+            leadId: String(activity.leadId),
+            from: String(payload.from ?? ''),
+            to: String(payload.to ?? ''),
+            at: activity.createdAt,
+          }
+        })
+        .filter((transition) => transition.from && transition.to)
+
+      return res.json({
+        period,
+        since: since.toISOString(),
+        funnel: buildFunnel(leads, transitions),
+        velocity: computeVelocity(leads, transitions),
+        losses: buildLossBreakdown(leads, transitions),
+        bySource: groupPerformance(leads, 'source'),
+        // Ventiler par personne n'a de sens que pour qui voit tout le monde :
+        // sur un périmètre restreint, la table n'aurait qu'une ligne et
+        // suggérerait une comparaison qui n'existe pas.
+        byOwner: seesEveryone ? groupPerformance(leads, 'assignedTo') : null,
+        coverage: assessCoverage(leads, transitions),
+      })
     } catch (err) {
       return next(err)
     }

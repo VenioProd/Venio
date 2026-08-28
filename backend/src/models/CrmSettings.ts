@@ -66,18 +66,26 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     escalationAction: {
       type: String,
       enum: ['NOTIFY_MANAGER', 'REASSIGN', 'BOTH'],
-      default: 'NOTIFY_MANAGER'
+      default: 'NOTIFY_MANAGER',
     },
     escalationManagerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    // ═══════════════════════════════════════════════════════════════
+    // MOTIFS DE PERTE
+    // ═══════════════════════════════════════════════════════════════
+    lostReasons: {
+      type: [String],
+      default: ['Prix', 'Délai', 'Concurrent', 'Sans réponse', 'Hors cible', 'Projet annulé'],
+    },
 
     // ═══════════════════════════════════════════════════════════════
     // LEAD SCORING
     // ═══════════════════════════════════════════════════════════════
     scoringEnabled: { type: Boolean, default: false },
     scoringWeights: {
-      budgetHigh: { type: Number, default: 30 },      // budget > 10000
-      budgetMedium: { type: Number, default: 15 },    // budget 1000-10000
-      budgetLow: { type: Number, default: 5 },        // budget < 1000
+      budgetHigh: { type: Number, default: 30 }, // budget > 10000
+      budgetMedium: { type: Number, default: 15 }, // budget 1000-10000
+      budgetLow: { type: Number, default: 5 }, // budget < 1000
       sourceReferral: { type: Number, default: 25 },
       sourceAds: { type: Number, default: 15 },
       sourceOther: { type: Number, default: 10 },
@@ -120,7 +128,7 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     clientHealthAutoUpdate: { type: Boolean, default: true },
     invoiceReminderDays: { type: Number, default: 7 }, // Days after due date to send reminder
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 /**
@@ -138,11 +146,7 @@ crmSettingsSchema.statics.getSettings = async function () {
  * Update settings (upsert)
  */
 crmSettingsSchema.statics.updateSettings = async function (updates: Partial<ICrmSettings>) {
-  const settings = await this.findOneAndUpdate(
-    {},
-    { $set: updates },
-    { upsert: true, new: true, runValidators: true }
-  )
+  const settings = await this.findOneAndUpdate({}, { $set: updates }, { upsert: true, new: true, runValidators: true })
   return settings
 }
 
