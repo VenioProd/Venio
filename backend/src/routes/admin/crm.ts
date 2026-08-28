@@ -640,6 +640,10 @@ router.get(
       return res.json({
         groups,
         thresholds,
+        // Motifs de perte proposés par le dialogue de clôture. Servis ici
+        // plutôt que via /crm/settings, réservé à MANAGE_CRM : les lire ne
+        // devrait pas exiger le droit de les modifier.
+        lostReasons: settings.lostReasons,
         // Délais de relance pré-remplis par la file quand on marque un lead
         // contacté : mêmes réglages que les automatisations de statut.
         followUp: {
