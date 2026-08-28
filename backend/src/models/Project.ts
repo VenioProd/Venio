@@ -38,6 +38,9 @@ const projectSchema = new mongoose.Schema<IProject>(
     internalNotes: { type: String, default: '' },
     isArchived: { type: Boolean, default: false },
     tags: { type: [String], default: [] },
+    // Lead à l'origine du projet, quand il vient du CRM. Sans lui, aucun euro
+    // facturé ne peut être remonté jusqu'à l'affaire qui l'a apporté.
+    sourceLead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     summary: { type: String, default: '' },
     reminderAt: { type: Date, default: null },
     billing: {
@@ -50,7 +53,9 @@ const projectSchema = new mongoose.Schema<IProject>(
       quoteReference: { type: String, default: '' },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
+
+projectSchema.index({ sourceLead: 1 }, { partialFilterExpression: { sourceLead: { $type: 'objectId' } } })
 
 export default mongoose.model<IProject>('Project', projectSchema)

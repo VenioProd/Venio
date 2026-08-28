@@ -38,7 +38,19 @@ export type {
   IQuoteProposal,
 } from './quote.js'
 
-export type { IClientActivity, IClientContact, IClientNote, IScoringWeights, ICrmSettings } from './crm.js'
+export type {
+  IClientActivity,
+  IClientContact,
+  IClientNote,
+  IScoringWeights,
+  ICrmSettings,
+  IInteraction,
+  IInteractionRecipient,
+  InteractionSubjectType,
+  InteractionKind,
+  InteractionDirection,
+  InteractionDeliveryStatus,
+} from './crm.js'
 
 export type { IBriefDateCle, IMissionBrief } from './brief.js'
 

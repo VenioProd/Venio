@@ -51,7 +51,9 @@ export async function sendInternReportEmail({
         `Voir les rapports : ${baseUrl}/stagiaires`,
         '',
         `— ${appName}`,
-      ].filter(Boolean).join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       html: `
         <div style="font-family: -apple-system, sans-serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
           <div style="background: #0f172a; padding: 24px; border-radius: 12px 12px 0 0;">
@@ -67,12 +69,16 @@ export async function sendInternReportEmail({
             <div style="background: #f8fafc; border-left: 3px solid #0ea5e9; border-radius: 0 6px 6px 0; padding: 14px 16px; margin-bottom: 20px; font-size: 14px; color: #334155; line-height: 1.6;">
               ${escapeHtml(preview).replace(/\n/g, '<br>')}
             </div>
-            ${tachesCount > 0 || attachmentsCount > 0 ? `
+            ${
+              tachesCount > 0 || attachmentsCount > 0
+                ? `
             <p style="font-size: 13px; color: #64748b; margin: 0 0 20px;">
               ${tachesCount > 0 ? `✅ ${tachesCount} tâche(s) réalisée(s)` : ''}
               ${tachesCount > 0 && attachmentsCount > 0 ? ' · ' : ''}
               ${attachmentsCount > 0 ? `📎 ${attachmentsCount} pièce(s) jointe(s)` : ''}
-            </p>` : ''}
+            </p>`
+                : ''
+            }
             <a href="${baseUrl}/stagiaires" style="display: inline-block; padding: 10px 20px; background: #0ea5e9; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Voir le rapport</a>
           </div>
           <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">— ${escapeHtml(appName)}</p>
@@ -122,7 +128,9 @@ export async function sendReportValidatedEmail({
         commentaire ? `\nCommentaire : ${commentaire}` : '',
         '',
         `— ${appName}`,
-      ].filter(Boolean).join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       html: `
         <div style="font-family: -apple-system, sans-serif; max-width: 520px; margin: 0 auto; color: #1e293b;">
           <div style="background: #0f172a; padding: 24px; border-radius: 12px 12px 0 0;">
@@ -138,11 +146,15 @@ export async function sendReportValidatedEmail({
               ton rapport d'activité du <strong>${escapeHtml(reportDate)}</strong> a été validé par <strong>${escapeHtml(adminName)}</strong>.
               <span style="display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${internType === 'ALTERNANT' ? '#f3e8ff' : '#e0f2fe'}; color: ${internType === 'ALTERNANT' ? '#7c3aed' : '#0369a1'};">${typeLabel}</span>
             </p>
-            ${commentaire ? `
+            ${
+              commentaire
+                ? `
             <div style="background: #f5f3ff; border-left: 3px solid #8b5cf6; border-radius: 0 6px 6px 0; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; color: #334155; line-height: 1.6;">
               <span style="font-size: 11px; font-weight: 600; color: #8b5cf6; display: block; margin-bottom: 4px;">Commentaire</span>
               ${escapeHtml(commentaire).replace(/\n/g, '<br>')}
-            </div>` : ''}
+            </div>`
+                : ''
+            }
           </div>
           <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">— ${escapeHtml(appName)}</p>
         </div>
@@ -167,7 +179,13 @@ interface WeeklyReportStats {
 /**
  * Envoie le rapport hebdomadaire CRM.
  */
-export async function sendWeeklyReportEmail({ to, stats }: { to: string; stats: WeeklyReportStats }): Promise<EmailResult> {
+export async function sendWeeklyReportEmail({
+  to,
+  stats,
+}: {
+  to: string
+  stats: WeeklyReportStats
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -188,7 +206,7 @@ export async function sendWeeklyReportEmail({ to, stats }: { to: string; stats: 
         `Leads qualifiés : ${stats.qualified}`,
         `Leads gagnés : ${stats.won}`,
         `Leads perdus : ${stats.lost}`,
-        `Taux de conversion : ${stats.conversionRate}%`,
+        `Taux de réussite (affaires conclues) : ${stats.conversionRate}%`,
         '',
         `Total leads actifs : ${stats.totalActive}`,
         `Valeur pipeline : ${stats.pipelineValue} €`,
@@ -204,7 +222,7 @@ export async function sendWeeklyReportEmail({ to, stats }: { to: string; stats: 
         `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Leads qualifiés</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600; text-align: right; color: #0ea5e9;">${stats.qualified}</td></tr>`,
         `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Leads gagnés</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600; text-align: right; color: #22c55e;">${stats.won}</td></tr>`,
         `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Leads perdus</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600; text-align: right; color: #ef4444;">${stats.lost}</td></tr>`,
-        `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Taux de conversion</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600; text-align: right;">${stats.conversionRate}%</td></tr>`,
+        `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Taux de réussite (affaires conclues)</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600; text-align: right;">${stats.conversionRate}%</td></tr>`,
         `<tr style="background: #f3f4f6;"><td style="padding: 8px;">Total leads actifs</td><td style="padding: 8px; font-weight: 600; text-align: right;">${stats.totalActive}</td></tr>`,
         `<tr style="background: #f3f4f6;"><td style="padding: 8px;">Valeur pipeline</td><td style="padding: 8px; font-weight: 600; text-align: right;">${stats.pipelineValue.toLocaleString('fr-FR')} €</td></tr>`,
         '</table>',
@@ -241,7 +259,10 @@ export async function sendInternReportReminderEmail({
 
   const appName = process.env.APP_NAME || 'Venio'
   const typeLabel = internType === 'ALTERNANT' ? 'alternant(e)' : 'stagiaire'
-  const delay = daysSinceLastReport === 0 ? "aujourd'hui" : `il y a ${daysSinceLastReport} jour${daysSinceLastReport > 1 ? 's' : ''}`
+  const delay =
+    daysSinceLastReport === 0
+      ? "aujourd'hui"
+      : `il y a ${daysSinceLastReport} jour${daysSinceLastReport > 1 ? 's' : ''}`
 
   try {
     await transporter.sendMail({

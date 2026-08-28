@@ -12,6 +12,38 @@ export interface IClientActivity extends Document {
   updatedAt: Date
 }
 
+// ─── Interaction ───
+export type InteractionSubjectType = 'LEAD' | 'CLIENT'
+export type InteractionKind = 'EMAIL' | 'CALL' | 'MEETING' | 'NOTE'
+export type InteractionDirection = 'OUT' | 'IN' | 'NONE'
+export type InteractionDeliveryStatus = 'NONE' | 'SENT' | 'PARTIAL' | 'FAILED'
+
+export interface IInteractionRecipient {
+  email: string
+  name: string
+  status: 'SENT' | 'FAILED'
+  error: string
+}
+
+export interface IInteraction extends Document {
+  subjectType: InteractionSubjectType
+  subjectId: Types.ObjectId
+  kind: InteractionKind
+  direction: InteractionDirection
+  occurredAt: Date
+  subject: string
+  body: string
+  pinned: boolean
+  author: Types.ObjectId | null
+  recipients: IInteractionRecipient[]
+  deliveryStatus: InteractionDeliveryStatus
+  /** Identifiant du document d'origine, pour rendre la migration idempotente.
+   *  Absent hors migration : voir l'index partiel du modèle. */
+  migratedFrom?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── ClientContact ───
 export interface IClientContact extends Document {
   clientId: Types.ObjectId
@@ -75,6 +107,7 @@ export interface ICrmSettings extends Document {
   escalationThresholdDays: number
   escalationAction: EscalationAction
   escalationManagerId: Types.ObjectId | null
+  lostReasons: string[]
   scoringEnabled: boolean
   scoringWeights: IScoringWeights
   duplicateDetectionEnabled: boolean

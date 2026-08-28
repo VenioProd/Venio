@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { useTabState } from '../../../hooks/useTabState'
@@ -7,29 +7,23 @@ import { useToast } from '../../../context/ToastContext'
 import {
   archiveAdminClient,
   createAdminClientContact,
-  createAdminClientNote,
   getAdminClient,
   getAdminClientBillingSummary,
   getAdminClientCloud,
   getAdminClientProgress,
-  listAdminClientActivities,
   listAdminClientBillingDocuments,
   listAdminClientContacts,
   listAdminClientDeliverables,
-  listAdminClientNotes,
   listAdminClientProjects,
   listAdminClientFiles,
   reactivateAdminClient,
   updateAdminClient,
   deleteAdminClientContact,
-  deleteAdminClientNote,
 } from '../../../services/adminClients'
 import type {
   Client,
   Contact,
   ContactDraft,
-  Note,
-  Activity,
   BillingSummary,
   BillingDocument,
   Deliverable,
@@ -37,14 +31,13 @@ import type {
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
 import type { AdminClientFile } from '../../../services/adminClients'
-import type { NoteOrActivity } from './types'
 import { TABS } from './types'
 import OverviewTab from './OverviewTab'
 import CloudTab from './CloudTab'
 import ProjectsTab from './ProjectsTab'
 import DeliverablesTab from './DeliverablesTab'
 import ContactsTab from './ContactsTab'
-import NotesTab from './NotesTab'
+import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import BillingTab from './BillingTab'
 import FilesTab from './FilesTab'
 import '../../espace-client/ClientPortal.css'
@@ -61,8 +54,6 @@ const ClientAccountDetail = () => {
   const [progress, setProgress] = useState<{ progressPercent?: number } | null>(null)
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [notes, setNotes] = useState<Note[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null)
   const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([])
   const [cloudInfo, setCloudInfo] = useState<CloudInfo | null>(null)
@@ -80,7 +71,6 @@ const ClientAccountDetail = () => {
   const [resettingClient, setResettingClient] = useState(false)
 
   const [contactDraft, setContactDraft] = useState<ContactDraft>({ firstName: '', lastName: '', email: '', phone: '' })
-  const [noteDraft, setNoteDraft] = useState<string>('')
 
   const canArchive = user?.role === 'SUPER_ADMIN'
 
@@ -171,8 +161,6 @@ const ClientAccountDetail = () => {
         progressRes,
         deliverablesRes,
         contactsRes,
-        notesRes,
-        activitiesRes,
         billingSummaryRes,
         billingDocumentsRes,
         cloudRes,
@@ -183,15 +171,11 @@ const ClientAccountDetail = () => {
         getAdminClientProgress(userId!),
         listAdminClientDeliverables(userId!),
         listAdminClientContacts(userId!),
-        listAdminClientNotes(userId!),
-        listAdminClientActivities(userId!),
         getAdminClientBillingSummary(userId!).catch(() => ({ summary: null })),
         listAdminClientBillingDocuments(userId!).catch(() => ({ documents: [] })),
         getAdminClientCloud(userId!).catch(() => ({ cloud: null })),
         listAdminClientFiles(userId!).catch(() => ({ files: [] })),
       ])) as [
-        Record<string, unknown>,
-        Record<string, unknown>,
         Record<string, unknown>,
         Record<string, unknown>,
         Record<string, unknown>,
@@ -208,8 +192,6 @@ const ClientAccountDetail = () => {
       setProgress((progressRes as { progressPercent?: number }) || null)
       setDeliverables((deliverablesRes.deliverables as Deliverable[]) || [])
       setContacts((contactsRes.contacts as Contact[]) || [])
-      setNotes((notesRes.notes as Note[]) || [])
-      setActivities((activitiesRes.activities as Activity[]) || [])
       setBillingSummary((billingSummaryRes.summary as BillingSummary) || null)
       setBillingDocuments((billingDocumentsRes.documents as BillingDocument[]) || [])
       setCloudInfo((cloudRes.cloud as CloudInfo) || null)
@@ -224,32 +206,6 @@ const ClientAccountDetail = () => {
   useEffect(() => {
     loadAll()
   }, [userId])
-
-  const notesAndActivities = useMemo<NoteOrActivity[]>(() => {
-    const fromNotes: NoteOrActivity[] = notes.map((note) => ({
-      _id: `note-${note._id}`,
-      createdAt: note.createdAt,
-      label: note.content,
-      type: 'NOTE',
-      actor: note.createdBy?.name || 'Admin',
-      pinned: Boolean(note.pinned),
-      rawId: note._id,
-    }))
-
-    const fromActivities: NoteOrActivity[] = activities.map((activity) => ({
-      _id: `activity-${activity._id}`,
-      createdAt: activity.createdAt,
-      label: activity.label,
-      type: activity.type,
-      actor: activity.actorId?.name || 'System',
-      pinned: false,
-      rawId: activity._id,
-    }))
-
-    return [...fromNotes, ...fromActivities].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-  }, [notes, activities])
 
   const saveClientPatch = async (patch: Record<string, unknown>) => {
     setSaving(true)
@@ -308,40 +264,6 @@ const ClientAccountDetail = () => {
       setContacts((current) => current.filter((contact) => contact._id !== contactId))
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur suppression contact')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const addNote = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!noteDraft.trim()) return
-    setSaving(true)
-    setError('')
-    try {
-      await createAdminClientNote(userId!, { content: noteDraft.trim() })
-      setNoteDraft('')
-      const [notesRes, activitiesRes] = (await Promise.all([
-        listAdminClientNotes(userId!),
-        listAdminClientActivities(userId!),
-      ])) as [Record<string, unknown>, Record<string, unknown>]
-      setNotes((notesRes.notes as Note[]) || [])
-      setActivities((activitiesRes.activities as Activity[]) || [])
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout note')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const removeNote = async (noteId: string) => {
-    setSaving(true)
-    setError('')
-    try {
-      await deleteAdminClientNote(userId!, noteId)
-      setNotes((current) => current.filter((note) => note._id !== noteId))
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression note')
     } finally {
       setSaving(false)
     }
@@ -460,16 +382,7 @@ const ClientAccountDetail = () => {
               />
             )}
 
-            {activeTab === 'notes' && (
-              <NotesTab
-                notesAndActivities={notesAndActivities}
-                noteDraft={noteDraft}
-                setNoteDraft={setNoteDraft}
-                addNote={addNote}
-                removeNote={removeNote}
-                saving={saving}
-              />
-            )}
+            {activeTab === 'notes' && <InteractionTimeline subjectType="CLIENT" subjectId={userId!} canWrite />}
 
             {activeTab === 'files' && <FilesTab files={files} clientId={userId!} />}
 

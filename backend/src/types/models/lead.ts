@@ -22,6 +22,8 @@ export interface ILead extends Document {
   statusChangedAt: Date | null
   clientAccountId: Types.ObjectId | null
   score: number | null
+  lostReason: string
+  lostComment: string
   createdAt: Date
   updatedAt: Date
 }

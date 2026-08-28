@@ -1,0 +1,157 @@
+/* Chaîne commerciale d'un lead : projets, devis, factures. */
+
+.revenue-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.revenue-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.revenue-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.revenue-summary-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.revenue-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e0e7ff;
+}
+
+.revenue-summary-value.is-muted {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.revenue-projects,
+.revenue-documents,
+.revenue-candidates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.revenue-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.revenue-project {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+.revenue-project-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.revenue-project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e7ff;
+}
+
+.revenue-project-status {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.revenue-unlink {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.revenue-unlink:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.revenue-unlink:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.revenue-documents {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.revenue-documents li {
+  display: grid;
+  grid-template-columns: 60px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.revenue-doc-type {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.revenue-doc-status {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.revenue-doc-total {
+  font-weight: 600;
+  color: #e0e7ff;
+  white-space: nowrap;
+}
+
+.revenue-candidates li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.revenue-empty,
+.revenue-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}

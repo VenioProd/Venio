@@ -1,4 +1,5 @@
 import Lead from '../models/Lead.js'
+import LeadActivity from '../models/LeadActivity.js'
 import Task from '../models/Task.js'
 import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
@@ -350,9 +351,17 @@ export async function processWeeklyReport(): Promise<WeeklyReportResult> {
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
 
+    // Ces compteurs mesurent l'ACTIVITÉ de la semaine — des flux, pas une
+    // cohorte. Les qualifications se comptent par transition et non par statut
+    // courant : sinon un lead passé QUALIFIED puis DEMO dans la même semaine
+    // n'apparaîtrait nulle part.
     const [newLeads, qualified, won, lost, allActive] = await Promise.all([
       Lead.countDocuments({ createdAt: { $gte: weekAgo } }),
-      Lead.countDocuments({ status: 'QUALIFIED', statusChangedAt: { $gte: weekAgo } }),
+      LeadActivity.countDocuments({
+        type: 'STATUS_CHANGE',
+        'payload.to': 'QUALIFIED',
+        createdAt: { $gte: weekAgo },
+      }),
       Lead.countDocuments({ status: 'WON', statusChangedAt: { $gte: weekAgo } }),
       Lead.countDocuments({ status: 'LOST', statusChangedAt: { $gte: weekAgo } }),
       Lead.find({ status: { $nin: ['WON', 'LOST'] } }),
@@ -360,7 +369,12 @@ export async function processWeeklyReport(): Promise<WeeklyReportResult> {
 
     const totalActive = allActive.length
     const pipelineValue = allActive.reduce((sum, lead) => sum + (lead.budget || 0), 0)
-    const conversionRate = newLeads > 0 ? Math.round((won / newLeads) * 100) : 0
+    // Part des affaires CONCLUES cette semaine qui l'ont été favorablement.
+    // L'ancien calcul divisait les gains de la semaine par les leads créés
+    // dans la semaine : deux populations sans rapport, un ratio qui pouvait
+    // dépasser 100 %.
+    const settled = won + lost
+    const conversionRate = settled > 0 ? Math.round((won / settled) * 100) : 0
 
     const stats = {
       newLeads,

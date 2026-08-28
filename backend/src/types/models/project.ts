@@ -46,6 +46,7 @@ export interface IProject extends Document {
   internalNotes: string
   isArchived: boolean
   tags: string[]
+  sourceLead: Types.ObjectId | null
   summary: string
   reminderAt: Date | null
   billing: IProjectBilling

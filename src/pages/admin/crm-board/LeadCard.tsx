@@ -2,6 +2,7 @@ import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import { getLeadAlerts } from './constants'
+import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadCardProps {
   lead: Lead
@@ -26,7 +27,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
 }) => {
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
-  const alerts = getLeadAlerts(lead)
+  const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
 
@@ -41,7 +42,11 @@ const LeadCard: React.FC<LeadCardProps> = ({
       {alerts.length > 0 && (
         <div className="crm-card-alerts">
           {alerts.map((alert) => (
-            <span key={alert.type} className="crm-alert-badge" style={{ '--alert-color': alert.color } as React.CSSProperties}>
+            <span
+              key={alert.type}
+              className="crm-alert-badge"
+              style={{ '--alert-color': alert.color } as React.CSSProperties}
+            >
               {alert.label}
             </span>
           ))}
