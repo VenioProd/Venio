@@ -6,13 +6,12 @@ import { useReveal } from '../hooks/useReveal'
 import { trackPublicEvent } from '../lib/publicAnalytics'
 import { apiFetch } from '../lib/api'
 import '../styles/monolithe-pages.css'
+import './Contact.css'
 
 interface ContactFormData {
   prenom: string
   nom: string
   email: string
-  entreprise: string
-  sujet: string
   message: string
   consent: boolean
   website: string
@@ -26,8 +25,6 @@ const Contact = () => {
     prenom: '',
     nom: '',
     email: '',
-    entreprise: '',
-    sujet: '',
     message: '',
     consent: false,
     website: '',
@@ -68,8 +65,6 @@ const Contact = () => {
           firstName: formData.prenom,
           lastName: formData.nom,
           email: formData.email,
-          company: formData.entreprise,
-          subject: formData.sujet,
           message: formData.message,
           consent: formData.consent,
           website: formData.website,
@@ -81,8 +76,6 @@ const Contact = () => {
         prenom: '',
         nom: '',
         email: '',
-        entreprise: '',
-        sujet: '',
         message: '',
         consent: false,
         website: '',
@@ -149,25 +142,43 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* §II — Écrivez-nous */}
+      {/* §II — La prochaine étape */}
       <section className="mp-block">
         <div className="mp-container">
           <div className="mp-head mp-reveal">
             <span className="mp-index" aria-hidden="true">
               II
             </span>
-            <span className="mp-kicker">Écrivez-nous</span>
+            <span className="mp-kicker">La prochaine étape</span>
           </div>
           <div className="mp-contact-grid">
-            <div className="mp-contact-aside mp-reveal">
-              <h2>Email direct</h2>
-              <a className="mp-mail" href="mailto:contact@venio.paris">
-                contact@venio.paris
-              </a>
+            <div className="mp-contact-promise mp-reveal">
+              <h2>
+                Un appel de <span className="mp-accent">trente minutes</span>.
+              </h2>
+              <p>
+                À la fin, vous saurez si on vous est utiles. Si on ne l’est pas, on vous le dit pendant l’appel et on
+                vous oriente ailleurs. Ça ne vous coûte que la demi-heure.
+              </p>
+              <dl className="mp-contact-facts">
+                <div>
+                  <dt>Durée</dt>
+                  <dd>30 min</dd>
+                </div>
+                <div>
+                  <dt>Préparation demandée</dt>
+                  <dd>Aucune</dd>
+                </div>
+                <div>
+                  <dt>Adresse</dt>
+                  <dd>
+                    <a href="mailto:contact@venio.paris">contact@venio.paris</a>
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <div className="mp-contact-form mp-reveal">
-              <h2>Le formulaire</h2>
               <form className="mp-form" onSubmit={handleSubmit}>
                 <div className="mp-form-row">
                   <input
@@ -198,22 +209,6 @@ const Contact = () => {
                   onChange={handleChange}
                   required
                 />
-                <input
-                  type="text"
-                  name="entreprise"
-                  aria-label="Entreprise"
-                  placeholder="Entreprise (optionnel)"
-                  value={formData.entreprise}
-                  onChange={handleChange}
-                />
-                <select name="sujet" aria-label="Votre besoin" value={formData.sujet} onChange={handleChange} required>
-                  <option value="">Votre besoin</option>
-                  <option value="Site web">Un site web</option>
-                  <option value="Développement sur mesure">Un outil sur mesure</option>
-                  <option value="Conseil">Du conseil</option>
-                  <option value="Communication & marque">Ma marque, ma communication</option>
-                  <option value="Autre">Autre chose</option>
-                </select>
                 <textarea
                   placeholder="Votre message"
                   name="message"
@@ -252,7 +247,7 @@ const Contact = () => {
                   </p>
                 )}
                 <button type="submit" className="mp-submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Envoi…' : 'Envoyer'}
+                  {isSubmitting ? 'Envoi…' : 'Demander l’appel'}
                 </button>
               </form>
             </div>

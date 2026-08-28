@@ -52,10 +52,10 @@ export function validateContactSubmission(body: unknown, now = Date.now()): Cont
   const lastName = normalizeSingleLine(raw.lastName, MAX_LENGTHS.lastName)
   const email = normalizeSingleLine(raw.email, MAX_LENGTHS.email)?.toLowerCase() ?? null
   const company = normalizeSingleLine(raw.company ?? '', MAX_LENGTHS.company)
-  const subject = normalizeSingleLine(raw.subject, MAX_LENGTHS.subject)
+  const subject = normalizeSingleLine(raw.subject ?? '', MAX_LENGTHS.subject)
   const message = normalizeMessage(raw.message)
 
-  if (!firstName || !lastName || !email || !isEmail(email) || company === null || !subject || !message) {
+  if (!firstName || !lastName || !email || !isEmail(email) || company === null || subject === null || !message) {
     return { ok: false, reason: 'invalid' }
   }
 
