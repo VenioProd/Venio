@@ -6,12 +6,21 @@ import VenioIcon, { type VenioIconName } from '../components/VenioIcon'
 import { CropMarks, GrainOverlay } from '../components/BrutalDeco'
 import '../styles/monolithe-home.css'
 
-const TIERS: { num: string; name: string; icon: VenioIconName; tag: string; incl: string[]; featured: boolean }[] = [
+const TIERS: {
+  num: string
+  name: string
+  icon: VenioIconName
+  tag: string
+  pourQui: string
+  incl: string[]
+  featured: boolean
+}[] = [
   {
     num: '01',
     name: 'Vitrine',
     icon: 'vitrine',
     tag: 'Exister en ligne, proprement.',
+    pourQui: 'Pour exister en ligne dès maintenant.',
     incl: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
     featured: false,
   },
@@ -19,7 +28,8 @@ const TIERS: { num: string; name: string; icon: VenioIconName; tag: string; incl
     num: '02',
     name: 'Essentiel',
     icon: 'essentiel',
-    tag: 'Publier et faire vivre votre contenu.',
+    tag: 'Publier souvent, sans friction.',
+    pourQui: 'Pour publier et être trouvé.',
     incl: ['Design sur mesure', 'Mieux placé sur Google', 'Blog & actualités'],
     featured: false,
   },
@@ -28,6 +38,7 @@ const TIERS: { num: string; name: string; icon: VenioIconName; tag: string; incl
     name: 'Business',
     icon: 'business',
     tag: 'Vendre et gérer vos clients en ligne.',
+    pourQui: 'Pour vendre et gérer vos clients.',
     incl: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
     featured: true,
   },
@@ -36,6 +47,7 @@ const TIERS: { num: string; name: string; icon: VenioIconName; tag: string; incl
     name: 'E-commerce',
     icon: 'ecommerce',
     tag: 'Vendre en ligne, en grand.',
+    pourQui: 'Pour un catalogue qui grossit.',
     incl: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
     featured: false,
   },
@@ -43,7 +55,8 @@ const TIERS: { num: string; name: string; icon: VenioIconName; tag: string; incl
     num: '05',
     name: 'Plateforme',
     icon: 'plateforme',
-    tag: "Votre outil de travail, rien qu'à vous.",
+    tag: 'Votre outil de travail. À vous, vraiment.',
+    pourQui: 'Pour un métier qui ne rentre dans aucune case.',
     incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
     featured: false,
   },
@@ -55,7 +68,7 @@ const METIERS: { num: string; name: string; icon: VenioIconName; to: string; tag
     name: 'Conseil',
     icon: 'conseil',
     to: '/services/conseil',
-    tag: 'Un état des lieux sans détour. Des décisions claires, pas de jolies présentations. Si votre stratégie ne tient pas, on vous le dit en face.',
+    tag: 'Un état des lieux sans détour, des décisions claires — pas de jolies présentations. Si votre stratégie ne tient pas, on vous le dit en face.',
     deliv: ['État des lieux franc', "L'IA quand ça sert", 'Une place qui tient face aux concurrents'],
   },
   {
@@ -63,7 +76,7 @@ const METIERS: { num: string; name: string; icon: VenioIconName; to: string; tag
     name: 'Développement',
     icon: 'developpement',
     to: '/services/developpement',
-    tag: 'Un site qui vous appartient. Solide, fait pour durer dix ans, pas six mois. Et que vos équipes peuvent reprendre quand elles veulent.',
+    tag: 'Un outil qui travaille comme vous — CRM, gestion, portail client. Du logiciel qui vous appartient et grandit avec vous, pas un abonnement de plus.',
     deliv: ['Outils de travail sur mesure', 'Un logiciel qui grandit avec vous', "L'IA utile au quotidien"],
   },
   {
@@ -71,7 +84,7 @@ const METIERS: { num: string; name: string; icon: VenioIconName; to: string; tag
     name: 'Communication',
     icon: 'communication',
     to: '/services/communication',
-    tag: 'Une marque qui se tient. Pas un PDF et trois posts. Un ensemble cohérent qui dure et ne ressemble à personne.',
+    tag: 'Une marque qui se tient. Pas un PDF et trois posts : un ensemble cohérent, qui dure et ne ressemble à personne.',
     deliv: ['Une marque cohérente', 'Une voix qui vous ressemble', 'Un style qui vous va'],
   },
 ]
@@ -93,7 +106,7 @@ const PILIERS: { num: string; icon: VenioIconName; titre: string; texte: string 
     num: '03',
     icon: 'refus',
     titre: 'Refus du mensonge',
-    texte: 'Si ça ne sert à rien, on ne le fait pas. Pas de promesses vides.',
+    texte: 'Pas de oui de complaisance. La vérité, même quand elle coûte une vente.',
   },
 ]
 
@@ -130,7 +143,7 @@ const Home = () => {
         <GrainOverlay opacity={0.04} />
         <CropMarks />
         <div className="mh-container mh-hero-content">
-          <p className="mh-hero-label">Studio digital — Paris</p>
+          <p className="mh-hero-label">Sites web sur mesure · Conseil · Marque — Paris</p>
           <h1 className="mh-hero-title">
             Construire
             <br />
@@ -142,15 +155,15 @@ const Home = () => {
           </h1>
           <p className="mh-hero-sub">Pas ce qui rassure.</p>
           <p className="mh-hero-offer">
-            <b>Un site web rien qu'à vous, du conseil, une marque qui tient.</b> Fait sur mesure — jamais un modèle tout
-            fait, jamais des présentations qui sonnent creux.
+            <b>Des sites qui vous appartiennent, du conseil qui tranche, une marque qui tient.</b> Tout sur mesure. Rien
+            en stock.
           </p>
           <div className="mh-hero-actions">
             <a className="mh-btn mh-btn--lime" href="#mh-sites">
               Voir les offres <span className="mh-ar">↓</span>
             </a>
             <Link className="mh-link" to="/contact" data-analytics-cta="home_hero_contact">
-              Parlons
+              Parler de votre projet
             </Link>
           </div>
         </div>
@@ -165,6 +178,7 @@ const Home = () => {
             </span>
             <span className="mh-kicker">Notre méthode</span>
           </div>
+          <h2 className="mh-methode-headline mh-reveal">Trois principes. Pas de discours.</h2>
           <div className="mh-piliers">
             {PILIERS.map((p) => (
               <div key={p.num} className="mh-pilier mh-reveal">
@@ -175,12 +189,7 @@ const Home = () => {
               </div>
             ))}
           </div>
-          <div className="mh-refus mh-reveal">
-            <span className="mh-refus-no">
-              Pas de modèle tout fait. Pas de présentation creuse. Pas de oui pour vous faire plaisir.
-            </span>
-            <span className="mh-refus-yes">Construire ce qui doit exister — alors on parle.</span>
-          </div>
+          <p className="mh-methode-close mh-reveal">Construire ce qui doit exister — le reste, on le refuse.</p>
           <Link className="mh-method-link mh-reveal" to="/methode">
             Voir les étapes, livrables et cadence <span className="mh-ar">→</span>
           </Link>
@@ -200,9 +209,10 @@ const Home = () => {
             Des sites qui durent <span className="mh-accent">10 ans</span>. Pas 6 mois.
           </h2>
           <p className="mh-sites-intro mh-reveal">
-            Pas un modèle acheté qui se casse à la première mise à jour. Chaque site est fait pour vous, à partir de vos
-            vrais besoins — et il grandit en même temps que votre activité. Cinq formules, selon l'ambition du projet.
+            Un site Venio est conçu pour votre activité et tient dans le temps. Un thème acheté, lui, casse à la
+            première mise à jour — c'est même son modèle économique.
           </p>
+          <p className="mh-sites-meta mh-reveal">Cinq paliers · Tous sur devis</p>
 
           <div className="mh-pricing">
             {TIERS.map((t) => (
@@ -221,9 +231,9 @@ const Home = () => {
                     <li key={i}>{i}</li>
                   ))}
                 </ul>
-                <span className="mh-price-devis">Sur devis</span>
+                <span className="mh-price-pourqui">{t.pourQui}</span>
                 <span className="mh-price-cta">
-                  {t.name === 'Plateforme' ? 'Nous contacter' : 'Démarrer'} <span className="mh-ar">→</span>
+                  Voir ce palier <span className="mh-ar">→</span>
                 </span>
               </Link>
             ))}
@@ -231,9 +241,8 @@ const Home = () => {
 
           <div className="mh-sites-foot mh-reveal">
             <p className="mh-webnote">
-              <b>On s'occupe de tout, en option sur chaque formule :</b> on héberge votre site, on le met à jour, on le
-              sauvegarde et on répond quand vous avez une question. Votre site reste vivant sans que vous ayez à y
-              toucher.
+              <b>On s'occupe de tout, en option sur chaque palier :</b> hébergement, mises à jour, sauvegardes — et
+              quelqu'un qui répond quand vous appelez. Votre site vit sans que vous y pensiez.
             </p>
             <Link className="mh-link" to="/services/sites">
               Le détail des offres <span className="mh-ar">→</span>
@@ -274,7 +283,6 @@ const Home = () => {
                     ))}
                   </ul>
                   <div className="mh-metier-foot">
-                    <span className="mh-metier-meta">Sur devis</span>
                     <span className="mh-metier-go">
                       En parler <span className="mh-ar">→</span>
                     </span>
@@ -296,6 +304,10 @@ const Home = () => {
           <Link className="mh-cta-go mh-reveal" to="/contact" data-analytics-cta="home_final_contact">
             Prendre contact <span className="mh-ar">→</span>
           </Link>
+          <p className="mh-cta-note mh-reveal">
+            Premier échange franc : si on n'est pas les bons pour votre projet, on vous le dit — et on vous dit vers qui
+            aller.
+          </p>
         </div>
       </section>
     </div>
