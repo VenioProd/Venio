@@ -90,6 +90,8 @@ export interface WorklistFollowUp {
 export interface WorklistResponse {
   groups: WorklistGroups
   thresholds: WorklistThresholds
+  /** Motifs de perte configurés, proposés par le dialogue de clôture. */
+  lostReasons: string[]
   followUp: WorklistFollowUp
   counts: Record<WorklistGroupKey, number>
 }

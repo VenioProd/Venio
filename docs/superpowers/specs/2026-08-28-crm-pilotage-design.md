@@ -20,7 +20,7 @@ reste hors sujet.
 | Couverture | **Affichée, jamais masquée.** Les leads sans historique exploitable sont comptés et montrés comme tels. |
 | Motifs de perte | **Liste fermée configurable** dans `CrmSettings` + commentaire libre. Obligatoire **dans l'interface**, optionnel **côté API** — voir § Le motif obligatoire. |
 | Indicateurs | Funnel, vélocité, motifs de perte, performance par source **et** par commercial. |
-| Rendu | `FinancialChart` et `PeriodSelector` existants. Aucun second langage graphique. |
+| Rendu | **Barres horizontales en CSS**, pas de librairie. `FinancialChart` (aire temporelle) et `PeriodSelector` étaient prévus, mais aucun indicateur du pilotage n'est une série temporelle : ce sont des répartitions et des taux. Les forcer dans un graphe de cours aurait été un contresens. Les périodes du pilotage (30 j / 90 j / année / 12 mois) diffèrent en outre de celles de `PeriodSelector` (7 j / 30 j / 90 j / YTD). |
 | Hors périmètre | Prévisionnel pondéré (probabilité × budget) : relève du chantier lead → devis → CA. |
 
 ## Le problème, vérifié dans le code
@@ -33,7 +33,7 @@ Le parcours complet d'un lead à travers les étapes est donc reconstituable, sa
 
 ### L'« entonnoir » n'en est pas un
 
-[`Analytics.tsx:251`](../../../src/pages/admin/Analytics.tsx) affiche Total, Actifs, Gagnés, Perdus.
+`Analytics.tsx:251` (avant découpage de la page) affichait Total, Actifs, Gagnés, Perdus.
 Ces trois dernières catégories **partitionnent** le total : ce sont des parts d'un camembert, pas des
 étapes successives. Aucune déperdition entre QUALIFIED et DEMO n'y est visible, alors que c'est
 précisément ce qu'un entonnoir sert à montrer.
@@ -90,9 +90,15 @@ et sont comptés séparément :
 - créé avant que la journalisation n'existe ;
 - créé pendant que `activityLogging` était désactivé dans les réglages.
 
-`assessCoverage` renvoie `{ total, withHistory, withoutHistory, ratio }`, affiché en clair au-dessus
-du funnel. Un lead sans historique est **exclu des taux** et **signalé**, jamais compté comme un
-échec silencieux.
+`assessCoverage` renvoie `{ total, withHistory, withoutHistory, ratio }`, affiché en clair sous le
+funnel.
+
+Un lead sans historique est **compté dans l'entonnoir, à son statut courant**, et **signalé**. Le
+spec prévoyait d'abord de l'exclure des taux ; l'exclure ferait afficher un entonnoir vide à toute
+installation dont la journalisation est récente, alors qu'on sait au moins où le lead se trouve
+aujourd'hui. Ce sont les **durées** qu'il ne peut pas alimenter, et c'est ce que dit l'avis de
+couverture. Un lead encore à la première étape n'a rien à journaliser : son absence de transition
+est normale et n'est pas comptée comme un trou.
 
 ### Le motif obligatoire
 
@@ -121,9 +127,16 @@ donnerait l'illusion d'une comparaison.
 
 ### Le rapport hebdomadaire, corrigé
 
-`processWeeklyReport` cesse de calculer son propre taux et appelle `groupPerformance` sur la cohorte
-des leads créés dans la période de référence. Le « qualifiés » compté par statut courant devient un
-« qualifiés » compté par transition atteinte.
+`processWeeklyReport` reste un rapport d'**activité** — des flux hebdomadaires, ce qui est légitime.
+Ce qui ne l'était pas, c'est d'appeler « taux de conversion » un rapport entre deux populations sans
+lien. Le taux devient la part des affaires **conclues dans la semaine** qui l'ont été favorablement,
+et les « qualifiés » se comptent par transition et non par statut courant. Le calcul reste sur place
+plutôt que de passer par `groupPerformance` : celui-ci travaille sur une cohorte de leads, quand le
+rapport compte des événements de la semaine — deux choses différentes qu'il aurait fallu tordre
+l'une dans l'autre.
+
+Le libellé de l'email suit : « Taux de réussite (affaires conclues) », pour que le chiffre dise ce
+qu'il mesure.
 
 ### Frontend
 

@@ -9497,3 +9497,37 @@ a.portal-button {
   line-height: 1.6;
   color: var(--text-muted);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Dialogue de motif de perte
+   ───────────────────────────────────────────────────────────── */
+
+.lost-reason-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lost-reason-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.lost-reason-select {
+  align-self: flex-start;
+}
+
+.lost-reason-select .custom-select-trigger {
+  min-width: 220px;
+}
+
+.lost-reason-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}

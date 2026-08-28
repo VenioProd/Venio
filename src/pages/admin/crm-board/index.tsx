@@ -22,6 +22,7 @@ import LeadTable from './LeadTable'
 import LeadFormPanel from './LeadFormPanel'
 import LeadDetailModal from './LeadDetailModal'
 import WorklistView from './worklist/WorklistView'
+import LostReasonDialog from './LostReasonDialog'
 import { DEFAULT_FOLLOW_UP } from './worklist/helpers'
 import { CrmThresholdsContext } from './thresholdsContext'
 import {
@@ -57,6 +58,11 @@ const CrmBoard = () => {
   // Une action menée depuis la file périme le pipeline, qu'on ne recharge
   // qu'au retour sur une vue qui l'affiche.
   const [pipelineStale, setPipelineStale] = useState<boolean>(false)
+  // Patch mis en attente le temps que l'utilisateur donne un motif de perte.
+  const [lostTarget, setLostTarget] = useState<{
+    lead: Lead
+    apply: (patch: Record<string, unknown>) => Promise<unknown>
+  } | null>(null)
   const [showForm, setShowForm] = useState<boolean>(false)
 
   // Table view state
@@ -276,10 +282,17 @@ const CrmBoard = () => {
     return succeeded
   }
 
-  const handleWorklistPatch = (leadId: string, patch: Record<string, unknown>) =>
-    runLeadAction(leadId, () =>
-      apiFetch(`/api/admin/crm/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
-    )
+  const handleWorklistPatch = async (leadId: string, patch: Record<string, unknown>) => {
+    const lead = findLead(leadId)
+    if (needsLostReason(patch) && lead) {
+      setLostTarget({
+        lead,
+        apply: (extra) => runLeadAction(leadId, () => patchLead(leadId, { ...patch, ...extra })),
+      })
+      return false
+    }
+    return runLeadAction(leadId, () => patchLead(leadId, patch))
+  }
 
   const handleLogContact = (leadId: string, payload: { nextActionAt: string | null; note: string }) =>
     runLeadAction(leadId, async () => {
@@ -390,13 +403,35 @@ const CrmBoard = () => {
     }
   }
 
+  /**
+   * Vrai si le patch ferme une affaire sans dire pourquoi. Le motif est demandé
+   * ici plutôt qu'exigé par l'API, qui doit rester ouverte à l'agent et aux
+   * automatisations.
+   */
+  const needsLostReason = (patch: Record<string, unknown>) =>
+    patch.status === 'LOST' && !patch.lostReason && lostReasons.length > 0
+
+  const findLead = (leadId: string) => allLeads.find((item) => item._id === leadId) ?? null
+
+  const patchLead = (leadId: string, patch: Record<string, unknown>) =>
+    apiFetch(`/api/admin/crm/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+
   const handleUpdateLead = async (leadId: string, patch: Record<string, unknown>) => {
+    const lead = findLead(leadId)
+    if (needsLostReason(patch) && lead) {
+      setLostTarget({
+        lead,
+        apply: async (extra) => {
+          await patchLead(leadId, { ...patch, ...extra })
+          await load()
+        },
+      })
+      return
+    }
+
     setError('')
     try {
-      await apiFetch(`/api/admin/crm/leads/${leadId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
+      await patchLead(leadId, patch)
       await load()
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur mise à jour lead')
@@ -491,6 +526,7 @@ const CrmBoard = () => {
   }, [])
 
   const worklistOverdueCount = worklist?.counts.overdue ?? 0
+  const lostReasons = worklist?.lostReasons ?? []
   const totalLeads = allLeads.length
   const activeFilters = [filterStatus, filterPriority, filterAssignee, search].filter(Boolean).length
 
@@ -858,6 +894,20 @@ const CrmBoard = () => {
             onLeadChange={setExpandedLead}
             onUpdateLead={handleUpdateLead}
             onConvertToClient={handleConvertToClient}
+          />
+        )}
+
+        {lostTarget && (
+          <LostReasonDialog
+            company={lostTarget.lead.company}
+            reasons={lostReasons}
+            saving={busyLeadId === lostTarget.lead._id}
+            onCancel={() => setLostTarget(null)}
+            onConfirm={async (payload) => {
+              const target = lostTarget
+              setLostTarget(null)
+              await target.apply(payload)
+            }}
           />
         )}
 
