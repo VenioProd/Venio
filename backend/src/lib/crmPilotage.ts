@@ -257,7 +257,10 @@ export interface PerformanceRow {
   active: number
   /** Gagnés rapportés aux affaires **conclues**. `null` si aucune ne l'est encore. */
   winRate: number | null
+  /** Somme des budgets **déclarés** des affaires gagnées. */
   wonBudget: number
+  /** Somme des montants **réellement signés**. L'écart avec wonBudget est l'intérêt. */
+  wonSigned: number
 }
 
 /**
@@ -267,19 +270,34 @@ export interface PerformanceRow {
  * les gains à un total gonflé d'affaires encore ouvertes ferait passer une
  * bonne performance pour un échec.
  */
-export function groupPerformance(leads: PilotageLead[], key: 'source' | 'assignedTo'): PerformanceRow[] {
+export function groupPerformance(
+  leads: PilotageLead[],
+  key: 'source' | 'assignedTo',
+  /** Montant signé par lead, quand la chaîne vers la facturation est connue. */
+  signedByLead: Map<string, number> = new Map(),
+): PerformanceRow[] {
   const rows = new Map<string, PerformanceRow>()
 
   for (const lead of leads) {
     const raw = key === 'source' ? lead.source : lead.assignedTo
     const bucket = (typeof raw === 'string' ? raw.trim() : '') || UNSPECIFIED
 
-    const row = rows.get(bucket) ?? { key: bucket, total: 0, won: 0, lost: 0, active: 0, winRate: null, wonBudget: 0 }
+    const row: PerformanceRow = rows.get(bucket) ?? {
+      key: bucket,
+      total: 0,
+      won: 0,
+      lost: 0,
+      active: 0,
+      winRate: null,
+      wonBudget: 0,
+      wonSigned: 0,
+    }
 
     row.total += 1
     if (lead.status === 'WON') {
       row.won += 1
       row.wonBudget += lead.budget ?? 0
+      row.wonSigned += signedByLead.get(lead._id) ?? 0
     } else if (lead.status === 'LOST') {
       row.lost += 1
     } else {

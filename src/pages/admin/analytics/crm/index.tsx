@@ -8,6 +8,7 @@ import VelocityPanel from './VelocityPanel'
 import LossPanel from './LossPanel'
 import PerformanceTable from './PerformanceTable'
 import CoverageNotice from './CoverageNotice'
+import PipelinePanel from './PipelinePanel'
 import { PILOTAGE_PERIODS, displayKey } from './constants'
 import './PilotageSection.css'
 
@@ -89,6 +90,11 @@ const PilotageSection: React.FC = () => {
           <div className="pilotage-block">
             <h4 className="pilotage-subtitle">Vélocité</h4>
             <VelocityPanel velocity={data.velocity} />
+          </div>
+
+          <div className="pilotage-block pilotage-block-wide">
+            <h4 className="pilotage-subtitle">Chiffre d'affaires</h4>
+            <PipelinePanel pipeline={data.pipeline} revenue={data.revenue} />
           </div>
 
           <div className="pilotage-block pilotage-block-wide">

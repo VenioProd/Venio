@@ -400,6 +400,8 @@ export async function autoCreateProjectFromLead(lead: LeadData, actorId: Types.O
     serviceTypes: lead.serviceType ? [lead.serviceType] : [],
     budget: lead.budget ? { amount: lead.budget, currency: 'EUR' } : undefined,
     tags: ['auto-crm'],
+    // Le tag disait que le projet vient du CRM ; il ne disait pas de quel lead.
+    sourceLead: lead._id ?? null,
   })
 
   await logLeadActivity(

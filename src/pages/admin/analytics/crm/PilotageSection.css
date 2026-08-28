@@ -256,3 +256,43 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* ── Chiffre d'affaires et prévisionnel ────────────────────────────────────── */
+
+.pilotage-money {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.pilotage-money-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.pilotage-money-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pilotage-money-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e0e7ff;
+}
+
+.pilotage-money-value.is-muted {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.pilotage-money-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}

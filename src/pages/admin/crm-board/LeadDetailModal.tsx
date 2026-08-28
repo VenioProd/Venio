@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
+import RevenueChain from '../../../components/admin/RevenueChain'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import { CRM_STATUSES, CRM_TEMPERATURES, TEMPERATURE_MAP } from './constants'
@@ -231,6 +232,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           {/* Le champ libre `interactionNotes` est remplacé par le journal des
               échanges. Son contenu déjà saisi reste affiché en tête de
               timeline pour ne pas disparaître de l'écran. */}
+          <div className="crm-modal-notes">
+            <label className="crm-modal-label">Chaîne commerciale</label>
+            <RevenueChain leadId={lead._id} canManage={canManageCrm} />
+          </div>
+
           <div className="crm-modal-notes">
             <label className="crm-modal-label">Journal des échanges</label>
             <InteractionTimeline

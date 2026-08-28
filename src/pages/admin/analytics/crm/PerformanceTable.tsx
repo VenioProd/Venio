@@ -27,7 +27,8 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({ rows, resolveLabel,
           <th>Gagnés</th>
           <th>Perdus</th>
           <th>Taux (conclues)</th>
-          <th>CA gagné</th>
+          <th>Budget déclaré</th>
+          <th>Signé</th>
         </tr>
       </thead>
       <tbody>
@@ -39,7 +40,8 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({ rows, resolveLabel,
             <td>{row.won}</td>
             <td>{row.lost}</td>
             <td className="is-strong">{formatPercent(row.winRate)}</td>
-            <td>{row.wonBudget > 0 ? formatEuro(row.wonBudget) : '—'}</td>
+            <td className="is-muted">{row.wonBudget > 0 ? formatEuro(row.wonBudget) : '—'}</td>
+            <td className="is-strong">{row.wonSigned > 0 ? formatEuro(row.wonSigned) : '—'}</td>
           </tr>
         ))}
       </tbody>

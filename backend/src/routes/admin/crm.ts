@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
+import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
@@ -24,6 +25,10 @@ import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
 import { leadScopeFilter, isLeadOutOfScope } from '../../lib/crmScope.js'
+import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
+import Project from '../../models/Project.js'
+import BillingDocument from '../../models/BillingDocument.js'
+import QuoteProposal from '../../models/QuoteProposal.js'
 import {
   assessCoverage,
   buildFunnel,
@@ -531,6 +536,159 @@ router.get(
   },
 )
 
+// ─── Chaîne lead → devis → chiffre d'affaires ────────────────────────────────
+
+/** Charge le lead en vérifiant son existence et le périmètre de l'utilisateur. */
+async function loadLeadInScope(req: Request, res: Response) {
+  const lead = await Lead.findById(req.params.id).select('company clientAccountId assignedTo createdBy budget')
+  if (!lead || isLeadOutOfScope(req, lead)) {
+    res.status(404).json({ error: 'Lead not found' })
+    return null
+  }
+  return lead
+}
+
+/** Ce que ce lead a réellement produit : projets rattachés, devis, factures. */
+router.get(
+  '/leads/:id/revenue',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadInScope(req, res)
+      if (!lead) return undefined
+
+      const projects = await Project.find({ sourceLead: lead._id }).select('name status createdAt').lean()
+      const projectIds = projects.map((project) => project._id)
+
+      const [documents, proposals] = await Promise.all([
+        projectIds.length === 0
+          ? Promise.resolve([])
+          : BillingDocument.find({ project: { $in: projectIds } })
+              .select('type number status total currency issuedAt paidAt project')
+              .sort({ issuedAt: -1 })
+              .lean(),
+        projectIds.length === 0
+          ? Promise.resolve([])
+          : QuoteProposal.find({ project: { $in: projectIds } })
+              .select('title status project billingDocument createdAt')
+              .sort({ createdAt: -1 })
+              .lean(),
+      ])
+
+      return res.json({
+        lead: { _id: String(lead._id), company: lead.company, budget: lead.budget ?? null },
+        projects,
+        proposals,
+        documents,
+        summary: summariseRevenue(documents as unknown as RevenueDocument[]),
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/**
+ * Projets du même client encore rattachés à aucun lead. Rien n'est deviné : un
+ * rapprochement automatique se tromperait dès qu'un client a eu plusieurs
+ * affaires, et un lien faux propage du chiffre d'affaires sur le mauvais lead.
+ */
+router.get(
+  '/leads/:id/project-candidates',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadInScope(req, res)
+      if (!lead) return undefined
+
+      if (!lead.clientAccountId) {
+        return res.json({ candidates: [], reason: 'NO_CLIENT_ACCOUNT' })
+      }
+
+      const candidates = await Project.find({
+        client: lead.clientAccountId,
+        $or: [{ sourceLead: null }, { sourceLead: { $exists: false } }],
+      })
+        .select('name status createdAt')
+        .sort({ createdAt: -1 })
+        .lean()
+
+      return res.json({ candidates })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.post(
+  '/leads/:id/projects/:projectId',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadInScope(req, res)
+      if (!lead) return undefined
+
+      if (!mongoose.isValidObjectId(req.params.projectId)) {
+        return res.status(400).json({ error: 'Identifiant de projet invalide' })
+      }
+      const project = await Project.findById(req.params.projectId).select('name sourceLead')
+      if (!project) return res.status(404).json({ error: 'Project not found' })
+
+      // Écraser un rattachement existant déplacerait du chiffre d'affaires d'un
+      // lead à un autre, en silence.
+      if (project.sourceLead && String(project.sourceLead) !== String(lead._id)) {
+        return res.status(409).json({ error: 'Ce projet est déjà rattaché à un autre lead' })
+      }
+
+      project.sourceLead = lead._id as mongoose.Types.ObjectId
+      await project.save()
+
+      // L'attribution du chiffre d'affaires est une décision humaine : elle se trace.
+      await logLeadActivity(
+        lead._id,
+        'PROJECT_LINKED',
+        `Projet "${project.name}" rattaché à ce lead`,
+        { projectId: String(project._id) },
+        req.user!.id,
+      )
+
+      return res.json({ success: true, project: { _id: String(project._id), name: project.name } })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.delete(
+  '/leads/:id/projects/:projectId',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadInScope(req, res)
+      if (!lead) return undefined
+
+      if (!mongoose.isValidObjectId(req.params.projectId)) {
+        return res.status(400).json({ error: 'Identifiant de projet invalide' })
+      }
+      const project = await Project.findOne({ _id: req.params.projectId, sourceLead: lead._id }).select('name')
+      if (!project) return res.status(404).json({ error: 'Project not found' })
+
+      await Project.updateOne({ _id: project._id }, { $set: { sourceLead: null } })
+      await logLeadActivity(
+        lead._id,
+        'PROJECT_UNLINKED',
+        `Projet "${project.name}" détaché de ce lead`,
+        { projectId: String(project._id) },
+        req.user!.id,
+      )
+
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
 // ─── Pilotage commercial ─────────────────────────────────────────────────────
 
 const PILOTAGE_PERIODS: Record<string, number> = { '30d': 30, '90d': 90, '12m': 365 }
@@ -590,17 +748,65 @@ router.get(
         })
         .filter((transition) => transition.from && transition.to)
 
+      const funnel = buildFunnel(leads, transitions)
+
+      // Chiffre d'affaires réellement produit par la cohorte, via les projets
+      // qui lui sont rattachés. Le budget déclaré est renvoyé en regard :
+      // l'écart entre annoncé et signé est ce que le CRM n'a jamais su dire.
+      const cohortProjects = await Project.find({ sourceLead: { $in: leadDocs.map((lead) => lead._id) } })
+        .select('_id sourceLead')
+        .lean()
+      const cohortDocuments =
+        cohortProjects.length === 0
+          ? []
+          : await BillingDocument.find({ project: { $in: cohortProjects.map((project) => project._id) } })
+              .select('type status total project')
+              .lean()
+
+      // Montant signé par lead, pour confronter le budget déclaré au réel dans
+      // les ventilations par source et par commercial.
+      const leadByProject = new Map(cohortProjects.map((project) => [String(project._id), String(project.sourceLead)]))
+      const signedByLead = new Map<string, number>()
+      for (const document of cohortDocuments) {
+        const leadId = leadByProject.get(String(document.project))
+        if (!leadId) continue
+        const { signed } = summariseRevenue([document as unknown as RevenueDocument])
+        if (signed > 0) signedByLead.set(leadId, (signedByLead.get(leadId) ?? 0) + signed)
+      }
+
+      const declaredBudget = leads.reduce((sum, lead) => sum + (lead.budget ?? 0), 0)
+
       return res.json({
         period,
         since: since.toISOString(),
-        funnel: buildFunnel(leads, transitions),
+        funnel,
+        revenue: {
+          declaredBudget,
+          linkedProjects: cohortProjects.length,
+          ...summariseRevenue(cohortDocuments as unknown as RevenueDocument[]),
+        },
+        // Le pipeline porte sur les affaires EN COURS, quelle que soit leur
+        // date de création : ce n'est pas la cohorte, seulement ses taux.
+        pipeline: weightedPipeline(
+          (
+            await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) })
+              .select('status createdAt budget')
+              .lean()
+          ).map((lead) => ({
+            _id: String(lead._id),
+            status: lead.status,
+            createdAt: lead.createdAt,
+            budget: lead.budget,
+          })),
+          funnel,
+        ),
         velocity: computeVelocity(leads, transitions),
         losses: buildLossBreakdown(leads, transitions),
-        bySource: groupPerformance(leads, 'source'),
+        bySource: groupPerformance(leads, 'source', signedByLead),
         // Ventiler par personne n'a de sens que pour qui voit tout le monde :
         // sur un périmètre restreint, la table n'aurait qu'une ligne et
         // suggérerait une comparaison qui n'existe pas.
-        byOwner: seesEveryone ? groupPerformance(leads, 'assignedTo') : null,
+        byOwner: seesEveryone ? groupPerformance(leads, 'assignedTo', signedByLead) : null,
         coverage: assessCoverage(leads, transitions),
       })
     } catch (err) {

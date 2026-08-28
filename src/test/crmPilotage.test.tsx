@@ -45,9 +45,24 @@ function response(overrides: Partial<PilotageResponse> = {}): PilotageResponse {
       byStage: [{ stage: 'PROPOSAL', count: 4 }],
     },
     bySource: [
-      { key: 'Ads', total: 6, won: 1, lost: 3, active: 2, winRate: 0.25, wonBudget: 4000 },
-      { key: 'NON_RENSEIGNE', total: 4, won: 0, lost: 1, active: 3, winRate: 0, wonBudget: 0 },
+      { key: 'Ads', total: 6, won: 1, lost: 3, active: 2, winRate: 0.25, wonBudget: 4000, wonSigned: 3600 },
+      { key: 'NON_RENSEIGNE', total: 4, won: 0, lost: 1, active: 3, winRate: 0, wonBudget: 0, wonSigned: 0 },
     ],
+    revenue: { declaredBudget: 30000, linkedProjects: 2, signed: 18000, collected: 6000, documents: 3 },
+    pipeline: {
+      total: 7500,
+      stages: [
+        { stage: 'LEAD', count: 2, probability: 0.1, weighted: 1500 },
+        { stage: 'QUALIFIED', count: 1, probability: 0.17, weighted: 2000 },
+        { stage: 'CONTACTED', count: 0, probability: 0.2, weighted: 0 },
+        { stage: 'DEMO', count: 1, probability: 0.5, weighted: 4000 },
+        { stage: 'PROPOSAL', count: 0, probability: 0.5, weighted: 0 },
+        { stage: 'WON', count: 0, probability: 1, weighted: 0 },
+      ],
+      withoutBudget: 1,
+      cohortSize: 24,
+      reliable: true,
+    },
     byOwner: null,
     coverage: { total: 10, withHistory: 8, withoutHistory: 2, ratio: 0.8 },
     ...overrides,
@@ -61,12 +76,15 @@ beforeEach(() => {
 
 describe('PilotageSection', () => {
   it("affiche l'entonnoir avec les taux de passage", async () => {
-    render(<PilotageSection />)
+    const { container } = render(<PilotageSection />)
     await screen.findByText('Entonnoir — 10 leads')
 
-    expect(screen.getByText('Qualifié')).toBeInTheDocument()
-    expect(screen.getByText('60 %')).toBeInTheDocument()
-    expect(screen.getByText('40 %')).toBeInTheDocument()
+    // Les étapes apparaissent aussi dans le pipeline pondéré : on lit
+    // l'entonnoir lui-même, pas la section entière.
+    const funnel = within(container.querySelector('.pilotage-funnel') as HTMLElement)
+    expect(funnel.getByText('Qualifié')).toBeInTheDocument()
+    expect(funnel.getByText('60 %')).toBeInTheDocument()
+    expect(funnel.getByText('40 %')).toBeInTheDocument()
   })
 
   it("signale les leads dont le parcours n'est pas journalisé", async () => {
@@ -106,7 +124,7 @@ describe('PilotageSection', () => {
   it('affiche la ventilation par commercial quand elle est servie', async () => {
     services.fetchPilotage.mockResolvedValue(
       response({
-        byOwner: [{ key: 'u1', total: 3, won: 1, lost: 1, active: 1, winRate: 0.5, wonBudget: 900 }],
+        byOwner: [{ key: 'u1', total: 3, won: 1, lost: 1, active: 1, winRate: 0.5, wonBudget: 900, wonSigned: 900 }],
       }),
     )
     render(<PilotageSection />)
