@@ -167,7 +167,7 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
             className="mh-dial-hits"
             viewBox="-116 62 1132 274"
             role="radiogroup"
-            aria-label="Cinq paliers de sites web"
+            aria-label="Cinq formules de sites web"
           >
             {marks.map((m, i) => (
               <circle
@@ -181,7 +181,7 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
                 r="30"
                 role="radio"
                 aria-checked={i === active}
-                aria-label={`Palier ${tiers[i].num} — ${tiers[i].name}`}
+                aria-label={`Formule ${tiers[i].num} — ${tiers[i].name}`}
                 tabIndex={i === active ? 0 : -1}
                 onClick={() => move(i)}
                 onKeyDown={(event) => onKeyDown(event, i)}
@@ -194,15 +194,12 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
       <div className="mh-tier">
         <div className="mh-tier-main">
           <span className="mh-mono mh-tier-num">
-            Palier {tier.num}
-            {tier.featured ? ' — le plus choisi' : ''}
+            Formule {tier.num}
+            {tier.featured ? ' — la plus choisie' : ''}
           </span>
           <h3 className="mh-tier-name">{tier.name}</h3>
           <p className="mh-tier-tag">{tier.tag}</p>
-          <p className="mh-tier-who">
-            Graduation {tier.num} sur {tiers.length.toString().padStart(2, '0')} — de « être trouvé » à « faire tourner
-            l’activité ».
-          </p>
+          <p className="mh-tier-who">{tier.pourQui}</p>
         </div>
 
         <div className="mh-tier-side">

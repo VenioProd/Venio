@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { GrainOverlay } from '../components/BrutalDeco'
-import HomeSystemBar from '../components/home/HomeSystemBar'
 import SitePlate from '../components/home/SitePlate'
 import TierDial, { type HomeTier } from '../components/home/TierDial'
 import ProofRadar from '../components/home/ProofRadar'
@@ -14,8 +13,8 @@ const TIERS: HomeTier[] = [
     num: '01',
     name: 'Vitrine',
     icon: 'vitrine',
-    tag: 'Exister en ligne, proprement.',
-    pourQui: 'Pour exister en ligne dès maintenant.',
+    tag: 'Se faire connaître.',
+    pourQui: "Vous voulez qu'on vous trouve, et que ça fasse sérieux.",
     incl: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
     featured: false,
   },
@@ -23,8 +22,8 @@ const TIERS: HomeTier[] = [
     num: '02',
     name: 'Essentiel',
     icon: 'essentiel',
-    tag: 'Publier souvent, sans friction.',
-    pourQui: 'Pour publier et être trouvé.',
+    tag: 'Publier soi-même.',
+    pourQui: 'Vous voulez ajouter et modifier vos pages vous-même.',
     incl: ['Design sur mesure', 'Mieux placé sur Google', 'Blog & actualités'],
     featured: false,
   },
@@ -32,64 +31,57 @@ const TIERS: HomeTier[] = [
     num: '03',
     name: 'Business',
     icon: 'business',
-    tag: 'Vendre et gérer vos clients en ligne.',
-    pourQui: 'Pour vendre et gérer vos clients.',
+    tag: 'Vendre et suivre ses clients.',
+    pourQui: 'Vous vendez, ou vous suivez vos clients en ligne.',
     incl: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
     featured: true,
   },
   {
     num: '04',
-    name: 'E-commerce',
+    name: 'Boutique en ligne',
     icon: 'ecommerce',
-    tag: 'Vendre en ligne, en grand.',
-    pourQui: 'Pour un catalogue qui grossit.',
+    tag: 'Vendre en grand.',
+    pourQui: "Votre boutique en ligne, c'est votre métier.",
     incl: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
     featured: false,
   },
   {
     num: '05',
-    name: 'Plateforme',
+    name: 'Sur mesure',
     icon: 'plateforme',
-    tag: 'Votre outil de travail. À vous, vraiment.',
-    pourQui: 'Pour un métier qui ne rentre dans aucune case.',
+    tag: "Un outil rien qu'à vous.",
+    pourQui: "L'outil dont vous avez besoin n'existe pas encore.",
     incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
     featured: false,
   },
 ]
 
-/* Les trois cotes du relevé. Rien d'autre n'est chiffré sur cette page :
-   dix ans est une durée de vie visée, la propriété du code est contractuelle,
-   la reprise est documentée — aucune des trois n'est une statistique. */
-const COTES: { num: string; label: string; value: string; live?: boolean }[] = [
-  { num: '01', label: 'Durée de vie visée', value: '10 ans', live: true },
-  { num: '02', label: 'Propriétaire du code', value: 'Vous' },
-  { num: '03', label: 'Reprise par vos équipes', value: 'Documentée' },
+/* Les trois repères du haut de page annoncent les trois arguments
+   développés plus bas. Aucun chiffre : rien ici n'est une statistique. */
+const REPERES: { num: string; label: string; value: string; live?: boolean }[] = [
+  { num: '01', label: 'Le design', value: 'Dessiné pour vous', live: true },
+  { num: '02', label: 'Le code', value: 'Il vous appartient' },
+  { num: '03', label: 'Vos demandes', value: "Rien n'est bloqué" },
 ]
 
-const ENGAGEMENTS: { num: string; titre: string; texte: string; cle: string; valeur: string }[] = [
+const ARGUMENTS: { num: string; titre: string; texte: string }[] = [
   {
     num: '01',
-    titre: 'On dit non par écrit',
+    titre: 'Un site clair, que vos clients comprennent tout de suite',
     texte:
-      'Si ce que vous demandez ne sert pas ce que vous cherchez, vous recevez un refus argumenté — avant le devis, pas après la facture.',
-    cle: 'Moment',
-    valeur: 'avant le devis',
+      'On dessine vos pages à partir de ce que vous avez à dire. Pas un modèle tout fait dans lequel on glisse vos textes.',
   },
   {
     num: '02',
-    titre: 'Le code est à vous dès le premier jour',
+    titre: 'Votre site vous appartient vraiment',
     texte:
-      "Dépôt ouvert à votre nom, accès complets, aucune brique qu'on serait seuls à savoir manier. Si vous changez de prestataire, il n'a rien à réapprendre.",
-    cle: 'Propriété',
-    valeur: 'client — j+0',
+      "Si un jour vous travaillez avec quelqu'un d'autre, tout part avec vous. N'importe quel développeur peut reprendre le travail après nous. On ne vous enferme pas dans un outil que nous seuls savons utiliser.",
   },
   {
     num: '03',
-    titre: 'On chiffre ce qu’on affirme',
+    titre: 'Rien n’est impossible parce que « l’outil ne le permet pas »',
     texte:
-      'Chaque proposition porte un prix, une date de livraison, et ce qui se passe si on la dépasse. Pas de « selon complexité », pas de forfait qui glisse.',
-    cle: 'Contenu',
-    valeur: 'prix + date + pénalité',
+      'On code votre site sur mesure. Ce que vous demandez, on peut le faire. On vous dira quand même si ça ne sert à rien.',
   },
 ]
 
@@ -134,9 +126,9 @@ const METIERS: {
 ]
 
 const RENDEZ_VOUS: { cle: string; valeur: string }[] = [
-  { cle: 'Durée', valeur: '30 min' },
-  { cle: 'Préparation demandée', valeur: 'aucune' },
-  { cle: 'Adresse', valeur: 'contact@venio.paris' },
+  { cle: 'Durée', valeur: '30 minutes' },
+  { cle: 'À préparer', valeur: 'Rien' },
+  { cle: 'Par écrit', valeur: 'contact@venio.paris' },
 ]
 
 const Home = () => {
@@ -160,14 +152,11 @@ const Home = () => {
   return (
     <div className="mh-home">
       <SEO
-        title="Un site qui tient dix ans · Paris"
-        description="Studio digital à Paris. Sites web et plateformes sur mesure : le code vous appartient dès le premier jour, la reprise par vos équipes est documentée, chaque proposition porte un prix, une date et une pénalité."
+        title="Site web sur mesure à Paris · Venio"
+        description="On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous."
         keywords="site web sur mesure, plateforme métier, développement web, conseil, marque, studio digital, Paris"
       />
       <StructuredData type="home" />
-
-      {/* ─── 01 · BANDEAU SYSTÈME ─── */}
-      <HomeSystemBar />
 
       {/* ─── 02 · RELEVÉ ─── */}
       <section id="mh-releve">
@@ -175,18 +164,18 @@ const Home = () => {
         <div className="mh-container mh-releve-grid">
           <div className="mh-releve-text">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 01 — durée de vie
+              <i aria-hidden="true" /> Venio — studio web à Paris
             </p>
             <h1 className="mh-releve-title">
-              Un site qui tient <span className="mh-accent">dix&nbsp;ans.</span>
+              Un site fait pour vous. <span className="mh-accent">Pas pour tout le monde.</span>
             </h1>
             <p className="mh-releve-sub">
-              Le thème n’est plus maintenu, l’agence a changé d’équipe, et plus personne ne sait où toucher sans tout
-              casser. On construit l’inverse.
+              On dessine et on code votre site à partir de ce que vous avez à dire. Pas à partir d’un modèle acheté dans
+              lequel on glisserait vos textes.
             </p>
 
             <dl className="mh-cotes">
-              {COTES.map((c) => (
+              {REPERES.map((c) => (
                 <div key={c.num} className={`mh-cote${c.live ? ' mh-cote--live' : ''}`}>
                   <dt className="mh-mono">
                     <span className="mh-cote-num">{c.num}</span>
@@ -207,14 +196,14 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 02 — sites web
+              <i aria-hidden="true" /> Sites web
             </p>
             <h2>
-              Cinq paliers. Le vôtre dépend de <span className="mh-accent">ce que le site doit faire.</span>
+              Cinq formules. La vôtre dépend de <span className="mh-accent">ce que le site doit faire.</span>
             </h2>
             <p className="mh-band-note">
-              Pas de ce que vous voulez montrer. Choisissez la graduation qui correspond au travail que le site doit
-              vraiment abattre — le chiffrage vient après, une fois le besoin posé.
+              Pas de ce que vous voulez montrer. Cliquez sur celle qui vous ressemble. On chiffre après, une fois qu’on
+              a compris votre besoin.
             </p>
           </header>
 
@@ -224,7 +213,7 @@ const Home = () => {
 
           <p className="mh-band-foot mh-reveal">
             <Link className="mh-link" to="/services/sites">
-              Le détail des cinq paliers <span aria-hidden="true">→</span>
+              Le détail des cinq formules <span aria-hidden="true">→</span>
             </Link>
           </p>
         </div>
@@ -235,14 +224,14 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 03 — preuve
+              <i aria-hidden="true" /> Nos réalisations
             </p>
             <h2>
-              Ce qu’on construit, <span className="mh-accent">on le fait tourner.</span>
+              Nos propres sites et logiciels <span className="mh-accent">tournent tous les jours.</span>
             </h2>
             <p className="mh-band-note">
-              Nous n’avons pas de mur de logos à vous montrer. Nous avons des produits que nous éditons nous-mêmes, en
-              production, et des sites en ligne qu’on entretient — c’est la seule preuve qui engage celui qui la donne.
+              On ne fait pas que livrer des sites : on en fait vivre. Voilà ce qu’on a construit, et qui fonctionne en
+              ce moment. Vous pouvez aller voir.
             </p>
           </header>
 
@@ -263,27 +252,20 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 04 — engagements
+              <i aria-hidden="true" /> Ce qui change avec nous
             </p>
             <h2>
-              Trois promesses qu’on peut <span className="mh-accent">nous opposer.</span>
+              Trois choses qu’on vous garantit, <span className="mh-accent">et que vous pouvez vérifier.</span>
             </h2>
-            <p className="mh-band-note">
-              Une promesse qu’on ne peut pas vérifier n’est pas une promesse. Voici les trois qui figurent dans chacun
-              de nos contrats.
-            </p>
+            <p className="mh-band-note">Elles figurent dans nos contrats, pas seulement sur cette page.</p>
           </header>
 
           <div className="mh-specs">
-            {ENGAGEMENTS.map((e) => (
-              <article key={e.num} className="mh-spec mh-reveal">
-                <span className="mh-mono mh-spec-num">{e.num}</span>
-                <h3>{e.titre}</h3>
-                <p>{e.texte}</p>
-                <p className="mh-spec-measure">
-                  <span className="mh-mono">{e.cle}</span>
-                  <b className="mh-mono">{e.valeur}</b>
-                </p>
+            {ARGUMENTS.map((a) => (
+              <article key={a.num} className="mh-spec mh-reveal">
+                <span className="mh-mono mh-spec-num">{a.num}</span>
+                <h3>{a.titre}</h3>
+                <p>{a.texte}</p>
               </article>
             ))}
           </div>
@@ -295,14 +277,14 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 05 — au-delà du site
+              <i aria-hidden="true" /> Au-delà du site
             </p>
             <h2>
-              Trois métiers, et <span className="mh-accent">quand ils ne servent à rien.</span>
+              On fait aussi <span className="mh-accent">trois autres choses.</span>
             </h2>
             <p className="mh-band-note">
-              Aucun ne se vend en paliers : ils dépendent trop de ce qu’on trouve en ouvrant le capot. Chacun est donc
-              décrit avec le cas où il faut passer votre chemin.
+              Elles ne se vendent pas en formules : ça dépend trop de ce qu’on trouve en ouvrant le capot. Pour chacune,
+              on vous dit aussi quand il ne faut pas nous appeler.
             </p>
           </header>
 
@@ -332,13 +314,13 @@ const Home = () => {
         <div className="mh-container mh-appel-grid">
           <div className="mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Relevé 06 — prochaine étape
+              <i aria-hidden="true" /> Prochaine étape
             </p>
             <h2>
               Un appel de <span className="mh-accent">trente minutes.</span>
             </h2>
             <p className="mh-appel-note">
-              À la fin, vous saurez si on vous est utiles. Si on ne l’est pas, on vous le dit pendant l’appel et on vous
+              À la fin, vous saurez si on peut vous aider. Si on ne peut pas, on vous le dit pendant l’appel et on vous
               oriente ailleurs. Ça ne vous coûte que la demi-heure.
             </p>
             <Link className="mh-cta" to="/contact" data-analytics-cta="home_final_contact">

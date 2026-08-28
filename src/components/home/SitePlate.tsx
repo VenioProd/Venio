@@ -14,14 +14,14 @@ const BADGES: { n: string; cx: number; cy: number }[] = [
 const SitePlate = () => (
   <figure className="mh-plate">
     <figcaption className="mh-plate-cap">
-      <span className="mh-mono">Élévation — un site Venio</span>
-      <span className="mh-mono">Cotes 01 · 02 · 03</span>
+      <span className="mh-mono">Un site Venio</span>
+      <span className="mh-mono">01 · 02 · 03</span>
     </figcaption>
 
     <svg
       viewBox="0 0 600 336"
       role="img"
-      aria-label="Élévation cotée d'un site web, annotée de trois cotes : durée de vie visée de dix ans, code propriété du client, reprise documentée."
+      aria-label="Schéma d'un site web, annoté de trois repères : le design est dessiné pour vous, le code vous appartient, rien n'est bloqué techniquement."
     >
       {/* ─── l'objet mesuré ─── */}
       <rect className="mh-pl-frame" x="96" y="52" width="452" height="200" rx="5" />
@@ -35,7 +35,7 @@ const SitePlate = () => (
       <rect className="mh-pl-node" x="256" y="172" width="132" height="62" rx="5" />
       <rect className="mh-pl-node" x="400" y="172" width="132" height="62" rx="5" />
 
-      {/* ─── cote 01 : durée de vie visée ─── */}
+      {/* ─── repère 01 : le design ─── */}
       <line className="mh-pl-ext" x1="96" y1="256" x2="96" y2="300" />
       <line className="mh-pl-ext" x1="548" y1="256" x2="548" y2="300" />
       <line className="mh-pl-dim" x1="96" y1="288" x2="274" y2="288" />
@@ -43,10 +43,10 @@ const SitePlate = () => (
       <path className="mh-pl-arrow" d="M 96 288 l 9 -3.6 v 7.2 z" />
       <path className="mh-pl-arrow" d="M 548 288 l -9 -3.6 v 7.2 z" />
       <text className="mh-pl-t mh-pl-t--live" x="322" y="292" textAnchor="middle">
-        10 ans
+        Dessiné pour vous
       </text>
 
-      {/* ─── cote 02 : propriété du code ─── */}
+      {/* ─── repère 02 : le code vous appartient ─── */}
       <line className="mh-pl-ext" x1="92" y1="52" x2="44" y2="52" />
       <line className="mh-pl-ext" x1="92" y1="252" x2="44" y2="252" />
       <line className="mh-pl-dim" x1="56" y1="52" x2="56" y2="104" />
@@ -54,14 +54,14 @@ const SitePlate = () => (
       <path className="mh-pl-arrow" d="M 56 52 l -3.6 9 h 7.2 z" />
       <path className="mh-pl-arrow" d="M 56 252 l -3.6 -9 h 7.2 z" />
       <text className="mh-pl-t" x="56" y="152" textAnchor="middle" transform="rotate(-90 56 152)">
-        Code : à vous
+        Le code est à vous
       </text>
 
-      {/* ─── cote 03 : reprise documentée ─── */}
+      {/* ─── repère 03 : aucune limite technique ─── */}
       <circle className="mh-pl-anchor" cx="322" cy="77" r="3.2" />
       <path className="mh-pl-lead" d="M 322 77 V 32 H 352" />
       <text className="mh-pl-t" x="378" y="36">
-        Reprise documentée
+        Rien n’est bloqué
       </text>
 
       {/* ─── repères, keyés sur les relevés ─── */}

@@ -156,8 +156,8 @@
   min-width: 46px;
   padding: 3px 6px;
   border-radius: 5px;
-  border: 1px solid var(--kind-color, #475569);
-  color: var(--kind-color, #475569);
+  border: 1px solid var(--kind-color, var(--ink-ghost));
+  color: var(--kind-color, var(--ink-ghost));
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.5px;

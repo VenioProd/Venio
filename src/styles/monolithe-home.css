@@ -150,18 +150,6 @@
 
 /* ═══ 01 · BANDEAU SYSTÈME ═══ */
 
-.mh-home .mh-sysbar {
-  border-bottom: 1px solid var(--mh-line);
-  background: var(--mh-bg-2);
-}
-.mh-home .mh-sysbar-in {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mh-sp-s);
-  min-height: 52px;
-  flex-wrap: wrap;
-}
 .mh-home .mh-sysnav {
   display: flex;
   gap: clamp(12px, 2.2vw, 30px);
@@ -978,11 +966,6 @@
 @media (max-width: 640px) {
   .mh-home .mh-cotes {
     grid-template-columns: 1fr;
-  }
-  .mh-home .mh-sysbar-in {
-    justify-content: flex-start;
-    padding-top: 10px;
-    padding-bottom: 10px;
   }
   .mh-home .mh-sysnav {
     width: 100%;

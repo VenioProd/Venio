@@ -1,9 +1,9 @@
 /**
  * Radar de preuve — bloc 04 de la home « Instrument ».
- * Angle : la famille (SaaS édités / sites et plateformes).
+ * Angle : la famille (nos logiciels / nos sites).
  * Rayon : l'état — anneau intérieur pour ce qui tourne, anneau extérieur
  * pour ce qui est en construction.
- * Vue publique du radar : ce qui est volontairement discret n'y figure pas.
+ * Arr0w et Virendys n'y figurent pas : discrétion assumée.
  *
  * Le schéma est décoratif ; le registre qui le suit porte la même
  * information en texte et sert de repli sur petit écran.
@@ -18,10 +18,10 @@ type Asset = {
 }
 
 const SAAS: Asset[] = [
-  { name: 'Jiraya', sub: 'formation', deg: -145, ring: 0, status: 'En production' },
+  { name: 'Jiraya', sub: 'formation', deg: -145, ring: 0, status: 'En ligne' },
   { name: 'LeadForge', sub: 'acquisition', deg: -110, ring: 1, status: 'En construction' },
   { name: 'Lucid', sub: 'comptabilité', deg: -70, ring: 1, status: 'En construction' },
-  { name: 'Yumi', sub: 'RH', deg: -35, ring: 0, status: 'En production' },
+  { name: 'Yumi', sub: 'RH', deg: -35, ring: 0, status: 'En ligne' },
 ]
 
 const SITES: Asset[] = [
@@ -74,14 +74,14 @@ const ProofRadar = () => {
     <div className="mh-radar">
       <figure className="mh-radar-face">
         <figcaption className="mh-radar-cap">
-          <span className="mh-mono">Angle : la famille · rayon : l'état</span>
-          <span className="mh-mono">Vue publique</span>
+          <span className="mh-mono">Ce que Venio a construit</span>
+          <span className="mh-mono">9 en tout</span>
         </figcaption>
 
         <svg
           viewBox="0 0 900 600"
           role="img"
-          aria-label="Radar à deux quartiers. En haut, les SaaS édités : Jiraya et Yumi sur l'anneau intérieur, en production ; LeadForge et Lucid sur l'anneau extérieur, en construction. En bas, les sites et plateformes : Decisio, Formatio, Creatio, Absys et Cauchemar, tous en ligne sur l'anneau intérieur."
+          aria-label="Ce que Venio a construit. Nos logiciels : Jiraya et Yumi sont en ligne, LeadForge et Lucid en construction. Nos sites : Decisio, Formatio, Creatio, Absys et Cauchemar sont tous en ligne."
         >
           <defs>
             <linearGradient id="mh-radar-cone" x1="0" y1="0" x2="1" y2="0">
@@ -111,16 +111,16 @@ const ProofRadar = () => {
           </text>
 
           <text className="mh-rd-sector" x={CX} y="66" textAnchor="middle">
-            SaaS édités
+            Nos logiciels
           </text>
           <text className="mh-rd-sector-sub" x={CX} y="80" textAnchor="middle">
-            produits qui nous appartiennent
+            on les a construits, on les fait tourner
           </text>
           <text className="mh-rd-sector" x={CX} y="536" textAnchor="middle">
-            Sites &amp; plateformes
+            Nos sites
           </text>
           <text className="mh-rd-sector-sub" x={CX} y="550" textAnchor="middle">
-            marques maison et clients publiés
+            nos marques et ceux de nos clients
           </text>
 
           {[...SAAS, ...SITES].map((asset) => (
@@ -130,18 +130,18 @@ const ProofRadar = () => {
           <line className="mh-rd-rule" x1="20" y1="578" x2="880" y2="578" />
           <circle className="mh-rd-key mh-rd-key--live" cx="26" cy="594" r="3.4" />
           <text className="mh-rd-legend" x="40" y="598">
-            Anneau intérieur — ça tourne aujourd'hui
+            En ligne — vous pouvez aller voir
           </text>
           <circle className="mh-rd-key" cx="446" cy="594" r="3.4" />
           <text className="mh-rd-legend" x="460" y="598">
-            Anneau extérieur — en construction
+            En construction — on y travaille
           </text>
         </svg>
       </figure>
 
       <div className="mh-reg">
         <div className="mh-reg-group">
-          <span className="mh-mono mh-reg-title">SaaS édités</span>
+          <span className="mh-mono mh-reg-title">Nos logiciels</span>
           <ul>
             {SAAS.map((asset) => (
               <li key={asset.name} className={asset.ring === 0 ? 'is-live' : ''}>
@@ -153,7 +153,7 @@ const ProofRadar = () => {
           </ul>
         </div>
         <div className="mh-reg-group">
-          <span className="mh-mono mh-reg-title">Sites &amp; plateformes</span>
+          <span className="mh-mono mh-reg-title">Nos sites</span>
           <ul>
             {SITES.map((asset) => (
               <li key={asset.name} className={asset.ring === 0 ? 'is-live' : ''}>
