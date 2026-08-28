@@ -102,7 +102,7 @@ const Contact = () => {
     <div className="mp-page">
       <SEO
         title="Contact — parlons de votre projet web"
-        description="On ne travaille pas avec tout le monde. Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous voulez construire quelque chose qui dure, parlons. Réponse sous 48h."
+        description="Dites-nous ce que vous voulez construire. Un appel de trente minutes suffit à savoir si on peut vous aider. Réponse sous 48 h."
         keywords="contact Venio, devis site web Paris, prendre contact, projet web"
       />
       <StructuredData type="contact" />
@@ -113,7 +113,7 @@ const Contact = () => {
           <p className="mp-eyebrow">Venio · Contact</p>
           <h1 className="mp-title">Contact</h1>
           <p className="mp-lede">
-            <b>On ne travaille pas avec tout le monde.</b> Et c'est tant mieux.
+            <b>Dites-nous ce que vous voulez construire.</b> On vous répond sous 48 heures.
           </p>
         </div>
       </section>
@@ -128,16 +128,13 @@ const Contact = () => {
             <span className="mp-kicker">Avant de nous écrire</span>
           </div>
           <div className="mp-prose mp-reveal">
-            <p className="mp-strong">Venio ne travaille pas avec tout le monde.</p>
+            <p className="mp-strong">On ne prend pas tous les projets.</p>
+            <p>Si vous cherchez le moins cher, ou quelqu'un qui dira oui à tout, on ne sera pas les bons.</p>
             <p>
-              Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous cherchez quelqu'un pour valider vos
-              idées sans réfléchir, ce n'est pas ici. Si vous voulez un modèle tout fait vite personnalisé, ce n'est pas
-              ici.
+              Si vous voulez un site pensé pour vous, qui vous appartienne, et sur lequel on peut tout construire —
+              alors écrivez-nous.
             </p>
-            <p>
-              Si vous voulez construire quelque chose qui dure, qui a du sens et qui est pensé pour vous, alors oui.
-            </p>
-            <p>On répond sous 48h. Si votre projet a du sens, on vous le dit. Sinon aussi.</p>
+            <p>On répond sous 48 heures. Si votre projet n'est pas pour nous, on vous le dit aussi.</p>
           </div>
         </div>
       </section>
