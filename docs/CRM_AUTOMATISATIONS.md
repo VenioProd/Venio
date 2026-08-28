@@ -116,14 +116,19 @@ Le modèle `CrmSettings` est un singleton qui contient tous les paramètres d'au
 - **Action en retard** : `nextActionAt` dépassé (badge rouge) - `overdueAlertEnabled`
 - **Lead bloqué** : Même statut depuis X jours (badge orange) - `staleLeadAlertEnabled`, `staleLeadThresholdDays`
 
-**Affichage :** Badges dans le tableau et les cartes Kanban  
-**Fichier :** `src/pages/admin/CrmBoard.jsx` → `getLeadAlerts()`
+**Affichage :** Badges dans le tableau, les cartes Kanban et les lignes de la file de travail  
+**Fichier :** `src/pages/admin/crm-board/constants.ts` → `getLeadAlerts(lead, thresholds)`  
+**Seuils :** servis par `GET /crm/worklist` et distribués via `CrmThresholdsContext`. Les valeurs ne
+sont plus codées en dur : les réglages de `/admin/crm/settings` s'appliquent réellement.
 
-### 10. Dashboard alertes CRM
+### 10. File de travail commerciale
 
-**Déclencheur :** Chargement du dashboard admin  
-**Action :** Affiche les compteurs de leads froids, en retard et bloqués  
-**Fichier :** `src/pages/admin/AdminDashboard.jsx`
+**Déclencheur :** Ouverture du mode « File » du board CRM (`/admin/crm?mode=file`)  
+**Action :** Range les leads actifs en quatre groupes — en retard, aujourd'hui, à venir 7 j, à ne pas
+laisser filer — et permet de reporter, marquer contacté, changer le statut et ajouter une note sans
+quitter la vue  
+**Fichier :** `backend/src/lib/crmAutomations.js` → `buildWorklist()`, `src/pages/admin/crm-board/worklist/`  
+**Partagée avec :** le Centre d'activité (`/admin/centre-activite`), qui en tire sa section « Relances CRM »
 
 ### 11. Conversion lead WON → Client
 
@@ -256,8 +261,9 @@ Le modèle `CrmSettings` est un singleton qui contient tous les paramètres d'au
 |---------|-------|-------------|
 | GET | `/api/admin/crm/leads` | Liste des leads |
 | GET | `/api/admin/crm/pipeline` | Pipeline groupé par statut |
-| GET | `/api/admin/crm/alerts` | Leads nécessitant attention |
+| GET | `/api/admin/crm/worklist` | File de travail groupée + seuils effectifs |
 | GET | `/api/admin/crm/leads/:id/activities` | Historique d'un lead |
+| POST | `/api/admin/crm/leads/:id/notes` | Ajouter une note datée (LeadActivity) |
 | POST | `/api/admin/crm/leads` | Créer un lead |
 | PATCH | `/api/admin/crm/leads/:id` | Mettre à jour un lead |
 | DELETE | `/api/admin/crm/leads/:id` | Supprimer un lead |

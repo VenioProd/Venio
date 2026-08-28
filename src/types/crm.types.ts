@@ -27,6 +27,7 @@ export interface Lead {
   interactionNotes?: string
   assignedTo?: string | null
   clientAccountId?: string | null
+  score?: number | null
   createdAt?: string
   updatedAt?: string
 }
@@ -66,8 +67,31 @@ export interface AdminUser {
   role: string
 }
 
-export interface CrmAlerts {
-  coldLeads: Lead[]
-  overdueLeads: Lead[]
-  staleLeads: Lead[]
+/** Seuils d'alerte effectifs, renvoyés par le serveur avec la file de travail. */
+export interface WorklistThresholds {
+  coldEnabled: boolean
+  coldDays: number
+  overdueEnabled: boolean
+  staleEnabled: boolean
+  staleDays: number
+}
+
+export type WorklistGroupKey = 'overdue' | 'today' | 'upcoming' | 'drifting'
+
+export type WorklistGroups = Record<WorklistGroupKey, Lead[]>
+
+/** Délais de relance configurés, pré-remplis au moment de marquer un contact. */
+export interface WorklistFollowUp {
+  demoDays: number
+  proposalDays: number
+  defaultDays: number
+}
+
+export interface WorklistResponse {
+  groups: WorklistGroups
+  thresholds: WorklistThresholds
+  /** Motifs de perte configurés, proposés par le dialogue de clôture. */
+  lostReasons: string[]
+  followUp: WorklistFollowUp
+  counts: Record<WorklistGroupKey, number>
 }

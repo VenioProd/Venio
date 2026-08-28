@@ -2,8 +2,6 @@ import type {
   Client,
   Contact,
   ContactDraft,
-  Note,
-  Activity,
   BillingSummary,
   BillingDocument,
   Deliverable,
@@ -11,16 +9,6 @@ import type {
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
 import type { AdminClientFile } from '../../../services/adminClients'
-
-export interface NoteOrActivity {
-  _id: string
-  createdAt: string
-  label: string
-  type: string
-  actor: string
-  pinned: boolean
-  rawId: string
-}
 
 export interface OverviewTabProps {
   client: Client | null
@@ -53,15 +41,6 @@ export interface ContactsTabProps {
   saving: boolean
 }
 
-export interface NotesTabProps {
-  notesAndActivities: NoteOrActivity[]
-  noteDraft: string
-  setNoteDraft: React.Dispatch<React.SetStateAction<string>>
-  addNote: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
-  removeNote: (noteId: string) => Promise<void>
-  saving: boolean
-}
-
 export interface BillingTabProps {
   billingSummary: BillingSummary | null
   billingDocuments: BillingDocument[]
@@ -78,7 +57,7 @@ export const TABS = [
   { id: 'projects', label: 'Projets' },
   { id: 'deliverables', label: 'Livrables' },
   { id: 'contacts', label: 'Contacts' },
-  { id: 'notes', label: 'Notes & Activités' },
+  { id: 'notes', label: 'Échanges' },
   { id: 'files', label: 'Fichiers reçus' },
   { id: 'billing', label: 'Facturation' },
 ]

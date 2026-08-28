@@ -1,6 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import InteractionTimeline from '../../../components/admin/InteractionTimeline'
+import RevenueChain from '../../../components/admin/RevenueChain'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import { CRM_STATUSES, CRM_TEMPERATURES, TEMPERATURE_MAP } from './constants'
@@ -32,7 +34,14 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         <div className="crm-modal-header">
           <h2>Notes d'interactions - {lead.company}</h2>
           <button className="crm-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -40,11 +49,21 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         </div>
         <div className="crm-modal-body">
           <div className="crm-modal-info">
-            <p><strong>Contact :</strong> {lead.contactName || '—'}</p>
-            <p><strong>Email :</strong> {lead.contactEmail || '—'}</p>
-            <p><strong>Téléphone :</strong> {lead.contactPhone || '—'}</p>
-            <p><strong>Service :</strong> {lead.serviceType || '—'}</p>
-            <p><strong>Chaleur :</strong> {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}</p>
+            <p>
+              <strong>Contact :</strong> {lead.contactName || '—'}
+            </p>
+            <p>
+              <strong>Email :</strong> {lead.contactEmail || '—'}
+            </p>
+            <p>
+              <strong>Téléphone :</strong> {lead.contactPhone || '—'}
+            </p>
+            <p>
+              <strong>Service :</strong> {lead.serviceType || '—'}
+            </p>
+            <p>
+              <strong>Chaleur :</strong> {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}
+            </p>
           </div>
 
           {/* Actions rapides : contact */}
@@ -78,7 +97,9 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     lead.contactEmail && `Email: ${lead.contactEmail}`,
                     lead.contactPhone && `Tél: ${lead.contactPhone}`,
                     lead.company && `Société: ${lead.company}`,
-                  ].filter(Boolean).join('\n')
+                  ]
+                    .filter(Boolean)
+                    .join('\n')
                   if (text) {
                     navigator.clipboard.writeText(text).then(() => alert('Infos contact copiées'))
                   }
@@ -100,7 +121,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     className="portal-input"
                     value={lead.status || 'LEAD'}
                     onChange={(v) => {
-                      onLeadChange((prev) => prev ? { ...prev, status: v } : prev)
+                      onLeadChange((prev) => (prev ? { ...prev, status: v } : prev))
                       onUpdateLead(lead._id, { status: v })
                     }}
                     options={CRM_STATUSES.map((s) => ({ value: s.key, label: s.label }))}
@@ -112,7 +133,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     className="portal-input"
                     value={lead.leadTemperature || 'TIEDE'}
                     onChange={(v) => {
-                      onLeadChange((prev) => prev ? { ...prev, leadTemperature: v } : prev)
+                      onLeadChange((prev) => (prev ? { ...prev, leadTemperature: v } : prev))
                       onUpdateLead(lead._id, { leadTemperature: v })
                     }}
                     options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
@@ -125,10 +146,15 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     value={lead.assignedTo || ''}
                     onChange={(v) => {
                       const val = v || null
-                      onLeadChange((prev) => prev ? { ...prev, assignedTo: val } : prev)
+                      onLeadChange((prev) => (prev ? { ...prev, assignedTo: val } : prev))
                       onUpdateLead(lead._id, { assignedTo: val })
                     }}
-                    options={[{ value: '', label: 'Non assigné' }, ...admins.filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role)).map((admin) => ({ value: admin._id, label: admin.name }))]}
+                    options={[
+                      { value: '', label: 'Non assigné' },
+                      ...admins
+                        .filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role))
+                        .map((admin) => ({ value: admin._id, label: admin.name })),
+                    ]}
                   />
                 </div>
                 <div className="crm-modal-quick-field">
@@ -137,7 +163,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     type="datetime-local"
                     className="portal-input"
                     value={toDateTimeLocal(lead.nextActionAt) || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLeadChange((prev) => prev ? { ...prev, nextActionAt: e.target.value ? fromDateTimeLocal(e.target.value) : null } : prev)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      onLeadChange((prev) =>
+                        prev
+                          ? { ...prev, nextActionAt: e.target.value ? fromDateTimeLocal(e.target.value) : null }
+                          : prev,
+                      )
+                    }
                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                       const raw = e.target.value
                       const iso = raw ? fromDateTimeLocal(raw) : null
@@ -153,8 +185,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   onClick={async () => {
                     const now = new Date().toISOString()
                     const isEarlyStage = lead.status === 'LEAD' || lead.status === 'QUALIFIED'
-                    onLeadChange((prev) => prev ? { ...prev, lastContactAt: now, ...(isEarlyStage ? { status: 'CONTACTED' } : {}) } : prev)
-                    await onUpdateLead(lead._id, { lastContactAt: now, ...(isEarlyStage ? { status: 'CONTACTED' } : {}) })
+                    onLeadChange((prev) =>
+                      prev ? { ...prev, lastContactAt: now, ...(isEarlyStage ? { status: 'CONTACTED' } : {}) } : prev,
+                    )
+                    await onUpdateLead(lead._id, {
+                      lastContactAt: now,
+                      ...(isEarlyStage ? { status: 'CONTACTED' } : {}),
+                    })
                   }}
                 >
                   ✓ Marquer comme contacté aujourd'hui
@@ -192,33 +229,28 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
           )}
 
+          {/* Le champ libre `interactionNotes` est remplacé par le journal des
+              échanges. Son contenu déjà saisi reste affiché en tête de
+              timeline pour ne pas disparaître de l'écran. */}
           <div className="crm-modal-notes">
-            <label className="crm-modal-label">Notes détaillées des interactions</label>
-            <textarea
-              className="crm-modal-textarea"
-              value={lead.interactionNotes || ''}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onLeadChange((prev) => prev ? { ...prev, interactionNotes: e.target.value } : prev)}
-              placeholder="Notez ici tous les détails des appels, emails, réunions avec ce prospect..."
-              rows={10}
-              disabled={!canManageCrm}
+            <label className="crm-modal-label">Chaîne commerciale</label>
+            <RevenueChain leadId={lead._id} canManage={canManageCrm} />
+          </div>
+
+          <div className="crm-modal-notes">
+            <label className="crm-modal-label">Journal des échanges</label>
+            <InteractionTimeline
+              subjectType="LEAD"
+              subjectId={lead._id}
+              canWrite={canManageCrm}
+              legacyNote={lead.interactionNotes || undefined}
             />
           </div>
-          {canManageCrm && (
-            <div className="crm-modal-actions">
-              <button
-                className="portal-button"
-                onClick={async () => {
-                  await onUpdateLead(lead._id, { interactionNotes: lead.interactionNotes })
-                  onClose()
-                }}
-              >
-                Enregistrer les notes
-              </button>
-              <button className="portal-button secondary" onClick={onClose}>
-                Fermer
-              </button>
-            </div>
-          )}
+          <div className="crm-modal-actions">
+            <button className="portal-button secondary" onClick={onClose}>
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
     </div>

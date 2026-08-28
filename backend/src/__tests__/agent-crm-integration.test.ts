@@ -2,17 +2,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
 import Lead from '../models/Lead.js'
 import ClientContact from '../models/ClientContact.js'
-import ClientNote from '../models/ClientNote.js'
+import Interaction from '../models/Interaction.js'
 
 /**
  * Tests d'intégration des routes CRM agent — exerce les vrais handlers
@@ -60,9 +55,7 @@ describe('Agent CRM / clients', () => {
       { email: 'globex@test.com', passwordHash: pwd, name: 'Bob', companyName: 'Globex', role: 'CLIENT' },
     ])
 
-    const allRes = await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const allRes = await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     expect(allRes.status).toBe(200)
     expect(allRes.body.total).toBe(2)
     expect(allRes.body.items).toHaveLength(2)
@@ -90,9 +83,7 @@ describe('Agent CRM / clients', () => {
     })
     await User.collection.updateOne({ _id: client._id }, { $set: { plainPassword: 'legacy-secret' } })
 
-    const list = await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const list = await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     expect(list.status).toBe(200)
     expect(list.body.items[0].passwordHash).toBeUndefined()
     expect(list.body.items[0].twoFactorSecret).toBeUndefined()
@@ -205,9 +196,7 @@ describe('Agent CRM / leads', () => {
     const leadId = created.body._id
 
     // List
-    const list = await request(app)
-      .get('/api/v1/agent/leads')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const list = await request(app).get('/api/v1/agent/leads').set('Authorization', `Bearer ${plainSecret}`)
     expect(list.status).toBe(200)
     expect(list.body.total).toBe(1)
 
@@ -216,9 +205,7 @@ describe('Agent CRM / leads', () => {
       .get('/api/v1/agent/leads?status=QUALIFIED')
       .set('Authorization', `Bearer ${plainSecret}`)
     expect(filtered.body.total).toBe(1)
-    const empty = await request(app)
-      .get('/api/v1/agent/leads?status=WON')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const empty = await request(app).get('/api/v1/agent/leads?status=WON').set('Authorization', `Bearer ${plainSecret}`)
     expect(empty.body.total).toBe(0)
 
     // Update
@@ -338,7 +325,8 @@ describe('Agent CRM / notes', () => {
       .delete(`/api/v1/agent/clients/${c._id}/notes/${n1.body._id}`)
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
     expect(del.status).toBe(200)
-    const left = await ClientNote.countDocuments()
+    // Les notes client vivent désormais dans Interaction(NOTE, CLIENT).
+    const left = await Interaction.countDocuments({ subjectType: 'CLIENT', kind: 'NOTE' })
     expect(left).toBe(1)
   })
 
