@@ -1,20 +1,15 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import VenioIcon, { type VenioIconName } from '../components/VenioIcon'
-import { CropMarks, GrainOverlay } from '../components/BrutalDeco'
+import { GrainOverlay } from '../components/BrutalDeco'
+import HomeSystemBar from '../components/home/HomeSystemBar'
+import SitePlate from '../components/home/SitePlate'
+import TierDial, { type HomeTier } from '../components/home/TierDial'
+import ProofRadar from '../components/home/ProofRadar'
 import '../styles/monolithe-home.css'
 
-const TIERS: {
-  num: string
-  name: string
-  icon: VenioIconName
-  tag: string
-  pourQui: string
-  incl: string[]
-  featured: boolean
-}[] = [
+const TIERS: HomeTier[] = [
   {
     num: '01',
     name: 'Vitrine',
@@ -62,52 +57,86 @@ const TIERS: {
   },
 ]
 
-const METIERS: { num: string; name: string; icon: VenioIconName; to: string; tag: string; deliv: string[] }[] = [
+/* Les trois cotes du relevé. Rien d'autre n'est chiffré sur cette page :
+   dix ans est une durée de vie visée, la propriété du code est contractuelle,
+   la reprise est documentée — aucune des trois n'est une statistique. */
+const COTES: { num: string; label: string; value: string; live?: boolean }[] = [
+  { num: '01', label: 'Durée de vie visée', value: '10 ans', live: true },
+  { num: '02', label: 'Propriétaire du code', value: 'Vous' },
+  { num: '03', label: 'Reprise par vos équipes', value: 'Documentée' },
+]
+
+const ENGAGEMENTS: { num: string; titre: string; texte: string; cle: string; valeur: string }[] = [
   {
     num: '01',
-    name: 'Conseil',
-    icon: 'conseil',
-    to: '/services/conseil',
-    tag: 'Un état des lieux sans détour, des décisions claires — pas de jolies présentations. Si votre stratégie ne tient pas, on vous le dit en face.',
-    deliv: ['État des lieux franc', "L'IA quand ça sert", 'Une place qui tient face aux concurrents'],
+    titre: 'On dit non par écrit',
+    texte:
+      'Si ce que vous demandez ne sert pas ce que vous cherchez, vous recevez un refus argumenté — avant le devis, pas après la facture.',
+    cle: 'Moment',
+    valeur: 'avant le devis',
   },
   {
     num: '02',
-    name: 'Développement',
-    icon: 'developpement',
-    to: '/services/developpement',
-    tag: 'Un outil qui travaille comme vous — CRM, gestion, portail client. Du logiciel qui vous appartient et grandit avec vous, pas un abonnement de plus.',
-    deliv: ['Outils de travail sur mesure', 'Un logiciel qui grandit avec vous', "L'IA utile au quotidien"],
+    titre: 'Le code est à vous dès le premier jour',
+    texte:
+      "Dépôt ouvert à votre nom, accès complets, aucune brique qu'on serait seuls à savoir manier. Si vous changez de prestataire, il n'a rien à réapprendre.",
+    cle: 'Propriété',
+    valeur: 'client — j+0',
   },
   {
     num: '03',
-    name: 'Communication',
-    icon: 'communication',
-    to: '/services/communication',
-    tag: 'Une marque qui se tient. Pas un PDF et trois posts : un ensemble cohérent, qui dure et ne ressemble à personne.',
-    deliv: ['Une marque cohérente', 'Une voix qui vous ressemble', 'Un style qui vous va'],
+    titre: 'On chiffre ce qu’on affirme',
+    texte:
+      'Chaque proposition porte un prix, une date de livraison, et ce qui se passe si on la dépasse. Pas de « selon complexité », pas de forfait qui glisse.',
+    cle: 'Contenu',
+    valeur: 'prix + date + pénalité',
   },
 ]
 
-const PILIERS: { num: string; icon: VenioIconName; titre: string; texte: string }[] = [
+/* La page « Au-delà du site » est ouverte par un chantier parallèle.
+   En attendant, chaque métier pointe vers sa page de service actuelle ;
+   les redirections 301 seront posées à la fusion. */
+const METIERS: {
+  num: string
+  nom: string
+  to: string
+  titre: string
+  texte: string
+  inutile: string
+}[] = [
   {
     num: '01',
-    icon: 'lucidite',
-    titre: 'Lucidité',
-    texte: 'On dit non. Souvent. La vérité est plus utile que le confort.',
+    nom: 'Conseil',
+    to: '/services/conseil',
+    titre: 'Un état des lieux écrit',
+    texte:
+      'Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre. Vous repartez avec le document, qu’on travaille ensemble ensuite ou non.',
+    inutile: 'Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.',
   },
   {
     num: '02',
-    icon: 'efficacite',
-    titre: 'Efficacité',
-    texte: 'On ne décore pas. On structure. La forme est une conséquence.',
+    nom: 'Développement',
+    to: '/services/developpement',
+    titre: 'L’outil que le tableur ne fait plus',
+    texte:
+      'Quand vos procédures tiennent dans des onglets partagés que plus personne n’ose modifier. On construit l’outil autour de votre façon de travailler, pas l’inverse.',
+    inutile: 'Un logiciel du marché couvre déjà l’essentiel du besoin — on vous dira lequel.',
   },
   {
     num: '03',
-    icon: 'refus',
-    titre: 'Refus du mensonge',
-    texte: 'Pas de oui de complaisance. La vérité, même quand elle coûte une vente.',
+    nom: 'Marque',
+    to: '/services/communication',
+    titre: 'Un nom, une voix, un système',
+    texte:
+      'Pas un logo et quelques publications. De quoi écrire, décliner et tenir sans nous rappeler à chaque fois qu’il faut produire quelque chose.',
+    inutile: 'Votre problème est commercial. Une belle marque ne remplit pas un carnet vide.',
   },
+]
+
+const RENDEZ_VOUS: { cle: string; valeur: string }[] = [
+  { cle: 'Durée', valeur: '30 min' },
+  { cle: 'Préparation demandée', valeur: 'aucune' },
+  { cle: 'Adresse', valeur: 'contact@venio.paris' },
 ]
 
 const Home = () => {
@@ -131,183 +160,200 @@ const Home = () => {
   return (
     <div className="mh-home">
       <SEO
-        title="Sites web sur mesure, conseil et marque · Paris"
-        description="Studio digital à Paris. Sites web sur mesure, conseil et identité de marque — du concret, fait pour vous, pas de modèle tout fait. Parlons de votre projet."
-        keywords="agence digitale, site web sur mesure, développement web, communication, branding, stratégie digitale, Paris"
+        title="Un site qui tient dix ans · Paris"
+        description="Studio digital à Paris. Sites web et plateformes sur mesure : le code vous appartient dès le premier jour, la reprise par vos équipes est documentée, chaque proposition porte un prix, une date et une pénalité."
+        keywords="site web sur mesure, plateforme métier, développement web, conseil, marque, studio digital, Paris"
       />
       <StructuredData type="home" />
 
-      {/* HERO */}
-      <section id="mh-hero">
-        <div className="mh-hero-lines" aria-hidden="true" />
-        <GrainOverlay opacity={0.04} />
-        <CropMarks />
-        <div className="mh-container mh-hero-content">
-          <p className="mh-hero-label">Sites web sur mesure · Conseil · Marque — Paris</p>
-          <h1 className="mh-hero-title">
-            Construire
-            <br />
-            ce qui
-            <br />
-            <span className="mh-accent">doit</span>
-            <br />
-            exister
-          </h1>
-          <p className="mh-hero-sub">Pas ce qui rassure.</p>
-          <p className="mh-hero-offer">
-            <b>Des sites qui vous appartiennent, du conseil qui tranche, une marque qui tient.</b> Tout sur mesure. Rien
-            en stock.
-          </p>
-          <div className="mh-hero-actions">
-            <a className="mh-btn mh-btn--lime" href="#mh-sites">
-              Voir les offres <span className="mh-ar">↓</span>
-            </a>
-            <Link className="mh-link" to="/contact" data-analytics-cta="home_hero_contact">
-              Parler de votre projet
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ─── 01 · BANDEAU SYSTÈME ─── */}
+      <HomeSystemBar />
 
-      {/* MÉTHODE */}
-      <section id="mh-methode">
-        <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              I
-            </span>
-            <span className="mh-kicker">Notre méthode</span>
-          </div>
-          <h2 className="mh-methode-headline mh-reveal">Trois principes. Pas de discours.</h2>
-          <div className="mh-piliers">
-            {PILIERS.map((p) => (
-              <div key={p.num} className="mh-pilier mh-reveal">
-                <VenioIcon name={p.icon} size={28} className="mh-pilier-icon" />
-                <span className="mh-pilier-num">{p.num}</span>
-                <h3 className="mh-pilier-titre">{p.titre}</h3>
-                <p className="mh-pilier-texte">{p.texte}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mh-methode-close mh-reveal">Construire ce qui doit exister — le reste, on le refuse.</p>
-          <Link className="mh-method-link mh-reveal" to="/methode">
-            Voir les étapes, livrables et cadence <span className="mh-ar">→</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* SITES — offre phare */}
-      <section id="mh-sites">
-        <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              II
-            </span>
-            <span className="mh-kicker">Sites web · l'offre</span>
-          </div>
-          <h2 className="mh-sites-headline mh-reveal">
-            Des sites qui durent <span className="mh-accent">10 ans</span>. Pas 6 mois.
-          </h2>
-          <p className="mh-sites-intro mh-reveal">
-            Un site Venio est conçu pour votre activité et tient dans le temps. Un thème acheté, lui, casse à la
-            première mise à jour — c'est même son modèle économique.
-          </p>
-          <p className="mh-sites-meta mh-reveal">Cinq paliers · Tous sur devis</p>
-
-          <div className="mh-pricing">
-            {TIERS.map((t) => (
-              <Link
-                key={t.num}
-                to="/services/sites"
-                className={`mh-price mh-reveal${t.featured ? ' mh-price--featured' : ''}`}
-              >
-                {t.featured && <span className="mh-price-badge">Le plus choisi</span>}
-                <VenioIcon name={t.icon} size={26} className="mh-price-icon" />
-                <span className="mh-price-num">Palier {t.num}</span>
-                <span className="mh-price-name">{t.name}</span>
-                <span className="mh-price-tag">{t.tag}</span>
-                <ul className="mh-price-incl">
-                  {t.incl.map((i) => (
-                    <li key={i}>{i}</li>
-                  ))}
-                </ul>
-                <span className="mh-price-pourqui">{t.pourQui}</span>
-                <span className="mh-price-cta">
-                  Voir ce palier <span className="mh-ar">→</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mh-sites-foot mh-reveal">
-            <p className="mh-webnote">
-              <b>On s'occupe de tout, en option sur chaque palier :</b> hébergement, mises à jour, sauvegardes — et
-              quelqu'un qui répond quand vous appelez. Votre site vit sans que vous y pensiez.
+      {/* ─── 02 · RELEVÉ ─── */}
+      <section id="mh-releve">
+        <GrainOverlay opacity={0.035} />
+        <div className="mh-container mh-releve-grid">
+          <div className="mh-releve-text">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 01 — durée de vie
             </p>
+            <h1 className="mh-releve-title">
+              Un site qui tient <span className="mh-accent">dix&nbsp;ans.</span>
+            </h1>
+            <p className="mh-releve-sub">
+              Le thème n’est plus maintenu, l’agence a changé d’équipe, et plus personne ne sait où toucher sans tout
+              casser. On construit l’inverse.
+            </p>
+
+            <dl className="mh-cotes">
+              {COTES.map((c) => (
+                <div key={c.num} className={`mh-cote${c.live ? ' mh-cote--live' : ''}`}>
+                  <dt className="mh-mono">
+                    <span className="mh-cote-num">{c.num}</span>
+                    {c.label}
+                  </dt>
+                  <dd>{c.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <SitePlate />
+        </div>
+      </section>
+
+      {/* ─── 03 · CADRAN DES CINQ PALIERS ─── */}
+      <section id="mh-paliers">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 02 — sites web
+            </p>
+            <h2>
+              Cinq paliers. Le vôtre dépend de <span className="mh-accent">ce que le site doit faire.</span>
+            </h2>
+            <p className="mh-band-note">
+              Pas de ce que vous voulez montrer. Choisissez la graduation qui correspond au travail que le site doit
+              vraiment abattre — le chiffrage vient après, une fois le besoin posé.
+            </p>
+          </header>
+
+          <div className="mh-reveal">
+            <TierDial tiers={TIERS} />
+          </div>
+
+          <p className="mh-band-foot mh-reveal">
             <Link className="mh-link" to="/services/sites">
-              Le détail des offres <span className="mh-ar">→</span>
+              Le détail des cinq paliers <span aria-hidden="true">→</span>
             </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ─── 04 · RADAR DE PREUVE ─── */}
+      <section id="mh-preuve">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 03 — preuve
+            </p>
+            <h2>
+              Ce qu’on construit, <span className="mh-accent">on le fait tourner.</span>
+            </h2>
+            <p className="mh-band-note">
+              Nous n’avons pas de mur de logos à vous montrer. Nous avons des produits que nous éditons nous-mêmes, en
+              production, et des sites en ligne qu’on entretient — c’est la seule preuve qui engage celui qui la donne.
+            </p>
+          </header>
+
+          <div className="mh-reveal">
+            <ProofRadar />
+          </div>
+
+          <p className="mh-band-foot mh-reveal">
+            <Link className="mh-link" to="/realisations">
+              Voir les réalisations <span aria-hidden="true">→</span>
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ─── 05 · TROIS ENGAGEMENTS OPPOSABLES ─── */}
+      <section id="mh-engagements">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 04 — engagements
+            </p>
+            <h2>
+              Trois promesses qu’on peut <span className="mh-accent">nous opposer.</span>
+            </h2>
+            <p className="mh-band-note">
+              Une promesse qu’on ne peut pas vérifier n’est pas une promesse. Voici les trois qui figurent dans chacun
+              de nos contrats.
+            </p>
+          </header>
+
+          <div className="mh-specs">
+            {ENGAGEMENTS.map((e) => (
+              <article key={e.num} className="mh-spec mh-reveal">
+                <span className="mh-mono mh-spec-num">{e.num}</span>
+                <h3>{e.titre}</h3>
+                <p>{e.texte}</p>
+                <p className="mh-spec-measure">
+                  <span className="mh-mono">{e.cle}</span>
+                  <b className="mh-mono">{e.valeur}</b>
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* MÉTIERS */}
+      {/* ─── 06 · AU-DELÀ DU SITE ─── */}
       <section id="mh-metiers">
         <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              III
-            </span>
-            <span className="mh-kicker">Au-delà du site</span>
-          </div>
-          <h2 className="mh-metiers-headline mh-reveal">Trois métiers.</h2>
-          <p className="mh-metiers-intro mh-reveal">
-            Quand le besoin dépasse le site. Sur devis, parce qu'aucun de ces projets ne se vend en paliers.
-          </p>
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 05 — au-delà du site
+            </p>
+            <h2>
+              Trois métiers, et <span className="mh-accent">quand ils ne servent à rien.</span>
+            </h2>
+            <p className="mh-band-note">
+              Aucun ne se vend en paliers : ils dépendent trop de ce qu’on trouve en ouvrant le capot. Chacun est donc
+              décrit avec le cas où il faut passer votre chemin.
+            </p>
+          </header>
 
-          <div>
+          <div className="mh-jobs">
             {METIERS.map((m) => (
-              <Link key={m.num} to={m.to} className="mh-metier mh-reveal">
-                <span className="mh-metier-num" aria-hidden="true">
-                  {m.num}
+              <Link key={m.num} to={m.to} className="mh-job mh-reveal">
+                <span className="mh-mono mh-job-num">
+                  {m.num} — {m.nom}
                 </span>
-                <div>
-                  <div className="mh-metier-header">
-                    <VenioIcon name={m.icon} size={24} className="mh-metier-icon" />
-                    <h3 className="mh-metier-name">{m.name}</h3>
-                  </div>
-                  <p className="mh-metier-tag">{m.tag}</p>
-                  <ul className="mh-metier-deliv">
-                    {m.deliv.map((d) => (
-                      <li key={d}>{d}</li>
-                    ))}
-                  </ul>
-                  <div className="mh-metier-foot">
-                    <span className="mh-metier-go">
-                      En parler <span className="mh-ar">→</span>
-                    </span>
-                  </div>
+                <h3>{m.titre}</h3>
+                <p>{m.texte}</p>
+                <div className="mh-job-nope">
+                  <span className="mh-mono">Inutile si</span>
+                  <p>{m.inutile}</p>
                 </div>
+                <span className="mh-job-go">
+                  En parler <span aria-hidden="true">→</span>
+                </span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section id="mh-cta">
-        <div className="mh-container">
-          <p className="mh-cta-eyebrow mh-reveal">Prochaine étape</p>
-          <h2 className="mh-cta-title mh-reveal">
-            Parlons<span className="mh-dot">.</span>
-          </h2>
-          <Link className="mh-cta-go mh-reveal" to="/contact" data-analytics-cta="home_final_contact">
-            Prendre contact <span className="mh-ar">→</span>
-          </Link>
-          <p className="mh-cta-note mh-reveal">
-            Premier échange franc : si on n'est pas les bons pour votre projet, on vous le dit — et on vous dit vers qui
-            aller.
-          </p>
+      {/* ─── 07 · UN APPEL DE TRENTE MINUTES ─── */}
+      <section id="mh-appel">
+        <div className="mh-container mh-appel-grid">
+          <div className="mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Relevé 06 — prochaine étape
+            </p>
+            <h2>
+              Un appel de <span className="mh-accent">trente minutes.</span>
+            </h2>
+            <p className="mh-appel-note">
+              À la fin, vous saurez si on vous est utiles. Si on ne l’est pas, on vous le dit pendant l’appel et on vous
+              oriente ailleurs. Ça ne vous coûte que la demi-heure.
+            </p>
+            <Link className="mh-cta" to="/contact" data-analytics-cta="home_final_contact">
+              Réserver l’appel <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          <dl className="mh-appel-meta mh-reveal">
+            {RENDEZ_VOUS.map((r) => (
+              <div key={r.cle}>
+                <dt className="mh-mono">{r.cle}</dt>
+                <dd className="mh-mono">{r.valeur}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
     </div>
