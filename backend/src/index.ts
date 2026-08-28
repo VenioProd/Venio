@@ -368,6 +368,18 @@ app.use('/api/client', clientFileRoutes)
 // non-standard API methods.
 app.all(['/api', '/api/{*path}'], apiNotFound)
 
+// Redirections 301 : pages services fusionnées dans /au-dela-du-site et /poles
+// retiré de la navigation publique (contenu repris dans /a-propos).
+const legacyPublicRedirects: Record<string, string> = {
+  '/services/conseil': '/au-dela-du-site#conseil',
+  '/services/developpement': '/au-dela-du-site#developpement',
+  '/services/communication': '/au-dela-du-site#marque',
+  '/poles': '/a-propos#poles',
+}
+app.get(Object.keys(legacyPublicRedirects), (req: Request, res: Response) => {
+  res.redirect(301, legacyPublicRedirects[req.path])
+})
+
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

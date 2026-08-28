@@ -11,18 +11,8 @@ export const serviceOffers: readonly ServiceOfferLink[] = [
     to: '/services/sites',
   },
   {
-    label: 'Communication',
-    description: 'Identité de marque, contenus et cohérence éditoriale.',
-    to: '/services/communication',
-  },
-  {
-    label: 'Conseil',
-    description: 'Audit, priorités et décisions stratégiques.',
-    to: '/services/conseil',
-  },
-  {
-    label: 'Développement',
-    description: 'Applications et outils métier qui durent.',
-    to: '/services/developpement',
+    label: 'Au-delà du site',
+    description: 'Conseil, développement sur mesure et communication.',
+    to: '/au-dela-du-site',
   },
 ]
