@@ -26,48 +26,15 @@ export const publicRoutes = [
       'Pas de modèle tout fait. Venio crée des sites utiles, performants et cohérents avec votre activité, de la stratégie au déploiement.',
   },
   {
-    path: '/services/communication',
-    priority: '0.9',
-    changefreq: 'monthly',
-    title: 'Communication et identité de marque à Paris | Venio',
-    description:
-      'Identité de marque et communication à Paris. Une vraie marque, pas juste un logo : cohérente, qui vous ressemble et qui dure dans le temps.',
-    h1: 'Communication et identité de marque',
-    content:
-      'Venio construit des marques lisibles et distinctives : positionnement, identité, messages et supports qui donnent une direction à votre communication.',
-  },
-  {
-    path: '/services/developpement',
-    priority: '0.9',
-    changefreq: 'monthly',
-    title: 'Développement web et applications sur mesure à Paris | Venio',
-    description:
-      'Création de sites web et d’outils sur mesure à Paris. Un site qui vous appartient, fait pour durer dix ans, pas six mois.',
-    h1: 'Développement web et applications sur mesure',
-    content:
-      'Sites, applications et outils métier : nous développons des produits fiables, maintenables et adaptés à votre manière de travailler.',
-  },
-  {
-    path: '/services/conseil',
-    priority: '0.9',
-    changefreq: 'monthly',
-    title: 'Conseil stratégique et audit digital à Paris | Venio',
-    description:
-      'Conseil et audit pour votre digital à Paris. Un bilan sans détour, des décisions claires et des priorités utiles.',
-    h1: 'Conseil stratégique et audit digital',
-    content:
-      'Nous auditons votre présence et votre organisation digitale pour transformer les constats en décisions, priorités et plan d’action concret.',
-  },
-  {
-    path: '/poles',
+    path: '/au-dela-du-site',
     priority: '0.8',
     changefreq: 'monthly',
-    title: 'Les pôles d’expertise Venio | Venio',
+    title: 'Conseil, développeur et agence communication à Paris | Venio',
     description:
-      'Découvrez les trois pôles Venio : stratégie, marque et digital, pensés pour faire avancer votre activité.',
-    h1: 'Trois pôles',
+      'Autour du site : conseil stratégique, développeur sur mesure et agence communication à Paris. Trois métiers activés seulement si vous en avez besoin.',
+    h1: 'Au-delà du site',
     content:
-      'Stratégie, communication et développement : trois expertises qui travaillent ensemble pour construire des projets cohérents.',
+      'Conseil stratégique, développement sur mesure et communication : trois métiers Venio, activés seulement quand ils servent votre projet.',
   },
   {
     path: '/realisations',

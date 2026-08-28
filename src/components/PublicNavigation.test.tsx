@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, expect, it } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { I18nProvider } from '../context/I18nContext'
@@ -19,22 +19,15 @@ function renderNavigation(ui: React.ReactNode) {
 }
 
 describe('navigation des offres publiques', () => {
-  it('rend les quatre offres dans le menu, avec une URL interne cohérente', () => {
-    const { container } = renderNavigation(<Navbar />)
-    const servicesMenu = container.querySelector<HTMLDetailsElement>('details.nav-services')
-    expect(servicesMenu).toBeTruthy()
-    fireEvent.click(servicesMenu!.querySelector('summary')!)
+  it('rend le lien Sites web dans la nav resserrée, avec une URL interne cohérente', () => {
+    renderNavigation(<Navbar />)
 
-    for (const offer of serviceOffers) {
-      expect(
-        within(servicesMenu!)
-          .getByRole('link', { name: new RegExp(`^${offer.label}`) })
-          .getAttribute('href'),
-      ).toBe(offer.to)
-    }
+    const sitesOffer = serviceOffers.find((offer) => offer.to === '/services/sites')!
+    const link = screen.getAllByRole('link', { name: new RegExp(`^${sitesOffer.label}`) })[0]
+    expect(link.getAttribute('href')).toBe(sitesOffer.to)
   })
 
-  it('rend les quatre offres dans le pied de page', () => {
+  it('rend les offres dans le pied de page, avec une URL interne cohérente', () => {
     renderNavigation(<Footer />)
 
     for (const offer of serviceOffers) {
