@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom'
 
 /**
  * Bandeau système — bloc 01 de la home « Instrument ».
- * Plaque d'identification de l'appareil : la marque, les quatre entrées
- * de la navigation resserrée, et l'état vivant à droite.
- * Volontairement non collant : la Navbar globale est déjà `position: fixed`.
+ * Plaque d'identification de l'appareil : les quatre entrées de la
+ * navigation resserrée, et l'état vivant à droite.
+ * La marque appartient à la Navbar globale ; la répéter ici ferait doublon.
+ * Volontairement non collant : la Navbar est déjà `position: fixed`.
  */
 
 const ENTRIES: { to: string; label: string }[] = [
@@ -17,10 +18,6 @@ const ENTRIES: { to: string; label: string }[] = [
 const HomeSystemBar = () => (
   <div className="mh-sysbar">
     <div className="mh-container mh-sysbar-in">
-      <span className="mh-mark">
-        Venio<span className="mh-mark-dot">.</span>
-      </span>
-
       <nav className="mh-sysnav" aria-label="Sections principales">
         {ENTRIES.map((entry) => (
           <Link key={entry.to} className="mh-sysnav-link" to={entry.to}>
