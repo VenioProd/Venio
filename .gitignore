@@ -43,3 +43,6 @@ prospection/
 
 # Superpowers / brainstorming companion
 .superpowers/
+
+# Playwright CLI (outil local)
+.playwright-cli/
