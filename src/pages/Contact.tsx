@@ -6,13 +6,12 @@ import { useReveal } from '../hooks/useReveal'
 import { trackPublicEvent } from '../lib/publicAnalytics'
 import { apiFetch } from '../lib/api'
 import '../styles/monolithe-pages.css'
+import './Contact.css'
 
 interface ContactFormData {
   prenom: string
   nom: string
   email: string
-  entreprise: string
-  sujet: string
   message: string
   consent: boolean
   website: string
@@ -26,8 +25,6 @@ const Contact = () => {
     prenom: '',
     nom: '',
     email: '',
-    entreprise: '',
-    sujet: '',
     message: '',
     consent: false,
     website: '',
@@ -68,8 +65,6 @@ const Contact = () => {
           firstName: formData.prenom,
           lastName: formData.nom,
           email: formData.email,
-          company: formData.entreprise,
-          subject: formData.sujet,
           message: formData.message,
           consent: formData.consent,
           website: formData.website,
@@ -81,8 +76,6 @@ const Contact = () => {
         prenom: '',
         nom: '',
         email: '',
-        entreprise: '',
-        sujet: '',
         message: '',
         consent: false,
         website: '',
@@ -109,7 +102,7 @@ const Contact = () => {
     <div className="mp-page">
       <SEO
         title="Contact — parlons de votre projet web"
-        description="On ne travaille pas avec tout le monde. Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous voulez construire quelque chose qui dure, parlons. Réponse sous 48h."
+        description="Dites-nous ce que vous voulez construire. Un appel de trente minutes suffit à savoir si on peut vous aider. Réponse sous 48 h."
         keywords="contact Venio, devis site web Paris, prendre contact, projet web"
       />
       <StructuredData type="contact" />
@@ -120,7 +113,7 @@ const Contact = () => {
           <p className="mp-eyebrow">Venio · Contact</p>
           <h1 className="mp-title">Contact</h1>
           <p className="mp-lede">
-            <b>On ne travaille pas avec tout le monde.</b> Et c'est tant mieux.
+            <b>Dites-nous ce que vous voulez construire.</b> On vous répond sous 48 heures.
           </p>
         </div>
       </section>
@@ -135,39 +128,54 @@ const Contact = () => {
             <span className="mp-kicker">Avant de nous écrire</span>
           </div>
           <div className="mp-prose mp-reveal">
-            <p className="mp-strong">Venio ne travaille pas avec tout le monde.</p>
+            <p className="mp-strong">On ne prend pas tous les projets.</p>
+            <p>Si vous cherchez le moins cher, ou quelqu'un qui dira oui à tout, on ne sera pas les bons.</p>
             <p>
-              Si vous cherchez du vite fait et pas cher, ce n'est pas ici. Si vous cherchez quelqu'un pour valider vos
-              idées sans réfléchir, ce n'est pas ici. Si vous voulez un modèle tout fait vite personnalisé, ce n'est pas
-              ici.
+              Si vous voulez un site pensé pour vous, qui vous appartienne, et sur lequel on peut tout construire —
+              alors écrivez-nous.
             </p>
-            <p>
-              Si vous voulez construire quelque chose qui dure, qui a du sens et qui est pensé pour vous, alors oui.
-            </p>
-            <p>On répond sous 48h. Si votre projet a du sens, on vous le dit. Sinon aussi.</p>
+            <p>On répond sous 48 heures. Si votre projet n'est pas pour nous, on vous le dit aussi.</p>
           </div>
         </div>
       </section>
 
-      {/* §II — Écrivez-nous */}
+      {/* §II — La prochaine étape */}
       <section className="mp-block">
         <div className="mp-container">
           <div className="mp-head mp-reveal">
             <span className="mp-index" aria-hidden="true">
               II
             </span>
-            <span className="mp-kicker">Écrivez-nous</span>
+            <span className="mp-kicker">La prochaine étape</span>
           </div>
           <div className="mp-contact-grid">
-            <div className="mp-contact-aside mp-reveal">
-              <h2>Email direct</h2>
-              <a className="mp-mail" href="mailto:contact@venio.paris">
-                contact@venio.paris
-              </a>
+            <div className="mp-contact-promise mp-reveal">
+              <h2>
+                Un appel de <span className="mp-accent">trente minutes</span>.
+              </h2>
+              <p>
+                À la fin, vous saurez si on vous est utiles. Si on ne l’est pas, on vous le dit pendant l’appel et on
+                vous oriente ailleurs. Ça ne vous coûte que la demi-heure.
+              </p>
+              <dl className="mp-contact-facts">
+                <div>
+                  <dt>Durée</dt>
+                  <dd>30 min</dd>
+                </div>
+                <div>
+                  <dt>Préparation demandée</dt>
+                  <dd>Aucune</dd>
+                </div>
+                <div>
+                  <dt>Adresse</dt>
+                  <dd>
+                    <a href="mailto:contact@venio.paris">contact@venio.paris</a>
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <div className="mp-contact-form mp-reveal">
-              <h2>Le formulaire</h2>
               <form className="mp-form" onSubmit={handleSubmit}>
                 <div className="mp-form-row">
                   <input
@@ -198,22 +206,6 @@ const Contact = () => {
                   onChange={handleChange}
                   required
                 />
-                <input
-                  type="text"
-                  name="entreprise"
-                  aria-label="Entreprise"
-                  placeholder="Entreprise (optionnel)"
-                  value={formData.entreprise}
-                  onChange={handleChange}
-                />
-                <select name="sujet" aria-label="Votre besoin" value={formData.sujet} onChange={handleChange} required>
-                  <option value="">Votre besoin</option>
-                  <option value="Site web">Un site web</option>
-                  <option value="Développement sur mesure">Un outil sur mesure</option>
-                  <option value="Conseil">Du conseil</option>
-                  <option value="Communication & marque">Ma marque, ma communication</option>
-                  <option value="Autre">Autre chose</option>
-                </select>
                 <textarea
                   placeholder="Votre message"
                   name="message"
@@ -252,7 +244,7 @@ const Contact = () => {
                   </p>
                 )}
                 <button type="submit" className="mp-submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Envoi…' : 'Envoyer'}
+                  {isSubmitting ? 'Envoi…' : 'Demander l’appel'}
                 </button>
               </form>
             </div>

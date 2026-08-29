@@ -44,7 +44,7 @@
   width: min(100%, 620px);
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: #0a1023;
-  color: #e2e8f0;
+  color: var(--ink-body);
   padding: 20px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
 }
@@ -72,7 +72,7 @@
 .agent-launch-cancel {
   background: transparent;
   border: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   cursor: pointer;
 }
 .agent-launch-close {
@@ -94,7 +94,7 @@
   font-size: 13px;
 }
 .agent-launch-scope dt {
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 .agent-launch-scope dd {
   margin: 0;
@@ -110,7 +110,7 @@
 .agent-launch-limits ul {
   margin: 7px 0 0;
   padding-left: 18px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 .agent-launch-error {
   color: #fca5a5;

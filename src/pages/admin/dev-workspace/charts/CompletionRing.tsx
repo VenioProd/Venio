@@ -55,7 +55,7 @@ export const CompletionRing = ({ percent, size = 96, strokeWidth = 10 }: Complet
         y="50%"
         textAnchor="middle"
         dominantBaseline="central"
-        fill="#f8fafc"
+        fill="var(--ink-strong)"
         fontSize={size * 0.22}
         fontWeight={750}
         style={{ fontVariantNumeric: 'tabular-nums' }}

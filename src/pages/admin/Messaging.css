@@ -2008,8 +2008,8 @@
 
 [data-theme='light'] .prompt-modal__input {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #0f172a;
+  border-color: var(--line-soft);
+  color: var(--ink-strong);
 }
 
 /* ============================================================
@@ -2339,7 +2339,7 @@
   --msg-panel: rgba(255, 255, 255, 0.94);
   --msg-panel-soft: rgba(250, 250, 252, 0.96);
   --msg-panel-strong: #ffffff;
-  --msg-text: #0f172a;
+  --msg-text: var(--ink-strong);
   --msg-muted: #4b5563;
   --msg-dim: #9ca3af;
   --msg-border: rgba(var(--primary-rgb), 0.22);
@@ -2361,12 +2361,12 @@
 [data-theme='light'] .messaging-header-main h1,
 [data-theme='light'] .messaging-conversation-name,
 [data-theme='light'] .messaging-sidebar-person-name {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .messaging-bubble {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .messaging-message.own .messaging-bubble {

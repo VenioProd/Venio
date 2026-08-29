@@ -730,9 +730,14 @@ const DevProjectCockpit = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={priorityData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: 'var(--ink-dim)', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
                     <YAxis
-                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tick={{ fill: 'var(--ink-dim)', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                       allowDecimals={false}
@@ -763,7 +768,7 @@ const DevProjectCockpit = () => {
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" horizontal={false} />
                     <XAxis
                       type="number"
-                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tick={{ fill: 'var(--ink-dim)', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                       allowDecimals={false}
@@ -771,7 +776,7 @@ const DevProjectCockpit = () => {
                     <YAxis
                       type="category"
                       dataKey="name"
-                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tick={{ fill: 'var(--ink-dim)', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                       width={70}

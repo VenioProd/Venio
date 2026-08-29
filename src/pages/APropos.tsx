@@ -5,6 +5,12 @@ import StructuredData from '../components/StructuredData'
 import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
 
+const POLES = [
+  { name: 'Decisio', desc: 'Communication juridique', link: 'https://decisio.paris' },
+  { name: 'Creatio', desc: 'Supports de cours', link: 'https://creatio.paris' },
+  { name: 'Formatio', desc: 'Formations professionnelles', link: 'https://formatio.paris' },
+]
+
 const APropos = () => {
   useReveal('.mp-page .mp-reveal', 'mp-visible')
 
@@ -116,6 +122,39 @@ const APropos = () => {
               avec des modules dans tous les sens, pas de modèle tout fait. Du sur-mesure, testé, documenté, que vos
               équipes peuvent reprendre — fait pour durer dix ans, pas six mois.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* §IV — Nos pôles */}
+      <section id="poles" className="mp-block">
+        <div className="mp-container">
+          <div className="mp-head mp-reveal">
+            <span className="mp-index" aria-hidden="true">
+              IV
+            </span>
+            <span className="mp-kicker">Nos pôles</span>
+          </div>
+          <div className="mp-prose mp-reveal">
+            <p className="mp-strong">
+              Venio travaille avec trois pôles spécialisés. Pas des cases sur une plaquette : des entités dédiées à un
+              seul domaine, avec une vraie expertise.
+            </p>
+            <p>De la profondeur, pas de la surface. On préfère faire une chose à fond plutôt que tout à moitié.</p>
+          </div>
+
+          <div style={{ marginTop: 'var(--mp-sp-l)' }}>
+            {POLES.map((p) => (
+              <a key={p.name} className="mp-row mp-reveal" href={p.link} target="_blank" rel="noopener noreferrer">
+                <div>
+                  <div className="mp-row-name">{p.name}</div>
+                  <div className="mp-row-desc">{p.desc}</div>
+                </div>
+                <span className="mp-row-go">
+                  Voir le site <span className="mp-ar">↗</span>
+                </span>
+              </a>
+            ))}
           </div>
         </div>
       </section>

@@ -1,9 +1,9 @@
 const en: Record<string, string> = {
   // Navigation
   'nav.home': 'Home',
-  'nav.services': 'Services',
+  'nav.services': 'Websites',
   'nav.realisations': 'Portfolio',
-  'nav.about': 'About',
+  'nav.method': 'Method',
   'nav.contact': 'Contact',
   'nav.clientPortal': 'Client portal',
   'nav.admin': 'Admin',

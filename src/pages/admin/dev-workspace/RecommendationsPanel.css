@@ -23,7 +23,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  color: #e2e8f0;
+  color: var(--ink-body);
   flex-wrap: wrap;
 }
 
@@ -32,11 +32,11 @@
   font-size: 14px;
   font-weight: 660;
   letter-spacing: -0.005em;
-  color: #f8fafc;
+  color: var(--ink-strong);
 }
 
 .reco-panel-subtitle {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
   font-style: italic;
 }
@@ -47,7 +47,7 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .reco-panel-stat {
@@ -113,7 +113,7 @@
 
 .reco-empty {
   padding: 14px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 12px;
   text-align: center;
   border: 1px dashed rgba(148, 163, 184, 0.2);
@@ -121,7 +121,7 @@
 }
 
 .reco-empty-loading {
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .reco-warnings {
@@ -203,21 +203,29 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.reco-tone-accent .reco-section-kicker { color: #c7bdff; }
-.reco-tone-add .reco-section-kicker { color: #86efac; }
-.reco-tone-optim .reco-section-kicker { color: #67e8f9; }
-.reco-tone-files .reco-section-kicker { color: #fdba74; }
+.reco-tone-accent .reco-section-kicker {
+  color: #c7bdff;
+}
+.reco-tone-add .reco-section-kicker {
+  color: #86efac;
+}
+.reco-tone-optim .reco-section-kicker {
+  color: #67e8f9;
+}
+.reco-tone-files .reco-section-kicker {
+  color: #fdba74;
+}
 
 .reco-section-meta {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
 }
 
@@ -233,7 +241,7 @@
 }
 
 .reco-row {
-  --p-color: #64748b;
+  --p-color: var(--ink-faint);
   display: grid;
   grid-template-columns: 6px minmax(0, 1fr) auto;
   align-items: start;
@@ -266,7 +274,7 @@
 }
 
 .reco-row-title {
-  color: #f1f5f9;
+  color: var(--ink-strong);
   font-size: 12.5px;
   font-weight: 620;
   line-height: 1.35;
@@ -275,7 +283,7 @@
 
 .reco-row-desc {
   margin-top: 3px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -290,7 +298,7 @@
 
 .reco-row-evidence {
   margin-top: 6px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -313,7 +321,7 @@
 .reco-row-evidence span {
   display: block;
   margin-top: 3px;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 .reco-badge {
@@ -321,7 +329,7 @@
   align-items: center;
   padding: 1px 6px;
   font-size: 10px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
@@ -341,7 +349,7 @@
 }
 
 .reco-badge-metric strong {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 600;
   margin-left: 2px;
 }
@@ -359,19 +367,21 @@
   gap: 4px;
   padding: 3px 8px;
   font-size: 11px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 6px;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .reco-action-btn:hover {
   background: rgba(124, 92, 255, 0.18);
-  color: #f8fafc;
+  color: var(--ink-strong);
 }
 
 @media (max-width: 640px) {

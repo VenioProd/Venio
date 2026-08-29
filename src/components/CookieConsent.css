@@ -80,22 +80,22 @@
 }
 
 /* Light mode */
-[data-theme="light"] .cookie-banner {
+[data-theme='light'] .cookie-banner {
   background: rgba(255, 255, 255, 0.97);
-  border-top-color: #e2e8f0;
+  border-top-color: var(--line-soft);
 }
 
-[data-theme="light"] .cookie-banner-content p {
-  color: #475569;
+[data-theme='light'] .cookie-banner-content p {
+  color: var(--ink-dim);
 }
 
-[data-theme="light"] .cookie-banner-content a {
+[data-theme='light'] .cookie-banner-content a {
   color: var(--primary-dark);
 }
 
-[data-theme="light"] .cookie-btn--refuse {
-  border-color: #cbd5e1;
-  color: #64748b;
+[data-theme='light'] .cookie-btn--refuse {
+  border-color: var(--line-strong);
+  color: var(--ink-faint);
 }
 
 @media (max-width: 640px) {

@@ -41,11 +41,10 @@ describe('theme accent tokens', () => {
     ]
 
     for (const accent of accents) {
-      const selector =
-        accent === 'dark' || accent === 'light' ? `[data-theme="${accent}"]` : `[data-accent="${accent}"]`
-      const block = themeCss.match(
-        new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*{([\\s\\S]*?)}`),
-      )?.[1]
+      // Prettier normalise les quotes des sélecteurs d'attribut : on accepte les deux.
+      const attr = accent === 'dark' || accent === 'light' ? 'data-theme' : 'data-accent'
+      const selector = `[${attr}="${accent}"]`
+      const block = themeCss.match(new RegExp(`\\[${attr}=['"]${accent}['"]\\]\\s*{([\\s\\S]*?)}`))?.[1]
 
       expect(block, `${selector} is missing`).toBeTruthy()
       for (const token of requiredTokens) {
@@ -95,7 +94,7 @@ describe('theme accent tokens', () => {
       '--ambient-mesh-layer-1: rgba(255, 255, 255',
     ]
 
-    expect(themeCss).toContain('[data-theme="dark"][data-accent="violet"]')
+    expect(themeCss).toMatch(/\[data-theme=['"]dark['"]\]\[data-accent=['"]violet['"]\]/)
     for (const token of neutralBackgroundTokens) {
       expect(themeCss, 'non-blue accents should neutralize ' + token).toContain(token)
     }

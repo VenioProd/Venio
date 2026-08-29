@@ -211,7 +211,7 @@ export default function IssueDetailPanel({
           </span>
 
           <span className="dev-detail-meta-label">Modèle créateur</span>
-          <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: '#cbd5e1' }}>
+          <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
             {issue.createdByModel || 'Non renseigné'}
           </span>
 
@@ -289,7 +289,7 @@ export default function IssueDetailPanel({
           </span>
 
           <span className="dev-detail-meta-label">Créée</span>
-          <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: '#94a3b8' }}>
+          <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: 'var(--ink-dim)' }}>
             {formatRelative(issue.createdAt)}
           </span>
         </div>
@@ -363,11 +363,11 @@ export default function IssueDetailPanel({
                   </button>
                 )}
               </div>
-              {c.context && <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>{c.context}</div>}
+              {c.context && <div style={{ color: 'var(--ink-dim)', fontSize: 12, marginBottom: 6 }}>{c.context}</div>}
               <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
             </div>
           ))}
-          {comments.length === 0 && <div style={{ color: '#64748b', fontSize: 12.5 }}>Aucun commentaire</div>}
+          {comments.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12.5 }}>Aucun commentaire</div>}
         </div>
 
         {canManage && (

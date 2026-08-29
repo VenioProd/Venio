@@ -258,7 +258,7 @@
 /* ─── Light theme ─── */
 [data-theme='light'] .notif-prefs {
   background: #ffffff;
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .notif-prefs-header p,
@@ -270,7 +270,7 @@
 [data-theme='light'] .notif-prefs-table thead th,
 [data-theme='light'] .notif-prefs-channel-label,
 [data-theme='light'] .notif-prefs-row-type strong {
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .notif-toggle-slider {

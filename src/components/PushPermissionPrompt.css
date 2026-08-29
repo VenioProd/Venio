@@ -116,7 +116,7 @@
 /* ─── Light theme ─── */
 [data-theme='light'] .push-prompt {
   background: #ffffff;
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 [data-theme='light'] .push-prompt-body span {
@@ -130,7 +130,7 @@
 
 [data-theme='light'] .push-prompt-dismiss:hover {
   background: rgba(var(--primary-rgb), 0.08);
-  color: #0f172a;
+  color: var(--ink-strong);
 }
 
 /* ─── Mobile ─── */

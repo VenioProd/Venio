@@ -11,7 +11,7 @@
 .gestion-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--ink-body);
   margin: 0;
 }
 .gestion-controls {
@@ -69,10 +69,10 @@
 .gestion-view-toggle {
   display: flex;
   gap: 4px;
-  background: #0f172a;
+  background: var(--surface-sunken);
   border-radius: 0;
   padding: 4px;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
 }
 .gestion-view-btn {
   display: flex;
@@ -82,14 +82,14 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-dim);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-view-btn:hover {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-body);
 }
 .gestion-view-btn.active {
   background: var(--primary);
@@ -101,13 +101,13 @@
 .gestion-loading {
   text-align: center;
   padding: 48px 0;
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 0.95rem;
 }
 .gestion-empty-state {
   text-align: center;
   padding: 48px 0;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 .gestion-empty-state p {
   margin: 4px 0;
@@ -120,7 +120,7 @@
 .gestion-table-wrap {
   overflow-x: auto;
   border-radius: 0;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
 }
 .gestion-table {
   width: 100%;
@@ -128,29 +128,29 @@
   font-size: 0.85rem;
 }
 .gestion-table thead th {
-  background: #0f172a;
-  color: #94a3b8;
+  background: var(--surface-sunken);
+  color: var(--ink-dim);
   font-weight: 600;
   text-align: left;
   padding: 10px 14px;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--line-soft);
 }
 .gestion-table thead th:hover {
-  color: #e2e8f0;
+  color: var(--ink-body);
 }
 .gestion-table tbody tr {
-  border-bottom: 1px solid #0f172a;
+  border-bottom: 1px solid var(--line-faint);
   transition: background 0.1s;
 }
 .gestion-table tbody tr:hover {
-  background: #0f172a99;
+  background: color-mix(in srgb, var(--surface-sunken) 60%, transparent);
 }
 .gestion-table td {
   padding: 10px 14px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   white-space: nowrap;
 }
 .gestion-table th:first-child,
@@ -160,13 +160,13 @@
 }
 .gestion-cell-title {
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--ink-body);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .gestion-cell-project {
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 0.8rem;
   max-width: 160px;
   overflow: hidden;
@@ -181,18 +181,18 @@
 }
 .gestion-empty {
   text-align: center;
-  color: #64748b;
+  color: var(--ink-faint);
   padding: 24px;
 }
 .gestion-assignee-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #1e293b;
+  background: var(--surface-raised);
   border-radius: 999px;
   padding: 3px 10px 3px 3px;
   font-size: 0.78rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
 }
 .gestion-assignee-badge::before {
   content: attr(data-initials);
@@ -202,7 +202,7 @@
 }
 .gestion-inline-select {
   background: transparent;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   padding: 4px 8px;
   font-size: 0.8rem;
@@ -210,8 +210,8 @@
   cursor: pointer;
 }
 .gestion-inline-select option {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--surface-sunken);
+  color: var(--ink-body);
 }
 
 /* Progress bar in table */
@@ -224,7 +224,7 @@
 .gestion-progress-bar {
   flex: 1;
   height: 6px;
-  background: #1e293b;
+  background: var(--surface-raised);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -235,7 +235,7 @@
 }
 .gestion-progress-text {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--ink-dim);
   min-width: 32px;
 }
 
@@ -249,7 +249,7 @@
 .gestion-kanban-col {
   background: #0a0e1a;
   border-radius: 0;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   display: flex;
   flex-direction: column;
   min-height: 200px;
@@ -264,12 +264,12 @@
 }
 .gestion-kanban-title {
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 0.85rem;
 }
 .gestion-kanban-count {
-  background: #1e293b;
-  color: #94a3b8;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
   font-size: 0.75rem;
   padding: 2px 8px;
   border-radius: 999px;
@@ -284,14 +284,14 @@
 }
 .gestion-kanban-card {
   background: #111827;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   padding: 10px 12px;
   cursor: grab;
   transition: border-color 0.1s;
 }
 .gestion-kanban-card:hover {
-  border-color: #334155;
+  border-color: var(--line-strong);
   box-shadow: none;
 }
 .gestion-kanban-card.dragging {
@@ -312,14 +312,14 @@
 }
 .gestion-kanban-project {
   font-size: 0.72rem;
-  color: #64748b;
-  background: #1e293b;
+  color: var(--ink-faint);
+  background: var(--surface-raised);
   padding: 1px 6px;
   border-radius: 0;
 }
 .gestion-kanban-card-title {
   font-size: 0.84rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-weight: 500;
   margin-bottom: 6px;
   line-height: 1.3;
@@ -329,7 +329,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 .gestion-kanban-assignee {
   background: var(--primary);
@@ -348,7 +348,7 @@
   font-weight: 600;
 }
 .gestion-kanban-progress {
-  background: #1e293b;
+  background: var(--surface-raised);
   padding: 1px 6px;
   border-radius: 0;
 }
@@ -356,29 +356,29 @@
 /* ─── Gantt View ─── */
 .gestion-gantt-wrap {
   border-radius: 0;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   overflow: hidden;
 }
 .gestion-gantt-controls {
   display: flex;
   gap: 4px;
   padding: 12px 16px;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--line-soft);
 }
 .gestion-gantt-mode-btn {
   padding: 6px 14px;
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-dim);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-gantt-mode-btn:hover {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-body);
 }
 .gestion-gantt-mode-btn.active {
   background: var(--primary);
@@ -398,21 +398,21 @@
 }
 .gantt-nav-btn {
   padding: 6px 12px;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-dim);
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.15s;
 }
 .gantt-nav-btn:hover {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-body);
 }
 .gantt-nav-today {
   padding: 6px 14px;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   background: transparent;
   color: var(--primary);
@@ -427,7 +427,7 @@
 }
 .gantt-range-label {
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-weight: 600;
   text-transform: capitalize;
   margin-left: 12px;
@@ -443,7 +443,7 @@
 .gantt-list {
   flex-shrink: 0;
   width: 320px;
-  border-right: 1px solid #1e293b;
+  border-right: 1px solid var(--line-soft);
   overflow-y: auto;
   background: #0a0e1a;
 }
@@ -454,18 +454,18 @@
   padding: 0 16px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--ink-ghost);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #1e293b;
-  background: #0f172a;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface-sunken);
 }
 .gantt-list-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  border-bottom: 1px solid #0f172a;
+  border-bottom: 1px solid var(--line-faint);
   gap: 8px;
   transition: background 0.1s;
 }
@@ -495,7 +495,7 @@
 }
 .gantt-list-title {
   font-size: 0.82rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -508,7 +508,7 @@
 .gantt-list-dates {
   flex-shrink: 0;
   font-size: 0.68rem;
-  color: #64748b;
+  color: var(--ink-faint);
   white-space: nowrap;
 }
 
@@ -529,8 +529,8 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--line-soft);
 }
 .gantt-col-header {
   position: absolute;
@@ -547,12 +547,12 @@
 }
 .gantt-col-label {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-weight: 600;
 }
 .gantt-col-sub {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 /* Grid lines */
@@ -581,7 +581,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  border-bottom: 1px solid #0f172a;
+  border-bottom: 1px solid var(--line-faint);
 }
 .gantt-row-even {
   background: rgba(15, 23, 42, 0.3);
@@ -692,24 +692,24 @@
 .gestion-kpi-periods {
   display: flex;
   gap: 4px;
-  background: #0f172a;
+  background: var(--surface-sunken);
   border-radius: 0;
   padding: 3px;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
 }
 .gestion-kpi-period-btn {
   padding: 6px 14px;
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-dim);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-kpi-period-btn:hover {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-body);
 }
 .gestion-kpi-period-btn.active {
   background: var(--primary);
@@ -736,8 +736,8 @@
   gap: 16px;
 }
 .gestion-kpi-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   padding: 20px;
   text-align: center;
@@ -755,7 +755,7 @@
 }
 .gestion-kpi-card-label {
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: var(--ink-dim);
   margin-top: 4px;
 }
 
@@ -765,14 +765,14 @@
   gap: 24px;
 }
 .gestion-kpi-section {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   padding: 20px;
 }
 .gestion-kpi-section h3 {
   font-size: 0.95rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   margin: 0 0 16px 0;
 }
 .gestion-kpi-bar-row {
@@ -784,12 +784,12 @@
 .gestion-kpi-bar-label {
   min-width: 80px;
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 .gestion-kpi-bar-track {
   flex: 1;
   height: 8px;
-  background: #1e293b;
+  background: var(--surface-raised);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -802,7 +802,7 @@
   min-width: 24px;
   text-align: right;
   font-size: 0.8rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-weight: 600;
 }
 
@@ -819,14 +819,14 @@
 
 /* Brief form */
 .gestion-brief-form {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   padding: 24px;
 }
 .gestion-brief-form h3 {
   font-size: 1rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
   margin: 0 0 16px 0;
 }
 .gestion-brief-form-grid {
@@ -844,7 +844,7 @@
 }
 .gestion-brief-field label {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-weight: 500;
 }
 .gestion-brief-field input,
@@ -852,9 +852,9 @@
 .gestion-brief-field select {
   padding: 8px 12px;
   border-radius: 0;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--line-soft);
   background: #0a0e1a;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 0.85rem;
   font-family: inherit;
 }
@@ -871,7 +871,7 @@
   align-items: center;
   gap: 5px;
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   cursor: pointer;
 }
 .gestion-brief-checkbox input[type='checkbox'] {
@@ -885,14 +885,14 @@
   gap: 10px;
 }
 .gestion-brief-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-soft);
   border-radius: 0;
   overflow: hidden;
   transition: border-color 0.15s;
 }
 .gestion-brief-card:hover {
-  border-color: #334155;
+  border-color: var(--line-strong);
 }
 .gestion-brief-card-header {
   display: flex;
@@ -908,7 +908,7 @@
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--ink-body);
 }
 .gestion-brief-status-badge {
   font-size: 0.72rem;
@@ -921,8 +921,8 @@
   font-size: 0.72rem;
   padding: 3px 8px;
   border-radius: 999px;
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-body);
   font-weight: 600;
 }
 .gestion-brief-card-right {
@@ -930,35 +930,35 @@
   align-items: center;
   gap: 12px;
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 .gestion-brief-entity {
-  background: #1e293b;
+  background: var(--surface-raised);
   padding: 2px 8px;
   border-radius: 0;
   font-weight: 500;
 }
 .gestion-brief-expand {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 .gestion-brief-card-body {
   padding: 0 18px 18px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--line-soft);
 }
 .gestion-brief-section {
   padding: 8px 0;
   font-size: 0.85rem;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   border-bottom: 1px solid #0a0e1a;
 }
 .gestion-brief-section strong {
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 .gestion-brief-date-cle {
   display: inline-block;
   margin-left: 10px;
-  background: #1e293b;
+  background: var(--surface-raised);
   padding: 2px 8px;
   border-radius: 0;
   font-size: 0.78rem;
@@ -1041,7 +1041,7 @@
   display: inline-block;
   width: 16px;
   margin-right: 6px;
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 11px;
 }
 
@@ -1078,12 +1078,12 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 .gestion-detail-text {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1091,7 +1091,7 @@
 
 .gestion-detail-empty {
   margin: 0;
-  color: #475569;
+  color: var(--ink-ghost);
   font-size: 13px;
   font-style: italic;
 }
@@ -1142,7 +1142,7 @@
 }
 
 .gestion-attachment-name {
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 13px;
   flex: 1;
   overflow: hidden;
@@ -1151,7 +1151,7 @@
 }
 
 .gestion-attachment-size {
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -1257,23 +1257,23 @@
    ═══════════════════════════════════════════════════════ */
 
 [data-theme='light'] .gestion-title {
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-project-select .custom-select-trigger,
 [data-theme='light'] .gestion-filter-select .custom-select-trigger {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #334155;
+  border-color: var(--line-soft);
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gestion-view-toggle {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-view-btn {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-view-btn.active {
@@ -1293,65 +1293,52 @@
 }
 
 [data-theme='light'] .gestion-table thead th {
-  background: #f8fafc;
-  color: #475569;
-  border-bottom-color: #e2e8f0;
+  background: var(--surface-sunken);
+  color: var(--ink-dim);
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-table tbody tr {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: var(--line-faint);
 }
 
 [data-theme='light'] .gestion-table tbody td {
-  border-bottom-color: #f1f5f9;
-  color: #334155;
+  border-bottom-color: var(--line-faint);
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gestion-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 [data-theme='light'] .gestion-cell-title {
-  color: #1e293b;
-}
-
-[data-theme='light'] .gestion-cell-project {
-  color: #64748b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-assignee-badge {
-  background: #f1f5f9;
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gestion-assignee-name {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .gestion-inline-select {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-inline-select option {
   background: #ffffff;
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-progress-bar {
-  background: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-progress-text {
-  color: #475569;
+  background: var(--surface-strong);
 }
 
 [data-theme='light'] .gestion-empty {
-  color: #94a3b8;
-}
-
-[data-theme='light'] .gestion-loading {
-  color: #64748b;
+  color: var(--ink-ghost);
 }
 
 /* Expandable Row Details */
@@ -1360,20 +1347,8 @@
 }
 
 [data-theme='light'] .gestion-task-details {
-  background: #f8fafc;
-  border-top-color: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-detail-label {
-  color: #64748b;
-}
-
-[data-theme='light'] .gestion-detail-text {
-  color: #334155;
-}
-
-[data-theme='light'] .gestion-detail-empty {
-  color: #94a3b8;
+  background: var(--surface-sunken);
+  border-top-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-detail-tag {
@@ -1384,16 +1359,12 @@
 /* Attachments */
 [data-theme='light'] .gestion-attachment-item {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-attachment-item:hover {
-  background: #f8fafc;
+  background: var(--surface-sunken);
   border-color: var(--primary);
-}
-
-[data-theme='light'] .gestion-attachment-name {
-  color: #1e293b;
 }
 
 [data-theme='light'] .gestion-upload-btn {
@@ -1445,27 +1416,18 @@
 
 /* Kanban */
 [data-theme='light'] .gestion-kanban-col {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-kanban-header {
   background: #ffffff;
-  border-bottom-color: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-kanban-title {
-  color: #1e293b;
-}
-
-[data-theme='light'] .gestion-kanban-count {
-  background: #f1f5f9;
-  color: #475569;
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-kanban-card {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   box-shadow: none;
 }
 
@@ -1473,37 +1435,29 @@
   box-shadow: none;
 }
 
-[data-theme='light'] .gestion-kanban-card-title {
-  color: #1e293b;
-}
-
-[data-theme='light'] .gestion-kanban-project {
-  color: #64748b;
-}
-
 [data-theme='light'] .gestion-kanban-assignee {
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--surface-raised);
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gestion-kanban-date {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kanban-progress {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 /* Gantt */
 [data-theme='light'] .gestion-gantt-controls {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-gantt-mode-btn {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-gantt-mode-btn.active {
@@ -1513,13 +1467,9 @@
 
 [data-theme='light'] .gantt-nav-btn,
 [data-theme='light'] .gantt-nav-today {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #e2e8f0;
-}
-
-[data-theme='light'] .gantt-range-label {
-  color: #1e293b;
+  background: var(--surface-raised);
+  color: var(--ink-dim);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gantt-container {
@@ -1528,28 +1478,28 @@
 
 [data-theme='light'] .gantt-list {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gantt-list-row:nth-child(even) {
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 [data-theme='light'] .gantt-list-row:hover {
-  background: #f1f5f9;
+  background: var(--surface-raised);
 }
 
 [data-theme='light'] .gantt-col-headers {
-  background: #f8fafc;
-  border-bottom-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .gantt-col-label {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gantt-col-sub {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .gantt-chart-scroll {
@@ -1557,35 +1507,26 @@
 }
 
 [data-theme='light'] .gantt-list-header {
-  background: #f8fafc;
-  color: #475569;
-  border-bottom-color: #e2e8f0;
+  color: var(--ink-dim);
+  border-bottom-color: var(--line-soft);
 }
 
 [data-theme='light'] .gantt-list-row {
-  border-bottom-color: #f1f5f9;
-}
-
-[data-theme='light'] .gantt-list-title {
-  color: #1e293b;
+  border-bottom-color: var(--line-faint);
 }
 
 [data-theme='light'] .gantt-list-project {
-  color: #94a3b8;
-}
-
-[data-theme='light'] .gantt-list-dates {
-  color: #64748b;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .gantt-col-header {
-  background: #f8fafc;
-  color: #475569;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  color: var(--ink-dim);
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gantt-grid-line {
-  border-color: #f1f5f9;
+  border-color: var(--line-faint);
 }
 
 [data-theme='light'] .gantt-grid-weekend {
@@ -1603,69 +1544,65 @@
 /* Briefs */
 [data-theme='light'] .gestion-brief-card {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-brief-card-header {
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-brief-card-header:hover {
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 [data-theme='light'] .gestion-brief-card-body {
-  border-top-color: #e2e8f0;
+  border-top-color: var(--line-soft);
   background: #fafbfc;
 }
 
 [data-theme='light'] .gestion-brief-section {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 [data-theme='light'] .gestion-brief-entity {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-brief-expand {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .gestion-brief-comment-input {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: var(--line-soft);
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .gestion-brief-form {
   background: #ffffff;
-  border-color: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-brief-form h3 {
-  color: #1e293b;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-brief-field label {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 [data-theme='light'] .gestion-brief-field input,
 [data-theme='light'] .gestion-brief-field textarea,
 [data-theme='light'] .gestion-brief-field select {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: var(--line-soft);
+  color: var(--ink-body);
 }
 
 /* Empty states */
 [data-theme='light'] .gestion-empty-state p {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 /* Table wrap border */
 [data-theme='light'] .gestion-table-wrap {
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 /* Inline badge (read-only status/priority badge) */
@@ -1676,111 +1613,99 @@
 
 /* Kanban project tag & progress tag backgrounds */
 [data-theme='light'] .gestion-kanban-project {
-  background: #f1f5f9;
-}
-
-[data-theme='light'] .gestion-kanban-progress {
-  background: #f1f5f9;
+  background: var(--surface-raised);
 }
 
 /* Kanban card meta text */
 [data-theme='light'] .gestion-kanban-card-meta {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 /* Brief priority badge */
 [data-theme='light'] .gestion-brief-priority-badge {
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--surface-raised);
+  color: var(--ink-soft);
 }
 
 /* Brief card left text */
 [data-theme='light'] .gestion-brief-card-left {
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 /* Brief card right */
 [data-theme='light'] .gestion-brief-card-right {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 /* Brief entity tag */
 [data-theme='light'] .gestion-brief-entity {
-  background: #f1f5f9;
+  background: var(--surface-raised);
 }
 
 /* Brief section labels */
 [data-theme='light'] .gestion-brief-section strong {
-  color: #475569;
+  color: var(--ink-dim);
 }
 
 /* Brief section border */
 [data-theme='light'] .gestion-brief-section {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: var(--line-faint);
 }
 
 /* Brief date cle tag */
 [data-theme='light'] .gestion-brief-date-cle {
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--surface-raised);
+  color: var(--ink-soft);
 }
 
 /* Brief checkbox */
 [data-theme='light'] .gestion-brief-checkbox {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 /* Expand icon */
 [data-theme='light'] .gestion-expand-icon {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 /* KPI cards */
 [data-theme='light'] .gestion-kpi-card {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-kpi-card-label {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kpi-section {
   background: #ffffff;
-  border-color: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-kpi-section h3 {
-  color: #1e293b;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-kpi-bar-label {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kpi-bar-track {
-  background: #e2e8f0;
-}
-
-[data-theme='light'] .gestion-kpi-bar-value {
-  color: #1e293b;
+  background: var(--surface-strong);
 }
 
 [data-theme='light'] .gestion-kpi-periods {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
 [data-theme='light'] .gestion-kpi-period-btn {
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 [data-theme='light'] .gestion-kpi-period-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--surface-raised);
+  color: var(--ink-body);
 }
 
 /* Gantt wrap border */
 [data-theme='light'] .gestion-gantt-wrap {
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }

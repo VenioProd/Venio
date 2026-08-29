@@ -32,11 +32,8 @@ function DashboardByRole() {
 const PublicHeader = lazy(() => import('./components/PublicHeader'))
 const PublicFooter = lazy(() => import('./components/PublicFooter'))
 const Home = lazy(() => import('./pages/Home'))
-const ServicesCommunication = lazy(() => import('./pages/ServicesCommunication'))
-const ServicesDeveloppement = lazy(() => import('./pages/ServicesDeveloppement'))
-const ServicesConseil = lazy(() => import('./pages/ServicesConseil'))
 const ServicesSites = lazy(() => import('./pages/ServicesSites'))
-const PolesPage = lazy(() => import('./pages/PolesPage'))
+const AuDelaDuSite = lazy(() => import('./pages/AuDelaDuSite'))
 const Realisations = lazy(() => import('./pages/Realisations'))
 const Methode = lazy(() => import('./pages/Methode'))
 const CaseStudyDetail = lazy(() =>
@@ -186,11 +183,16 @@ function App() {
               <Routes>
                 {/* Site vitrine */}
                 <Route path="/" element={<Home />} />
-                <Route path="/services/communication" element={<ServicesCommunication />} />
-                <Route path="/services/developpement" element={<ServicesDeveloppement />} />
-                <Route path="/services/conseil" element={<ServicesConseil />} />
                 <Route path="/services/sites" element={<ServicesSites />} />
-                <Route path="/poles" element={<PolesPage />} />
+                <Route path="/au-dela-du-site" element={<AuDelaDuSite />} />
+                {/* Redirections 301 : anciennes pages services fusionnées et /poles retiré de la nav */}
+                <Route path="/services/conseil" element={<Navigate to="/au-dela-du-site#conseil" replace />} />
+                <Route
+                  path="/services/developpement"
+                  element={<Navigate to="/au-dela-du-site#developpement" replace />}
+                />
+                <Route path="/services/communication" element={<Navigate to="/au-dela-du-site#marque" replace />} />
+                <Route path="/poles" element={<Navigate to="/a-propos#poles" replace />} />
                 <Route path="/realisations" element={<Realisations />} />
                 <Route path="/realisations/:slug" element={<CaseStudyDetail />} />
                 <Route path="/methode" element={<Methode />} />

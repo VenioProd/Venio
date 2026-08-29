@@ -1,9 +1,9 @@
 const fr: Record<string, string> = {
   // Navigation
   'nav.home': 'Accueil',
-  'nav.services': 'Services',
+  'nav.services': 'Sites web',
   'nav.realisations': 'Réalisations',
-  'nav.about': 'À propos',
+  'nav.method': 'Méthode',
   'nav.contact': 'Contact',
   'nav.clientPortal': 'Espace client',
   'nav.admin': 'Admin',
@@ -20,7 +20,7 @@ const fr: Record<string, string> = {
   'admin.analytics': 'Analytics',
   'admin.calendar': 'Calendrier',
   'admin.templates': 'Templates',
-  'admin.audit': 'Journal d\'audit',
+  'admin.audit': "Journal d'audit",
   'admin.accounts': 'Comptes',
 
   // Common actions

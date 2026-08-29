@@ -144,6 +144,31 @@
   font-weight: 800;
 }
 
+/* ─── JUMPNAV (ancres métiers) ─── */
+.mp-page .mp-jumpnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-sp-s);
+  margin-top: var(--mp-sp-l);
+}
+.mp-page .mp-jumpnav a {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 10px 18px;
+  text-decoration: none;
+  transition:
+    color 0.2s var(--mp-ease),
+    border-color 0.2s var(--mp-ease);
+}
+.mp-page .mp-jumpnav a:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 /* ─── PROSE (blocs de texte) ─── */
 .mp-page .mp-block {
   padding: var(--mp-sp-xl) 0;
@@ -164,6 +189,25 @@
   color: var(--text-primary);
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+/* ─── INUTILE SI (garde-fou) ─── */
+.mp-page .mp-inutile {
+  max-width: 62ch;
+  margin-top: var(--mp-sp-m);
+  padding-left: var(--mp-sp-m);
+  border-left: 2px solid var(--border-color);
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.mp-page .mp-inutile-label {
+  font-weight: 800;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  margin-right: 6px;
 }
 
 /* ─── PILIERS (méthode) ─── */

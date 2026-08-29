@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px 22px 28px;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-feature-settings: 'cv05', 'cv11';
   overflow-y: auto;
 }
@@ -16,7 +16,7 @@
 .cockpit-error,
 .cockpit-empty {
   padding: 22px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 12.5px;
 }
 
@@ -54,13 +54,13 @@
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   cursor: pointer;
 }
 
 .cockpit-back:hover {
   background: rgba(148, 163, 184, 0.16);
-  color: #f8fafc;
+  color: var(--ink-strong);
 }
 
 .cockpit-header-id {
@@ -74,7 +74,7 @@
   background: color-mix(in srgb, var(--accent) 22%, rgba(15, 23, 42, 0.6));
   border: 1px solid color-mix(in srgb, var(--accent) 40%, rgba(148, 163, 184, 0.2));
   border-radius: 0;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   font-weight: 700;
@@ -85,7 +85,7 @@
   padding: 3px 8px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
@@ -107,7 +107,7 @@
 .cockpit-title {
   max-width: 100%;
   margin: 0;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 22px;
   font-weight: 660;
   letter-spacing: -0.01em;
@@ -143,7 +143,7 @@
 .cockpit-btn.subtle {
   background: transparent;
   border-color: rgba(148, 163, 184, 0.22);
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-btn.subtle:hover {
@@ -209,7 +209,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -217,7 +217,7 @@
 }
 
 .cockpit-kpi-value {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 24px;
   font-weight: 720;
   font-variant-numeric: tabular-nums;
@@ -225,7 +225,7 @@
 }
 
 .cockpit-kpi-sub {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
 }
 
@@ -284,7 +284,7 @@
   align-items: baseline;
   gap: 8px;
   padding-left: 2px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -296,7 +296,7 @@
 }
 
 .cockpit-metrics-subtitle {
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -322,7 +322,7 @@
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid rgba(148, 163, 184, 0.08);
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
 }
 
@@ -348,7 +348,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11.5px;
   font-weight: 600;
   text-transform: uppercase;
@@ -359,7 +359,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11.5px;
 }
 
@@ -370,7 +370,7 @@
   background: rgba(15, 23, 42, 0.4);
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-family: inherit;
   font-size: 12.5px;
   line-height: 1.55;
@@ -382,7 +382,7 @@
 
 .cockpit-readme-empty {
   padding: 12px 0;
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 12px;
   font-style: italic;
 }
@@ -396,7 +396,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 12.5px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-status-list li {
@@ -425,7 +425,7 @@
 }
 
 .cockpit-status-list li strong {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 650;
 }
 
@@ -464,7 +464,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-legend li {
@@ -488,7 +488,7 @@
 
 .cockpit-legend-value {
   font-variant-numeric: tabular-nums;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 600;
 }
 
@@ -500,12 +500,12 @@
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 0;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 11.5px;
 }
 
 .cockpit-chart-tooltip strong {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 12px;
 }
 
@@ -527,7 +527,7 @@
   border: 1px solid transparent;
   border-left: 2px solid var(--prio-color, rgba(148, 163, 184, 0.3));
   border-radius: 0;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 12px;
   text-align: left;
   cursor: pointer;
@@ -541,14 +541,14 @@
 .cockpit-issue-row-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-issue-row-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 500;
 }
 
@@ -598,7 +598,7 @@
 .cockpit-assignees thead th {
   padding: 6px 8px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 600;
   text-align: left;
@@ -609,7 +609,7 @@
 .cockpit-assignees tbody td {
   padding: 6px 8px;
   border-bottom: 1px dashed rgba(148, 163, 184, 0.08);
-  color: #e2e8f0;
+  color: var(--ink-body);
 }
 
 .cockpit-assignees tbody tr:last-child td {
@@ -654,7 +654,7 @@
   background: rgba(15, 23, 42, 0.4);
   border-radius: 0;
   font-size: 11.5px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-activity-icon {
@@ -665,7 +665,7 @@
   height: 18px;
   background: rgba(148, 163, 184, 0.12);
   border-radius: 999px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-activity-row.tone-issue_completed .cockpit-activity-icon {
@@ -684,12 +684,12 @@
 }
 
 .cockpit-activity-actor {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 600;
 }
 
 .cockpit-activity-action {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11px;
 }
 
@@ -710,13 +710,13 @@
 
 .cockpit-activity-issue-title {
   margin-left: 6px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-family: inherit;
   font-weight: 500;
 }
 
 .cockpit-activity-date {
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -734,7 +734,7 @@
   padding: 4px 8px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: rgba(15, 23, 42, 0.45);
-  color: #94a3b8;
+  color: var(--ink-dim);
   border-radius: 999px;
   font: inherit;
   font-size: 11px;
@@ -745,7 +745,7 @@
 .cockpit-timeline-filter.active {
   border-color: color-mix(in srgb, var(--primary) 65%, transparent);
   background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: #f8fafc;
+  color: var(--ink-strong);
 }
 
 .cockpit-timeline-list {
@@ -777,7 +777,7 @@
   margin-left: -23px;
   border-radius: 999px;
   background: #172033;
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-timeline-row.tone-comment .cockpit-timeline-icon {
@@ -809,25 +809,25 @@
 }
 
 .cockpit-timeline-label {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 11px;
   font-weight: 650;
 }
 
 .cockpit-timeline-actor,
 .cockpit-timeline-date {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
 }
 
 .cockpit-timeline-date {
   margin-left: auto;
-  color: #64748b;
+  color: var(--ink-faint);
 }
 
 .cockpit-timeline-summary {
   margin-top: 3px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 12px;
 }
 
@@ -836,7 +836,7 @@
   padding: 6px 8px;
   border-left: 2px solid color-mix(in srgb, var(--primary) 65%, transparent);
   background: rgba(15, 23, 42, 0.45);
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11.5px;
   line-height: 1.45;
   white-space: pre-wrap;
@@ -869,13 +869,13 @@
 }
 
 .cockpit-timeline-issue span {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-family: inherit;
   font-weight: 400;
 }
 
 .cockpit-timeline-sha {
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 /* ─── Project intelligence: GitHub / Tokens / Code / Refactor ─────────────── */
@@ -894,7 +894,7 @@
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   cursor: pointer;
 }
 .cockpit-icon-btn:hover {
@@ -932,7 +932,7 @@
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 11.5px;
   font-weight: 500;
   text-decoration: none;
@@ -953,7 +953,7 @@
   background: rgba(15, 23, 42, 0.4);
   border: 1px dashed rgba(148, 163, 184, 0.2);
   border-radius: 0;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 12px;
 }
 
@@ -966,7 +966,7 @@
 
 .cockpit-gh-prs-header {
   margin-top: 4px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -982,7 +982,7 @@
   background: rgba(15, 23, 42, 0.4);
   border: 1px solid transparent;
   border-radius: 0;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 12px;
   text-decoration: none;
   transition:
@@ -1006,7 +1006,7 @@
   gap: 4px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-gh-pr-state.merged {
@@ -1023,13 +1023,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #f8fafc;
+  color: var(--ink-strong);
 }
 
 .cockpit-gh-pr-issue {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10.5px;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-gh-pr-branch {
@@ -1074,7 +1074,7 @@
 
 .cockpit-gh-pr-ci.tone-neutral {
   background: rgba(148, 163, 184, 0.16);
-  color: #cbd5e1;
+  color: var(--ink-soft);
 }
 
 .cockpit-gh-actions {
@@ -1099,7 +1099,7 @@
   flex-direction: column;
   gap: 3px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-gh-form-grid label span {
@@ -1114,7 +1114,7 @@
   background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 0;
-  color: #f1f5f9;
+  color: var(--ink-strong);
   font-size: 12px;
 }
 
@@ -1160,7 +1160,7 @@
 }
 
 .cockpit-tokens-cell-label {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1168,7 +1168,7 @@
 }
 
 .cockpit-tokens-cell-value {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 17px;
   font-weight: 660;
   font-variant-numeric: tabular-nums;
@@ -1182,17 +1182,17 @@
   background: rgba(15, 23, 42, 0.4);
   border: 1px dashed rgba(148, 163, 184, 0.22);
   border-radius: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 12px;
 }
 
 .cockpit-tokens-empty p {
   margin: 0;
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-tokens-missing-label {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1203,7 +1203,7 @@
   margin: 0;
   padding: 0 0 0 16px;
   list-style: disc;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11.5px;
 }
 
@@ -1235,7 +1235,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1247,7 +1247,7 @@
   padding: 1px 5px;
   background: rgba(148, 163, 184, 0.1);
   border-radius: 999px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10px;
 }
@@ -1291,7 +1291,7 @@
 }
 
 .cockpit-code-lang-meta {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1322,7 +1322,7 @@
 
 .cockpit-code-top summary {
   padding: 6px 10px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   cursor: pointer;
   list-style: none;
 }
@@ -1347,7 +1347,7 @@
   gap: 8px;
   padding: 4px 10px;
   font-size: 11.5px;
-  color: #e2e8f0;
+  color: var(--ink-body);
 }
 
 .cockpit-code-top li:nth-child(even) {
@@ -1363,7 +1363,7 @@
 }
 
 .cockpit-code-top-meta {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1381,7 +1381,7 @@
   background: rgba(15, 23, 42, 0.4);
   border: 1px dashed rgba(148, 163, 184, 0.22);
   border-radius: 0;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 12px;
 }
 
@@ -1393,7 +1393,7 @@
   gap: 12px;
   padding: 8px 0 10px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11px;
 }
 
@@ -1406,7 +1406,7 @@
 }
 
 .cockpit-quality-score.unavailable {
-  color: #94a3b8;
+  color: var(--ink-dim);
 }
 
 .cockpit-quality-signals {
@@ -1456,7 +1456,7 @@
   background: rgba(248, 113, 113, 0.12);
 }
 .tone-unavailable .cockpit-quality-status {
-  color: #cbd5e1;
+  color: var(--ink-soft);
   background: rgba(148, 163, 184, 0.12);
 }
 
@@ -1465,12 +1465,12 @@
   min-width: 0;
   flex-direction: column;
   gap: 2px;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11px;
 }
 
 .cockpit-quality-main strong {
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-size: 11.5px;
 }
 .cockpit-quality-main em {
@@ -1478,12 +1478,12 @@
   font-style: normal;
 }
 .cockpit-quality-main small {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10px;
 }
 
 .cockpit-quality-points {
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1492,7 +1492,7 @@
 .cockpit-quality-source {
   grid-column: 2 / -1;
   overflow: hidden;
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 9.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1573,7 +1573,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #f8fafc;
+  color: var(--ink-strong);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   text-decoration: none;
@@ -1585,12 +1585,12 @@
 }
 
 .cockpit-large-meta {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
 }
 
 .cockpit-large-lines {
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1604,7 +1604,7 @@
   padding: 3px 6px;
   background: rgba(148, 163, 184, 0.14);
   border-radius: 0;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1770,7 +1770,7 @@
 }
 
 .cockpit-deployment-list dt {
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -1779,7 +1779,7 @@
 
 .cockpit-deployment-list dd {
   flex-wrap: wrap;
-  color: #e2e8f0;
+  color: var(--ink-body);
   font-size: 12px;
   font-weight: 600;
 }
@@ -1798,14 +1798,14 @@
 }
 
 .cockpit-deployment-list dd code {
-  color: #e2e8f0;
+  color: var(--ink-body);
   font: inherit;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .cockpit-deployment-list dd small {
   width: 100%;
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 10.5px;
   font-weight: 500;
 }
@@ -1817,7 +1817,7 @@
   width: fit-content;
   padding: 2px 6px;
   border: 1px solid rgba(148, 163, 184, 0.25);
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-size: 10.5px;
   font-weight: 700;
 }
@@ -1844,14 +1844,14 @@
 
 .cockpit-deployment-details {
   margin-top: 10px;
-  color: #94a3b8;
+  color: var(--ink-dim);
   font-size: 11px;
   line-height: 1.45;
 }
 
 .cockpit-deployment-details summary {
   cursor: pointer;
-  color: #cbd5e1;
+  color: var(--ink-soft);
   font-weight: 600;
 }
 

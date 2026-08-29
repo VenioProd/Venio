@@ -82,19 +82,19 @@
 }
 
 /* ── Light Mode ── */
-[data-theme="light"] .file-dropzone {
-  border-color: #e2e8f0;
+[data-theme='light'] .file-dropzone {
+  border-color: var(--line-soft);
   background: #fafbfc;
 }
 
-[data-theme="light"] .file-dropzone-placeholder {
-  color: #94a3b8;
+[data-theme='light'] .file-dropzone-placeholder {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .file-dropzone-name {
-  color: #334155;
+[data-theme='light'] .file-dropzone-name {
+  color: var(--ink-soft);
 }
 
-[data-theme="light"] .file-dropzone-size {
-  color: #94a3b8;
+[data-theme='light'] .file-dropzone-size {
+  color: var(--ink-ghost);
 }

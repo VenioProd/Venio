@@ -256,11 +256,11 @@ export default function EmailComposer() {
               alignItems: 'center',
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0' }}>Destinataires</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-body)' }}>Destinataires</span>
             <span
               style={{
                 background: totalSelected > 0 ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(255,255,255,0.06)',
-                color: totalSelected > 0 ? 'var(--primary-light)' : '#475569',
+                color: totalSelected > 0 ? 'var(--primary-light)' : 'var(--ink-ghost)',
                 borderRadius: 20,
                 padding: '2px 10px',
                 fontSize: 12,
@@ -309,7 +309,7 @@ export default function EmailComposer() {
 
             {/* Chips cliquables — membres */}
             {loadingRecipients ? (
-              <div style={{ color: '#475569', fontSize: 13, padding: '8px 0' }}>Chargement...</div>
+              <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>Chargement...</div>
             ) : (
               <div
                 style={{
@@ -322,7 +322,7 @@ export default function EmailComposer() {
                 }}
               >
                 {filteredList.length === 0 ? (
-                  <div style={{ color: '#475569', fontSize: 13, padding: '8px 0' }}>Aucun résultat</div>
+                  <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>Aucun résultat</div>
                 ) : (
                   filteredList.map((r) => {
                     const selected = selectedEmails.has(r.email)
@@ -371,7 +371,7 @@ export default function EmailComposer() {
                             style={{
                               fontSize: 13,
                               fontWeight: 600,
-                              color: selected ? '#e2e8f0' : 'rgba(255,255,255,0.7)',
+                              color: selected ? 'var(--ink-body)' : 'rgba(255,255,255,0.7)',
                               display: 'flex',
                               alignItems: 'center',
                               gap: 6,
@@ -579,7 +579,7 @@ export default function EmailComposer() {
                   background: '#07080f',
                   border: '1px solid rgba(var(--primary-rgb), 0.15)',
                   fontSize: 14,
-                  color: '#cbd5e1',
+                  color: 'var(--ink-soft)',
                   lineHeight: 1.8,
                 }}
               >
@@ -594,7 +594,7 @@ export default function EmailComposer() {
                     ),
                   )
                 ) : (
-                  <span style={{ color: '#334155', fontStyle: 'italic' }}>Aucun contenu</span>
+                  <span style={{ color: 'var(--ink-whisper)', fontStyle: 'italic' }}>Aucun contenu</span>
                 )}
                 {showCta && ctaUrl && ctaLabel && (
                   <div style={{ marginTop: 16 }}>
@@ -671,7 +671,7 @@ export default function EmailComposer() {
                   fontWeight: 600,
                   fontSize: 14,
                   marginBottom: 12,
-                  color: '#e2e8f0',
+                  color: 'var(--ink-body)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,

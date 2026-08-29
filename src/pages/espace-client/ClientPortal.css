@@ -1698,18 +1698,18 @@ div:has(> input.portal-input[type='datetime-local'])::after {
 
 [data-theme='light'] .portal-card {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme='light'] .portal-input {
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
   background: #ffffff;
-  color: #1e293b;
+  color: var(--ink-body);
 }
 
 [data-theme='light'] .portal-input::placeholder {
-  color: #94a3b8;
+  color: var(--ink-ghost);
 }
 
 [data-theme='light'] .portal-input:focus {
@@ -1734,8 +1734,8 @@ div:has(> input.portal-input[type='datetime-local'])::after {
 }
 
 [data-theme='light'] .portal-action-link {
-  color: #475569;
-  border-color: #e2e8f0;
+  color: var(--ink-dim);
+  border-color: var(--line-soft);
 }
 
 /* ── Timeline des étapes de production (thème MONOLITHE : angles droits, sans ombre) ── */

@@ -33,11 +33,45 @@ const StructuredData = ({ type = 'home' }) => {
       case 'home':
         return [baseOrganization, baseWebSite]
 
-      case 'poles':
       case 'realisations':
       case 'apropos':
       case 'contact':
         return [baseOrganization, baseWebSite]
+
+      case 'au-dela-du-site':
+        return [
+          baseOrganization,
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: [
+              {
+                '@type': 'Service',
+                position: 1,
+                serviceType: 'Conseil Stratégique',
+                provider: baseOrganization,
+                areaServed: 'FR',
+                description: 'Audit sans détour, décisions et priorités.',
+              },
+              {
+                '@type': 'Service',
+                position: 2,
+                serviceType: 'Développement sur mesure',
+                provider: baseOrganization,
+                areaServed: 'FR',
+                description: 'Outils métier et applications construits autour de votre façon de travailler.',
+              },
+              {
+                '@type': 'Service',
+                position: 3,
+                serviceType: 'Communication & Branding',
+                provider: baseOrganization,
+                areaServed: 'FR',
+                description: 'Identité, voix et système de marque cohérents dans le temps.',
+              },
+            ],
+          },
+        ]
 
       case 'service-communication':
         return [

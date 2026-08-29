@@ -1,26 +1,20 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import VenioIcon, { type VenioIconName } from '../components/VenioIcon'
-import { CropMarks, GrainOverlay } from '../components/BrutalDeco'
+import { GrainOverlay } from '../components/BrutalDeco'
+import SitePlate from '../components/home/SitePlate'
+import TierDial, { type HomeTier } from '../components/home/TierDial'
+import ProofRadar from '../components/home/ProofRadar'
 import '../styles/monolithe-home.css'
 
-const TIERS: {
-  num: string
-  name: string
-  icon: VenioIconName
-  tag: string
-  pourQui: string
-  incl: string[]
-  featured: boolean
-}[] = [
+const TIERS: HomeTier[] = [
   {
     num: '01',
     name: 'Vitrine',
     icon: 'vitrine',
-    tag: 'Exister en ligne, proprement.',
-    pourQui: 'Pour exister en ligne dès maintenant.',
+    tag: 'Se faire connaître.',
+    pourQui: "Vous voulez qu'on vous trouve, et que ça fasse sérieux.",
     incl: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
     featured: false,
   },
@@ -28,8 +22,8 @@ const TIERS: {
     num: '02',
     name: 'Essentiel',
     icon: 'essentiel',
-    tag: 'Publier souvent, sans friction.',
-    pourQui: 'Pour publier et être trouvé.',
+    tag: 'Publier soi-même.',
+    pourQui: 'Vous voulez ajouter et modifier vos pages vous-même.',
     incl: ['Design sur mesure', 'Mieux placé sur Google', 'Blog & actualités'],
     featured: false,
   },
@@ -37,77 +31,104 @@ const TIERS: {
     num: '03',
     name: 'Business',
     icon: 'business',
-    tag: 'Vendre et gérer vos clients en ligne.',
-    pourQui: 'Pour vendre et gérer vos clients.',
+    tag: 'Vendre et suivre ses clients.',
+    pourQui: 'Vous vendez, ou vous suivez vos clients en ligne.',
     incl: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
     featured: true,
   },
   {
     num: '04',
-    name: 'E-commerce',
+    name: 'Boutique en ligne',
     icon: 'ecommerce',
-    tag: 'Vendre en ligne, en grand.',
-    pourQui: 'Pour un catalogue qui grossit.',
+    tag: 'Vendre en grand.',
+    pourQui: "Votre boutique en ligne, c'est votre métier.",
     incl: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
     featured: false,
   },
   {
     num: '05',
-    name: 'Plateforme',
+    name: 'Sur mesure',
     icon: 'plateforme',
-    tag: 'Votre outil de travail. À vous, vraiment.',
-    pourQui: 'Pour un métier qui ne rentre dans aucune case.',
+    tag: "Un outil rien qu'à vous.",
+    pourQui: "L'outil dont vous avez besoin n'existe pas encore.",
     incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
     featured: false,
   },
 ]
 
-const METIERS: { num: string; name: string; icon: VenioIconName; to: string; tag: string; deliv: string[] }[] = [
+/* Les trois repères du haut de page annoncent les trois arguments
+   développés plus bas. Aucun chiffre : rien ici n'est une statistique. */
+const REPERES: { num: string; label: string; value: string; live?: boolean }[] = [
+  { num: '01', label: 'Le design', value: 'Dessiné pour vous', live: true },
+  { num: '02', label: 'Le code', value: 'Il vous appartient' },
+  { num: '03', label: 'Vos demandes', value: "Rien n'est bloqué" },
+]
+
+const ARGUMENTS: { num: string; titre: string; texte: string }[] = [
   {
     num: '01',
-    name: 'Conseil',
-    icon: 'conseil',
-    to: '/services/conseil',
-    tag: 'Un état des lieux sans détour, des décisions claires — pas de jolies présentations. Si votre stratégie ne tient pas, on vous le dit en face.',
-    deliv: ['État des lieux franc', "L'IA quand ça sert", 'Une place qui tient face aux concurrents'],
+    titre: 'Un site clair, que vos clients comprennent tout de suite',
+    texte:
+      'On dessine vos pages à partir de ce que vous avez à dire. Pas un modèle tout fait dans lequel on glisse vos textes.',
   },
   {
     num: '02',
-    name: 'Développement',
-    icon: 'developpement',
-    to: '/services/developpement',
-    tag: 'Un outil qui travaille comme vous — CRM, gestion, portail client. Du logiciel qui vous appartient et grandit avec vous, pas un abonnement de plus.',
-    deliv: ['Outils de travail sur mesure', 'Un logiciel qui grandit avec vous', "L'IA utile au quotidien"],
+    titre: 'Votre site vous appartient vraiment',
+    texte:
+      "Si un jour vous travaillez avec quelqu'un d'autre, tout part avec vous. N'importe quel développeur peut reprendre le travail après nous. On ne vous enferme pas dans un outil que nous seuls savons utiliser.",
   },
   {
     num: '03',
-    name: 'Communication',
-    icon: 'communication',
-    to: '/services/communication',
-    tag: 'Une marque qui se tient. Pas un PDF et trois posts : un ensemble cohérent, qui dure et ne ressemble à personne.',
-    deliv: ['Une marque cohérente', 'Une voix qui vous ressemble', 'Un style qui vous va'],
+    titre: 'Rien n’est impossible parce que « l’outil ne le permet pas »',
+    texte:
+      'On code votre site sur mesure. Ce que vous demandez, on peut le faire. On vous dira quand même si ça ne sert à rien.',
   },
 ]
 
-const PILIERS: { num: string; icon: VenioIconName; titre: string; texte: string }[] = [
+/* La page « Au-delà du site » est ouverte par un chantier parallèle.
+   En attendant, chaque métier pointe vers sa page de service actuelle ;
+   les redirections 301 seront posées à la fusion. */
+const METIERS: {
+  num: string
+  nom: string
+  to: string
+  titre: string
+  texte: string
+  inutile: string
+}[] = [
   {
     num: '01',
-    icon: 'lucidite',
-    titre: 'Lucidité',
-    texte: 'On dit non. Souvent. La vérité est plus utile que le confort.',
+    nom: 'Conseil',
+    to: '/services/conseil',
+    titre: 'Un état des lieux écrit',
+    texte:
+      'Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre. Vous repartez avec le document, qu’on travaille ensemble ensuite ou non.',
+    inutile: 'Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.',
   },
   {
     num: '02',
-    icon: 'efficacite',
-    titre: 'Efficacité',
-    texte: 'On ne décore pas. On structure. La forme est une conséquence.',
+    nom: 'Développement',
+    to: '/services/developpement',
+    titre: 'L’outil que le tableur ne fait plus',
+    texte:
+      'Quand vos procédures tiennent dans des onglets partagés que plus personne n’ose modifier. On construit l’outil autour de votre façon de travailler, pas l’inverse.',
+    inutile: 'Un logiciel du marché couvre déjà l’essentiel du besoin — on vous dira lequel.',
   },
   {
     num: '03',
-    icon: 'refus',
-    titre: 'Refus du mensonge',
-    texte: 'Pas de oui de complaisance. La vérité, même quand elle coûte une vente.',
+    nom: 'Marque',
+    to: '/services/communication',
+    titre: 'Un nom, une voix, un système',
+    texte:
+      'Pas un logo et quelques publications. De quoi écrire, décliner et tenir sans nous rappeler à chaque fois qu’il faut produire quelque chose.',
+    inutile: 'Votre problème est commercial. Une belle marque ne remplit pas un carnet vide.',
   },
+]
+
+const RENDEZ_VOUS: { cle: string; valeur: string }[] = [
+  { cle: 'Durée', valeur: '30 minutes' },
+  { cle: 'À préparer', valeur: 'Rien' },
+  { cle: 'Par écrit', valeur: 'contact@venio.paris' },
 ]
 
 const Home = () => {
@@ -131,183 +152,190 @@ const Home = () => {
   return (
     <div className="mh-home">
       <SEO
-        title="Sites web sur mesure, conseil et marque · Paris"
-        description="Studio digital à Paris. Sites web sur mesure, conseil et identité de marque — du concret, fait pour vous, pas de modèle tout fait. Parlons de votre projet."
-        keywords="agence digitale, site web sur mesure, développement web, communication, branding, stratégie digitale, Paris"
+        title="Site web sur mesure à Paris · Venio"
+        description="On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous."
+        keywords="site web sur mesure, plateforme métier, développement web, conseil, marque, studio digital, Paris"
       />
       <StructuredData type="home" />
 
-      {/* HERO */}
-      <section id="mh-hero">
-        <div className="mh-hero-lines" aria-hidden="true" />
-        <GrainOverlay opacity={0.04} />
-        <CropMarks />
-        <div className="mh-container mh-hero-content">
-          <p className="mh-hero-label">Sites web sur mesure · Conseil · Marque — Paris</p>
-          <h1 className="mh-hero-title">
-            Construire
-            <br />
-            ce qui
-            <br />
-            <span className="mh-accent">doit</span>
-            <br />
-            exister
-          </h1>
-          <p className="mh-hero-sub">Pas ce qui rassure.</p>
-          <p className="mh-hero-offer">
-            <b>Des sites qui vous appartiennent, du conseil qui tranche, une marque qui tient.</b> Tout sur mesure. Rien
-            en stock.
-          </p>
-          <div className="mh-hero-actions">
-            <a className="mh-btn mh-btn--lime" href="#mh-sites">
-              Voir les offres <span className="mh-ar">↓</span>
-            </a>
-            <Link className="mh-link" to="/contact" data-analytics-cta="home_hero_contact">
-              Parler de votre projet
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* MÉTHODE */}
-      <section id="mh-methode">
-        <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              I
-            </span>
-            <span className="mh-kicker">Notre méthode</span>
-          </div>
-          <h2 className="mh-methode-headline mh-reveal">Trois principes. Pas de discours.</h2>
-          <div className="mh-piliers">
-            {PILIERS.map((p) => (
-              <div key={p.num} className="mh-pilier mh-reveal">
-                <VenioIcon name={p.icon} size={28} className="mh-pilier-icon" />
-                <span className="mh-pilier-num">{p.num}</span>
-                <h3 className="mh-pilier-titre">{p.titre}</h3>
-                <p className="mh-pilier-texte">{p.texte}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mh-methode-close mh-reveal">Construire ce qui doit exister — le reste, on le refuse.</p>
-          <Link className="mh-method-link mh-reveal" to="/methode">
-            Voir les étapes, livrables et cadence <span className="mh-ar">→</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* SITES — offre phare */}
-      <section id="mh-sites">
-        <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              II
-            </span>
-            <span className="mh-kicker">Sites web · l'offre</span>
-          </div>
-          <h2 className="mh-sites-headline mh-reveal">
-            Des sites qui durent <span className="mh-accent">10 ans</span>. Pas 6 mois.
-          </h2>
-          <p className="mh-sites-intro mh-reveal">
-            Un site Venio est conçu pour votre activité et tient dans le temps. Un thème acheté, lui, casse à la
-            première mise à jour — c'est même son modèle économique.
-          </p>
-          <p className="mh-sites-meta mh-reveal">Cinq paliers · Tous sur devis</p>
-
-          <div className="mh-pricing">
-            {TIERS.map((t) => (
-              <Link
-                key={t.num}
-                to="/services/sites"
-                className={`mh-price mh-reveal${t.featured ? ' mh-price--featured' : ''}`}
-              >
-                {t.featured && <span className="mh-price-badge">Le plus choisi</span>}
-                <VenioIcon name={t.icon} size={26} className="mh-price-icon" />
-                <span className="mh-price-num">Palier {t.num}</span>
-                <span className="mh-price-name">{t.name}</span>
-                <span className="mh-price-tag">{t.tag}</span>
-                <ul className="mh-price-incl">
-                  {t.incl.map((i) => (
-                    <li key={i}>{i}</li>
-                  ))}
-                </ul>
-                <span className="mh-price-pourqui">{t.pourQui}</span>
-                <span className="mh-price-cta">
-                  Voir ce palier <span className="mh-ar">→</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mh-sites-foot mh-reveal">
-            <p className="mh-webnote">
-              <b>On s'occupe de tout, en option sur chaque palier :</b> hébergement, mises à jour, sauvegardes — et
-              quelqu'un qui répond quand vous appelez. Votre site vit sans que vous y pensiez.
+      {/* ─── 02 · RELEVÉ ─── */}
+      <section id="mh-releve">
+        <GrainOverlay opacity={0.035} />
+        <div className="mh-container mh-releve-grid">
+          <div className="mh-releve-text">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Venio — studio web à Paris
             </p>
+            <h1 className="mh-releve-title">
+              Un site fait pour vous. <span className="mh-accent">Pas pour tout le monde.</span>
+            </h1>
+            <p className="mh-releve-sub">
+              On dessine et on code votre site à partir de ce que vous avez à dire. Pas à partir d’un modèle acheté dans
+              lequel on glisserait vos textes.
+            </p>
+
+            <dl className="mh-cotes">
+              {REPERES.map((c) => (
+                <div key={c.num} className={`mh-cote${c.live ? ' mh-cote--live' : ''}`}>
+                  <dt className="mh-mono">
+                    <span className="mh-cote-num">{c.num}</span>
+                    {c.label}
+                  </dt>
+                  <dd>{c.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <SitePlate />
+        </div>
+      </section>
+
+      {/* ─── 03 · CADRAN DES CINQ PALIERS ─── */}
+      <section id="mh-paliers">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Sites web
+            </p>
+            <h2>
+              Cinq formules. La vôtre dépend de <span className="mh-accent">ce que le site doit faire.</span>
+            </h2>
+            <p className="mh-band-note">
+              Pas de ce que vous voulez montrer. Cliquez sur celle qui vous ressemble. On chiffre après, une fois qu’on
+              a compris votre besoin.
+            </p>
+          </header>
+
+          <div className="mh-reveal">
+            <TierDial tiers={TIERS} />
+          </div>
+
+          <p className="mh-band-foot mh-reveal">
             <Link className="mh-link" to="/services/sites">
-              Le détail des offres <span className="mh-ar">→</span>
+              Le détail des cinq formules <span aria-hidden="true">→</span>
             </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ─── 04 · RADAR DE PREUVE ─── */}
+      <section id="mh-preuve">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Nos réalisations
+            </p>
+            <h2>
+              Nos propres sites et logiciels <span className="mh-accent">tournent tous les jours.</span>
+            </h2>
+            <p className="mh-band-note">
+              On ne fait pas que livrer des sites : on en fait vivre. Voilà ce qu’on a construit, et qui fonctionne en
+              ce moment. Vous pouvez aller voir.
+            </p>
+          </header>
+
+          <div className="mh-reveal">
+            <ProofRadar />
+          </div>
+
+          <p className="mh-band-foot mh-reveal">
+            <Link className="mh-link" to="/realisations">
+              Voir les réalisations <span aria-hidden="true">→</span>
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ─── 05 · TROIS ENGAGEMENTS OPPOSABLES ─── */}
+      <section id="mh-engagements">
+        <div className="mh-container">
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Ce qui change avec nous
+            </p>
+            <h2>
+              Trois choses qu’on vous garantit, <span className="mh-accent">et que vous pouvez vérifier.</span>
+            </h2>
+            <p className="mh-band-note">Elles figurent dans nos contrats, pas seulement sur cette page.</p>
+          </header>
+
+          <div className="mh-specs">
+            {ARGUMENTS.map((a) => (
+              <article key={a.num} className="mh-spec mh-reveal">
+                <span className="mh-mono mh-spec-num">{a.num}</span>
+                <h3>{a.titre}</h3>
+                <p>{a.texte}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* MÉTIERS */}
+      {/* ─── 06 · AU-DELÀ DU SITE ─── */}
       <section id="mh-metiers">
         <div className="mh-container">
-          <div className="mh-head mh-reveal">
-            <span className="mh-index" aria-hidden="true">
-              III
-            </span>
-            <span className="mh-kicker">Au-delà du site</span>
-          </div>
-          <h2 className="mh-metiers-headline mh-reveal">Trois métiers.</h2>
-          <p className="mh-metiers-intro mh-reveal">
-            Quand le besoin dépasse le site. Sur devis, parce qu'aucun de ces projets ne se vend en paliers.
-          </p>
+          <header className="mh-band-head mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Au-delà du site
+            </p>
+            <h2>
+              On fait aussi <span className="mh-accent">trois autres choses.</span>
+            </h2>
+            <p className="mh-band-note">
+              Elles ne se vendent pas en formules : ça dépend trop de ce qu’on trouve en ouvrant le capot. Pour chacune,
+              on vous dit aussi quand il ne faut pas nous appeler.
+            </p>
+          </header>
 
-          <div>
+          <div className="mh-jobs">
             {METIERS.map((m) => (
-              <Link key={m.num} to={m.to} className="mh-metier mh-reveal">
-                <span className="mh-metier-num" aria-hidden="true">
-                  {m.num}
+              <Link key={m.num} to={m.to} className="mh-job mh-reveal">
+                <span className="mh-mono mh-job-num">
+                  {m.num} — {m.nom}
                 </span>
-                <div>
-                  <div className="mh-metier-header">
-                    <VenioIcon name={m.icon} size={24} className="mh-metier-icon" />
-                    <h3 className="mh-metier-name">{m.name}</h3>
-                  </div>
-                  <p className="mh-metier-tag">{m.tag}</p>
-                  <ul className="mh-metier-deliv">
-                    {m.deliv.map((d) => (
-                      <li key={d}>{d}</li>
-                    ))}
-                  </ul>
-                  <div className="mh-metier-foot">
-                    <span className="mh-metier-go">
-                      En parler <span className="mh-ar">→</span>
-                    </span>
-                  </div>
+                <h3>{m.titre}</h3>
+                <p>{m.texte}</p>
+                <div className="mh-job-nope">
+                  <span className="mh-mono">Inutile si</span>
+                  <p>{m.inutile}</p>
                 </div>
+                <span className="mh-job-go">
+                  En parler <span aria-hidden="true">→</span>
+                </span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section id="mh-cta">
-        <div className="mh-container">
-          <p className="mh-cta-eyebrow mh-reveal">Prochaine étape</p>
-          <h2 className="mh-cta-title mh-reveal">
-            Parlons<span className="mh-dot">.</span>
-          </h2>
-          <Link className="mh-cta-go mh-reveal" to="/contact" data-analytics-cta="home_final_contact">
-            Prendre contact <span className="mh-ar">→</span>
-          </Link>
-          <p className="mh-cta-note mh-reveal">
-            Premier échange franc : si on n'est pas les bons pour votre projet, on vous le dit — et on vous dit vers qui
-            aller.
-          </p>
+      {/* ─── 07 · UN APPEL DE TRENTE MINUTES ─── */}
+      <section id="mh-appel">
+        <div className="mh-container mh-appel-grid">
+          <div className="mh-reveal">
+            <p className="mh-eyebrow mh-mono">
+              <i aria-hidden="true" /> Prochaine étape
+            </p>
+            <h2>
+              Un appel de <span className="mh-accent">trente minutes.</span>
+            </h2>
+            <p className="mh-appel-note">
+              À la fin, vous saurez si on peut vous aider. Si on ne peut pas, on vous le dit pendant l’appel et on vous
+              oriente ailleurs. Ça ne vous coûte que la demi-heure.
+            </p>
+            <Link className="mh-cta" to="/contact" data-analytics-cta="home_final_contact">
+              Réserver l’appel <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          <dl className="mh-appel-meta mh-reveal">
+            {RENDEZ_VOUS.map((r) => (
+              <div key={r.cle}>
+                <dt className="mh-mono">{r.cle}</dt>
+                <dd className="mh-mono">{r.valeur}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
     </div>

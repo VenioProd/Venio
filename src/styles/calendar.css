@@ -424,111 +424,111 @@
 }
 
 /* ── Light Mode ── */
-[data-theme="light"] .calendar-header h2 {
-  color: #0f172a;
+[data-theme='light'] .calendar-header h2 {
+  color: var(--ink-strong);
 }
 
-[data-theme="light"] .calendar-nav-btn {
-  border-color: #e2e8f0;
+[data-theme='light'] .calendar-nav-btn {
+  border-color: var(--line-soft);
   background: #ffffff;
-  color: #475569;
+  color: var(--ink-dim);
 }
 
-[data-theme="light"] .calendar-nav-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #cbd5e1;
+[data-theme='light'] .calendar-nav-btn:hover {
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  border-color: var(--line-strong);
 }
 
-[data-theme="light"] .calendar-today-btn {
-  border-color: #e2e8f0;
+[data-theme='light'] .calendar-today-btn {
+  border-color: var(--line-soft);
   background: #ffffff;
-  color: #475569;
+  color: var(--ink-dim);
 }
 
-[data-theme="light"] .calendar-today-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #cbd5e1;
+[data-theme='light'] .calendar-today-btn:hover {
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  border-color: var(--line-strong);
 }
 
-[data-theme="light"] .calendar-grid {
-  border-color: #e2e8f0;
+[data-theme='light'] .calendar-grid {
+  border-color: var(--line-soft);
   background: #ffffff;
 }
 
-[data-theme="light"] .calendar-day-header {
-  color: #475569;
-  background: #f8fafc;
-  border-bottom-color: #e2e8f0;
+[data-theme='light'] .calendar-day-header {
+  color: var(--ink-dim);
+  background: var(--surface-sunken);
+  border-bottom-color: var(--line-soft);
 }
 
-[data-theme="light"] .calendar-day {
-  border-right-color: #f1f5f9;
-  border-bottom-color: #f1f5f9;
+[data-theme='light'] .calendar-day {
+  border-right-color: var(--line-faint);
+  border-bottom-color: var(--line-faint);
 }
 
-[data-theme="light"] .calendar-day:hover {
-  background: #f8fafc;
+[data-theme='light'] .calendar-day:hover {
+  background: var(--surface-sunken);
 }
 
-[data-theme="light"] .calendar-day-number {
-  color: #334155;
+[data-theme='light'] .calendar-day-number {
+  color: var(--ink-soft);
 }
 
-[data-theme="light"] .calendar-event-more {
-  color: #64748b;
+[data-theme='light'] .calendar-event-more {
+  color: var(--ink-faint);
 }
 
-[data-theme="light"] .calendar-day-detail {
+[data-theme='light'] .calendar-day-detail {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--line-soft);
 }
 
-[data-theme="light"] .calendar-detail-header h3 {
-  color: #0f172a;
+[data-theme='light'] .calendar-detail-header h3 {
+  color: var(--ink-strong);
 }
 
-[data-theme="light"] .calendar-detail-close {
-  border-color: #e2e8f0;
-  color: #475569;
+[data-theme='light'] .calendar-detail-close {
+  border-color: var(--line-soft);
+  color: var(--ink-dim);
 }
 
-[data-theme="light"] .calendar-detail-close:hover {
-  color: #0f172a;
-  border-color: #cbd5e1;
+[data-theme='light'] .calendar-detail-close:hover {
+  color: var(--ink-strong);
+  border-color: var(--line-strong);
 }
 
-[data-theme="light"] .calendar-detail-item {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+[data-theme='light'] .calendar-detail-item {
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
-[data-theme="light"] .calendar-detail-item:hover {
-  background: #f1f5f9;
+[data-theme='light'] .calendar-detail-item:hover {
+  background: var(--surface-raised);
 }
 
-[data-theme="light"] .calendar-detail-title {
-  color: #0f172a;
+[data-theme='light'] .calendar-detail-title {
+  color: var(--ink-strong);
 }
 
-[data-theme="light"] .calendar-detail-meta {
-  color: #64748b;
+[data-theme='light'] .calendar-detail-meta {
+  color: var(--ink-faint);
 }
 
-[data-theme="light"] .calendar-empty-state {
-  color: #94a3b8;
+[data-theme='light'] .calendar-empty-state {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .calendar-loading {
-  color: #94a3b8;
+[data-theme='light'] .calendar-loading {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .calendar-legend {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+[data-theme='light'] .calendar-legend {
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
 }
 
-[data-theme="light"] .calendar-legend-item {
-  color: #475569;
+[data-theme='light'] .calendar-legend-item {
+  color: var(--ink-dim);
 }

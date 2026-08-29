@@ -126,45 +126,45 @@
 }
 
 /* ── Light Mode ── */
-[data-theme="light"] .activity-loading {
-  color: #94a3b8;
+[data-theme='light'] .activity-loading {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .activity-empty {
-  color: #94a3b8;
+[data-theme='light'] .activity-empty {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .activity-group-label {
-  color: #64748b;
+[data-theme='light'] .activity-group-label {
+  color: var(--ink-faint);
 }
 
-[data-theme="light"] .activity-group-items::before {
-  background: #e2e8f0;
+[data-theme='light'] .activity-group-items::before {
+  background: var(--surface-strong);
 }
 
-[data-theme="light"] .activity-item:hover {
-  background: #f8fafc;
+[data-theme='light'] .activity-item:hover {
+  background: var(--surface-sunken);
 }
 
-[data-theme="light"] .activity-item-summary {
-  color: #334155;
+[data-theme='light'] .activity-item-summary {
+  color: var(--ink-soft);
 }
 
-[data-theme="light"] .activity-item-actor {
-  color: #0f172a;
+[data-theme='light'] .activity-item-actor {
+  color: var(--ink-strong);
 }
 
-[data-theme="light"] .activity-item-time {
-  color: #94a3b8;
+[data-theme='light'] .activity-item-time {
+  color: var(--ink-ghost);
 }
 
-[data-theme="light"] .activity-load-more {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #475569;
+[data-theme='light'] .activity-load-more {
+  background: var(--surface-sunken);
+  border-color: var(--line-soft);
+  color: var(--ink-dim);
 }
 
-[data-theme="light"] .activity-load-more:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+[data-theme='light'] .activity-load-more:hover {
+  background: var(--surface-raised);
+  color: var(--ink-strong);
 }

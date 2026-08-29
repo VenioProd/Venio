@@ -139,7 +139,7 @@
 /* ─── Light theme ─── */
 [data-theme='light'] .notification-settings {
   background: #ffffff;
-  color: #0f172a;
+  color: var(--ink-strong);
   border-color: rgba(var(--primary-rgb), 0.22);
 }
 

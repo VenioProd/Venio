@@ -18,7 +18,7 @@
   --critical-surface: rgba(239, 68, 68, 0.13);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-primary: #000000;
   --bg-secondary: transparent;
   --bg-card: transparent;
@@ -65,9 +65,30 @@
   --ambient-mesh-layer-2: rgba(59, 130, 246, 0.2);
   --ambient-mesh-layer-3: rgba(var(--primary-light-rgb), 0.15);
   --ambient-mesh-layer-4: rgba(37, 99, 235, 0.15);
+
+  /* ─── Rampe neutre (ex-palette slate, promue en tokens) ───────────────
+     Sept niveaux d'encre + trois surfaces + quatre filets, strictement
+     miroir entre dark et light. Ces échelles sont volontairement
+     distinctes du trio --text-primary/secondary/muted, qui reste la
+     hiérarchie de base ; --ink-* couvre les nuances intermédiaires des
+     portails (admin, espace client, dev workspace). */
+  --ink-strong: #f8fafc;
+  --ink-body: #e2e8f0;
+  --ink-soft: #cbd5e1;
+  --ink-dim: #94a3b8;
+  --ink-faint: #64748b;
+  --ink-ghost: #475569;
+  --ink-whisper: #334155;
+  --surface-sunken: #0f172a;
+  --surface-raised: #1e293b;
+  --surface-strong: #334155;
+  --line-faint: #0f172a;
+  --line-soft: #1e293b;
+  --line-strong: #334155;
+  --line-vivid: #64748b;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   --bg-primary: #f5f5f7;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
@@ -114,13 +135,29 @@
   --ambient-mesh-layer-2: rgba(59, 130, 246, 0.1);
   --ambient-mesh-layer-3: rgba(var(--primary-light-rgb), 0.08);
   --ambient-mesh-layer-4: rgba(37, 99, 235, 0.08);
+
+  /* ─── Rampe neutre — miroir exact du thème sombre ─── */
+  --ink-strong: #0f172a;
+  --ink-body: #1e293b;
+  --ink-soft: #334155;
+  --ink-dim: #475569;
+  --ink-faint: #64748b;
+  --ink-ghost: #94a3b8;
+  --ink-whisper: #cbd5e1;
+  --surface-sunken: #f8fafc;
+  --surface-raised: #f1f5f9;
+  --surface-strong: #e2e8f0;
+  --line-faint: #f1f5f9;
+  --line-soft: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --line-vivid: #94a3b8;
 }
 
 /* ═══════════════════════════════════════════
    Color Accent Overrides
    ═══════════════════════════════════════════ */
 
-[data-accent="violet"] {
+[data-accent='violet'] {
   --primary: #8b5cf6;
   --primary-light: #a78bfa;
   --primary-dark: #7c3aed;
@@ -144,7 +181,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="emerald"] {
+[data-accent='emerald'] {
   --primary: #10b981;
   --primary-light: #34d399;
   --primary-dark: #059669;
@@ -168,7 +205,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="amber"] {
+[data-accent='amber'] {
   --primary: #f59e0b;
   --primary-light: #fbbf24;
   --primary-dark: #d97706;
@@ -192,7 +229,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="rose"] {
+[data-accent='rose'] {
   --primary: #ec4899;
   --primary-light: #f472b6;
   --primary-dark: #db2777;
@@ -216,7 +253,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="coral"] {
+[data-accent='coral'] {
   --primary: #f97316;
   --primary-light: #fb923c;
   --primary-dark: #ea580c;
@@ -240,7 +277,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="yellow"] {
+[data-accent='yellow'] {
   --primary: #f9f041;
   --primary-light: #fef9c3;
   --primary-dark: #ca8a04;
@@ -264,7 +301,7 @@
   --primary-fg: #111;
 }
 
-[data-accent="indigo"] {
+[data-accent='indigo'] {
   --primary: #6366f1;
   --primary-light: #818cf8;
   --primary-dark: #4f46e5;
@@ -288,7 +325,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="teal"] {
+[data-accent='teal'] {
   --primary: #14b8a6;
   --primary-light: #2dd4bf;
   --primary-dark: #0d9488;
@@ -312,7 +349,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="fuchsia"] {
+[data-accent='fuchsia'] {
   --primary: #d946ef;
   --primary-light: #e879f9;
   --primary-dark: #c026d3;
@@ -336,7 +373,7 @@
   --primary-fg: #fff;
 }
 
-[data-accent="lime"] {
+[data-accent='lime'] {
   --primary: #84cc16;
   --primary-light: #a3e635;
   --primary-dark: #65a30d;
@@ -360,7 +397,7 @@
   --primary-fg: #111;
 }
 
-[data-accent="slate"] {
+[data-accent='slate'] {
   --primary: #94a3b8;
   --primary-light: #cbd5e1;
   --primary-dark: #64748b;
@@ -384,17 +421,17 @@
   --primary-fg: #0b0f17;
 }
 
-[data-theme="dark"][data-accent="violet"],
-[data-theme="dark"][data-accent="emerald"],
-[data-theme="dark"][data-accent="amber"],
-[data-theme="dark"][data-accent="rose"],
-[data-theme="dark"][data-accent="coral"],
-[data-theme="dark"][data-accent="yellow"],
-[data-theme="dark"][data-accent="indigo"],
-[data-theme="dark"][data-accent="teal"],
-[data-theme="dark"][data-accent="fuchsia"],
-[data-theme="dark"][data-accent="lime"],
-[data-theme="dark"][data-accent="slate"] {
+[data-theme='dark'][data-accent='violet'],
+[data-theme='dark'][data-accent='emerald'],
+[data-theme='dark'][data-accent='amber'],
+[data-theme='dark'][data-accent='rose'],
+[data-theme='dark'][data-accent='coral'],
+[data-theme='dark'][data-accent='yellow'],
+[data-theme='dark'][data-accent='indigo'],
+[data-theme='dark'][data-accent='teal'],
+[data-theme='dark'][data-accent='fuchsia'],
+[data-theme='dark'][data-accent='lime'],
+[data-theme='dark'][data-accent='slate'] {
   --admin-shell-bg-glow-1: rgba(255, 255, 255, 0.018);
   --admin-shell-bg-glow-2: rgba(255, 255, 255, 0.014);
   --admin-shell-bg-glow-3: rgba(255, 255, 255, 0.012);
