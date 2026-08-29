@@ -7,12 +7,12 @@ export const publicRoutes = [
     path: '',
     priority: '1.0',
     changefreq: 'weekly',
-    title: 'Création de sites web sur mesure à Paris | Venio',
+    title: 'Site web sur mesure à Paris · Venio',
     description:
-      'Studio digital à Paris. Sites web sur mesure, conseil et identité de marque — du concret, fait pour vous, pas de modèle tout fait.',
-    h1: 'Construire ce qui doit exister.',
+      "On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous.",
+    h1: 'Un site fait pour vous. Pas pour tout le monde.',
     content:
-      'Venio conçoit des sites web, des identités de marque et des stratégies digitales pour les entreprises qui veulent avancer avec une direction claire.',
+      "Venio dessine et code des sites et des plateformes sur mesure à Paris. Votre site vous appartient : n'importe quel développeur peut le reprendre après nous. Et rien n'est impossible parce que l'outil ne le permet pas.",
   },
   {
     path: '/services/sites',
