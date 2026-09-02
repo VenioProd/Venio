@@ -11,7 +11,7 @@ import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
-import { consumeRecoveryCode, graceEndsAt, requiresMfa, verifyTotp } from '../lib/mfa.js'
+import { consumeRecoveryCode, graceEndsAt, isMfaEnabled, requiresMfa, verifyTotp } from '../lib/mfa.js'
 import {
   clearSessionCookie,
   readSessionCookie,
@@ -112,7 +112,7 @@ router.post(
       let mfaEnrollmentOnly = false
       // Check 2FA, including a single-use recovery code when the authenticator
       // is unavailable. A recovery code is consumed atomically with the login.
-      if (user.twoFactorEnabled && user.twoFactorSecret) {
+      if (isMfaEnabled() && user.twoFactorEnabled && user.twoFactorSecret) {
         const { totpCode, recoveryCode } = req.body
         if (!totpCode && !recoveryCode) {
           return res.json({ requires2FA: true })

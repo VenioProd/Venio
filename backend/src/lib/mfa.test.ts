@@ -1,11 +1,36 @@
-import { describe, expect, it } from 'vitest'
-import { consumeRecoveryCode, createRecoveryCodes, createTotpSecret, isMfaEnrollmentRoute, requiresMfa } from './mfa.js'
+import { afterEach, describe, expect, it } from 'vitest'
+import {
+  consumeRecoveryCode,
+  createRecoveryCodes,
+  createTotpSecret,
+  isMfaEnabled,
+  isMfaEnrollmentRoute,
+  requiresMfa,
+} from './mfa.js'
+
+afterEach(() => {
+  delete process.env.MFA_ENABLED
+})
 
 describe('MFA helpers', () => {
-  it('requires MFA only for privileged administrator roles', () => {
+  it('requires MFA only for privileged administrator roles once the feature is on', () => {
+    process.env.MFA_ENABLED = 'true'
     expect(requiresMfa('SUPER_ADMIN')).toBe(true)
     expect(requiresMfa('ADMIN')).toBe(true)
     expect(requiresMfa('MANAGER')).toBe(false)
+  })
+
+  it('is disabled by default, so no role is ever asked for a second factor', () => {
+    expect(isMfaEnabled()).toBe(false)
+    expect(requiresMfa('SUPER_ADMIN')).toBe(false)
+    expect(requiresMfa('ADMIN')).toBe(false)
+  })
+
+  it('reads the switch at call time rather than at module load', () => {
+    process.env.MFA_ENABLED = 'true'
+    expect(requiresMfa('ADMIN')).toBe(true)
+    process.env.MFA_ENABLED = 'false'
+    expect(requiresMfa('ADMIN')).toBe(false)
   })
 
   it('creates recovery codes that are single-use and never persisted in clear text', async () => {

@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requirePermission, userHasPermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import Task from '../../models/Task.js'
 import User from '../../models/User.js'
@@ -78,7 +78,7 @@ router.get(
 router.get(
   '/',
   requirePermission(PERMISSIONS.VIEW_PROJECTS),
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -178,15 +178,19 @@ router.get(
         // Lead model may not exist
       }
 
+      // L'écran analytics s'ouvre sur view_projects, mais son bloc financier
+      // relève de la facturation : masqué pour un admin sans view_billing.
+      const canSeeAmounts = await userHasPermission(req, PERMISSIONS.VIEW_BILLING)
+
       return res.json({
         projectsByStatus: Object.fromEntries(projectsByStatus.map((p) => [p._id, p.count])),
         projectsByPriority: Object.fromEntries(projectsByPriority.map((p) => [p._id, p.count])),
         tasksByStatus: Object.fromEntries(tasksByStatus.map((t) => [t._id, t.count])),
         tasksByPriority: Object.fromEntries(tasksByPriority.map((t) => [t._id, t.count])),
-        totalRevenue,
-        monthlyRevenue,
-        lastMonthRevenue,
-        totalBudget,
+        totalRevenue: canSeeAmounts ? totalRevenue : null,
+        monthlyRevenue: canSeeAmounts ? monthlyRevenue : null,
+        lastMonthRevenue: canSeeAmounts ? lastMonthRevenue : null,
+        totalBudget: canSeeAmounts ? totalBudget : null,
         clientCount,
         activeClientCount,
         projectsPerMonth,

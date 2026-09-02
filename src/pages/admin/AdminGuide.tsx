@@ -10,15 +10,7 @@ interface GuideSection {
   content: React.ReactNode
 }
 
-const Section = ({
-  section,
-  isOpen,
-  toggle,
-}: {
-  section: GuideSection
-  isOpen: boolean
-  toggle: () => void
-}) => (
+const Section = ({ section, isOpen, toggle }: { section: GuideSection; isOpen: boolean; toggle: () => void }) => (
   <div
     style={{
       background: 'var(--bg-tertiary)',
@@ -118,15 +110,25 @@ const sections: GuideSection[] = [
     title: '2. Gestion des clients',
     content: (
       <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Comptes clients
-        </p>
+        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Comptes clients</p>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li><strong>Creer un client</strong> : nom, email, entreprise, telephone, adresse, notes internes</li>
-          <li><strong>Modifier / Archiver</strong> : cliquer sur la fiche client pour editer ou archiver le compte</li>
-          <li><strong>Fiche client complete</strong> : onglets Contacts, Notes, Facturation, Cloud (fichiers partages), Livrables</li>
-          <li><strong>Se connecter en tant que</strong> : bouton <Kbd>Impersonation</Kbd> pour visualiser l'espace client exactement comme le client le voit</li>
-          <li><strong>Reinitialisation mot de passe</strong> : genere un lien unique a envoyer au client</li>
+          <li>
+            <strong>Creer un client</strong> : nom, email, entreprise, telephone, adresse, notes internes
+          </li>
+          <li>
+            <strong>Modifier / Archiver</strong> : cliquer sur la fiche client pour editer ou archiver le compte
+          </li>
+          <li>
+            <strong>Fiche client complete</strong> : onglets Contacts, Notes, Facturation, Cloud (fichiers partages),
+            Livrables
+          </li>
+          <li>
+            <strong>Se connecter en tant que</strong> : bouton <Kbd>Impersonation</Kbd> pour visualiser l'espace client
+            exactement comme le client le voit
+          </li>
+          <li>
+            <strong>Reinitialisation mot de passe</strong> : genere un lien unique a envoyer au client
+          </li>
           <li>Recherche et filtrage par statut (actif / archive), entreprise, date de creation</li>
         </ul>
         <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
@@ -141,26 +143,35 @@ const sections: GuideSection[] = [
     title: '3. CRM / Pipeline commercial',
     content: (
       <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Pipeline de vente
-        </p>
+        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Pipeline de vente</p>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
           <li>
             <strong>Etapes du pipeline</strong> :{' '}
-            {['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'].map((s) => (
-              <Kbd key={s}>{s}</Kbd>
-            )).reduce((acc: React.ReactNode[], el, i) => [...acc, i > 0 ? ' \u2192 ' : '', el], [])}
+            {['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
+              .map((s) => <Kbd key={s}>{s}</Kbd>)
+              .reduce((acc: React.ReactNode[], el, i) => [...acc, i > 0 ? ' \u2192 ' : '', el], [])}
           </li>
-          <li><strong>Drag & drop</strong> : deplacer un lead d'une colonne a l'autre en Kanban</li>
-          <li><strong>Conversion automatique</strong> : quand un lead passe en <Kbd>WON</Kbd>, un compte client est cree automatiquement</li>
-          <li><strong>Scoring</strong> : score calcule selon budget, temperature, interactions et delai</li>
-          <li><strong>Temperature</strong> : froid, tiede, chaud, brulant</li>
-          <li><strong>Alertes</strong> : notification quand un lead est inactif depuis X jours</li>
-          <li><strong>Assignation round-robin</strong> : repartition automatique des leads entre commerciaux</li>
+          <li>
+            <strong>Drag & drop</strong> : deplacer un lead d'une colonne a l'autre en Kanban
+          </li>
+          <li>
+            <strong>Conversion automatique</strong> : quand un lead passe en <Kbd>WON</Kbd>, un compte client est cree
+            automatiquement
+          </li>
+          <li>
+            <strong>Scoring</strong> : score calcule selon budget, temperature, interactions et delai
+          </li>
+          <li>
+            <strong>Temperature</strong> : froid, tiede, chaud, brulant
+          </li>
+          <li>
+            <strong>Alertes</strong> : notification quand un lead est inactif depuis X jours
+          </li>
+          <li>
+            <strong>Assignation round-robin</strong> : repartition automatique des leads entre commerciaux
+          </li>
         </ul>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Parametres CRM
-        </p>
+        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Parametres CRM</p>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
           <li>Personnaliser les colonnes du pipeline, les sources, les temperatures</li>
           <li>Configurer le seuil d'inactivite pour les alertes</li>
@@ -180,10 +191,17 @@ const sections: GuideSection[] = [
     content: (
       <>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li><strong>Creer un projet</strong> : titre, client associe, description, date de debut/fin, budget</li>
-          <li><strong>Sections</strong> : organiser le contenu du projet en sections (ex: Maquettes, Dev, Recettage)</li>
-          <li><strong>Items de contenu</strong> : ajouter des items dans chaque section (texte, lien, fichier)</li>
-          <li><strong>Taches</strong> :
+          <li>
+            <strong>Creer un projet</strong> : titre, client associe, description, date de debut/fin, budget
+          </li>
+          <li>
+            <strong>Sections</strong> : organiser le contenu du projet en sections (ex: Maquettes, Dev, Recettage)
+          </li>
+          <li>
+            <strong>Items de contenu</strong> : ajouter des items dans chaque section (texte, lien, fichier)
+          </li>
+          <li>
+            <strong>Taches</strong> :
             <ul>
               <li>Creer des taches avec titre, description, priorite (P1/P2/P3), assignation, deadline</li>
               <li>Pieces jointes sur les taches (images, documents)</li>
@@ -191,8 +209,12 @@ const sections: GuideSection[] = [
               <li>Vue Kanban et vue tableau</li>
             </ul>
           </li>
-          <li><strong>Suivi de progression</strong> : barre de progression automatique basee sur les taches terminees</li>
-          <li><strong>PDF recapitulatif</strong> : generer un document PDF avec l'etat du projet, les taches et le suivi</li>
+          <li>
+            <strong>Suivi de progression</strong> : barre de progression automatique basee sur les taches terminees
+          </li>
+          <li>
+            <strong>PDF recapitulatif</strong> : generer un document PDF avec l'etat du projet, les taches et le suivi
+          </li>
           <li>Le client voit son projet dans son espace (sections, livrables, taches)</li>
         </ul>
         <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
@@ -207,12 +229,24 @@ const sections: GuideSection[] = [
     title: '5. Facturation',
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Devis</strong> : creer un devis avec lignes de prestation, quantite, prix unitaire</li>
-        <li><strong>Factures</strong> : convertir un devis en facture ou creer directement</li>
-        <li><strong>Numerotation automatique</strong> : format configurable (ex: FAC-2026-001)</li>
-        <li><strong>Calcul TVA</strong> : TVA 20% par defaut, modifiable par ligne</li>
-        <li><strong>Statuts</strong> : Brouillon, Envoye, Paye, En retard, Annule</li>
-        <li><strong>Export PDF</strong> : telecharger le devis ou la facture en PDF</li>
+        <li>
+          <strong>Devis</strong> : creer un devis avec lignes de prestation, quantite, prix unitaire
+        </li>
+        <li>
+          <strong>Factures</strong> : convertir un devis en facture ou creer directement
+        </li>
+        <li>
+          <strong>Numerotation automatique</strong> : format configurable (ex: FAC-2026-001)
+        </li>
+        <li>
+          <strong>Calcul TVA</strong> : TVA 20% par defaut, modifiable par ligne
+        </li>
+        <li>
+          <strong>Statuts</strong> : Brouillon, Envoye, Paye, En retard, Annule
+        </li>
+        <li>
+          <strong>Export PDF</strong> : telecharger le devis ou la facture en PDF
+        </li>
         <li>Les factures sont visibles par le client dans son espace (onglet Facturation)</li>
       </ul>
     ),
@@ -223,12 +257,24 @@ const sections: GuideSection[] = [
     title: '6. Tickets internes',
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Types</strong> : Question, Demande, Probleme technique</li>
-        <li><strong>Priorites</strong> : Basse, Normale, Haute, Urgente</li>
-        <li><strong>Workflow</strong> : Ouvert &rarr; En cours &rarr; Resolu &rarr; Archive</li>
-        <li><strong>Reponses</strong> : fil de discussion avec pieces jointes</li>
-        <li><strong>Archivage</strong> : archiver les tickets resolus pour garder l'historique</li>
-        <li><strong>KPIs</strong> : temps moyen de resolution, tickets par statut, par priorite</li>
+        <li>
+          <strong>Types</strong> : Question, Demande, Probleme technique
+        </li>
+        <li>
+          <strong>Priorites</strong> : Basse, Normale, Haute, Urgente
+        </li>
+        <li>
+          <strong>Workflow</strong> : Ouvert &rarr; En cours &rarr; Resolu &rarr; Archive
+        </li>
+        <li>
+          <strong>Reponses</strong> : fil de discussion avec pieces jointes
+        </li>
+        <li>
+          <strong>Archivage</strong> : archiver les tickets resolus pour garder l'historique
+        </li>
+        <li>
+          <strong>KPIs</strong> : temps moyen de resolution, tickets par statut, par priorite
+        </li>
         <li>Bouton flottant (FAB) pour creer un ticket rapidement depuis n'importe quelle page</li>
       </ul>
     ),
@@ -239,16 +285,23 @@ const sections: GuideSection[] = [
     title: "7. Gestion d'equipe",
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Tableau de gestion</strong> : liste des stagiaires / membres d'equipe avec statut, poste, periode</li>
-        <li><strong>Briefs de mission</strong> :
+        <li>
+          <strong>Tableau de gestion</strong> : liste des stagiaires / membres d'equipe avec statut, poste, periode
+        </li>
+        <li>
+          <strong>Briefs de mission</strong> :
           <ul>
             <li>Creer un brief avec intitule, contexte, objectifs, outils, deadline</li>
             <li>Priorite P1 / P2 / P3</li>
             <li>Suivi du statut : En attente, En cours, Termine</li>
           </ul>
         </li>
-        <li><strong>Suivi des outils</strong> : quels outils sont attribues a chaque membre (Figma, Notion, etc.)</li>
-        <li><strong>Fiches</strong> : informations de contact, convention, notes internes</li>
+        <li>
+          <strong>Suivi des outils</strong> : quels outils sont attribues a chaque membre (Figma, Notion, etc.)
+        </li>
+        <li>
+          <strong>Fiches</strong> : informations de contact, convention, notes internes
+        </li>
         <li>Vue Kanban, Gantt et tableau disponibles</li>
       </ul>
     ),
@@ -259,9 +312,12 @@ const sections: GuideSection[] = [
     title: '8. Qualiopi',
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Indicateurs qualite</strong> : suivi des 32 indicateurs Qualiopi</li>
+        <li>
+          <strong>Indicateurs qualite</strong> : suivi des 32 indicateurs Qualiopi
+        </li>
         <li>Pour chaque indicateur : statut (conforme / non conforme / en cours), preuves, commentaires</li>
-        <li><strong>Questionnaires de satisfaction</strong> :
+        <li>
+          <strong>Questionnaires de satisfaction</strong> :
           <ul>
             <li>Creer et envoyer des questionnaires aux clients/stagiaires</li>
             <li>Reponses collectees et consultables</li>
@@ -278,7 +334,9 @@ const sections: GuideSection[] = [
     title: '9. Messagerie',
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Messages par projet</strong> : chaque projet dispose d'un fil de discussion</li>
+        <li>
+          <strong>Messages par projet</strong> : chaque projet dispose d'un fil de discussion
+        </li>
         <li>Communication directe entre admin et client</li>
         <li>Pieces jointes possibles dans les messages</li>
         <li>Notifications en temps reel (cloche dans la barre de navigation)</li>
@@ -293,23 +351,36 @@ const sections: GuideSection[] = [
     title: '10. Comptes admin',
     content: (
       <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Roles disponibles
-        </p>
+        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Roles disponibles</p>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li><Kbd>Super Admin</Kbd> : acces total, peut gerer les autres admins et les permissions</li>
-          <li><Kbd>Contributeur</Kbd> : acces aux projets, clients, CRM (selon permissions)</li>
-          <li><Kbd>RH</Kbd> : acces a la gestion d'equipe, Qualiopi, briefs</li>
-          <li><Kbd>Lecture seule</Kbd> : consultation uniquement, aucune modification</li>
+          <li>
+            <Kbd>Super Admin</Kbd> : acces total, peut gerer les autres admins et les permissions
+          </li>
+          <li>
+            <Kbd>Contributeur</Kbd> : acces aux projets, clients, CRM (selon permissions)
+          </li>
+          <li>
+            <Kbd>RH</Kbd> : acces a la gestion d'equipe, Qualiopi, briefs
+          </li>
+          <li>
+            <Kbd>Lecture seule</Kbd> : consultation uniquement, aucune modification
+          </li>
         </ul>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Fonctionnalites
-        </p>
+        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Fonctionnalites</p>
         <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li><strong>Permissions personnalisees</strong> : pour chaque admin, definir finement les droits (voir clients, editer projets, gerer CRM, etc.)</li>
-          <li><strong>Impersonation</strong> : se connecter en tant qu'un autre admin pour diagnostiquer un probleme</li>
-          <li><strong>2FA</strong> : authentification a deux facteurs activable par compte</li>
-          <li><strong>Journal d'audit</strong> : toutes les actions sont tracees (connexion, modification, suppression)</li>
+          <li>
+            <strong>Permissions personnalisees</strong> : pour chaque admin, definir finement les droits (voir clients,
+            editer projets, gerer CRM, etc.)
+          </li>
+          <li>
+            <strong>Impersonation</strong> : se connecter en tant qu'un autre admin pour diagnostiquer un probleme
+          </li>
+          <li>
+            <strong>2FA</strong> : desactivee sur cette instance (variable <Kbd>MFA_ENABLED</Kbd>)
+          </li>
+          <li>
+            <strong>Journal d'audit</strong> : toutes les actions sont tracees (connexion, modification, suppression)
+          </li>
         </ul>
         <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
           Acces : <Kbd>/admin/comptes-admin</Kbd>
@@ -323,11 +394,22 @@ const sections: GuideSection[] = [
     title: '11. Parametres',
     content: (
       <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li><strong>Profil</strong> : modifier nom, telephone, entreprise, site web</li>
-        <li><strong>Mot de passe</strong> : changer le mot de passe (ancien + nouveau + confirmation)</li>
-        <li><strong>Theme</strong> : basculer entre mode sombre et mode clair</li>
-        <li><strong>Notifications</strong> : configurer les notifications email et in-app (nouveaux messages, taches assignees, leads, tickets)</li>
-        <li><strong>Sauvegardes</strong> : exporter les donnees (clients, projets, factures) en format JSON ou CSV</li>
+        <li>
+          <strong>Profil</strong> : modifier nom, telephone, entreprise, site web
+        </li>
+        <li>
+          <strong>Mot de passe</strong> : changer le mot de passe (ancien + nouveau + confirmation)
+        </li>
+        <li>
+          <strong>Theme</strong> : basculer entre mode sombre et mode clair
+        </li>
+        <li>
+          <strong>Notifications</strong> : configurer les notifications email et in-app (nouveaux messages, taches
+          assignees, leads, tickets)
+        </li>
+        <li>
+          <strong>Sauvegardes</strong> : exporter les donnees (clients, projets, factures) en format JSON ou CSV
+        </li>
         <li>Les parametres sont propres a chaque compte admin</li>
       </ul>
     ),
@@ -337,8 +419,7 @@ const sections: GuideSection[] = [
 const AdminGuide = () => {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
-  const toggle = (id: string) =>
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }))
+  const toggle = (id: string) => setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }))
 
   const allOpen = sections.every((s) => openSections[s.id])
 
@@ -372,9 +453,7 @@ const AdminGuide = () => {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 24, color: 'var(--text-primary)' }}>
-              Guide d'utilisation — Admin
-            </h1>
+            <h1 style={{ margin: 0, fontSize: 24, color: 'var(--text-primary)' }}>Guide d'utilisation — Admin</h1>
             <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
               Toutes les fonctionnalites de l'espace administrateur Venio expliquees section par section.
             </p>
@@ -420,9 +499,8 @@ const AdminGuide = () => {
             lineHeight: 1.6,
           }}
         >
-          <strong style={{ color: 'var(--text-secondary)' }}>Besoin d'aide ?</strong>{' '}
-          Utilisez le bouton de ticket flottant en bas a droite pour signaler un probleme ou poser une question
-          a l'equipe technique.
+          <strong style={{ color: 'var(--text-secondary)' }}>Besoin d'aide ?</strong> Utilisez le bouton de ticket
+          flottant en bas a droite pour signaler un probleme ou poser une question a l'equipe technique.
         </div>
       </div>
     </div>

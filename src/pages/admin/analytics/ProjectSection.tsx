@@ -18,8 +18,12 @@ interface ProjectSectionProps {
 const ProjectSection: React.FC<ProjectSectionProps> = ({ data }) => {
   const totalProjects = Object.values(data.projectsByStatus).reduce((a, b) => a + b, 0)
   const totalTasks = Object.values(data.tasksByStatus).reduce((a, b) => a + b, 0)
+  // Les montants sont retirés en amont pour qui n'a pas accès à la facturation.
+  // On masque alors les tuiles concernées : afficher « 0 € » laisserait croire
+  // à un chiffre d'affaires nul plutôt qu'à une information non accessible.
+  const canSeeAmounts = data.totalRevenue !== null
   const revenueChange =
-    data.lastMonthRevenue > 0
+    data.lastMonthRevenue !== null && data.lastMonthRevenue > 0 && data.monthlyRevenue !== null
       ? Math.round(((data.monthlyRevenue - data.lastMonthRevenue) / data.lastMonthRevenue) * 100)
       : 0
 
@@ -39,19 +43,21 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({ data }) => {
             {data.overdueTaskCount} en retard
           </span>
         </div>
-        <div className="analytics-kpi">
-          <span className="analytics-kpi-label">CA Total</span>
-          <span className="analytics-kpi-value">{formatEur(data.totalRevenue)}</span>
-          <span className="analytics-kpi-sub">
-            Ce mois: {formatEur(data.monthlyRevenue)}
-            {revenueChange !== 0 && (
-              <span style={{ color: revenueChange > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
-                {revenueChange > 0 ? '+' : ''}
-                {revenueChange}%
-              </span>
-            )}
-          </span>
-        </div>
+        {canSeeAmounts && (
+          <div className="analytics-kpi">
+            <span className="analytics-kpi-label">CA Total</span>
+            <span className="analytics-kpi-value">{formatEur(data.totalRevenue ?? 0)}</span>
+            <span className="analytics-kpi-sub">
+              Ce mois: {formatEur(data.monthlyRevenue ?? 0)}
+              {revenueChange !== 0 && (
+                <span style={{ color: revenueChange > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
+                  {revenueChange > 0 ? '+' : ''}
+                  {revenueChange}%
+                </span>
+              )}
+            </span>
+          </div>
+        )}
         <div className="analytics-kpi">
           <span className="analytics-kpi-label">Clients</span>
           <span className="analytics-kpi-value">{data.clientCount}</span>
@@ -68,7 +74,9 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({ data }) => {
         <div className="analytics-kpi">
           <span className="analytics-kpi-label">Pipeline</span>
           <span className="analytics-kpi-value">{formatEur(data.leadStats.pipelineValue)}</span>
-          <span className="analytics-kpi-sub">Budget total: {formatEur(data.totalBudget)}</span>
+          {data.totalBudget !== null && (
+            <span className="analytics-kpi-sub">Budget total: {formatEur(data.totalBudget)}</span>
+          )}
         </div>
       </div>
 

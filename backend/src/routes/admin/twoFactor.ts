@@ -6,7 +6,14 @@ import { requireAdmin } from '../../middleware/role.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import AuditLog from '../../models/AuditLog.js'
-import { createRecoveryCodes, consumeRecoveryCode, createTotpSecret, graceEndsAt, verifyTotp } from '../../lib/mfa.js'
+import {
+  createRecoveryCodes,
+  consumeRecoveryCode,
+  createTotpSecret,
+  graceEndsAt,
+  isMfaEnabled,
+  verifyTotp,
+} from '../../lib/mfa.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { revokeSession, readSessionCookie, setSessionCookie } from '../../lib/session.js'
 
@@ -15,8 +22,25 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 
+/**
+ * Refuse l'enrôlement quand le second facteur est désactivé globalement :
+ * sans ce garde-fou on laisserait quelqu'un scanner un QR code pour un facteur
+ * que la connexion ne demandera jamais. La désactivation et la lecture du
+ * statut restent ouvertes, elles servent à revenir en arrière proprement.
+ */
+function requireMfaFeature(_req: Request, res: Response, next: NextFunction): void {
+  if (!isMfaEnabled()) {
+    res.status(409).json({
+      error: 'MFA_DISABLED',
+      message: 'La double authentification est désactivée sur cette instance.',
+    })
+    return
+  }
+  next()
+}
+
 // POST /api/admin/2fa/setup — Generate TOTP secret and QR code
-router.post('/setup', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/setup', requireMfaFeature, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await User.findById(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
@@ -51,7 +75,7 @@ router.post('/setup', async (req: Request, res: Response, next: NextFunction) =>
 })
 
 // POST /api/admin/2fa/verify — Verify TOTP code and enable 2FA
-router.post('/verify', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/verify', requireMfaFeature, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { code } = req.body
     if (!code) return res.status(400).json({ error: 'Code requis' })
@@ -202,7 +226,7 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const user = await User.findById(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
-    return res.json({ enabled: user.twoFactorEnabled })
+    return res.json({ enabled: user.twoFactorEnabled, enforced: isMfaEnabled() })
   } catch (err) {
     return next(err)
   }

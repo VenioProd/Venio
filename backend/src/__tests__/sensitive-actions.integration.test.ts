@@ -11,11 +11,15 @@ import AuditLog from '../models/AuditLog.js'
 let app: Express
 
 beforeAll(async () => {
+  // Ce module valide le garde-fou d'élévation MFA : on l'arme explicitement,
+  // l'instance étant livrée avec MFA_ENABLED=false.
+  process.env.MFA_ENABLED = 'true'
   await setupMongo()
   app = await createAdminTestApp()
 })
 
 afterAll(async () => {
+  delete process.env.MFA_ENABLED
   await teardownMongo()
 })
 

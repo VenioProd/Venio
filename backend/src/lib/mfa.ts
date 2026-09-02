@@ -6,7 +6,21 @@ export const PRIVILEGED_MFA_ROLES = ['SUPER_ADMIN', 'ADMIN'] as const
 const MFA_GRACE_PERIOD_DAYS = Math.max(1, Number(process.env.MFA_GRACE_PERIOD_DAYS || 7))
 const TOTP_BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
+/**
+ * Interrupteur global du second facteur, désactivé par défaut : la friction
+ * quotidienne l'emportait sur le gain de sécurité pour une équipe de cette
+ * taille. Toute la mécanique TOTP reste en place et les secrets déjà enrôlés
+ * sont conservés en base — poser MFA_ENABLED=true la réarme sans migration.
+ *
+ * Lu à chaud plutôt que figé au chargement du module, pour que les tests et
+ * un rechargement de configuration n'aient pas à réimporter le module.
+ */
+export function isMfaEnabled(): boolean {
+  return String(process.env.MFA_ENABLED ?? 'false').toLowerCase() === 'true'
+}
+
 export function requiresMfa(role: string): boolean {
+  if (!isMfaEnabled()) return false
   return (PRIVILEGED_MFA_ROLES as readonly string[]).includes(role)
 }
 

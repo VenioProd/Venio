@@ -14,6 +14,7 @@ vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
+  userHasPermission: async () => true,
 }))
 
 let app: Express

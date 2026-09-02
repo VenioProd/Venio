@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import requireMfa from './mfa.js'
 import User from '../models/User.js'
 
@@ -26,8 +26,29 @@ function findUser(twoFactorEnabled: boolean) {
 }
 
 describe('requireMfa middleware', () => {
+  // Ce module teste le mécanisme d'élévation lui-même : on l'arme explicitement,
+  // l'instance étant livrée avec MFA_ENABLED=false.
+  beforeAll(() => {
+    process.env.MFA_ENABLED = 'true'
+  })
+  afterAll(() => {
+    delete process.env.MFA_ENABLED
+  })
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('laisse tout passer sans consulter la base quand la MFA est désactivée', async () => {
+    delete process.env.MFA_ENABLED
+    const req = { user: { id: 'u1', role: 'SUPER_ADMIN' } } as Partial<Request> as Request
+    const res = response()
+    const next = vi.fn() as NextFunction
+
+    await requireMfa(req, res, next)
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(User.findById).not.toHaveBeenCalled()
+    process.env.MFA_ENABLED = 'true'
   })
 
   it('allows non-privileged roles without a step-up claim', async () => {

@@ -3,10 +3,12 @@ export interface AnalyticsData {
   projectsByPriority: Record<string, number>
   tasksByStatus: Record<string, number>
   tasksByPriority: Record<string, number>
-  totalRevenue: number
-  monthlyRevenue: number
-  lastMonthRevenue: number
-  totalBudget: number
+  // null quand l'utilisateur n'a pas view_billing : l'API retire les montants
+  // plutôt que de renvoyer 0, qui se lirait comme un chiffre d'affaires nul.
+  totalRevenue: number | null
+  monthlyRevenue: number | null
+  lastMonthRevenue: number | null
+  totalBudget: number | null
   clientCount: number
   activeClientCount: number
   projectsPerMonth: { _id: { year: number; month: number }; count: number }[]
