@@ -171,11 +171,16 @@ async function main(): Promise<void> {
   // Le mot de passe part par email s'il est demandé ; le jeton d'API, jamais.
   // Un PAT circulant par mail resterait valable indéfiniment dans une boîte,
   // sans le réflexe de changement qu'impose un mot de passe temporaire.
+  // sendAdminCredentials ne lève pas sur un échec SMTP : elle renvoie
+  // { sent: false, error }. Tester uniquement l'exception ferait passer un
+  // envoi refusé par le serveur pour un succès.
   let mailStatus = 'non demandé'
   if (process.argv.includes('--send-email')) {
     try {
-      await sendAdminCredentials({ to: email, name, email, password })
-      mailStatus = `envoyé à ${email}`
+      const result = await sendAdminCredentials({ to: email, name, email, password })
+      mailStatus = result.sent
+        ? `envoyé à ${email}`
+        : `ÉCHEC (${result.error ?? 'raison inconnue'}) — transmets le mot de passe à la main`
     } catch (err) {
       mailStatus = `ÉCHEC (${(err as Error).message}) — transmets le mot de passe à la main`
     }
