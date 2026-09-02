@@ -56,6 +56,24 @@ export async function requireSuperAdmin(req: Request, res: Response, next: NextF
   next()
 }
 
+/**
+ * Résout une permission pour l'utilisateur courant sans interrompre la requête.
+ * À utiliser quand un écran reste accessible mais qu'une partie de sa charge
+ * utile doit être masquée — typiquement le chiffre d'affaires du dashboard pour
+ * un admin dont la comptabilité a été retirée via deniedPermissions.
+ */
+export async function userHasPermission(req: Request, permission: Permission): Promise<boolean> {
+  if (!req.user) return false
+  if (req.user.role === 'SUPER_ADMIN') return true
+  const dbUser = await User.findById(req.user.id).select('grantedPermissions deniedPermissions').lean()
+  return hasPermissionResolved(
+    req.user.role as UserRole,
+    permission,
+    dbUser?.grantedPermissions ?? [],
+    dbUser?.deniedPermissions ?? [],
+  )
+}
+
 export function requirePermission(permission: Permission) {
   return async function permissionMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
     if (!req.user) {
@@ -69,17 +87,20 @@ export function requirePermission(permission: Permission) {
       return
     }
     // For other roles, check grantedPermissions/deniedPermissions from DB
-    User.findById(req.user.id).select('grantedPermissions deniedPermissions').then((dbUser) => {
-      const granted = dbUser?.grantedPermissions ?? []
-      const denied = dbUser?.deniedPermissions ?? []
-      if (!hasPermissionResolved(req.user!.role as UserRole, permission, granted, denied)) {
-        res.status(403).json({ error: 'Forbidden' })
-        return
-      }
-      next()
-    }).catch(() => {
-      res.status(500).json({ error: 'Internal server error' })
-    })
+    User.findById(req.user.id)
+      .select('grantedPermissions deniedPermissions')
+      .then((dbUser) => {
+        const granted = dbUser?.grantedPermissions ?? []
+        const denied = dbUser?.deniedPermissions ?? []
+        if (!hasPermissionResolved(req.user!.role as UserRole, permission, granted, denied)) {
+          res.status(403).json({ error: 'Forbidden' })
+          return
+        }
+        next()
+      })
+      .catch(() => {
+        res.status(500).json({ error: 'Internal server error' })
+      })
   }
 }
 
@@ -94,17 +115,22 @@ export function requireAnyPermission(permissions: Permission[] = []) {
       next()
       return
     }
-    User.findById(req.user.id).select('grantedPermissions deniedPermissions').then((dbUser) => {
-      const granted = dbUser?.grantedPermissions ?? []
-      const denied = dbUser?.deniedPermissions ?? []
-      const hasAny = permissions.some((perm) => hasPermissionResolved(req.user!.role as UserRole, perm, granted, denied))
-      if (!hasAny) {
-        res.status(403).json({ error: 'Forbidden' })
-        return
-      }
-      next()
-    }).catch(() => {
-      res.status(500).json({ error: 'Internal server error' })
-    })
+    User.findById(req.user.id)
+      .select('grantedPermissions deniedPermissions')
+      .then((dbUser) => {
+        const granted = dbUser?.grantedPermissions ?? []
+        const denied = dbUser?.deniedPermissions ?? []
+        const hasAny = permissions.some((perm) =>
+          hasPermissionResolved(req.user!.role as UserRole, perm, granted, denied),
+        )
+        if (!hasAny) {
+          res.status(403).json({ error: 'Forbidden' })
+          return
+        }
+        next()
+      })
+      .catch(() => {
+        res.status(500).json({ error: 'Internal server error' })
+      })
   }
 }

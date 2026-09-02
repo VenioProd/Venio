@@ -16,6 +16,7 @@ vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
+  userHasPermission: async () => true,
 }))
 
 let app: Express
@@ -28,8 +29,12 @@ beforeAll(async () => {
   app.use('/api/admin/inbox', inboxRoutes)
 })
 
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('GET /api/admin/inbox', () => {
   it('retourne items / counts / snoozedCount avec inbox vide', async () => {
@@ -58,10 +63,7 @@ describe('POST /api/admin/inbox/snooze', () => {
   })
 
   it('rejette si fields manquants', async () => {
-    await request(app)
-      .post('/api/admin/inbox/snooze')
-      .send({ itemType: 'decision' })
-      .expect(400)
+    await request(app).post('/api/admin/inbox/snooze').send({ itemType: 'decision' }).expect(400)
   })
 
   it('rejette si snoozedUntil pas une date valide', async () => {
@@ -73,22 +75,25 @@ describe('POST /api/admin/inbox/snooze', () => {
 
   it('upsert un snooze existant', async () => {
     const sourceId = new mongoose.Types.ObjectId().toString()
-    await request(app).post('/api/admin/inbox/snooze')
+    await request(app)
+      .post('/api/admin/inbox/snooze')
       .send({ itemType: 'decision', sourceId, snoozedUntil: new Date(Date.now() + 1000).toISOString() })
       .expect(200)
-    const res2 = await request(app).post('/api/admin/inbox/snooze')
+    const res2 = await request(app)
+      .post('/api/admin/inbox/snooze')
       .send({ itemType: 'decision', sourceId, snoozedUntil: new Date(Date.now() + 7200000).toISOString() })
       .expect(200)
     const InboxSnooze = (await import('../models/InboxSnooze.js')).default
     const all = await InboxSnooze.find({ itemType: 'decision', sourceId })
-    expect(all).toHaveLength(1)  // upsert = no duplicates
+    expect(all).toHaveLength(1) // upsert = no duplicates
   })
 })
 
 describe('DELETE /api/admin/inbox/snooze/:itemType/:sourceId', () => {
   it('supprime un snooze existant', async () => {
     const sourceId = new mongoose.Types.ObjectId().toString()
-    await request(app).post('/api/admin/inbox/snooze')
+    await request(app)
+      .post('/api/admin/inbox/snooze')
       .send({ itemType: 'decision', sourceId, snoozedUntil: new Date(Date.now() + 1000).toISOString() })
       .expect(200)
     await request(app).delete(`/api/admin/inbox/snooze/decision/${sourceId}`).expect(204)
@@ -107,10 +112,7 @@ describe('POST /api/admin/inbox/pin', () => {
   })
 
   it('rejette si fields manquants', async () => {
-    await request(app)
-      .post('/api/admin/inbox/pin')
-      .send({ refType: 'project' })
-      .expect(400)
+    await request(app).post('/api/admin/inbox/pin').send({ refType: 'project' }).expect(400)
   })
 })
 

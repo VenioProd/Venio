@@ -93,6 +93,9 @@ async function loginAs(role: RecipeRole) {
 }
 
 beforeAll(async () => {
+  // La recette vérifie la matrice RBAC *et* le parcours MFA : on arme le second
+  // facteur pour ce module, l'instance étant livrée avec MFA_ENABLED=false.
+  process.env.MFA_ENABLED = 'true'
   password = crypto.randomBytes(32).toString('base64url')
   passwordHash = await bcrypt.hash(password, 4)
   await setupMongo()
@@ -107,6 +110,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  delete process.env.MFA_ENABLED
   await teardownMongo()
 })
 

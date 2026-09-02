@@ -18,11 +18,14 @@ app.use('/api/admin/2fa', twoFactorRoutes)
 app.get('/protected', auth, (req, res) => res.json({ userId: req.user!.id }))
 
 beforeAll(async () => {
+  // Le confinement à l'enrôlement n'existe que MFA armée.
+  process.env.MFA_ENABLED = 'true'
   process.env.NODE_ENV = 'test'
   await setupMongo()
 })
 
 afterAll(async () => {
+  delete process.env.MFA_ENABLED
   await teardownMongo()
 })
 

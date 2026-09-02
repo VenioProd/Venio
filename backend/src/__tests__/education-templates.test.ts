@@ -26,6 +26,7 @@ vi.mock('../middleware/role.js', () => ({
   requireAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requireSuperAdmin: (_req: Request, _res: Response, next: NextFunction) => next(),
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
+  userHasPermission: async () => true,
   requireAnyPermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
   default: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }))
@@ -81,10 +82,7 @@ describe('education templates', () => {
   })
 
   it('rejette un kind invalide à la création', async () => {
-    const res = await request(app)
-      .post('/api/admin/education/templates')
-      .send({ kind: 'oops', name: 'X' })
-      .expect(400)
+    const res = await request(app).post('/api/admin/education/templates').send({ kind: 'oops', name: 'X' }).expect(400)
     expect(res.body.error).toMatch(/kind/i)
   })
 
@@ -99,7 +97,10 @@ describe('education templates', () => {
   it('filtre par kind', async () => {
     await request(app).post('/api/admin/education/templates').send({ kind: 'note', name: 'A', body: {} }).expect(201)
     await request(app).post('/api/admin/education/templates').send({ kind: 'session', name: 'B', body: {} }).expect(201)
-    await request(app).post('/api/admin/education/templates').send({ kind: 'assignment', name: 'C', body: {} }).expect(201)
+    await request(app)
+      .post('/api/admin/education/templates')
+      .send({ kind: 'assignment', name: 'C', body: {} })
+      .expect(201)
 
     const noteOnly = await request(app).get('/api/admin/education/templates?kind=note').expect(200)
     expect(noteOnly.body.total).toBe(1)
@@ -111,10 +112,7 @@ describe('education templates', () => {
 
   it('isole les templates par owner', async () => {
     currentUserId = OWNER_ID
-    await request(app)
-      .post('/api/admin/education/templates')
-      .send({ kind: 'note', name: 'Mine', body: {} })
-      .expect(201)
+    await request(app).post('/api/admin/education/templates').send({ kind: 'note', name: 'Mine', body: {} }).expect(201)
 
     currentUserId = OTHER_ID
     const otherList = await request(app).get('/api/admin/education/templates').expect(200)
@@ -143,17 +141,12 @@ describe('education notes — backlinks (VENIO-31)', () => {
       .post('/api/admin/education/notes')
       .send({ title: 'Idées atelier', blocks: [], links: [{ type: 'class', refId: classId }] })
       .expect(201)
-    await request(app)
-      .post('/api/admin/education/notes')
-      .send({ title: 'Note libre', blocks: [] })
-      .expect(201)
+    await request(app).post('/api/admin/education/notes').send({ title: 'Note libre', blocks: [] }).expect(201)
 
-    const linked = await request(app)
-      .get(`/api/admin/education/notes?linkType=class&linkId=${classId}`)
-      .expect(200)
+    const linked = await request(app).get(`/api/admin/education/notes?linkType=class&linkId=${classId}`).expect(200)
     expect(linked.body.total).toBe(2)
     expect(linked.body.notes.map((n: { title: string }) => n.title)).toEqual(
-      expect.arrayContaining(['Plan cours', 'Idées atelier'])
+      expect.arrayContaining(['Plan cours', 'Idées atelier']),
     )
 
     const allNotes = await request(app).get('/api/admin/education/notes').expect(200)
@@ -161,9 +154,7 @@ describe('education notes — backlinks (VENIO-31)', () => {
   })
 
   it('rejette un linkId invalide silencieusement (ne crash pas)', async () => {
-    const r = await request(app)
-      .get('/api/admin/education/notes?linkType=class&linkId=not-an-id')
-      .expect(200)
+    const r = await request(app).get('/api/admin/education/notes?linkType=class&linkId=not-an-id').expect(200)
     expect(r.body.total).toBe(0)
   })
 })

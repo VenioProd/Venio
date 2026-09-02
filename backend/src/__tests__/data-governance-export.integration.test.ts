@@ -10,6 +10,8 @@ import AuditLog from '../models/AuditLog.js'
 let app: Express
 
 beforeAll(async () => {
+  // Ce module atteste le step-up MFA : on l'arme explicitement.
+  process.env.MFA_ENABLED = 'true'
   await setupMongo()
   const { default: educationRoutes } = await import('../routes/admin/education/index.js')
   app = express()
@@ -18,6 +20,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  delete process.env.MFA_ENABLED
   await teardownMongo()
 })
 
@@ -38,7 +41,9 @@ async function sessionCookie(steppedUp = true): Promise<string> {
   return `venio_session=${token}`
 }
 
-async function seedEducationExport(cookie: string): Promise<{ classId: string; assignmentId: string; sessionId: string }> {
+async function seedEducationExport(
+  cookie: string,
+): Promise<{ classId: string; assignmentId: string; sessionId: string }> {
   const klass = await request(app)
     .post('/api/admin/education/classes')
     .set('Cookie', cookie)

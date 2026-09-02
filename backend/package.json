@@ -13,6 +13,8 @@
     "cleanup:demo:dry": "tsx src/scripts/cleanupDemoData.ts --dry-run",
     "accounting:migrate-billing": "tsx src/scripts/migrateExistingBilling.ts",
     "accounting:migrate-billing:dry": "tsx src/scripts/migrateExistingBilling.ts --dry-run",
+    "provision:consultant": "tsx src/scripts/provisionExternalConsultant.ts",
+    "provision:consultant:dry": "tsx src/scripts/provisionExternalConsultant.ts --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

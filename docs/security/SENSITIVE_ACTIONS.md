@@ -25,6 +25,12 @@ actions avec `SESSION` exigent une session ayant réalisé le step-up MFA dans l
 15 dernières minutes. La révélation de secret outil conserve un TOTP présenté à
 l'action (`totpCode`), qui est vérifié par le garde-fou central.
 
+> **Second facteur désactivé.** L'instance tourne avec `MFA_ENABLED=false` : le
+> step-up `SESSION` est satisfait d'office et la confirmation typée devient le
+> seul rempart devant ces actions. La confirmation, le journal d'audit et les
+> alertes aux super admins restent actifs. Poser `MFA_ENABLED=true` réarme le
+> step-up sans autre changement.
+
 Sur succès 2xx, une entrée `SENSITIVE_ACTION_EXECUTED` est ajoutée au journal
 d'audit. Elle contient l'identifiant de politique, le niveau, le chemin et la
 méthode ; elle ne contient jamais le corps de requête ni un secret. Certaines

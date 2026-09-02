@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requireSuperAdmin } from '../../middleware/role.js'
+import { requireAdmin, requireSuperAdmin, userHasPermission } from '../../middleware/role.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import Task from '../../models/Task.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
@@ -104,13 +105,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .populate('client', 'name')
       .select('name status priority client updatedAt')
 
+    // Les montants ne suivent pas la permission d'accès au dashboard : un admin
+    // dont la facturation a été retirée voit la vue business, jamais le CA.
+    const canSeeAmounts = await userHasPermission(req, PERMISSIONS.VIEW_BILLING)
+
     return res.json({
       myTasks,
       myBriefs,
       overdueTasks,
       tasksByStatus,
       activeProjectCount,
-      totalRevenue: monthlyRevenue[0]?.total || 0,
+      totalRevenue: canSeeAmounts ? monthlyRevenue[0]?.total || 0 : null,
+      // Le pipeline agrège des budgets de leads, pas du facturé : il relève de
+      // view_crm et reste visible pour qui travaille les affaires en cours.
       pipelineValue: pipelineValue[0]?.total || 0,
       pendingDecisionCount,
       staleProjectCount,
