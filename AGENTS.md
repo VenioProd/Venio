@@ -101,7 +101,8 @@ testers walk through. Everything the admin UI can do is reachable here:
 Notes that will save you a round trip:
 
 - **You can test, too.** `POST /beta/scenarios/:id/runs` records _your_ verdict
-  (`WORKS` / `BROKEN` / `TO_OPTIMIZE`), attributed to the system account. Posting
+  (`WORKS` / `BROKEN` / `TO_OPTIMIZE` / `BLOCKED` when you could not run it at
+  all), attributed to the system account. Posting
   again revises that verdict instead of adding a second one — a `200` means you
   revised, a `201` means it was new.
 - **Screenshots go in as base64** (`{ filename, contentBase64 }`), like documents.
