@@ -50,7 +50,7 @@ export default function BetaTesterSpace() {
 
   // La page est atteignable sans compte : on la tient hors des moteurs de
   // recherche, quel que soit l'état de chargement.
-  const seo = <SEO title="Beta test — Venio" description="Espace de test réservé aux testeurs invités." noindex />
+  const seo = <SEO title="Beta test" description="Espace de test réservé aux testeurs invités." noindex />
 
   if (loading)
     return (
