@@ -47,6 +47,8 @@
     "MANAGE_EXTERNAL_SOURCES": "manage_external_sources",
     "VIEW_DEV": "view_dev",
     "MANAGE_DEV": "manage_dev",
+    "VIEW_BETA": "view_beta",
+    "MANAGE_BETA": "manage_beta",
     "VIEW_EDUCATION": "view_education",
     "MANAGE_EDUCATION": "manage_education",
     "VIEW_WEBHOOKS": "view_webhooks",
@@ -84,6 +86,8 @@
       "manage_external_sources",
       "view_dev",
       "manage_dev",
+      "manage_beta",
+      "view_beta",
       "view_education",
       "manage_education",
       "view_change_requests",
@@ -116,6 +120,8 @@
       "export_fec",
       "view_dev",
       "manage_dev",
+      "manage_beta",
+      "view_beta",
       "view_change_requests",
       "manage_change_requests"
     ],
@@ -143,6 +149,8 @@
       "manage_vat",
       "view_dev",
       "manage_dev",
+      "manage_beta",
+      "view_beta",
       "view_change_requests",
       "manage_change_requests"
     ],
@@ -197,6 +205,7 @@
       "view_tickets",
       "create_tickets",
       "view_dev",
+      "view_beta",
       "view_change_requests"
     ],
     "STAGIAIRE": [
@@ -389,6 +398,14 @@
       "screen": "/admin/dev",
       "label": "Dev workspace",
       "permission": "view_dev",
+      "roles": []
+    },
+    {
+      "id": "beta",
+      "section": "Suivi",
+      "screen": "/admin/beta",
+      "label": "Beta tests",
+      "permission": "view_beta",
       "roles": []
     },
     {
