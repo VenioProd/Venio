@@ -16,6 +16,7 @@ import {
   recordIssueEvent,
   validateIssueReferences,
 } from '../../../lib/dev/issueMutations.js'
+import { applyIssueResolutionToBetaRuns } from '../../../lib/beta/promote.js'
 
 const router = express.Router()
 
@@ -303,6 +304,12 @@ router.patch(
           summary: `${issue.identifier} ${oldStatus} → ${issue.status}`,
           metadata: { from: oldStatus, to: issue.status },
         })
+        // Une issue née d'un beta test referme la boucle : les retours qu'elle
+        // couvre passent en « corrigé » et leur démarche redemande une
+        // validation. Seul DONE compte — une issue annulée n'a rien réparé.
+        if (issue.status === 'DONE') {
+          await applyIssueResolutionToBetaRuns(String(issue._id))
+        }
       }
       if (oldPriority !== issue.priority) {
         await recordIssueEvent({

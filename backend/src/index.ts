@@ -66,6 +66,8 @@ import adminAccountingRoutes from './routes/admin/accounting/index.js'
 import adminAgentTokenRoutes from './routes/admin/agentTokens.js'
 import adminWebhookRoutes from './routes/admin/webhooks.js'
 import adminDevRoutes from './routes/admin/dev/index.js'
+import adminBetaRoutes from './routes/admin/beta/index.js'
+import betaTesterRoutes from './routes/beta/index.js'
 import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
@@ -338,6 +340,11 @@ app.use('/api/admin/agent-tokens', auth, requireMfa, adminAgentTokenRoutes)
 
 // Dev workspace (suivi développement type Linear, séparé de Projets clients).
 app.use('/api/admin/dev', adminDevRoutes)
+
+// Espace beta tests : pilotage côté équipe, et surface publique pour les
+// testeurs invités, authentifiée par le seul jeton porté par leur lien.
+app.use('/api/admin/beta', adminBetaRoutes)
+app.use('/api/beta', betaTesterRoutes)
 app.use('/api/admin/education', adminEducationRoutes)
 
 // Routes client pour le contenu des projets

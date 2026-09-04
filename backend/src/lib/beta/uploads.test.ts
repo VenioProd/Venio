@@ -7,6 +7,8 @@ import {
   detectImageMimeType,
 } from './uploads.js'
 
+type Refusal = { ok: false; reason: string }
+
 const png = () => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64)])
 const jpeg = () => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(64)])
 const gif = () => Buffer.concat([Buffer.from('GIF89a', 'latin1'), Buffer.alloc(64)])
@@ -54,7 +56,7 @@ describe('checkAttachmentQuota', () => {
   })
 
   it('refuse une capture trop lourde', () => {
-    const result = checkAttachmentQuota({ ...ok, incomingBytes: BETA_MAX_ATTACHMENT_BYTES + 1 })
+    const result = checkAttachmentQuota({ ...ok, incomingBytes: BETA_MAX_ATTACHMENT_BYTES + 1 }) as Refusal
     expect(result.ok).toBe(false)
     expect(result.reason).toMatch(/volumineux/i)
   })
@@ -64,7 +66,7 @@ describe('checkAttachmentQuota', () => {
       runAttachmentCount: BETA_MAX_ATTACHMENTS_PER_RUN,
       testerTotalBytes: 0,
       incomingBytes: 1000,
-    })
+    }) as Refusal
     expect(result.ok).toBe(false)
     expect(result.reason).toMatch(/pieces jointes|pièces jointes/i)
   })
@@ -74,7 +76,7 @@ describe('checkAttachmentQuota', () => {
       runAttachmentCount: 0,
       testerTotalBytes: BETA_MAX_BYTES_PER_TESTER,
       incomingBytes: 1000,
-    })
+    }) as Refusal
     expect(result.ok).toBe(false)
     expect(result.reason).toMatch(/quota/i)
   })

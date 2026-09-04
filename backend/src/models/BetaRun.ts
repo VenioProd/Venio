@@ -21,12 +21,16 @@ export interface BetaRunContext {
 }
 
 export interface BetaAttachment {
+  _id: mongoose.Types.ObjectId
   originalName: string
   storagePath: string
   mimeType: string
   size: number
   uploadedAt: Date
 }
+
+/** Une pièce jointe avant persistance : Mongoose lui attribue son `_id`. */
+export type NewBetaAttachment = Omit<BetaAttachment, '_id'>
 
 export const betaAttachmentSchema = new Schema<BetaAttachment>(
   {

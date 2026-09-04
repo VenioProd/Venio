@@ -32,6 +32,8 @@ const notificationSchema = new mongoose.Schema<INotification>(
         // ── Webhooks sortants ──
         'WEBHOOK_ENDPOINT_DISABLED',
         'WEBHOOK_TEST',
+        // ── Beta tests ──
+        'BETA_BLOCKING_FEEDBACK',
       ],
       required: true,
     },

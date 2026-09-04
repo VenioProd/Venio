@@ -31,6 +31,8 @@ export type Permission =
   | 'manage_tickets'
   | 'view_dev'
   | 'manage_dev'
+  | 'view_beta'
+  | 'manage_beta'
   | 'view_education'
   | 'manage_education'
   | 'view_webhooks'

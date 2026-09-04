@@ -58,6 +58,8 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   // ── Webhooks sortants ──
   'WEBHOOK_ENDPOINT_DISABLED',
   'WEBHOOK_TEST',
+  // ── Beta tests ──
+  'BETA_BLOCKING_FEEDBACK',
 ]
 
 export function defaultChannelPrefs(): ChannelPreferences {
