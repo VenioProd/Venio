@@ -7,6 +7,7 @@ import BetaScenario from '../../../models/BetaScenario.js'
 import BetaTester from '../../../models/BetaTester.js'
 import BetaRun from '../../../models/BetaRun.js'
 import { computeCoverage } from '../../../lib/beta/summary.js'
+import { buildCampaignReportData, renderCampaignReportPdf } from '../../../lib/beta/report.js'
 import { isObjectId, loadCampaign, parseDate, readString } from './shared.js'
 
 const router = express.Router()
@@ -163,6 +164,27 @@ router.patch(
 
       await campaign.save()
       return res.json({ campaign })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// GET /api/admin/beta/campaigns/:campaignId/report — rapport à archiver ou
+// à remettre au client.
+router.get(
+  '/campaigns/:campaignId/report',
+  requirePermission(PERMISSIONS.VIEW_BETA),
+  loadCampaign,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await buildCampaignReportData(String(req.betaCampaign!._id))
+      const buffer = await renderCampaignReportPdf(data)
+
+      const safeName = data.campaign.name.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüÿçœæ\s-]/gi, '').replace(/\s+/g, '_')
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="Beta_${safeName}.pdf"`)
+      return res.send(buffer)
     } catch (err) {
       return next(err)
     }
