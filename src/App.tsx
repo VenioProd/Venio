@@ -109,6 +109,9 @@ const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
 const Webhooks = lazy(() => import('./pages/admin/Webhooks'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
+const BetaWorkspace = lazy(() => import('./pages/admin/beta'))
+const BetaCampaignCockpit = lazy(() => import('./pages/admin/beta/CampaignCockpit'))
+const BetaTesterSpace = lazy(() => import('./pages/beta'))
 const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
 const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
 const EducationWorkspace = lazy(() => import('./pages/admin/education'))
@@ -204,6 +207,10 @@ function App() {
                 <Route path="/confidentialite" element={<Confidentialite />} />
                 <Route path="/questionnaire/creer/:token" element={<PublicQuestionnaireBuilder />} />
                 <Route path="/questionnaire/:token" element={<PublicQuestionnaire />} />
+
+                {/* Espace beta tests : le jeton du lien porte l'identité du
+                    testeur, il n'y a donc ni compte ni session à créer. */}
+                <Route path="/beta/:token" element={<BetaTesterSpace />} />
 
                 {/* Espace client */}
                 <Route path="/espace-client/login" element={<ClientLogin />} />
@@ -459,6 +466,22 @@ function App() {
                     element={
                       <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
                         <DevProjectCockpit />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="beta"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_BETA} redirectTo="/admin">
+                        <BetaWorkspace />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="beta/campaigns/:campaignId"
+                    element={
+                      <RequirePermission permission={PERMISSIONS.VIEW_BETA} redirectTo="/admin">
+                        <BetaCampaignCockpit />
                       </RequirePermission>
                     }
                   />

@@ -54,6 +54,7 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   education: 'Contenu & outils',
   'internal-projects': 'Contenu & outils',
   dev: 'Contenu & outils',
+  beta: 'Contenu & outils',
   accounting: 'Finance & conformité',
   qualiopi: 'Finance & conformité',
   audit: 'Finance & conformité',

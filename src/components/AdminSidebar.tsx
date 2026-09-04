@@ -42,6 +42,7 @@ import {
   Webhook,
   X,
   type LucideIcon,
+  FlaskConical,
 } from 'lucide-react'
 import UserAvatar from './UserAvatar'
 import { apiFetch } from '../lib/api'
@@ -86,6 +87,7 @@ const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
   audit: Shield,
   'internal-projects': FolderGit2,
   dev: GitBranch,
+  beta: FlaskConical,
   education: GraduationCap,
   subsidiaries: Building2,
   arrow: Crosshair,

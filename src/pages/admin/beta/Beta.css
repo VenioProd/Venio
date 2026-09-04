@@ -1,0 +1,813 @@
+/* Espace beta tests — même densité que le dev workspace. Scope: .beta-* */
+
+.beta-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 40px;
+  color: var(--ink-body);
+}
+
+/* ── En-tête ── */
+
+.beta-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.beta-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-strong);
+}
+
+.beta-header-title h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.beta-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.beta-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-dim);
+  text-decoration: none;
+}
+
+.beta-back:hover {
+  color: var(--ink-body);
+  border-color: var(--line-vivid);
+}
+
+.beta-banner {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  font-size: 12.5px;
+}
+
+/* ── Onglets ── */
+
+.beta-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.beta-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.beta-tab:hover {
+  color: var(--ink-body);
+}
+
+.beta-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.beta-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* ── Blocs génériques ── */
+
+.beta-muted {
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.beta-hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.beta-error {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent);
+  color: var(--ink-body);
+  font-size: 12.5px;
+}
+
+.beta-empty {
+  padding: 32px 0;
+  text-align: center;
+}
+
+.beta-panel {
+  min-height: 200px;
+}
+
+.beta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.beta-btn:hover:not(:disabled) {
+  border-color: var(--line-vivid);
+  background: color-mix(in srgb, var(--ink-body) 6%, transparent);
+}
+
+.beta-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.beta-btn-primary {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.beta-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.beta-btn-ghost {
+  border-color: transparent;
+  color: var(--ink-dim);
+  padding: 4px 8px;
+}
+
+.beta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.beta-chip-warn {
+  border-color: color-mix(in srgb, #f59e0b 55%, transparent);
+  color: #f59e0b;
+}
+
+.beta-chip-fail {
+  border-color: color-mix(in srgb, #ef4444 55%, transparent);
+  color: #ef4444;
+}
+
+.beta-chip-link {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  color: var(--primary);
+}
+
+.beta-status {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-dim);
+}
+
+.beta-status-running {
+  border-color: color-mix(in srgb, #22c55e 55%, transparent);
+  color: #22c55e;
+}
+
+.beta-status-closed {
+  color: var(--ink-faint);
+}
+
+.beta-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-dim);
+}
+
+.beta-badge-ok {
+  border-color: color-mix(in srgb, #22c55e 55%, transparent);
+  color: #22c55e;
+}
+
+.beta-badge-fail {
+  border-color: color-mix(in srgb, #ef4444 55%, transparent);
+  color: #ef4444;
+}
+
+.beta-badge-warn {
+  border-color: color-mix(in srgb, #f59e0b 55%, transparent);
+  color: #f59e0b;
+}
+
+.beta-badge-retest {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  color: var(--primary);
+}
+
+/* ── Liste des campagnes ── */
+
+.beta-campaign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beta-campaign-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.12s ease;
+}
+
+.beta-campaign-card:hover {
+  border-color: var(--line-vivid);
+}
+
+.beta-campaign-main h2 {
+  margin: 4px 0 2px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.beta-campaign-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.beta-campaign-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Grille de couverture ── */
+
+.beta-coverage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.beta-coverage-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.beta-coverage-ratio {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-coverage-scroll {
+  overflow-x: auto;
+}
+
+.beta-coverage-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+}
+
+.beta-coverage-table th,
+.beta-coverage-table td {
+  border: 1px solid var(--line-soft);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.beta-coverage-corner,
+.beta-coverage-tester {
+  color: var(--ink-dim);
+  font-weight: 500;
+  font-size: 11.5px;
+}
+
+.beta-coverage-scenario {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  color: var(--ink-body);
+}
+
+.beta-disputed {
+  display: inline-flex;
+}
+
+.beta-coverage-scenario svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.beta-coverage-id {
+  color: var(--ink-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-coverage-cell {
+  width: 1%;
+  text-align: center;
+}
+
+.beta-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--line-vivid);
+}
+
+.beta-dot-ok {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+.beta-dot-fail {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.beta-dot-warn {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.beta-dot-empty {
+  background: transparent;
+}
+
+.beta-coverage-empty {
+  padding: 32px 0;
+  text-align: center;
+}
+
+/* ── File des retours ── */
+
+.beta-findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.beta-finding {
+  border: 1px solid var(--line-soft);
+  border-left-width: 2px;
+  background: var(--surface-raised);
+}
+
+.beta-finding-fail {
+  border-left-color: #ef4444;
+}
+
+.beta-finding-warn {
+  border-left-color: #f59e0b;
+}
+
+.beta-finding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.beta-finding-title {
+  font-weight: 500;
+  color: var(--ink-strong);
+}
+
+.beta-finding-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.beta-finding-detail {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.beta-finding-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+
+.beta-finding-facts dt {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+}
+
+.beta-finding-facts dd {
+  margin: 0;
+}
+
+.beta-ua {
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.beta-finding-body {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.beta-shots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.beta-shots img {
+  max-height: 150px;
+  border: 1px solid var(--line-strong);
+  display: block;
+}
+
+.beta-finding-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Fil de discussion ── */
+
+.beta-thread {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.beta-message header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  margin-bottom: 3px;
+}
+
+.beta-message p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.beta-thread form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.beta-thread textarea {
+  width: 100%;
+}
+
+.beta-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* ── Démarches ── */
+
+.beta-scenarios-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.beta-inline-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.beta-scenario-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beta-scenario {
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-raised);
+}
+
+.beta-scenario header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.beta-scenario h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-strong);
+  flex: 1 1 auto;
+}
+
+.beta-scenario-id {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-scenario-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.beta-steps {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.beta-scenario-editor,
+.beta-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.beta-scenario-editor {
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+  margin-bottom: 10px;
+}
+
+.beta-scenario-editor label,
+.beta-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.beta-steps-editor {
+  border: 1px solid var(--line-soft);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.beta-steps-editor legend {
+  font-size: 12px;
+  color: var(--ink-dim);
+  padding: 0 4px;
+}
+
+.beta-step-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.beta-step-order {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Testeurs ── */
+
+.beta-invite {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.beta-tester-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.beta-tester {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-raised);
+}
+
+.beta-tester.revoked {
+  opacity: 0.55;
+}
+
+.beta-tester-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.beta-tester-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.beta-fresh-link {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 1px dashed var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+.beta-fresh-link code {
+  font-size: 11.5px;
+  word-break: break-all;
+  flex: 1 1 240px;
+}
+
+.beta-fresh-link p {
+  flex-basis: 100%;
+}
+
+/* ── Modale ── */
+
+.beta-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+}
+
+.beta-modal {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+}
+
+.beta-modal h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.beta-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.beta-workspace input,
+.beta-workspace select,
+.beta-workspace textarea {
+  padding: 6px 9px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-body);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.beta-workspace input:focus,
+.beta-workspace select:focus,
+.beta-workspace textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+@media (max-width: 720px) {
+  .beta-workspace {
+    padding: 16px 14px 32px;
+  }
+
+  .beta-tester {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-step-row {
+    grid-template-columns: 20px 1fr auto;
+  }
+}

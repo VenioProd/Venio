@@ -1,0 +1,452 @@
+/* Surface testeur — public, hors coquille admin. Lecture simple, cible large,
+   utilisable au pouce sur mobile. Scope: .bt-* */
+
+.bt-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 18px 64px;
+  color: var(--text-primary, #1a1a2e);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.bt-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.bt-hello {
+  margin: 0;
+  color: var(--text-muted, #666);
+  font-size: 14px;
+}
+
+.bt-header h1 {
+  margin: 2px 0 8px;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.bt-desc {
+  margin: 0 0 12px;
+  color: var(--text-secondary, #333);
+}
+
+.bt-hint {
+  margin: 4px 0 0;
+  color: var(--text-muted, #666);
+  font-size: 13px;
+}
+
+.bt-header-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.bt-progress {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bt-progress-count {
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-progress-bar {
+  flex-basis: 100%;
+  height: 4px;
+  background: var(--border-color, #ddd);
+}
+
+.bt-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary, #0ea5e9);
+  transition: width 0.25s ease;
+}
+
+.bt-gate {
+  padding: 48px 0;
+  text-align: center;
+}
+
+/* ── Carte de démarche ── */
+
+.bt-card {
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color, #ddd);
+  background: var(--bg-card, #fff);
+}
+
+.bt-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bt-card-id {
+  color: var(--text-muted, #666);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-card h2 {
+  margin: 2px 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bt-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color, #ddd);
+  color: var(--text-muted, #666);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.bt-badge-ok {
+  border-color: #22c55e;
+  color: #16a34a;
+}
+
+/* ── Étapes ── */
+
+.bt-steps {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  counter-reset: bt-step;
+}
+
+.bt-steps li {
+  counter-increment: bt-step;
+  padding: 7px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 60%, transparent);
+}
+
+.bt-steps label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.bt-steps label::before {
+  content: counter(bt-step) '.';
+  color: var(--text-muted, #666);
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+}
+
+.bt-steps input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.bt-steps em {
+  color: var(--text-muted, #666);
+  font-style: normal;
+}
+
+/* ── Verdicts ── */
+
+.bt-verdicts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bt-verdict {
+  padding: 13px 12px;
+  border: 1.5px solid var(--border-color, #ddd);
+  background: transparent;
+  color: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.bt-verdict:hover {
+  border-color: currentColor;
+}
+
+.bt-verdict-ok.active {
+  border-color: #22c55e;
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #15803d;
+}
+
+.bt-verdict-fail.active {
+  border-color: #ef4444;
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #b91c1c;
+}
+
+.bt-verdict-warn.active {
+  border-color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  color: #b45309;
+}
+
+/* ── Formulaire de retour ── */
+
+.bt-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-color, #ddd);
+}
+
+.bt-detail label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.bt-detail fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bt-detail legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.bt-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.bt-choices-inline {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.bt-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-color, #ddd);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bt-choice strong {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.bt-choice span {
+  color: var(--text-muted, #666);
+  font-size: 12px;
+}
+
+.bt-choice.active {
+  border-color: var(--primary, #0ea5e9);
+  background: color-mix(in srgb, var(--primary, #0ea5e9) 10%, transparent);
+}
+
+.bt-dropzone {
+  padding: 14px;
+  border: 1px dashed var(--border-color, #ddd);
+  text-align: center;
+}
+
+.bt-shots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bt-shots img {
+  max-height: 130px;
+  border: 1px solid var(--border-color, #ddd);
+}
+
+.bt-send {
+  width: 100%;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+.bt-error {
+  margin: 10px 0 0;
+  padding: 8px 11px;
+  border-left: 2px solid #ef4444;
+  background: color-mix(in srgb, #ef4444 8%, transparent);
+  font-size: 13.5px;
+}
+
+/* ── Ce que les autres ont signalé ── */
+
+.bt-others {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color, #ddd);
+}
+
+.bt-others ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bt-others li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 60%, transparent);
+  font-size: 14px;
+}
+
+.bt-others-title {
+  flex: 1 1 200px;
+}
+
+/* ── Fils de discussion ── */
+
+.bt-thread {
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border-color, #ddd) 70%, transparent);
+}
+
+.bt-thread header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.bt-message {
+  margin: 0 0 8px;
+  padding: 9px 12px;
+  background: var(--bg-secondary, #f5f5f7);
+  font-size: 14px;
+}
+
+.bt-message-me {
+  background: color-mix(in srgb, var(--primary, #0ea5e9) 8%, transparent);
+}
+
+.bt-message-author {
+  display: block;
+  color: var(--text-muted, #666);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.bt-thread form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+/* ── Contrôles ── */
+
+.bt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 15px;
+  border: 1px solid var(--border-color, #ddd);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.bt-btn:hover:not(:disabled) {
+  border-color: currentColor;
+}
+
+.bt-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bt-btn-primary {
+  border-color: var(--primary, #0ea5e9);
+  color: var(--primary, #0ea5e9);
+}
+
+.bt-btn-small {
+  padding: 5px 10px;
+  font-size: 13px;
+}
+
+.bt-shell input,
+.bt-shell select,
+.bt-shell textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border-color, #ddd);
+  background: var(--bg-secondary, #fff);
+  color: inherit;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.bt-shell input:focus,
+.bt-shell select:focus,
+.bt-shell textarea:focus {
+  outline: 2px solid var(--primary, #0ea5e9);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+@media (max-width: 560px) {
+  .bt-shell {
+    padding: 20px 14px 48px;
+  }
+
+  .bt-verdicts {
+    grid-template-columns: 1fr;
+  }
+}
