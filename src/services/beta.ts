@@ -45,6 +45,8 @@ export interface BetaScenario {
 export interface BetaTester {
   _id: string
   campaign: string
+  /** Vrai quand le testeur est un membre de l'équipe qui s'est déclaré. */
+  isTeamMember?: boolean
   name: string
   email: string
   invitedAt: string
@@ -196,6 +198,16 @@ export function inviteTester(campaignId: string, data: { name: string; email: st
   return apiFetch<{ tester: BetaTester; token: string }>(`${BASE}/campaigns/${campaignId}/testers`, {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Inscrit le membre connecté comme testeur : nom et adresse viennent de son
+ * compte. Le lien renvoyé n'est lisible qu'ici.
+ */
+export function joinCampaignAsTester(campaignId: string) {
+  return apiFetch<{ tester: BetaTester; token: string }>(`${BASE}/campaigns/${campaignId}/testers/me`, {
+    method: 'POST',
   })
 }
 

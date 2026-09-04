@@ -129,7 +129,12 @@ router.get(
           })),
       })
 
-      return res.json({ campaign, scenarios, testers, coverage })
+      return res.json({
+        campaign,
+        scenarios,
+        testers: testers.map((tester) => ({ ...tester, isTeamMember: Boolean(tester.user) })),
+        coverage,
+      })
     } catch (err) {
       return next(err)
     }

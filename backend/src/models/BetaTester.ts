@@ -3,6 +3,9 @@ import mongoose, { Schema, Document } from 'mongoose'
 export interface IBetaTester extends Document {
   _id: mongoose.Types.ObjectId
   campaign: mongoose.Types.ObjectId
+  // Renseigné quand un membre de l'équipe s'est déclaré testeur lui-même :
+  // il garde son compte, et son passage se lit comme celui d'un interne.
+  user: mongoose.Types.ObjectId | null
   name: string
   email: string
   // Empreinte SHA-256 du secret porté par le lien. Le secret lui-même n'est
@@ -19,6 +22,7 @@ export interface IBetaTester extends Document {
 const betaTesterSchema = new Schema<IBetaTester>(
   {
     campaign: { type: Schema.Types.ObjectId, ref: 'BetaCampaign', required: true, index: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     email: { type: String, required: true, trim: true, lowercase: true, maxlength: 200 },
     tokenHash: { type: String, required: true, index: true },

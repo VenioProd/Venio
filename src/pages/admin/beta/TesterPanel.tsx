@@ -1,6 +1,13 @@
 import { useState } from 'react'
-import { Copy, KeyRound, UserPlus, UserX } from 'lucide-react'
-import { inviteTester, revokeTester, rotateTesterLink, testerLinkUrl, type BetaTester } from '../../../services/beta'
+import { Copy, Hand, KeyRound, UserPlus, UserX } from 'lucide-react'
+import {
+  inviteTester,
+  joinCampaignAsTester,
+  revokeTester,
+  rotateTesterLink,
+  testerLinkUrl,
+  type BetaTester,
+} from '../../../services/beta'
 import { formatRelative } from './helpers'
 
 interface Props {
@@ -20,6 +27,7 @@ export default function TesterPanel({ campaignId, testers, onChanged }: Props) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const alreadyIn = testers.some((tester) => tester.isTeamMember && !tester.revokedAt)
 
   async function invite(event: React.FormEvent) {
     event.preventDefault()
@@ -38,8 +46,33 @@ export default function TesterPanel({ campaignId, testers, onChanged }: Props) {
     }
   }
 
+  /** Le membre connecté se déclare testeur : rien à saisir, son compte suffit. */
+  async function joinMyself() {
+    setBusy(true)
+    setError(null)
+    try {
+      const { tester, token } = await joinCampaignAsTester(campaignId)
+      setFreshLinks((current) => ({ ...current, [tester._id]: testerLinkUrl(token) }))
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Inscription impossible')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="beta-testers">
+      <div className="beta-join">
+        <button type="button" className="beta-btn" onClick={joinMyself} disabled={busy || alreadyIn}>
+          <Hand size={14} aria-hidden /> {alreadyIn ? 'Vous participez déjà' : 'Je participe aussi'}
+        </button>
+        <p className="beta-muted beta-hint">
+          Vous recevez le même lien qu’un testeur externe : c’est l’écran de test, pas celui-ci, qui déroule les
+          démarches.
+        </p>
+      </div>
+
       <form className="beta-invite" onSubmit={invite}>
         <input
           value={name}
@@ -72,7 +105,10 @@ export default function TesterPanel({ campaignId, testers, onChanged }: Props) {
         {testers.map((tester) => (
           <li key={tester._id} className={tester.revokedAt ? 'beta-tester revoked' : 'beta-tester'}>
             <div className="beta-tester-identity">
-              <strong>{tester.name}</strong>
+              <strong>
+                {tester.name}
+                {tester.isTeamMember && <span className="beta-chip beta-team">équipe</span>}
+              </strong>
               <span className="beta-muted">{tester.email}</span>
             </div>
             <div className="beta-tester-state">

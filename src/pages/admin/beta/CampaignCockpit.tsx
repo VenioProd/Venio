@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, FileDown, Play, Square } from 'lucide-react'
 import {
@@ -31,10 +31,15 @@ export default function CampaignCockpit() {
   const [tab, setTab] = useState<Tab>('coverage')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const loadedOnce = useRef(false)
 
   const load = useCallback(async () => {
     if (!campaignId) return
-    setLoading(true)
+    // Seul le premier affichage montre « Chargement » : un rechargement en
+    // cours de travail démonterait l'écran, et emporterait avec lui le lien
+    // d'invitation qui vient d'être affiché — un secret qu'on ne peut pas
+    // relire.
+    if (!loadedOnce.current) setLoading(true)
     setError(null)
     try {
       const [detailResult, runsResult] = await Promise.all([getCampaign(campaignId), listRuns(campaignId)])
@@ -43,6 +48,7 @@ export default function CampaignCockpit() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Chargement impossible')
     } finally {
+      loadedOnce.current = true
       setLoading(false)
     }
   }, [campaignId])

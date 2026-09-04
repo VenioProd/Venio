@@ -315,7 +315,13 @@ router.get(
           .lean(),
         BetaTester.countDocuments(filter),
       ])
-      res.json(paginatedResponse(items, pag, total))
+      res.json(
+        paginatedResponse(
+          items.map((tester) => ({ ...tester, isTeamMember: Boolean(tester.user) })),
+          pag,
+          total,
+        ),
+      )
     } catch (err) {
       next(err)
     }

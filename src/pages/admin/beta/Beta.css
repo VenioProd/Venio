@@ -824,3 +824,24 @@
     grid-template-columns: 20px 1fr auto;
   }
 }
+
+.beta-join {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--line-strong);
+}
+
+.beta-join p {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+.beta-team {
+  margin-left: 8px;
+  font-weight: 400;
+  text-transform: lowercase;
+}
