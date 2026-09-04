@@ -14,6 +14,7 @@ import BetaComment from '../../models/BetaComment.js'
 import { requireBetaTester } from '../../lib/beta/testerAuth.js'
 import { refreshScenarioSummary } from '../../lib/beta/promote.js'
 import { notifyBlockingFeedback } from '../../lib/beta/notify.js'
+import { sanitizeReportedUrl } from '../../lib/beta/sanitizeUrl.js'
 import { serializeCommentsForTester, serializeRunsForTester } from '../../lib/beta/serialize.js'
 import {
   BETA_MAX_ATTACHMENTS_PER_RUN,
@@ -51,7 +52,9 @@ function readNumber(raw: unknown, max: number): number | null {
 function captureContext(req: Request) {
   const body = req.body ?? {}
   return {
-    url: typeof body.url === 'string' ? body.url.slice(0, 500) : null,
+    // Jamais l'URL brute : elle peut porter le lien secret du testeur, qui
+    // finirait recopié dans l'issue créée à la promotion.
+    url: sanitizeReportedUrl(body.url),
     userAgent: (req.get('user-agent') ?? '').slice(0, 500) || null,
     viewportWidth: readNumber(body.viewportWidth, 100000),
     viewportHeight: readNumber(body.viewportHeight, 100000),

@@ -68,12 +68,14 @@ export function loadSession(token: string) {
  * Le contexte technique part avec chaque verdict, sans que le testeur ait à
  * le saisir : c'est ce qui rend le retour exploitable côté équipe.
  */
-export function submitVerdict(token: string, scenarioId: string, payload: VerdictPayload) {
+export function submitVerdict(token: string, scenarioId: string, payload: VerdictPayload, testedUrl?: string | null) {
   return apiFetch<{ run: TesterRun }>(`${base(token)}/scenarios/${scenarioId}/runs`, {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
-      url: typeof window === 'undefined' ? undefined : window.location.href,
+      // L'URL de la page courante porte le jeton du testeur : on rapporte
+      // celle du site testé, la seule qui aide au diagnostic.
+      url: testedUrl ?? undefined,
       viewportWidth: typeof window === 'undefined' ? undefined : window.innerWidth,
       viewportHeight: typeof window === 'undefined' ? undefined : window.innerHeight,
       isMobile: typeof window === 'undefined' ? undefined : window.matchMedia('(pointer: coarse)').matches,

@@ -147,6 +147,9 @@ function ProjectsRedirect() {
 function App() {
   const location = useLocation()
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
+  // La surface des beta testeurs est une page de travail, pas une page du
+  // site : ni en-tête ni pied de page vitrine, comme pour les questionnaires.
+  const isBetaTesterSpace = location.pathname.startsWith('/beta/')
   const isAdminArea = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login'
   const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
 
@@ -157,14 +160,14 @@ function App() {
   // Thème Monolithe : scopé au site public (hors portail & questionnaire).
   // Thème Monolithe Portail : scopé à l'admin + l'espace client (login inclus).
   useEffect(() => {
-    const isPublicSite = !isPortal && !isPublicQuestionnaire
+    const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
     document.documentElement.classList.toggle('theme-monolithe', isPublicSite)
     document.documentElement.classList.toggle('theme-monolithe-portal', isPortal)
     return () => {
       document.documentElement.classList.remove('theme-monolithe')
       document.documentElement.classList.remove('theme-monolithe-portal')
     }
-  }, [isPortal, isPublicQuestionnaire])
+  }, [isPortal, isPublicQuestionnaire, isBetaTesterSpace])
 
   useEffect(() => {
     document.body.classList.add('gpu-off')
@@ -179,8 +182,10 @@ function App() {
       <ThemeProvider>
         <ThemeSync />
         <ToastProvider>
-          <Suspense fallback={null}>{!isPublicQuestionnaire && !isPortal && <PublicHeader />}</Suspense>
-          {!isPublicQuestionnaire && !isPortal && <PublicAnalytics />}
+          <Suspense fallback={null}>
+            {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicHeader />}
+          </Suspense>
+          {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicAnalytics />}
           <Suspense fallback={null}>
             <Suspense fallback={null}>
               <Routes>
@@ -760,7 +765,9 @@ function App() {
             <ToastContainer />
             {isAdminArea && <SearchModal />}
           </Suspense>
-          <Suspense fallback={null}>{!isPublicQuestionnaire && !isPortal && <PublicFooter />}</Suspense>
+          <Suspense fallback={null}>
+            {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicFooter />}
+          </Suspense>
         </ToastProvider>
       </ThemeProvider>
     </I18nProvider>

@@ -135,6 +135,25 @@ describe('depot d un verdict', () => {
     expect(run!.context!.viewportWidth).toBe(390)
   })
 
+  it('ne conserve jamais le lien secret du testeur comme contexte', async () => {
+    // Le client envoie naïvement son URL courante ; elle porte le jeton, et
+    // finirait recopiée dans l'issue ouverte à la promotion.
+    await postVerdict(leaToken, {
+      verdict: 'BROKEN',
+      title: 'Casse',
+      url: `https://venio.paris/beta/${leaToken}`,
+    }).expect(201)
+    const run = await BetaRun.findOne({ scenario: scenarioId, tester: leaId })
+    expect(run!.context!.url).toBeNull()
+    expect(JSON.stringify(run!.toObject())).not.toContain(leaToken)
+  })
+
+  it('conserve l URL du site reellement teste', async () => {
+    await postVerdict(leaToken, { verdict: 'BROKEN', title: 'Casse', url: 'https://exemple.fr/contact' }).expect(201)
+    const run = await BetaRun.findOne({ scenario: scenarioId, tester: leaId })
+    expect(run!.context!.url).toBe('https://exemple.fr/contact')
+  })
+
   it('refuse un verdict inconnu', async () => {
     await postVerdict(leaToken, { verdict: 'PEUT_ETRE' }).expect(400)
   })

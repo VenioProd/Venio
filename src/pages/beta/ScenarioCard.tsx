@@ -25,6 +25,8 @@ const REPRODUCIBILITIES: Array<{ id: BetaReproducibility; label: string }> = [
 
 interface Props {
   token: string
+  /** URL du site testé, rapportée avec le verdict. */
+  testedUrl: string | null
   scenario: TesterScenario
   myRun: TesterRun | undefined
   othersRuns: TesterRun[]
@@ -35,7 +37,7 @@ interface Props {
  * Une démarche vue par le testeur : les étapes à suivre, les trois verdicts,
  * et le formulaire minimal qui s'ouvre seulement si quelque chose cloche.
  */
-export default function ScenarioCard({ token, scenario, myRun, othersRuns, onSubmitted }: Props) {
+export default function ScenarioCard({ token, testedUrl, scenario, myRun, othersRuns, onSubmitted }: Props) {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [verdict, setVerdict] = useState<BetaVerdict | null>(myRun?.verdict ?? null)
   const [severity, setSeverity] = useState<BetaSeverity | null>(myRun?.severity ?? null)
@@ -76,14 +78,19 @@ export default function ScenarioCard({ token, scenario, myRun, othersRuns, onSub
     setBusy(true)
     setError(null)
     try {
-      const { run } = await submitVerdict(token, scenario._id, {
-        verdict,
-        severity: verdict === 'WORKS' ? null : severity,
-        reproducibility: verdict === 'WORKS' ? null : reproducibility,
-        failedStep,
-        title,
-        body,
-      })
+      const { run } = await submitVerdict(
+        token,
+        scenario._id,
+        {
+          verdict,
+          severity: verdict === 'WORKS' ? null : severity,
+          reproducibility: verdict === 'WORKS' ? null : reproducibility,
+          failedStep,
+          title,
+          body,
+        },
+        testedUrl,
+      )
       setRunId(run._id)
       setDone(true)
       onSubmitted()

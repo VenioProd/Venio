@@ -9,6 +9,7 @@ import {
   type TesterRun,
   type TesterSession,
 } from '../../services/betaTester'
+import SEO from '../../components/SEO'
 import ScenarioCard from './ScenarioCard'
 import './BetaTester.css'
 
@@ -47,15 +48,21 @@ export default function BetaTesterSpace() {
     return map
   }, [session])
 
+  // La page est atteignable sans compte : on la tient hors des moteurs de
+  // recherche, quel que soit l'état de chargement.
+  const seo = <SEO title="Beta test — Venio" description="Espace de test réservé aux testeurs invités." noindex />
+
   if (loading)
     return (
       <main className="bt-shell">
+        {seo}
         <p>Chargement…</p>
       </main>
     )
   if (error) {
     return (
       <main className="bt-shell">
+        {seo}
         <div className="bt-gate">
           <h1>Lien indisponible</h1>
           <p>{error}</p>
@@ -71,6 +78,7 @@ export default function BetaTesterSpace() {
 
   return (
     <main className="bt-shell">
+      {seo}
       <header className="bt-header">
         <p className="bt-hello">Bonjour {session.tester.name}</p>
         <h1>{session.campaign.name}</h1>
@@ -115,6 +123,7 @@ export default function BetaTesterSpace() {
           <ScenarioCard
             key={scenario._id}
             token={token}
+            testedUrl={session.campaign.targetUrl}
             scenario={scenario}
             myRun={entry?.mine}
             othersRuns={entry?.others ?? []}
