@@ -34,25 +34,25 @@ curl -sS -H "Authorization: Bearer $VENIO_AGENT_TOKEN" \
 
 Interpret the result:
 
-| Response | Meaning | Action |
-|---|---|---|
-| `200 { ok: true, name, prefix, scopes }` | Token valid. | Proceed. If a later call fails with 401, the URL is wrong, not the token. |
-| `401 MISSING_TOKEN` | Header didn't arrive. | Verify `$VENIO_AGENT_TOKEN` is set; ensure `Bearer ` prefix. |
-| `401 INVALID_TOKEN` | Revoked, mis-copied, or wrong env. | Regenerate in Venio's `/admin/agents` UI. Secret is shown only at creation. |
-| `401 EXPIRED_TOKEN` | `expiresAt` passed. | Regenerate. |
-| `403 INSUFFICIENT_SCOPE` | Token valid, but path needs a scope it lacks. | Response body shows `required`, `granted`, `missing`. Regenerate with the missing scopes. |
+| Response                                 | Meaning                                       | Action                                                                                    |
+| ---------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `200 { ok: true, name, prefix, scopes }` | Token valid.                                  | Proceed. If a later call fails with 401, the URL is wrong, not the token.                 |
+| `401 MISSING_TOKEN`                      | Header didn't arrive.                         | Verify `$VENIO_AGENT_TOKEN` is set; ensure `Bearer ` prefix.                              |
+| `401 INVALID_TOKEN`                      | Revoked, mis-copied, or wrong env.            | Regenerate in Venio's `/admin/agents` UI. Secret is shown only at creation.               |
+| `401 EXPIRED_TOKEN`                      | `expiresAt` passed.                           | Regenerate.                                                                               |
+| `403 INSUFFICIENT_SCOPE`                 | Token valid, but path needs a scope it lacks. | Response body shows `required`, `granted`, `missing`. Regenerate with the missing scopes. |
 
 ## URL rewrites (admin → agent)
 
 If a prompt or example shows an admin URL, rewrite mechanically:
 
-| Wrong (browser/admin) | Right (agent token) |
-|---|---|
-| `/api/admin/dev/projects` | `/api/v1/agent/dev/projects` |
-| `/api/admin/dev/issues` | `/api/v1/agent/dev/issues` |
-| `/api/admin/clients` | `/api/v1/agent/crm/clients` |
-| `/api/admin/tasks` | `/api/v1/agent/tasks` |
-| `/api/admin/documents` | `/api/v1/agent/documents` |
+| Wrong (browser/admin)      | Right (agent token)           |
+| -------------------------- | ----------------------------- |
+| `/api/admin/dev/projects`  | `/api/v1/agent/dev/projects`  |
+| `/api/admin/dev/issues`    | `/api/v1/agent/dev/issues`    |
+| `/api/admin/clients`       | `/api/v1/agent/crm/clients`   |
+| `/api/admin/tasks`         | `/api/v1/agent/tasks`         |
+| `/api/admin/documents`     | `/api/v1/agent/documents`     |
 | `/api/admin/messaging/...` | `/api/v1/agent/messaging/...` |
 
 Rule: drop `/admin`, insert `/v1/agent`.
@@ -77,7 +77,46 @@ Common scopes:
 - `read:documents`, `write:documents`
 - `read:internal-messaging`, `write:internal-messaging`
 - `read:dev`, `write:dev` (Venio's internal dev tracker — most likely what Codex needs)
+- `read:beta`, `write:beta` (beta-test campaigns — see below)
 - `admin:*` (full access, master tokens only — avoid)
+
+## Beta-test campaigns (`/beta/*`)
+
+Campaigns live under a dev project and hold the scenarios (`démarches`) that
+testers walk through. Everything the admin UI can do is reachable here:
+
+| Purpose                      | Endpoint                                                                                 |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
+| List / open a campaign       | `GET                                                                                     | POST /beta/campaigns`, `PATCH /beta/campaigns/:id` |
+| Scenarios                    | `GET                                                                                     | POST /beta/campaigns/:id/scenarios`, `PATCH        | DELETE /beta/scenarios/:id` |
+| Invite a tester              | `POST /beta/campaigns/:id/testers`                                                       |
+| Revoke / renew a tester link | `POST /beta/testers/:id/revoke`, `POST /beta/testers/:id/rotate`                         |
+| Read feedback                | `GET /beta/campaigns/:id/runs`                                                           |
+| Cast your own verdict        | `POST /beta/scenarios/:id/runs`                                                          |
+| Triage / open an issue       | `PATCH /beta/runs/:id`, `POST /beta/runs/:id/promote`                                    |
+| Discussion thread            | `GET                                                                                     | POST /beta/runs/:id/comments`                      |
+| Screenshots                  | `POST /beta/runs/:id/attachments` (base64), `GET .../attachments/:attachmentId` (binary) |
+| Campaign report              | `GET /beta/campaigns/:id/report` (PDF)                                                   |
+
+Notes that will save you a round trip:
+
+- **You can test, too.** `POST /beta/scenarios/:id/runs` records _your_ verdict
+  (`WORKS` / `BROKEN` / `TO_OPTIMIZE`), attributed to the system account. Posting
+  again revises that verdict instead of adding a second one — a `200` means you
+  revised, a `201` means it was new.
+- **Screenshots go in as base64** (`{ filename, contentBase64 }`), like documents.
+  Only real raster images pass: the server checks the leading bytes, so SVG and
+  anything mislabelled is rejected with `400 UNSUPPORTED_MEDIA`.
+- **`POST /beta/runs/:id/promote` is idempotent.** It opens a pre-filled
+  `DevIssue` in the campaign's dev project the first time (`201`) and returns the
+  existing one afterwards (`200`). When that issue later reaches `DONE`, the
+  feedback flips to `FIXED` and its scenario goes back to `TO_RETEST`.
+- **Tester links are secrets.** The invite and rotate responses are the only place
+  the raw token appears — it is stored hashed and never returned again. Treat it
+  like a password: hand it to the person it belongs to, never log it, never put it
+  in an issue.
+- **Feedback carries personal data** (tester name and email). `read:beta` exposes
+  it; only request that scope when the task genuinely needs it.
 
 ## Mutations require `Idempotency-Key`
 
@@ -112,11 +151,7 @@ Use this as the standard client shape so Codex stops reinventing it across files
 ```ts
 const BASE = 'https://venio.paris/api/v1/agent'
 
-async function venio<T>(
-  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
-  path: string,
-  body?: unknown,
-): Promise<T> {
+async function venio<T>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${process.env.VENIO_AGENT_TOKEN!}`,
   }

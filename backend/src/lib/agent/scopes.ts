@@ -82,6 +82,12 @@ export const AGENT_SCOPES = [
   'read:dev',
   'write:dev',
 
+  // Espace beta tests (campagnes de recette, démarches, testeurs, verdicts)
+  // Note : read:beta donne accès aux retours, qui portent l'identité des
+  // testeurs externes invités. À n'accorder qu'aux agents qui en ont besoin.
+  'read:beta',
+  'write:beta',
+
   // Filiales (business internes — contexte, dossier, liens, infos, contacts)
   'read:subsidiaries',
   'write:subsidiaries',

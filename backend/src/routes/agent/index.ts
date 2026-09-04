@@ -30,6 +30,7 @@ import backupRoutes from './backup.js'
 import usersRoutes from './users.js'
 import messagingRoutes from './messaging.js'
 import devRoutes from './dev.js'
+import betaRoutes from './beta.js'
 import subsidiariesRoutes from './subsidiaries.js'
 
 /**
@@ -131,6 +132,7 @@ router.use('/', backupRoutes)
 router.use('/', usersRoutes)
 router.use('/messaging', messagingRoutes)
 router.use('/', devRoutes)
+router.use('/', betaRoutes)
 router.use('/', subsidiariesRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
