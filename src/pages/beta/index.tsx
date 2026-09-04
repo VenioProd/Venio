@@ -11,6 +11,8 @@ import {
 } from '../../services/betaTester'
 import SEO from '../../components/SEO'
 import ScenarioCard from './ScenarioCard'
+import ScenarioTable from './ScenarioTable'
+import { pickScenarioToResume, readProgress } from './progress'
 import './BetaTester.css'
 
 export default function BetaTesterSpace() {
@@ -18,6 +20,8 @@ export default function BetaTesterSpace() {
   const [session, setSession] = useState<TesterSession | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [checkedByScenario, setCheckedByScenario] = useState<Record<string, number[]>>({})
 
   const reload = useCallback(async () => {
     if (!token) return
@@ -36,6 +40,27 @@ export default function BetaTesterSpace() {
   useEffect(() => {
     void reload()
   }, [reload])
+
+  // Relit la progression locale une fois les démarches connues, pour que la
+  // vue d'ensemble affiche l'avancement dès l'ouverture.
+  useEffect(() => {
+    if (!session || !token) return
+    const testerKey = session.tester.name
+    setCheckedByScenario(
+      Object.fromEntries(
+        session.scenarios.map((scenario) => [scenario._id, readProgress(testerKey, scenario._id).checked]),
+      ),
+    )
+    // Rouvre là où le testeur s'était arrêté, plutôt qu'en tête de liste.
+    setOpenId((current) => {
+      if (current) return current
+      const answered = new Set(session.runs.filter((run) => run.mine).map((run) => run.scenario))
+      const checked = Object.fromEntries(
+        session.scenarios.map((scenario) => [scenario._id, readProgress(testerKey, scenario._id).checked]),
+      )
+      return pickScenarioToResume(session.scenarios, answered, checked)
+    })
+  }, [session, token])
 
   const runsByScenario = useMemo(() => {
     const map = new Map<string, { mine?: TesterRun; others: TesterRun[] }>()
@@ -117,20 +142,30 @@ export default function BetaTesterSpace() {
         <p className="bt-desc">Rien à tester pour l’instant. Revenez un peu plus tard.</p>
       )}
 
-      {session.scenarios.map((scenario) => {
-        const entry = runsByScenario.get(scenario._id)
-        return (
-          <ScenarioCard
-            key={scenario._id}
-            token={token}
-            testedUrl={session.campaign.targetUrl}
-            scenario={scenario}
-            myRun={entry?.mine}
-            othersRuns={entry?.others ?? []}
-            onSubmitted={() => void reload()}
-          />
-        )
-      })}
+      <ScenarioTable
+        scenarios={session.scenarios}
+        myRuns={Object.fromEntries(
+          session.scenarios.map((scenario) => [scenario._id, runsByScenario.get(scenario._id)?.mine]),
+        )}
+        checkedByScenario={checkedByScenario}
+        openId={openId}
+        onToggle={(id) => setOpenId((current) => (current === id ? null : id))}
+        renderDetail={(scenario) => {
+          const entry = runsByScenario.get(scenario._id)
+          return (
+            <ScenarioCard
+              token={token}
+              testerKey={session.tester.name}
+              testedUrl={session.campaign.targetUrl}
+              scenario={scenario}
+              myRun={entry?.mine}
+              othersRuns={entry?.others ?? []}
+              onSubmitted={() => void reload()}
+              onProgress={(id, checked) => setCheckedByScenario((c) => ({ ...c, [id]: checked }))}
+            />
+          )
+        }}
+      />
 
       {myFindings.length > 0 && (
         <section className="bt-card">

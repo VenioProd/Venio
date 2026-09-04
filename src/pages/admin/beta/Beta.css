@@ -257,6 +257,19 @@
   color: var(--primary);
 }
 
+/* Un blocage n'est pas un défaut du produit : il reste dans les encres
+   neutres, à l'écart du rouge réservé à ce qui est cassé. */
+.beta-badge-blocked,
+.beta-chip-blocked {
+  border-color: var(--ink-faint);
+  color: var(--ink-dim);
+}
+
+.beta-dot-blocked {
+  background: var(--ink-faint);
+  border-color: var(--ink-faint);
+}
+
 /* ── Liste des campagnes ── */
 
 .beta-campaign-list {

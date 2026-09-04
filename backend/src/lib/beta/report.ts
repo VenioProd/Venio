@@ -6,6 +6,7 @@ import BetaRun, { type BetaSeverity } from '../../models/BetaRun.js'
 
 const SCENARIO_LABELS: Record<BetaScenarioStatus, string> = {
   NOT_TESTED: 'Non testée',
+  BLOCKED: 'Personne n’a pu la dérouler',
   OK: 'Fonctionne',
   KO: 'Ne fonctionne pas',
   TO_OPTIMIZE: 'À optimiser',
@@ -36,6 +37,7 @@ export interface CampaignReportData {
     toOptimize: number
     toRetest: number
     notTested: number
+    blocked: number
     /** Part des démarches concluantes, arrondie au point. */
     successRate: number
   }
@@ -47,6 +49,13 @@ export interface CampaignReportData {
     confirmations: number
     testerName: string
   }>
+  /**
+   * Les démarches qu'un testeur n'a pas pu dérouler. Tenues à l'écart des
+   * défauts : elles disent qu'il manque un accès ou un préalable, pas que le
+   * produit est en cause. Les mélanger gonflerait le nombre de bugs et
+   * enverrait l'équipe corriger ce qui n'est pas cassé.
+   */
+  blockedFindings: Array<{ title: string; scenario: string; testerName: string }>
   fixedFindings: number
   testers: Array<{ name: string; tested: number; total: number }>
 }
@@ -65,8 +74,21 @@ export async function buildCampaignReportData(campaignId: string): Promise<Campa
     scenarios.filter((scenario) => scenario.summaryStatus === status).length
 
   const ok = countBy('OK')
+  const isOpen = (run: { status: string }) => ['OPEN', 'ACKNOWLEDGED'].includes(run.status)
+  const describe = (run: Record<string, unknown>) => {
+    const scenario = run.scenario as { identifier?: string; title?: string } | null
+    const tester = run.tester as { name?: string } | null
+    return {
+      title: (run.title as string) || 'Retour sans intitulé',
+      scenario: scenario?.identifier ? `${scenario.identifier} — ${scenario.title}` : '—',
+      testerName: tester?.name ?? 'Équipe',
+    }
+  }
+
+  const blockedFindings = runs.filter((run) => run.verdict === 'BLOCKED' && isOpen(run)).map(describe)
+
   const openFindings = runs
-    .filter((run) => run.verdict !== 'WORKS' && ['OPEN', 'ACKNOWLEDGED'].includes(run.status))
+    .filter((run) => !['WORKS', 'BLOCKED'].includes(run.verdict) && isOpen(run))
     .sort((a, b) => {
       const bySeverity = (a.severity ? SEVERITY_WEIGHT[a.severity] : 9) - (b.severity ? SEVERITY_WEIGHT[b.severity] : 9)
       if (bySeverity !== 0) return bySeverity
@@ -113,9 +135,11 @@ export async function buildCampaignReportData(campaignId: string): Promise<Campa
       toOptimize: countBy('TO_OPTIMIZE'),
       toRetest: countBy('TO_RETEST'),
       notTested: countBy('NOT_TESTED'),
+      blocked: countBy('BLOCKED'),
       successRate: scenarios.length === 0 ? 0 : Math.round((ok / scenarios.length) * 100),
     },
     openFindings,
+    blockedFindings,
     fixedFindings: runs.filter((run) => run.status === 'FIXED').length,
     testers: testers.map((tester) => ({
       name: tester.name,
@@ -152,7 +176,7 @@ export function renderCampaignReportPdf(data: CampaignReportData): Promise<Buffe
     pdf.text(
       `Fonctionne : ${data.totals.ok} · Ne fonctionne pas : ${data.totals.ko} · ` +
         `À optimiser : ${data.totals.toOptimize} · À revalider : ${data.totals.toRetest} · ` +
-        `Non testée : ${data.totals.notTested}`,
+        `Bloquée : ${data.totals.blocked} · Non testée : ${data.totals.notTested}`,
     )
     if (data.fixedFindings > 0) pdf.text(`${data.fixedFindings} retour(s) corrigé(s) pendant la campagne`)
 
@@ -162,6 +186,17 @@ export function renderCampaignReportPdf(data: CampaignReportData): Promise<Buffe
     pdf.fontSize(9)
     for (const scenario of data.scenarios) {
       pdf.text(`[${scenario.statusLabel}] ${scenario.identifier} — ${scenario.title}`)
+    }
+
+    if (data.blockedFindings.length > 0) {
+      pdf.moveDown(1)
+      pdf.fontSize(12).text('Démarches que personne n’a pu dérouler')
+      pdf.moveDown(0.3)
+      pdf.fontSize(9)
+      for (const blocked of data.blockedFindings) {
+        pdf.text(`${blocked.title}`)
+        pdf.fillColor('#666').text(`    ${blocked.scenario} — signalé par ${blocked.testerName}`).fillColor('#000')
+      }
     }
 
     if (data.openFindings.length > 0) {

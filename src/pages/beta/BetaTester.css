@@ -450,3 +450,280 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Vue d'ensemble des démarches ──────────────────────────────────────────
+   Un tableau plutôt qu'un empilement de cartes : passé une poignée de
+   démarches, le testeur doit voir ce qui reste avant de plonger dans le
+   détail. Sur mobile, les colonnes se replient sous le titre. */
+
+.bt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.bt-table thead th {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+  color: var(--text-muted, #666);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.bt-row > * {
+  padding: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 55%, transparent);
+  vertical-align: middle;
+  font-weight: 400;
+  text-align: left;
+}
+
+.bt-row.open > * {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--primary, #0ea5e9) 6%, transparent);
+}
+
+.bt-col-rank {
+  width: 1%;
+  color: var(--text-muted, #666);
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-col-title button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bt-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted, #666);
+  transition: transform 0.15s ease;
+}
+
+.bt-row.open .bt-chevron {
+  transform: rotate(180deg);
+}
+
+.bt-col-steps {
+  width: 1%;
+  white-space: nowrap;
+  color: var(--text-muted, #666);
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-steps-done {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.bt-col-verdict {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.bt-pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--border-color, #ddd);
+  color: var(--text-muted, #666);
+  font-size: 12px;
+}
+
+.bt-pill-ok {
+  border-color: #22c55e;
+  color: #16a34a;
+}
+.bt-pill-fail {
+  border-color: #ef4444;
+  color: #dc2626;
+}
+.bt-pill-warn {
+  border-color: #f59e0b;
+  color: #b45309;
+}
+.bt-pill-retest {
+  border-color: var(--primary, #0ea5e9);
+  color: var(--primary, #0ea5e9);
+}
+.bt-pill-todo {
+  border-style: dashed;
+}
+
+.bt-row-detail > td {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.bt-row-detail .bt-card {
+  margin-bottom: 0;
+  border: none;
+  padding: 0 10px;
+}
+
+.bt-row-detail .bt-card-head,
+.bt-row-detail .bt-card h2 {
+  display: none;
+}
+
+.bt-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Préconditions et pièges ───────────────────────────────────────────────
+   Deux informations qui invalident un test quand on les rate, jusqu'ici
+   noyées dans le gris le moins lisible de l'écran. */
+
+.bt-preconditions {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bt-preconditions li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 10px;
+  background: color-mix(in srgb, var(--primary, #0ea5e9) 8%, transparent);
+  border-left: 2px solid var(--primary, #0ea5e9);
+  font-size: 14px;
+}
+
+.bt-preconditions svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--primary, #0ea5e9);
+}
+
+.bt-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* L'attendu passe sous l'instruction : c'est le texte que le testeur compare
+   pour décider de son verdict, pas une note de bas de page. */
+.bt-step-expected {
+  color: var(--text-secondary, #333);
+  font-size: 13.5px;
+}
+
+.bt-step-label {
+  display: inline-block;
+  margin-right: 5px;
+  color: var(--text-muted, #666);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bt-step-trap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 6px 9px;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  border-left: 2px solid #f59e0b;
+  font-size: 13.5px;
+}
+
+.bt-step-trap svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #b45309;
+}
+
+.bt-step-trap .bt-step-label {
+  color: #b45309;
+}
+
+/* Un blocage n'est pas un défaut du produit : il ne prend pas le rouge. */
+.bt-verdict-blocked.active {
+  border-color: var(--ink-faint);
+  background: color-mix(in srgb, var(--ink-faint) 14%, transparent);
+  color: var(--ink-ghost);
+}
+
+@media (max-width: 560px) {
+  .bt-table,
+  .bt-table tbody,
+  .bt-row-detail,
+  .bt-row-detail > td {
+    display: block;
+    width: auto;
+  }
+
+  .bt-table thead {
+    display: none;
+  }
+
+  /* Une ligne tient sur une seule rangée : rang, titre, avancement. Le fond
+     de la ligne ouverte couvre alors toute sa largeur, sans marche. */
+  .bt-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 0 10px;
+    padding: 4px 4px 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 55%, transparent);
+  }
+
+  /* Le fond de la ligne ouverte est porté par la ligne, pas par chaque
+     cellule : sinon les hauteurs inégales dessinent des marches. La règle
+     desktop cible `.bt-row.open > *`, il faut donc la neutraliser aussi
+     précisément. */
+  .bt-row > *,
+  .bt-row.open > * {
+    border-bottom: none;
+    padding: 7px 0;
+    background: none;
+  }
+
+  /* Le verdict rejoint la ligne quand il y en a un ; « à tester » est l'état
+     par défaut et n'a pas besoin d'occuper une rangée pour le dire. */
+  .bt-row.open {
+    background: color-mix(in srgb, var(--primary, #0ea5e9) 6%, transparent);
+  }
+
+  .bt-col-verdict {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  .bt-col-steps {
+    grid-row: 2;
+    grid-column: 2 / -1;
+    padding-top: 0;
+    text-align: right;
+  }
+
+  .bt-col-verdict .bt-pill-todo {
+    display: none;
+  }
+}
+
+.bt-pill-blocked {
+  border-color: var(--ink-faint);
+  color: var(--ink-dim);
+}

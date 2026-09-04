@@ -2,8 +2,10 @@ import { apiFetch } from '../lib/api'
 import type { DevIssue, UserRef } from './dev'
 
 export type BetaCampaignStatus = 'DRAFT' | 'RUNNING' | 'CLOSED'
-export type BetaScenarioStatus = 'NOT_TESTED' | 'OK' | 'KO' | 'TO_OPTIMIZE' | 'TO_RETEST'
-export type BetaVerdict = 'WORKS' | 'BROKEN' | 'TO_OPTIMIZE'
+export type BetaScenarioStatus = 'NOT_TESTED' | 'OK' | 'KO' | 'TO_OPTIMIZE' | 'TO_RETEST' | 'BLOCKED'
+// BLOCKED : le testeur n'a pas pu dérouler la démarche. Ce n'est pas un
+// verdict sur le produit.
+export type BetaVerdict = 'WORKS' | 'BROKEN' | 'TO_OPTIMIZE' | 'BLOCKED'
 export type BetaSeverity = 'BLOCKER' | 'MAJOR' | 'MINOR' | 'COSMETIC'
 export type BetaReproducibility = 'ALWAYS' | 'SOMETIMES' | 'ONCE'
 export type BetaRunStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FIXED' | 'REJECTED'

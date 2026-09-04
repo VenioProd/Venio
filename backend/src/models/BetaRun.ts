@@ -1,6 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
-export const BETA_VERDICTS = ['WORKS', 'BROKEN', 'TO_OPTIMIZE'] as const
+// BLOCKED : le testeur n'a pas pu dérouler la démarche (préalable manquant,
+// accès, appareil). Ce n'est pas un verdict sur le produit — le confondre
+// avec un échec fausserait la recette, et le laisser vide le rendrait
+// indiscernable d'une démarche jamais ouverte.
+export const BETA_VERDICTS = ['WORKS', 'BROKEN', 'TO_OPTIMIZE', 'BLOCKED'] as const
 export type BetaVerdict = (typeof BETA_VERDICTS)[number]
 
 export const BETA_SEVERITIES = ['BLOCKER', 'MAJOR', 'MINOR', 'COSMETIC'] as const

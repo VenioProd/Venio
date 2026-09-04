@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Check, ImagePlus, ThumbsUp, X } from 'lucide-react'
+import { AlertTriangle, Check, ImagePlus, Info, ThumbsUp, X } from 'lucide-react'
 import {
   confirmRun,
   screenshotUrl,
@@ -9,6 +9,8 @@ import {
   type TesterScenario,
 } from '../../services/betaTester'
 import type { BetaReproducibility, BetaSeverity, BetaVerdict } from '../../services/beta'
+import { splitPreconditions, toReadableStep } from './steps'
+import { clearScenarioProgress, readProgress, writeChecked, writeDraft } from './progress'
 
 const SEVERITIES: Array<{ id: BetaSeverity; label: string; hint: string }> = [
   { id: 'BLOCKER', label: 'Bloquant', hint: 'Impossible d’aller plus loin' },
@@ -25,26 +27,42 @@ const REPRODUCIBILITIES: Array<{ id: BetaReproducibility; label: string }> = [
 
 interface Props {
   token: string
+  /** Identifie le testeur pour sa progression locale. */
+  testerKey: string
   /** URL du site testé, rapportée avec le verdict. */
   testedUrl: string | null
   scenario: TesterScenario
   myRun: TesterRun | undefined
   othersRuns: TesterRun[]
   onSubmitted: () => void
+  /** Remonte l'avancement des coches pour la vue d'ensemble. */
+  onProgress?: (scenarioId: string, checked: number[]) => void
 }
 
 /**
  * Une démarche vue par le testeur : les étapes à suivre, les trois verdicts,
  * et le formulaire minimal qui s'ouvre seulement si quelque chose cloche.
  */
-export default function ScenarioCard({ token, testedUrl, scenario, myRun, othersRuns, onSubmitted }: Props) {
-  const [checked, setChecked] = useState<Set<number>>(new Set())
+export default function ScenarioCard({
+  token,
+  testerKey,
+  testedUrl,
+  scenario,
+  myRun,
+  othersRuns,
+  onSubmitted,
+  onProgress,
+}: Props) {
+  // La saisie en cours survit à un rechargement : une campagne longue se
+  // déroule en plusieurs sessions, et repartir de zéro décourage.
+  const saved = readProgress(testerKey, scenario._id)
+  const [checked, setChecked] = useState<Set<number>>(new Set(saved.checked))
   const [verdict, setVerdict] = useState<BetaVerdict | null>(myRun?.verdict ?? null)
   const [severity, setSeverity] = useState<BetaSeverity | null>(myRun?.severity ?? null)
   const [reproducibility, setReproducibility] = useState<BetaReproducibility | null>(myRun?.reproducibility ?? null)
   const [failedStep, setFailedStep] = useState<number | null>(myRun?.failedStep ?? null)
-  const [title, setTitle] = useState(myRun?.title ?? '')
-  const [body, setBody] = useState(myRun?.body ?? '')
+  const [title, setTitle] = useState(saved.draft?.title ?? myRun?.title ?? '')
+  const [body, setBody] = useState(saved.draft?.body ?? myRun?.body ?? '')
   const [shots, setShots] = useState(myRun?.attachments ?? [])
   const [runId, setRunId] = useState(myRun?._id ?? null)
   const [busy, setBusy] = useState(false)
@@ -57,8 +75,15 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
       const next = new Set(current)
       if (next.has(order)) next.delete(order)
       else next.add(order)
+      writeChecked(testerKey, scenario._id, [...next])
+      onProgress?.(scenario._id, [...next])
       return next
     })
+  }
+
+  /** Mémorise la saisie à chaque frappe, sans rien envoyer au serveur. */
+  function rememberDraft(patch: Partial<{ verdict: BetaVerdict | null; title: string; body: string }>) {
+    writeDraft(testerKey, scenario._id, { verdict, title, body, ...patch })
   }
 
   async function attach(files: FileList | File[] | null) {
@@ -83,8 +108,8 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
         scenario._id,
         {
           verdict,
-          severity: verdict === 'WORKS' ? null : severity,
-          reproducibility: verdict === 'WORKS' ? null : reproducibility,
+          severity: verdict === 'WORKS' || isBlocked ? null : severity,
+          reproducibility: verdict === 'WORKS' || isBlocked ? null : reproducibility,
           failedStep,
           title,
           body,
@@ -93,6 +118,7 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
       )
       setRunId(run._id)
       setDone(true)
+      clearScenarioProgress(testerKey, scenario._id)
       onSubmitted()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Envoi impossible')
@@ -101,6 +127,7 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
     }
   }
 
+  const isBlocked = verdict === 'BLOCKED'
   const needsDetail = verdict !== null && verdict !== 'WORKS'
 
   return (
@@ -118,17 +145,46 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
         )}
       </header>
 
-      {scenario.description && <p className="bt-desc">{scenario.description}</p>}
+      {(() => {
+        const { intro, conditions } = splitPreconditions(scenario.description ?? '')
+        return (
+          <>
+            {intro && <p className="bt-desc">{intro}</p>}
+            {conditions.length > 0 && (
+              <ul className="bt-preconditions">
+                {conditions.map((condition) => (
+                  <li key={condition}>
+                    <Info size={13} aria-hidden />
+                    <span>{condition}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )
+      })()}
 
       {scenario.steps.length > 0 && (
         <ol className="bt-steps">
-          {scenario.steps.map((step) => (
+          {scenario.steps.map(toReadableStep).map((step) => (
             <li key={step.order}>
               <label>
                 <input type="checkbox" checked={checked.has(step.order)} onChange={() => toggleStep(step.order)} />
-                <span>
+                <span className="bt-step-text">
                   <strong>{step.instruction}</strong>
-                  {step.expected && <em> → {step.expected}</em>}
+                  {step.expected && (
+                    <span className="bt-step-expected">
+                      <span className="bt-step-label">Attendu</span> {step.expected}
+                    </span>
+                  )}
+                  {step.watchOut && (
+                    <span className="bt-step-trap">
+                      <AlertTriangle size={12} aria-hidden />
+                      <span>
+                        <span className="bt-step-label">Piège</span> {step.watchOut}
+                      </span>
+                    </span>
+                  )}
                 </span>
               </label>
             </li>
@@ -140,7 +196,10 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
         <button
           type="button"
           className={`bt-verdict bt-verdict-ok${verdict === 'WORKS' ? ' active' : ''}`}
-          onClick={() => setVerdict('WORKS')}
+          onClick={() => {
+            setVerdict('WORKS')
+            rememberDraft({ verdict: 'WORKS' })
+          }}
           aria-pressed={verdict === 'WORKS'}
         >
           Ça fonctionne
@@ -148,7 +207,10 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
         <button
           type="button"
           className={`bt-verdict bt-verdict-fail${verdict === 'BROKEN' ? ' active' : ''}`}
-          onClick={() => setVerdict('BROKEN')}
+          onClick={() => {
+            setVerdict('BROKEN')
+            rememberDraft({ verdict: 'BROKEN' })
+          }}
           aria-pressed={verdict === 'BROKEN'}
         >
           Ça ne fonctionne pas
@@ -156,25 +218,44 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
         <button
           type="button"
           className={`bt-verdict bt-verdict-warn${verdict === 'TO_OPTIMIZE' ? ' active' : ''}`}
-          onClick={() => setVerdict('TO_OPTIMIZE')}
+          onClick={() => {
+            setVerdict('TO_OPTIMIZE')
+            rememberDraft({ verdict: 'TO_OPTIMIZE' })
+          }}
           aria-pressed={verdict === 'TO_OPTIMIZE'}
         >
           À optimiser
+        </button>
+        <button
+          type="button"
+          className={`bt-verdict bt-verdict-blocked${verdict === 'BLOCKED' ? ' active' : ''}`}
+          onClick={() => {
+            setVerdict('BLOCKED')
+            rememberDraft({ verdict: 'BLOCKED' })
+          }}
+          aria-pressed={verdict === 'BLOCKED'}
+        >
+          Je n’ai pas pu tester
         </button>
       </div>
 
       {needsDetail && (
         <div className="bt-detail">
           <label>
-            En une phrase, qu’est-ce qui cloche&nbsp;?
+            {isBlocked ? 'Qu’est-ce qui vous a empêché de tester\u00a0?' : 'En une phrase, qu’est-ce qui cloche\u00a0?'}
             <input
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Le bouton Envoyer ne réagit pas"
+              onChange={(event) => {
+                setTitle(event.target.value)
+                rememberDraft({ title: event.target.value })
+              }}
+              placeholder={
+                isBlocked ? 'Je n’ai pas reçu l’accès à l’espace intervenant' : 'Le bouton Envoyer ne réagit pas'
+              }
             />
           </label>
 
-          {scenario.steps.length > 0 && (
+          {!isBlocked && scenario.steps.length > 0 && (
             <label>
               À quelle étape&nbsp;?
               <select
@@ -184,53 +265,61 @@ export default function ScenarioCard({ token, testedUrl, scenario, myRun, others
                 <option value="">Pas une étape en particulier</option>
                 {scenario.steps.map((step) => (
                   <option key={step.order} value={step.order}>
-                    {step.order}. {step.instruction}
+                    {step.order}.{' '}
+                    {step.instruction.length > 60 ? `${step.instruction.slice(0, 58)}…` : step.instruction}
                   </option>
                 ))}
               </select>
             </label>
           )}
 
-          <fieldset>
-            <legend>C’est à quel point gênant&nbsp;?</legend>
-            <div className="bt-choices">
-              {SEVERITIES.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  className={`bt-choice${severity === entry.id ? ' active' : ''}`}
-                  onClick={() => setSeverity(entry.id)}
-                  aria-pressed={severity === entry.id}
-                >
-                  <strong>{entry.label}</strong>
-                  <span>{entry.hint}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {!isBlocked && (
+            <fieldset>
+              <legend>C’est à quel point gênant&nbsp;?</legend>
+              <div className="bt-choices">
+                {SEVERITIES.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`bt-choice${severity === entry.id ? ' active' : ''}`}
+                    onClick={() => setSeverity(entry.id)}
+                    aria-pressed={severity === entry.id}
+                  >
+                    <strong>{entry.label}</strong>
+                    <span>{entry.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
-          <fieldset>
-            <legend>Ça arrive…</legend>
-            <div className="bt-choices bt-choices-inline">
-              {REPRODUCIBILITIES.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  className={`bt-choice${reproducibility === entry.id ? ' active' : ''}`}
-                  onClick={() => setReproducibility(entry.id)}
-                  aria-pressed={reproducibility === entry.id}
-                >
-                  <strong>{entry.label}</strong>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {!isBlocked && (
+            <fieldset>
+              <legend>Ça arrive…</legend>
+              <div className="bt-choices bt-choices-inline">
+                {REPRODUCIBILITIES.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`bt-choice${reproducibility === entry.id ? ' active' : ''}`}
+                    onClick={() => setReproducibility(entry.id)}
+                    aria-pressed={reproducibility === entry.id}
+                  >
+                    <strong>{entry.label}</strong>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <label>
-            Racontez ce qui s’est passé
+            {isBlocked ? 'Précisez, si besoin' : 'Racontez ce qui s’est passé'}
             <textarea
               value={body}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(event) => {
+                setBody(event.target.value)
+                rememberDraft({ body: event.target.value })
+              }}
               rows={3}
               placeholder="J’ai rempli le formulaire, cliqué sur Envoyer, et la page est restée figée."
               onPaste={(event) => {

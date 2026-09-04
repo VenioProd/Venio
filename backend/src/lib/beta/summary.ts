@@ -22,7 +22,16 @@ export function computeScenarioSummary(runs: SummaryRun[]): BetaScenarioStatus {
 
   if (meaningful.some((run) => run.verdict === 'BROKEN' && isOpen(run))) return 'KO'
   if (meaningful.some((run) => run.status === 'FIXED')) return 'TO_RETEST'
+
+  // Un blocage ne vaut que tant que personne n'a réussi à passer : dès qu'un
+  // testeur déroule la démarche, la question est tranchée.
+  const someoneGotThrough = meaningful.some((run) => run.verdict !== 'BLOCKED')
+  if (!someoneGotThrough && meaningful.some((run) => run.verdict === 'BLOCKED' && isOpen(run))) {
+    return 'BLOCKED'
+  }
+
   if (meaningful.some((run) => run.verdict === 'TO_OPTIMIZE' && isOpen(run))) return 'TO_OPTIMIZE'
+  if (meaningful.every((run) => run.verdict === 'BLOCKED')) return 'BLOCKED'
   return 'OK'
 }
 

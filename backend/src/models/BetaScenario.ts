@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
-export const BETA_SCENARIO_STATUSES = ['NOT_TESTED', 'OK', 'KO', 'TO_OPTIMIZE', 'TO_RETEST'] as const
+// BLOCKED : personne n'a pu dérouler la démarche. Distinct de NOT_TESTED
+// (jamais ouverte) et de KO (ouverte, et cassée).
+export const BETA_SCENARIO_STATUSES = ['NOT_TESTED', 'OK', 'KO', 'TO_OPTIMIZE', 'TO_RETEST', 'BLOCKED'] as const
 export type BetaScenarioStatus = (typeof BETA_SCENARIO_STATUSES)[number]
 
 export interface BetaScenarioStep {

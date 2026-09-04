@@ -8,7 +8,7 @@ import type {
   BetaVerdict,
 } from '../../../services/beta'
 
-export type Tone = 'ok' | 'warn' | 'fail' | 'retest' | 'neutral'
+export type Tone = 'ok' | 'warn' | 'fail' | 'retest' | 'blocked' | 'neutral'
 
 export const SCENARIO_STATUS_LABEL: Record<BetaScenarioStatus, string> = {
   NOT_TESTED: 'Non testée',
@@ -16,12 +16,14 @@ export const SCENARIO_STATUS_LABEL: Record<BetaScenarioStatus, string> = {
   KO: 'Ne fonctionne pas',
   TO_OPTIMIZE: 'À optimiser',
   TO_RETEST: 'À revalider',
+  BLOCKED: 'Personne n’a pu la dérouler',
 }
 
 export const VERDICT_LABEL: Record<BetaVerdict, string> = {
   WORKS: 'Fonctionne',
   BROKEN: 'Ne fonctionne pas',
   TO_OPTIMIZE: 'À optimiser',
+  BLOCKED: 'N’a pas pu être testée',
 }
 
 export const SEVERITY_LABEL: Record<BetaSeverity, string> = {
@@ -50,6 +52,7 @@ const SCENARIO_TONES: Record<BetaScenarioStatus, Tone> = {
   TO_OPTIMIZE: 'warn',
   TO_RETEST: 'retest',
   NOT_TESTED: 'neutral',
+  BLOCKED: 'blocked',
 }
 
 export function scenarioTone(status: BetaScenarioStatus): Tone {
@@ -59,6 +62,7 @@ export function scenarioTone(status: BetaScenarioStatus): Tone {
 export function verdictTone(verdict: BetaVerdict): Tone {
   if (verdict === 'WORKS') return 'ok'
   if (verdict === 'BROKEN') return 'fail'
+  if (verdict === 'BLOCKED') return 'blocked'
   return 'warn'
 }
 
@@ -69,10 +73,11 @@ export function verdictTone(verdict: BetaVerdict): Tone {
  */
 const ATTENTION_ORDER: Record<BetaScenarioStatus, number> = {
   KO: 0,
-  TO_RETEST: 1,
-  TO_OPTIMIZE: 2,
-  NOT_TESTED: 3,
-  OK: 4,
+  BLOCKED: 1,
+  TO_RETEST: 2,
+  TO_OPTIMIZE: 3,
+  NOT_TESTED: 4,
+  OK: 5,
 }
 
 export function sortScenariosByAttention(scenarios: BetaScenario[]): BetaScenario[] {
