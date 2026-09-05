@@ -57,13 +57,22 @@ export const DEV_PRIORITY_COLORS: Record<string, string> = {
 }
 
 /** Statuts de projet (dashboard) → couleur. */
+/**
+ * Répartition des projets par statut. C'est une série catégorielle : chaque
+ * segment est une catégorie, pas un niveau d'alerte. Une seule exception,
+ * `BLOQUE`, qui est réellement un état à traiter et garde le rouge de statut.
+ *
+ * `TERMINE` n'emploie plus `STATUS.good` : « terminé » n'est pas « en bonne
+ * santé ». Le vert de statut au milieu d'une série de teintes arbitraires
+ * laissait croire à un jugement là où il n'y avait qu'une catégorie.
+ */
 export const PROJECT_STATUS_COLORS: Record<string, string> = {
   CADRAGE: '#7c3aed',
   EN_COURS: ACCENT,
   EN_REVUE: '#d97706',
   LIVRAISON: '#14b8a6', // teal — distinct du vert "Terminé" et du cyan "En cours"
-  BLOQUE: STATUS.critical,
-  TERMINE: STATUS.good,
+  BLOQUE: STATUS.critical, // seul véritable état d'alerte de la série
+  TERMINE: '#059669', // émeraude catégorielle, pas le vert « bon » de STATUS
   EN_PAUSE: STATUS.neutral,
 }
 
