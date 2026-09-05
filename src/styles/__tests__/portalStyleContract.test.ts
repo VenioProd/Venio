@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import allowlist from './portal-style-allowlist.json'
+import allowlistJson from './portal-style-allowlist.json'
 
 /**
  * Garde-fou de la charte Portail.
@@ -17,6 +17,10 @@ import allowlist from './portal-style-allowlist.json'
  * lot après lot. Un fichier qui passe toutes les règles doit en sortir : le test
  * échoue tant qu'il y reste, pour que la liste ne puisse que décroître.
  */
+
+/* Le tableau est vide depuis la fin du chantier : sans annotation, TypeScript
+   infere never[] et refuse .includes(). */
+const allowlist: string[] = allowlistJson
 
 const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
@@ -116,9 +120,12 @@ function violations(path: string): Violation[] {
     const hex = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((m) => m[0].toLowerCase()).find((h) => !PALETTE.has(h))
     if (hex) found.push({ rule: 'couleur hors palette', sample: hex })
 
+    // Une valeur de repli est admise : les feuilles partagées avec le site
+    // public doivent tenir hors de `html.theme-portail`, où les jetons du
+    // portail ne sont pas déclarés.
     const font = [...css.matchAll(/font-family:\s*([^;}]+)/gi)]
       .map((m) => m[1].trim())
-      .find((v) => !/^(var\(--font-(heading|body|mono)\)|inherit)$/.test(v))
+      .find((v) => !/^(var\(--font-(heading|body|mono)(,[^)]*)?\)|inherit)$/.test(v))
     if (font) found.push({ rule: 'police hors jetons', sample: font })
   }
 

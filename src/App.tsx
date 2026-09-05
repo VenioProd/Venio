@@ -151,7 +151,10 @@ function App() {
   // site : ni en-tête ni pied de page vitrine, comme pour les questionnaires.
   const isBetaTesterSpace = location.pathname.startsWith('/beta/')
   const isAdminArea = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login'
-  const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
+  // L'espace testeur est une surface privée derrière un jeton : il relève de la
+  // charte Portail au même titre que l'admin et l'espace client.
+  const isPortal =
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isBetaTesterSpace
 
   useEffect(() => {
     window.scrollTo(0, 0)
