@@ -17,7 +17,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   min-width: 200px;
   text-align: center;
   text-transform: capitalize;
@@ -29,46 +29,46 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 1.1rem;
   transition: all 0.2s ease;
 }
 
 .calendar-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--line-strong);
 }
 
 .calendar-today-btn {
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.2s ease;
 }
 
 .calendar-today-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--line-strong);
 }
 
 /* Calendar Grid */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
 }
 
 /* Day Name Headers */
@@ -77,19 +77,19 @@
   text-align: center;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 
 /* Individual Day Cell */
 .calendar-day {
   min-height: 90px;
   padding: 6px 8px;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: background 0.15s ease;
   position: relative;
@@ -100,7 +100,7 @@
 }
 
 .calendar-day:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-card-hover);
 }
 
 .calendar-day.selected {
@@ -110,7 +110,7 @@
 /* Today highlight */
 .calendar-day.today .calendar-day-number {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
   border-radius: 50%;
   width: 26px;
   height: 26px;
@@ -132,7 +132,7 @@
 .calendar-day-number {
   font-size: 0.82rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin-bottom: 4px;
   display: inline-block;
 }
@@ -148,7 +148,7 @@
 .calendar-event {
   font-size: 0.68rem;
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -156,29 +156,32 @@
   font-weight: 500;
 }
 
+/* Types d'evenement : ce sont des categories, pas des etats. Elles prennent
+   la palette categorielle, jamais --good/--warning/--serious/--critical, que
+   la charte reserve a l'etat (spec section 8). */
 .calendar-event.type-task {
-  background: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
+  background: color-mix(in srgb, var(--cat-1) 20%, transparent);
+  color: var(--cat-1);
 }
 
 .calendar-event.type-deadline {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background: color-mix(in srgb, var(--cat-3) 20%, transparent);
+  color: var(--cat-3);
 }
 
 .calendar-event.type-project_start {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
+  background: color-mix(in srgb, var(--cat-5) 20%, transparent);
+  color: var(--cat-5);
 }
 
 .calendar-event.type-project_end {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background: color-mix(in srgb, var(--cat-2) 20%, transparent);
+  color: var(--cat-2);
 }
 
 .calendar-event-more {
   font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   padding: 1px 5px;
   font-weight: 500;
 }
@@ -186,9 +189,9 @@
 /* Day Detail Panel */
 .calendar-day-detail {
   margin-top: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   padding: 20px 24px;
   animation: calendar-detail-in 0.2s ease;
 }
@@ -215,14 +218,14 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .calendar-detail-close {
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px 10px;
   font-size: 0.8rem;
@@ -230,8 +233,8 @@
 }
 
 .calendar-detail-close:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  border-color: var(--line-strong);
 }
 
 .calendar-detail-list {
@@ -245,14 +248,14 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   transition: background 0.15s ease;
 }
 
 .calendar-detail-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card-hover);
 }
 
 .calendar-detail-dot {
@@ -263,19 +266,19 @@
 }
 
 .calendar-detail-dot.type-task {
-  background: #6366f1;
+  background: var(--primary);
 }
 
 .calendar-detail-dot.type-deadline {
-  background: #ef4444;
+  background: var(--critical);
 }
 
 .calendar-detail-dot.type-project_start {
-  background: #22c55e;
+  background: var(--good);
 }
 
 .calendar-detail-dot.type-project_end {
-  background: #f97316;
+  background: var(--serious);
 }
 
 .calendar-detail-info {
@@ -286,7 +289,7 @@
 .calendar-detail-title {
   font-size: 0.88rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -294,49 +297,49 @@
 
 .calendar-detail-meta {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
 .calendar-detail-type {
   font-size: 0.72rem;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-pill);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .calendar-detail-type.type-task {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: var(--accent-surface);
+  color: var(--primary-light);
 }
 
 .calendar-detail-type.type-deadline {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--critical-surface);
+  color: var(--critical);
 }
 
 .calendar-detail-type.type-project_start {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: var(--good-surface);
+  color: var(--good);
 }
 
 .calendar-detail-type.type-project_end {
-  background: rgba(249, 115, 22, 0.15);
-  color: #fb923c;
+  background: var(--serious-surface);
+  color: var(--serious);
 }
 
 .calendar-empty-state {
   text-align: center;
   padding: 12px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
 .calendar-loading {
   text-align: center;
   padding: 48px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
 }
 
 /* Legend */
@@ -346,9 +349,9 @@
   flex-wrap: wrap;
   margin-top: 16px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
 }
 
 .calendar-legend-item {
@@ -356,7 +359,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
 }
 
 .calendar-legend-dot {
@@ -418,117 +421,118 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #6366f1;
+    background: var(--primary);
     margin: 4px auto 0;
   }
 }
 
-/* ── Light Mode ── */
+/* ── Light Mode — neutralisée : mêmes jetons que le mode sombre (spec §12,
+   point ouvert 2, pas de miroir clair pour le portail). ── */
 [data-theme='light'] .calendar-header h2 {
-  color: var(--ink-strong);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .calendar-nav-btn {
-  border-color: var(--line-soft);
-  background: #ffffff;
-  color: var(--ink-dim);
+  border-color: var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .calendar-nav-btn:hover {
-  background: var(--surface-raised);
-  color: var(--ink-strong);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
   border-color: var(--line-strong);
 }
 
 [data-theme='light'] .calendar-today-btn {
-  border-color: var(--line-soft);
-  background: #ffffff;
-  color: var(--ink-dim);
+  border-color: var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .calendar-today-btn:hover {
-  background: var(--surface-raised);
-  color: var(--ink-strong);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
   border-color: var(--line-strong);
 }
 
 [data-theme='light'] .calendar-grid {
-  border-color: var(--line-soft);
-  background: #ffffff;
+  border-color: var(--border-color);
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .calendar-day-header {
-  color: var(--ink-dim);
-  background: var(--surface-sunken);
-  border-bottom-color: var(--line-soft);
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .calendar-day {
-  border-right-color: var(--line-faint);
-  border-bottom-color: var(--line-faint);
+  border-right-color: var(--border-color);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .calendar-day:hover {
-  background: var(--surface-sunken);
+  background: var(--bg-card-hover);
 }
 
 [data-theme='light'] .calendar-day-number {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .calendar-event-more {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .calendar-day-detail {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .calendar-detail-header h3 {
-  color: var(--ink-strong);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .calendar-detail-close {
-  border-color: var(--line-soft);
-  color: var(--ink-dim);
+  border-color: var(--border-color);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .calendar-detail-close:hover {
-  color: var(--ink-strong);
+  color: var(--text-primary);
   border-color: var(--line-strong);
 }
 
 [data-theme='light'] .calendar-detail-item {
-  background: var(--surface-sunken);
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .calendar-detail-item:hover {
-  background: var(--surface-raised);
+  background: var(--bg-card-hover);
 }
 
 [data-theme='light'] .calendar-detail-title {
-  color: var(--ink-strong);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .calendar-detail-meta {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .calendar-empty-state {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .calendar-loading {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .calendar-legend {
-  background: var(--surface-sunken);
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .calendar-legend-item {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }

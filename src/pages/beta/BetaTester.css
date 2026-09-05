@@ -5,7 +5,7 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 28px 18px 64px;
-  color: var(--text-primary, #1a1a2e);
+  color: var(--text-primary);
   font-size: 15px;
   line-height: 1.6;
 }
@@ -13,12 +13,12 @@
 .bt-header {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-color, #ddd);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .bt-hello {
   margin: 0;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -31,12 +31,12 @@
 
 .bt-desc {
   margin: 0 0 12px;
-  color: var(--text-secondary, #333);
+  color: var(--text-secondary);
 }
 
 .bt-hint {
   margin: 4px 0 0;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -56,21 +56,23 @@
 }
 
 .bt-progress-count {
+  font-family: var(--font-mono, ui-monospace, 'SFMono-Regular', monospace);
   font-size: 19px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .bt-progress-bar {
+  border-radius: var(--r-pill, 999px);
   flex-basis: 100%;
   height: 4px;
-  background: var(--border-color, #ddd);
+  background: var(--border-color);
 }
 
 .bt-progress-bar span {
   display: block;
   height: 100%;
-  background: var(--primary, #0ea5e9);
+  background: var(--primary);
   transition: width 0.25s ease;
 }
 
@@ -82,10 +84,11 @@
 /* ── Carte de démarche ── */
 
 .bt-card {
+  border-radius: var(--r-lg, 13px);
   padding: 20px;
   margin-bottom: 16px;
-  border: 1px solid var(--border-color, #ddd);
-  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
 }
 
 .bt-card-head {
@@ -96,7 +99,8 @@
 }
 
 .bt-card-id {
-  color: var(--text-muted, #666);
+  font-family: var(--font-mono, ui-monospace, 'SFMono-Regular', monospace);
+  color: var(--text-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -114,19 +118,20 @@
 }
 
 .bt-badge {
+  border-radius: var(--r-pill, 999px);
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border: 1px solid var(--border-color, #ddd);
-  color: var(--text-muted, #666);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   font-size: 12px;
   white-space: nowrap;
 }
 
 .bt-badge-ok {
-  border-color: #22c55e;
-  color: #16a34a;
+  border-color: var(--good);
+  color: var(--good);
 }
 
 /* ── Étapes ── */
@@ -141,7 +146,7 @@
 .bt-steps li {
   counter-increment: bt-step;
   padding: 7px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .bt-steps label {
@@ -153,7 +158,7 @@
 
 .bt-steps label::before {
   content: counter(bt-step) '.';
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   min-width: 18px;
 }
@@ -166,7 +171,7 @@
 }
 
 .bt-steps em {
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-style: normal;
 }
 
@@ -180,8 +185,9 @@
 }
 
 .bt-verdict {
+  border-radius: var(--r-md, 10px);
   padding: 13px 12px;
-  border: 1.5px solid var(--border-color, #ddd);
+  border: 1.5px solid var(--border-color);
   background: transparent;
   color: inherit;
   font-size: 14.5px;
@@ -198,21 +204,21 @@
 }
 
 .bt-verdict-ok.active {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 12%, transparent);
-  color: #15803d;
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  color: var(--good);
 }
 
 .bt-verdict-fail.active {
-  border-color: #ef4444;
-  background: color-mix(in srgb, #ef4444 12%, transparent);
-  color: #b91c1c;
+  border-color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 12%, transparent);
+  color: var(--critical);
 }
 
 .bt-verdict-warn.active {
-  border-color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 14%, transparent);
-  color: #b45309;
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: var(--warning);
 }
 
 /* ── Formulaire de retour ── */
@@ -222,7 +228,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px 0;
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border-color);
 }
 
 .bt-detail label {
@@ -257,11 +263,12 @@
 }
 
 .bt-choice {
+  border-radius: var(--r-md, 10px);
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 9px 11px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border-color);
   background: transparent;
   color: inherit;
   font-family: inherit;
@@ -275,18 +282,19 @@
 }
 
 .bt-choice span {
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .bt-choice.active {
-  border-color: var(--primary, #0ea5e9);
-  background: color-mix(in srgb, var(--primary, #0ea5e9) 10%, transparent);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .bt-dropzone {
+  border-radius: var(--r-md, 10px);
   padding: 14px;
-  border: 1px dashed var(--border-color, #ddd);
+  border: 1px dashed var(--border-color);
   text-align: center;
 }
 
@@ -298,7 +306,7 @@
 
 .bt-shots img {
   max-height: 130px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border-color);
 }
 
 .bt-send {
@@ -312,8 +320,8 @@
 .bt-error {
   margin: 10px 0 0;
   padding: 8px 11px;
-  border-left: 2px solid #ef4444;
-  background: color-mix(in srgb, #ef4444 8%, transparent);
+  border-left: 2px solid var(--critical);
+  background: color-mix(in srgb, var(--critical) 8%, transparent);
   font-size: 13.5px;
 }
 
@@ -322,7 +330,7 @@
 .bt-others {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border-color);
 }
 
 .bt-others ul {
@@ -337,7 +345,7 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 8px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   font-size: 14px;
 }
 
@@ -349,7 +357,7 @@
 
 .bt-thread {
   padding: 12px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border-color, #ddd) 70%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
 }
 
 .bt-thread header {
@@ -361,19 +369,20 @@
 }
 
 .bt-message {
+  border-radius: var(--r-md, 10px);
   margin: 0 0 8px;
   padding: 9px 12px;
-  background: var(--bg-secondary, #f5f5f7);
+  background: var(--bg-secondary);
   font-size: 14px;
 }
 
 .bt-message-me {
-  background: color-mix(in srgb, var(--primary, #0ea5e9) 8%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 .bt-message-author {
   display: block;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 12px;
   margin-bottom: 2px;
 }
@@ -388,11 +397,12 @@
 /* ── Contrôles ── */
 
 .bt-btn {
+  border-radius: var(--r-md, 10px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 9px 15px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border-color);
   background: transparent;
   color: inherit;
   font-size: 14px;
@@ -412,8 +422,8 @@
 }
 
 .bt-btn-primary {
-  border-color: var(--primary, #0ea5e9);
-  color: var(--primary, #0ea5e9);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .bt-btn-small {
@@ -426,8 +436,9 @@
 .bt-shell textarea {
   width: 100%;
   padding: 9px 11px;
-  border: 1px solid var(--border-color, #ddd);
-  background: var(--bg-secondary, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md, 10px);
+  background: var(--bg-secondary);
   color: inherit;
   font-size: 15px;
   font-family: inherit;
@@ -436,7 +447,7 @@
 .bt-shell input:focus,
 .bt-shell select:focus,
 .bt-shell textarea:focus {
-  outline: 2px solid var(--primary, #0ea5e9);
+  outline: 2px solid var(--primary);
   outline-offset: -1px;
   border-color: transparent;
 }
@@ -464,8 +475,8 @@
 
 .bt-table thead th {
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border-color, #ddd);
-  color: var(--text-muted, #666);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   text-align: left;
@@ -473,7 +484,7 @@
 
 .bt-row > * {
   padding: 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
   vertical-align: middle;
   font-weight: 400;
   text-align: left;
@@ -481,12 +492,13 @@
 
 .bt-row.open > * {
   border-bottom-color: transparent;
-  background: color-mix(in srgb, var(--primary, #0ea5e9) 6%, transparent);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
 }
 
 .bt-col-rank {
+  font-family: var(--font-mono, ui-monospace, 'SFMono-Regular', monospace);
   width: 1%;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -507,7 +519,7 @@
 
 .bt-chevron {
   flex-shrink: 0;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   transition: transform 0.15s ease;
 }
 
@@ -516,14 +528,15 @@
 }
 
 .bt-col-steps {
+  font-family: var(--font-mono, ui-monospace, 'SFMono-Regular', monospace);
   width: 1%;
   white-space: nowrap;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .bt-steps-done {
-  color: #16a34a;
+  color: var(--good);
   font-weight: 600;
 }
 
@@ -533,28 +546,29 @@
 }
 
 .bt-pill {
+  border-radius: var(--r-pill, 999px);
   display: inline-block;
   padding: 2px 9px;
-  border: 1px solid var(--border-color, #ddd);
-  color: var(--text-muted, #666);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .bt-pill-ok {
-  border-color: #22c55e;
-  color: #16a34a;
+  border-color: var(--good);
+  color: var(--good);
 }
 .bt-pill-fail {
-  border-color: #ef4444;
-  color: #dc2626;
+  border-color: var(--critical);
+  color: var(--critical);
 }
 .bt-pill-warn {
-  border-color: #f59e0b;
-  color: #b45309;
+  border-color: var(--warning);
+  color: var(--warning);
 }
 .bt-pill-retest {
-  border-color: var(--primary, #0ea5e9);
-  color: var(--primary, #0ea5e9);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .bt-pill-todo {
   border-style: dashed;
@@ -562,7 +576,7 @@
 
 .bt-row-detail > td {
   padding: 0 0 12px;
-  border-bottom: 1px solid var(--border-color, #ddd);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .bt-row-detail .bt-card {
@@ -603,15 +617,15 @@
   align-items: flex-start;
   gap: 7px;
   padding: 7px 10px;
-  background: color-mix(in srgb, var(--primary, #0ea5e9) 8%, transparent);
-  border-left: 2px solid var(--primary, #0ea5e9);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-left: 2px solid var(--primary);
   font-size: 14px;
 }
 
 .bt-preconditions svg {
   flex-shrink: 0;
   margin-top: 3px;
-  color: var(--primary, #0ea5e9);
+  color: var(--primary);
 }
 
 .bt-step-text {
@@ -623,18 +637,17 @@
 /* L'attendu passe sous l'instruction : c'est le texte que le testeur compare
    pour décider de son verdict, pas une note de bas de page. */
 .bt-step-expected {
-  color: var(--text-secondary, #333);
+  color: var(--text-secondary);
   font-size: 13.5px;
 }
 
 .bt-step-label {
   display: inline-block;
   margin-right: 5px;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: normal;
 }
 
 .bt-step-trap {
@@ -643,19 +656,19 @@
   gap: 6px;
   margin-top: 2px;
   padding: 6px 9px;
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
-  border-left: 2px solid #f59e0b;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border-left: 2px solid var(--warning);
   font-size: 13.5px;
 }
 
 .bt-step-trap svg {
   flex-shrink: 0;
   margin-top: 3px;
-  color: #b45309;
+  color: var(--warning);
 }
 
 .bt-step-trap .bt-step-label {
-  color: #b45309;
+  color: var(--warning);
 }
 
 /* Un blocage n'est pas un défaut du produit : il ne prend pas le rouge. */
@@ -686,7 +699,7 @@
     align-items: start;
     gap: 0 10px;
     padding: 4px 4px 6px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color, #ddd) 55%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
   }
 
   /* Le fond de la ligne ouverte est porté par la ligne, pas par chaque
@@ -703,7 +716,7 @@
   /* Le verdict rejoint la ligne quand il y en a un ; « à tester » est l'état
      par défaut et n'a pas besoin d'occuper une rangée pour le dire. */
   .bt-row.open {
-    background: color-mix(in srgb, var(--primary, #0ea5e9) 6%, transparent);
+    background: color-mix(in srgb, var(--primary) 6%, transparent);
   }
 
   .bt-col-verdict {

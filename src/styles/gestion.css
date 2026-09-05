@@ -11,7 +11,7 @@
 .gestion-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--ink-body);
+  color: var(--text-primary);
   margin: 0;
 }
 .gestion-controls {
@@ -25,7 +25,7 @@
 }
 .gestion-project-select .custom-select-trigger {
   padding: 8px 14px;
-  border-radius: 0;
+  border-radius: var(--r-md);
   font-size: 0.85rem;
 }
 
@@ -44,16 +44,16 @@
 }
 .gestion-filter-select .custom-select-trigger {
   padding: 7px 12px;
-  border-radius: 0;
+  border-radius: var(--r-md);
   font-size: 0.82rem;
 }
 
 .gestion-filter-clear {
   padding: 7px 14px;
-  border-radius: 0;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  background: rgba(239, 68, 68, 0.08);
-  color: #fca5a5;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 138, 138, 0.25);
+  background: rgba(255, 138, 138, 0.08);
+  color: var(--critical);
   font-size: 0.82rem;
   cursor: pointer;
   transition:
@@ -63,16 +63,16 @@
 }
 
 .gestion-filter-clear:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(255, 138, 138, 0.15);
+  border-color: rgba(255, 138, 138, 0.4);
 }
 .gestion-view-toggle {
   display: flex;
   gap: 4px;
-  background: var(--surface-sunken);
-  border-radius: 0;
+  background: var(--bg-card);
+  border-radius: var(--r-md);
   padding: 4px;
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--border-color);
 }
 .gestion-view-btn {
   display: flex;
@@ -80,20 +80,20 @@
   gap: 6px;
   padding: 7px 14px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-view-btn:hover {
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-view-btn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 .gestion-view-icon {
   font-size: 1rem;
@@ -101,13 +101,13 @@
 .gestion-loading {
   text-align: center;
   padding: 48px 0;
-  color: var(--ink-faint);
+  color: var(--text-muted);
   font-size: 0.95rem;
 }
 .gestion-empty-state {
   text-align: center;
   padding: 48px 0;
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 .gestion-empty-state p {
   margin: 4px 0;
@@ -119,8 +119,8 @@
 /* ─── Table View ─── */
 .gestion-table-wrap {
   overflow-x: auto;
-  border-radius: 0;
-  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-color);
 }
 .gestion-table {
   width: 100%;
@@ -128,29 +128,29 @@
   font-size: 0.85rem;
 }
 .gestion-table thead th {
-  background: var(--surface-sunken);
-  color: var(--ink-dim);
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-weight: 600;
   text-align: left;
   padding: 10px 14px;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--border-color);
 }
 .gestion-table thead th:hover {
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-table tbody tr {
-  border-bottom: 1px solid var(--line-faint);
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.1s;
 }
 .gestion-table tbody tr:hover {
-  background: color-mix(in srgb, var(--surface-sunken) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
 }
 .gestion-table td {
   padding: 10px 14px;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 .gestion-table th:first-child,
@@ -160,28 +160,28 @@
 }
 .gestion-cell-title {
   font-weight: 500;
-  color: var(--ink-body);
+  color: var(--text-primary);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .gestion-cell-project {
-  color: var(--ink-faint);
+  color: var(--text-muted);
   font-size: 0.8rem;
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .gestion-row-overdue {
-  background: rgba(239, 68, 68, 0.06) !important;
+  background: rgba(255, 138, 138, 0.06) !important;
 }
 .gestion-cell-overdue {
-  color: #ef4444 !important;
+  color: var(--critical) !important;
   font-weight: 600;
 }
 .gestion-empty {
   text-align: center;
-  color: var(--ink-faint);
+  color: var(--text-muted);
   padding: 24px;
 }
 .gestion-assignee-badge {
@@ -189,10 +189,10 @@
   align-items: center;
   gap: 6px;
   background: var(--surface-raised);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 3px 10px 3px 3px;
   font-size: 0.78rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-assignee-badge::before {
   content: attr(data-initials);
@@ -202,16 +202,16 @@
 }
 .gestion-inline-select {
   background: transparent;
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
   padding: 4px 8px;
   font-size: 0.8rem;
   color: inherit;
   cursor: pointer;
 }
 .gestion-inline-select option {
-  background: var(--surface-sunken);
-  color: var(--ink-body);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 /* Progress bar in table */
@@ -225,17 +225,17 @@
   flex: 1;
   height: 6px;
   background: var(--surface-raised);
-  border-radius: 3px;
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 .gestion-progress-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--r-sm);
   transition: width 0.3s;
 }
 .gestion-progress-text {
   font-size: 0.75rem;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   min-width: 32px;
 }
 
@@ -247,9 +247,9 @@
   min-height: 400px;
 }
 .gestion-kanban-col {
-  background: #0a0e1a;
-  border-radius: 0;
-  border: 1px solid var(--line-soft);
+  background: var(--bg-primary);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   min-height: 200px;
@@ -257,22 +257,22 @@
 .gestion-kanban-header {
   padding: 12px 14px;
   border-top: 3px solid;
-  border-radius: 0;
+  border-radius: var(--r-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 .gestion-kanban-title {
   font-weight: 600;
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-size: 0.85rem;
 }
 .gestion-kanban-count {
   background: var(--surface-raised);
-  color: var(--ink-dim);
+  color: var(--text-muted);
   font-size: 0.75rem;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .gestion-kanban-cards {
   padding: 8px;
@@ -283,9 +283,9 @@
   overflow-y: auto;
 }
 .gestion-kanban-card {
-  background: #111827;
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
   padding: 10px 12px;
   cursor: grab;
   transition: border-color 0.1s;
@@ -312,14 +312,14 @@
 }
 .gestion-kanban-project {
   font-size: 0.72rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
   background: var(--surface-raised);
   padding: 1px 6px;
-  border-radius: 0;
+  border-radius: var(--r-pill);
 }
 .gestion-kanban-card-title {
   font-size: 0.84rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 6px;
   line-height: 1.3;
@@ -329,11 +329,11 @@
   align-items: center;
   gap: 8px;
   font-size: 0.72rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 .gestion-kanban-assignee {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -344,45 +344,45 @@
   font-weight: 600;
 }
 .gestion-kanban-date.overdue {
-  color: #ef4444;
+  color: var(--critical);
   font-weight: 600;
 }
 .gestion-kanban-progress {
   background: var(--surface-raised);
   padding: 1px 6px;
-  border-radius: 0;
+  border-radius: var(--r-pill);
 }
 
 /* ─── Gantt View ─── */
 .gestion-gantt-wrap {
-  border-radius: 0;
-  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 .gestion-gantt-controls {
   display: flex;
   gap: 4px;
   padding: 12px 16px;
-  background: var(--surface-sunken);
-  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 .gestion-gantt-mode-btn {
   padding: 6px 14px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: transparent;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-gantt-mode-btn:hover {
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-gantt-mode-btn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 
 /* ─── Custom Gantt ─── */
@@ -398,22 +398,22 @@
 }
 .gantt-nav-btn {
   padding: 6px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
   background: transparent;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.15s;
 }
 .gantt-nav-btn:hover {
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gantt-nav-today {
   padding: 6px 14px;
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--primary);
   cursor: pointer;
@@ -423,11 +423,11 @@
 }
 .gantt-nav-today:hover {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 .gantt-range-label {
   font-size: 0.9rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-weight: 600;
   text-transform: capitalize;
   margin-left: 12px;
@@ -435,7 +435,7 @@
 
 .gantt-container {
   display: flex;
-  background: #060a14;
+  background: var(--bg-primary);
   overflow: hidden;
 }
 
@@ -443,9 +443,9 @@
 .gantt-list {
   flex-shrink: 0;
   width: 320px;
-  border-right: 1px solid var(--line-soft);
+  border-right: 1px solid var(--border-color);
   overflow-y: auto;
-  background: #0a0e1a;
+  background: var(--bg-primary);
 }
 .gantt-list-header {
   display: flex;
@@ -454,26 +454,26 @@
   padding: 0 16px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--ink-ghost);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--line-soft);
-  background: var(--surface-sunken);
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
 }
 .gantt-list-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  border-bottom: 1px solid var(--line-faint);
+  border-bottom: 1px solid var(--border-color);
   gap: 8px;
   transition: background 0.1s;
 }
 .gantt-list-row:nth-child(even) {
-  background: #0c101e;
+  background: var(--bg-card);
 }
 .gantt-list-row:hover {
-  background: #111827;
+  background: var(--bg-card-hover);
 }
 .gantt-list-name {
   display: flex;
@@ -495,7 +495,7 @@
 }
 .gantt-list-title {
   font-size: 0.82rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -503,12 +503,12 @@
 }
 .gantt-list-project {
   font-size: 0.7rem;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 .gantt-list-dates {
   flex-shrink: 0;
   font-size: 0.68rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -529,8 +529,8 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--surface-sunken);
-  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 .gantt-col-header {
   position: absolute;
@@ -540,30 +540,30 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-left: 1px solid #1a2235;
+  border-left: 1px solid var(--border-color);
 }
 .gantt-col-header.gantt-col-weekend {
-  background: rgba(100, 116, 139, 0.06);
+  background: var(--border-color);
 }
 .gantt-col-label {
   font-size: 0.78rem;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   font-weight: 600;
 }
 .gantt-col-sub {
   font-size: 0.72rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 /* Grid lines */
 .gantt-grid-line {
   position: absolute;
   bottom: 0;
-  border-left: 1px solid #111827;
+  border-left: 1px solid var(--border-color);
   pointer-events: none;
 }
 .gantt-grid-line.gantt-grid-weekend {
-  background: rgba(100, 116, 139, 0.04);
+  background: var(--border-color);
 }
 
 /* Today column highlight */
@@ -581,10 +581,10 @@
   position: absolute;
   left: 0;
   right: 0;
-  border-bottom: 1px solid var(--line-faint);
+  border-bottom: 1px solid var(--border-color);
 }
 .gantt-row-even {
-  background: rgba(15, 23, 42, 0.3);
+  background: color-mix(in srgb, var(--bg-primary) 30%, transparent);
 }
 
 /* Bars */
@@ -611,13 +611,13 @@
 .gantt-bar-track {
   position: absolute;
   inset: 0;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   border: 1px solid;
   overflow: hidden;
 }
 .gantt-bar-fill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   transition: width 0.3s;
 }
 
@@ -628,8 +628,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ef4444;
-  border: 2px solid #060a14;
+  background: var(--critical);
+  border: 2px solid var(--bg-primary);
   z-index: 3;
 }
 
@@ -646,8 +646,8 @@
   justify-content: center;
   font-size: 0.6rem;
   font-weight: 700;
-  color: #fff;
-  border: 2px solid #060a14;
+  color: var(--primary-fg);
+  border: 2px solid var(--bg-primary);
   z-index: 3;
 }
 .gantt-bar-handle {
@@ -657,7 +657,7 @@
   bottom: 0;
   width: 8px;
   cursor: ew-resize;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   background: transparent;
   transition: background 0.15s;
 }
@@ -692,35 +692,35 @@
 .gestion-kpi-periods {
   display: flex;
   gap: 4px;
-  background: var(--surface-sunken);
-  border-radius: 0;
+  background: var(--bg-card);
+  border-radius: var(--r-md);
   padding: 3px;
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--border-color);
 }
 .gestion-kpi-period-btn {
   padding: 6px 14px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.82rem;
   transition: all 0.15s;
 }
 .gestion-kpi-period-btn:hover {
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-kpi-period-btn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 .gestion-export-btn {
   padding: 8px 18px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
@@ -736,9 +736,9 @@
   gap: 16px;
 }
 .gestion-kpi-card {
-  background: var(--surface-sunken);
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   padding: 20px;
   text-align: center;
 }
@@ -748,14 +748,14 @@
   color: var(--primary);
 }
 .gestion-kpi-card-success .gestion-kpi-card-value {
-  color: #22c55e;
+  color: var(--good);
 }
 .gestion-kpi-card-danger .gestion-kpi-card-value {
-  color: #ef4444;
+  color: var(--critical);
 }
 .gestion-kpi-card-label {
   font-size: 0.82rem;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -765,14 +765,14 @@
   gap: 24px;
 }
 .gestion-kpi-section {
-  background: var(--surface-sunken);
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   padding: 20px;
 }
 .gestion-kpi-section h3 {
   font-size: 0.95rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   margin: 0 0 16px 0;
 }
 .gestion-kpi-bar-row {
@@ -784,25 +784,25 @@
 .gestion-kpi-bar-label {
   min-width: 80px;
   font-size: 0.8rem;
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 .gestion-kpi-bar-track {
   flex: 1;
   height: 8px;
   background: var(--surface-raised);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 .gestion-kpi-bar-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   transition: width 0.3s;
 }
 .gestion-kpi-bar-value {
   min-width: 24px;
   text-align: right;
   font-size: 0.8rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -819,14 +819,14 @@
 
 /* Brief form */
 .gestion-brief-form {
-  background: var(--surface-sunken);
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   padding: 24px;
 }
 .gestion-brief-form h3 {
   font-size: 1rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
   margin: 0 0 16px 0;
 }
 .gestion-brief-form-grid {
@@ -844,19 +844,19 @@
 }
 .gestion-brief-field label {
   font-size: 0.78rem;
-  color: var(--ink-dim);
+  color: var(--text-muted);
   font-weight: 500;
 }
 .gestion-brief-field input,
 .gestion-brief-field textarea,
 .gestion-brief-field select {
   padding: 8px 12px;
-  border-radius: 0;
-  border: 1px solid var(--line-soft);
-  background: #0a0e1a;
-  color: var(--ink-body);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 0.85rem;
-  font-family: inherit;
+  font-family: var(--font-body);
 }
 .gestion-brief-field textarea {
   resize: vertical;
@@ -871,7 +871,7 @@
   align-items: center;
   gap: 5px;
   font-size: 0.82rem;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 .gestion-brief-checkbox input[type='checkbox'] {
@@ -885,9 +885,9 @@
   gap: 10px;
 }
 .gestion-brief-card {
-  background: var(--surface-sunken);
-  border: 1px solid var(--line-soft);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
   overflow: hidden;
   transition: border-color 0.15s;
 }
@@ -908,21 +908,21 @@
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 .gestion-brief-status-badge {
   font-size: 0.72rem;
   padding: 3px 10px;
-  border-radius: 999px;
-  color: #fff;
+  border-radius: var(--r-pill);
+  color: var(--primary-fg);
   font-weight: 600;
 }
 .gestion-brief-priority-badge {
   font-size: 0.72rem;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-weight: 600;
 }
 .gestion-brief-card-right {
@@ -930,37 +930,37 @@
   align-items: center;
   gap: 12px;
   font-size: 0.78rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 .gestion-brief-entity {
   background: var(--surface-raised);
   padding: 2px 8px;
-  border-radius: 0;
+  border-radius: var(--r-pill);
   font-weight: 500;
 }
 .gestion-brief-expand {
   font-size: 0.7rem;
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 .gestion-brief-card-body {
   padding: 0 18px 18px;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--border-color);
 }
 .gestion-brief-section {
   padding: 8px 0;
   font-size: 0.85rem;
-  color: var(--ink-soft);
-  border-bottom: 1px solid #0a0e1a;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 .gestion-brief-section strong {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 .gestion-brief-date-cle {
   display: inline-block;
   margin-left: 10px;
   background: var(--surface-raised);
   padding: 2px 8px;
-  border-radius: 0;
+  border-radius: var(--r-pill);
   font-size: 0.78rem;
 }
 .gestion-brief-card-actions {
@@ -971,17 +971,17 @@
 }
 .gestion-delete-btn {
   padding: 6px 14px;
-  border: 1px solid #ef4444;
-  border-radius: 0;
+  border: 1px solid var(--mono-danger-border);
+  border-radius: var(--r-md);
   background: transparent;
-  color: #ef4444;
+  color: var(--mono-danger);
   cursor: pointer;
   font-size: 0.8rem;
   transition: all 0.15s;
 }
 .gestion-delete-btn:hover {
-  background: #ef4444;
-  color: #fff;
+  background: var(--mono-danger-surface);
+  color: var(--mono-danger);
 }
 
 /* ─── Responsive ─── */
@@ -1010,7 +1010,7 @@
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 0;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
@@ -1020,12 +1020,12 @@
 .gestion-brief-comment-input {
   width: 100%;
   padding: 10px 12px;
-  background: #01040e;
+  background: var(--bg-primary);
   border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 0;
+  border-radius: var(--r-md);
   color: var(--text-primary);
   font-size: 13px;
-  font-family: inherit;
+  font-family: var(--font-body);
   resize: vertical;
   min-height: 80px;
 }
@@ -1041,7 +1041,7 @@
   display: inline-block;
   width: 16px;
   margin-right: 6px;
-  color: var(--ink-faint);
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -1060,8 +1060,8 @@
 
 .gestion-task-details {
   padding: 16px 24px 20px;
-  background: rgba(15, 23, 42, 0.4);
-  border-top: 1px solid rgba(148, 163, 184, 0.08);
+  background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
+  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1076,14 +1076,14 @@
 .gestion-detail-label {
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--ink-faint);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-muted);
 }
 
 .gestion-detail-text {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1091,7 +1091,7 @@
 
 .gestion-detail-empty {
   margin: 0;
-  color: var(--ink-ghost);
+  color: var(--text-muted);
   font-size: 13px;
   font-style: italic;
 }
@@ -1106,7 +1106,7 @@
   padding: 3px 10px;
   background: rgba(var(--primary-rgb), 0.12);
   color: var(--primary-light);
-  border-radius: 0;
+  border-radius: var(--r-pill);
   font-size: 12px;
 }
 
@@ -1122,9 +1122,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
   cursor: pointer;
   transition:
     background 0.15s,
@@ -1132,7 +1132,7 @@
 }
 
 .gestion-attachment-item:hover {
-  background: rgba(30, 41, 59, 0.9);
+  background: var(--bg-card-hover);
   border-color: rgba(var(--primary-rgb), 0.3);
 }
 
@@ -1142,7 +1142,7 @@
 }
 
 .gestion-attachment-name {
-  color: var(--ink-body);
+  color: var(--text-primary);
   font-size: 13px;
   flex: 1;
   overflow: hidden;
@@ -1151,7 +1151,7 @@
 }
 
 .gestion-attachment-size {
-  color: var(--ink-faint);
+  color: var(--text-muted);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -1169,7 +1169,7 @@
   background: rgba(var(--primary-rgb), 0.12);
   color: var(--primary-light);
   border: 1px dashed rgba(var(--primary-rgb), 0.3);
-  border-radius: 0;
+  border-radius: var(--r-md);
   font-size: 13px;
   cursor: pointer;
   transition:
@@ -1197,10 +1197,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(34, 197, 94, 0.06);
-  border: 1px solid rgba(34, 197, 94, 0.15);
-  border-radius: 0;
-  color: #86efac;
+  background: rgba(127, 219, 160, 0.06);
+  border: 1px solid rgba(127, 219, 160, 0.15);
+  border-radius: var(--r-md);
+  color: var(--good);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1210,12 +1210,12 @@
 }
 
 .gestion-completed-toggle:hover {
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(127, 219, 160, 0.1);
 }
 
 .gestion-completed-icon {
   font-size: 12px;
-  color: #4ade80;
+  color: var(--good);
 }
 
 .gestion-table-completed {
@@ -1224,31 +1224,31 @@
 }
 
 .gestion-table-completed tbody tr {
-  background: rgba(34, 197, 94, 0.03);
+  background: rgba(127, 219, 160, 0.03);
 }
 
 .gestion-table-completed tbody tr:hover {
-  background: rgba(34, 197, 94, 0.06);
+  background: rgba(127, 219, 160, 0.06);
 }
 
 /* ─── Task Ready (100% progress, not yet marked TERMINE) ─── */
 .gestion-row-ready {
-  background: rgba(34, 197, 94, 0.08) !important;
-  border-left: 3px solid #22c55e;
+  background: rgba(127, 219, 160, 0.08) !important;
+  border-left: 3px solid var(--good);
 }
 
 .gestion-row-ready .gestion-cell-title {
-  color: #86efac;
+  color: var(--good);
 }
 
 .gestion-row-ready:hover {
-  background: rgba(34, 197, 94, 0.12) !important;
+  background: rgba(127, 219, 160, 0.12) !important;
 }
 
 /* Kanban card ready (100%) */
 .gestion-kanban-card-ready {
-  border: 1px solid rgba(34, 197, 94, 0.4) !important;
-  background: rgba(34, 197, 94, 0.06) !important;
+  border: 1px solid rgba(127, 219, 160, 0.4) !important;
+  background: rgba(127, 219, 160, 0.06) !important;
   box-shadow: none;
 }
 
@@ -1257,88 +1257,88 @@
    ═══════════════════════════════════════════════════════ */
 
 [data-theme='light'] .gestion-title {
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .gestion-project-select .custom-select-trigger,
 [data-theme='light'] .gestion-filter-select .custom-select-trigger {
-  background: #ffffff;
-  border-color: var(--line-soft);
-  color: var(--ink-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gestion-view-toggle {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-view-btn {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-view-btn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 
 [data-theme='light'] .gestion-filter-clear {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #ef4444;
+  background: var(--critical-surface);
+  border-color: rgba(255, 138, 138, 0.32);
+  color: var(--critical);
 }
 
 /* Table */
 [data-theme='light'] .gestion-table {
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gestion-table thead th {
-  background: var(--surface-sunken);
-  color: var(--ink-dim);
-  border-bottom-color: var(--line-soft);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-table tbody tr {
-  border-bottom-color: var(--line-faint);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-table tbody td {
-  border-bottom-color: var(--line-faint);
-  color: var(--ink-soft);
+  border-bottom-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gestion-table tbody tr:hover {
-  background: var(--surface-sunken);
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gestion-cell-title {
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .gestion-assignee-badge {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gestion-assignee-name {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-inline-select {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-inline-select option {
-  background: #ffffff;
-  color: var(--ink-body);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .gestion-progress-bar {
-  background: var(--surface-strong);
+  background: var(--bg-card-hover);
 }
 
 [data-theme='light'] .gestion-empty {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 /* Expandable Row Details */
@@ -1347,8 +1347,8 @@
 }
 
 [data-theme='light'] .gestion-task-details {
-  background: var(--surface-sunken);
-  border-top-color: var(--line-soft);
+  background: var(--bg-card);
+  border-top-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-detail-tag {
@@ -1358,76 +1358,76 @@
 
 /* Attachments */
 [data-theme='light'] .gestion-attachment-item {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-attachment-item:hover {
-  background: var(--surface-sunken);
+  background: var(--bg-card);
   border-color: var(--primary);
 }
 
 [data-theme='light'] .gestion-upload-btn {
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
   color: var(--primary-dark);
 }
 
 [data-theme='light'] .gestion-upload-btn:hover {
-  background: #e0f2fe;
+  background: var(--accent-medium);
 }
 
 /* Completed Section */
 [data-theme='light'] .gestion-completed-toggle {
-  background: rgba(34, 197, 94, 0.06);
-  border-color: #bbf7d0;
-  color: #16a34a;
+  background: rgba(127, 219, 160, 0.06);
+  border-color: rgba(127, 219, 160, 0.32);
+  color: var(--good);
 }
 
 [data-theme='light'] .gestion-completed-toggle:hover {
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(127, 219, 160, 0.1);
 }
 
 [data-theme='light'] .gestion-completed-icon {
-  color: #22c55e;
+  color: var(--good);
 }
 
 [data-theme='light'] .gestion-table-completed tbody tr {
-  background: rgba(34, 197, 94, 0.02);
+  background: rgba(127, 219, 160, 0.02);
 }
 
 /* Ready row */
 [data-theme='light'] .gestion-row-ready {
-  background: rgba(34, 197, 94, 0.06) !important;
+  background: rgba(127, 219, 160, 0.06) !important;
 }
 
 [data-theme='light'] .gestion-row-ready .gestion-cell-title {
-  color: #16a34a;
+  color: var(--good);
 }
 
 /* Overdue */
 [data-theme='light'] .gestion-row-overdue {
-  background: rgba(239, 68, 68, 0.04) !important;
+  background: rgba(255, 138, 138, 0.04) !important;
 }
 
 [data-theme='light'] .gestion-cell-overdue {
-  color: #dc2626;
+  color: var(--critical);
 }
 
 /* Kanban */
 [data-theme='light'] .gestion-kanban-col {
-  background: var(--surface-sunken);
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-kanban-header {
-  background: #ffffff;
-  border-bottom-color: var(--line-soft);
+  background: var(--bg-card);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-kanban-card {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
   box-shadow: none;
 }
 
@@ -1437,52 +1437,52 @@
 
 [data-theme='light'] .gestion-kanban-assignee {
   background: var(--surface-raised);
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gestion-kanban-date {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-kanban-progress {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 
 /* Gantt */
 [data-theme='light'] .gestion-gantt-controls {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-gantt-mode-btn {
   background: var(--surface-raised);
-  color: var(--ink-dim);
-  border-color: var(--line-soft);
+  color: var(--text-muted);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-gantt-mode-btn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
 }
 
 [data-theme='light'] .gantt-nav-btn,
 [data-theme='light'] .gantt-nav-today {
   background: var(--surface-raised);
-  color: var(--ink-dim);
-  border-color: var(--line-soft);
+  color: var(--text-muted);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-container {
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gantt-list {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-list-row:nth-child(even) {
-  background: var(--surface-sunken);
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gantt-list-row:hover {
@@ -1490,47 +1490,47 @@
 }
 
 [data-theme='light'] .gantt-col-headers {
-  background: var(--surface-sunken);
-  border-bottom-color: var(--line-soft);
+  background: var(--bg-card);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-col-label {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gantt-col-sub {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gantt-chart-scroll {
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gantt-list-header {
-  color: var(--ink-dim);
-  border-bottom-color: var(--line-soft);
+  color: var(--text-muted);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-list-row {
-  border-bottom-color: var(--line-faint);
+  border-bottom-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-list-project {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gantt-col-header {
-  background: var(--surface-sunken);
-  color: var(--ink-dim);
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-grid-line {
-  border-color: var(--line-faint);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gantt-grid-weekend {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--border-color);
 }
 
 [data-theme='light'] .gantt-today-col {
@@ -1538,77 +1538,77 @@
 }
 
 [data-theme='light'] .gantt-row-even {
-  background: rgba(0, 0, 0, 0.01);
+  background: color-mix(in srgb, var(--bg-primary) 30%, transparent);
 }
 
 /* Briefs */
 [data-theme='light'] .gestion-brief-card {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-brief-card-header {
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .gestion-brief-card-header:hover {
-  background: var(--surface-sunken);
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gestion-brief-card-body {
-  border-top-color: var(--line-soft);
-  background: #fafbfc;
+  border-top-color: var(--border-color);
+  background: var(--bg-card);
 }
 
 [data-theme='light'] .gestion-brief-section {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 [data-theme='light'] .gestion-brief-entity {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-brief-expand {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-brief-comment-input {
-  background: #ffffff;
-  border-color: var(--line-soft);
-  color: var(--ink-body);
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 [data-theme='light'] .gestion-brief-form {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-brief-field label {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-brief-field input,
 [data-theme='light'] .gestion-brief-field textarea,
 [data-theme='light'] .gestion-brief-field select {
-  background: #ffffff;
-  border-color: var(--line-soft);
-  color: var(--ink-body);
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 /* Empty states */
 [data-theme='light'] .gestion-empty-state p {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 /* Table wrap border */
 [data-theme='light'] .gestion-table-wrap {
-  border-color: var(--line-soft);
+  border-color: var(--border-color);
 }
 
 /* Inline badge (read-only status/priority badge) */
 [data-theme='light'] .gestion-inline-badge {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.12);
+  background: var(--bg-card-hover);
+  border-color: var(--border-color);
 }
 
 /* Kanban project tag & progress tag backgrounds */
@@ -1618,23 +1618,23 @@
 
 /* Kanban card meta text */
 [data-theme='light'] .gestion-kanban-card-meta {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 /* Brief priority badge */
 [data-theme='light'] .gestion-brief-priority-badge {
   background: var(--surface-raised);
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 /* Brief card left text */
 [data-theme='light'] .gestion-brief-card-left {
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 
 /* Brief card right */
 [data-theme='light'] .gestion-brief-card-right {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 /* Brief entity tag */
@@ -1644,68 +1644,68 @@
 
 /* Brief section labels */
 [data-theme='light'] .gestion-brief-section strong {
-  color: var(--ink-dim);
+  color: var(--text-muted);
 }
 
 /* Brief section border */
 [data-theme='light'] .gestion-brief-section {
-  border-bottom-color: var(--line-faint);
+  border-bottom-color: var(--border-color);
 }
 
 /* Brief date cle tag */
 [data-theme='light'] .gestion-brief-date-cle {
   background: var(--surface-raised);
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 /* Brief checkbox */
 [data-theme='light'] .gestion-brief-checkbox {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 /* Expand icon */
 [data-theme='light'] .gestion-expand-icon {
-  color: var(--ink-ghost);
+  color: var(--text-muted);
 }
 
 /* KPI cards */
 [data-theme='light'] .gestion-kpi-card {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-kpi-card-label {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-kpi-section {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-kpi-bar-label {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-kpi-bar-track {
-  background: var(--surface-strong);
+  background: var(--bg-card-hover);
 }
 
 [data-theme='light'] .gestion-kpi-periods {
-  background: #ffffff;
-  border-color: var(--line-soft);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 [data-theme='light'] .gestion-kpi-period-btn {
-  color: var(--ink-faint);
+  color: var(--text-muted);
 }
 
 [data-theme='light'] .gestion-kpi-period-btn:hover {
   background: var(--surface-raised);
-  color: var(--ink-body);
+  color: var(--text-primary);
 }
 
 /* Gantt wrap border */
 [data-theme='light'] .gestion-gantt-wrap {
-  border-color: var(--line-soft);
+  border-color: var(--border-color);
 }

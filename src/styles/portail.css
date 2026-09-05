@@ -1,0 +1,816 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Charte PORTAIL — pages privées (admin + espace client)
+   ───────────────────────────────────────────────────────────────────
+   Scopée sur html.theme-portail, posée par App.tsx sur les routes
+   /admin et /espace-client (login inclus).
+
+   Sélecteur volontairement plus spécifique que [data-theme="…"] et
+   [data-accent="…"] pour gagner la cascade : le mode clair et les
+   accents perso restent sans effet dans le portail.
+
+   Contrat : docs/superpowers/specs/2026-09-05-charte-pages-privees-design.md
+   Trois règles tiennent toute la charte :
+     1. aucune capitale forcée, aucun interlettrage positif ;
+     2. aucun angle vif — tout passe par l'échelle de rayons ;
+     3. aucune couleur en dur — tout passe par les jetons ci-dessous.
+
+   Lot 0 : jetons + primitives partagées. Les écrans spécifiques
+   (lots 1→9) héritent déjà de cette couche.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────────
+   JETONS
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail {
+  /* Surfaces — neutre à biais froid, accordé à l'accent bleu */
+  --bg-primary: #0a0c0f;
+  --bg-secondary: #141a20;
+  --bg-card: #141a20;
+  --bg-card-hover: #1b242c;
+  --surface-raised: #202a33;
+
+  /* Encres — contrastes mesurés sur --bg-primary :
+     primary 16,8:1 · secondary 8,2:1 · muted 5,4:1 (WCAG AA à 11,5 px) */
+  --text-primary: #e8eef3;
+  --text-secondary: #9daab3;
+  --text-muted: #7b8894;
+  --border-color: rgba(224, 238, 247, 0.09);
+  --line-strong: rgba(224, 238, 247, 0.16);
+
+  /* Pas de relief neumorphe */
+  --neumorphism-light: transparent;
+  --neumorphism-dark: transparent;
+
+  /* Accent bleu ciel — sky 400 en remplissage, sky 300 en texte sur fond
+     sombre, sky 500 au survol. Jamais d'hexadécimal bleu ici : le test
+     themeAccentTokens l'interdit, tout passe par les triplets. */
+  --primary: rgb(var(--primary-rgb));
+  --primary-light: rgb(var(--primary-light-rgb));
+  --primary-dark: rgb(var(--primary-dark-rgb));
+  --primary-fg: #06202b;
+  --primary-rgb: 56, 189, 248;
+  --primary-light-rgb: 125, 211, 252;
+  --primary-dark-rgb: 14, 165, 233;
+
+  /* Accents — surfaces conservées, glows coupés */
+  --accent-soft: rgba(var(--primary-rgb), 0.07);
+  --accent-medium: rgba(var(--primary-rgb), 0.14);
+  --accent-border: rgba(var(--primary-rgb), 0.34);
+  --accent-border-strong: rgba(var(--primary-rgb), 0.5);
+  --accent-glow-soft: transparent;
+  --accent-glow: transparent;
+  --accent-glow-strong: transparent;
+  --accent-surface: rgba(var(--primary-rgb), 0.09);
+  --accent-surface-strong: rgba(var(--primary-rgb), 0.16);
+  --accent-ring: rgba(var(--primary-rgb), 0.55);
+  --primary-glow: transparent;
+  --primary-glow-strong: transparent;
+  --primary-shadow: none;
+  --primary-shadow-strong: none;
+
+  /* Statut — désaturé. Réservé à l'état, jamais une série de graphe,
+     jamais seul : toujours accompagné d'une icône ou d'un libellé. */
+  --good: #7fdba0;
+  --warning: #f7c268;
+  --serious: #f4a06a;
+  --critical: #ff8a8a;
+  --good-surface: rgba(127, 219, 160, 0.1);
+  --warning-surface: rgba(247, 194, 104, 0.1);
+  --serious-surface: rgba(244, 160, 106, 0.1);
+  --critical-surface: rgba(255, 138, 138, 0.1);
+
+  /* Catégoriel — miroir CSS de CHART_CATEGORICAL (src/lib/chartColors.ts).
+     Pour distinguer des catégories sans hiérarchie : langages, poles, series.
+     Ne jamais employer une couleur de statut a cette fin, et inversement.
+     Ecrit en rgb() : le test themeAccentTokens interdit les hexadecimaux
+     bleus dans cette feuille. */
+  --cat-1: rgb(2, 132, 199);
+  --cat-2: rgb(217, 119, 6);
+  --cat-3: rgb(225, 29, 72);
+  --cat-4: rgb(124, 58, 237);
+  --cat-5: rgb(5, 150, 105);
+
+  /* Alias historique des actions destructives (sidebars) */
+  --mono-danger: var(--critical);
+  --mono-danger-surface: var(--critical-surface);
+  --mono-danger-border: rgba(255, 138, 138, 0.32);
+
+  /* Rayons */
+  --r-hair: 2px; /* filets et barres decoratives de 2 a 3 px */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 13px;
+  --r-pill: 999px;
+
+  /* Typographie */
+  --font-heading: 'Manrope', 'Cabinet Grotesk', system-ui, sans-serif;
+  --font-body: 'Manrope', 'Cabinet Grotesk', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Mesh ambiant neutralisé.
+     !important : theme.css redéfinit ces tokens via
+     [data-theme="dark"][data-accent="X"] (spécificité 0,2,0) si
+     l'utilisateur a un accent perso sauvegardé. */
+  --ambient-mesh-primary: transparent !important;
+  --ambient-mesh-primary-soft: transparent !important;
+  --ambient-mesh-secondary: transparent !important;
+  --ambient-mesh-secondary-soft: transparent !important;
+  --ambient-mesh-layer-1: transparent !important;
+  --ambient-mesh-layer-2: transparent !important;
+  --ambient-mesh-layer-3: transparent !important;
+  --ambient-mesh-layer-4: transparent !important;
+
+  /* Fonds des shells — aplatis */
+  --admin-shell-bg-base: #0a0c0f;
+  --admin-shell-bg-glow-1: transparent !important;
+  --admin-shell-bg-glow-2: transparent !important;
+  --admin-shell-bg-glow-3: transparent !important;
+  --client-shell-bg-base: #0a0c0f;
+  --client-shell-bg-glow-1: transparent !important;
+  --client-shell-bg-glow-2: transparent !important;
+  --client-shell-bg-glow-3: transparent !important;
+}
+
+/* Fond garanti partout (login sans shell inclus) */
+html.theme-portail,
+html.theme-portail body {
+  background: var(--bg-primary);
+}
+
+html.theme-portail body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+/* Les chiffres qui s'alignent en colonne */
+html.theme-portail :is(table, .admin-table, .admin-stat-value, .admin-widget-value) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CASSE — aucune capitale forcée dans le portail.
+   La hiérarchie passe par la graisse et la couleur, plus par la casse.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail :is(h1, h2, h3, h4, h5, h6, button, label, th, .admin-tab, .admin-badge, .admin-tag) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   RAYONS — trois familles de formes.
+   Contrôles à --r-md, surfaces à --r-lg, statuts en gélule.
+   Les !important tiennent le contrat tant que les écrans (lots 1→9)
+   portent encore leurs propres rayons hérités.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail
+  :is(
+    button,
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea,
+    .portal-button,
+    .portal-input,
+    .portal-action-link,
+    .admin-button,
+    .admin-card-btn,
+    .admin-card-actions,
+    .client-dashboard-logout,
+    .client-activity-load-more,
+    .client-project-back,
+    .client-project-item-button,
+    .client-project-document-button,
+    .client-card-avatar,
+    .client-dashboard-stat-icon,
+    .project-form-section-icon,
+    .client-project-document-icon
+  ) {
+  border-radius: var(--r-md) !important;
+}
+
+html.theme-portail
+  :is(
+    fieldset,
+    table,
+    .portal-card,
+    .admin-widget,
+    .admin-stat-card,
+    .admin-table-wrapper,
+    .admin-list-item,
+    .admin-member-card,
+    .admin-form-section,
+    .project-form-section,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .admin-empty-state,
+    .admin-error,
+    .admin-success,
+    .admin-info,
+    .client-card,
+    .client-dashboard-hero,
+    .client-dashboard-stat,
+    .client-dashboard-empty,
+    .client-project-card,
+    .client-project-hero,
+    .client-project-section,
+    .client-project-item,
+    .client-project-update,
+    .client-project-document,
+    .client-project-empty-state,
+    .client-progress-info,
+    .client-progress-tasks,
+    .client-progress-activity
+  ) {
+  border-radius: var(--r-lg) !important;
+}
+
+html.theme-portail
+  :is(
+    .admin-badge,
+    .admin-tag,
+    .admin-card-role,
+    .admin-card-you,
+    .priority-indicator,
+    .client-card-status,
+    .client-card-service,
+    .client-project-card-badge,
+    .client-project-card-tag,
+    .client-project-card-tag-more,
+    .client-project-hero-badge,
+    .client-project-item-type,
+    .client-status-active,
+    .client-status-done,
+    .client-status-pending,
+    .client-status-cancelled
+  ) {
+  border-radius: var(--r-pill) !important;
+}
+
+/* Aucune ombre décorative, aucun flottement au survol. */
+html.theme-portail
+  :is(
+    button,
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea,
+    .portal-card,
+    .portal-button,
+    .portal-input,
+    .portal-action-link,
+    .admin-widget,
+    .admin-stat-card,
+    .admin-table-wrapper,
+    .admin-list-item,
+    .admin-member-card,
+    .admin-badge,
+    .admin-tag,
+    .admin-card-btn,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .priority-indicator,
+    .admin-empty-state,
+    .admin-error,
+    .admin-success,
+    .admin-info,
+    .client-card,
+    .client-dashboard-hero,
+    .client-dashboard-stat,
+    .client-project-card,
+    .client-project-hero,
+    .client-project-section,
+    .client-project-item,
+    .client-project-update,
+    .client-project-document
+  ) {
+  box-shadow: none !important;
+}
+
+html.theme-portail
+  :is(
+    .admin-widget,
+    .admin-stat-card,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-card-btn,
+    .portal-button,
+    .portal-action-link,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .admin-badge,
+    .priority-indicator,
+    .admin-button.secondary,
+    .client-dashboard-stat,
+    .client-project-card,
+    .client-project-item,
+    .client-project-document,
+    .client-project-back,
+    .client-project-document-button,
+    .client-project-item-button,
+    .client-dashboard-logout
+  ):hover {
+  transform: none !important;
+}
+
+/* Neutralise les barres et halos décoratifs en ::before des cartes */
+html.theme-portail
+  :is(
+    .admin-widget,
+    .admin-stat-card,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .admin-form-section,
+    .project-form-section,
+    .portal-card,
+    .admin-header,
+    .client-project-card,
+    .admin-tag
+  )::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   EN-TÊTES DE PAGE — kicker, titre plein, filet d'accent arrondi
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .admin-header h1,
+html.theme-portail .admin-page-header h1 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  background: none !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+html.theme-portail .admin-page-header {
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-portail .admin-page-header::after {
+  background: var(--primary) !important;
+  opacity: 1 !important;
+  height: 3px;
+  border-radius: var(--r-hair) !important;
+}
+html.theme-portail .admin-page-subtitle {
+  color: var(--text-secondary);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   BOUTONS
+   Primaire : aplat d'accent, texte sombre, survol plus profond.
+   Secondaire : contour, survol par la surface.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .portal-button {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-weight: 700;
+  letter-spacing: normal;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease;
+}
+html.theme-portail .portal-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: var(--primary-fg);
+}
+html.theme-portail .portal-button.secondary,
+html.theme-portail .admin-button.secondary {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text-primary);
+}
+html.theme-portail .portal-button.secondary:hover:not(:disabled),
+html.theme-portail .admin-button.secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--line-strong);
+  color: var(--text-primary);
+}
+html.theme-portail .portal-button::before {
+  display: none !important;
+}
+
+/* Boutons d'action « libellé révélé » (topbar dashboard) */
+html.theme-portail .admin-actions .portal-action-link {
+  border: 1px solid var(--border-color) !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  letter-spacing: normal;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+html.theme-portail .admin-actions .portal-action-link:hover {
+  border-color: var(--accent-border) !important;
+  color: var(--primary-light) !important;
+  background: var(--accent-medium) !important;
+}
+html.theme-portail .admin-actions .portal-action-link[title='Se deconnecter'],
+html.theme-portail .admin-actions .portal-action-link[title='Déconnexion'] {
+  border-color: var(--mono-danger-border) !important;
+  color: var(--mono-danger) !important;
+  background: var(--mono-danger-surface) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CHAMPS DE FORMULAIRE
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .portal-input,
+html.theme-portail input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html.theme-portail select,
+html.theme-portail textarea {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+html.theme-portail .portal-input:focus,
+html.theme-portail input:focus,
+html.theme-portail select:focus,
+html.theme-portail textarea:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--accent-medium) !important;
+  background: var(--bg-card);
+}
+html.theme-portail .portal-container select,
+html.theme-portail .portal-container select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+html.theme-portail .portal-container select option:checked {
+  background-color: var(--accent-surface-strong);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CARTES & GRILLES
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .portal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+html.theme-portail
+  :is(
+    .admin-widget,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card,
+    .admin-form-section,
+    .project-form-section
+  ) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-portail
+  :is(
+    .admin-widget,
+    .admin-list-item,
+    .client-card,
+    .admin-member-card,
+    .admin-document-item,
+    .admin-update-item,
+    .cloud-folder-card
+  ):hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--line-strong) !important;
+}
+
+/* Stat-cards : gros chiffre, libellé en casse normale, accent unifié */
+html.theme-portail .admin-stat-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-left: 3px solid var(--primary) !important;
+}
+html.theme-portail .admin-stat-card:hover {
+  background: var(--bg-card-hover) !important;
+}
+html.theme-portail .admin-stat-label,
+html.theme-portail .admin-widget-label {
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+html.theme-portail .admin-stat-value,
+html.theme-portail .admin-widget-value {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+/* Neutralise les variantes « arc-en-ciel » des widgets et stat-cards */
+html.theme-portail .admin-widget:nth-child(n) .admin-widget-value,
+html.theme-portail .admin-stat-card:nth-child(n) .admin-stat-value {
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+html.theme-portail .admin-widget:nth-child(n) {
+  border-color: var(--border-color) !important;
+}
+html.theme-portail .admin-widget:nth-child(n):hover {
+  border-color: var(--line-strong) !important;
+}
+html.theme-portail .admin-stat-card:nth-child(n) {
+  border-left-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   TABLES — filets horizontaux, en-têtes en casse normale
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .admin-table-wrapper {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  overflow: hidden;
+}
+html.theme-portail .admin-table th {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-muted) !important;
+  color: var(--text-muted) !important;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-portail .admin-table td {
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-portail .admin-table tr:hover td {
+  background: var(--bg-card-hover) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   BADGES / STATUTS / PRIORITÉS — gélules, fond teinté, casse normale
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail :is(.admin-badge, .priority-indicator, .admin-card-role) {
+  background: var(--bg-card-hover) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+/* En cours / normal → accent */
+html.theme-portail .admin-badge.status-en-cours,
+html.theme-portail .priority-indicator.normale,
+html.theme-portail .client-status-active {
+  background: var(--accent-medium) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--primary-light) !important;
+}
+/* Terminé / succès */
+html.theme-portail .admin-badge.status-termine,
+html.theme-portail .client-status-done {
+  background: var(--good-surface) !important;
+  border-color: rgba(127, 219, 160, 0.32) !important;
+  color: var(--good) !important;
+}
+/* Attente */
+html.theme-portail .admin-badge.status-en-attente,
+html.theme-portail .priority-indicator.haute,
+html.theme-portail .client-status-pending {
+  background: var(--warning-surface) !important;
+  border-color: rgba(247, 194, 104, 0.32) !important;
+  color: var(--warning) !important;
+}
+/* Urgent / danger */
+html.theme-portail .priority-indicator.urgente {
+  background: var(--critical-surface) !important;
+  border-color: var(--mono-danger-border) !important;
+  color: var(--critical) !important;
+  animation: none !important;
+}
+/* Annulé / clos */
+html.theme-portail .client-status-cancelled {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Tags */
+html.theme-portail .admin-tag,
+html.theme-portail .client-project-card-tag {
+  background: var(--accent-medium) !important;
+  border: 1px solid var(--accent-border) !important;
+  color: var(--primary-light) !important;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ONGLETS — soulignés, casse normale
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .admin-tabs {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0;
+  gap: 0;
+}
+html.theme-portail .admin-tab {
+  color: var(--text-muted) !important;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+}
+html.theme-portail .admin-tab:hover:not(.active) {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+html.theme-portail .admin-tab.active {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  border-bottom-color: var(--primary) !important;
+  text-shadow: none !important;
+}
+
+/* Onglets espace client */
+html.theme-portail .client-project-tabs {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0;
+  gap: 0;
+}
+html.theme-portail .client-project-tab {
+  color: var(--text-muted) !important;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  border-bottom: 2px solid transparent !important;
+}
+html.theme-portail .client-project-tab.active {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   MESSAGES / ÉTATS / FILETS / FIL D'ARIANE
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .admin-error {
+  background: var(--critical-surface) !important;
+  border: 1px solid var(--mono-danger-border) !important;
+  color: var(--critical) !important;
+  animation: none !important;
+}
+html.theme-portail .admin-success {
+  background: var(--good-surface) !important;
+  border: 1px solid rgba(127, 219, 160, 0.32) !important;
+  color: var(--good) !important;
+}
+html.theme-portail .admin-info {
+  background: var(--accent-medium) !important;
+  border: 1px solid var(--accent-border) !important;
+  color: var(--primary-light) !important;
+}
+html.theme-portail :is(.admin-empty-state, .client-dashboard-empty, .client-project-empty-state) {
+  background: transparent !important;
+  border: 1px dashed var(--border-color) !important;
+}
+html.theme-portail .admin-empty-state-icon {
+  animation: none !important;
+}
+html.theme-portail .admin-empty-state-text {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-muted) !important;
+  color: var(--text-muted) !important;
+}
+html.theme-portail .admin-divider {
+  background: var(--border-color) !important;
+  box-shadow: none !important;
+}
+html.theme-portail .admin-divider::before {
+  display: none !important;
+}
+html.theme-portail .admin-breadcrumb span {
+  background: none !important;
+  -webkit-text-fill-color: var(--primary-light) !important;
+  color: var(--primary-light) !important;
+}
+html.theme-portail .admin-tooltip:hover::after {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: none !important;
+}
+html.theme-portail .admin-tooltip:hover::before {
+  border-top-color: var(--border-color) !important;
+}
+
+/* Formulaires : titre plein, filet latéral d'accent */
+html.theme-portail .admin-form-section h2 {
+  background: none !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+html.theme-portail .admin-form-section::before,
+html.theme-portail .project-form-section::before {
+  background: var(--primary) !important;
+  box-shadow: none !important;
+  border-radius: var(--r-hair) !important;
+  display: block !important;
+  content: '' !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ESPACE CLIENT — tableau de bord et détail projet
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail .client-dashboard-hero,
+html.theme-portail .client-project-hero {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-portail .client-dashboard-title,
+html.theme-portail .client-project-hero-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  text-transform: none;
+}
+html.theme-portail
+  :is(
+    .client-dashboard-stat,
+    .client-project-section,
+    .client-project-item,
+    .client-project-update,
+    .client-project-document,
+    .client-progress-info,
+    .client-progress-tasks,
+    .client-progress-activity
+  ) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+html.theme-portail .client-dashboard-stat-value {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+html.theme-portail .client-dashboard-stat-label {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+html.theme-portail .client-project-card-progress-fill,
+html.theme-portail .client-progress-bar-fill {
+  background: var(--primary) !important;
+}
+html.theme-portail :is(.client-project-item-button, .client-project-document-button:hover) {
+  background: var(--primary) !important;
+  color: var(--primary-fg) !important;
+  border-color: var(--primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ACCESSIBILITÉ — focus clavier visible (WCAG 2.4.7)
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail :is(a, button, [role='button'], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-portail *,
+  html.theme-portail *::before,
+  html.theme-portail *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   DIVERS — ascenseur, sélection
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-portail ::selection {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+html.theme-portail *::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--r-pill);
+}

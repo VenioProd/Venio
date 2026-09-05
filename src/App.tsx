@@ -151,21 +151,24 @@ function App() {
   // site : ni en-tête ni pied de page vitrine, comme pour les questionnaires.
   const isBetaTesterSpace = location.pathname.startsWith('/beta/')
   const isAdminArea = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login'
-  const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client')
+  // L'espace testeur est une surface privée derrière un jeton : il relève de la
+  // charte Portail au même titre que l'admin et l'espace client.
+  const isPortal =
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isBetaTesterSpace
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
   // Thème Monolithe : scopé au site public (hors portail & questionnaire).
-  // Thème Monolithe Portail : scopé à l'admin + l'espace client (login inclus).
+  // Charte Portail : scopée à l'admin + l'espace client (login inclus).
   useEffect(() => {
     const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
     document.documentElement.classList.toggle('theme-monolithe', isPublicSite)
-    document.documentElement.classList.toggle('theme-monolithe-portal', isPortal)
+    document.documentElement.classList.toggle('theme-portail', isPortal)
     return () => {
       document.documentElement.classList.remove('theme-monolithe')
-      document.documentElement.classList.remove('theme-monolithe-portal')
+      document.documentElement.classList.remove('theme-portail')
     }
   }, [isPortal, isPublicQuestionnaire, isBetaTesterSpace])
 

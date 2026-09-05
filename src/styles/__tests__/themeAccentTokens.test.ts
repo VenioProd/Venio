@@ -56,7 +56,7 @@ describe('theme accent tokens', () => {
   it('keeps shared UI accent surfaces free of hardcoded Venio blue values', () => {
     const paths = [
       'src/styles/theme-monolithe.css',
-      'src/styles/monolithe-portal.css',
+      'src/styles/portail.css',
       'src/styles/monolithe-home.css',
       'src/styles/monolithe-sites.css',
       'src/components/Navbar.css',
