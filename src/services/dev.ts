@@ -965,15 +965,15 @@ export const TYPE_LABEL: Record<DevIssueType, string> = {
 }
 
 export const TYPE_COLOR: Record<DevIssueType, string> = {
-  FEATURE: '#22c55e',
-  BUG: '#ef4444',
-  CHORE: '#a3a3a3',
-  TASK: '#7c5cff',
-  REFACTOR: '#14b8a6',
-  SECURITY: '#f43f5e',
-  CI: '#38bdf8',
-  DEPLOY: '#22c55e',
-  DOC: '#f59e0b',
+  FEATURE: '#7dd3fc',
+  BUG: '#ff8a8a',
+  CHORE: '#93a1ab',
+  TASK: '#93a1ab',
+  REFACTOR: '#93a1ab',
+  SECURITY: '#f0a3c8',
+  CI: '#93a1ab',
+  DEPLOY: '#f7c268',
+  DOC: '#c9b8e8',
 }
 
 // Weighted progression — must match backend src/lib/dev/stats.ts STATUS_WEIGHT.

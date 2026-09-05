@@ -79,6 +79,17 @@ html.theme-portail {
   --serious-surface: rgba(244, 160, 106, 0.1);
   --critical-surface: rgba(255, 138, 138, 0.1);
 
+  /* Catégoriel — miroir CSS de CHART_CATEGORICAL (src/lib/chartColors.ts).
+     Pour distinguer des catégories sans hiérarchie : langages, poles, series.
+     Ne jamais employer une couleur de statut a cette fin, et inversement.
+     Ecrit en rgb() : le test themeAccentTokens interdit les hexadecimaux
+     bleus dans cette feuille. */
+  --cat-1: rgb(2, 132, 199);
+  --cat-2: rgb(217, 119, 6);
+  --cat-3: rgb(225, 29, 72);
+  --cat-4: rgb(124, 58, 237);
+  --cat-5: rgb(5, 150, 105);
+
   /* Alias historique des actions destructives (sidebars) */
   --mono-danger: var(--critical);
   --mono-danger-surface: var(--critical-surface);
