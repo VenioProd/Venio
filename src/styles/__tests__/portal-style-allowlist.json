@@ -1,6 +1,4 @@
 [
-  "src/pages/admin/Subsidiaries.css",
-  "src/pages/admin/accounting/AccountingPortal.css",
   "src/pages/admin/beta/Beta.css",
   "src/pages/admin/education/CorrectionMode.css",
   "src/pages/admin/education/EducationWorkspace.css",
