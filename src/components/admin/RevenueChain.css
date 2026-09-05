@@ -17,26 +17,26 @@
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
 }
 
 .revenue-summary-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--text-muted);
 }
 
 .revenue-summary-value {
   font-size: 18px;
   font-weight: 700;
-  color: #e0e7ff;
+  color: var(--text-primary);
 }
 
 .revenue-summary-value.is-muted {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
 }
 
 .revenue-projects,
@@ -55,8 +55,8 @@
 
 .revenue-project {
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
 }
 
 .revenue-project-head {
@@ -69,32 +69,32 @@
 .revenue-project-name {
   font-size: 14px;
   font-weight: 600;
-  color: #e0e7ff;
+  color: var(--text-primary);
 }
 
 .revenue-project-status {
   padding: 2px 7px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-pill);
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-color);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-muted);
 }
 
 .revenue-unlink {
   margin-left: auto;
   padding: 3px 9px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-color);
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 11px;
   cursor: pointer;
 }
 
 .revenue-unlink:hover:not(:disabled) {
   border-color: var(--primary);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .revenue-unlink:disabled {
@@ -115,14 +115,14 @@
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-secondary);
 }
 
 .revenue-doc-type {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--text-muted);
 }
 
@@ -133,7 +133,9 @@
 
 .revenue-doc-total {
   font-weight: 600;
-  color: #e0e7ff;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -143,9 +145,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color);
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-secondary);
 }
 
 .revenue-empty,
