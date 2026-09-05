@@ -100,6 +100,11 @@ function violations(path: string): Violation[] {
   const sharp = css.match(/border-radius:\s*0(?![.\d])/i)
   if (sharp) found.push({ rule: 'angle vif', sample: sharp[0] })
 
+  // Les rayons viennent de l'échelle, pas de valeurs en dur. `50%` et les
+  // pourcentages restent autorisés pour les avatars et les pastilles.
+  const offScale = css.match(/border-radius:[^;}]*\b\d+(?:\.\d+)?(?:px|rem|em)\b[^;}]*/i)
+  if (offScale) found.push({ rule: 'rayon hors échelle', sample: offScale[0].trim() })
+
   const tracking = css.match(/letter-spacing:\s*0*\.\d+em/i)
   if (tracking) found.push({ rule: 'interlettrage positif', sample: tracking[0] })
 

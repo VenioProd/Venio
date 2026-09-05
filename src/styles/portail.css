@@ -85,6 +85,7 @@ html.theme-portail {
   --mono-danger-border: rgba(255, 138, 138, 0.32);
 
   /* Rayons */
+  --r-hair: 2px; /* filets et barres decoratives de 2 a 3 px */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 13px;
@@ -345,7 +346,7 @@ html.theme-portail .admin-page-header::after {
   background: var(--primary) !important;
   opacity: 1 !important;
   height: 3px;
-  border-radius: 2px !important;
+  border-radius: var(--r-hair) !important;
 }
 html.theme-portail .admin-page-subtitle {
   color: var(--text-secondary);
@@ -717,7 +718,7 @@ html.theme-portail .admin-form-section::before,
 html.theme-portail .project-form-section::before {
   background: var(--primary) !important;
   box-shadow: none !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-hair) !important;
   display: block !important;
   content: '' !important;
 }

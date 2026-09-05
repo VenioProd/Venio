@@ -9,7 +9,7 @@
 .analytics-kpi {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -18,10 +18,10 @@
 
 .analytics-kpi-label {
   font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .analytics-kpi-value {
@@ -52,7 +52,7 @@
 .analytics-chart-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   padding: 20px;
 }
 
@@ -87,13 +87,13 @@
   flex: 1;
   height: 24px;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 
 .analytics-bar-fill {
   height: 100%;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   min-width: 4px;
   transition: width 0.5s ease;
 }
@@ -130,7 +130,7 @@
   width: 100%;
   max-width: 48px;
   background: rgba(99, 102, 241, 0.3);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
   min-height: 4px;
   transition: height 0.5s ease;
 }
@@ -171,7 +171,7 @@
 
 .analytics-funnel-bar {
   height: 32px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -187,7 +187,7 @@
 
 /* ── Light Mode ── */
 [data-theme='light'] .analytics-kpi {
-  background: #ffffff;
+  background: var(--bg-card);
   border-color: var(--line-soft);
 }
 
@@ -204,7 +204,7 @@
 }
 
 [data-theme='light'] .analytics-chart-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border-color: var(--line-soft);
 }
 
@@ -237,5 +237,5 @@
 }
 
 [data-theme='light'] .analytics-funnel-bar span {
-  color: #ffffff;
+  color: var(--primary-fg);
 }
