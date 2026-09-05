@@ -1,7 +1,6 @@
 [
   "src/components/admin/InteractionTimeline/InteractionTimeline.css",
   "src/components/admin/RevenueChain.css",
-  "src/pages/admin/AdminPortal.css",
   "src/pages/admin/Messaging.css",
   "src/pages/admin/Subsidiaries.css",
   "src/pages/admin/accounting/AccountingPortal.css",
