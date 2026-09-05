@@ -1,7 +1,6 @@
 [
   "src/components/admin/InteractionTimeline/InteractionTimeline.css",
   "src/components/admin/RevenueChain.css",
-  "src/pages/admin/Messaging.css",
   "src/pages/admin/Subsidiaries.css",
   "src/pages/admin/accounting/AccountingPortal.css",
   "src/pages/admin/beta/Beta.css",
@@ -13,8 +12,6 @@
   "src/styles/calendar.css",
   "src/styles/file-dropzone.css",
   "src/styles/gestion.css",
-  "src/styles/notifications.css",
-  "src/styles/project-chat.css",
   "src/styles/search-modal.css",
   "src/styles/task-board.css"
 ]

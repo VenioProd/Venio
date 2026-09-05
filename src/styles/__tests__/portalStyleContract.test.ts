@@ -101,9 +101,13 @@ function violations(path: string): Violation[] {
   if (sharp) found.push({ rule: 'angle vif', sample: sharp[0] })
 
   // Les rayons viennent de l'échelle, pas de valeurs en dur. `50%` et les
-  // pourcentages restent autorisés pour les avatars et les pastilles.
-  const offScale = css.match(/border-radius:[^;}]*\b\d+(?:\.\d+)?(?:px|rem|em)\b[^;}]*/i)
-  if (offScale) found.push({ rule: 'rayon hors échelle', sample: offScale[0].trim() })
+  // pourcentages restent autorisés pour les avatars et les pastilles, et la
+  // valeur de repli d'un `var(--r-*, …)` ne compte pas : elle sert aux
+  // feuilles partagées avec le site public, qui n'a pas ces jetons.
+  const offScale = [...css.matchAll(/border-radius:([^;}]*)/gi)]
+    .map((m) => ({ raw: m[0], value: m[1].replace(/var\([^)]*\)/g, '') }))
+    .find((d) => /\b\d+(?:\.\d+)?(?:px|rem|em)\b/.test(d.value))
+  if (offScale) found.push({ rule: 'rayon hors échelle', sample: offScale.raw.trim() })
 
   const tracking = css.match(/letter-spacing:\s*0*\.\d+em/i)
   if (tracking) found.push({ rule: 'interlettrage positif', sample: tracking[0] })
