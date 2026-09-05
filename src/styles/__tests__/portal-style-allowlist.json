@@ -1,9 +1,4 @@
 [
-  "src/components/AdminCommandPalette.css",
-  "src/components/AdminShell.css",
-  "src/components/AdminSidebar.css",
-  "src/components/ClientShell.css",
-  "src/components/ClientSidebar.css",
   "src/components/admin/InteractionTimeline/InteractionTimeline.css",
   "src/components/admin/RevenueChain.css",
   "src/components/dashboard/dashboard.css",

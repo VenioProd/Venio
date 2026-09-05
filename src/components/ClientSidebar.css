@@ -12,7 +12,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
+  background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   padding-top: env(safe-area-inset-top, 0px);
 }
@@ -29,7 +29,7 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-body);
   text-align: left;
 }
 
@@ -39,9 +39,9 @@
   flex: 0 0 30px;
   display: grid;
   place-items: center;
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: var(--primary);
-  color: #0a0a0a;
+  color: var(--primary-fg);
   font-size: 0.95rem;
   font-weight: 900;
 }
@@ -50,8 +50,6 @@
   color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .client-sb-nav {
@@ -71,8 +69,6 @@
   color: var(--text-muted);
   font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
 .client-sb-item {
@@ -82,12 +78,12 @@
   gap: 10px;
   min-height: 40px;
   padding: 9px 10px;
-  border-radius: 0;
+  border-radius: var(--r-md);
+  /* Navigation principale : --text-secondary, pas --text-muted, qui est
+     réservé aux libellés et aux métadonnées. Aligné sur .admin-sb-item. */
   color: var(--text-secondary);
   font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
   text-decoration: none;
   transition:
     color 0.16s ease,
@@ -111,7 +107,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   background: var(--primary);
 }
 
@@ -165,8 +161,6 @@
   color: var(--text-muted);
   font-size: 0.66rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -178,15 +172,13 @@
   min-height: 38px;
   padding: 9px 10px;
   border: 1px solid var(--border-color);
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--mono-danger);
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -211,7 +203,7 @@
   width: min(288px, 88vw);
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
+  background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   padding-top: env(safe-area-inset-top, 0px);
 }
@@ -232,7 +224,7 @@
   height: 34px;
   margin-right: 12px;
   border: 1px solid var(--border-color);
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
