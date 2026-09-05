@@ -158,14 +158,14 @@ function App() {
   }, [location.pathname])
 
   // Thème Monolithe : scopé au site public (hors portail & questionnaire).
-  // Thème Monolithe Portail : scopé à l'admin + l'espace client (login inclus).
+  // Charte Portail : scopée à l'admin + l'espace client (login inclus).
   useEffect(() => {
     const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
     document.documentElement.classList.toggle('theme-monolithe', isPublicSite)
-    document.documentElement.classList.toggle('theme-monolithe-portal', isPortal)
+    document.documentElement.classList.toggle('theme-portail', isPortal)
     return () => {
       document.documentElement.classList.remove('theme-monolithe')
-      document.documentElement.classList.remove('theme-monolithe-portal')
+      document.documentElement.classList.remove('theme-portail')
     }
   }, [isPortal, isPublicQuestionnaire, isBetaTesterSpace])
 
