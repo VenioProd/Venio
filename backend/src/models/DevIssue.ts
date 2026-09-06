@@ -38,6 +38,7 @@ export const DEV_AI_MODELS = [
   'GPT_5_6_LUNA',
   'GPT_5_6_TERRA',
   'GPT_5_6_SOL',
+  'GPT_6_ASTRA',
 ] as const
 export type DevAiModel = (typeof DEV_AI_MODELS)[number]
 
