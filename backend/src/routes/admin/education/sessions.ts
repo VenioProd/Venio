@@ -10,6 +10,7 @@ import {
 } from '../../../models/education/index.js'
 import { invalidStudentIdsForClass, logActivity, ownerFilter, parseListQuery, validId } from './helpers.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
+import { normalizeRemarks, normalizeLinks, normalizeReminders, normalizeDuties } from './workspaceHelpers.js'
 
 const router = express.Router()
 
@@ -108,7 +109,24 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
     if (!item) return res.status(404).json({ error: 'Séance introuvable' })
 
-    const { title, theme, objectives, agenda, date, durationMin, location, status, recap, supports, tags } = req.body
+    const {
+      title,
+      theme,
+      objectives,
+      agenda,
+      date,
+      durationMin,
+      location,
+      status,
+      recap,
+      notes,
+      supports,
+      tags,
+      remarks,
+      links,
+      reminders,
+      duties,
+    } = req.body
     if (title !== undefined) item.title = title.trim()
     if (theme !== undefined) item.theme = theme
     if (Array.isArray(objectives)) item.objectives = objectives
@@ -123,10 +141,36 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       item.status = status
     }
     if (recap !== undefined) item.recap = recap
+    if (notes !== undefined) item.notes = notes
     if (Array.isArray(supports)) item.supports = supports
     if (Array.isArray(tags)) item.tags = tags
+    if (Array.isArray(remarks)) item.remarks = normalizeRemarks(remarks)
+    if (Array.isArray(links)) item.links = normalizeLinks(links)
+    if (Array.isArray(reminders)) item.reminders = normalizeReminders(reminders)
+    if (Array.isArray(duties)) item.duties = normalizeDuties(duties)
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', {})
+    res.json({ session: item })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PUT /:id/workspace — bulk update des enrichissements de fiche séance
+// (notes/remarques/liens/rappels/devoirs) — pratique pour le drawer.
+router.put('/:id/workspace', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!validId(req.params.id)) return res.status(400).json({ error: 'Identifiant invalide' })
+    const item = await EducationSession.findOne({ _id: req.params.id, ...ownerFilter(req) })
+    if (!item) return res.status(404).json({ error: 'Séance introuvable' })
+    const { notes, remarks, links, reminders, duties } = req.body
+    if (typeof notes === 'string') item.notes = notes
+    if (Array.isArray(remarks)) item.remarks = normalizeRemarks(remarks)
+    if (Array.isArray(links)) item.links = normalizeLinks(links)
+    if (Array.isArray(reminders)) item.reminders = normalizeReminders(reminders)
+    if (Array.isArray(duties)) item.duties = normalizeDuties(duties)
+    await item.save()
+    await logActivity(req.user!.id, req.user!.id, 'session', item._id, 'UPDATE', { kind: 'workspace' })
     res.json({ session: item })
   } catch (err) {
     next(err)

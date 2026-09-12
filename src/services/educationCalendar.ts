@@ -1,4 +1,5 @@
 import { apiFetch } from '../lib/api'
+import type { SessionDuty, SessionLink, SessionReminder, SessionRemark, SessionWorkspacePayload } from './education'
 
 // ─── Apple Calendar (lecture seule) ─────────────────────────────────────────
 //
@@ -51,4 +52,96 @@ export async function refreshAppleCalendar(): Promise<{
   bytes: number
 }> {
   return await apiFetch(`/api/admin/education/calendar/refresh`, { method: 'POST' })
+}
+
+// ─── Upcoming events rapprochés des classes du cockpit ──────────────────────
+//
+// VENIO-42 — endpoint dédié au cockpit intervenant qui renvoie les événements
+// Apple Calendar des prochains jours, rapprochés des EducationClass existantes
+// lorsque c'est possible (matching best-effort côté backend).
+
+export interface CalendarClassMatch {
+  classId: string
+  className: string
+  school: string
+  color: string
+  score: number
+  reason: 'exact-name' | 'tokens'
+}
+
+export interface UpcomingCalendarEvent extends AppleCalendarEvent {
+  match: CalendarClassMatch | null
+}
+
+export interface UpcomingCalendarPayload {
+  configured: boolean
+  source: 'Apple Calendar'
+  fetchedAt: string
+  fromCache: boolean
+  from: string
+  to: string
+  days: number
+  events: UpcomingCalendarEvent[]
+}
+
+export async function fetchUpcomingCalendar(params: { days?: number } = {}): Promise<UpcomingCalendarPayload> {
+  const qs = new URLSearchParams()
+  if (params.days) qs.set('days', String(params.days))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch<UpcomingCalendarPayload>(`/api/admin/education/calendar/upcoming${suffix}`)
+}
+
+// ─── Workspace persistant pour un événement Apple Calendar (VENIO-44) ──────
+//
+// On n'écrit JAMAIS dans l'événement Apple lui-même : c'est une lecture
+// seule depuis le flux ICS. À la place, le backend stocke une fiche Venio
+// indexée par occurrenceId, exposable depuis n'importe quel endroit de
+// l'app où cet événement apparaît (cockpit, calendrier). Le format des
+// blocs (notes/remarques/liens/rappels/devoirs) est strictement le même
+// que pour les séances internes (VENIO-43), ce qui permet de réutiliser
+// les mêmes composants côté UI (WorkspaceSections.tsx).
+
+export interface CalendarEventWorkspace {
+  _id: string | null
+  occurrenceId: string
+  uid: string
+  source: 'Apple Calendar'
+  title: string
+  start: string | null
+  classId: string | null
+  notes: string
+  remarks: SessionRemark[]
+  links: SessionLink[]
+  reminders: SessionReminder[]
+  duties: SessionDuty[]
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface CalendarEventWorkspaceResponse {
+  workspace: CalendarEventWorkspace
+  exists: boolean
+}
+
+export interface CalendarEventWorkspacePayload extends SessionWorkspacePayload {
+  occurrenceId: string
+  uid?: string
+  title?: string
+  start?: string
+  source?: 'Apple Calendar'
+  classId?: string | null
+}
+
+export async function fetchCalendarEventWorkspace(occurrenceId: string): Promise<CalendarEventWorkspaceResponse> {
+  const qs = new URLSearchParams({ occurrenceId })
+  return await apiFetch<CalendarEventWorkspaceResponse>(`/api/admin/education/calendar/workspace?${qs.toString()}`)
+}
+
+export async function updateCalendarEventWorkspace(
+  payload: CalendarEventWorkspacePayload,
+): Promise<CalendarEventWorkspaceResponse> {
+  return await apiFetch<CalendarEventWorkspaceResponse>(`/api/admin/education/calendar/workspace`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
 }

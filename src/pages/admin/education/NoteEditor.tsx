@@ -402,11 +402,11 @@ export function NoteEditor({
                   onClick={() => setShowTemplates((v) => !v)}
                   aria-expanded={showTemplates}
                 >
-                  <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
+                  <Sparkles size={16} color={showTemplates ? 'var(--primary)' : undefined} />
                 </button>
               )}
               <button className="edu-btn-icon" title="Épingler" onClick={() => update({ pinned: !note.pinned })}>
-                <Pin size={16} color={note.pinned ? '#22C55E' : undefined} />
+                <Pin size={16} color={note.pinned ? 'var(--primary)' : undefined} />
               </button>
               <button className="edu-btn-icon" title="Archiver" onClick={() => update({ archived: !note.archived })}>
                 <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
@@ -429,7 +429,7 @@ export function NoteEditor({
             onClick={() => setShowTemplates((v) => !v)}
             aria-expanded={showTemplates}
           >
-            <Sparkles size={16} color={showTemplates ? '#22C55E' : undefined} />
+            <Sparkles size={16} color={showTemplates ? 'var(--primary)' : undefined} />
           </button>
         </div>
       )}
@@ -699,14 +699,12 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
         const r = await searchEducation(query)
         if (cancelled) return
         const opts: MentionOption[] = [
-          ...r.results.students
-            .slice(0, 5)
-            .map((s) => ({
-              refType: 'student' as NoteLinkType,
-              refId: s._id,
-              label: studentDisplayName(s),
-              kind: 'Étudiant',
-            })),
+          ...r.results.students.slice(0, 5).map((s) => ({
+            refType: 'student' as NoteLinkType,
+            refId: s._id,
+            label: studentDisplayName(s),
+            kind: 'Étudiant',
+          })),
           ...r.results.sessions
             .slice(0, 5)
             .map((s) => ({ refType: 'session' as NoteLinkType, refId: s._id, label: s.title, kind: 'Séance' })),

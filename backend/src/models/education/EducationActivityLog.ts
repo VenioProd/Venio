@@ -9,11 +9,12 @@ export const EDU_ENTITY_TYPES = [
   'note',
   'document',
   'template',
+  'calendarEventWorkspace',
 ] as const
-export type EduEntityType = typeof EDU_ENTITY_TYPES[number]
+export type EduEntityType = (typeof EDU_ENTITY_TYPES)[number]
 
 export const EDU_ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE', 'GRADE', 'SUBMIT'] as const
-export type EduAction = typeof EDU_ACTIONS[number]
+export type EduAction = (typeof EDU_ACTIONS)[number]
 
 export interface IEducationActivityLog {
   owner: mongoose.Types.ObjectId
@@ -34,7 +35,7 @@ const schema = new Schema<IEducationActivityLog>(
     action: { type: String, enum: EDU_ACTIONS, required: true },
     payload: { type: Schema.Types.Mixed, default: {} },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: { createdAt: true, updatedAt: false } },
 )
 
 schema.index({ owner: 1, createdAt: -1 })

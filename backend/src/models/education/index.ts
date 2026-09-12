@@ -27,3 +27,8 @@ export * from './EducationActivityLog.js'
 
 export { default as EducationAiGeneration } from './EducationAiGeneration.js'
 export * from './EducationAiGeneration.js'
+
+export { default as EducationCalendarEventWorkspace } from './EducationCalendarEventWorkspace.js'
+export * from './EducationCalendarEventWorkspace.js'
+
+export * from './sessionWorkspace.js'

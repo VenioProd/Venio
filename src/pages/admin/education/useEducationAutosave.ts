@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { updateClass, updateNote, updateSession } from '../../../services/education'
 
-type Kind = 'class' | 'note' | 'session'
+import { updateCalendarEventWorkspace } from '../../../services/educationCalendar'
+
+type Kind = 'class' | 'note' | 'session' | 'calendar-event'
 type Patch = Record<string, unknown>
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 type Entry = {
@@ -85,6 +87,8 @@ async function flushEntry(entry: Entry): Promise<boolean> {
       try {
         if (entry.kind === 'class') await updateClass(entry.id, patch)
         else if (entry.kind === 'note') await updateNote(entry.id, patch)
+        else if (entry.kind === 'calendar-event')
+          await updateCalendarEventWorkspace({ ...patch, occurrenceId: entry.id })
         else await updateSession(entry.id, patch)
         entry.sending = null
         entry.saved = true

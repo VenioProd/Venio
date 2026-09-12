@@ -205,7 +205,11 @@ function TemplateCard({ t, onOpen, onApply }: { t: EducationTemplate; onOpen: ()
           Utiliser
         </button>
         {t.tags.slice(0, 3).map((tag) => (
-          <span key={tag} className="edu-pill" style={{ background: 'rgba(34,197,94,0.1)', color: '#86EFAC' }}>
+          <span
+            key={tag}
+            className="edu-pill"
+            style={{ background: 'var(--accent-soft)', color: 'var(--primary-light)' }}
+          >
             #{tag}
           </span>
         ))}
