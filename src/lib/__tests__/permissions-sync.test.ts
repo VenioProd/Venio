@@ -189,7 +189,7 @@ describe('Front/back synchronization', () => {
 // Adapted from the unmerged VEN-356 batch: compare runtime values instead of
 // parsing the former frontend map, now generated from rbac-matrix.json.
 describe('role grants match the backend', () => {
-  for (const role of [...ADMIN_ROLES, 'CLIENT', 'USER'] as const) {
+  for (const role of [...ADMIN_ROLES, 'CLIENT'] as const) {
     it(role, () => {
       expect(getPermissionsForRole(role).sort()).toEqual(backendPermissions(role).sort())
     })

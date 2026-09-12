@@ -731,20 +731,7 @@ function UpcomingItem({
   const primaryLabel = onOpenCalendarEvent ? 'Ouvrir la fiche' : event.match ? 'Ouvrir la classe' : 'Voir le calendrier'
 
   return (
-    <div
-      className="edu-cockpit-cal-item edu-cockpit-cal-item-clickable"
-      style={{ borderLeftColor: matchColor }}
-      role="button"
-      tabIndex={0}
-      onClick={handleOpenWorkspace}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleOpenWorkspace()
-        }
-      }}
-      aria-label={primaryLabel}
-    >
+    <div className="edu-cockpit-cal-item" style={{ borderLeftColor: matchColor }}>
       <div className="edu-cockpit-cal-item-main">
         <div className="edu-cockpit-cal-item-time">
           <Clock size={12} />

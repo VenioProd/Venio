@@ -164,8 +164,8 @@ export function NotionImportView({ classes, onImported }: Props) {
             Import Notion
           </h1>
           <p className="edu-sub">
-            Importe une page Notion comme note, ou une base de données Notion comme étudiants d'une classe. Les rappels
-            suivants sont mis à jour côté serveur : pages et lignes déjà importées sont rafraîchies, pas dupliquées.
+            Importez une page Notion comme note, ou les étudiants d'une base Notion dans une classe. Lors d'un nouvel
+            import, les éléments existants sont mis à jour sans créer de doublons.
           </p>
         </div>
         <button
@@ -267,9 +267,9 @@ export function NotionImportView({ classes, onImported }: Props) {
             className="edu-btn ghost"
             onClick={onPreview}
             disabled={!canSubmit || previewing || importing}
-            title="Lance un dry-run, sans écriture en base"
+            title="Prévisualiser les éléments sans les importer"
           >
-            <Eye size={14} /> {previewing ? 'Aperçu en cours…' : 'Aperçu (dry-run)'}
+            <Eye size={14} /> {previewing ? 'Aperçu en cours…' : 'Aperçu'}
           </button>
           <button className="edu-btn" onClick={onImport} disabled={!canSubmit || previewing || importing}>
             <Play size={14} /> {importing ? 'Import en cours…' : "Lancer l'import"}
@@ -434,7 +434,7 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
             <strong style={{ color: '#0EA5E9' }}>{log.stats.updated}</strong> maj
           </span>
           <span title="Ignorés">
-            <strong style={{ color: '#94A3B8' }}>{log.stats.skipped}</strong> ignorés
+            <strong style={{ color: 'var(--text-secondary)' }}>{log.stats.skipped}</strong> ignorés
           </span>
           {log.stats.errors > 0 && (
             <span title="Erreurs">
