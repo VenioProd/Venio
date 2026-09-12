@@ -11,6 +11,7 @@ import DevIssueComment from '../../models/DevIssueComment.js'
 import DevIssueEvent, { type DevIssueEventType } from '../../models/DevIssueEvent.js'
 import DevProject from '../../models/DevProject.js'
 import { CLOSED_ISSUE_STATUSES } from './issueMutations.js'
+import { BLOCKER_MATCH, BLOCKER_EXPRESSION } from './blockers.js'
 
 export const STATUS_WEIGHT: Record<DevIssueStatus, number> = {
   BACKLOG: 0,
@@ -72,14 +73,10 @@ export interface StatsPayload {
   byPriority: Record<string, number>
 }
 
-const BLOCKED_LABELS = ['blocked', 'blocker']
-const BLOCKED_LABEL_REGEXES = BLOCKED_LABELS.map((l) => new RegExp(`^${l}$`, 'i'))
 const CLOSED_STATUSES = CLOSED_ISSUE_STATUSES
 const ACTIVE_MATCH = { archivedAt: null }
 
-export async function computeStats(
-  match: Record<string, unknown> = {}
-): Promise<StatsPayload> {
+export async function computeStats(match: Record<string, unknown> = {}): Promise<StatsPayload> {
   const now = Date.now()
   const day = 24 * 60 * 60 * 1000
   const since14 = new Date(now - 14 * day)
@@ -95,7 +92,7 @@ export async function computeStats(
       DevIssue.countDocuments(openMatch),
       DevProject.countDocuments({ status: { $ne: 'ARCHIVED' } }),
       DevIssue.countDocuments({ ...openMatch, priority: 'URGENT' }),
-      DevIssue.countDocuments({ ...openMatch, labels: { $in: BLOCKED_LABEL_REGEXES } }),
+      DevIssue.countDocuments({ ...openMatch, ...BLOCKER_MATCH }),
       DevIssue.countDocuments({ ...scopedMatch, status: 'DONE', completedAt: { $gte: since7 } }),
       DevIssue.countDocuments({ ...scopedMatch, status: 'DONE', completedAt: { $gte: since14 } }),
     ])
@@ -177,25 +174,24 @@ function emptyByStatus(): Record<DevIssueStatus, number> {
 
 export async function computeOverview(): Promise<OverviewPayload> {
   const projectsRaw = await DevProject.find({})
-    .populate<{ lead: { _id: mongoose.Types.ObjectId; name: string; email: string } | null }>(
-      'lead',
-      'name email'
-    )
+    .populate<{ lead: { _id: mongoose.Types.ObjectId; name: string; email: string } | null }>('lead', 'name email')
     .lean()
 
   const statusSumStage = Object.fromEntries(
     (Object.keys(emptyByStatus()) as DevIssueStatus[]).map((s) => [
       s,
       { $sum: { $cond: [{ $eq: ['$status', s] }, 1, 0] } },
-    ])
+    ]),
   )
 
-  const perProjectAgg = await DevIssue.aggregate<{
-    _id: mongoose.Types.ObjectId
-    urgent: number
-    blocked: number
-    lastUpdatedAt: Date | null
-  } & Record<DevIssueStatus, number>>([
+  const perProjectAgg = await DevIssue.aggregate<
+    {
+      _id: mongoose.Types.ObjectId
+      urgent: number
+      blocked: number
+      lastUpdatedAt: Date | null
+    } & Record<DevIssueStatus, number>
+  >([
     { $match: ACTIVE_MATCH },
     {
       $group: {
@@ -214,29 +210,7 @@ export async function computeOverview(): Promise<OverviewPayload> {
           $sum: {
             $cond: [
               {
-                $and: [
-                  { $not: { $in: ['$status', CLOSED_STATUSES] } },
-                  {
-                    $gt: [
-                      {
-                        $size: {
-                          $filter: {
-                            input: { $ifNull: ['$labels', []] },
-                            as: 'l',
-                            cond: {
-                              $regexMatch: {
-                                input: '$$l',
-                                regex: '^(blocked|blocker)$',
-                                options: 'i',
-                              },
-                            },
-                          },
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                ],
+                $and: [{ $not: { $in: ['$status', CLOSED_STATUSES] } }, BLOCKER_EXPRESSION],
               },
               1,
               0,
@@ -269,10 +243,7 @@ export async function computeOverview(): Promise<OverviewPayload> {
     const progress = computeProgress(byStatus)
     const health = computeHealth({ urgent, blocked }, progress)
     const lastActivityAt = new Date(
-      Math.max(
-        new Date(p.updatedAt).getTime(),
-        agg?.lastUpdatedAt ? new Date(agg.lastUpdatedAt).getTime() : 0
-      )
+      Math.max(new Date(p.updatedAt).getTime(), agg?.lastUpdatedAt ? new Date(agg.lastUpdatedAt).getTime() : 0),
     ).toISOString()
     return {
       _id: String(p._id),
@@ -280,9 +251,7 @@ export async function computeOverview(): Promise<OverviewPayload> {
       name: p.name,
       color: p.color,
       status: p.status,
-      lead: p.lead
-        ? { _id: String(p.lead._id), name: p.lead.name, email: p.lead.email }
-        : null,
+      lead: p.lead ? { _id: String(p.lead._id), name: p.lead.name, email: p.lead.email } : null,
       counts: { total, open, done, cancelled, urgent, blocked, byStatus },
       progress,
       health,
@@ -302,8 +271,8 @@ export async function computeOverview(): Promise<OverviewPayload> {
   const since14 = new Date(now - 14 * day)
   const since7 = new Date(now - 7 * day)
   const [completed7d, completed14d] = await Promise.all([
-      DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since7 } }),
-      DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since14 } }),
+    DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since7 } }),
+    DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since14 } }),
   ])
 
   const kpis: OverviewKpis = {
@@ -496,7 +465,7 @@ function shapeIssueRef(issue: {
  *  - per-assignee workload
  */
 export async function computeProjectCockpit(
-  projectId: mongoose.Types.ObjectId | string
+  projectId: mongoose.Types.ObjectId | string,
 ): Promise<CockpitPayload | null> {
   const id = typeof projectId === 'string' ? new mongoose.Types.ObjectId(projectId) : projectId
 
@@ -530,12 +499,15 @@ export async function computeProjectCockpit(
     recentCommentsRaw,
     recentEventsRaw,
     assigneesAgg,
+    urgent,
+    blocked,
+    overdueCount,
   ] = await Promise.all([
     DevIssue.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
     DevIssue.aggregate([{ $match: match }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
     DevIssue.aggregate([{ $match: match }, { $group: { _id: '$type', count: { $sum: 1 } } }]),
     DevIssue.aggregate([
-      { $match: { project: id, status: 'DONE', completedAt: { $gte: since14 } } },
+      { $match: { ...match, status: 'DONE', completedAt: { $gte: since14 } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt', timezone: 'UTC' } },
@@ -544,7 +516,7 @@ export async function computeProjectCockpit(
       },
     ]),
     DevIssue.aggregate([
-      { $match: { project: id, createdAt: { $gte: since14 } } },
+      { $match: { ...match, createdAt: { $gte: since14 } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
@@ -555,7 +527,7 @@ export async function computeProjectCockpit(
     DevIssue.aggregate<{ duration: number }>([
       {
         $match: {
-          project: id,
+          ...match,
           status: 'DONE',
           completedAt: { $gte: since14 },
           startedAt: { $ne: null },
@@ -570,16 +542,16 @@ export async function computeProjectCockpit(
       },
     ]),
     DevIssue.find({
-      project: id,
+      ...match,
       status: { $nin: CLOSED_STATUSES },
-      labels: { $in: BLOCKED_LABEL_REGEXES },
+      ...BLOCKER_MATCH,
     })
       .populate('assignee', 'name email avatarUrl')
       .sort({ priority: -1, updatedAt: -1 })
       .limit(8)
       .lean(),
     DevIssue.find({
-      project: id,
+      ...match,
       status: { $nin: CLOSED_STATUSES },
       priority: 'URGENT',
     })
@@ -588,7 +560,7 @@ export async function computeProjectCockpit(
       .limit(8)
       .lean(),
     DevIssue.find({
-      project: id,
+      ...match,
       status: { $nin: CLOSED_STATUSES },
       dueDate: { $ne: null, $lt: startOfToday },
     })
@@ -597,7 +569,7 @@ export async function computeProjectCockpit(
       .limit(8)
       .lean(),
     DevIssue.find({
-      project: id,
+      ...match,
       status: { $nin: CLOSED_STATUSES },
       dueDate: { $ne: null, $gte: startOfToday },
     })
@@ -645,10 +617,7 @@ export async function computeProjectCockpit(
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ['$priority', 'URGENT'] },
-                    { $not: { $in: ['$status', CLOSED_STATUSES] } },
-                  ],
+                  $and: [{ $eq: ['$priority', 'URGENT'] }, { $not: { $in: ['$status', CLOSED_STATUSES] } }],
                 },
                 1,
                 0,
@@ -658,6 +627,9 @@ export async function computeProjectCockpit(
         },
       },
     ]),
+    DevIssue.countDocuments({ ...match, status: { $nin: CLOSED_STATUSES }, priority: 'URGENT' }),
+    DevIssue.countDocuments({ ...match, status: { $nin: CLOSED_STATUSES }, ...BLOCKER_MATCH }),
+    DevIssue.countDocuments({ ...match, status: { $nin: CLOSED_STATUSES }, dueDate: { $ne: null, $lt: startOfToday } }),
   ])
 
   const byStatus = emptyByStatusType(DEV_ISSUE_STATUSES) as Record<DevIssueStatus, number>
@@ -672,9 +644,6 @@ export async function computeProjectCockpit(
   const cancelled = byStatus.CANCELLED
   const duplicate = byStatus.DUPLICATE
   const open = total - done - duplicate - cancelled
-  const urgent = urgentRaw.length
-  const blocked = blockersRaw.length
-  const overdueCount = overdueRaw.length
   const progress = computeProgress(byStatus)
   const health = computeHealth({ urgent, blocked }, progress)
 
@@ -698,9 +667,7 @@ export async function computeProjectCockpit(
   const completed14d = days.reduce((s, d) => s + d.completed, 0)
   const created14d = days.reduce((s, d) => s + d.created, 0)
   const avgCompletionDays = completionDurations.length
-    ? Math.round(
-        (completionDurations.reduce((s, r) => s + r.duration, 0) / completionDurations.length) * 10
-      ) / 10
+    ? Math.round((completionDurations.reduce((s, r) => s + r.duration, 0) / completionDurations.length) * 10) / 10
     : null
 
   const blockers = blockersRaw.map((i) => shapeIssueRef(i as never))
@@ -852,11 +819,13 @@ export async function computeProjectCockpit(
   const activityCapped = activity.slice(0, 20)
 
   // Assignees workload — populate user refs in a second pass
-  const assigneeIds = assigneesAgg
-    .map((row) => row._id)
-    .filter((v): v is mongoose.Types.ObjectId => Boolean(v))
+  const assigneeIds = assigneesAgg.map((row) => row._id).filter((v): v is mongoose.Types.ObjectId => Boolean(v))
   const users = assigneeIds.length
-    ? await mongoose.model('User').find({ _id: { $in: assigneeIds } }).select('name email avatarUrl').lean()
+    ? await mongoose
+        .model('User')
+        .find({ _id: { $in: assigneeIds } })
+        .select('name email avatarUrl')
+        .lean()
     : []
   const userMap = new Map<string, PopulatedUserRef>()
   for (const u of users as PopulatedUserRef[]) userMap.set(String(u._id), u)

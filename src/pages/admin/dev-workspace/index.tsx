@@ -24,6 +24,8 @@ import { ACCENT, DEV_PRIORITY_COLORS, DEV_STATUS_COLORS } from '../../../lib/cha
 import {
   listDevProjects,
   listDevIssues,
+  fetchDevIssueAnalytics,
+  type DevIssueAnalytics,
   fetchDevStats,
   fetchDevOverview,
   fetchDevDailyPriorities,
@@ -68,7 +70,6 @@ import { MiniStats, type MiniStatItem } from './charts/MiniStats'
 import { VelocityChart } from './charts/VelocityChart'
 import { StatusBreakdownBar } from './charts/StatusBreakdownBar'
 import { HorizontalBarList } from './charts/HorizontalBarList'
-import { buildVelocitySeries, buildCreatorModelRows } from './charts/aggregate'
 import './DevWorkspace.css'
 
 // Persistance des filtres & préférences d'affichage (A4).
@@ -128,10 +129,12 @@ const DevWorkspace = () => {
   const [overview, setOverview] = useState<DevOverview | null>(null)
   const [dailyPriorities, setDailyPriorities] = useState<DevDailyPriorities | null>(null)
   const [stats, setStats] = useState<DevStats | null>(null)
-  // Population complète (tous statuts) du projet courant — alimente les visualisations
-  // dérivées (vélocité par jour, répartition par modèle créateur) qui ont besoin de
-  // voir les issues DONE/CANCELLED masquées par les filtres par défaut de la liste.
-  const [analyticsIssues, setAnalyticsIssues] = useState<DevIssue[]>([])
+  const [analytics, setAnalytics] = useState<DevIssueAnalytics | null>(null)
+  const [issueError, setIssueError] = useState<string | null>(null)
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
+  const dataError = issueError || analyticsError
+  const issueRequest = useRef(0)
+  const analyticsRequest = useRef(0)
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
 
   const [loading, setLoading] = useState(true)
@@ -212,17 +215,21 @@ const DevWorkspace = () => {
   }, [quickCreate.project])
 
   const loadIssues = useCallback(async () => {
+    const request = ++issueRequest.current
     setLoading(true)
+    setIssueError(null)
     try {
       const data = await listDevIssues(filters)
+      if (request !== issueRequest.current) return
       // Un refetch pendant la fenêtre d'undo ne doit pas faire réapparaître
       // l'issue en attente de suppression (elle n'est pas encore supprimée côté serveur).
       const pendingId = pendingDeleteRef.current?.issue._id
       setIssues(pendingId ? data.issues.filter((i) => i._id !== pendingId) : data.issues)
     } catch (e) {
-      console.error(e)
+      if (request === issueRequest.current)
+        setIssueError(e instanceof Error ? e.message : 'Impossible de charger les tickets')
     } finally {
-      setLoading(false)
+      if (request === issueRequest.current) setLoading(false)
     }
   }, [filters])
 
@@ -236,14 +243,18 @@ const DevWorkspace = () => {
   }, [filters.project])
 
   const loadAnalyticsIssues = useCallback(async () => {
+    const request = ++analyticsRequest.current
+    setAnalyticsError(null)
     setAnalyticsLoading(true)
+    setAnalytics(null)
     try {
-      const data = await listDevIssues({ project: filters.project, status: 'all', includeArchived: 'true' })
-      setAnalyticsIssues(data.issues)
+      const data = await fetchDevIssueAnalytics(filters.project)
+      if (request === analyticsRequest.current) setAnalytics(data)
     } catch (e) {
-      console.error(e)
+      if (request === analyticsRequest.current)
+        setAnalyticsError(e instanceof Error ? e.message : 'Impossible de charger les graphiques')
     } finally {
-      setAnalyticsLoading(false)
+      if (request === analyticsRequest.current) setAnalyticsLoading(false)
     }
   }, [filters.project])
 
@@ -398,6 +409,7 @@ const DevWorkspace = () => {
       base.assignee = undefined
       base.priority = undefined
       base.label = undefined
+      base.blocked = undefined
       base.status = 'open'
       switch (view) {
         case 'mine':
@@ -407,7 +419,7 @@ const DevWorkspace = () => {
           base.priority = 'URGENT'
           break
         case 'blocked':
-          base.label = 'blocked'
+          base.blocked = 'true'
           break
         case 'review':
           base.status = 'IN_REVIEW'
@@ -732,15 +744,13 @@ const DevWorkspace = () => {
 
   const globalCompletion = stats ? computeWeightedProgress(stats.byStatus as Record<DevIssueStatus, number>) : 0
 
-  // Bandeau de visualisations — dérivé de `stats` (agrégats serveur) pour les
-  // répartitions statut/priorité, et de `analyticsIssues` (population complète,
-  // tous statuts) pour la vélocité et la répartition par modèle créateur.
+  // Tous les graphiques utilisent des agrégats serveur, indépendants des pages de tickets.
   const miniStats: MiniStatItem[] = useMemo(() => {
     if (!stats) return []
     return [
       { key: 'open', label: 'Ouvertes', value: stats.open, tone: 'neutral' },
-      { key: 'urgent', label: 'Urgentes', value: stats.byPriority.URGENT || 0, tone: 'critical' },
-      { key: 'blocked', label: 'Bloquées', value: stats.byStatus.BLOCKED || 0, tone: 'serious' },
+      { key: 'urgent', label: 'Urgentes', value: stats.urgent ?? stats.byPriority.URGENT ?? 0, tone: 'critical' },
+      { key: 'blocked', label: 'Bloquées', value: stats.blocked ?? stats.byStatus.BLOCKED ?? 0, tone: 'serious' },
       { key: 'done14', label: 'Finies · 14j', value: stats.completedRecent, tone: 'good' },
     ]
   }, [stats])
@@ -765,12 +775,8 @@ const DevWorkspace = () => {
     })).filter((r) => r.value > 0)
   }, [stats])
 
-  const velocitySeries = useMemo(() => buildVelocitySeries(analyticsIssues, 14), [analyticsIssues])
-
-  const creatorModelRows = useMemo(() => {
-    const rows = buildCreatorModelRows(analyticsIssues, 6)
-    return rows.map((r) => ({ ...r, color: ACCENT }))
-  }, [analyticsIssues])
+  const velocitySeries = analytics?.velocity ?? []
+  const creatorModelRows = (analytics?.creatorModels ?? []).map((r) => ({ ...r, color: ACCENT }))
 
   const renderRow = (issue: DevIssue) => {
     const project = typeof issue.project === 'object' ? issue.project : null
@@ -839,6 +845,14 @@ const DevWorkspace = () => {
   return (
     <div className="dev-workspace">
       {ConfirmDialog}
+      {dataError && (
+        <div className="dev-empty" role="alert">
+          {dataError}{' '}
+          <button className="dev-btn" onClick={refreshWorkspace}>
+            Réessayer
+          </button>
+        </div>
+      )}
 
       <div className="dev-header">
         <div className="dev-header-left">
@@ -1526,6 +1540,7 @@ const DevWorkspace = () => {
 
       {showReviewQueue && (
         <ReviewQueue
+          canManage={canManage}
           projects={projects}
           onClose={() => setShowReviewQueue(false)}
           onChanged={() => {

@@ -24,6 +24,9 @@ export function DashboardView({
   onChangeSchool,
   onOpenClass,
   onOpenStudent,
+  onOpenSession,
+  onStartLive,
+  onStartCorrection,
   onCreateClass,
   reloadError,
   onReload,
@@ -32,6 +35,9 @@ export function DashboardView({
   selectedSchool: string
   onChangeSchool: (school: string) => void
   onOpenClass: (id: string) => void
+  onOpenSession: (id: string) => void
+  onStartLive: (id: string) => void
+  onStartCorrection: (id: string) => void
   onOpenStudent: (alert: EducationDashboardAlert) => void
   onCreateClass: () => void
   reloadError: string | null
@@ -146,20 +152,38 @@ export function DashboardView({
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 const school = (cls as { school?: string } | null)?.school
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr key={s._id}>
                     <td>{new Date(s.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td>
                       {cls && (
-                        <span className="edu-pill">
+                        <button
+                          type="button"
+                          className="edu-btn ghost"
+                          onClick={() => onOpenClass(cls._id)}
+                          aria-label={`Ouvrir la classe ${cls.name}`}
+                        >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
-                        </span>
+                        </button>
                       )}
                     </td>
                     <td>{school || '—'}</td>
-                    <td>{s.title}</td>
+                    <td>
+                      <button className="edu-btn ghost" onClick={() => onOpenSession(s._id)}>
+                        {s.title}
+                      </button>
+                    </td>
                     <td>
                       <span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span>
+                      {['PLANIFIEE', 'EN_COURS'].includes(s.status) && (
+                        <button
+                          className="edu-btn ghost"
+                          onClick={() => onStartLive(s._id)}
+                          aria-label={`Lancer la séance ${s.title}`}
+                        >
+                          Séance live
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -188,18 +212,27 @@ export function DashboardView({
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 const school = (cls as { school?: string } | null)?.school
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr key={s._id}>
                     <td>{formatDate(s.date, true)}</td>
                     <td>
                       {cls && (
-                        <span className="edu-pill">
+                        <button
+                          type="button"
+                          className="edu-btn ghost"
+                          onClick={() => onOpenClass(cls._id)}
+                          aria-label={`Ouvrir la classe ${cls.name}`}
+                        >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
-                        </span>
+                        </button>
                       )}
                     </td>
                     <td>{school || '—'}</td>
-                    <td>{s.title}</td>
+                    <td>
+                      <button className="edu-btn ghost" onClick={() => onOpenSession(s._id)}>
+                        {s.title}
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -226,18 +259,25 @@ export function DashboardView({
               {dashboard.toPrepare.map((s) => {
                 const cls = typeof s.classId === 'string' ? null : s.classId
                 return (
-                  <tr key={s._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
+                  <tr key={s._id}>
                     <td>{formatDate(s.date, true)}</td>
                     <td>
                       {cls && (
-                        <span className="edu-pill">
+                        <button
+                          type="button"
+                          className="edu-btn ghost"
+                          onClick={() => onOpenClass(cls._id)}
+                          aria-label={`Ouvrir la classe ${cls.name}`}
+                        >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
-                        </span>
+                        </button>
                       )}
                     </td>
                     <td>
-                      {s.title}
+                      <button className="edu-btn ghost" onClick={() => onOpenSession(s._id)}>
+                        {s.title}
+                      </button>
                       {s.theme && <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {s.theme}</span>}
                     </td>
                     <td>{s.location || '—'}</td>
@@ -255,7 +295,7 @@ export function DashboardView({
         subtitle={c.toGrade > 0 ? `${c.toGrade} copie(s) en attente` : 'Aucune correction en attente'}
       >
         {dashboard.toCorrect.length === 0 ? (
-          <p className="edu-empty">Aucun devoir ouvert pour le moment.</p>
+          <p className="edu-empty">Aucune copie en attente de correction.</p>
         ) : (
           <table className="edu-table">
             <thead>
@@ -271,14 +311,27 @@ export function DashboardView({
               {dashboard.toCorrect.map((a) => {
                 const cls = typeof a.classId === 'string' ? null : a.classId
                 return (
-                  <tr key={a._id} onClick={() => cls?._id && onOpenClass(cls._id)} style={{ cursor: 'pointer' }}>
-                    <td>{a.title}</td>
+                  <tr key={a._id}>
+                    <td>
+                      <button
+                        className="edu-btn ghost"
+                        onClick={() => onStartCorrection(a._id)}
+                        aria-label={`Corriger ${a.title}`}
+                      >
+                        {a.title} · Corriger
+                      </button>
+                    </td>
                     <td>
                       {cls && (
-                        <span className="edu-pill">
+                        <button
+                          type="button"
+                          className="edu-btn ghost"
+                          onClick={() => onOpenClass(cls._id)}
+                          aria-label={`Ouvrir la classe ${cls.name}`}
+                        >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
-                        </span>
+                        </button>
                       )}
                     </td>
                     <td>{ASSIGNMENT_KIND_LABEL[a.kind]}</td>
@@ -314,17 +367,19 @@ export function DashboardView({
             </thead>
             <tbody>
               {dashboard.lastSessionByClass.map((row) => (
-                <tr key={row.class._id} onClick={() => onOpenClass(row.class._id)} style={{ cursor: 'pointer' }}>
+                <tr key={row.class._id}>
                   <td>
-                    <span className="edu-pill">
+                    <button className="edu-btn ghost" onClick={() => onOpenClass(row.class._id)}>
                       <span className="edu-pill-dot" style={{ background: row.class.color || '#22C55E' }} />
                       {row.class.name}
-                    </span>
+                    </button>
                   </td>
                   <td>{row.class.school || '—'}</td>
                   <td>
                     {row.lastSession ? (
-                      row.lastSession.title
+                      <button className="edu-btn ghost" onClick={() => onOpenSession(row.lastSession!._id)}>
+                        {row.lastSession.title}
+                      </button>
                     ) : (
                       <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
                     )}
