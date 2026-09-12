@@ -76,7 +76,8 @@ import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
 import { DocumentsView } from './DocumentsView'
 import type { UpcomingCalendarEvent } from '../../../services/educationCalendar'
-import { Building2, FileSearch, CalendarDays } from 'lucide-react'
+import { Building2, FileSearch, CalendarDays, Download } from 'lucide-react'
+import { NotionImportView } from './NotionImportView'
 import './EducationWorkspace.css'
 import { Kpi, ClassesView, ClassFormDrawer } from './class-parts'
 import { ClassWorkspace } from './ClassWorkspace'
@@ -98,6 +99,7 @@ type View =
   | 'advanced-search'
   | 'schools'
   | 'calendar'
+  | 'notion-import'
 
 /* ─── Reprise du dernier contexte (VENIO-75) ───────────────────────────── */
 
@@ -115,6 +117,7 @@ const RESTORABLE_VIEWS: View[] = [
   'advanced-search',
   'schools',
   'calendar',
+  'notion-import',
 ]
 
 type WorkspaceContext = { view: View; selectedClassId: string | null; school: string }
@@ -357,6 +360,12 @@ export default function EducationWorkspace() {
           <FileSearch size={15} /> Recherche avancée
         </button>
         <button
+          className={`edu-side-item ${view === 'notion-import' ? 'active' : ''}`}
+          onClick={() => selectView('notion-import')}
+        >
+          <Download size={15} /> Import Notion
+        </button>
+        <button
           className="edu-side-item"
           onClick={() => {
             setSearchOpen(true)
@@ -491,6 +500,15 @@ export default function EducationWorkspace() {
               />
             )}
           </>
+        )}
+        {view === 'notion-import' && (
+          <NotionImportView
+            classes={classes}
+            onImported={() => {
+              void refreshClasses()
+              void refreshDashboard()
+            }}
+          />
         )}
       </main>
 

@@ -32,3 +32,6 @@ export { default as EducationCalendarEventWorkspace } from './EducationCalendarE
 export * from './EducationCalendarEventWorkspace.js'
 
 export * from './sessionWorkspace.js'
+
+export { default as EducationNotionImport } from './EducationNotionImport.js'
+export * from './EducationNotionImport.js'

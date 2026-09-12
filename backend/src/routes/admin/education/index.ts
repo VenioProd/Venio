@@ -15,6 +15,8 @@ import calendar from './calendar.js'
 import ai from './ai.js'
 import exportsRouter from './exports.js'
 
+import notion from './notion.js'
+
 const router = express.Router()
 
 router.use(auth)
@@ -23,6 +25,7 @@ router.use(requireSuperAdmin)
 router.use('/dashboard', dashboard)
 router.use('/search', search)
 router.use('/calendar', calendar)
+router.use('/notion', notion)
 router.use('/classes', classes)
 router.use('/students', students)
 router.use('/sessions', sessions)
