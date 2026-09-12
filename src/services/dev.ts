@@ -52,6 +52,7 @@ export type DevAiModel =
   | 'GPT_5_6_LUNA'
   | 'GPT_5_6_TERRA'
   | 'GPT_5_6_SOL'
+  | 'GPT_6_ASTRA'
 export type DevReasoningEffort = 'LOW' | 'MEDIUM' | 'HIGH' | 'MAX'
 export type DevIssueCommentKind = 'NOTE' | 'CONTEXT' | 'PROGRESS' | 'DECISION' | 'EVIDENCE' | 'BLOCKER' | 'HANDOFF'
 
@@ -62,6 +63,7 @@ export const DEV_AI_MODEL_LABEL: Record<DevAiModel, string> = {
   GPT_5_6_LUNA: 'ChatGPT 5.6 Luna',
   GPT_5_6_TERRA: 'ChatGPT 5.6 Terra',
   GPT_5_6_SOL: 'ChatGPT 5.6 Sol',
+  GPT_6_ASTRA: 'ChatGPT 6 Astra',
 }
 
 export const DEV_REASONING_EFFORT_LABEL: Record<DevReasoningEffort, string> = {
