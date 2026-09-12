@@ -26,14 +26,23 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      rollupOptions: {
+      // Preserve the browser baseline used before the Vite 8 migration.
+      target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+      rolldownOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules/react-router-dom')) return 'vendor-router'
-            if (id.includes('node_modules/react-dom')) return 'vendor-react'
-            if (id.includes('node_modules/react/')) return 'vendor-react'
-            if (id.includes('node_modules/recharts')) return 'vendor-charts'
-            if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
+          codeSplitting: {
+            groups: [
+              {
+                name(id) {
+                  if (id.includes('node_modules/react-router-dom')) return 'vendor-router'
+                  if (id.includes('node_modules/react-dom')) return 'vendor-react'
+                  if (id.includes('node_modules/react/')) return 'vendor-react'
+                  if (id.includes('node_modules/recharts')) return 'vendor-charts'
+                  if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
+                  return null
+                },
+              },
+            ],
           },
         },
       },
