@@ -211,6 +211,7 @@ export function SessionForm({
     location: '',
     agenda: '',
     objectives: [] as string[],
+    supports: [] as string[],
   })
   const [saving, setSaving] = useState(false)
 
@@ -227,6 +228,7 @@ export function SessionForm({
       agenda: typeof b.agenda === 'string' ? b.agenda : f.agenda,
       durationMin: typeof b.durationMin === 'number' ? b.durationMin : f.durationMin,
       location: typeof b.location === 'string' ? b.location : f.location,
+      supports: Array.isArray(b.supports) ? b.supports.filter((v): v is string => typeof v === 'string') : f.supports,
       objectives: Array.isArray(b.objectives)
         ? (b.objectives as unknown[]).filter((o): o is string => typeof o === 'string')
         : f.objectives,

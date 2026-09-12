@@ -1965,3 +1965,44 @@
   font-size: 13px;
   margin-bottom: 12px;
 }
+
+/* Forms and previews for reusable teaching formats. */
+.edu-template-fields .edu-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edu-template-preview {
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.edu-template-preview p,
+.edu-template-preview ul {
+  margin: 6px 0 14px;
+}
+.edu-template-rubric {
+  min-width: 0;
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
+  border-radius: var(--r-md);
+}
+.edu-template-rubric .edu-row {
+  align-items: end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.edu-template-rubric label {
+  flex: 1;
+  min-width: 90px;
+}
+.edu-template-advanced summary {
+  cursor: pointer;
+  padding: 12px 0;
+}
+.edu-template-card .edu-template-card-title {
+  text-align: left;
+  white-space: normal;
+}

@@ -67,6 +67,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
     const sessionAssignFilter = classIds ? { ...ownerFilter(req), classId: { $in: classIds } } : { ...ownerFilter(req) }
 
+    const correctionAssignments = await EducationAssignment.find({
+      ...sessionAssignFilter,
+      status: { $in: ['OUVERT', 'EN_CORRECTION'] },
+    }).select('_id')
+    const submissionFilter = {
+      ...ownerFilter(req),
+      assignmentId: { $in: correctionAssignments.map((a) => a._id) },
+    }
+    const needsCorrection = { status: { $in: ['RENDU', 'EN_RETARD', 'EN_CORRECTION'] }, grade: null }
+    const toCorrectIds = await EducationSubmission.distinct('assignmentId', { ...submissionFilter, ...needsCorrection })
+
     const [
       activeClasses,
       totalStudents,
@@ -119,17 +130,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         .sort({ deadline: 1 })
         .limit(20),
       EducationSubmission.countDocuments({
-        ...ownerFilter(req),
+        ...submissionFilter,
+        ...needsCorrection,
         $or: [{ status: 'EN_RETARD' }, { isLate: true, status: { $ne: 'CORRIGE' } }],
       }),
-      EducationSubmission.countDocuments({
-        ...ownerFilter(req),
-        status: { $in: ['RENDU', 'EN_RETARD', 'EN_CORRECTION'] },
-        grade: null,
-      }),
+      EducationSubmission.countDocuments({ ...submissionFilter, ...needsCorrection }),
       // À corriger : devoirs avec au moins une soumission non corrigée.
       EducationAssignment.find({
         ...sessionAssignFilter,
+        _id: { $in: toCorrectIds },
         status: { $in: ['OUVERT', 'EN_CORRECTION'] },
       })
         .populate('classId', 'name color school')

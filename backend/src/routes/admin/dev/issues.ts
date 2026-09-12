@@ -16,6 +16,8 @@ import {
   recordIssueEvent,
   validateIssueReferences,
 } from '../../../lib/dev/issueMutations.js'
+import { issueFilter } from '../../../lib/dev/issueFilter.js'
+import { computeIssueAnalytics } from '../../../lib/dev/issueAnalytics.js'
 import { applyIssueResolutionToBetaRuns } from '../../../lib/beta/promote.js'
 
 const router = express.Router()
@@ -43,59 +45,45 @@ function parseCommentContext(raw: unknown): string {
   return typeof raw === 'string' ? raw.trim().slice(0, 2000) : ''
 }
 
+router.get('/issues/analytics', requirePermission(PERMISSIONS.VIEW_DEV), async (req, res, next) => {
+  try {
+    res.json(await computeIssueAnalytics(issueFilter(req.query, req.user!.id), req.query.timezone))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/admin/dev/issues — filtre principal type Linear
 router.get(
   '/issues',
   requirePermission(PERMISSIONS.VIEW_DEV),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = { ...ACTIVE_ISSUE_FILTER }
-      const { project, status, priority, type, assignee, q, label, cycle, agentAssignee, includeArchived } = req.query
-      if (includeArchived === 'true') delete filter.archivedAt
+      const filter = issueFilter(req.query, req.user!.id)
+      const page = Math.max(1, Number(req.query.page) || 1)
+      const pageSize = Math.min(500, Math.max(1, Number(req.query.pageSize) || 100))
+      if (
+        !Number.isSafeInteger(page) ||
+        !Number.isSafeInteger(pageSize) ||
+        !Number.isSafeInteger((page - 1) * pageSize)
+      ) {
+        return res.status(400).json({ error: 'Pagination invalide' })
+      }
+      const sort: Record<string, 1 | -1> =
+        req.query.sort === 'oldest' ? { updatedAt: 1, _id: 1 } : { rank: 1, updatedAt: -1, _id: 1 }
 
-      if (typeof project === 'string') {
-        if (isObjectId(project)) filter.project = project
-        else if (project !== 'all' && project) return res.json({ issues: [] })
-      }
-
-      if (typeof status === 'string') {
-        if (status === 'open') filter.status = { $nin: CLOSED_ISSUE_STATUSES }
-        else if ((DEV_ISSUE_STATUSES as readonly string[]).includes(status)) filter.status = status
-      }
-      if (typeof priority === 'string' && (DEV_ISSUE_PRIORITIES as readonly string[]).includes(priority)) {
-        filter.priority = priority
-      }
-      if (typeof type === 'string' && (DEV_ISSUE_TYPES as readonly string[]).includes(type)) {
-        filter.type = type
-      }
-      if (typeof assignee === 'string') {
-        if (assignee === 'me') filter.assignee = req.user!.id
-        else if (assignee === 'unassigned') filter.assignee = null
-        else if (isObjectId(assignee)) filter.assignee = assignee
-      }
-      if (typeof label === 'string' && label.trim()) {
-        filter.labels = label.trim().toLowerCase()
-      }
-      if (typeof cycle === 'string' && cycle.trim()) filter.cycle = cycle.trim()
-      if (typeof agentAssignee === 'string' && agentAssignee.trim()) filter.agentAssignee = agentAssignee.trim()
-      if (typeof q === 'string' && q.trim()) {
-        const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        filter.$or = [
-          { title: { $regex: safe, $options: 'i' } },
-          { identifier: { $regex: safe, $options: 'i' } },
-          { description: { $regex: safe, $options: 'i' } },
-          { 'external.linearIdentifier': { $regex: safe, $options: 'i' } },
-        ]
-      }
-
-      const issues = await DevIssue.find(filter)
-        .populate('assignee', 'name email avatarUrl')
-        .populate('reporter', 'name email avatarUrl')
-        .populate('project', 'key name color')
-        .sort({ rank: 1, updatedAt: -1 })
-        .limit(500)
-        .lean()
-      res.json({ issues })
+      const [issues, total] = await Promise.all([
+        DevIssue.find(filter)
+          .populate('assignee', 'name email avatarUrl')
+          .populate('reporter', 'name email avatarUrl')
+          .populate('project', 'key name color')
+          .sort(sort)
+          .skip((page - 1) * pageSize)
+          .limit(pageSize)
+          .lean(),
+        DevIssue.countDocuments(filter),
+      ])
+      res.json({ issues, total, page, pageSize, nextPage: page * pageSize < total ? page + 1 : null })
     } catch (err) {
       next(err)
     }

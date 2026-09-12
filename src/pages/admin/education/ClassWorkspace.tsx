@@ -9,7 +9,7 @@
  *
  * L'autosave est optimiste et debouncé, comme l'éditeur de notes.
  */
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   ArrowLeft,
   Trash2,
@@ -41,6 +41,8 @@ import {
   type EducationTemplate,
   type NoteBlock,
 } from '../../../services/education'
+import { useEducationAutosave } from './useEducationAutosave'
+import { AutosaveStatus } from './AutosaveStatus'
 import { NoteEditor } from './NoteEditor'
 import { StudentsTab } from './student-parts'
 import { SessionsTab } from './session-parts'
@@ -94,7 +96,7 @@ function coverStyle(cover: string, color: string): CSSProperties {
 
 export function ClassWorkspace({
   classId,
-  onClose,
+  onClose: onExit,
   onChanged,
   templates,
 }: {
@@ -118,8 +120,13 @@ export function ClassWorkspace({
   const [showEmoji, setShowEmoji] = useState(false)
   const [showCover, setShowCover] = useState(false)
 
-  const classTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pageTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { stage, restore, flush, discard, status: saveStatus, error: saveError } = useEducationAutosave()
+  const onClose = useCallback(async () => {
+    if (await flush()) {
+      onChanged()
+      onExit()
+    }
+  }, [flush, onChanged, onExit])
 
   const depth = pageStack.length - 1
   const currentPage = pageStack[pageStack.length - 1] ?? null
@@ -127,14 +134,14 @@ export function ClassWorkspace({
   const load = useCallback(async () => {
     try {
       const [c, h] = await Promise.all([getClass(classId), getClassHome(classId)])
-      setKlass(c.class)
+      setKlass(restore('class', classId, c.class))
       setStats(c.stats)
-      setPageStack([h.note])
+      setPageStack([restore('note', h.note._id, h.note)])
       setLoadError(null)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Impossible de charger la classe')
     }
-  }, [classId])
+  }, [classId, restore])
 
   useEffect(() => {
     load()
@@ -144,46 +151,36 @@ export function ClassWorkspace({
   const refreshMeta = useCallback(async () => {
     try {
       const c = await getClass(classId)
-      setKlass(c.class)
+      setKlass(restore('class', classId, c.class))
       setStats(c.stats)
     } catch {
       /* best-effort */
     }
-  }, [classId])
+  }, [classId, restore])
 
-  // ── Autosave classe (optimiste + debounce) ──────────────────────────────
   const patchClass = useCallback(
     (patch: Partial<EducationClass>) => {
       setKlass((prev) => (prev ? { ...prev, ...patch } : prev))
-      if (classTimer.current) clearTimeout(classTimer.current)
-      classTimer.current = setTimeout(async () => {
-        try {
-          await updateClass(classId, patch)
-          onChanged()
-        } catch {
-          /* best-effort, l'état local reste affiché */
-        }
-      }, 500)
+      stage('class', classId, patch)
     },
-    [classId, onChanged],
+    [classId, stage],
   )
 
-  // ── Autosave de la page courante (racine ou sous-page) ───────────────────
-  const persistPage = useCallback((next: EducationNote) => {
-    setPageStack((stack) => stack.map((p, i) => (i === stack.length - 1 ? next : p)))
-    if (pageTimer.current) clearTimeout(pageTimer.current)
-    pageTimer.current = setTimeout(async () => {
-      try {
-        await updateNote(next._id, { title: next.title, blocks: next.blocks, emoji: next.emoji })
-      } catch {
-        /* best-effort */
-      }
-    }, 600)
-  }, [])
+  const persistPage = useCallback(
+    (next: EducationNote) => {
+      setPageStack((stack) => stack.map((p) => (p._id === next._id ? next : p)))
+      stage('note', next._id, { title: next.title, blocks: next.blocks, emoji: next.emoji })
+    },
+    [stage],
+  )
+
+  async function selectTab(next: WorkspaceTab) {
+    if (await flush()) setTab(next)
+  }
 
   // ── Navigation dans l'arbre de sous-pages ────────────────────────────────
   const createSubpage = useCallback(async () => {
-    if (!currentPage) return null
+    if (!currentPage || !(await flush())) return null
     try {
       const r = await createNote({
         title: 'Sans titre',
@@ -204,18 +201,23 @@ export function ClassWorkspace({
     } catch {
       return null
     }
-  }, [currentPage])
+  }, [currentPage, flush])
 
-  const openSubpage = useCallback(async (childId: string) => {
-    try {
-      const r = await getNote(childId)
-      setPageStack((s) => [...s, r.note])
-    } catch {
-      alert('Cette sous-page est introuvable (peut-être supprimée).')
-    }
-  }, [])
+  const openSubpage = useCallback(
+    async (childId: string) => {
+      if (!(await flush())) return
+      try {
+        const r = await getNote(childId)
+        setPageStack((s) => [...s, restore('note', r.note._id, r.note)])
+      } catch {
+        alert('Cette sous-page est introuvable (peut-être supprimée).')
+      }
+    },
+    [flush, restore],
+  )
 
-  function goToCrumb(index: number) {
+  async function goToCrumb(index: number) {
+    if (!(await flush())) return
     setPageStack((s) => s.slice(0, index + 1))
   }
 
@@ -223,7 +225,9 @@ export function ClassWorkspace({
     if (!currentPage || depth === 0) return
     if (!confirm('Supprimer cette sous-page et son contenu ?')) return
     try {
+      if (!(await flush())) return
       await deleteNote(currentPage._id)
+      discard('note', currentPage._id)
       setPageStack((s) => s.slice(0, -1))
     } catch {
       alert('Suppression impossible.')
@@ -232,7 +236,8 @@ export function ClassWorkspace({
 
   // Mention cliquée : on revient à la racine de la classe et on ouvre la
   // section concernée (les onglets ne sont visibles qu'à la racine).
-  function openMention(refType: string) {
+  async function openMention(refType: string) {
+    if (!(await flush())) return
     setPageStack((s) => s.slice(0, 1))
     if (refType === 'student') setTab('students')
     else if (refType === 'session') setTab('sessions')
@@ -262,7 +267,10 @@ export function ClassWorkspace({
   async function handleDelete() {
     if (!confirm(`Supprimer la classe "${klass!.name}" ? Étudiants, séances et devoirs liés seront aussi archivés.`))
       return
+    if (!(await flush())) return
     await deleteClass(classId)
+    discard('class', classId)
+    for (const page of pageStack) discard('note', page._id)
     onChanged()
     onClose()
   }
@@ -311,6 +319,8 @@ export function ClassWorkspace({
           </div>
         )}
       </div>
+
+      <AutosaveStatus status={saveStatus} error={saveError} onRetry={flush} />
 
       {/* Fil d'Ariane (dans l'arbre de sous-pages) */}
       {depth > 0 && (
@@ -381,33 +391,33 @@ export function ClassWorkspace({
 
           {/* Navigation de sections */}
           <div className="edu-cw-tabs">
-            <TabBtn icon={FileText} label="Page" active={tab === 'page'} onClick={() => setTab('page')} />
+            <TabBtn icon={FileText} label="Page" active={tab === 'page'} onClick={() => selectTab('page')} />
             <TabBtn
               icon={Users}
               label="Étudiants"
               count={stats?.studentCount}
               active={tab === 'students'}
-              onClick={() => setTab('students')}
+              onClick={() => selectTab('students')}
             />
             <TabBtn
               icon={CalIcon}
               label="Séances"
               count={stats?.sessionCount}
               active={tab === 'sessions'}
-              onClick={() => setTab('sessions')}
+              onClick={() => selectTab('sessions')}
             />
             <TabBtn
               icon={ClipboardList}
               label="Devoirs"
               count={stats?.assignmentCount}
               active={tab === 'assignments'}
-              onClick={() => setTab('assignments')}
+              onClick={() => selectTab('assignments')}
             />
             <TabBtn
               icon={FileText}
               label="Bilan & conseil"
               active={tab === 'council'}
-              onClick={() => setTab('council')}
+              onClick={() => selectTab('council')}
             />
           </div>
 

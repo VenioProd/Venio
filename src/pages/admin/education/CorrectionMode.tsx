@@ -1,3 +1,4 @@
+import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { X, Save, Download, Plus, Trash2, ChevronDown, ChevronUp, Keyboard, Sparkles } from 'lucide-react'
 import './CorrectionMode.css'
@@ -318,275 +319,279 @@ export function CorrectionMode({
 
   if (!assignment) {
     return (
-      <div className="edu-correction-overlay">
-        <div className="edu-correction-loading">Chargement…</div>
-      </div>
+      <WorkspaceOverlayPortal>
+        <div className="edu-correction-overlay">
+          <div className="edu-correction-loading">Chargement…</div>
+        </div>
+      </WorkspaceOverlayPortal>
     )
   }
 
   return (
-    <div className="edu-correction-overlay" role="dialog" aria-label="Mode correction">
-      <div className="edu-correction-toolbar">
-        <div className="edu-correction-toolbar-left">
-          <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)">
-            <X size={18} />
-          </button>
-          <div>
-            <h2 className="edu-correction-title">{assignment.title}</h2>
-            <div className="edu-correction-subtitle">
-              {ASSIGNMENT_KIND_LABEL[assignment.kind]} · {ASSIGNMENT_STATUS_LABEL[assignment.status]} · /
-              {assignment.maxGrade}
-              {' · '}
-              <strong>
-                {stats.done}/{stats.total}
-              </strong>{' '}
-              corrigés
-              {stats.avg != null && (
-                <>
-                  {' '}
-                  · moy. <strong>{stats.avg}</strong>
-                </>
-              )}
+    <WorkspaceOverlayPortal>
+      <div className="edu-correction-overlay" role="dialog" aria-label="Mode correction">
+        <div className="edu-correction-toolbar">
+          <div className="edu-correction-toolbar-left">
+            <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)">
+              <X size={18} />
+            </button>
+            <div>
+              <h2 className="edu-correction-title">{assignment.title}</h2>
+              <div className="edu-correction-subtitle">
+                {ASSIGNMENT_KIND_LABEL[assignment.kind]} · {ASSIGNMENT_STATUS_LABEL[assignment.status]} · /
+                {assignment.maxGrade}
+                {' · '}
+                <strong>
+                  {stats.done}/{stats.total}
+                </strong>{' '}
+                corrigés
+                {stats.avg != null && (
+                  <>
+                    {' '}
+                    · moy. <strong>{stats.avg}</strong>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="edu-correction-toolbar-right">
-          <button
-            className="edu-btn ghost"
-            onClick={() =>
-              void downloadAssignmentExport(assignment._id).catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Impossible d’exporter les corrections')
-              })
-            }
-            title="Télécharger les corrections en CSV"
-          >
-            <Download size={14} /> Export CSV
-          </button>
-          <button className="edu-btn ghost" onClick={() => setShowShortcuts((v) => !v)} title="Raccourcis clavier">
-            <Keyboard size={14} />
-          </button>
-          <button className="edu-btn" disabled={saving} onClick={saveAll}>
-            <Save size={14} /> {saving ? 'Enregistrement…' : 'Tout enregistrer'}
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="edu-banner-error" style={{ margin: '0 16px 8px' }}>
-          {error}
-          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
-            Fermer
-          </button>
-        </div>
-      )}
-      {lastSavedAt && !error && (
-        <div className="edu-correction-saved-toast" aria-live="polite">
-          Enregistré ✓
-        </div>
-      )}
-
-      {showShortcuts && (
-        <div className="edu-correction-shortcuts">
-          <strong>Raccourcis :</strong> J/↓ suivant · K/↑ précédent · ⌘/Ctrl+S enregistrer · Esc fermer · ? aide
-        </div>
-      )}
-
-      <div className="edu-correction-body">
-        <aside className="edu-correction-list">
-          <div className="edu-correction-filters">
-            {(
-              [
-                ['pending', 'À corriger'],
-                ['done', 'Corrigés'],
-                ['all', 'Tous'],
-              ] as Array<['pending' | 'done' | 'all', string]>
-            ).map(([k, l]) => (
-              <button
-                key={k}
-                className={`edu-correction-filter ${filter === k ? 'active' : ''}`}
-                onClick={() => setFilter(k)}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-          <div className="edu-correction-quick-actions">
-            <button className="edu-correction-quick" onClick={() => applyQuickAction('all-rendu')}>
-              Tous → Rendu
+          <div className="edu-correction-toolbar-right">
+            <button
+              className="edu-btn ghost"
+              onClick={() =>
+                void downloadAssignmentExport(assignment._id).catch((err: unknown) => {
+                  setError(err instanceof Error ? err.message : 'Impossible d’exporter les corrections')
+                })
+              }
+              title="Télécharger les corrections en CSV"
+            >
+              <Download size={14} /> Export CSV
             </button>
-            <button className="edu-correction-quick" onClick={() => applyQuickAction('mark-absent-non-rendu')}>
-              Non rendus → Non validé
+            <button className="edu-btn ghost" onClick={() => setShowShortcuts((v) => !v)} title="Raccourcis clavier">
+              <Keyboard size={14} />
             </button>
-            <button className="edu-correction-quick" onClick={() => applyQuickAction('all-corrige-zero')}>
-              Mettre 0 si non noté
+            <button className="edu-btn" disabled={saving} onClick={saveAll}>
+              <Save size={14} /> {saving ? 'Enregistrement…' : 'Tout enregistrer'}
             </button>
           </div>
-          <div className="edu-correction-list-items">
-            {filtered.length === 0 && (
-              <div className="edu-empty edu-empty-compact" style={{ padding: 14 }}>
-                Tout est traité ici. Bascule le filtre pour voir les autres.
-              </div>
-            )}
-            {filtered.map((s) => {
-              const sid = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
-              const stu = typeof s.studentId === 'string' ? null : s.studentId
-              const d = drafts[sid]
-              const isActive = sid === activeStudentId
-              const grade = d?.grade
-              const status = d?.status ?? s.status
-              return (
+        </div>
+
+        {error && (
+          <div className="edu-banner-error" style={{ margin: '0 16px 8px' }}>
+            {error}
+            <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
+              Fermer
+            </button>
+          </div>
+        )}
+        {lastSavedAt && !error && (
+          <div className="edu-correction-saved-toast" aria-live="polite">
+            Enregistré ✓
+          </div>
+        )}
+
+        {showShortcuts && (
+          <div className="edu-correction-shortcuts">
+            <strong>Raccourcis :</strong> J/↓ suivant · K/↑ précédent · ⌘/Ctrl+S enregistrer · Esc fermer · ? aide
+          </div>
+        )}
+
+        <div className="edu-correction-body">
+          <aside className="edu-correction-list">
+            <div className="edu-correction-filters">
+              {(
+                [
+                  ['pending', 'À corriger'],
+                  ['done', 'Corrigés'],
+                  ['all', 'Tous'],
+                ] as Array<['pending' | 'done' | 'all', string]>
+              ).map(([k, l]) => (
                 <button
-                  key={s._id}
-                  className={`edu-correction-row ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveStudentId(sid)}
+                  key={k}
+                  className={`edu-correction-filter ${filter === k ? 'active' : ''}`}
+                  onClick={() => setFilter(k)}
                 >
-                  <div className="edu-correction-row-name">{stu ? studentDisplayName(stu) : '—'}</div>
-                  <div className="edu-correction-row-meta">
-                    <span className="edu-pill">{SUBMISSION_STATUS_LABEL[status]}</span>
-                    <span className="edu-correction-row-grade">
-                      {grade != null ? `${grade}/${assignment.maxGrade}` : '—'}
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div className="edu-correction-quick-actions">
+              <button className="edu-correction-quick" onClick={() => applyQuickAction('all-rendu')}>
+                Tous → Rendu
+              </button>
+              <button className="edu-correction-quick" onClick={() => applyQuickAction('mark-absent-non-rendu')}>
+                Non rendus → Non validé
+              </button>
+              <button className="edu-correction-quick" onClick={() => applyQuickAction('all-corrige-zero')}>
+                Mettre 0 si non noté
+              </button>
+            </div>
+            <div className="edu-correction-list-items">
+              {filtered.length === 0 && (
+                <div className="edu-empty edu-empty-compact" style={{ padding: 14 }}>
+                  Tout est traité ici. Bascule le filtre pour voir les autres.
+                </div>
+              )}
+              {filtered.map((s) => {
+                const sid = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
+                const stu = typeof s.studentId === 'string' ? null : s.studentId
+                const d = drafts[sid]
+                const isActive = sid === activeStudentId
+                const grade = d?.grade
+                const status = d?.status ?? s.status
+                return (
+                  <button
+                    key={s._id}
+                    className={`edu-correction-row ${isActive ? 'active' : ''}`}
+                    onClick={() => setActiveStudentId(sid)}
+                  >
+                    <div className="edu-correction-row-name">{stu ? studentDisplayName(stu) : '—'}</div>
+                    <div className="edu-correction-row-meta">
+                      <span className="edu-pill">{SUBMISSION_STATUS_LABEL[status]}</span>
+                      <span className="edu-correction-row-grade">
+                        {grade != null ? `${grade}/${assignment.maxGrade}` : '—'}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </aside>
+
+          <section className="edu-correction-panel">
+            {!activeDraft || !activeSubmission ? (
+              <div className="edu-empty">Sélectionne un étudiant à corriger.</div>
+            ) : (
+              <>
+                <CorrectionPanel
+                  assignment={assignment}
+                  submission={activeSubmission}
+                  draft={activeDraft}
+                  onChange={(patch) => patchDraft(activeDraft.studentId, patch)}
+                  onApplyRubric={(scores) => applyRubric(activeDraft.studentId, scores)}
+                />
+                <EducationAiDraftPanel
+                  key={activeDraft.studentId}
+                  mode="assignment_feedback"
+                  initialText={activeDraft.feedback}
+                  rubric={assignment.rubric.map((criterion) => criterion.label)}
+                  onApply={(draft) => {
+                    const feedback = draft.fields.feedback
+                    if (typeof feedback === 'string') patchDraft(activeDraft.studentId, { feedback })
+                  }}
+                />
+              </>
+            )}
+          </section>
+
+          <aside className="edu-correction-side">
+            <div className="edu-correction-side-block">
+              <div className="edu-correction-side-head">
+                <strong>Barème</strong>
+                <button className="edu-btn ghost" onClick={() => setShowRubricEditor((v) => !v)}>
+                  {showRubricEditor ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {assignment.rubric.length ? 'Éditer' : 'Configurer'}
+                </button>
+              </div>
+              {showRubricEditor ? (
+                <div className="edu-correction-rubric-editor">
+                  {rubricDraft.map((r, i) => (
+                    <div key={i} className="edu-correction-rubric-row">
+                      <input
+                        className="edu-input"
+                        value={r.label}
+                        placeholder="Critère"
+                        onChange={(e) => {
+                          const next = [...rubricDraft]
+                          next[i] = { ...next[i], label: e.target.value }
+                          setRubricDraft(next)
+                        }}
+                      />
+                      <input
+                        className="edu-input"
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        value={r.max}
+                        style={{ width: 80 }}
+                        onChange={(e) => {
+                          const next = [...rubricDraft]
+                          next[i] = { ...next[i], max: Number(e.target.value) || 0 }
+                          setRubricDraft(next)
+                        }}
+                      />
+                      <button
+                        className="edu-btn-icon"
+                        onClick={() => setRubricDraft(rubricDraft.filter((_, j) => j !== i))}
+                        aria-label="Supprimer"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="edu-row" style={{ gap: 6, marginTop: 6 }}>
+                    <button
+                      className="edu-btn ghost"
+                      onClick={() => setRubricDraft([...rubricDraft, { label: '', max: 0 }])}
+                    >
+                      <Plus size={13} /> Critère
+                    </button>
+                    <span className="edu-correction-rubric-sum">
+                      Total : {rubricDraft.reduce((acc, r) => acc + (Number(r.max) || 0), 0)} / {assignment.maxGrade}
                     </span>
                   </div>
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-
-        <section className="edu-correction-panel">
-          {!activeDraft || !activeSubmission ? (
-            <div className="edu-empty">Sélectionne un étudiant à corriger.</div>
-          ) : (
-            <>
-              <CorrectionPanel
-                assignment={assignment}
-                submission={activeSubmission}
-                draft={activeDraft}
-                onChange={(patch) => patchDraft(activeDraft.studentId, patch)}
-                onApplyRubric={(scores) => applyRubric(activeDraft.studentId, scores)}
-              />
-              <EducationAiDraftPanel
-                key={activeDraft.studentId}
-                mode="assignment_feedback"
-                initialText={activeDraft.feedback}
-                rubric={assignment.rubric.map((criterion) => criterion.label)}
-                onApply={(draft) => {
-                  const feedback = draft.fields.feedback
-                  if (typeof feedback === 'string') patchDraft(activeDraft.studentId, { feedback })
-                }}
-              />
-            </>
-          )}
-        </section>
-
-        <aside className="edu-correction-side">
-          <div className="edu-correction-side-block">
-            <div className="edu-correction-side-head">
-              <strong>Barème</strong>
-              <button className="edu-btn ghost" onClick={() => setShowRubricEditor((v) => !v)}>
-                {showRubricEditor ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                {assignment.rubric.length ? 'Éditer' : 'Configurer'}
-              </button>
-            </div>
-            {showRubricEditor ? (
-              <div className="edu-correction-rubric-editor">
-                {rubricDraft.map((r, i) => (
-                  <div key={i} className="edu-correction-rubric-row">
-                    <input
-                      className="edu-input"
-                      value={r.label}
-                      placeholder="Critère"
-                      onChange={(e) => {
-                        const next = [...rubricDraft]
-                        next[i] = { ...next[i], label: e.target.value }
-                        setRubricDraft(next)
-                      }}
-                    />
-                    <input
-                      className="edu-input"
-                      type="number"
-                      min={0}
-                      step={0.5}
-                      value={r.max}
-                      style={{ width: 80 }}
-                      onChange={(e) => {
-                        const next = [...rubricDraft]
-                        next[i] = { ...next[i], max: Number(e.target.value) || 0 }
-                        setRubricDraft(next)
-                      }}
-                    />
+                  <div className="edu-row" style={{ gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
                     <button
-                      className="edu-btn-icon"
-                      onClick={() => setRubricDraft(rubricDraft.filter((_, j) => j !== i))}
-                      aria-label="Supprimer"
+                      className="edu-btn ghost"
+                      onClick={() => {
+                        setRubricDraft(assignment.rubric)
+                        setShowRubricEditor(false)
+                      }}
                     >
-                      <Trash2 size={13} />
+                      Annuler
+                    </button>
+                    <button className="edu-btn" onClick={saveRubric}>
+                      Enregistrer le barème
                     </button>
                   </div>
-                ))}
-                <div className="edu-row" style={{ gap: 6, marginTop: 6 }}>
-                  <button
-                    className="edu-btn ghost"
-                    onClick={() => setRubricDraft([...rubricDraft, { label: '', max: 0 }])}
-                  >
-                    <Plus size={13} /> Critère
-                  </button>
-                  <span className="edu-correction-rubric-sum">
-                    Total : {rubricDraft.reduce((acc, r) => acc + (Number(r.max) || 0), 0)} / {assignment.maxGrade}
-                  </span>
                 </div>
-                <div className="edu-row" style={{ gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
-                  <button
-                    className="edu-btn ghost"
-                    onClick={() => {
-                      setRubricDraft(assignment.rubric)
-                      setShowRubricEditor(false)
-                    }}
-                  >
-                    Annuler
-                  </button>
-                  <button className="edu-btn" onClick={saveRubric}>
-                    Enregistrer le barème
-                  </button>
+              ) : assignment.rubric.length === 0 ? (
+                <div className="edu-correction-rubric-empty">
+                  Pas de barème. Ajoute des critères (ex. méthode, contenu, forme) pour noter par sous-totaux.
                 </div>
-              </div>
-            ) : assignment.rubric.length === 0 ? (
-              <div className="edu-correction-rubric-empty">
-                Pas de barème. Ajoute des critères (ex. méthode, contenu, forme) pour noter par sous-totaux.
-              </div>
-            ) : (
-              <div className="edu-correction-rubric-summary">
-                {assignment.rubric.map((c, i) => (
-                  <div key={i} className="edu-correction-rubric-summary-row">
-                    <span>{c.label}</span>
-                    <span className="edu-correction-rubric-summary-max">/ {c.max}</span>
+              ) : (
+                <div className="edu-correction-rubric-summary">
+                  {assignment.rubric.map((c, i) => (
+                    <div key={i} className="edu-correction-rubric-summary-row">
+                      <span>{c.label}</span>
+                      <span className="edu-correction-rubric-summary-max">/ {c.max}</span>
+                    </div>
+                  ))}
+                  <div className="edu-correction-rubric-summary-row total">
+                    <span>Total</span>
+                    <span>
+                      {assignment.rubric.reduce((acc, c) => acc + c.max, 0)} / {assignment.maxGrade}
+                    </span>
                   </div>
-                ))}
-                <div className="edu-correction-rubric-summary-row total">
-                  <span>Total</span>
-                  <span>
-                    {assignment.rubric.reduce((acc, c) => acc + c.max, 0)} / {assignment.maxGrade}
-                  </span>
                 </div>
-              </div>
-            )}
-          </div>
-
-          <div className="edu-correction-side-block">
-            <div className="edu-correction-side-head">
-              <strong>Snippets feedback</strong>
-              <Sparkles size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+              )}
             </div>
-            <SnippetsEditor
-              snippets={snippets}
-              onApply={appendSnippet}
-              onSave={saveSnippets}
-              disabled={!activeStudentId}
-            />
-          </div>
-        </aside>
+
+            <div className="edu-correction-side-block">
+              <div className="edu-correction-side-head">
+                <strong>Snippets feedback</strong>
+                <Sparkles size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+              </div>
+              <SnippetsEditor
+                snippets={snippets}
+                onApply={appendSnippet}
+                onSave={saveSnippets}
+                disabled={!activeStudentId}
+              />
+            </div>
+          </aside>
+        </div>
       </div>
-    </div>
+    </WorkspaceOverlayPortal>
   )
 }
 

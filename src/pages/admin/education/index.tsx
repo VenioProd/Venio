@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   GraduationCap,
   BookOpen,
@@ -62,6 +62,7 @@ import {
   type EducationTemplate,
 } from '../../../services/education'
 import { DashboardView } from './DashboardView'
+import { SessionLiveMode } from './SessionLiveMode'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { TemplatesView } from './TemplatesView'
@@ -129,6 +130,10 @@ function loadContext(): WorkspaceContext {
 }
 
 export default function EducationWorkspace() {
+  const dashboardRequest = useRef(0)
+  const dashboardScope = useRef<string | null>(null)
+  const mainRef = useRef<HTMLElement>(null)
+  const cockpitScroll = useRef<{ main: number; window: number } | null>(null)
   const [view, setView] = useState<View>(() => loadContext().view)
   const [dashboard, setDashboard] = useState<EducationDashboard | null>(null)
   const [classes, setClasses] = useState<EducationClass[]>([])
@@ -137,6 +142,7 @@ export default function EducationWorkspace() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(() => loadContext().selectedClassId)
   const [showCreateClass, setShowCreateClass] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [cockpitSession, setCockpitSession] = useState<{ id: string; live: boolean } | null>(null)
   const [correctionAssignmentId, setCorrectionAssignmentId] = useState<string | null>(null)
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null)
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
@@ -150,13 +156,26 @@ export default function EducationWorkspace() {
     followUpAlert: EducationDashboardAlert | null
   } | null>(null)
 
+  useLayoutEffect(() => {
+    if (!selectedClassId && view === 'dashboard' && cockpitScroll.current) {
+      if (mainRef.current) mainRef.current.scrollTop = cockpitScroll.current.main
+      window.scrollTo(0, cockpitScroll.current.window)
+      cockpitScroll.current = null
+    }
+  }, [selectedClassId, view])
+
   const refreshDashboard = useCallback(async () => {
+    const request = ++dashboardRequest.current
+    if (dashboardScope.current !== school) setDashboard(null)
+    dashboardScope.current = school
     try {
       const r = await fetchDashboard(school ? { school } : {})
+      if (request !== dashboardRequest.current) return
       setDashboard(r)
       setDashboardError(null)
     } catch (err) {
-      setDashboardError(err instanceof Error ? err.message : 'Impossible de charger le cockpit')
+      if (request === dashboardRequest.current)
+        setDashboardError(err instanceof Error ? err.message : 'Impossible de charger le cockpit')
     }
   }, [school])
 
@@ -338,7 +357,7 @@ export default function EducationWorkspace() {
         )}
       </aside>
 
-      <main className="edu-main">
+      <main className="edu-main" ref={mainRef}>
         {selectedClassId ? (
           <ClassWorkspace
             classId={selectedClassId}
@@ -365,9 +384,12 @@ export default function EducationWorkspace() {
                 selectedSchool={school}
                 onChangeSchool={setSchool}
                 onOpenClass={(id) => {
+                  cockpitScroll.current = { main: mainRef.current?.scrollTop ?? 0, window: window.scrollY }
                   setSelectedClassId(id)
-                  selectView('classes')
                 }}
+                onOpenSession={(id) => setCockpitSession({ id, live: false })}
+                onStartLive={(id) => setCockpitSession({ id, live: true })}
+                onStartCorrection={setCorrectionAssignmentId}
                 onOpenStudent={openStudentFollowUp}
                 onCreateClass={() => setShowCreateClass(true)}
                 reloadError={dashboardError}
@@ -411,7 +433,16 @@ export default function EducationWorkspace() {
                 onCloseIncomingOpen={() => setPendingNoteId(null)}
               />
             )}
-            {view === 'templates' && <TemplatesView />}
+            {view === 'templates' && (
+              <TemplatesView
+                classes={classes}
+                onChanged={() => {
+                  void refreshTemplates()
+                  void refreshClasses()
+                  void refreshDashboard()
+                }}
+              />
+            )}
             {view === 'schools' && (
               <SchoolsView
                 onOpenClass={(id) => {
@@ -486,6 +517,22 @@ export default function EducationWorkspace() {
         />
       )}
 
+      {cockpitSession &&
+        (cockpitSession.live ? (
+          <SessionLiveMode
+            sessionId={cockpitSession.id}
+            templates={templates}
+            onClose={() => setCockpitSession(null)}
+            onChanged={refreshDashboard}
+          />
+        ) : (
+          <SessionDetailDrawer
+            sessionId={cockpitSession.id}
+            templates={templates}
+            onClose={() => setCockpitSession(null)}
+            onChanged={refreshDashboard}
+          />
+        ))}
       {correctionAssignmentId && (
         <CorrectionMode
           assignmentId={correctionAssignmentId}

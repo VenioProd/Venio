@@ -1,3 +1,4 @@
+import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useCallback, useEffect, useState } from 'react'
 import { X, ChevronDown, ChevronRight, Play } from 'lucide-react'
 import {
@@ -16,6 +17,8 @@ import {
 } from '../../../services/education'
 import { SessionLiveMode } from './SessionLiveMode'
 import { DocumentsPanel } from './DocumentsPanel'
+import { useEducationAutosave } from './useEducationAutosave'
+import { AutosaveStatus } from './AutosaveStatus'
 import { PostSessionFlow } from './PostSessionFlow'
 import { EducationAiDraftPanel } from './EducationAiDraft'
 
@@ -32,7 +35,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 export function SessionDetailDrawer({
   sessionId,
   templates,
-  onClose,
+  onClose: onExit,
   onChanged,
 }: {
   sessionId: string
@@ -42,6 +45,18 @@ export function SessionDetailDrawer({
   onChanged: () => void
 }) {
   const [session, setSession] = useState<EducationSession | null>(null)
+  const { stage, restore, flush, status: recapSaveStatus, error: recapSaveError } = useEducationAutosave()
+  const onClose = useCallback(async () => {
+    if (await flush()) {
+      onChanged()
+      onExit()
+    }
+  }, [flush, onChanged, onExit])
+  function changeRecap(value: string) {
+    setRecap(value)
+    stage('session', sessionId, { recap: value })
+  }
+
   const [recap, setRecap] = useState('')
   const [status, setStatus] = useState<EducationSessionStatus>('PLANIFIEE')
   const [attendanceOpen, setAttendanceOpen] = useState(false)
@@ -56,39 +71,20 @@ export function SessionDetailDrawer({
     try {
       const r = await getSession(sessionId)
       setSession(r.session)
-      setRecap(r.session.recap || '')
+      setRecap(restore('session', sessionId, r.session).recap || '')
       setStatus(r.session.status)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de charger la séance')
     }
-  }, [sessionId])
+  }, [sessionId, restore])
 
   useEffect(() => {
     refresh()
   }, [refresh])
 
-  // Autosave debouncé du recap.
-  useEffect(() => {
-    if (!session) return
-    if (recap === (session.recap || '')) return
-    setSaveState('saving')
-    const t = setTimeout(async () => {
-      try {
-        await updateSession(session._id, { recap })
-        setSaveState('saved')
-        // Retour à idle après 1.5s.
-        setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
-      } catch (err) {
-        setSaveState('error')
-        setError(err instanceof Error ? err.message : 'Erreur de sauvegarde')
-      }
-    }, 800)
-    return () => clearTimeout(t)
-  }, [recap, session])
-
   if (!session) {
     return (
-      <>
+      <WorkspaceOverlayPortal>
         <div className="edu-drawer-backdrop" onClick={onClose} />
         <div className="edu-drawer">
           <div className="edu-drawer-head">
@@ -109,13 +105,14 @@ export function SessionDetailDrawer({
             )}
           </div>
         </div>
-      </>
+      </WorkspaceOverlayPortal>
     )
   }
 
   const attendanceFilled = session.attendance.filter((a) => a.state !== 'NON_RENSEIGNE').length
 
   async function saveStatus(next: EducationSessionStatus) {
+    if (!(await flush())) return
     setStatus(next)
     setSaveState('saving')
     try {
@@ -131,7 +128,7 @@ export function SessionDetailDrawer({
   }
 
   return (
-    <>
+    <WorkspaceOverlayPortal>
       <div className="edu-drawer-backdrop" onClick={onClose} />
       <div className="edu-drawer">
         <div className="edu-drawer-head">
@@ -145,7 +142,9 @@ export function SessionDetailDrawer({
             <SaveIndicator state={saveState} />
             <button
               className="edu-btn"
-              onClick={() => setLiveOpen(true)}
+              onClick={async () => {
+                if (await flush()) setLiveOpen(true)
+              }}
               title="Ouvrir le mode séance (présence un-tap)"
             >
               <Play size={14} /> Mode séance
@@ -202,11 +201,12 @@ export function SessionDetailDrawer({
             </div>
           )}
 
+          <AutosaveStatus status={recapSaveStatus} error={recapSaveError} onRetry={flush} />
           <h2 className="edu-h2">Compte-rendu de séance</h2>
           <textarea
             className="edu-textarea"
             value={recap}
-            onChange={(e) => setRecap(e.target.value)}
+            onChange={(e) => changeRecap(e.target.value)}
             placeholder="Ce qui s'est passé, ce qu'il faut retenir, les points clés pour la prochaine séance…"
             style={{ minHeight: 200 }}
             aria-label="Compte-rendu de séance"
@@ -216,7 +216,7 @@ export function SessionDetailDrawer({
             initialText={recap}
             onApply={(draft) => {
               const proposedRecap = draft.fields.recap
-              if (typeof proposedRecap === 'string') setRecap(proposedRecap)
+              if (typeof proposedRecap === 'string') changeRecap(proposedRecap)
             }}
           />
 
@@ -316,7 +316,7 @@ export function SessionDetailDrawer({
       )}
       {postFlowOpen && (
         <PostSessionFlow
-          session={session}
+          session={{ ...session, recap }}
           templates={templates ?? []}
           onClose={() => {
             setPostFlowOpen(false)
@@ -325,7 +325,7 @@ export function SessionDetailDrawer({
           onChanged={onChanged}
         />
       )}
-    </>
+    </WorkspaceOverlayPortal>
   )
 }
 

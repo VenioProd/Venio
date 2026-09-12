@@ -200,6 +200,8 @@ export interface DevStats {
   created7?: number
   overdue?: number
   totalProjects: number
+  urgent?: number
+  blocked?: number
   byStatus: Record<DevIssueStatus, number>
   byPriority: Record<DevIssuePriority, number>
   byType?: Record<DevIssueType, number>
@@ -301,6 +303,8 @@ export interface IssueFilters {
   cycle?: string
   agentAssignee?: string
   includeArchived?: 'true'
+  blocked?: 'true'
+  sort?: 'oldest'
 }
 
 function qs(params: Record<string, string | undefined>): string {
@@ -337,8 +341,49 @@ export function deleteDevProject(id: string): Promise<{ ok: boolean; archived: b
 }
 
 // Issues
-export function listDevIssues(filters: IssueFilters = {}): Promise<{ issues: DevIssue[] }> {
-  return apiFetch(`/api/admin/dev/issues${qs(filters as Record<string, string | undefined>)}`)
+export interface DevIssuePage {
+  issues: DevIssue[]
+  total: number
+  page: number
+  pageSize: number
+  nextPage: number | null
+}
+
+export function listDevIssuePage(filters: IssueFilters = {}, page = 1, signal?: AbortSignal): Promise<DevIssuePage> {
+  return apiFetch(`/api/admin/dev/issues${qs({ ...filters, page: String(page), pageSize: '500' })}`, { signal })
+}
+
+/** Follow every page so boards, keyboard search and review never silently omit issues. */
+export async function listDevIssues(
+  filters: IssueFilters = {},
+  signal?: AbortSignal,
+): Promise<{ issues: DevIssue[]; total: number }> {
+  const issues = new Map<string, DevIssue>()
+  let page = 1
+  let total = 0
+  for (;;) {
+    const data = await listDevIssuePage(filters, page, signal)
+    for (const issue of data.issues) issues.set(issue._id, issue)
+    total = data.total ?? issues.size
+    if (data.nextPage == null) break
+    if (data.nextPage <= page) throw new Error('Pagination des tickets incohérente')
+    page = data.nextPage
+  }
+  if (issues.size !== total)
+    throw new Error('La liste des tickets a changé pendant le chargement. Réessayez pour obtenir la liste complète.')
+  return { issues: [...issues.values()], total }
+}
+
+export interface DevIssueAnalytics {
+  total: number
+  velocity: Array<{ date: string; label: string; count: number }>
+  creatorModels: Array<{ key: string; label: string; value: number }>
+}
+
+export function fetchDevIssueAnalytics(project?: string): Promise<DevIssueAnalytics> {
+  return apiFetch(
+    `/api/admin/dev/issues/analytics${qs({ project, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`,
+  )
 }
 
 export function getDevIssue(

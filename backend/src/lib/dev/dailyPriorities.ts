@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import DevIssue, { type DevIssuePriority, type DevIssueStatus } from '../../models/DevIssue.js'
 import DevProject from '../../models/DevProject.js'
 import { CLOSED_ISSUE_STATUSES } from './issueMutations.js'
+import { isBlocked } from './blockers.js'
 
 const STALE_AFTER_DAYS = 14
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -66,10 +67,6 @@ const priorityWeight: Record<DevIssuePriority, number> = {
 
 function daysSince(date: Date, now: number): number {
   return Math.floor((now - date.getTime()) / DAY_MS)
-}
-
-function isBlocked(issue: IssueWithProject): boolean {
-  return issue.status === 'BLOCKED' || issue.labels.some((label) => /^(blocked|blocker)$/i.test(label))
 }
 
 function candidateFor(
