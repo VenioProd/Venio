@@ -1,3 +1,4 @@
+import { subsidiaryLogo } from '../../lib/subsidiaryLogo'
 import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
@@ -431,8 +432,15 @@ export default function SubsidiaryDetail() {
       {/* En-tête */}
       <div className="portal-card sub-detail-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div className="sub-logo" style={{ width: 52, height: 52, fontSize: 20, background: accent }}>
-            {initials(sub.name)}
+          <div
+            className="sub-logo"
+            style={{ width: 52, height: 52, fontSize: 20, background: subsidiaryLogo(sub) ? 'transparent' : accent }}
+          >
+            {subsidiaryLogo(sub) ? (
+              <img src={subsidiaryLogo(sub)} alt={sub.name} className="sub-logo__img" />
+            ) : (
+              initials(sub.name)
+            )}
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
