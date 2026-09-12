@@ -1,0 +1,13 @@
+# Runtime and local artifacts must never enter the production build context.
+node_modules
+dist
+backend/dist
+.git
+.env
+.env.*
+
+# Human/editor backup copies can be left on the VPS by previous maintenance.
+# TypeScript would compile them alongside the real sources after `COPY . .`.
+**/*.bak.*
+**/*.backup
+**/*~
