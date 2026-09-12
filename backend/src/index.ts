@@ -240,9 +240,11 @@ app.get('/api/health', async (_req: Request, res: Response) => {
   }
 
   const overallOk = mongoOk && mongoPing !== null
+  res.setHeader('Cache-Control', 'no-store')
   res.status(overallOk ? 200 : 503).json({
     status: overallOk ? 'ok' : 'degraded',
     version: APP_VERSION,
+    commitSha: process.env.VENIO_BUILD_SHA || null,
     uptime: Math.round(process.uptime()),
     mongo: { ok: mongoOk, state: mongoState, pingMs: mongoPing },
     checkedAt: new Date().toISOString(),

@@ -11,3 +11,14 @@ backend/dist
 **/*.bak.*
 **/*.backup
 **/*~
+
+# Local agent checkouts and upload payloads are never build inputs.
+.claude
+.codex
+backend/node_modules
+**/.env
+**/.env.*
+uploads
+backend/uploads
+test-results
+playwright-report

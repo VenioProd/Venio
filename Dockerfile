@@ -30,6 +30,11 @@ RUN npm ci --omit=dev
 # Copy frontend build
 COPY --from=frontend-build /app/dist ./public
 
+ARG VENIO_BUILD_SHA=unknown
+ENV VENIO_BUILD_SHA=$VENIO_BUILD_SHA
+LABEL org.opencontainers.image.revision=$VENIO_BUILD_SHA
+RUN node -e "require('fs').writeFileSync('/app/public/version.json', JSON.stringify({commitSha: process.env.VENIO_BUILD_SHA}))"
+
 ENV NODE_ENV=production
 ENV PORT=3000
 
