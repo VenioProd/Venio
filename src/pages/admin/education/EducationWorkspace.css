@@ -1974,7 +1974,7 @@
 }
 .edu-template-preview {
   border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 16px;
   margin: 16px 0;
   overflow-wrap: anywhere;
@@ -1986,7 +1986,7 @@
 .edu-template-rubric {
   min-width: 0;
   border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 .edu-template-rubric .edu-row {
   align-items: end;
