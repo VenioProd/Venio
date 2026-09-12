@@ -1,7 +1,7 @@
 /* eslint-env serviceworker */
 /* global self, caches, clients, fetch */
 
-const CACHE_NAME = 'venio-v2'
+const CACHE_NAME = 'venio-v3'
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

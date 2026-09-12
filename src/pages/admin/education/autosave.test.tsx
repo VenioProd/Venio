@@ -1,5 +1,7 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
+import { fetchCalendarEventWorkspace, updateCalendarEventWorkspace } from '../../../services/educationCalendar'
 import { useEducationAutosave } from './useEducationAutosave'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { ClassWorkspace } from './ClassWorkspace'
@@ -13,6 +15,10 @@ vi.mock('../../../services/education', async (original) => ({
   getClassHome: vi.fn(),
   updateClass: vi.fn(),
   updateNote: vi.fn().mockResolvedValue({ note: {} }),
+}))
+vi.mock('../../../services/educationCalendar', () => ({
+  fetchCalendarEventWorkspace: vi.fn(),
+  updateCalendarEventWorkspace: vi.fn(),
 }))
 vi.mock('./DocumentsPanel', () => ({ DocumentsPanel: () => null }))
 vi.mock('./EducationAiDraft', () => ({ EducationAiDraftPanel: () => null }))
@@ -128,4 +134,40 @@ it('restores an owner-scoped draft after reopening and never loads another owner
   owner.id++
   const other = renderHook(() => useEducationAutosave())
   expect(other.result.current.restore('note', 'restored', { title: 'Other owner' }).title).toBe('Other owner')
+})
+
+it('flushes Apple course notes and the class association when closing immediately', async () => {
+  vi.mocked(fetchCalendarEventWorkspace).mockResolvedValue({
+    workspace: { notes: '', classId: null, remarks: [], links: [], reminders: [], duties: [] },
+    exists: false,
+  } as never)
+  vi.mocked(updateCalendarEventWorkspace).mockResolvedValue({ workspace: {} } as never)
+  const onClose = vi.fn()
+  render(
+    <CalendarEventWorkspaceDrawer
+      event={
+        {
+          occurrenceId: 'evt-1',
+          uid: 'uid-1',
+          title: 'Course',
+          start: '2026-09-12T09:00:00Z',
+          end: '2026-09-12T10:00:00Z',
+          durationMin: 60,
+          source: 'Apple Calendar',
+        } as never
+      }
+      onClose={onClose}
+      classes={[{ _id: 'c1', name: 'Master', status: 'ACTIVE' } as never]}
+    />,
+  )
+  await act(async () => {})
+  fireEvent.click(screen.getByRole('button', { name: 'Notes libres' }))
+  fireEvent.change(screen.getByLabelText('Notes libres'), { target: { value: 'Last course note' } })
+  fireEvent.change(screen.getByLabelText('Rattacher à une classe'), { target: { value: 'c1' } })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Fermer' })[0])
+  await act(async () => {})
+  expect(updateCalendarEventWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({ occurrenceId: 'evt-1', notes: 'Last course note', classId: 'c1' }),
+  )
+  expect(onClose).toHaveBeenCalledOnce()
 })

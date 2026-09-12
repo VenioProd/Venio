@@ -139,6 +139,7 @@ jobs:
             ln -sfn "$SHARED_ENV" "$PROJECT_DIR/.env"
 
             [ -f "$COMPOSE_FILE" ] || fail "Fichier Compose absent"
+            export VENIO_BUILD_SHA="$DEPLOY_SHA"
             docker compose -f "$COMPOSE_FILE" config --quiet
             TARGET_IMAGE="$(docker compose -f "$COMPOSE_FILE" config --images | head -n 1)"
             [ -n "$TARGET_IMAGE" ] || fail "Nom de l'image Compose introuvable"
@@ -162,7 +163,9 @@ jobs:
             # Vérifie également le chemin public avant de considérer le swap réussi.
             public_ok=false
             for check in 1 2 3 4 5 6; do
-              if curl --fail --silent --show-error --max-time 10 https://venio.paris/api/health >/dev/null; then
+              HEALTH_RESPONSE="$(curl --fail --silent --show-error --max-time 10 https://venio.paris/api/health || true)"
+              VERSION_RESPONSE="$(curl --fail --silent --show-error --max-time 10 "https://venio.paris/version.json?sha=$DEPLOY_SHA" || true)"
+              if [[ "$HEALTH_RESPONSE" == *"\"commitSha\":\"$DEPLOY_SHA\""* ]] && [[ "$VERSION_RESPONSE" == *"\"commitSha\":\"$DEPLOY_SHA\""* ]]; then
                 public_ok=true
                 break
               fi
@@ -171,10 +174,10 @@ jobs:
 
             if [ "$public_ok" != "true" ]; then
               rollback || true
-              fail "Le healthcheck public a échoué"
+              fail "La santé publique ou la vérification du SHA servi a échoué"
             fi
 
-            echo "✅ Déploiement de $DEPLOY_SHA validé (Docker healthy + endpoint public)"
+            echo "✅ Déploiement de $DEPLOY_SHA validé (Docker healthy + SHA public backend/frontend)"
           DEPLOY
             status=$?
             set -e

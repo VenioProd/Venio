@@ -13,6 +13,9 @@ import {
   ChevronRight,
   Menu,
   Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
+  FolderOpen,
 } from 'lucide-react'
 import {
   fetchDashboard,
@@ -64,13 +67,17 @@ import {
 import { DashboardView } from './DashboardView'
 import { SessionLiveMode } from './SessionLiveMode'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { TemplatesView } from './TemplatesView'
 import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'
 import { SchoolsView } from './SchoolsView'
 import { CalendarView } from './CalendarView'
-import { Building2, FileSearch, CalendarDays } from 'lucide-react'
+import { DocumentsView } from './DocumentsView'
+import type { UpcomingCalendarEvent } from '../../../services/educationCalendar'
+import { Building2, FileSearch, CalendarDays, Download } from 'lucide-react'
+import { NotionImportView } from './NotionImportView'
 import './EducationWorkspace.css'
 import { Kpi, ClassesView, ClassFormDrawer } from './class-parts'
 import { ClassWorkspace } from './ClassWorkspace'
@@ -86,11 +93,13 @@ type View =
   | 'sessions'
   | 'assignments'
   | 'notes'
+  | 'documents'
   | 'templates'
   | 'search'
   | 'advanced-search'
   | 'schools'
   | 'calendar'
+  | 'notion-import'
 
 /* ─── Reprise du dernier contexte (VENIO-75) ───────────────────────────── */
 
@@ -103,10 +112,12 @@ const RESTORABLE_VIEWS: View[] = [
   'sessions',
   'assignments',
   'notes',
+  'documents',
   'templates',
   'advanced-search',
   'schools',
   'calendar',
+  'notion-import',
 ]
 
 type WorkspaceContext = { view: View; selectedClassId: string | null; school: string }
@@ -149,6 +160,8 @@ export default function EducationWorkspace() {
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [school, setSchool] = useState<string>(() => loadContext().school)
+  const [calendarEvent, setCalendarEvent] = useState<UpcomingCalendarEvent | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [classesError, setClassesError] = useState<string | null>(null)
   const [profileState, setProfileState] = useState<{
@@ -249,13 +262,16 @@ export default function EducationWorkspace() {
   }
 
   return (
-    <div className="edu-workspace">
+    <div className={`edu-workspace ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       {/* Barre mobile : burger + titre. Reste visible en sticky en haut. */}
       <div className="edu-mobile-bar">
         <button
           type="button"
           className="edu-mobile-burger"
-          onClick={() => setSidebarOpen((v) => !v)}
+          onClick={() => {
+            setSidebarCollapsed(false)
+            setSidebarOpen((v) => !v)
+          }}
           aria-label="Ouvrir la navigation"
           aria-expanded={sidebarOpen}
         >
@@ -274,8 +290,19 @@ export default function EducationWorkspace() {
         aria-hidden
       />
 
-      <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-        <h3>Espace pédagogique</h3>
+      <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''} ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
+        <div className="edu-sidebar-title-row">
+          <h3>Espace pédagogique</h3>
+          <button
+            type="button"
+            className="edu-sidebar-collapse-btn"
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            aria-label={sidebarCollapsed ? 'Déplier le panneau pédagogique' : 'Rétracter le panneau pédagogique'}
+            title={sidebarCollapsed ? 'Déplier' : 'Rétracter'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+          </button>
+        </div>
         <button
           className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`}
           onClick={() => selectView('dashboard')}
@@ -311,6 +338,12 @@ export default function EducationWorkspace() {
           <FileText size={15} /> Notes
         </button>
         <button
+          className={`edu-side-item ${view === 'documents' ? 'active' : ''}`}
+          onClick={() => selectView('documents')}
+        >
+          <FolderOpen size={15} /> Documents
+        </button>
+        <button
           className={`edu-side-item ${view === 'templates' ? 'active' : ''}`}
           onClick={() => selectView('templates')}
         >
@@ -327,6 +360,12 @@ export default function EducationWorkspace() {
           <FileSearch size={15} /> Recherche avancée
         </button>
         <button
+          className={`edu-side-item ${view === 'notion-import' ? 'active' : ''}`}
+          onClick={() => selectView('notion-import')}
+        >
+          <Download size={15} /> Import Notion
+        </button>
+        <button
           className="edu-side-item"
           onClick={() => {
             setSearchOpen(true)
@@ -338,22 +377,13 @@ export default function EducationWorkspace() {
         </button>
 
         {classes.length > 0 && (
-          <>
-            <h3>Mes classes</h3>
-            {classes.slice(0, 12).map((c) => (
-              <button
-                key={c._id}
-                className="edu-side-item"
-                onClick={() => {
-                  setSelectedClassId(c._id)
-                  selectView('classes')
-                }}
-              >
-                <span className="edu-side-dot" style={{ background: c.color }} />
-                {c.name}
-              </button>
-            ))}
-          </>
+          <ClassesSidebar
+            classes={classes}
+            onPickClass={(id) => {
+              setSelectedClassId(id)
+              selectView('classes')
+            }}
+          />
         )}
       </aside>
 
@@ -388,6 +418,7 @@ export default function EducationWorkspace() {
                   setSelectedClassId(id)
                 }}
                 onOpenSession={(id) => setCockpitSession({ id, live: false })}
+                onOpenCalendarEvent={setCalendarEvent}
                 onStartLive={(id) => setCockpitSession({ id, live: true })}
                 onStartCorrection={setCorrectionAssignmentId}
                 onOpenStudent={openStudentFollowUp}
@@ -433,6 +464,7 @@ export default function EducationWorkspace() {
                 onCloseIncomingOpen={() => setPendingNoteId(null)}
               />
             )}
+            {view === 'documents' && <DocumentsView classes={classes} />}
             {view === 'templates' && (
               <TemplatesView
                 classes={classes}
@@ -468,6 +500,15 @@ export default function EducationWorkspace() {
               />
             )}
           </>
+        )}
+        {view === 'notion-import' && (
+          <NotionImportView
+            classes={classes}
+            onImported={() => {
+              void refreshClasses()
+              void refreshDashboard()
+            }}
+          />
         )}
       </main>
 
@@ -553,8 +594,88 @@ export default function EducationWorkspace() {
           }}
         />
       )}
+
+      {calendarEvent && (
+        <CalendarEventWorkspaceDrawer
+          event={calendarEvent}
+          defaultMatch={calendarEvent.match ?? null}
+          classes={classes}
+          onClose={() => setCalendarEvent(null)}
+          onOpenClass={(id) => {
+            setCalendarEvent(null)
+            setSelectedClassId(id)
+            selectView('classes')
+          }}
+        />
+      )}
     </div>
   )
 }
 
+/* ─── VENIO-43 — Sidebar « Mes classes » groupée par école ─────────────────
+   On agrège par école (en gardant un libellé « Sans école » pour celles qui
+   n'en ont pas), on trie les écoles A→Z avec « Sans école » en fin et on
+   affiche un compteur par groupe pour la lecture rapide.                    */
+function ClassesSidebar({ classes, onPickClass }: { classes: EducationClass[]; onPickClass: (id: string) => void }) {
+  const groups = groupClassesBySchool(classes)
+  return (
+    <>
+      <h3>Mes classes</h3>
+      {groups.length === 0 && <div className="edu-side-classes-empty">Aucune classe à afficher.</div>}
+      {groups.map((group) => (
+        <div key={group.key} className="edu-side-school-group">
+          <div className="edu-side-school-head">
+            <span>{group.label}</span>
+            <span
+              className="edu-side-school-count"
+              aria-label={`${group.classes.length} classe${group.classes.length > 1 ? 's' : ''}`}
+            >
+              {group.classes.length}
+            </span>
+          </div>
+          {group.classes.map((c) => (
+            <button
+              key={c._id}
+              className="edu-side-item"
+              onClick={() => onPickClass(c._id)}
+              title={[c.school, c.level, c.program].filter(Boolean).join(' · ') || c.name}
+            >
+              <span className="edu-side-dot" style={{ background: c.color }} />
+              {c.name}
+            </button>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+function groupClassesBySchool(
+  classes: EducationClass[],
+): Array<{ key: string; label: string; classes: EducationClass[] }> {
+  const buckets = new Map<string, { key: string; label: string; classes: EducationClass[] }>()
+  for (const c of classes) {
+    const trimmed = (c.school || '').trim()
+    const key = trimmed.toLowerCase() || '__no_school__'
+    const label = trimmed || 'Sans école'
+    if (!buckets.has(key)) buckets.set(key, { key, label, classes: [] })
+    buckets.get(key)!.classes.push(c)
+  }
+  // Tri : classes ACTIVE en premier, puis A→Z. École « Sans école » en dernier.
+  for (const bucket of buckets.values()) {
+    bucket.classes.sort((a, b) => {
+      const aActive = a.status === 'ACTIVE' ? 0 : 1
+      const bActive = b.status === 'ACTIVE' ? 0 : 1
+      if (aActive !== bActive) return aActive - bActive
+      return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+    })
+  }
+  const arr = Array.from(buckets.values())
+  arr.sort((a, b) => {
+    if (a.key === '__no_school__') return 1
+    if (b.key === '__no_school__') return -1
+    return a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' })
+  })
+  return arr
+}
 /* DashboardView et Kpi sont extraits dans ./DashboardView.tsx (VENIO-27). */

@@ -24,6 +24,7 @@ import {
   type EducationClass,
   type EducationSession,
 } from '../../../services/education'
+import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 
 type Mode = 'week' | 'month'
@@ -318,7 +319,8 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
       )}
 
       {selectedEvent && (
-        <EventDrawer
+        <CalendarEventWorkspaceDrawer
+          classes={classes}
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onCreateSession={() => setCreateFor(selectedEvent)}
@@ -529,88 +531,6 @@ function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
 }
 
 // ───────────────────────────── Détail événement ────────────────────────────
-
-function EventDrawer({
-  event,
-  onClose,
-  onCreateSession,
-}: {
-  event: AppleCalendarEvent
-  onClose: () => void
-  onCreateSession: () => void
-}) {
-  const start = new Date(event.start)
-  const dayLabel = `${DAY_NAMES_LONG[(start.getDay() + 6) % 7]} ${start.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
-  return (
-    <>
-      <div className="edu-drawer-backdrop" onClick={onClose} />
-      <div className="edu-drawer">
-        <div className="edu-drawer-head">
-          <div>
-            <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-              {event.title || '(Sans titre)'}
-            </h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-              <Apple size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Apple Calendar
-              {event.status && ` · ${event.status.toLowerCase()}`}
-            </div>
-          </div>
-          <div className="edu-row" style={{ gap: 6 }}>
-            <button
-              className="edu-btn"
-              onClick={onCreateSession}
-              title="Créer une séance pédagogique depuis cet événement"
-            >
-              <Plus size={14} /> Créer la séance
-            </button>
-            <button className="edu-btn ghost" onClick={onClose}>
-              Fermer
-            </button>
-          </div>
-        </div>
-        <div className="edu-drawer-body">
-          <div className="edu-form-group">
-            <label>Quand</label>
-            <div>{dayLabel}</div>
-            <div style={{ marginTop: 4 }}>
-              {formatRange(event.start, event.end, event.allDay)} · {durationLabel(event.durationMin)}
-            </div>
-          </div>
-          {event.location && (
-            <div className="edu-form-group">
-              <label>Lieu</label>
-              <div>{event.location}</div>
-            </div>
-          )}
-          {(event.school || event.classLabel) && (
-            <div className="edu-form-group">
-              <label>Inféré</label>
-              <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                {event.school && <span className="edu-pill">{event.school}</span>}
-                {event.classLabel && <span className="edu-pill">{event.classLabel}</span>}
-              </div>
-            </div>
-          )}
-          {event.description && (
-            <div className="edu-form-group">
-              <label>Description</label>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{event.description}</div>
-            </div>
-          )}
-          {event.url && (
-            <div className="edu-form-group">
-              <label>Lien</label>
-              <a href={event.url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>
-                {event.url}
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
 
 // ───────────────────────────── Création de séance (B4) ─────────────────────
 

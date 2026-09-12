@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import { PERMISSIONS } from '../permissions'
+import { ADMIN_ROLES, getPermissionsForRole as backendPermissions } from '../../../backend/src/lib/permissions'
+import { PERMISSIONS, getPermissionsForRole } from '../permissions'
 
 /**
  * Canonical list of permissions shared between front and back.
@@ -183,4 +184,14 @@ describe('Front/back synchronization', () => {
     const backOnly = backendValues.filter((v) => !frontSet.has(v))
     expect(backOnly).toEqual([])
   })
+})
+
+// Adapted from the unmerged VEN-356 batch: compare runtime values instead of
+// parsing the former frontend map, now generated from rbac-matrix.json.
+describe('role grants match the backend', () => {
+  for (const role of [...ADMIN_ROLES, 'CLIENT'] as const) {
+    it(role, () => {
+      expect(getPermissionsForRole(role).sort()).toEqual(backendPermissions(role).sort())
+    })
+  }
 })

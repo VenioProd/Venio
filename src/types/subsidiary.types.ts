@@ -123,6 +123,7 @@ export interface Subsidiary {
   contacts: SubsidiaryContact[]
   credentials: SubsidiaryCredential[]
   accentColor: string
+  logoUrl?: string
   lead: SubsidiaryPerson | null
   foundedYear: number | null
   linkedEntity: string

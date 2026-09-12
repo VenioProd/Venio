@@ -1,11 +1,16 @@
 /* ─── Education Workspace — layout type Notion ────────────────────────── */
 .edu-workspace {
+  --edu-sidebar-width: 240px;
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: var(--edu-sidebar-width) 1fr;
   gap: 0;
   min-height: calc(100vh - 60px);
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+.edu-workspace.is-sidebar-collapsed {
+  --edu-sidebar-width: 58px;
 }
 
 .edu-sidebar {
@@ -13,6 +18,79 @@
   padding: 16px 12px;
   background: var(--bg-card);
   overflow-y: auto;
+  overflow-x: hidden;
+  transition:
+    padding 0.16s ease,
+    width 0.16s ease;
+}
+
+.edu-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 4px 10px 8px;
+}
+
+.edu-sidebar-title-row h3 {
+  margin: 0;
+}
+
+.edu-sidebar-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.edu-sidebar-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.edu-sidebar.is-collapsed {
+  padding: 14px 8px;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-title-row {
+  justify-content: center;
+  margin: 0 0 12px;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-title-row h3,
+.edu-sidebar.is-collapsed h3,
+.edu-sidebar.is-collapsed .edu-side-school-group,
+.edu-sidebar.is-collapsed .edu-side-classes-empty {
+  display: none;
+}
+
+.edu-sidebar.is-collapsed .edu-sidebar-collapse-btn {
+  display: inline-flex;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item {
+  justify-content: center;
+  gap: 0;
+  padding: 9px 0;
+  font-size: 0;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item svg {
+  flex-shrink: 0;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item .edu-side-badge {
+  display: none;
+}
+
+.edu-sidebar.is-collapsed .edu-side-item .edu-side-dot {
+  margin: 0;
 }
 
 .edu-sidebar h3 {
@@ -371,6 +449,13 @@
 }
 
 /* ─── Drawer ─────────────────────────────────────────────────────────── */
+/* VENIO-46 — Le drawer démarre sous la barre breadcrumb de l'AdminShell
+   (.admin-shell-topbar : 44px + safe-area). Avant ce correctif, le drawer
+   couvrait la breadcrumb et le bouton "Fermer" pouvait être inaccessible
+   sur petites résolutions. La variable peut être surchargée par un parent. */
+.edu-workspace {
+  --edu-topbar-offset: calc(44px + env(safe-area-inset-top, 0px));
+}
 .edu-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -379,7 +464,7 @@
 }
 .edu-drawer {
   position: fixed;
-  top: 0;
+  top: var(--edu-topbar-offset, 0);
   right: 0;
   bottom: 0;
   width: min(720px, 96vw);
@@ -669,6 +754,88 @@
   color: var(--text-secondary);
 }
 
+/* VENIO-43 — Fiche séance enrichie : sections repliables et lignes éditables */
+.edu-session-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.edu-session-block .edu-collapse-toggle {
+  margin-top: 0;
+}
+.edu-session-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 4px 4px 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+.edu-session-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.edu-session-row .edu-input {
+  min-width: 0;
+}
+.edu-session-remarks {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edu-session-remark {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+@media (max-width: 720px) {
+  .edu-session-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .edu-session-row .edu-input {
+    width: 100% !important;
+  }
+}
+
+/* VENIO-43 — Sidebar « Mes classes » groupée par école */
+.edu-side-school-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+.edu-side-school-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 8px 6px 4px;
+  font-weight: 600;
+}
+.edu-side-school-head .edu-side-school-count {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.65);
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  font-size: 10.5px;
+  letter-spacing: 0;
+}
+.edu-side-classes-empty {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 6px;
+}
+
 /* ─── Banner error / save indicator inline ──────────────────────────── */
 .edu-banner-error {
   background: color-mix(in srgb, var(--critical) 10%, transparent);
@@ -684,12 +851,16 @@
 
 /* ─── Mobile ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .edu-workspace {
+  .edu-workspace,
+  .edu-workspace.is-sidebar-collapsed {
     grid-template-columns: 1fr;
     position: relative;
   }
   .edu-mobile-bar {
     display: flex;
+  }
+  .edu-sidebar-collapse-btn {
+    display: none;
   }
   /* La sidebar devient un panneau coulissant accessible via le burger.
      ⚠️ NE PAS la cacher sans alternative — la barre mobile la rouvre. */
@@ -774,6 +945,26 @@
   .edu-h2 {
     font-size: 16px;
     margin: 18px 0 10px;
+  }
+  .edu-sidebar.is-collapsed {
+    padding: 16px 12px;
+  }
+  .edu-sidebar.is-collapsed .edu-sidebar-title-row h3,
+  .edu-sidebar.is-collapsed h3,
+  .edu-sidebar.is-collapsed .edu-side-school-group {
+    display: flex;
+  }
+  .edu-sidebar.is-collapsed .edu-side-school-group {
+    flex-direction: column;
+  }
+  .edu-sidebar.is-collapsed .edu-side-item {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 13.5px;
+  }
+  .edu-sidebar.is-collapsed .edu-side-item .edu-side-badge {
+    display: inline-flex;
   }
   /* Touch targets : on agrandit boutons et inputs en mobile.
      ⚠️ Garder >= 36px pour rester confortables au pouce. */
@@ -2005,4 +2196,356 @@
 .edu-template-card .edu-template-card-title {
   text-align: left;
   white-space: normal;
+}
+
+/* ─── VENIO-42 — Bloc cockpit "Prochains cours" (calendrier Apple) ─── */
+.edu-cockpit-cal {
+  margin: 24px 0 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--r-lg);
+  background: radial-gradient(120% 120% at 0% 0%, var(--accent-soft), transparent 55%), rgba(255, 255, 255, 0.03);
+}
+
+.edu-cockpit-cal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.edu-cockpit-cal-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.edu-cockpit-cal-state-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.edu-cockpit-cal-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.edu-cockpit-cal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.edu-cockpit-cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edu-cockpit-cal-day-head {
+  font-size: 11px;
+
+  color: rgba(255, 255, 255, 0.55);
+  padding-left: 4px;
+}
+
+.edu-cockpit-cal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--edu-color, var(--primary));
+  border-radius: var(--r-md);
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+.edu-cockpit-cal-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+.edu-cockpit-cal-item-main {
+  flex: 1;
+  min-width: 0;
+}
+.edu-cockpit-cal-item-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 2px;
+}
+.edu-cockpit-cal-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.edu-cockpit-cal-item-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.edu-cockpit-cal-item-loose {
+  font-size: 11px;
+
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+}
+.edu-cockpit-cal-school {
+  font-size: 10px;
+
+  background: var(--accent-surface-strong);
+  color: var(--primary-light);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+}
+.edu-cockpit-cal-item-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.edu-cockpit-cal-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-left: auto;
+}
+.edu-cockpit-cal-item-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* VENIO-44 — Tout le bloc devient cliquable pour ouvrir la fiche workspace. */
+.edu-cockpit-cal-item-clickable {
+  cursor: pointer;
+}
+.edu-cockpit-cal-item-clickable:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .edu-cockpit-cal-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .edu-cockpit-cal-item-action {
+    align-self: flex-end;
+  }
+  .edu-cockpit-cal-source {
+    margin-left: 0;
+  }
+  .edu-cockpit-cal-item-action-label {
+    display: none;
+  }
+}
+
+/* ─── VENIO-46 — Documents (BDD documentaire) ──────────────────────────── */
+.edu-doc-counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+.edu-doc-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+  min-width: 96px;
+}
+.edu-doc-counter:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.edu-doc-counter.is-active {
+  border-color: var(--primary);
+  background: var(--accent-medium);
+}
+.edu-doc-counter-value {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+.edu-doc-counter-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.edu-doc-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.edu-doc-filter-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+.edu-doc-filter-search svg {
+  position: absolute;
+  left: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+.edu-doc-filter-search .edu-input {
+  padding-left: 30px;
+}
+.edu-doc-filters .edu-select {
+  width: auto;
+  min-width: 140px;
+}
+
+.edu-doc-table-wrap {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.02);
+}
+.edu-doc-table {
+  font-size: 13px;
+}
+.edu-doc-table th {
+  background: rgba(255, 255, 255, 0.03);
+}
+.edu-doc-table td {
+  vertical-align: top;
+}
+.edu-doc-title-cell {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.edu-doc-title-icon {
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.edu-doc-title-main {
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.edu-doc-title-sub {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.edu-doc-status-published {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--good);
+}
+.edu-doc-status-draft {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warn);
+}
+.edu-doc-status-archived {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.edu-doc-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.edu-doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+}
+.edu-doc-tag-more {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 1px 4px;
+}
+
+.edu-doc-edit-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.edu-doc-edit-meta strong {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+@media (max-width: 720px) {
+  .edu-doc-counters {
+    gap: 6px;
+  }
+  .edu-doc-counter {
+    min-width: 0;
+    padding: 6px 10px;
+    flex: 1 1 calc(50% - 6px);
+  }
+  .edu-doc-filters .edu-select {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+  .edu-doc-edit-meta {
+    grid-template-columns: 1fr;
+  }
+  .edu-doc-title-main,
+  .edu-doc-title-sub {
+    max-width: 220px;
+  }
 }

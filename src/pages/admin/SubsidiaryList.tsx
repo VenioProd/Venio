@@ -1,3 +1,4 @@
+import { subsidiaryLogo } from '../../lib/subsidiaryLogo'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, Plus, TrendingUp, TrendingDown, Minus } from 'lucide-react'
@@ -170,8 +171,12 @@ export default function SubsidiaryList() {
                 <div className="sub-card__band" />
                 <div className="sub-card__body">
                   <div className="sub-card__head">
-                    <div className="sub-logo" style={{ background: s.accentColor }}>
-                      {initials(s.name)}
+                    <div className="sub-logo" style={{ background: subsidiaryLogo(s) ? 'transparent' : s.accentColor }}>
+                      {subsidiaryLogo(s) ? (
+                        <img src={subsidiaryLogo(s)} alt={s.name} className="sub-logo__img" />
+                      ) : (
+                        initials(s.name)
+                      )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="sub-card__title">{s.name}</div>

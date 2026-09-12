@@ -21,16 +21,31 @@ import { useEducationAutosave } from './useEducationAutosave'
 import { AutosaveStatus } from './AutosaveStatus'
 import { PostSessionFlow } from './PostSessionFlow'
 import { EducationAiDraftPanel } from './EducationAiDraft'
+import { DutiesSection, LinksSection, NotesSection, RemarksSection, RemindersSection } from './WorkspaceSections'
+import {
+  type SessionDuty,
+  type SessionLink,
+  type SessionReminder,
+  type SessionRemark,
+} from '../../../services/education'
 
 /**
- * VENIO-27 — Détail de séance.
+ * VENIO-43 — Fiche séance enrichie.
  *
- * Le compte-rendu est central. La présence est repositionnée comme
- * note légère de séance, repliable. Pas d'usage central / bloc admin.
+ * Le compte-rendu reste central. Sous le recap, des sections repliables
+ * permettent de capturer rapidement notes libres, remarques datées, liens
+ * utiles, rappels et devoirs à donner. Ces enrichissements sont persistés
+ * sur la séance via PUT /sessions/:id/workspace et sont donc accessibles
+ * depuis n'importe quelle entrée (cockpit, calendrier, classe).
  *
- * Autosave : affiche "Sauvegarde…", "Sauvegardé", "Erreur" pour le recap.
+ * Le drawer est volontairement plat (pas d'onglets) : on scroll. Chaque
+ * section sauvegarde en autopilote (debounce 800ms) et affiche l'état
+ * "Sauvegarde…/Sauvegardé/Erreur" partagé en haut.
+ *
+ * VENIO-44 — Les sections de workspace (Notes/Devoirs/Rappels/Remarques/
+ * Liens) sont désormais dans WorkspaceSections.tsx pour être réutilisées
+ * par la fiche d'événement Apple Calendar.
  */
-type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export function SessionDetailDrawer({
   sessionId,
@@ -58,10 +73,15 @@ export function SessionDetailDrawer({
   }
 
   const [recap, setRecap] = useState('')
+  const [notes, setNotes] = useState('')
+  const [remarks, setRemarks] = useState<SessionRemark[]>([])
+  const [links, setLinks] = useState<SessionLink[]>([])
+  const [reminders, setReminders] = useState<SessionReminder[]>([])
+  const [duties, setDuties] = useState<SessionDuty[]>([])
   const [status, setStatus] = useState<EducationSessionStatus>('PLANIFIEE')
   const [attendanceOpen, setAttendanceOpen] = useState(false)
   const [liveOpen, setLiveOpen] = useState(false)
-  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
   // Mini-bannière + modale d'enchaînement post-séance (passage en TERMINEE).
   const [postBanner, setPostBanner] = useState(false)
@@ -71,7 +91,13 @@ export function SessionDetailDrawer({
     try {
       const r = await getSession(sessionId)
       setSession(r.session)
-      setRecap(restore('session', sessionId, r.session).recap || '')
+      const restored = restore('session', sessionId, r.session)
+      setRecap(restored.recap || '')
+      setNotes(restored.notes || '')
+      setRemarks(restored.remarks || [])
+      setLinks(restored.links || [])
+      setReminders(restored.reminders || [])
+      setDuties(restored.duties || [])
       setStatus(r.session.status)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de charger la séance')
@@ -139,7 +165,6 @@ export function SessionDetailDrawer({
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(session.date, true)}</div>
           </div>
           <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-            <SaveIndicator state={saveState} />
             <button
               className="edu-btn"
               onClick={async () => {
@@ -220,7 +245,43 @@ export function SessionDetailDrawer({
             }}
           />
 
-          {/* Présence en note légère, repliable */}
+          <NotesSection
+            notes={notes}
+            onChange={(value) => {
+              setNotes(value)
+              stage('session', sessionId, { notes: value })
+            }}
+          />
+          <DutiesSection
+            duties={duties}
+            onChange={(value) => {
+              setDuties(value)
+              stage('session', sessionId, { duties: value })
+            }}
+          />
+          <RemindersSection
+            reminders={reminders}
+            onChange={(value) => {
+              setReminders(value)
+              stage('session', sessionId, { reminders: value })
+            }}
+          />
+          <RemarksSection
+            remarks={remarks}
+            onChange={(value) => {
+              setRemarks(value)
+              stage('session', sessionId, { remarks: value })
+            }}
+          />
+          <LinksSection
+            links={links}
+            onChange={(value) => {
+              setLinks(value)
+              stage('session', sessionId, { links: value })
+            }}
+          />
+
+          {/* Présence en note légère, repliable (inchangé) */}
           <button
             type="button"
             className="edu-collapse-toggle"
@@ -326,20 +387,5 @@ export function SessionDetailDrawer({
         />
       )}
     </WorkspaceOverlayPortal>
-  )
-}
-
-function SaveIndicator({ state }: { state: SaveState }) {
-  if (state === 'idle') return null
-  const label = state === 'saving' ? 'Sauvegarde…' : state === 'saved' ? 'Sauvegardé' : 'Erreur'
-  const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
-  return (
-    <span
-      className="edu-pill"
-      style={{ background: 'rgba(255,255,255,0.06)', color, fontSize: 11.5 }}
-      aria-live="polite"
-    >
-      {label}
-    </span>
   )
 }

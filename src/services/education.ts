@@ -144,6 +144,40 @@ export interface AttendanceEntry {
   comment: string
 }
 
+export interface SessionRemark {
+  id: string
+  text: string
+  createdAt: string
+}
+
+export interface SessionLink {
+  id: string
+  label: string
+  url: string
+}
+
+export interface SessionReminder {
+  id: string
+  label: string
+  dueAt: string | null
+  done: boolean
+}
+
+export interface SessionDuty {
+  id: string
+  label: string
+  dueAt: string | null
+  done: boolean
+}
+
+export interface SessionWorkspacePayload {
+  notes?: string
+  remarks?: SessionRemark[]
+  links?: SessionLink[]
+  reminders?: SessionReminder[]
+  duties?: SessionDuty[]
+}
+
 export interface EducationSession {
   _id: string
   classId: string | { _id: string; name: string; color?: string }
@@ -157,6 +191,11 @@ export interface EducationSession {
   status: EducationSessionStatus
   attendance: AttendanceEntry[]
   recap: string
+  notes: string
+  remarks: SessionRemark[]
+  links: SessionLink[]
+  reminders: SessionReminder[]
+  duties: SessionDuty[]
   supports: string[]
   tags: string[]
   createdAt: string
@@ -241,16 +280,43 @@ export interface EducationTemplate {
   updatedAt: string
 }
 
+// VENIO-46 — BDD documentaire pédagogique : catégories + statut + liens
+// optionnels vers les entités existantes (classe, séance, devoir, étudiant…).
+export type EducationDocumentCategory =
+  | 'school_document'
+  | 'student_submission'
+  | 'assignment_submission'
+  | 'exam_subject'
+  | 'assignment_correction'
+  | 'teaching_resource'
+  | 'administrative'
+  | 'other'
+
+export type EducationDocumentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+
 export interface EducationDocument {
   _id: string
   parentType: EducationDocumentParentType
   parentId: string | null
+  category: EducationDocumentCategory
+  status: EducationDocumentStatus
   title: string
+  description: string
   originalName: string
+  storagePath: string
   mimeType: string
   size: number
   url: string
+  school: string
+  classId: string | null
+  sessionId: string | null
+  assignmentId: string | null
+  submissionId: string | null
+  studentId: string | null
+  documentDate: string | null
+  dueDate: string | null
   tags: string[]
+  deletedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -264,7 +330,20 @@ export type EducationDocumentParentContext =
     }
   | { state: 'unavailable'; reason: 'NO_PARENT' | 'TARGET_UNAVAILABLE' }
 
-export type EducationSearchDocument = EducationDocument & {
+export type EducationSearchDocument = Pick<
+  EducationDocument,
+  | '_id'
+  | 'parentType'
+  | 'parentId'
+  | 'title'
+  | 'originalName'
+  | 'mimeType'
+  | 'size'
+  | 'url'
+  | 'tags'
+  | 'createdAt'
+  | 'updatedAt'
+> & {
   parentContext: EducationDocumentParentContext
 }
 
@@ -577,6 +656,19 @@ export async function updateSession(
   return await apiFetch(`${base}/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
+// VENIO-43 — bulk-update des enrichissements (notes, remarques, liens,
+// rappels, devoirs) sans toucher au reste de la séance. Pratique pour le
+// drawer ouvert depuis cockpit/calendrier/classe.
+export async function updateSessionWorkspace(
+  id: string,
+  data: SessionWorkspacePayload,
+): Promise<{ session: EducationSession }> {
+  return await apiFetch(`${base}/sessions/${id}/workspace`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
 export async function deleteSession(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/sessions/${id}`, { method: 'DELETE' })
 }
@@ -863,6 +955,79 @@ export async function listEducationBySchool(): Promise<{ schools: SchoolBucket[]
   return await apiFetch(`${base}/search/by-school`)
 }
 
+// ─── Notion import ──────────────────────────────────────────────────────────
+
+export type NotionImportSourceType = 'page' | 'database'
+export type NotionImportStatus = 'pending' | 'running' | 'success' | 'partial' | 'error'
+
+export interface NotionImportStats {
+  created: number
+  updated: number
+  skipped: number
+  errors: number
+}
+
+export interface NotionImportLog {
+  _id: string
+  owner: string
+  sourceType: NotionImportSourceType
+  pageId: string
+  databaseId: string
+  sourceUrl: string
+  classId: string | null
+  dryRun: boolean
+  status: NotionImportStatus
+  stats: NotionImportStats
+  messages: string[]
+  errors: string[]
+  startedAt: string
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotionImportPayload {
+  pageIdOrUrl?: string
+  databaseIdOrUrl?: string
+  query?: string
+  classId?: string | null
+}
+
+export interface NotionPreviewResult {
+  dryRun: true
+  sourceType: NotionImportSourceType
+  pageId: string
+  databaseId: string
+  classId: string | null
+  stats: NotionImportStats
+  messages: string[]
+  errors: string[]
+}
+
+export async function listNotionImportLogs(
+  params: { limit?: number; skip?: number } = {},
+): Promise<{ logs: NotionImportLog[]; total: number }> {
+  const qs = new URLSearchParams()
+  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.skip) qs.set('skip', String(params.skip))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch(`${base}/notion/logs${suffix}`)
+}
+
+export async function previewNotionImport(payload: NotionImportPayload): Promise<NotionPreviewResult> {
+  return await apiFetch(`${base}/notion/preview`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function runNotionImport(payload: NotionImportPayload): Promise<{ log: NotionImportLog }> {
+  return await apiFetch(`${base}/notion/import`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Cycle de présence un-tap : NON_RENSEIGNE démarre à PRESENT, puis rotation. */
@@ -906,39 +1071,141 @@ export function formatDate(date: string | null | undefined, withTime = false): s
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// ─── Documents ───────────────────────────────────────────────────────────────
-// Ajoutés en fin de fichier : ce module est importé en lecture par mon-espace,
-// ne pas réorganiser l'existant ci-dessus.
+// ─── VENIO-46 — Documents (BDD documentaire) ───────────────────────────────
 
-export async function listDocuments(
-  params: { parentType?: EducationDocumentParentType; parentId?: string } = {},
-): Promise<{ documents: EducationDocument[]; total: number }> {
+export const DOCUMENT_CATEGORY_LABEL: Record<EducationDocumentCategory, string> = {
+  school_document: 'Document école',
+  student_submission: 'Rendu étudiant',
+  assignment_submission: 'Rendu devoir',
+  exam_subject: "Sujet d'examen",
+  assignment_correction: 'Correction',
+  teaching_resource: 'Ressource pédagogique',
+  administrative: 'Administratif',
+  other: 'Autre',
+}
+
+export const DOCUMENT_STATUS_LABEL: Record<EducationDocumentStatus, string> = {
+  DRAFT: 'Brouillon',
+  PUBLISHED: 'Publié',
+  ARCHIVED: 'Archivé',
+}
+
+export interface ListDocumentsParams {
+  parentId?: string
+  search?: string
+  category?: EducationDocumentCategory | ''
+  status?: EducationDocumentStatus | ''
+  school?: string
+  classId?: string
+  sessionId?: string
+  assignmentId?: string
+  submissionId?: string
+  studentId?: string
+  parentType?: EducationDocumentParentType
+  tag?: string
+  sort?: string
+  limit?: number
+  skip?: number
+}
+
+export interface ListDocumentsResult {
+  documents: EducationDocument[]
+  total: number
+  categoryCounts: Partial<Record<EducationDocumentCategory, number>>
+}
+
+export async function listDocuments(params: ListDocumentsParams = {}): Promise<ListDocumentsResult> {
   const qs = new URLSearchParams()
+  if (params.search) qs.set('search', params.search)
+  if (params.category) qs.set('category', params.category)
+  if (params.status) qs.set('status', params.status)
+  if (params.school) qs.set('school', params.school)
+  if (params.classId) qs.set('classId', params.classId)
+  if (params.sessionId) qs.set('sessionId', params.sessionId)
+  if (params.assignmentId) qs.set('assignmentId', params.assignmentId)
+  if (params.submissionId) qs.set('submissionId', params.submissionId)
+  if (params.studentId) qs.set('studentId', params.studentId)
   if (params.parentType) qs.set('parentType', params.parentType)
   if (params.parentId) qs.set('parentId', params.parentId)
-  return await apiFetch(`${base}/documents${qs.toString() ? '?' + qs.toString() : ''}`)
+  if (params.tag) qs.set('tag', params.tag)
+  if (params.sort) qs.set('sort', params.sort)
+  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.skip) qs.set('skip', String(params.skip))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await apiFetch(`${base}/documents${suffix}`)
 }
 
-/** Upload multipart (champ `file` + metadata) — apiUpload laisse le navigateur fixer le boundary. */
+export interface DocumentCreatePayload {
+  parentType?: EducationDocumentParentType
+  parentId?: string
+  title?: string
+  description?: string
+  category?: EducationDocumentCategory
+  status?: EducationDocumentStatus
+  school?: string
+  classId?: string
+  sessionId?: string
+  assignmentId?: string
+  submissionId?: string
+  studentId?: string
+  url?: string
+  tags?: string[]
+  documentDate?: string | null
+  dueDate?: string | null
+}
+
+function appendDocFields(form: FormData, payload: DocumentCreatePayload): void {
+  if (payload.parentType) form.append('parentType', payload.parentType)
+  if (payload.parentId) form.append('parentId', payload.parentId)
+  if (payload.title) form.append('title', payload.title)
+  if (payload.description) form.append('description', payload.description)
+  if (payload.category) form.append('category', payload.category)
+  if (payload.status) form.append('status', payload.status)
+  if (payload.school) form.append('school', payload.school)
+  if (payload.classId) form.append('classId', payload.classId)
+  if (payload.sessionId) form.append('sessionId', payload.sessionId)
+  if (payload.assignmentId) form.append('assignmentId', payload.assignmentId)
+  if (payload.submissionId) form.append('submissionId', payload.submissionId)
+  if (payload.studentId) form.append('studentId', payload.studentId)
+  if (payload.url) form.append('url', payload.url)
+  if (payload.tags && payload.tags.length) form.append('tags', payload.tags.join(','))
+  if (payload.documentDate) form.append('documentDate', payload.documentDate)
+  if (payload.dueDate) form.append('dueDate', payload.dueDate)
+}
+
 export async function uploadDocument(
   file: File,
-  meta: { parentType: EducationDocumentParentType; parentId: string; title?: string },
+  payload: DocumentCreatePayload = {},
 ): Promise<{ document: EducationDocument }> {
-  const fd = new FormData()
-  fd.append('file', file)
-  fd.append('parentType', meta.parentType)
-  fd.append('parentId', meta.parentId)
-  if (meta.title) fd.append('title', meta.title)
-  return await apiUpload(`${base}/documents`, fd)
+  const form = new FormData()
+  form.append('file', file)
+  appendDocFields(form, payload)
+  return await apiUpload(`${base}/documents`, form)
 }
 
-/** URL de téléchargement (route protégée Bearer : à consommer via apiDownload côté UI). */
-export function documentDownloadUrl(id: string): string {
-  return `${base}/documents/${id}/download`
+export async function createDocumentFromUrl(
+  payload: DocumentCreatePayload & { url: string },
+): Promise<{ document: EducationDocument }> {
+  const form = new FormData()
+  appendDocFields(form, payload)
+  return await apiUpload(`${base}/documents`, form)
+}
+
+export async function updateDocument(
+  id: string,
+  data: Partial<Omit<EducationDocument, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'owner'>> & {
+    tags?: string[]
+  },
+): Promise<{ document: EducationDocument }> {
+  return await apiFetch(`${base}/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
 export async function deleteDocument(id: string): Promise<{ success: true }> {
   return await apiFetch(`${base}/documents/${id}`, { method: 'DELETE' })
+}
+
+export function documentDownloadUrl(id: string): string {
+  return `${base}/documents/${id}/download`
 }
 
 /** Taille de fichier lisible (o, Ko, Mo). */

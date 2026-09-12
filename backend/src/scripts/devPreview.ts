@@ -57,6 +57,7 @@ if (existing === 0) {
       status: 'ACTIVE',
       health: 'GOOD',
       accentColor: '#6366f1',
+      logoUrl: '/filiales/yumi.png',
       foundedYear: 2024,
       description: 'Produit SaaS grand public en forte croissance, modèle d’abonnement mensuel.',
       productDescription:
@@ -179,6 +180,7 @@ if (existing === 0) {
       status: 'INCUBATION',
       health: 'GOOD',
       accentColor: '#ec4899',
+      logoUrl: '/filiales/jiraya.svg',
       foundedYear: 2025,
       description: 'Jeune studio en incubation, premières missions clients.',
       lead: adminId,
