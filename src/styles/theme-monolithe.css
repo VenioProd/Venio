@@ -61,6 +61,12 @@ html.theme-monolithe {
   /* Typographie Archivo */
   --font-heading: 'Archivo', 'Cabinet Grotesk', sans-serif;
   --font-body: 'Archivo', 'Cabinet Grotesk', sans-serif;
+
+  /* Rayons — le brutalisme survit dans la grille, la typo et les filets,
+     plus dans les angles vifs. Trois valeurs pour tout le site public. */
+  --r-btn: 10px;
+  --r-card: 14px;
+  --r-pill: 999px;
 }
 
 /* Le body lit --bg-primary ; on force le fond Monolithe même

@@ -13,6 +13,8 @@ import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
 import CookieConsent from './components/CookieConsent'
 import PublicAnalytics from './components/PublicAnalytics'
+import { ConversionProvider } from './context/ConversionContext'
+import StickyCta from './components/conversion/StickyCta'
 import './App.css'
 
 function ThemeSync() {
@@ -146,7 +148,7 @@ function ProjectsRedirect() {
   return <Navigate to={`/admin/projets/${id}${location.search}`} replace />
 }
 
-function App() {
+function AppShell() {
   const location = useLocation()
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
   // La surface des beta testeurs est une page de travail, pas une page du
@@ -157,6 +159,9 @@ function App() {
   // charte Portail au même titre que l'admin et l'espace client.
   const isPortal =
     location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isBetaTesterSpace
+  // Seule source de vérité du « on est sur le site public » : thème Monolithe
+  // et socle de conversion s'y accrochent tous les deux.
+  const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -165,14 +170,13 @@ function App() {
   // Thème Monolithe : scopé au site public (hors portail & questionnaire).
   // Charte Portail : scopée à l'admin + l'espace client (login inclus).
   useEffect(() => {
-    const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
     document.documentElement.classList.toggle('theme-monolithe', isPublicSite)
     document.documentElement.classList.toggle('theme-portail', isPortal)
     return () => {
       document.documentElement.classList.remove('theme-monolithe')
       document.documentElement.classList.remove('theme-portail')
     }
-  }, [isPortal, isPublicQuestionnaire, isBetaTesterSpace])
+  }, [isPortal, isPublicSite])
 
   useEffect(() => {
     document.body.classList.add('gpu-off')
@@ -780,6 +784,7 @@ function App() {
                 </Routes>
               </Suspense>
               <CookieConsent />
+              {isPublicSite && <StickyCta />}
               <ToastContainer />
               {isAdminArea && <SearchModal />}
             </Suspense>
@@ -790,6 +795,21 @@ function App() {
         </ThemeProvider>
       </I18nProvider>
     </ErrorBoundary>
+  )
+}
+
+/**
+ * Le socle de conversion enveloppe l'application entière plutôt que le seul
+ * sous-arbre public : les pages publiques et la barre flottante — montée à
+ * côté du bandeau cookies, loin des routes — doivent lire le même contexte,
+ * et envelopper AppShell sans le réindenter garde le montage chirurgical.
+ * Les modales ne sont montées qu'à l'ouverture : l'admin n'en porte rien.
+ */
+function App() {
+  return (
+    <ConversionProvider>
+      <AppShell />
+    </ConversionProvider>
   )
 }
 

@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
+import DualCta from '../components/conversion/DualCta'
+import TrustLine from '../components/conversion/TrustLine'
 import { PORTFOLIO_PROJECTS, type PortfolioFilter } from '../content/portfolioProjects'
 import { useReveal } from '../hooks/useReveal'
 import './Realisations.css'
@@ -24,7 +26,7 @@ const Realisations = () => {
   return (
     <main className="portfolio-page">
       <SEO
-        title="Réalisations — Venio"
+        title="Réalisations — sites, marques et projets digitaux"
         description="Sites, identités, produits et expériences numériques signés Venio. Découvrez une sélection de réalisations publiées."
         keywords="réalisations Venio, portfolio, sites web, branding, produits numériques"
       />
@@ -159,9 +161,16 @@ const Realisations = () => {
       <section className="portfolio-cta">
         <div className="portfolio-shell portfolio-reveal">
           <p>Un projet qui mérite mieux qu’un site interchangeable ?</p>
+          {/* Le lien historique garde sa taille : sur cette page, c'est le
+              titre du bloc autant qu'une action. Les deux boutons du socle
+              viennent dessous, en actions concrètes. */}
           <Link to="/contact">
             Parlons-en <span aria-hidden="true">→</span>
           </Link>
+          <div className="portfolio-cta-alt">
+            <DualCta />
+            <TrustLine />
+          </div>
         </div>
       </section>
     </main>

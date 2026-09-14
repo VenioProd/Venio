@@ -1,0 +1,43 @@
+/* ─────────────────────────────────────────────────────────────
+   Formulaires de conversion (BookingModal, CallbackModal).
+
+   Les champs, libellés, cases de consentement et statuts viennent
+   du socle (.mc-field, .mc-label, .mc-input, .mc-consent, .mc-status) :
+   il ne reste ici que la mise en page du formulaire.
+   ───────────────────────────────────────────────────────────── */
+
+html.theme-monolithe .mc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-sp-s);
+}
+
+html.theme-monolithe .mc-form__intro {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+html.theme-monolithe .mc-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--mc-sp-s);
+}
+
+html.theme-monolithe .mc-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mc-sp-xs);
+  margin-top: var(--mc-sp-xs);
+}
+
+html.theme-monolithe .mc-form__actions .mc-btn {
+  flex: 1 1 180px;
+}
+
+@media (max-width: 480px) {
+  html.theme-monolithe .mc-form__row {
+    grid-template-columns: 1fr;
+  }
+}

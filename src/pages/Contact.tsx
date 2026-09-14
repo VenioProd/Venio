@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
+import TrustLine from '../components/conversion/TrustLine'
 import { useReveal } from '../hooks/useReveal'
 import { trackPublicEvent } from '../lib/publicAnalytics'
 import { apiFetch } from '../lib/api'
@@ -246,6 +247,10 @@ const Contact = () => {
                 <button type="submit" className="mp-submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Envoi…' : 'Demander l’appel'}
                 </button>
+                {/* Réassurance sous le bouton : au-dessus, elle se serait
+                    glissée entre le consentement et l'action, et aurait éloigné
+                    le message de statut (aria-live) de son bouton. */}
+                <TrustLine />
               </form>
             </div>
           </div>

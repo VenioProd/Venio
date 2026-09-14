@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import ServiceOfferLinks from '../components/ServiceOfferLinks'
+import DualCta from '../components/conversion/DualCta'
+import TrustLine from '../components/conversion/TrustLine'
+import Faq from '../components/conversion/Faq'
+import { AU_DELA_FAQ } from '../content/faq'
 import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
 
@@ -98,6 +102,14 @@ const AuDelaDuSite = () => {
         </div>
       </section>
 
+      {/* Pas de ProofBar ici : ses quatre engagements parlent du site, alors que
+          cette page parle des trois métiers qui l'entourent. */}
+      <section className="mp-block">
+        <div className="mp-container mp-reveal">
+          <Faq items={AU_DELA_FAQ} />
+        </div>
+      </section>
+
       <section className="mp-cta">
         <div className="mp-container">
           <h2 className="mp-cta-titre">
@@ -106,9 +118,15 @@ const AuDelaDuSite = () => {
           <p className="mp-cta-texte">
             Un projet de conseil, de développement ou de marque ? Dites-nous où vous en êtes, on vous répond en face.
           </p>
-          <Link className="mp-btn" to="/contact" data-analytics-cta="au_dela_du_site_final_contact">
-            Prendre contact <span className="mp-ar">→</span>
-          </Link>
+          <DualCta />
+          <TrustLine />
+          {/* Le contact écrit reste offert, mais en second : il passe en bouton
+              fantôme derrière les deux actions du socle. */}
+          <p className="mp-cta-alt">
+            <Link className="mc-btn mc-btn--ghost" to="/contact" data-analytics-cta="au_dela_du_site_final_contact">
+              Prendre contact <span className="mp-ar">→</span>
+            </Link>
+          </p>
         </div>
       </section>
     </div>

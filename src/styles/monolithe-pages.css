@@ -305,6 +305,7 @@
   margin-bottom: var(--mp-sp-l);
 }
 .mp-page .mp-filter {
+  border-radius: var(--r-pill);
   font-family: inherit;
   font-size: 12px;
   font-weight: 800;
@@ -350,6 +351,7 @@
   margin-bottom: var(--mp-sp-s);
 }
 .mp-page .mp-projet-tag {
+  border-radius: var(--r-pill);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -579,6 +581,7 @@
 .mp-page .mp-form select,
 .mp-page .mp-form textarea {
   width: 100%;
+  border-radius: var(--r-btn);
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -641,6 +644,7 @@
   margin: 4px 0;
 }
 .mp-page .mp-submit {
+  border-radius: var(--r-btn);
   font-family: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -696,6 +700,7 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  border-radius: var(--r-btn);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -764,4 +769,9 @@
   .mp-page .mp-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Action de repli sous le double CTA des blocs de fin de page. */
+.mp-page .mp-cta-alt {
+  margin: var(--mp-sp-m) 0 0;
 }

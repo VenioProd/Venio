@@ -1,0 +1,132 @@
+/* ─────────────────────────────────────────────────────────────
+   FAQ — accordéon natif <details>/<summary>
+
+   Le natif plutôt qu'un state React : la FAQ s'ouvre sans JS, le
+   clavier et les lecteurs d'écran la connaissent déjà, et le
+   validateur statique n'a aucun <button> anonyme à signaler.
+
+   Ne lit que les tokens globaux du thème et les --mc-* du socle.
+   ───────────────────────────────────────────────────────────── */
+
+html.theme-monolithe .mc-faq-head {
+  margin: 0 0 var(--mc-sp-l);
+}
+
+html.theme-monolithe .mc-faq-title {
+  /* Les gabarits .ms-page et .mp-page mettent leurs titres en capitales.
+     Une question posée en capitales se lit mal : le socle impose sa casse. */
+  text-transform: none;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(26px, 3.6vw, 44px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+html.theme-monolithe .mc-faq-list {
+  display: grid;
+  gap: var(--mc-sp-xs);
+}
+
+html.theme-monolithe .mc-faq-item {
+  overflow: hidden;
+  padding: 0;
+}
+
+html.theme-monolithe .mc-faq-item[open] {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+/* <summary> est le bouton d'ouverture : il porte déjà le nom
+   accessible et l'état aria-expanded natifs. */
+html.theme-monolithe .mc-faq-q {
+  padding: var(--mc-sp-s) var(--mc-sp-m);
+  cursor: pointer;
+  list-style: none;
+}
+
+html.theme-monolithe .mc-faq-q-text {
+  /* Les gabarits .ms-page et .mp-page mettent leurs titres en capitales.
+     Une question posée en capitales se lit mal : le socle impose sa casse. */
+  text-transform: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mc-sp-s);
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(15px, 1.5vw, 18px);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+  transition: color 0.25s var(--mc-ease);
+}
+
+html.theme-monolithe .mc-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+html.theme-monolithe .mc-faq-q:hover .mc-faq-q-text {
+  color: var(--primary);
+}
+
+html.theme-monolithe .mc-faq-q:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: var(--r-card);
+}
+
+/* Le chevron est décoratif : l'état réel est porté par <details>. */
+html.theme-monolithe .mc-faq-sign {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  position: relative;
+  color: var(--primary);
+}
+
+html.theme-monolithe .mc-faq-sign::before,
+html.theme-monolithe .mc-faq-sign::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 1.5px;
+  background: currentColor;
+  transition: transform 0.25s var(--mc-ease);
+}
+
+html.theme-monolithe .mc-faq-sign::after {
+  transform: rotate(90deg);
+}
+
+html.theme-monolithe .mc-faq-item[open] .mc-faq-sign::after {
+  transform: rotate(0deg);
+}
+
+html.theme-monolithe .mc-faq-a {
+  margin: 0;
+  padding: 0 var(--mc-sp-m) var(--mc-sp-m);
+  max-width: 72ch;
+  font-size: clamp(14px, 1.3vw, 16px);
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  html.theme-monolithe .mc-faq-q,
+  html.theme-monolithe .mc-faq-a {
+    padding-inline: var(--mc-sp-s);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-faq-q-text,
+  html.theme-monolithe .mc-faq-sign::before,
+  html.theme-monolithe .mc-faq-sign::after {
+    transition: none;
+  }
+}

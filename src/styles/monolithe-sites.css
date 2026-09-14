@@ -168,6 +168,7 @@
   margin-bottom: var(--ms-sp-l);
 }
 .ms-page .ms-cta-go {
+  border-radius: var(--r-btn);
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -196,7 +197,7 @@
 .ms-page .pricing-card {
   background: var(--bg-primary);
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-card);
   box-shadow: none;
   padding: var(--ms-sp-m);
 }
@@ -211,7 +212,7 @@
   right: 0;
   left: auto;
   transform: none;
-  border-radius: 0;
+  border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--bg-primary);
   font-size: 9px;
@@ -237,7 +238,7 @@
   color: var(--text-primary);
 }
 .ms-page .pricing-card__cta {
-  border-radius: 0;
+  border-radius: var(--r-btn);
   border: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-primary);
@@ -264,7 +265,7 @@
   border-color: var(--text-primary);
 }
 .ms-page .pricing-toggle-badge {
-  border-radius: 0;
+  border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--bg-primary);
 }
@@ -278,4 +279,10 @@
     grid-template-columns: 1fr;
     gap: var(--ms-sp-m);
   }
+}
+
+/* Action de repli sous le double CTA : le contact écrit reste offert, mais il
+   n'est plus ce qu'on propose en premier. */
+.ms-page .ms-cta-alt {
+  margin: var(--ms-sp-s) 0 0;
 }

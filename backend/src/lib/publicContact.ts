@@ -2,19 +2,21 @@ export interface ContactSubmission {
   firstName: string
   lastName: string
   email: string
+  /** Optionnel : vide quand le formulaire ne demande pas de numéro. */
+  phone: string
   company: string
   subject: string
   message: string
 }
 
 export type ContactValidationResult =
-  | { ok: true; submission: ContactSubmission }
-  | { ok: false; reason: 'invalid' | 'too_fast' | 'honeypot' }
+  { ok: true; submission: ContactSubmission } | { ok: false; reason: 'invalid' | 'too_fast' | 'honeypot' }
 
 const MAX_LENGTHS = {
   firstName: 80,
   lastName: 80,
   email: 254,
+  phone: 40,
   company: 160,
   subject: 100,
   message: 4000,
@@ -51,16 +53,28 @@ export function validateContactSubmission(body: unknown, now = Date.now()): Cont
   const firstName = normalizeSingleLine(raw.firstName, MAX_LENGTHS.firstName)
   const lastName = normalizeSingleLine(raw.lastName, MAX_LENGTHS.lastName)
   const email = normalizeSingleLine(raw.email, MAX_LENGTHS.email)?.toLowerCase() ?? null
+  // Le téléphone n'est jamais requis : seule sa longueur est bornée, comme les
+  // autres champs facultatifs. Une valeur trop longue reste un refus explicite.
+  const phone = normalizeSingleLine(raw.phone ?? '', MAX_LENGTHS.phone)
   const company = normalizeSingleLine(raw.company ?? '', MAX_LENGTHS.company)
   const subject = normalizeSingleLine(raw.subject ?? '', MAX_LENGTHS.subject)
   const message = normalizeMessage(raw.message)
 
-  if (!firstName || !lastName || !email || !isEmail(email) || company === null || subject === null || !message) {
+  if (
+    !firstName ||
+    !lastName ||
+    !email ||
+    !isEmail(email) ||
+    phone === null ||
+    company === null ||
+    subject === null ||
+    !message
+  ) {
     return { ok: false, reason: 'invalid' }
   }
 
   return {
     ok: true,
-    submission: { firstName, lastName, email, company, subject, message },
+    submission: { firstName, lastName, email, phone, company, subject, message },
   }
 }

@@ -1,0 +1,103 @@
+/* StickyCta — barre d'action persistante du site public.
+
+   Superposition : 900, sous la navbar (1000) et ses menus (10000). Le bandeau
+   cookies (9998) occupe le même bas d'écran, mais la collision est réglée en
+   amont — le composant ne se monte pas tant que le consentement n'est pas
+   tranché — plutôt qu'à coups de z-index. */
+
+html.theme-monolithe .mc-sticky {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 900;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  padding-block: var(--mc-sp-xs);
+  padding-bottom: calc(var(--mc-sp-xs) + env(safe-area-inset-bottom, 0px));
+  animation: mc-sticky-in 0.35s var(--mc-ease) both;
+}
+
+@keyframes mc-sticky-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+html.theme-monolithe .mc-sticky-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mc-sp-s);
+}
+
+html.theme-monolithe .mc-sticky-label {
+  margin: 0;
+  font-family: var(--mc-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Boutons compacts : la barre ne doit pas voler la hauteur du contenu. */
+html.theme-monolithe .mc-sticky .mc-btn {
+  padding: 11px 18px;
+}
+
+/* Sous 767px, la navigation mobile fixe (.mobile-bottom-nav, z-index 1002)
+   occupe déjà le bas de l'écran : la barre passe au-dessus d'elle, sinon elle
+   disparaît entièrement derrière — et c'est en mobile qu'elle sert le plus.
+   64px est la valeur que Navbar.css réserve lui-même à cette navigation. */
+@media (max-width: 767px) {
+  html.theme-monolithe .mc-sticky {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--mc-sp-xs);
+  }
+}
+
+@media (max-width: 720px) {
+  /* Le libellé cède la place aux deux actions dès que la largeur se resserre. */
+  html.theme-monolithe .mc-sticky-label {
+    display: none;
+  }
+
+  html.theme-monolithe .mc-sticky .mc-dual {
+    flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  /* DualCta empile en pleine largeur en mobile ; dans la barre flottante ce
+     serait deux fois trop haut. On garde les deux actions sur une ligne, à
+     largeur égale. */
+  html.theme-monolithe .mc-sticky .mc-dual {
+    flex-direction: row;
+  }
+
+  html.theme-monolithe .mc-sticky .mc-dual .mc-btn {
+    flex: 1;
+    width: auto;
+    padding: 11px 8px;
+    /* Deux actions côte à côte sur 375px : sans ce cran de moins, le libellé
+       le plus long passe sur deux lignes et la barre double de hauteur. */
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-sticky {
+    animation: none;
+  }
+}
+
+/* Compensation de fin de page. --mc-sticky-h est déclaré à 0px par le socle et
+   passé à la hauteur réelle par le composant quand la barre est visible : le
+   pied de page public ne passe jamais sous la barre. Le repli à 0px couvre le
+   cas où la feuille de socle ne serait pas chargée. */
+html.theme-monolithe footer {
+  padding-bottom: calc(40px + var(--mc-sticky-h, 0px));
+}

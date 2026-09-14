@@ -103,6 +103,42 @@ describe('POST /api/contact', () => {
     expect(await Lead.countDocuments()).toBe(0)
   })
 
+  it('accepte un téléphone normalisé, s’en passe, et refuse un numéro hors gabarit', async () => {
+    const withPhone = await request(app)
+      .post('/api/contact')
+      .set('X-Forwarded-For', '198.51.100.20')
+      .send(
+        validBody({
+          email: 'rappel@example.test',
+          phone: '  06 12  34   56 78 ',
+          subject: 'Demande de rappel',
+          message: 'Demande de rappel.',
+        }),
+      )
+
+    expect(withPhone.status).toBe(202)
+    expect(await Lead.findOne({ contactEmail: 'rappel@example.test' }).lean()).toMatchObject({
+      contactPhone: '06 12 34 56 78',
+      serviceType: 'Demande de rappel',
+    })
+
+    const withoutPhone = await request(app)
+      .post('/api/contact')
+      .set('X-Forwarded-For', '198.51.100.21')
+      .send(validBody({ email: 'sans-phone@example.test' }))
+
+    expect(withoutPhone.status).toBe(202)
+    expect(await Lead.findOne({ contactEmail: 'sans-phone@example.test' }).lean()).toMatchObject({ contactPhone: '' })
+
+    const tooLong = await request(app)
+      .post('/api/contact')
+      .set('X-Forwarded-For', '198.51.100.22')
+      .send(validBody({ email: 'trop-long@example.test', phone: '0'.repeat(41) }))
+
+    expect(tooLong.status).toBe(400)
+    expect(await Lead.countDocuments({ contactEmail: 'trop-long@example.test' })).toBe(0)
+  })
+
   it('limite les tentatives répétées par adresse IP', async () => {
     const ip = '198.51.100.14'
     for (let index = 0; index < 5; index += 1) {

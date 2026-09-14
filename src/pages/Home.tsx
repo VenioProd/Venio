@@ -6,6 +6,11 @@ import { GrainOverlay } from '../components/BrutalDeco'
 import SitePlate from '../components/home/SitePlate'
 import TierDial, { type HomeTier } from '../components/home/TierDial'
 import ProofRadar from '../components/home/ProofRadar'
+import ProofBar from '../components/conversion/ProofBar'
+import DualCta from '../components/conversion/DualCta'
+import TrustLine from '../components/conversion/TrustLine'
+import Faq from '../components/conversion/Faq'
+import { HOME_FAQ } from '../content/faq'
 import '../styles/monolithe-home.css'
 
 const TIERS: HomeTier[] = [
@@ -54,14 +59,6 @@ const TIERS: HomeTier[] = [
     incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
     featured: false,
   },
-]
-
-/* Les trois repères du haut de page annoncent les trois arguments
-   développés plus bas. Aucun chiffre : rien ici n'est une statistique. */
-const REPERES: { num: string; label: string; value: string; live?: boolean }[] = [
-  { num: '01', label: 'Le design', value: 'Dessiné pour vous', live: true },
-  { num: '02', label: 'Le code', value: 'Il vous appartient' },
-  { num: '03', label: 'Vos demandes', value: "Rien n'est bloqué" },
 ]
 
 const ARGUMENTS: { num: string; titre: string; texte: string }[] = [
@@ -152,7 +149,7 @@ const Home = () => {
   return (
     <div className="mh-home">
       <SEO
-        title="Site web sur mesure à Paris · Venio"
+        title="Site web sur mesure à Paris"
         description="On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous."
         keywords="site web sur mesure, plateforme métier, développement web, conseil, marque, studio digital, Paris"
       />
@@ -167,29 +164,25 @@ const Home = () => {
               <i aria-hidden="true" /> Venio — studio web à Paris
             </p>
             <h1 className="mh-releve-title">
-              Un site fait pour vous. <span className="mh-accent">Pas pour tout le monde.</span>
+              Sites web et plateformes sur mesure, <span className="mh-accent">à Paris.</span>
             </h1>
             <p className="mh-releve-sub">
-              On dessine et on code votre site à partir de ce que vous avez à dire. Pas à partir d’un modèle acheté dans
-              lequel on glisserait vos textes.
+              Faits pour vous, et qui vous ressemblent. On dessine et on code votre site à partir de ce que vous avez à
+              dire. Pas à partir d’un modèle acheté dans lequel on glisserait vos textes.
             </p>
 
-            <dl className="mh-cotes">
-              {REPERES.map((c) => (
-                <div key={c.num} className={`mh-cote${c.live ? ' mh-cote--live' : ''}`}>
-                  <dt className="mh-mono">
-                    <span className="mh-cote-num">{c.num}</span>
-                    {c.label}
-                  </dt>
-                  <dd>{c.value}</dd>
-                </div>
-              ))}
-            </dl>
+            {/* Le hero est un lieu d'action : les trois repères qui occupaient
+                cette place disaient déjà ce que dit le ProofBar juste en
+                dessous, en moins complet. */}
+            <DualCta align="start" />
+            <TrustLine />
           </div>
 
           <SitePlate />
         </div>
       </section>
+
+      <ProofBar />
 
       {/* ─── 03 · CADRAN DES CINQ PALIERS ─── */}
       <section id="mh-paliers">
@@ -309,7 +302,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ─── 07 · UN APPEL DE TRENTE MINUTES ─── */}
+      {/* ─── 07 · QUESTIONS FRÉQUENTES ─── */}
+      <section id="mh-faq">
+        <div className="mh-container mh-reveal">
+          <Faq items={HOME_FAQ} />
+        </div>
+      </section>
+
+      {/* ─── 08 · UN APPEL DE TRENTE MINUTES ─── */}
       <section id="mh-appel">
         <div className="mh-container mh-appel-grid">
           <div className="mh-reveal">
