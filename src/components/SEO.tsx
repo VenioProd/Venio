@@ -11,6 +11,19 @@ interface SEOProps {
   noindex?: boolean
 }
 
+/**
+ * Suffixe la marque, sauf si le titre la porte déjà.
+ *
+ * Trois pages terminaient leur titre par « Venio » et récoltaient
+ * « … · Venio | Venio » dans l'onglet et dans les résultats de recherche.
+ * Les titres ont été nettoyés ; cette garde empêche le défaut de revenir à la
+ * prochaine page qui reprendra la convention à la main.
+ */
+const suffixerMarque = (titre: string) => {
+  const propre = titre.trim().replace(/\s*[|·—–-]\s*Venio$/i, '')
+  return `${propre} | Venio`
+}
+
 const SEO = ({
   title,
   description,
@@ -23,7 +36,7 @@ const SEO = ({
   const { locale, t } = useI18n()
   const siteUrl = 'https://venio.paris'
   const currentUrl = `${siteUrl}${location.pathname}`
-  const fullTitle = title ? `${title} | Venio` : t('seo.defaultTitle')
+  const fullTitle = title ? suffixerMarque(title) : t('seo.defaultTitle')
   const fullDescription = description || t('seo.defaultDescription')
   const ogLocale = locale === 'en' ? 'en_US' : 'fr_FR'
 

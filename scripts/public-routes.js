@@ -10,9 +10,9 @@ export const publicRoutes = [
     title: 'Site web sur mesure à Paris · Venio',
     description:
       "On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous.",
-    h1: 'Un site fait pour vous. Pas pour tout le monde.',
+    h1: 'Sites web et plateformes sur mesure, à Paris.',
     content:
-      "Venio dessine et code des sites et des plateformes sur mesure à Paris. Votre site vous appartient : n'importe quel développeur peut le reprendre après nous. Et rien n'est impossible parce que l'outil ne le permet pas.",
+      "Venio dessine et code des sites et des plateformes sur mesure à Paris : faits pour vous, et qui vous ressemblent. Votre site vous appartient — n'importe quel développeur peut le reprendre après nous — et rien n'est impossible parce que l'outil ne le permet pas.",
   },
   {
     path: '/services/sites',

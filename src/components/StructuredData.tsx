@@ -1,6 +1,17 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
+import { APROPOS_FAQ, AU_DELA_FAQ, HOME_FAQ, METHODE_FAQ, SITES_FAQ, type FaqItem } from '../content/faq'
+
+/** Une page balisée sans FAQ visible serait un faux signal : la table suit
+    exactement les pages qui affichent l'accordéon. */
+const FAQ_BY_TYPE: Record<string, FaqItem[]> = {
+  home: HOME_FAQ,
+  'service-sites': SITES_FAQ,
+  'au-dela-du-site': AU_DELA_FAQ,
+  method: METHODE_FAQ,
+  apropos: APROPOS_FAQ,
+}
 
 const StructuredData = ({ type = 'home' }) => {
   const location = useLocation()
@@ -31,8 +42,6 @@ const StructuredData = ({ type = 'home' }) => {
 
     switch (type) {
       case 'home':
-        return [baseOrganization, baseWebSite]
-
       case 'realisations':
       case 'apropos':
       case 'contact':
@@ -109,7 +118,7 @@ const StructuredData = ({ type = 'home' }) => {
             serviceType: 'Conseil Stratégique',
             provider: baseOrganization,
             areaServed: 'FR',
-            description: 'Positionnement, vision, architecture digitale globale et stratégie IA.',
+            description: 'Positionnement, vision, architecture digitale globale et priorités de décision.',
           },
         ]
 
@@ -166,7 +175,30 @@ const StructuredData = ({ type = 'home' }) => {
     }
   }
 
-  const structuredData = getStructuredData()
+  /**
+   * La FAQ d'une page est balisée ici, au runtime, et non dans le prérendu :
+   * `scripts/validate-prerender.js` n'accepte qu'un seul `ld+json` dans le HTML
+   * statique. Les questions viennent de `src/content/faq.ts`, la même source
+   * que l'accordéon — un balisage qui diverge de la page visible est une
+   * pénalité, pas une coquille.
+   */
+  const faqItems = FAQ_BY_TYPE[type]
+  const faqPage = faqItems
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer,
+          },
+        })),
+      }
+    : null
+
+  const structuredData = [...getStructuredData(), ...(faqPage ? [faqPage] : [])]
   const breadcrumb = getBreadcrumb()
 
   return (

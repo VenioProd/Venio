@@ -1,0 +1,128 @@
+/* ─────────────────────────────────────────────────────────────
+   PublicModal — enveloppe de dialogue du site public.
+
+   Tout ce qui est réutilisable (carte, boutons, champs, statuts)
+   vit dans monolithe-socle.css : ce fichier ne porte que ce que le
+   socle n'a pas — le voile, le positionnement et les dimensions.
+   ───────────────────────────────────────────────────────────── */
+
+html.theme-monolithe .mc-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10001; /* au-dessus de la navbar (1000) et de ses menus (10000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mc-sp-m);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: mc-modal-fade 0.2s var(--mc-ease);
+}
+
+html.theme-monolithe .mc-modal {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: calc(100vh - 2 * var(--mc-sp-m));
+  overflow-y: auto;
+  padding: var(--mc-sp-m);
+  background: var(--bg-primary);
+  animation: mc-modal-rise 0.24s var(--mc-ease);
+}
+
+html.theme-monolithe .mc-modal:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+html.theme-monolithe .mc-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mc-sp-s);
+  margin-bottom: var(--mc-sp-m);
+  padding-bottom: var(--mc-sp-s);
+  border-bottom: 1px solid var(--border-color);
+}
+
+html.theme-monolithe .mc-modal__heading .mc-eyebrow {
+  margin-bottom: 8px;
+}
+
+html.theme-monolithe .mc-modal__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 3.4vw, 30px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+html.theme-monolithe .mc-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  margin: -6px -6px 0 0;
+  color: var(--text-secondary);
+  transition: color 0.2s var(--mc-ease);
+}
+
+html.theme-monolithe .mc-modal__close:hover {
+  color: var(--text-primary);
+}
+
+html.theme-monolithe .mc-modal__body {
+  display: block;
+}
+
+@keyframes mc-modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mc-modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  html.theme-monolithe .mc-modal-layer {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  html.theme-monolithe .mc-modal {
+    width: 100%;
+    max-height: 92vh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-card) var(--r-card) 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-modal-layer,
+  html.theme-monolithe .mc-modal {
+    animation: none;
+  }
+
+  html.theme-monolithe .mc-modal__close {
+    transition: none;
+  }
+}

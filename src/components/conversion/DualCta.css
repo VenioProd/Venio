@@ -1,0 +1,29 @@
+/* DualCta — deux boutons. Le socle fournit .mc-btn, .mc-btn--primary et
+   .mc-btn--ghost ; cette feuille ne décrit que leur mise en ligne. */
+
+html.theme-monolithe .mc-dual {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mc-sp-xs);
+}
+
+html.theme-monolithe .mc-dual--start {
+  justify-content: flex-start;
+}
+
+html.theme-monolithe .mc-dual--center {
+  justify-content: center;
+}
+
+/* En mobile, deux boutons côte à côte deviennent deux cibles trop étroites :
+   ils passent en pleine largeur, empilés, l'action principale en premier. */
+@media (max-width: 560px) {
+  html.theme-monolithe .mc-dual {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html.theme-monolithe .mc-dual .mc-btn {
+    width: 100%;
+  }
+}

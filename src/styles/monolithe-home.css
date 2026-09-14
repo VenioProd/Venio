@@ -28,8 +28,8 @@
   --mh-sp-xl: clamp(48px, 7vw, 96px);
   --mh-gutter: clamp(16px, 4vw, 56px);
   --mh-max: 1240px;
-  --mh-r: 8px;
-  --mh-r-node: 5px;
+  --mh-r: var(--r-card, 14px);
+  --mh-r-node: var(--r-btn, 10px);
   --mh-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --mh-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
@@ -214,48 +214,6 @@
   color: var(--mh-ink-2);
   max-width: 48ch;
   margin: 0 0 var(--mh-sp-m);
-}
-
-.mh-home .mh-cotes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  margin: 0;
-  background: var(--mh-line);
-  border: 1px solid var(--mh-line);
-  border-radius: var(--mh-r);
-  overflow: hidden;
-}
-.mh-home .mh-cote {
-  background: var(--mh-bg-2);
-  padding: 13px 14px 15px;
-}
-.mh-home .mh-cote dt {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  line-height: 1.35;
-  margin-bottom: 8px;
-  font-family: var(--mh-mono);
-  font-size: 9px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--mh-ink-3);
-}
-.mh-home .mh-cote-num {
-  color: var(--mh-ink-2);
-}
-.mh-home .mh-cote dd {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: clamp(1rem, 2vw, 1.375rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--mh-ink);
-}
-.mh-home .mh-cote--live dd {
-  color: var(--mh-accent);
 }
 
 /* ─── Élévation cotée ─── */
@@ -964,9 +922,6 @@
 }
 
 @media (max-width: 640px) {
-  .mh-home .mh-cotes {
-    grid-template-columns: 1fr;
-  }
   .mh-home .mh-sysnav {
     width: 100%;
   }

@@ -433,3 +433,8 @@
     transition: none !important;
   }
 }
+
+/* Les deux actions du socle, sous le lien-titre du bloc de fin. */
+.portfolio-cta .portfolio-cta-alt {
+  margin-top: clamp(28px, 4vw, 44px);
+}

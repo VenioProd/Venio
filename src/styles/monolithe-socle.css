@@ -1,0 +1,231 @@
+/* ─────────────────────────────────────────────────────────────
+   SOCLE DE CONVERSION — primitives partagées par les trois gabarits
+
+   Les tokens --mh-*, --mp-* et --ms-* sont scopés à leur conteneur :
+   un composant partagé qui les lirait s'effondrerait sur deux gabarits
+   sur trois, et la barre flottante — montée hors de tout gabarit —
+   n'en verrait aucun. Le socle est donc autonome : il ne lit que les
+   tokens globaux de theme-monolithe.css et ses propres --mc-*.
+
+   Préfixe de classe : mc- (mono / conversion).
+   ───────────────────────────────────────────────────────────── */
+
+html.theme-monolithe {
+  --mc-max: 1240px;
+  --mc-gutter: clamp(16px, 4vw, 56px);
+  --mc-sp-xs: clamp(8px, 1.2vw, 12px);
+  --mc-sp-s: clamp(12px, 2vw, 20px);
+  --mc-sp-m: clamp(20px, 3vw, 32px);
+  --mc-sp-l: clamp(30px, 4.4vw, 56px);
+  --mc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mc-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Hauteur réservée à la barre flottante. Passe à sa vraie valeur
+     quand la barre est montée, pour que le pied de page ne passe
+     jamais dessous. */
+  --mc-sticky-h: 0px;
+}
+
+html.theme-monolithe .mc-container {
+  width: min(100%, var(--mc-max));
+  margin-inline: auto;
+  padding-inline: var(--mc-gutter);
+}
+
+/* ── Boutons ────────────────────────────────────────────────── */
+
+html.theme-monolithe .mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 22px;
+  border: 1px solid var(--primary);
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.25s var(--mc-ease),
+    color 0.25s var(--mc-ease),
+    border-color 0.25s var(--mc-ease);
+}
+
+/* Le bouton plein porte l'action principale. Un seul par écran. */
+html.theme-monolithe .mc-btn--primary {
+  background: var(--primary);
+  color: var(--bg-primary);
+}
+
+html.theme-monolithe .mc-btn--primary:hover {
+  background: transparent;
+  color: var(--primary);
+}
+
+html.theme-monolithe .mc-btn--ghost:hover {
+  background: var(--accent-soft);
+}
+
+html.theme-monolithe .mc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+html.theme-monolithe .mc-btn:focus-visible,
+html.theme-monolithe .mc-tap:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Cible tactile nue (croix de fermeture, résumé d'accordéon) */
+html.theme-monolithe .mc-tap {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--r-btn);
+}
+
+/* ── Surfaces ───────────────────────────────────────────────── */
+
+html.theme-monolithe .mc-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-card);
+  background: var(--bg-secondary);
+}
+
+html.theme-monolithe .mc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  font-family: var(--mc-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ── Typographie de section ─────────────────────────────────── */
+
+html.theme-monolithe .mc-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 var(--mc-sp-s);
+  font-family: var(--mc-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+html.theme-monolithe .mc-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--primary);
+}
+
+/* ── Formulaires (modales) ──────────────────────────────────── */
+
+html.theme-monolithe .mc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html.theme-monolithe .mc-label {
+  font-family: var(--mc-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+html.theme-monolithe .mc-input,
+html.theme-monolithe .mc-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-btn);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+html.theme-monolithe .mc-textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+html.theme-monolithe .mc-input:focus,
+html.theme-monolithe .mc-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+html.theme-monolithe .mc-input::placeholder,
+html.theme-monolithe .mc-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Le honeypot doit rester dans le flux pour les robots qui lisent
+   le DOM, mais hors de portée d'un humain et d'un lecteur d'écran. */
+html.theme-monolithe .mc-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+html.theme-monolithe .mc-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+html.theme-monolithe .mc-consent input {
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+html.theme-monolithe .mc-status {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-btn);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+html.theme-monolithe .mc-status--ok {
+  border-color: var(--accent-border);
+  color: var(--primary);
+}
+
+html.theme-monolithe .mc-status--ko {
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-btn {
+    transition: none;
+  }
+}

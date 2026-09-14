@@ -45,6 +45,7 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         company: submission.company || 'Particulier',
         contactName,
         contactEmail: submission.email,
+        contactPhone: submission.phone,
         source: 'FORMULAIRE_SITE',
         status: 'LEAD',
         serviceType: submission.subject,
@@ -54,6 +55,8 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
       })
     } else {
       lead.contactName = contactName
+      // Un formulaire sans champ téléphone ne doit pas effacer un numéro connu.
+      if (submission.phone) lead.contactPhone = submission.phone
       if (submission.company) lead.company = submission.company
       lead.serviceType = submission.subject
       lead.lastContactAt = now

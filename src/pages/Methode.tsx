@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
+import DualCta from '../components/conversion/DualCta'
+import TrustLine from '../components/conversion/TrustLine'
+import Faq from '../components/conversion/Faq'
+import { METHODE_FAQ } from '../content/faq'
 import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
 
@@ -43,7 +47,7 @@ const Methode = () => {
   return (
     <div className="mp-page">
       <SEO
-        title="Méthode de travail — étapes, livrables et cadence | Venio"
+        title="Méthode de travail — étapes, livrables et cadence"
         description="Découvrez comment Venio cadre, conçoit, construit, recette et transmet un projet web : étapes, livrables et rythme de travail."
         keywords="méthode projet web, livrables site web, cadence projet digital, Venio"
       />
@@ -113,6 +117,14 @@ const Methode = () => {
         </div>
       </section>
 
+      {/* Pas de ProofBar ici : la page décrit déjà le déroulé étape par étape,
+          le bandeau d'engagements n'y ajouterait qu'une redite. */}
+      <section className="mp-block">
+        <div className="mp-container mp-reveal">
+          <Faq items={METHODE_FAQ} />
+        </div>
+      </section>
+
       <section className="mp-cta">
         <div className="mp-container">
           <h2 className="mp-cta-titre">
@@ -122,9 +134,15 @@ const Methode = () => {
             Choisissez le palier qui correspond à votre besoin ; le cadrage sert à confirmer le périmètre plutôt qu’à le
             deviner.
           </p>
-          <Link className="mp-btn" to="/services/sites">
-            Voir les offres <span className="mp-ar">→</span>
-          </Link>
+          <DualCta />
+          <TrustLine />
+          {/* La comparaison des offres reste accessible, mais derrière les deux
+              actions du socle : bouton fantôme. */}
+          <p className="mp-cta-alt">
+            <Link className="mc-btn mc-btn--ghost" to="/services/sites">
+              Voir les offres <span className="mp-ar">→</span>
+            </Link>
+          </p>
         </div>
       </section>
     </div>

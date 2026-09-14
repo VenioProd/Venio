@@ -1,0 +1,24 @@
+/* TrustLine — ligne de réassurance discrète, en mono. */
+
+html.theme-monolithe .mc-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: var(--mc-sp-s) 0 0;
+  font-family: var(--mc-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+html.theme-monolithe .mc-trust-sep {
+  display: inline-block;
+  padding: 0 9px;
+  color: var(--primary);
+}
+
+html.theme-monolithe .mc-dual--center + .mc-trust {
+  justify-content: center;
+}

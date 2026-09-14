@@ -4,6 +4,11 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import SitesPricingTable from '../components/SitesPricingTable'
 import ServiceOfferLinks from '../components/ServiceOfferLinks'
+import ProofBar from '../components/conversion/ProofBar'
+import DualCta from '../components/conversion/DualCta'
+import TrustLine from '../components/conversion/TrustLine'
+import Faq from '../components/conversion/Faq'
+import { SITES_FAQ } from '../content/faq'
 import '../styles/monolithe-sites.css'
 
 const ServicesSites: React.FC = () => {
@@ -26,6 +31,8 @@ const ServicesSites: React.FC = () => {
           </p>
         </div>
       </section>
+
+      <ProofBar />
 
       <section className="ms-block">
         <div className="ms-container ms-twocol">
@@ -59,6 +66,12 @@ const ServicesSites: React.FC = () => {
         </div>
       </section>
 
+      <section className="ms-block">
+        <div className="ms-container">
+          <Faq items={SITES_FAQ} />
+        </div>
+      </section>
+
       <section className="ms-cta">
         <div className="ms-container">
           <p className="ms-cta-eyebrow">Un projet en tête ?</p>
@@ -69,9 +82,18 @@ const ServicesSites: React.FC = () => {
             Pas de devis automatique, pas de formulaire en 47 étapes. Un échange direct pour comprendre ce dont vous
             avez besoin.
           </p>
-          <Link to="/contact" className="ms-cta-go" data-analytics-cta="sites_final_contact">
-            Prendre contact →
-          </Link>
+          <DualCta />
+          <TrustLine />
+
+          {/* Troisième action, volontairement en retrait : deux boutons pleine
+              bordure de plus auraient concurrencé le DualCta. La gélule du
+              socle donne le bon poids visuel — écrire reste possible, mais ce
+              n'est plus ce qu'on propose en premier. */}
+          <p className="ms-cta-alt">
+            <Link to="/contact" className="mc-pill" data-analytics-cta="sites_final_contact">
+              Prendre contact →
+            </Link>
+          </p>
         </div>
       </section>
     </div>
