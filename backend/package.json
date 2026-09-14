@@ -26,7 +26,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@sentry/node": "10.69.0",
+    "@sentry/node": "10.74.0",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
@@ -41,7 +41,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
     "otpauth": "^9.5.0",
-    "pdfkit": "^0.19.1",
+    "pdfkit": "^0.20.2",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
     "qrcode": "^1.5.4",
