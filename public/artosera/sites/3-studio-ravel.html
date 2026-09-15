@@ -1,0 +1,985 @@
+<meta charset="utf-8">
+<title>Studio Ravel — galerie d'art contemporain, Marseille</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bone: #F0E8D8;
+    --bone-dark: #E4D9C3;
+    --ink: #18140E;
+    --vermillon: #B8331A;
+    --vermillon-dark: #96280F;
+    --grey: #6E6353;
+    --paper: #F7F2E7;
+    --hair: rgba(24,20,14,0.16);
+    --hair-on-verm: rgba(247,242,231,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bone);
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible {
+    outline: 3px solid var(--vermillon);
+    outline-offset: 3px;
+  }
+
+  .verm-block a:focus-visible,
+  .verm-block button:focus-visible {
+    outline-color: var(--paper);
+  }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Archivo", Arial, sans-serif;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  .wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left: clamp(20px, 4vw, 56px);
+    padding-right: clamp(20px, 4vw, 56px);
+  }
+
+  .eyebrow {
+    font-family: "Archivo", Arial, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+    color: var(--grey);
+  }
+
+  .verm-block .eyebrow { color: rgba(247,242,231,0.78); }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Archivo", Arial, sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    padding: 13px 22px;
+    background: transparent;
+  }
+
+  .btn-outline:hover { background: var(--ink); color: var(--bone); }
+
+  .verm-block .btn-outline {
+    color: var(--paper);
+    border-color: var(--paper);
+  }
+  .verm-block .btn-outline:hover {
+    background: var(--paper);
+    color: var(--vermillon-dark);
+  }
+
+  .btn-outline .arrow { transition: transform 0.15s ease; }
+  .btn-outline:hover .arrow { transform: translateX(3px); }
+
+  /* ---------- header ---------- */
+
+  .site-header {
+    background: var(--bone);
+    border-bottom: 1.5px solid var(--ink);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .wordmark { text-transform: none; }
+  .wordmark a {
+    text-decoration: none;
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.3rem, 2.3vw, 1.7rem);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .main-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(14px, 2.4vw, 28px);
+  }
+
+  .main-nav a {
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    padding: 4px 0;
+    border-bottom: 1.5px solid transparent;
+  }
+
+  .main-nav a:hover { border-bottom-color: var(--vermillon); color: var(--vermillon); }
+
+  .lang-switch {
+    display: flex;
+    border: 1.5px solid var(--ink);
+  }
+
+  .lang-btn {
+    font-family: "Archivo", Arial, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+
+  .lang-btn + .lang-btn { border-left: 1.5px solid var(--ink); }
+  .lang-btn.is-active { background: var(--ink); color: var(--bone); }
+  .lang-btn:not(.is-active):hover { background: var(--bone-dark); }
+
+  /* ---------- exposition en cours ---------- */
+
+  .show-current {
+    background: var(--vermillon);
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: stretch;
+  }
+
+  .show-media { min-height: 340px; overflow: hidden; }
+  .show-media img { width: 100%; height: 100%; object-fit: cover; }
+
+  .show-info {
+    padding: clamp(32px, 5vw, 72px) clamp(20px, 4vw, 64px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--paper);
+  }
+
+  .show-title {
+    font-size: clamp(2.4rem, 6.2vw, 4.6rem);
+    line-height: 0.96;
+    margin-bottom: 18px;
+  }
+
+  .show-exhibition-title {
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
+    font-style: italic;
+    font-weight: 500;
+    margin: 0 0 14px;
+  }
+
+  .show-meta {
+    font-size: 0.98rem;
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+
+  .show-place {
+    font-size: 0.95rem;
+    margin: 0 0 22px;
+    color: rgba(247,242,231,0.85);
+  }
+
+  .show-text {
+    max-width: 46ch;
+    margin: 0 0 30px;
+    font-size: 1rem;
+    color: rgba(247,242,231,0.94);
+  }
+
+  /* ---------- generic section ---------- */
+
+  section { padding: clamp(52px, 8vw, 96px) 0; }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: clamp(28px, 4vw, 48px);
+    flex-wrap: wrap;
+  }
+
+  .section-title {
+    font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+    line-height: 1.02;
+  }
+
+  .section-note {
+    max-width: 40ch;
+    font-size: 0.95rem;
+    color: var(--grey);
+    margin: 0;
+  }
+
+  /* ---------- oeuvres rail ---------- */
+
+  .works-rail {
+    display: flex;
+    gap: clamp(16px, 2vw, 24px);
+    overflow-x: auto;
+    padding-bottom: 18px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .works-rail::-webkit-scrollbar { height: 8px; }
+  .works-rail::-webkit-scrollbar-track { background: var(--bone-dark); }
+  .works-rail::-webkit-scrollbar-thumb { background: var(--ink); }
+
+  .work-card {
+    scroll-snap-align: start;
+    flex: 0 0 clamp(240px, 27vw, 320px);
+    display: flex;
+    flex-direction: column;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+  }
+
+  .work-swatch {
+    height: 190px;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+
+  .work-swatch span {
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .work-swatch.t-verm { background: var(--vermillon); color: var(--paper); }
+  .work-swatch.t-ink { background: var(--ink); color: var(--bone); }
+  .work-swatch.t-bone { background: var(--bone-dark); color: var(--ink); }
+  .work-swatch.t-grey { background: var(--grey); color: var(--paper); }
+
+  .work-cartel {
+    padding: 18px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-grow: 1;
+  }
+
+  .work-artist { font-weight: 700; font-size: 1rem; }
+  .work-detail { font-size: 0.86rem; color: var(--grey); }
+  .work-detail em { color: var(--ink); font-style: italic; }
+  .work-price {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .work-link {
+    margin-top: 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    border-bottom: 1.5px solid var(--ink);
+    align-self: flex-start;
+    padding-bottom: 1px;
+  }
+  .work-link:hover { color: var(--vermillon); border-color: var(--vermillon); }
+
+  /* ---------- artistes ---------- */
+
+  .artist-index { border-top: 1.5px solid var(--ink); }
+
+  .artist-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px clamp(20px, 4vw, 56px);
+    border-bottom: 1.5px solid var(--ink);
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .artist-row .name {
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.15rem, 3vw, 1.9rem);
+    text-transform: uppercase;
+  }
+
+  .artist-row .discipline {
+    font-size: 0.85rem;
+    color: var(--grey);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .artist-row:hover,
+  .artist-row:focus-visible {
+    background: var(--vermillon);
+    color: var(--paper);
+  }
+  .artist-row:hover .discipline,
+  .artist-row:focus-visible .discipline { color: rgba(247,242,231,0.85); }
+
+  /* ---------- agenda ---------- */
+
+  .agenda-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1.5px solid var(--ink);
+    border-left: 1.5px solid var(--ink);
+  }
+
+  .agenda-item {
+    border-right: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    padding: 26px 24px 30px;
+    display: flex;
+    flex-direction: column;
+    min-height: 220px;
+  }
+
+  .agenda-kind {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--vermillon);
+    margin-bottom: 14px;
+  }
+
+  .agenda-title {
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .agenda-title em { display: block; text-transform: none; font-size: 1rem; font-weight: 500; margin-top: 4px; }
+
+  .agenda-dates { font-size: 0.92rem; font-weight: 600; margin-bottom: 4px; }
+  .agenda-place { font-size: 0.88rem; color: var(--grey); margin-top: auto; padding-top: 12px; }
+
+  .fair-feature {
+    border-right: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    background: var(--ink);
+    position: relative;
+    min-height: 220px;
+    overflow: hidden;
+  }
+
+  .fair-feature img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  .fair-feature .fair-cap {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(24,20,14,0.86) 0%, rgba(24,20,14,0.86) 38%, rgba(24,20,14,0) 39%);
+    color: var(--paper);
+  }
+
+  .fair-feature .agenda-kind { color: var(--bone); }
+  .fair-feature .agenda-title { color: var(--paper); }
+  .fair-feature .agenda-place { color: rgba(247,242,231,0.8); }
+
+  /* ---------- editions ---------- */
+
+  .editions-section {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .editions-section .section-note { color: rgba(247,242,231,0.72); }
+
+  .editions-layout {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: clamp(28px, 4vw, 56px);
+    align-items: start;
+  }
+
+  .editions-media img {
+    border: 1.5px solid rgba(247,242,231,0.4);
+  }
+
+  .editions-intro {
+    max-width: 52ch;
+    font-size: 1rem;
+    color: rgba(247,242,231,0.9);
+    margin: 0 0 28px;
+  }
+
+  .editions-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5px;
+    background: rgba(247,242,231,0.35);
+    border: 1.5px solid rgba(247,242,231,0.35);
+  }
+
+  .edition-item {
+    background: var(--ink);
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .edition-item .work-artist { color: var(--paper); }
+  .edition-item .work-detail { color: rgba(247,242,231,0.66); }
+  .edition-item .work-detail em { color: var(--paper); }
+  .edition-item .work-price { color: var(--paper); }
+  .edition-item .work-link {
+    color: var(--paper);
+    border-color: rgba(247,242,231,0.6);
+  }
+  .edition-item .work-link:hover { color: var(--vermillon); border-color: var(--vermillon); }
+
+  /* ---------- la galerie ---------- */
+
+  .about-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .about-media { min-height: 280px; overflow: hidden; }
+  .about-media img { width: 100%; height: 100%; object-fit: cover; }
+
+  .about-text {
+    padding: clamp(32px, 5vw, 64px) clamp(20px, 4vw, 64px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--bone-dark);
+  }
+
+  .about-text p { max-width: 48ch; font-size: 1.02rem; margin: 0 0 16px; }
+  .about-text p:last-of-type { margin-bottom: 26px; }
+
+  /* ---------- newsletter ---------- */
+
+  .newsletter {
+    background: var(--vermillon);
+    color: var(--paper);
+    padding: clamp(40px, 6vw, 64px) 0;
+  }
+
+  .newsletter-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .newsletter-inner p {
+    margin: 0;
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.2rem, 2.6vw, 1.7rem);
+    text-transform: uppercase;
+    max-width: 24ch;
+  }
+
+  .newsletter-form {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+    flex: 0 1 420px;
+  }
+
+  .newsletter-form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  .newsletter-form input[type="email"] {
+    flex: 1 1 220px;
+    min-width: 0;
+    font-family: "Archivo", Arial, sans-serif;
+    font-size: 0.95rem;
+    padding: 14px 16px;
+    border: 1.5px solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+  }
+
+  .newsletter-form input[type="email"]::placeholder { color: rgba(247,242,231,0.65); }
+
+  .newsletter-form button {
+    font-family: "Archivo", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 14px 24px;
+    background: var(--paper);
+    color: var(--vermillon-dark);
+    border: 1.5px solid var(--paper);
+    cursor: pointer;
+  }
+
+  .newsletter-form button:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    background: var(--ink);
+    color: var(--bone);
+    padding: clamp(44px, 6vw, 72px) 0 26px;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 28px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid rgba(240,232,216,0.24);
+  }
+
+  .footer-grid h3 {
+    font-family: "Archivo", Arial, sans-serif;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--grey);
+    margin-bottom: 14px;
+  }
+
+  .footer-grid p, .footer-grid a {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--bone);
+    text-decoration: none;
+    margin: 0 0 4px;
+  }
+
+  .footer-grid a { display: block; }
+  .footer-grid a:hover { color: var(--vermillon); }
+
+  .footer-wordmark {
+    font-family: "Bricolage Grotesque", Arial, sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 20px;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    color: rgba(240,232,216,0.55);
+  }
+
+  .demo-note {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    font-size: 0.7rem;
+    color: rgba(240,232,216,0.32);
+  }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 980px) {
+    .show-current { grid-template-columns: 1fr; }
+    .show-media { min-height: 260px; order: -1; }
+    .agenda-grid { grid-template-columns: 1fr 1fr; }
+    .editions-layout { grid-template-columns: 1fr; }
+    .editions-media { display: none; }
+    .about-section { grid-template-columns: 1fr; }
+    .about-media { min-height: 240px; order: -1; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 700px) {
+    .main-nav { order: 3; width: 100%; gap: 16px; }
+    .agenda-grid { grid-template-columns: 1fr; }
+    .editions-list { grid-template-columns: 1fr; }
+    .artist-row { flex-wrap: wrap; }
+    .footer-grid { grid-template-columns: 1fr; gap: 22px; }
+    .newsletter-inner { flex-direction: column; align-items: flex-start; }
+    .newsletter-form { width: 100%; }
+  }
+</style>
+
+<header class="site-header" id="top">
+  <div class="wrap header-inner">
+    <h1 class="wordmark"><a href="#top">Studio Ravel</a></h1>
+    <nav class="main-nav" aria-label="Navigation principale">
+      <a href="#artistes">Artistes</a>
+      <a href="#expositions">Expositions</a>
+      <a href="#foires">Foires</a>
+      <a href="#editions">Éditions</a>
+      <a href="#galerie">La galerie</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="Choix de la langue">
+      <button type="button" class="lang-btn is-active" aria-pressed="true">FR</button>
+      <button type="button" class="lang-btn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<section class="show-current" id="expositions" aria-labelledby="show-current-title">
+  <div class="show-media">
+    <img src="../img/manipulation.jpg" alt="Mains gantées manipulant une œuvre pendant l'accrochage de l'exposition" width="1611" height="2000" loading="eager">
+  </div>
+  <div class="show-info verm-block">
+    <p class="eyebrow">Exposition en cours</p>
+    <h2 id="show-current-title" class="show-title">NOOR<br>EL AMRANI</h2>
+    <p class="show-exhibition-title">— <em>Les murs parlent encore</em></p>
+    <p class="show-meta">5 septembre – 24 octobre 2026</p>
+    <p class="show-place">Studio Ravel, 41 rue Sainte-Françoise, Marseille 2e</p>
+    <p class="show-text">Première exposition personnelle en galerie : neuf toiles et un ensemble de collages qui reprennent les relevés muraux faits par l'artiste dans des immeubles voués à la démolition, à la Belle de Mai.</p>
+    <a class="btn-outline" href="#">Voir l'exposition <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<section id="oeuvres">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 class="section-title">Œuvres<br>disponibles</h2>
+      <p class="section-note">Pièces en stock à la galerie. Un dossier complet, avec vues détaillées et historique, est envoyé sur demande.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="works-rail">
+      <article class="work-card">
+        <div class="work-swatch t-verm"><span>MT</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Malik Traoré</p>
+          <p class="work-detail"><em>Sédiments IV</em>, 2024</p>
+          <p class="work-detail">Huile et pigments sur toile</p>
+          <p class="work-detail">120 × 90 cm</p>
+          <p class="work-price">3 400 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-ink"><span>LV</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Léa Vandekerckhove</p>
+          <p class="work-detail"><em>Chambre 12</em>, 2023</p>
+          <p class="work-detail">Encre sur papier marouflé sur bois</p>
+          <p class="work-detail">60 × 45 cm</p>
+          <p class="work-price">1 800 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-bone"><span>SO</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Samuel Ohanian</p>
+          <p class="work-detail"><em>Sans titre (Grès 07)</em>, 2024</p>
+          <p class="work-detail">Grès émaillé, pièce unique</p>
+          <p class="work-detail">34 × 22 × 22 cm</p>
+          <p class="work-price">2 200 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-grey"><span>NE</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Noor El Amrani</p>
+          <p class="work-detail"><em>Les murs parlent encore II</em>, 2025</p>
+          <p class="work-detail">Acrylique et collage sur toile</p>
+          <p class="work-detail">150 × 110 cm</p>
+          <p class="work-price">Prix sur demande</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-ink"><span>KO</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Kwame Osei</p>
+          <p class="work-detail"><em>Foyer</em>, 2024</p>
+          <p class="work-detail">Bronze poli, édition de 5 + 2 EA</p>
+          <p class="work-detail">28 × 15 × 12 cm</p>
+          <p class="work-price">6 500 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-verm"><span>HL</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Hugo Lindqvist</p>
+          <p class="work-detail"><em>Nuit blanche à Marseille</em>, 2024</p>
+          <p class="work-detail">Huile sur toile</p>
+          <p class="work-detail">100 × 81 cm</p>
+          <p class="work-price">3 900 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-bone"><span>MT</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Marion Tesseire</p>
+          <p class="work-detail"><em>Pli</em>, 2025</p>
+          <p class="work-detail">Céramique émaillée, pièce unique</p>
+          <p class="work-detail">45 × 20 × 20 cm</p>
+          <p class="work-price">2 900 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="work-swatch t-grey"><span>IF</span></div>
+        <div class="work-cartel">
+          <p class="work-artist">Inès Faucher</p>
+          <p class="work-detail"><em>Terrain vague</em>, 2023</p>
+          <p class="work-detail">Huile sur toile</p>
+          <p class="work-detail">80 × 60 cm</p>
+          <p class="work-price">2 600 €</p>
+          <a class="work-link" href="#">Demander le dossier</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="artistes" aria-labelledby="artistes-title">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="artistes-title" class="section-title">Artistes<br>représentés</h2>
+      <p class="section-note">Quatorze artistes, la plupart montrés en solo pour la première fois à Studio Ravel.</p>
+    </div>
+  </div>
+  <div class="artist-index">
+    <a class="artist-row" href="#"><span class="name">Inès Faucher</span><span class="discipline">Peinture</span></a>
+    <a class="artist-row" href="#"><span class="name">Malik Traoré</span><span class="discipline">Peinture</span></a>
+    <a class="artist-row" href="#"><span class="name">Léa Vandekerckhove</span><span class="discipline">Dessin</span></a>
+    <a class="artist-row" href="#"><span class="name">Samuel Ohanian</span><span class="discipline">Céramique</span></a>
+    <a class="artist-row" href="#"><span class="name">Noor El Amrani</span><span class="discipline">Peinture, collage</span></a>
+    <a class="artist-row" href="#"><span class="name">Thibault Roques</span><span class="discipline">Édition, risographie</span></a>
+    <a class="artist-row" href="#"><span class="name">Camille Suzor</span><span class="discipline">Estampe</span></a>
+    <a class="artist-row" href="#"><span class="name">Yannick Moreno</span><span class="discipline">Sculpture</span></a>
+    <a class="artist-row" href="#"><span class="name">Anaïs Delahaye</span><span class="discipline">Estampe</span></a>
+    <a class="artist-row" href="#"><span class="name">Kwame Osei</span><span class="discipline">Sculpture, bronze</span></a>
+    <a class="artist-row" href="#"><span class="name">Marion Tesseire</span><span class="discipline">Céramique</span></a>
+    <a class="artist-row" href="#"><span class="name">Hugo Lindqvist</span><span class="discipline">Peinture</span></a>
+    <a class="artist-row" href="#"><span class="name">Salomé Berger</span><span class="discipline">Photographie</span></a>
+    <a class="artist-row" href="#"><span class="name">Rafael Coutinho</span><span class="discipline">Édition, sérigraphie</span></a>
+  </div>
+</section>
+
+<section id="agenda" aria-labelledby="agenda-title">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="agenda-title" class="section-title">Agenda</h2>
+      <p class="section-note">Prochaines expositions à la galerie et rendez-vous sur les foires.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="agenda-grid">
+      <div class="agenda-item">
+        <p class="agenda-kind">Exposition</p>
+        <p class="agenda-title">Malik Traoré<em>Sous la croûte</em></p>
+        <p class="agenda-dates">14 novembre – 20 décembre 2026</p>
+        <p class="agenda-place">Studio Ravel, Marseille</p>
+      </div>
+      <div class="agenda-item">
+        <p class="agenda-kind">Exposition — première personnelle</p>
+        <p class="agenda-title">Salomé Berger<em>Première personne</em></p>
+        <p class="agenda-dates">16 janvier – 21 février 2027</p>
+        <p class="agenda-place">Studio Ravel, Marseille</p>
+      </div>
+      <div class="fair-feature" id="foires">
+        <img src="../img/foire.jpg" alt="Galeriste debout sur un stand de foire d'art, œuvres accrochées derrière lui" width="2000" height="1341" loading="lazy">
+        <div class="fair-cap">
+          <p class="agenda-kind">Foire</p>
+          <p class="agenda-title">Art Brussels<em>Secteur Discovery</em></p>
+          <p class="agenda-dates">23 – 26 avril 2027</p>
+          <p class="agenda-place">Tour &amp; Taxis, Bruxelles</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="editions-section" id="editions" aria-labelledby="editions-title">
+  <div class="wrap">
+    <div class="editions-layout">
+      <div class="editions-media">
+        <img src="../img/reserve.jpg" alt="Racks de stockage dans la réserve de la galerie" width="1611" height="2000" loading="lazy">
+      </div>
+      <div>
+        <p class="eyebrow">Section éditions</p>
+        <h2 id="editions-title" class="section-title" style="margin-bottom:20px;">Éditions &amp; multiples</h2>
+        <p class="editions-intro">Sérigraphies, lithographies, risographies et petits bronzes tirés en séries limitées, imprimés et fondus avec des ateliers marseillais. De 150 à 800 €, pour commencer une collection sans attendre la pièce unique.</p>
+        <div class="editions-list">
+          <article class="edition-item">
+            <p class="work-artist">Camille Suzor</p>
+            <p class="work-detail"><em>Veille</em>, 2023</p>
+            <p class="work-detail">Sérigraphie sur papier Somerset</p>
+            <p class="work-detail">Édition de 25 + 5 EA · 40 × 30 cm</p>
+            <p class="work-price">420 €</p>
+            <a class="work-link" href="#">Demander le dossier</a>
+          </article>
+          <article class="edition-item">
+            <p class="work-artist">Thibault Roques</p>
+            <p class="work-detail"><em>Carnet de fouilles</em>, 2024</p>
+            <p class="work-detail">Risographie</p>
+            <p class="work-detail">Édition de 50 · 21 × 29,7 cm</p>
+            <p class="work-price">150 €</p>
+            <a class="work-link" href="#">Demander le dossier</a>
+          </article>
+          <article class="edition-item">
+            <p class="work-artist">Anaïs Delahaye</p>
+            <p class="work-detail"><em>Soleil bas</em>, 2023</p>
+            <p class="work-detail">Lithographie</p>
+            <p class="work-detail">Édition de 30 + 5 EA · 50 × 65 cm</p>
+            <p class="work-price">680 €</p>
+            <a class="work-link" href="#">Demander le dossier</a>
+          </article>
+          <article class="edition-item">
+            <p class="work-artist">Rafael Coutinho</p>
+            <p class="work-detail"><em>Structures I–IV</em>, 2024</p>
+            <p class="work-detail">Sérigraphie, suite de 4 planches</p>
+            <p class="work-detail">Édition de 20 · 30 × 30 cm chaque</p>
+            <p class="work-price">800 € la suite</p>
+            <a class="work-link" href="#">Demander le dossier</a>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about-section" id="galerie" aria-labelledby="about-title">
+  <div class="about-media">
+    <img src="../img/galerie.jpg" alt="Salle blanche de la galerie sous verrière, cimaises nues" width="2000" height="1341" loading="lazy">
+  </div>
+  <div class="about-text">
+    <p class="eyebrow">La galerie</p>
+    <h2 id="about-title" class="section-title" style="margin-bottom:20px;">Jeune scène,<br>premiers accrochages</h2>
+    <p>Studio Ravel ouvre en 2021 dans le 2e arrondissement de Marseille, à deux pas du Cours Julien. La galerie donne leur première exposition personnelle à des artistes en début de carrière, aux côtés d'un programme d'éditions pensé pour rendre la collection accessible.</p>
+    <p>Studio Ravel participe à Art Brussels et à Paris Internationale, et accompagne ses artistes sur la durée : premières commandes, premiers textes de catalogue, premières ventes en collection publique.</p>
+    <a class="btn-outline" href="#contact">Nous écrire <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<section class="newsletter">
+  <div class="wrap newsletter-inner">
+    <p>Une lettre occasionnelle : ouvertures, éditions, extraits d'atelier.</p>
+    <form class="newsletter-form" action="#" method="post">
+      <label for="newsletter-email">Adresse e-mail</label>
+      <input id="newsletter-email" type="email" name="email" placeholder="votre@email.fr" required>
+      <button type="submit">S'inscrire</button>
+    </form>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="footer-wordmark">Studio Ravel</p>
+        <p>Galerie d'art contemporain</p>
+        <p>Jeune création &amp; éditions</p>
+      </div>
+      <div>
+        <h3>Adresse</h3>
+        <p>41 rue Sainte-Françoise<br>13002 Marseille</p>
+      </div>
+      <div>
+        <h3>Horaires</h3>
+        <p>Mercredi – samedi<br>14h – 19h, et sur rendez-vous</p>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <a href="tel:+33491542718">+33 4 91 54 27 18</a>
+        <a href="mailto:bonjour@studio-ravel.fr">bonjour@studio-ravel.fr</a>
+        <a href="#">Instagram</a>
+        <a href="#">Substack</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Studio Ravel. Tous droits réservés.</span>
+      <span>Galerie déclarée · TVA intracommunautaire sur demande</span>
+      <span class="demo-note">Modèle de démonstration Artosera · galerie fictive.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.lang-btn');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        buttons.forEach(function (b) {
+          b.classList.remove('is-active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('is-active');
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  })();
+</script>
