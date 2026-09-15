@@ -159,86 +159,180 @@
     const c = compute();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const W = 210, M = 18, R = W - M; let y = 20;
+    const W = 210, H = 297, M = 16, R = W - M, COL = R - M;
+    const INK = [23, 20, 15], CERISE = [168, 18, 47], GRIS = [94, 88, 78], FILET = [223, 218, 209], PALE = [244, 242, 238];
+    // jsPDF donne une largeur nulle au glyphe € : collé devant un chiffre il le chevauche.
+    // Une espace franche après le symbole règle le problème sans toucher au reste.
+    const money = n => eur(n).replace(/[\u202f\u00a0\u2009]/g, " ").replace(/^€(?=\d)/, "€ ");
+    const nombre = n => nf(n).replace(/[   ]/g, " ");
     const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-    const txt = (s, x, yy, o = {}) => doc.text(String(s), x, yy, o);
-    const line = (yy, w = 0.2) => { doc.setLineWidth(w); doc.line(M, yy, R, yy); };
-    const need = h => { if (y + h > 277) { doc.addPage(); y = 20; } };
-
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(168, 18, 47);
-    txt("ARTOSERA · MANAGEMENT PLATFORM FOR ART GALLERIES", M, y); y += 8;
-    doc.setFontSize(22); doc.setTextColor(23, 20, 15); txt("Quote", M, y);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(94, 88, 78);
-    txt(`Prepared on ${dateStr} by Venio, Paris`, R, y - 5, { align: "right" }); txt("Valid for 60 days · prices in euros, excluding VAT", R, y, { align: "right" });
-    y += 6; line(y, 0.8); y += 8;
-
-    doc.setTextColor(23, 20, 15); doc.setFontSize(10);
     const galerie = S.name || "Gallery to be confirmed";
-    doc.setFont("helvetica", "bold"); txt(galerie, M, y); doc.setFont("helvetica", "normal");
-    const who = [S.who, S.mail].filter(Boolean).join(" · "); if (who) { y += 5; txt(who, M, y); }
-    y += 5; txt(`Subscription ${c.tier.n} · ${S.eng ? S.eng + "-month commitment" : "monthly, no commitment"}`, M, y);
-    y += 10;
+    let y = 0;
 
-    const section = (title) => { need(14); doc.setFont("helvetica", "bold"); doc.setFontSize(11); txt(title, M, y); y += 3; line(y, 0.5); y += 6; doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); };
-    const rowPdf = (name, desc, amount) => {
-      const lines = desc ? doc.splitTextToSize(desc, R - M - 40) : [];
-      const h = 5 + lines.length * 4 + 2; need(h);
-      doc.setFont("helvetica", "bold"); txt(name, M, y); doc.setFont("helvetica", "normal"); txt(amount, R, y, { align: "right" });
-      if (lines.length) { doc.setTextColor(94, 88, 78); doc.setFontSize(8.5); doc.text(lines, M, y + 4); doc.setFontSize(9.5); doc.setTextColor(23, 20, 15); }
-      y += h; doc.setDrawColor(223, 218, 209); line(y - 1.5, 0.2); doc.setDrawColor(23, 20, 15);
-    };
+    const setFont = (style, size, color) => { doc.setFont("helvetica", style); doc.setFontSize(size); doc.setTextColor(...(color || INK)); };
+    const txt = (s, x, yy, opt) => doc.text(String(s), x, yy, opt);
+    const right = (s, yy) => doc.text(String(s), R, yy, { align: "right" });
+    const rule = (yy, color, w) => { doc.setDrawColor(...(color || FILET)); doc.setLineWidth(w || 0.2); doc.line(M, yy, R, yy); };
+    const need = h => { if (y + h > H - 22) { doc.addPage(); y = 24; } };
 
-    section("Included in the subscription");
-    doc.setTextColor(94, 88, 78); doc.setFontSize(8.5);
-    doc.text(doc.splitTextToSize("Artwork record, photos, status, search · artist record FR/EN · address book · access from any device, multiple users · gallery domain, HTTPS · hosting in France, daily backup · maintenance and updates · e-mail support · full export and reversibility under the contract.", R - M), M, y);
-    y += 16; doc.setTextColor(23, 20, 15); doc.setFontSize(9.5);
+    // ---- Header: ink block, identity on the left, document type on the right
+    doc.setFillColor(...INK); doc.rect(0, 0, W, 34, "F");
+    setFont("bold", 20, [255, 255, 255]); txt("Artosera", M, 16);
+    setFont("normal", 9, [190, 185, 175]); txt("by Venio · management platform for art galleries", M, 22.5);
+    setFont("bold", 13, [255, 255, 255]); txt("QUOTE", R, 14, { align: "right" });
+    setFont("normal", 8.5, [190, 185, 175]);
+    txt(dateStr, R, 20, { align: "right" });
+    txt("Valid for 60 days · prices in euros, excluding VAT", R, 25, { align: "right" });
+    y = 46;
 
-    section("Implementation — modules selected");
-    if (!c.chosen.length) { txt("No modules selected beyond the core.", M, y); y += 8; }
-    GROUPS.forEach(g => {
-      const kept = g.items.filter(i => picked.has(i.id));
-      if (!kept.length) return;
-      need(12); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(168, 18, 47);
-      txt(g.title, M, y); txt(eur(kept.reduce((a, i) => a + i.p, 0)), R, y, { align: "right" });
-      doc.setTextColor(23, 20, 15); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); y += 5;
-      kept.forEach(i => rowPdf(i.n, i.d, eur(i.p)));
-      y += 2;
-    });
-    y += 2; need(8); doc.setFont("helvetica", "bold"); txt("Implementation", M, y); txt(eur(c.base.impl) + (c.adjusted.impl ? " (adjusted)" : ""), R, y, { align: "right" }); doc.setFont("helvetica", "normal"); y += 10;
+    // ---- Recipient and terms, two columns
+    const midX = M + COL / 2 + 4;
+    setFont("bold", 8, GRIS); txt("PREPARED FOR", M, y); txt("TERMS", midX, y);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.2);
+    doc.line(M, y + 1.6, M + COL / 2 - 4, y + 1.6); doc.line(midX, y + 1.6, R, y + 1.6);
+    y += 7;
+    setFont("bold", 11.5, INK); txt(galerie, M, y);
+    setFont("normal", 9.5, INK); txt(`${c.tier.n} plan`, midX, y);
+    y += 5;
+    setFont("normal", 9.5, GRIS);
+    const coords = [S.who, S.mail].filter(Boolean).join(" · ");
+    if (coords) txt(coords, M, y);
+    txt(S.eng ? `${S.eng}-month commitment` : "Monthly, no commitment", midX, y);
+    y += 5;
+    txt("Go-live estimated at thirteen weeks", midX, y);
+    y += 12;
 
-    section("Data migration");
-    if (c.base.mig > 0) rowPdf("Migration of the inventory, contacts, documents and website", `${nf(S.oeuvres)} artworks · ${S.sites} existing site${S.sites > 1 ? "s" : ""} · redirects from old addresses included`, eur(c.base.mig) + (c.adjusted.mig ? " (adjusted)" : ""));
-    else { txt("No migration requested.", M, y); y += 8; }
-    y += 4;
+    // ---- Selected scope
+    setFont("bold", 12, INK); txt("Selected scope", M, y);
+    setFont("normal", 9, GRIS); right(`${c.chosen.length} module${c.chosen.length > 1 ? "s" : ""} of ${ALL.length}`, y);
+    y += 2.5; rule(y, INK, 0.6); y += 7;
 
-    section("Subscription");
-    rowPdf(`${c.tier.n} plan`, `${S.eng ? S.eng + "-month commitment" : "Monthly, no commitment"} · core included · hosted in France`, `${eur(c.base.sub)} / month` + (c.adjusted.sub ? " (adjusted)" : ""));
-    y += 4;
-
-    need(40); section("Total");
-    const tot = (l, a, bold) => { doc.setFont("helvetica", bold ? "bold" : "normal"); txt(l, M, y); txt(a, R, y, { align: "right" }); y += 6; };
-    if (S.disc > 0) { tot(`${S.disc}% discount on implementation, data migration and the subscription`, `− ${eur((c.base.impl - c.net.impl) + (c.base.mig - c.net.mig))} · − ${eur(c.base.sub - c.net.sub)} / month`); }
-    tot("Implementation, on delivery", eur(c.net.impl));
-    tot("Data migration, before go-live", eur(c.net.mig));
-    tot(`${c.tier.n} subscription, per month`, eur(c.net.sub));
-    y += 1; line(y, 0.8); y += 7;
-    doc.setFontSize(12); tot("First year, all included", eur(c.year), true); doc.setFontSize(9.5); doc.setFont("helvetica", "normal");
-    if (S.notes) {
-      y += 2; section("Notes and special terms");
-      const nl = doc.splitTextToSize(S.notes, R - M); need(nl.length * 4.2 + 6); doc.text(nl, M, y); y += nl.length * 4.2 + 4;
+    if (!c.chosen.length) {
+      setFont("normal", 9.5, GRIS); txt("No module selected beyond the core included in the subscription.", M, y); y += 8;
     }
-    y += 4; doc.setTextColor(94, 88, 78); doc.setFontSize(8.5);
-    doc.text(doc.splitTextToSize("Go-live estimated at thirteen weeks after signature, data migration included. Any module not selected can be added later: the platform stays the same, only the functions switched on change. Data hosted in France, full export at any time.", R - M), M, y);
-    y += 18; doc.setTextColor(23, 20, 15);
-    need(30); doc.setFontSize(8.5);
-    txt("For the gallery — name, date, signature", M, y); txt("For Venio — name, date, signature", W / 2 + 4, y); y += 14; doc.setDrawColor(150); doc.line(M, y, W / 2 - 4, y); doc.line(W / 2 + 4, y, R, y);
 
+    GROUPS.forEach(g => {
+      const retenues = g.items.filter(i => picked.has(i.id));
+      if (!retenues.length) return;
+      need(22);
+      // service band
+      doc.setFillColor(...PALE); doc.rect(M, y - 4.6, COL, 7.4, "F");
+      setFont("bold", 10, CERISE); txt(g.title.toUpperCase(), M + 2.5, y);
+      setFont("bold", 10, INK); right(money(retenues.reduce((a, i) => a + i.p, 0)) + "  ", y);
+      y += 8;
+      retenues.forEach(i => {
+        const desc = doc.splitTextToSize(i.d, COL - 34);
+        const h = 4.6 + desc.length * 3.5 + 3.4;
+        need(h + 4);
+        setFont("bold", 9.5, INK); txt(i.n, M + 2.5, y);
+        setFont("normal", 9.5, INK); right(money(i.p) + "  ", y);
+        setFont("normal", 7.8, GRIS); doc.text(desc, M + 2.5, y + 3.9);
+        y += h;
+        doc.setDrawColor(...FILET); doc.setLineWidth(0.15); doc.line(M + 2.5, y - 2, R - 2, y - 2);
+      });
+      y += 4;
+    });
+
+    // ---- Migration and subscription
+    need(34);
+    y += 2; setFont("bold", 12, INK); txt("Migration and subscription", M, y);
+    y += 2.5; rule(y, INK, 0.6); y += 7;
+    const ligne = (titre, detail, montant) => {
+      const d = doc.splitTextToSize(detail, COL - 44);
+      need(6 + d.length * 3.5);
+      setFont("bold", 9.5, INK); txt(titre, M + 2.5, y);
+      setFont("normal", 9.5, INK); right(montant + "  ", y);
+      setFont("normal", 7.8, GRIS); doc.text(d, M + 2.5, y + 3.9);
+      y += 4.6 + d.length * 3.5 + 3.4;
+      doc.setDrawColor(...FILET); doc.setLineWidth(0.15); doc.line(M + 2.5, y - 2, R - 2, y - 2);
+    };
+    ligne("Data migration",
+      c.base.mig > 0 ? `${nombre(S.oeuvres)} artworks · ${S.sites} existing website${S.sites > 1 ? "s" : ""} · import of the inventory, contacts and documents, redirects included` : "No migration requested",
+      money(c.base.mig) + (c.adjusted.mig ? " adjusted" : ""));
+    ligne(`${c.tier.n} subscription`,
+      `${S.eng ? S.eng + "-month commitment" : "Monthly, no commitment"} · core included · hosted in France, daily backup`,
+      money(c.base.sub) + " / month" + (c.adjusted.sub ? " adjusted" : ""));
+    y += 6;
+
+    // ---- Totals, box on the right
+    const boxW = 92, boxX = R - boxW;
+    const remise = S.disc > 0;
+    const lignes = 3 + (remise ? 1 : 0);
+    const listH = 6 + lignes * 5.6;
+    need(listH + 20);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.3); doc.rect(boxX, y, boxW, listH);
+    let by = y + 7;
+    const totLigne = (l, a, couleur) => {
+      setFont("normal", 9, couleur || GRIS); txt(l, boxX + 5, by);
+      setFont("normal", 9, couleur || INK); txt(a, boxX + boxW - 5, by, { align: "right" }); by += 5.6;
+    };
+    totLigne("Implementation", money(c.net.impl));
+    totLigne("Data migration", money(c.net.mig));
+    totLigne("Subscription, per month", money(c.net.sub));
+    if (remise) totLigne(`${S.disc}% discount applied`, "—", CERISE);
+    setFont("normal", 7.5, GRIS);
+    doc.text(doc.splitTextToSize("Implementation and migration are paid once, on delivery and before go-live. Subscription is monthly, per gallery.", boxX - M - 8), M, y + 6);
+    y += listH;
+    doc.setFillColor(...INK); doc.rect(boxX, y, boxW, 15, "F");
+    setFont("normal", 8, [190, 185, 175]); txt("FIRST YEAR, ALL INCLUDED", boxX + 5, y + 5.5);
+    setFont("bold", 14, [255, 255, 255]); txt(money(c.year), boxX + boxW - 5, y + 12, { align: "right" });
+    y += 24;
+
+    // ---- Notes
+    if (S.notes) {
+      const n = doc.splitTextToSize(S.notes, COL - 10);
+      need(n.length * 4 + 16);
+      doc.setFillColor(...PALE); doc.rect(M, y, COL, n.length * 4 + 12, "F");
+      setFont("bold", 8, GRIS); txt("NOTES AND SPECIAL TERMS", M + 5, y + 6);
+      setFont("normal", 9, INK); doc.text(n, M + 5, y + 11.5);
+      y += n.length * 4 + 18;
+    }
+
+    // ---- Core included, two columns at measured height
+    const socle = ["Artwork record, photos, status, search", "Artist record EN and FR", "Address book",
+      "Access from any device, several users", "Gallery domain, HTTPS",
+      "Hosted in France, daily backup", "Maintenance and updates", "E-mail support",
+      "Full export and reversibility under contract"];
+    const colW = COL / 2 - 6, moitie = Math.ceil(socle.length / 2);
+    setFont("normal", 7.8, GRIS);
+    const hauteurs = socle.map(t => doc.splitTextToSize("— " + t, colW).length * 3.6);
+    const hCol = [0, 1].map(k => hauteurs.slice(k * moitie, (k + 1) * moitie).reduce((a, b) => a + b, 0));
+    need(Math.max(...hCol) + 14);
+    setFont("bold", 8, GRIS); txt("INCLUDED IN THE SUBSCRIPTION, AT NO EXTRA COST", M, y);
+    const yListe = y + 5;
+    setFont("normal", 7.8, GRIS);
+    [0, 1].forEach(k => {
+      let yy = yListe;
+      socle.slice(k * moitie, (k + 1) * moitie).forEach(t => {
+        const l = doc.splitTextToSize("— " + t, colW);
+        doc.text(l, M + k * (COL / 2 + 6), yy);
+        yy += l.length * 3.6;
+      });
+    });
+    y = yListe + Math.max(...hCol) + 10;
+
+    // ---- Signatures
+    need(26);
+    setFont("bold", 8, GRIS);
+    txt("FOR THE GALLERY", M, y); txt("FOR VENIO", M + COL / 2 + 4, y);
+    setFont("normal", 7.5, GRIS);
+    txt("name, date, signature", M, y + 4); txt("name, date, signature", M + COL / 2 + 4, y + 4);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.3);
+    doc.line(M, y + 18, M + COL / 2 - 6, y + 18); doc.line(M + COL / 2 + 4, y + 18, R, y + 18);
+
+    // ---- Footer on every page
     const n = doc.getNumberOfPages();
-    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(151, 144, 127); txt(`Artosera is designed and built in Paris by Venio · quote ${galerie} · page ${i} / ${n}`, M, 290); }
+    for (let i = 1; i <= n; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...FILET); doc.setLineWidth(0.2); doc.line(M, H - 14, R, H - 14);
+      setFont("normal", 7.5, GRIS);
+      txt("Artosera is designed and built in Paris by Venio · contact@venio.paris", M, H - 9.5);
+      txt(`${galerie} · ${i} / ${n}`, R, H - 9.5, { align: "right" });
+    }
+
     const slug = (galerie || "gallery").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     return { doc, filename: `artosera-quote-${slug}-${new Date().toISOString().slice(0, 10)}.pdf` };
   }
-
   const status = (msg, cls) => { const s = el("status"); s.textContent = msg; s.className = "status" + (cls ? " " + cls : ""); };
   let downloads = null;
   if (window.claude && typeof window.claude.use === "function") { window.claude.use("downloads").then(ns => { downloads = ns; }).catch(() => {}); }
@@ -290,6 +384,7 @@
         const { doc, filename } = buildPdf();
         const b64 = doc.output("datauristring").split(",")[1];
         const recap = {
+          lang: "en",
           offre: `${c.tier.n} plan`,
           engagement: S.eng ? `${S.eng}-month commitment` : "Monthly, no commitment",
           services: GROUPS.flatMap(g => {
