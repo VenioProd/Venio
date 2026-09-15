@@ -681,7 +681,8 @@
   @media (max-width: 640px) { html.artosera-standalone .artosera-back u { margin-left: 0; } }
 </style>
 <a class="artosera-back" href="/artosera#sites"><b>Artosera</b><span>Modèle de site de galerie — contenu fictif</span><u>Revenir à la présentation ↗</u></a>
-<script>if (window.top === window.self) document.documentElement.classList.add('artosera-standalone');</script>
+<script src="/artosera/sites/standalone.js"></script>
+
 
 <header class="site-header" id="top">
   <div class="wrap header-inner">
@@ -981,18 +982,4 @@
   </div>
 </footer>
 
-<script>
-  (function () {
-    var buttons = document.querySelectorAll('.lang-btn');
-    buttons.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        buttons.forEach(function (b) {
-          b.classList.remove('is-active');
-          b.setAttribute('aria-pressed', 'false');
-        });
-        btn.classList.add('is-active');
-        btn.setAttribute('aria-pressed', 'true');
-      });
-    });
-  })();
-</script>
+
