@@ -25,6 +25,20 @@ export interface ArtoseraDevisSubmission {
   pdf: Buffer
   /** État du devis, conservé tel quel pour la trace. */
   devis: unknown
+  /** Récapitulatif structuré, source du corps HTML de l'e-mail. Absent = corps texte seul. */
+  recap: ArtoseraDevisRecap | null
+}
+
+/** Récapitulatif normalisé : rien n'en sort qui n'ait été validé ici. */
+export interface ArtoseraDevisRecap {
+  offre: string
+  engagement: string
+  services: { titre: string; sousTotal: string; lignes: { nom: string; prix: string }[] }[]
+  reprise: { detail: string; montant: string } | null
+  abonnement: { detail: string; montant: string } | null
+  remise: string
+  totaux: { libelle: string; montant: string }[]
+  notes: string
 }
 
 export type ArtoseraDevisRejection =
@@ -49,6 +63,9 @@ const MAX_LENGTHS = {
   body: 20_000,
   filename: 180,
 } as const
+
+/** Bornes du récapitulatif : sept services d'une poignée de lignes, pas un catalogue. */
+const RECAP_LIMITS = { services: 30, lignes: 40, totaux: 12, court: 120, detail: 400, notes: 4000 }
 
 /** Un PDF de devis pèse quelques centaines de Ko ; 5 MiB laisse une marge confortable. */
 export const MAX_PDF_BYTES = 5 * 1024 * 1024
@@ -138,6 +155,64 @@ function decodePdf(value: unknown): { ok: true; pdf: Buffer } | { ok: false; rea
   return { ok: true, pdf }
 }
 
+/**
+ * Normalise le récapitulatif envoyé par la page. Tout champ absent ou mal typé
+ * est ignoré plutôt que de faire échouer l'envoi : le PDF, lui, est complet.
+ * Aucun HTML n'est accepté ici — l'e-mail est composé côté serveur.
+ */
+function normalizeRecap(value: unknown): ArtoseraDevisRecap | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const raw = value as Record<string, unknown>
+  const court = (v: unknown) => normalizeSingleLine(v ?? '', RECAP_LIMITS.court) ?? ''
+  const detail = (v: unknown) => normalizeSingleLine(v ?? '', RECAP_LIMITS.detail) ?? ''
+
+  const services = Array.isArray(raw.services)
+    ? raw.services.slice(0, RECAP_LIMITS.services).flatMap((s) => {
+        if (!s || typeof s !== 'object') return []
+        const g = s as Record<string, unknown>
+        const titre = court(g.titre)
+        if (!titre) return []
+        const lignes = Array.isArray(g.lignes)
+          ? g.lignes.slice(0, RECAP_LIMITS.lignes).flatMap((l) => {
+              if (!l || typeof l !== 'object') return []
+              const item = l as Record<string, unknown>
+              const nom = court(item.nom)
+              return nom ? [{ nom, prix: court(item.prix) }] : []
+            })
+          : []
+        return [{ titre, sousTotal: court(g.sousTotal), lignes }]
+      })
+    : []
+
+  const bloc = (v: unknown) => {
+    if (!v || typeof v !== 'object') return null
+    const b = v as Record<string, unknown>
+    const montant = court(b.montant)
+    return montant ? { detail: detail(b.detail), montant } : null
+  }
+
+  const totaux = Array.isArray(raw.totaux)
+    ? raw.totaux.slice(0, RECAP_LIMITS.totaux).flatMap((t) => {
+        if (!t || typeof t !== 'object') return []
+        const x = t as Record<string, unknown>
+        const libelle = court(x.libelle)
+        return libelle ? [{ libelle, montant: court(x.montant) }] : []
+      })
+    : []
+
+  const recap: ArtoseraDevisRecap = {
+    offre: court(raw.offre),
+    engagement: court(raw.engagement),
+    services,
+    reprise: bloc(raw.reprise),
+    abonnement: bloc(raw.abonnement),
+    remise: court(raw.remise),
+    totaux,
+    notes: normalizeMultiLine(raw.notes ?? '', RECAP_LIMITS.notes) ?? '',
+  }
+  return services.length || totaux.length ? recap : null
+}
+
 export function validateArtoseraDevis(body: unknown): ArtoseraDevisValidation {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, reason: 'invalid_body' }
   const raw = body as Record<string, unknown>
@@ -182,6 +257,7 @@ export function validateArtoseraDevis(body: unknown): ArtoseraDevisValidation {
       filename: sanitizePdfFilename(raw.filename),
       pdf: decoded.pdf,
       devis,
+      recap: normalizeRecap(raw.recap),
     },
   }
 }

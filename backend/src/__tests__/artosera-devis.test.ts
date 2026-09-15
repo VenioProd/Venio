@@ -202,3 +202,57 @@ describe('POST /api/artosera/devis', () => {
     expect(sendMail).not.toHaveBeenCalled()
   })
 })
+
+describe('récapitulatif structuré', () => {
+  let validateArtoseraDevis: typeof import('../lib/artosera/devis.js').validateArtoseraDevis
+
+  beforeAll(async () => {
+    ;({ validateArtoseraDevis } = await import('../lib/artosera/devis.js'))
+  })
+
+  const base = {
+    to: 'contact@venio.paris',
+    subject: 'Devis Artosera — Galerie Test',
+    body: 'Corps de repli.',
+    filename: 'devis.pdf',
+    pdfBase64: PDF_BYTES.toString('base64'),
+  }
+
+  it('normalise les services, les totaux et les remarques', () => {
+    const result = validateArtoseraDevis({
+      ...base,
+      recap: {
+        offre: 'Offre Galerie',
+        engagement: 'Engagement 12 mois',
+        services: [
+          { titre: 'Le bureau', sousTotal: '2 250 €', lignes: [{ nom: 'Inventaire complet', prix: '800 €' }] },
+        ],
+        reprise: { detail: '8 000 œuvres', montant: '3 750 €' },
+        abonnement: { detail: 'Offre Galerie', montant: '249 € / mois' },
+        totaux: [{ libelle: 'Première année', montant: '15 738 €' }],
+        notes: 'Formation sur place.',
+      },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const recap = result.submission.recap
+    expect(recap?.services).toHaveLength(1)
+    expect(recap?.services[0].lignes[0].nom).toBe('Inventaire complet')
+    expect(recap?.totaux[0].montant).toBe('15 738 €')
+    expect(recap?.notes).toBe('Formation sur place.')
+  })
+
+  it('laisse passer le devis sans récapitulatif', () => {
+    const result = validateArtoseraDevis(base)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap).toBeNull()
+  })
+
+  it('ignore un récapitulatif dont les champs ne sont pas exploitables', () => {
+    const result = validateArtoseraDevis({ ...base, recap: { services: 'pas une liste', totaux: 42 } })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap).toBeNull()
+  })
+})

@@ -289,7 +289,26 @@
         if (!window.jspdf) throw new Error("pdf");
         const { doc, filename } = buildPdf();
         const b64 = doc.output("datauristring").split(",")[1];
-        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: DEST, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
+        const recap = {
+          offre: `${c.tier.n} plan`,
+          engagement: S.eng ? `${S.eng}-month commitment` : "Monthly, no commitment",
+          services: GROUPS.flatMap(g => {
+            const kept = g.items.filter(i => picked.has(i.id));
+            return kept.length ? [{ titre: g.title, sousTotal: eur(kept.reduce((a, i) => a + i.p, 0)),
+              lignes: kept.map(i => ({ nom: i.n, prix: eur(i.p) })) }] : [];
+          }),
+          reprise: c.base.mig ? { detail: `Data migration · ${nf(S.oeuvres)} artworks · ${S.sites} existing website${S.sites > 1 ? "s" : ""}`, montant: eur(c.base.mig) } : null,
+          abonnement: { detail: `${c.tier.n} plan · ${S.eng ? S.eng + "-month commitment" : "no commitment"} · core included`, montant: `${eur(c.base.sub)} / month` },
+          remise: S.disc ? `${S.disc}% discount applied to implementation, migration and subscription` : "",
+          totaux: [
+            { libelle: "Implementation", montant: eur(c.net.impl) },
+            { libelle: "Data migration", montant: eur(c.net.mig) },
+            { libelle: "Subscription, per month", montant: eur(c.net.sub) },
+            { libelle: "First year, all included", montant: eur(c.year) },
+          ],
+          notes: S.notes,
+        };
+        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: DEST, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, recap, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
         if (!r.ok) throw new Error(String(r.status));
         status(`Sent to ${DEST}, PDF attached.`, "ok"); return;
       } catch (e) { status("Sending from the server failed; the PDF has been downloaded and the e-mail opens instead.", "err"); }
