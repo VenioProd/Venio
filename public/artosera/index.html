@@ -5,7 +5,7 @@
 <meta name="description" content="Artosera, la plateforme de gestion et de sites pour galeries d’art, par Venio.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>Artosera by Venio</title>
+<title>Artosera · plateforme pour galeries d'art</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -38,9 +38,10 @@
   @media (max-width: 640px) { .wrap { padding: 0 18px; } .mock { padding: 8px 18px; } }
 
   header.top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--hair); }
-  .brand { font-family: var(--display); font-size: 24px; letter-spacing: -0.01em; }
-  .brand span { font-family: var(--body); font-size: 14px; color: var(--muted); letter-spacing: 0.01em; margin-left: 2px; }
-  .top nav { display: flex; gap: 22px; align-items: center; font-size: 14px; color: var(--muted); }
+  .brand { font-family: var(--display); font-size: 24px; letter-spacing: -0.01em; white-space: nowrap; flex: 0 0 auto; }
+  .brand span { font-family: var(--body); font-size: 14px; color: var(--muted); letter-spacing: 0.01em; margin-left: 2px; white-space: nowrap; }
+  @media (max-width: 420px) { .brand { font-size: 21px; } .brand span { font-size: 12.5px; } }
+  .top nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 18px; align-items: center; font-size: 13.5px; color: var(--muted); }
   .top nav a:hover { color: var(--ink); }
   .top nav .lnk { color: var(--green); text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
   .top nav .lnk:hover { color: var(--ink); }
@@ -48,7 +49,8 @@
   .btn:hover { background: var(--ink); border-color: var(--ink); }
   .btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
   .btn.ghost:hover { background: var(--ink); color: var(--ground); }
-  @media (max-width: 760px) { .top nav .hide { display: none; } }
+  @media (max-width: 760px) { .top nav .hide { display: none; } .top nav .devis-lnk { display: inline; } }
+  @media (max-width: 420px) { .top nav .devis-lnk { display: none; } }
 
   /* Ouverture */
   .hero { padding: 72px 0 40px; display: grid; grid-template-columns: 1fr; gap: 24px; }
@@ -105,13 +107,25 @@
   .phone { position: absolute; right: 0; bottom: -2%; width: 11.5%; }
   .phone .screen { aspect-ratio: 9 / 19; border: 7px solid #1c1c1f; border-radius: 18px; box-shadow: -12px 10px 26px rgba(20,23,26,0.18); }
   .phone .notch { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 34%; height: 5px; background: #1c1c1f; border-radius: 0 0 5px 5px; z-index: 2; }
-  @media (max-width: 900px) { .laptop { width: 100%; } .tablet, .phone { display: none; } }
+  .dev-shot { display: none; }
+  .cap .narrow { display: none; }
+  .cap-lnk { white-space: nowrap; border-bottom: 1px solid var(--hair); }
+  @media (max-width: 900px) {
+    .laptop { width: 100%; }
+    .tablet, .phone { display: none; }
+  }
+  @media (max-width: 680px) {
+    .laptop { display: none; }
+    .dev-shot { display: block; width: 100%; height: auto; max-width: 100%; border: 1px solid var(--hair); }
+    .cap .wide { display: none; }
+    .cap .narrow { display: inline; }
+  }
 
   /* Modèles de sites */
   .mocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 28px; }
   .mock-card { display: block; border: 1px solid var(--hair); background: var(--surface); }
   .mock-card .frame { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--surface); border-bottom: 1px solid var(--hair); }
-  .mock-card iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .mock-card .frame img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
   .mock-card .cartel { padding: 14px 16px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   .mock-card .cartel b { font-family: var(--display); font-weight: 400; font-size: 21px; display: block; }
   .mock-card .cartel span.d { font-size: 14px; color: var(--muted); }
@@ -161,23 +175,28 @@
   .cta p { max-width: 56ch; font-size: 18px; margin: 0 0 26px; opacity: 0.9; }
   .cta .btn { background: var(--ground); color: var(--ink); border-color: var(--ground); }
   .cta .btn:hover { background: var(--green); color: var(--green-ink); border-color: var(--green); }
+  .cta .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  .cta .btn.ghost { background: transparent; color: var(--ground); border-color: rgba(250,247,247,0.5); }
+  .cta .btn.ghost:hover { background: var(--ground); color: var(--ink); border-color: var(--ground); }
   .cta .mail { font-family: var(--mono); font-size: 13px; opacity: 0.8; margin-top: 18px; display: block; }
+  .cta .mail a { border-bottom: 1px solid rgba(250,247,247,0.4); }
 
   footer { padding: 28px 0 60px; font-size: 13.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
   footer a { border-bottom: 1px solid var(--hair); }
 </style>
 </head>
 <body>
-
-<div class="wrap">
+<div class="wrap" id="haut">
 
   <header class="top">
-    <a class="brand" href="https://venio.paris">Artosera <span>by Venio</span></a>
+    <a class="brand" href="#haut">Artosera <span>par Venio</span></a>
     <nav>
-      <a class="hide" href="#solide">Pérenne</a>
-      <a class="hide" href="#perennite">Pérennité</a>
+      <a class="hide" href="#solide">Ce que pérenne veut dire</a>
       <a class="hide" href="#sites">Modèles de site</a>
-      <a class="hide" href="#references">Références</a>
+      <a class="hide" href="#perennite">Engagements</a>
+      <a class="hide" href="#qui">Qui construit</a>
+      <a class="hide" href="#demarrer">Démarrer</a>
+      <a class="hide devis-lnk" href="/artosera/devis">Composer un devis</a>
       <a class="lnk" href="#demo">Demander une démonstration</a>
     </nav>
   </header>
@@ -186,13 +205,14 @@
     <div>
       <p class="eyebrow">Artosera · une plateforme construite par Venio</p>
       <h1>Un outil pérenne, qui vous appartient.</h1>
-      <p class="lede"><b>Artosera gère votre galerie : les œuvres, les contacts, les ventes, le site et les contrats.</b> Voici qui le construit et ce qui vous protège.</p>
+      <p class="lede"><b>Artosera gère votre galerie : les œuvres, les contacts, les ventes, le site et les contrats.</b> Voici ce qui vous protège, et qui le construit.</p>
     </div>
     <div class="devices">
       <div class="dev laptop">
         <div class="screen" data-w="1440"><iframe src="/artosera/sites/bureau.html" title="Le bureau Artosera sur ordinateur" tabindex="-1" scrolling="no"></iframe></div>
         <div class="foot"><i></i></div>
       </div>
+      <img class="dev-shot" src="/artosera/img/sites/bureau-detail.jpg" alt="La fiche d'une œuvre dans le bureau Artosera : technique, dimensions, signature, prix public et prix artiste, historique." width="780" height="900" loading="lazy">
       <div class="dev tablet">
         <div class="screen" data-w="820"><iframe src="/artosera/sites/1-sainte-avoye.html" title="Un site de galerie sur tablette" tabindex="-1" scrolling="no"></iframe></div>
       </div>
@@ -201,7 +221,7 @@
         <div class="screen" data-w="390"><iframe src="/artosera/sites/3-studio-ravel.html" title="Un site de galerie sur téléphone" tabindex="-1" scrolling="no"></iframe></div>
       </div>
     </div>
-    <p class="cap">Le bureau sur ordinateur, le site de la galerie sur tablette et sur téléphone. Un seul outil.</p>
+    <p class="cap"><span class="wide">Le bureau sur ordinateur, le site de la galerie sur tablette et sur téléphone. Un seul outil.</span><span class="narrow">La fiche d'une œuvre dans le bureau. Le même outil publie le site de la galerie.</span> <a class="cap-lnk" href="/artosera/sites/bureau.html" target="_blank" rel="noopener">Ouvrir le bureau en grand ↗</a></p>
   </section>
 
   <section class="s" id="constat">
@@ -224,7 +244,7 @@
         <div class="col">
           <div class="k">Éprouvé</div>
           <h3>Déjà utilisé au quotidien</h3>
-          <p>Artosera repose sur une base qui fait déjà tourner plusieurs établissements, chacun avec ses propres données. Ce n'est pas un premier essai.</p>
+          <p>Artosera repose sur une base qui fait déjà tourner des écoles et des agences, chacune avec ses propres données, ses utilisateurs et ses documents. Ce n'est pas un premier essai.</p>
         </div>
         <div class="col">
           <div class="k">Conforme</div>
@@ -239,11 +259,11 @@
       </div>
       <div class="figs">
         <div class="fig"><div class="v">114</div><div class="l">fonctions déjà en service</div></div>
-        <div class="fig"><div class="v">3 400</div><div class="l">vérifications automatiques</div></div>
-        <div class="fig"><div class="v">100</div><div class="l">étapes livrées</div></div>
-        <div class="fig"><div class="v">8 400</div><div class="l">améliorations depuis 2025</div></div>
+        <div class="fig"><div class="v">3 400</div><div class="l">contrôles automatiques à chaque mise à jour</div></div>
+        <div class="fig"><div class="v">100</div><div class="l">chantiers livrés et recettés</div></div>
+        <div class="fig"><div class="v">8 400</div><div class="l">corrections et améliorations livrées</div></div>
       </div>
-      <p class="figs-cap">Chiffres au 12 septembre 2026, arrondis. Nous les montrons sur rendez-vous.</p>
+      <p class="figs-cap">Relevés le 12 septembre 2026 dans nos dépôts de code, arrondis. Nous vous les montrons en direct sur rendez-vous.</p>
     </div>
   </section>
 
@@ -255,27 +275,27 @@
       <div class="prose"><p>Une œuvre ajoutée dans le bureau apparaît sur le site. Rien n'est saisi deux fois. Voici six galeries fictives, chacune avec son style. Le vôtre part de l'un d'eux, ou se dessine sur mesure.</p></div>
       <div class="mocks">
         <a class="mock-card" href="/artosera/sites/1-sainte-avoye.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/1-sainte-avoye.html" title="Modèle Galerie Sainte-Avoye" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/1-sainte-avoye.jpg" alt="Page d'accueil du modèle Sainte-Avoye : cube blanc, trois grandes peintures." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Galerie Sainte-Avoye</b><span class="d">Paris · art contemporain</span></div><span class="go">Voir ↗</span></div>
         </a>
         <a class="mock-card" href="/artosera/sites/2-maison-vallier.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/2-maison-vallier.html" title="Modèle Maison Vallier" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/2-maison-vallier.jpg" alt="Page d'accueil du modèle Maison Vallier : mise en page d'imprimé, ivoire et bleu de Prusse." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Maison Vallier</b><span class="d">Paris · art moderne</span></div><span class="go">Voir ↗</span></div>
         </a>
         <a class="mock-card" href="/artosera/sites/3-studio-ravel.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/3-studio-ravel.html" title="Modèle Studio Ravel" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/3-studio-ravel.jpg" alt="Page d'accueil du modèle Studio Ravel : aplat vermillon, exposition en cours." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Studio Ravel</b><span class="d">Marseille · jeune création</span></div><span class="go">Voir ↗</span></div>
         </a>
         <a class="mock-card" href="/artosera/sites/4-kosei.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/4-kosei.html" title="Modèle Galerie Kosei" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/4-kosei.jpg" alt="Page d'accueil du modèle Kosei : vide, serif fin, céramique." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Galerie Kosei</b><span class="d">Paris · arts du Japon</span></div><span class="go">Voir ↗</span></div>
         </a>
         <a class="mock-card" href="/artosera/sites/5-brun-et-fils.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/5-brun-et-fils.html" title="Modèle Brun &amp; Fils" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/5-brun-et-fils.jpg" alt="Page d'accueil du modèle Brun &amp; Fils : fond graphite, photographie en réserve." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Brun &amp; Fils</b><span class="d">Lyon · photographie</span></div><span class="go">Voir ↗</span></div>
         </a>
         <a class="mock-card" href="/artosera/sites/6-nova-kunst.html" target="_blank" rel="noopener">
-          <div class="frame"><iframe src="/artosera/sites/6-nova-kunst.html" title="Modèle Nova Kunst" loading="lazy" tabindex="-1" scrolling="no" data-w="1400"></iframe></div>
+          <div class="frame"><img src="/artosera/img/sites/6-nova-kunst.jpg" alt="Page d'accueil du modèle Nova Kunst : grille suisse, exposition en cours et œuvres disponibles." width="900" height="675" loading="lazy" decoding="async"></div>
           <div class="cartel"><div><b>Nova Kunst</b><span class="d">Bruxelles et Anvers · contemporain</span></div><span class="go">Voir ↗</span></div>
         </a>
       </div>
@@ -311,7 +331,7 @@
           <div class="n">04</div>
           <h3>Les accès sont contrôlés</h3>
           <p class="m"><b>Comment</b>Un compte par personne, une connexion sécurisée, des droits selon le rôle. Chaque ouverture d'un contrat est enregistrée.</p>
-          <ul><li>Historique gardé douze mois</li><li>Le prix artiste n'est vu que par ceux qui doivent le voir</li><li>Chaque galerie d'un groupe reste séparée</li></ul>
+          <ul><li>Historique gardé douze mois</li><li>Le prix artiste n'est vu que par ceux qui doivent le voir</li><li>Les documents sensibles sont cloisonnés par rôle</li></ul>
         </div>
         <div class="eng">
           <div class="n">05</div>
@@ -323,11 +343,14 @@
     </div>
   </section>
 
-  <section class="s" id="references">
-    <div class="idx">V<small>Déjà construit</small></div>
+  <section class="s" id="qui">
+    <div class="idx">V<small>Qui construit Artosera</small></div>
     <div>
-      <h2>Ce que nous avons déjà construit.</h2>
-      <div class="prose"><p>Chaque lien s'ouvre. Une démonstration d'Artosera se prend sur rendez-vous.</p></div>
+      <h2>Qui construit Artosera, et ce qui tourne déjà.</h2>
+      <div class="prose">
+        <p>Venio est un studio parisien. Artosera est construit par l'équipe qui a livré les plateformes ci-dessous : chaque lien s'ouvre, elles sont en service aujourd'hui.</p>
+        <p class="strong">Aucune galerie n'utilise encore Artosera. La vôtre serait la première, et c'est exactement pourquoi tout ce qui précède est écrit au contrat plutôt que promis à l'oral.</p>
+      </div>
       <div class="refs">
         <a class="ref" href="https://app.arr0w.app" target="_blank" rel="noopener"><span class="nm">Arrow</span><span class="d">Gestion complète de plusieurs écoles privées : élèves, contacts, factures, documents.</span><span class="go">Voir ↗</span></a>
         <a class="ref" href="https://yumicv.com" target="_blank" rel="noopener"><span class="nm">Yumi</span><span class="d">Service en ligne de création de CV.</span><span class="go">Voir ↗</span></a>
@@ -335,6 +358,7 @@
         <a class="ref" href="https://decisio.paris" target="_blank" rel="noopener"><span class="nm">Decisio</span><span class="d">Site d'une agence de communication juridique.</span><span class="go">Voir ↗</span></a>
         <a class="ref" href="https://venio.paris" target="_blank" rel="noopener"><span class="nm">Venio</span><span class="d">Le site et l'espace client du studio : devis, suivi, documents, factures.</span><span class="go">Voir ↗</span></a>
       </div>
+      <p class="cap"><a class="cap-lnk" href="/artosera/preuves">Le fondateur, la méthode et les chiffres en détail ↗</a></p>
     </div>
   </section>
 
@@ -343,11 +367,12 @@
     <div>
       <h2>Treize semaines, du premier échange à la mise en service.</h2>
       <div class="steps">
-        <div class="step"><div class="w">Jour 1</div><h3>Démonstration</h3><p>Vingt minutes, sur vos propres œuvres. Vous repartez avec un devis.</p></div>
+        <div class="step"><div class="w">Jour 1</div><h3>Démonstration</h3><p>Vingt minutes, sur vos propres œuvres. Vous repartez avec un devis chiffré, composé avec vous.</p></div>
         <div class="step"><div class="w">Semaine 1</div><h3>Cadrage</h3><p>Un atelier de deux heures. On fixe ensemble ce qui sera fait.</p></div>
         <div class="step"><div class="w">Semaines 2 à 8</div><h3>Construction et démo</h3><p>L'outil prend forme avec vos vraies œuvres. Vous le voyez en semaine 8.</p></div>
-        <div class="step"><div class="w">Semaines 9 à 13</div><h3>Finalisation et bascule</h3><p>On reprend vos données, on met en service, vous quittez l'ancien fournisseur. Puis une semaine par galerie.</p></div>
+        <div class="step"><div class="w">Semaines 9 à 13</div><h3>Finalisation et bascule</h3><p>On reprend vos données, on met en service, vous quittez l'ancien fournisseur.</p></div>
       </div>
+      <p class="cap">Vous pouvez composer votre devis dès maintenant : cochez ce dont la galerie a besoin, le montant s'affiche. <a class="cap-lnk" href="/artosera/devis">Composer votre devis ↗</a></p>
     </div>
   </section>
 
@@ -357,8 +382,11 @@
   <div class="wrap">
     <h2>Voyons votre galerie dans Artosera.</h2>
     <p>Vingt minutes, sur vos propres œuvres. Vous repartez avec un devis et nos engagements écrits.</p>
-    <a class="btn" href="mailto:contact@venio.paris?subject=Artosera%20%C2%B7%20d%C3%A9monstration">Demander une démonstration</a>
-    <span class="mail">contact@venio.paris · Paris</span>
+    <div class="btns">
+      <a class="btn" href="mailto:contact@venio.paris?subject=Artosera%20%C2%B7%20d%C3%A9monstration">Demander une démonstration</a>
+      <a class="btn ghost" href="/artosera/devis">Composer votre devis</a>
+    </div>
+    <span class="mail">contact@venio.paris · Paris · <a href="/artosera/quote">English version</a></span>
   </div>
 </section>
 

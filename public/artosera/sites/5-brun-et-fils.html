@@ -571,7 +571,20 @@
     .footer-grid{ grid-template-columns:1fr; }
     .agenda-item{ padding:28px 22px; }
   }
+
+  /* Bandeau de retour — visible seulement quand la page est ouverte seule, jamais en vignette */
+  .artosera-back { display: none; }
+  html.artosera-standalone .artosera-back { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px;
+    position: sticky; top: 0; z-index: 9999; background: #17140F; color: #FBFAF8;
+    font-family: "IBM Plex Mono", Menlo, monospace; font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 9px 20px; text-decoration: none; }
+  html.artosera-standalone .artosera-back b { font-weight: 500; color: #FBFAF8; }
+  html.artosera-standalone .artosera-back span { opacity: 0.66; }
+  html.artosera-standalone .artosera-back u { margin-left: auto; text-decoration: underline; text-underline-offset: 3px; }
+  @media (max-width: 640px) { html.artosera-standalone .artosera-back u { margin-left: 0; } }
 </style>
+<a class="artosera-back" href="/artosera#sites"><b>Artosera</b><span>Modèle de site de galerie — contenu fictif</span><u>Revenir à la présentation ↗</u></a>
+<script>if (window.top === window.self) document.documentElement.classList.add('artosera-standalone');</script>
 
 <header class="site-header">
   <div class="header-row wrap">
