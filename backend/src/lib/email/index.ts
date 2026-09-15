@@ -23,3 +23,4 @@ export {
 export { sendWeeklyReportEmail } from './templates/report.js'
 export { sendTicketReplyEmail } from './templates/ticket.js'
 export { sendContactReceiptEmail } from './templates/contact.js'
+export { sendArtoseraDevisEmail, artoseraDevisBcc } from './templates/artosera.js'
