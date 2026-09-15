@@ -1,0 +1,664 @@
+<meta charset="utf-8">
+<title>Galerie Sainte-Avoye</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blanc:      #ffffff;
+    --encre:      #111110;
+    --filet:      #e2e1dc;
+    --gris:       #85847d;
+    --outremer:   #1c2a66;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--blanc);
+    color:var(--encre);
+    font-family:"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img{display:block;max-width:100%;height:auto;}
+
+  a{color:inherit;text-decoration:none;}
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible{
+    outline:2px solid var(--encre);
+    outline-offset:3px;
+  }
+
+  h1,h2,h3{
+    font-family:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight:500;
+    margin:0;
+  }
+
+  .mono{
+    font-family:"IBM Plex Mono", "Courier New", monospace;
+    font-weight:400;
+  }
+
+  .wrap{
+    max-width:1320px;
+    margin:0 auto;
+    padding:0 40px;
+  }
+
+  .intertitre{
+    font-family:"Familjen Grotesk", sans-serif;
+    font-size:12px;
+    font-weight:500;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--gris);
+  }
+
+  .hairline{border:none;border-top:1px solid var(--filet);margin:0;}
+
+  /* ---------- header ---------- */
+  header.site-header{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:var(--blanc);
+    border-bottom:1px solid var(--filet);
+  }
+  .header-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    padding:22px 40px;
+  }
+  .logotype{
+    font-family:"Familjen Grotesk", sans-serif;
+    font-weight:600;
+    font-size:19px;
+    letter-spacing:0.04em;
+    white-space:nowrap;
+  }
+  nav.primary-nav{
+    display:flex;
+    gap:30px;
+    flex-wrap:wrap;
+  }
+  nav.primary-nav a{
+    font-size:13px;
+    letter-spacing:0.04em;
+    color:var(--encre);
+    padding:4px 0;
+    border-bottom:1px solid transparent;
+  }
+  nav.primary-nav a:hover{border-bottom-color:var(--encre);}
+  .lang-select{
+    display:flex;
+    gap:8px;
+    font-size:12px;
+    letter-spacing:0.06em;
+    flex-shrink:0;
+  }
+  .lang-select button{
+    background:none;
+    border:none;
+    padding:2px 3px;
+    font:inherit;
+    font-family:"IBM Plex Mono", monospace;
+    color:var(--gris);
+    cursor:pointer;
+  }
+  .lang-select button[aria-pressed="true"]{color:var(--encre);}
+  .lang-select span{color:var(--filet);}
+
+  /* ---------- opener ---------- */
+  .opener{width:100%;}
+  .opener img{width:100%;height:auto;}
+
+  /* ---------- generic section spacing ---------- */
+  section{padding:96px 0;}
+  section.tight{padding:72px 0;}
+
+  /* ---------- exposition en cours ---------- */
+  .expo-courante{
+    display:grid;
+    grid-template-columns:0.9fr 1.1fr;
+    gap:72px;
+    align-items:start;
+  }
+  .expo-courante .visuel img{width:100%;height:auto;}
+  .expo-courante .texte{padding-top:6px;}
+  .expo-titre{
+    font-family:"Familjen Grotesk", sans-serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:34px;
+    line-height:1.2;
+    margin:18px 0 6px;
+  }
+  .expo-artiste{
+    font-size:14px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .expo-meta{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:13px;
+    color:var(--gris);
+    margin-top:10px;
+  }
+  .expo-phrase{
+    max-width:46ch;
+    margin-top:26px;
+    font-size:16px;
+  }
+  .voir-expo{
+    display:inline-block;
+    margin-top:30px;
+    font-size:13px;
+    letter-spacing:0.05em;
+    color:var(--outremer);
+    border-bottom:1px solid var(--outremer);
+    padding-bottom:2px;
+  }
+  .voir-expo:hover{opacity:0.7;}
+
+  /* ---------- oeuvres ---------- */
+  .oeuvres-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    column-gap:48px;
+    row-gap:64px;
+  }
+  .piece{
+    display:flex;
+    flex-direction:column;
+  }
+  .piece-visuel{
+    height:300px;
+    display:flex;
+    align-items:flex-end;
+    border-bottom:1px solid var(--encre);
+  }
+  .piece-aplat{
+    width:100%;
+    background:#f2f1ec;
+  }
+  .cartel{
+    padding-top:16px;
+  }
+  .cartel .artiste{
+    font-size:14px;
+  }
+  .cartel .titre{
+    font-style:italic;
+    font-size:14px;
+  }
+  .cartel .details{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    color:var(--gris);
+    line-height:1.7;
+    margin-top:8px;
+  }
+  .cartel .prix{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:13px;
+    color:var(--encre);
+    margin-top:10px;
+  }
+  .cartel .demander{
+    display:inline-block;
+    margin-top:12px;
+    font-size:12px;
+    letter-spacing:0.03em;
+    border-bottom:1px solid var(--filet);
+  }
+  .cartel .demander:hover{border-bottom-color:var(--encre);}
+
+  /* ---------- artistes ---------- */
+  .artistes-liste{
+    columns:3;
+    column-gap:48px;
+  }
+  .artiste-entree{
+    break-inside:avoid;
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 0;
+    border-bottom:1px solid var(--filet);
+  }
+  .artiste-entree .nom{font-size:16px;}
+  .artiste-entree .discipline{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--gris);
+    white-space:nowrap;
+    padding-top:3px;
+  }
+
+  /* ---------- agenda ---------- */
+  .agenda-liste{display:flex;flex-direction:column;}
+  .agenda-entree{
+    display:grid;
+    grid-template-columns:160px 1fr auto;
+    gap:24px;
+    align-items:baseline;
+    padding:22px 0;
+    border-bottom:1px solid var(--filet);
+  }
+  .agenda-entree:first-child{border-top:1px solid var(--filet);}
+  .agenda-date{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    color:var(--gris);
+  }
+  .agenda-titre{font-size:16px;}
+  .agenda-titre .type{
+    display:block;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--gris);
+    margin-bottom:5px;
+  }
+  .agenda-lieu{
+    font-size:13px;
+    color:var(--gris);
+    text-align:right;
+  }
+
+  /* ---------- archives ---------- */
+  .archives-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1.3fr;
+    gap:56px;
+    align-items:start;
+  }
+  .archives-images{display:grid;gap:16px;}
+  .archives-images img{width:100%;height:auto;}
+  .archives-liste{font-size:14px;}
+  .archives-liste .an{
+    font-family:"IBM Plex Mono", monospace;
+    color:var(--gris);
+    font-size:12px;
+    margin-right:14px;
+  }
+  .archives-liste li{
+    display:flex;
+    gap:0;
+    padding:11px 0;
+    border-bottom:1px solid var(--filet);
+    list-style:none;
+  }
+  .archives-liste ul{margin:0;padding:0;}
+  .archives-intro{
+    max-width:38ch;
+    margin-bottom:28px;
+    color:var(--gris);
+  }
+
+  /* ---------- newsletter ---------- */
+  .newsletter{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:32px;
+    flex-wrap:wrap;
+    border-top:1px solid var(--filet);
+    border-bottom:1px solid var(--filet);
+    padding:48px 0;
+  }
+  .newsletter p{margin:0;font-size:15px;max-width:34ch;}
+  .newsletter form{
+    display:flex;
+    gap:0;
+    flex:1;
+    min-width:260px;
+    max-width:440px;
+  }
+  .newsletter input[type="email"]{
+    flex:1;
+    border:none;
+    border-bottom:1px solid var(--encre);
+    background:none;
+    font:inherit;
+    font-size:14px;
+    padding:8px 4px;
+    color:var(--encre);
+  }
+  .newsletter input[type="email"]::placeholder{color:var(--gris);}
+  .newsletter button{
+    background:var(--encre);
+    color:var(--blanc);
+    border:none;
+    padding:0 22px;
+    font-family:"Familjen Grotesk", sans-serif;
+    font-size:13px;
+    letter-spacing:0.04em;
+    cursor:pointer;
+  }
+  .newsletter button:hover{opacity:0.85;}
+
+  /* ---------- footer ---------- */
+  footer{padding:64px 0 40px;}
+  .footer-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:32px;
+  }
+  .footer-grid .logotype{margin-bottom:6px;}
+  .footer-col .intertitre{margin-bottom:14px;}
+  .footer-col p, .footer-col a{
+    display:block;
+    font-size:14px;
+    margin:0 0 6px;
+    color:var(--encre);
+  }
+  .footer-col a:hover{color:var(--gris);}
+  .footer-bas{
+    margin-top:56px;
+    padding-top:20px;
+    border-top:1px solid var(--filet);
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    font-size:12px;
+    color:var(--gris);
+  }
+  .demo-mention{
+    text-align:center;
+    font-size:10px;
+    color:var(--filet);
+    margin-top:28px;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1080px){
+    .wrap{padding:0 28px;}
+    .header-row{padding:18px 24px;}
+    .expo-courante{grid-template-columns:1fr;gap:36px;}
+    .archives-grid{grid-template-columns:1fr 1fr;}
+    .archives-grid .archives-liste{grid-column:1 / -1;}
+    .footer-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width:760px){
+    .oeuvres-grid{grid-template-columns:1fr 1fr;row-gap:44px;column-gap:28px;}
+    .artistes-liste{columns:2;}
+    .agenda-entree{grid-template-columns:1fr;gap:6px;}
+    .agenda-lieu{text-align:left;}
+    .archives-grid{grid-template-columns:1fr;}
+    .footer-grid{grid-template-columns:1fr 1fr;}
+    section{padding:64px 0;}
+  }
+  @media (max-width:520px){
+    .wrap{padding:0 20px;}
+    .header-row{padding:16px 20px;flex-wrap:wrap;}
+    nav.primary-nav{order:3;width:100%;gap:18px;padding-top:6px;}
+    .oeuvres-grid{grid-template-columns:1fr;}
+    .piece-visuel{height:240px;}
+    .artistes-liste{columns:1;}
+    .footer-grid{grid-template-columns:1fr 1fr;gap:28px;}
+    .expo-titre{font-size:26px;}
+    .newsletter{flex-direction:column;align-items:stretch;}
+  }
+</style>
+
+<header class="site-header">
+  <div class="header-row">
+    <div class="logotype">GALERIE SAINTE-AVOYE</div>
+    <nav class="primary-nav" aria-label="Navigation principale">
+      <a href="#artistes">Artistes</a>
+      <a href="#expositions">Expositions</a>
+      <a href="#agenda">Foires</a>
+      <a href="#archives">Publications</a>
+      <a href="#la-galerie">La galerie</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="lang-select" role="group" aria-label="Langue">
+      <button type="button" aria-pressed="true">FR</button>
+      <span aria-hidden="true">/</span>
+      <button type="button" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="opener">
+  <img src="../img/galerie.jpg" alt="Salle d'exposition de la galerie sous verrière, murs blancs et sol en béton ciré." width="2000" height="1341">
+</div>
+
+<main>
+
+  <section id="expositions" class="wrap">
+    <p class="intertitre">Exposition en cours</p>
+    <div class="expo-courante">
+      <div class="visuel">
+        <img src="../img/manipulation.jpg" alt="Mains gantées ajustant l'accrochage d'une œuvre avant le vernissage." width="1611" height="2000" loading="lazy">
+      </div>
+      <div class="texte">
+        <p class="expo-artiste">Hélène Marchetti</p>
+        <h2 class="expo-titre">Les Heures basses</h2>
+        <p class="expo-meta">4 septembre — 18 octobre 2026 · Galerie Sainte-Avoye, 14 rue Sainte-Avoye, Paris 3e</p>
+        <p class="expo-phrase">Onze toiles peintes cet hiver en Bourgogne, où la lumière décline avant d'avoir vraiment commencé — une peinture de fin de journée, retenue et sans emphase.</p>
+        <a class="voir-expo" href="#">Voir l'exposition</a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hairline">
+
+  <section class="wrap" aria-labelledby="oeuvres-titre">
+    <p class="intertitre" id="oeuvres-titre">Œuvres disponibles</p>
+    <div class="oeuvres-grid" style="margin-top:36px;">
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:140/110;background:#efeee8;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Hélène Marchetti</p>
+          <p class="titre">Les Heures basses n° 4</p>
+          <p class="details">2025 · huile sur toile<br>140 × 110 cm</p>
+          <p class="prix">18 000 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:38/42;background:#f4f2ec;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Yannick Sorel</p>
+          <p class="titre">Vasque cendrée</p>
+          <p class="details">2024 · grès émaillé<br>38 × 42 × 42 cm · pièce unique</p>
+          <p class="prix">6 500 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:90/70;background:#f0efe9;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Agathe Rouvière</p>
+          <p class="titre">Sans titre (Marne)</p>
+          <p class="details">2023 · encre sur papier marouflé<br>90 × 70 cm</p>
+          <p class="prix">4 800 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:26/112;background:#eeece5;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Thomas Bellec</p>
+          <p class="titre">Colonne III</p>
+          <p class="details">2025 · grès chamotté<br>112 × 26 × 26 cm · pièce unique</p>
+          <p class="prix">9 200 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:200/150;background:#f2f1ec;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Elena Kowalska</p>
+          <p class="titre">Intérieur nuit</p>
+          <p class="details">2024 · huile sur toile<br>200 × 150 cm</p>
+          <p class="prix">24 000 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:34/30;background:#f5f3ee;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Noor Haddad</p>
+          <p class="titre">Jarre fendue</p>
+          <p class="details">2025 · porcelaine et or<br>34 × 30 × 30 cm · édition de 5 + 2 EA, ex. 2/5</p>
+          <p class="prix">7 400 €</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+      <article class="piece">
+        <div class="piece-visuel"><div class="piece-aplat" style="aspect-ratio:100/81;background:#efeee8;"></div></div>
+        <div class="cartel">
+          <p class="artiste">Frédéric Lantz</p>
+          <p class="titre">Talus</p>
+          <p class="details">2022 · acrylique sur toile<br>100 × 81 cm</p>
+          <p class="prix">Prix sur demande</p>
+          <a class="demander" href="#contact">Demander le dossier</a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <hr class="hairline">
+
+  <section id="artistes" class="wrap">
+    <p class="intertitre">Artistes représentés</p>
+    <div class="artistes-liste" style="margin-top:36px;">
+      <div class="artiste-entree"><span class="nom">Hélène Marchetti</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Yannick Sorel</span><span class="discipline">Céramique</span></div>
+      <div class="artiste-entree"><span class="nom">Agathe Rouvière</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Thomas Bellec</span><span class="discipline">Céramique</span></div>
+      <div class="artiste-entree"><span class="nom">Elena Kowalska</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Marc-Antoine Feugère</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Noor Haddad</span><span class="discipline">Céramique</span></div>
+      <div class="artiste-entree"><span class="nom">Julien Preira</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Camille Ostrowski</span><span class="discipline">Céramique</span></div>
+      <div class="artiste-entree"><span class="nom">Frédéric Lantz</span><span class="discipline">Peinture</span></div>
+      <div class="artiste-entree"><span class="nom">Sofia Brandt</span><span class="discipline">Céramique</span></div>
+      <div class="artiste-entree"><span class="nom">Paul-Émile Ducros</span><span class="discipline">Peinture</span></div>
+    </div>
+  </section>
+
+  <hr class="hairline">
+
+  <section id="agenda" class="wrap">
+    <p class="intertitre">Agenda</p>
+    <div class="agenda-liste" style="margin-top:36px;">
+      <div class="agenda-entree">
+        <p class="agenda-date">14 nov. — 20 déc. 2026</p>
+        <p class="agenda-titre"><span class="type">Exposition personnelle</span>Thomas Bellec — Terre cuite, terre battue</p>
+        <p class="agenda-lieu">Galerie Sainte-Avoye, Paris</p>
+      </div>
+      <div class="agenda-entree">
+        <p class="agenda-date">22 — 26 oct. 2026</p>
+        <p class="agenda-titre"><span class="type">Foire</span>Art Basel Paris</p>
+        <p class="agenda-lieu">Grand Palais, Paris — stand C14</p>
+      </div>
+      <div class="agenda-entree">
+        <p class="agenda-date">16 jan. — 21 fév. 2027</p>
+        <p class="agenda-titre"><span class="type">Exposition collective</span>Trois peintres, une lumière</p>
+        <p class="agenda-lieu">Galerie Sainte-Avoye, Paris</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hairline">
+
+  <section id="archives" class="wrap">
+    <p class="intertitre">Archives</p>
+    <div class="archives-grid" style="margin-top:36px;">
+      <div class="archives-images">
+        <img src="../img/verso.jpg" alt="Dos d'une toile entreposée, châssis et étiquette visibles." width="1611" height="2000" loading="lazy">
+      </div>
+      <div class="archives-images">
+        <img src="../img/reserve.jpg" alt="Réserve de la galerie, œuvres rangées sur des racks métalliques." width="1611" height="2000" loading="lazy">
+      </div>
+      <div class="archives-liste">
+        <p class="archives-intro">Depuis 1998, la galerie a présenté plus de quatre-vingts expositions. Un choix, par décennies.</p>
+        <ul>
+          <li><span class="an">2024</span> Elena Kowalska — Basse saison</li>
+          <li><span class="an">2019</span> Marc-Antoine Feugère — Rétrospective (1999–2019)</li>
+          <li><span class="an">2011</span> Yannick Sorel — Premières terres</li>
+          <li><span class="an">2003</span> Frédéric Lantz — Talus et lisières</li>
+          <li><span class="an">1998</span> Exposition inaugurale — huit peintres, une galerie</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap tight">
+    <div class="newsletter">
+      <p>Recevoir les annonces d'expositions et les nouvelles acquisitions, quelques fois par an.</p>
+      <form action="#" method="post">
+        <label for="newsletter-email" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Adresse e-mail</label>
+        <input id="newsletter-email" type="email" name="email" placeholder="Adresse e-mail" required>
+        <button type="submit">S'inscrire</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer id="la-galerie">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="logotype">GALERIE SAINTE-AVOYE</div>
+        <p style="color:var(--gris);margin-top:10px;">Art contemporain — peinture et céramique. Depuis 1998.</p>
+      </div>
+      <div class="footer-col" id="contact">
+        <p class="intertitre">Adresse</p>
+        <p>14 rue Sainte-Avoye</p>
+        <p>75003 Paris</p>
+        <p style="margin-top:14px;">Mar. — sam., 11h — 19h</p>
+      </div>
+      <div class="footer-col">
+        <p class="intertitre">Contact</p>
+        <a href="tel:+33142780014">+33 1 42 78 00 14</a>
+        <a href="mailto:contact@galerie-sainte-avoye.fr">contact@galerie-sainte-avoye.fr</a>
+      </div>
+      <div class="footer-col">
+        <p class="intertitre">Suivre</p>
+        <a href="#">Instagram</a>
+        <a href="#">Mentions légales</a>
+      </div>
+    </div>
+    <div class="footer-bas">
+      <span>© 2026 Galerie Sainte-Avoye</span>
+      <span>Membre du Comité professionnel des galeries d'art</span>
+    </div>
+    <p class="demo-mention">Modèle de démonstration Artosera · galerie fictive</p>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.lang-select button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.lang-select button').forEach(function(b){ b.setAttribute('aria-pressed','false'); });
+      btn.setAttribute('aria-pressed','true');
+    });
+  });
+</script>

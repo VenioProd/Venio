@@ -1,0 +1,1041 @@
+<meta charset="utf-8">
+<title>Œuvres — Galerie Sainte-Avoye</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ Jetons — thème clair (racine nue) ============ */
+  :root{
+    --paper:        #eef0e9;
+    --paper-raised: #f7f7f1;
+    --paper-sunken: #e6e8df;
+    --ink:          #1c1c16;
+    --ink-soft:     #5c5a4d;
+    --ink-faint:    #928f7d;
+    --line:         #d7d4c4;
+    --line-strong:  #c1bda8;
+
+    --accent:          #2b4a3d;
+    --accent-strong:   #1c342a;
+    --accent-contrast: #f4f2e6;
+    --accent-soft:     rgba(43,74,61,0.10);
+    --accent-soft-2:   rgba(43,74,61,0.18);
+
+    --status-dispo:      #3c7e52;
+    --status-dispo-bg:   rgba(60,126,82,0.13);
+    --status-reservee:   #b87427;
+    --status-reservee-bg:rgba(184,116,39,0.14);
+    --status-vendue:     #ad4438;
+    --status-vendue-bg:  rgba(173,68,56,0.13);
+    --status-depot:      #7d7a68;
+    --status-depot-bg:   rgba(125,122,104,0.15);
+
+    --swatch-1: linear-gradient(150deg,#d0bd97,#93764f);
+    --swatch-2: linear-gradient(150deg,#bcc4ae,#78816a);
+    --swatch-3: linear-gradient(150deg,#cbb9a8,#9d8570);
+    --swatch-4: linear-gradient(150deg,#bac0c4,#82898f);
+    --swatch-5: linear-gradient(150deg,#cdbdc8,#93748c);
+    --swatch-6: linear-gradient(150deg,#b7b79c,#767657);
+
+    --shadow-panel: 0 1px 2px rgba(28,28,22,0.06), 0 8px 20px -14px rgba(28,28,22,0.25);
+
+    color-scheme: light;
+  }
+
+  /* ============ Jetons — thème sombre (système) ============ */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:        #14140f;
+      --paper-raised: #1b1b14;
+      --paper-sunken: #101008;
+      --ink:          #ece7d6;
+      --ink-soft:     #aba690;
+      --ink-faint:    #756f5c;
+      --line:         #35331f;
+      --line-strong:  #47432a;
+
+      --accent:          #6fa98a;
+      --accent-strong:   #8dc0a5;
+      --accent-contrast: #0e130f;
+      --accent-soft:     rgba(111,169,138,0.14);
+      --accent-soft-2:   rgba(111,169,138,0.24);
+
+      --status-dispo:      #5fb377;
+      --status-dispo-bg:   rgba(95,179,119,0.16);
+      --status-reservee:   #d99a4d;
+      --status-reservee-bg:rgba(217,154,77,0.16);
+      --status-vendue:     #d17b6c;
+      --status-vendue-bg:  rgba(209,123,108,0.16);
+      --status-depot:      #a5a08a;
+      --status-depot-bg:   rgba(165,160,138,0.16);
+
+      --swatch-1: linear-gradient(150deg,#4a3f28,#241d10);
+      --swatch-2: linear-gradient(150deg,#3a4034,#1a1e16);
+      --swatch-3: linear-gradient(150deg,#453a2e,#211a13);
+      --swatch-4: linear-gradient(150deg,#373d42,#191c1e);
+      --swatch-5: linear-gradient(150deg,#40323c,#1e161c);
+      --swatch-6: linear-gradient(150deg,#3a3a28,#1a1a10);
+
+      --shadow-panel: 0 1px 2px rgba(0,0,0,0.4), 0 10px 24px -16px rgba(0,0,0,0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:        #14140f;
+    --paper-raised: #1b1b14;
+    --paper-sunken: #101008;
+    --ink:          #ece7d6;
+    --ink-soft:     #aba690;
+    --ink-faint:    #756f5c;
+    --line:         #35331f;
+    --line-strong:  #47432a;
+
+    --accent:          #6fa98a;
+    --accent-strong:   #8dc0a5;
+    --accent-contrast: #0e130f;
+    --accent-soft:     rgba(111,169,138,0.14);
+    --accent-soft-2:   rgba(111,169,138,0.24);
+
+    --status-dispo:      #5fb377;
+    --status-dispo-bg:   rgba(95,179,119,0.16);
+    --status-reservee:   #d99a4d;
+    --status-reservee-bg:rgba(217,154,77,0.16);
+    --status-vendue:     #d17b6c;
+    --status-vendue-bg:  rgba(209,123,108,0.16);
+    --status-depot:      #a5a08a;
+    --status-depot-bg:   rgba(165,160,138,0.16);
+
+    --swatch-1: linear-gradient(150deg,#4a3f28,#241d10);
+    --swatch-2: linear-gradient(150deg,#3a4034,#1a1e16);
+    --swatch-3: linear-gradient(150deg,#453a2e,#211a13);
+    --swatch-4: linear-gradient(150deg,#373d42,#191c1e);
+    --swatch-5: linear-gradient(150deg,#40323c,#1e161c);
+    --swatch-6: linear-gradient(150deg,#3a3a28,#1a1a10);
+
+    --shadow-panel: 0 1px 2px rgba(0,0,0,0.4), 0 10px 24px -16px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+
+  /* ============ Base ============ */
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ background:var(--paper); }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum{ font-variant-numeric: tabular-nums; }
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+
+  .caps{
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    font-weight:600;
+    font-size:10.5px;
+    color:var(--ink-soft);
+  }
+
+  /* ============ Bandeau de maquette ============ */
+  .mockup-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px;
+    padding:7px 18px;
+    background:var(--ink);
+    color:var(--paper-raised);
+    font-size:11.5px;
+    letter-spacing:.02em;
+  }
+  .mockup-bar span{ opacity:.72; }
+  .mockup-bar a{
+    color:var(--paper-raised);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    white-space:nowrap;
+  }
+
+  /* ============ Coquille ============ */
+  .shell{ display:flex; align-items:stretch; min-height:calc(100vh - 34px); }
+
+  /* ---- Nav gauche, texte seul ---- */
+  .primary-nav{
+    width:194px;
+    flex:0 0 194px;
+    border-right:1px solid var(--line);
+    background:var(--paper-raised);
+    display:flex;
+    flex-direction:column;
+    padding:16px 14px;
+    gap:18px;
+  }
+  .gallery-switch{
+    display:flex; flex-direction:column; gap:2px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    border-radius:2px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .gallery-switch .name{ font-size:12.5px; font-weight:600; }
+  .gallery-switch .row{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .gallery-switch svg{ flex:none; color:var(--ink-faint); }
+
+  .nav-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .nav-list a{
+    display:block;
+    padding:6px 10px;
+    font-size:13px;
+    text-decoration:none;
+    color:var(--ink-soft);
+    border-left:2px solid transparent;
+    border-radius:0 2px 2px 0;
+  }
+  .nav-list a:hover{ color:var(--ink); background:var(--paper-sunken); }
+  .nav-list a.is-active{
+    color:var(--ink);
+    font-weight:600;
+    border-left-color:var(--accent);
+    background:var(--accent-soft);
+  }
+
+  .nav-foot{
+    margin-top:auto;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+  }
+  .nav-foot .who{ font-weight:600; }
+  .nav-foot .role{ color:var(--ink-faint); }
+
+  /* ---- Colonne principale ---- */
+  .main{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
+
+  /* ---- Barre haute ---- */
+  .topbar{
+    display:flex; align-items:center; gap:16px;
+    padding:10px 22px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper-raised);
+  }
+  .breadcrumb{ font-size:12px; color:var(--ink-faint); white-space:nowrap; }
+  .breadcrumb b{ color:var(--ink); font-weight:600; }
+
+  .search-field{
+    position:relative;
+    flex:1 1 auto;
+    max-width:420px;
+  }
+  .search-field svg{
+    position:absolute; left:9px; top:50%; transform:translateY(-50%);
+    color:var(--ink-faint); pointer-events:none;
+  }
+  .search-field input{
+    width:100%;
+    padding:6px 34px 6px 30px;
+    border:1px solid var(--line-strong);
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:2px;
+    font-size:12.5px;
+  }
+  .search-field input::placeholder{ color:var(--ink-faint); }
+  .kbd-hint{
+    position:absolute; right:7px; top:50%; transform:translateY(-50%);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-faint);
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    padding:1px 5px;
+    background:var(--paper-raised);
+  }
+
+  .topbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px;
+    font-size:12.5px;
+    font-weight:500;
+    border-radius:2px;
+    border:1px solid var(--line-strong);
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:hover{ background:var(--paper-sunken); }
+  .btn svg{ flex:none; }
+  .btn-primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:var(--accent-contrast);
+  }
+  .btn-primary:hover{ background:var(--accent-strong); border-color:var(--accent-strong); }
+  .btn .kbd-hint{ position:static; transform:none; margin-left:2px; }
+  .btn-primary .kbd-hint{ border-color:rgba(244,242,230,.4); color:inherit; background:transparent; }
+
+  /* ---- Bandeau de synthèse : ligne de compteurs ---- */
+  .summary-bar{
+    display:flex; align-items:stretch;
+    padding:0 22px;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .summary-item{
+    display:flex; align-items:baseline; gap:8px;
+    padding:11px 22px 11px 0;
+    margin-right:22px;
+    border-right:1px solid var(--line);
+  }
+  .summary-item:last-child{ border-right:none; margin-right:0; }
+  .summary-item .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:19px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-item.alert .num{ color:var(--status-reservee); }
+  .summary-item .lbl{ font-size:12px; color:var(--ink-soft); }
+
+  /* ---- Espace de travail ---- */
+  .workspace{ padding:16px 22px 30px; flex:1; }
+
+  .filters-row{
+    display:flex; flex-wrap:wrap; align-items:end; gap:14px;
+    padding-bottom:14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .field{ display:flex; flex-direction:column; gap:4px; }
+  .field label{ }
+  .field select{
+    font-size:12.5px;
+    padding:5px 8px;
+    border:1px solid var(--line-strong);
+    background:var(--paper-raised);
+    color:var(--ink);
+    border-radius:2px;
+    min-width:132px;
+  }
+  .field-toggle{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .field-toggle .caps{ order:2; }
+
+  /* switch (checkbox natif stylé) */
+  .switch{ position:relative; display:inline-flex; align-items:center; }
+  .switch input{
+    appearance:none; -webkit-appearance:none;
+    width:32px; height:18px;
+    margin:0;
+    border:1px solid var(--line-strong);
+    border-radius:20px;
+    background:var(--paper-sunken);
+    position:relative;
+    cursor:pointer;
+    transition:background .12s ease;
+  }
+  .switch input::after{
+    content:"";
+    position:absolute; top:1px; left:1px;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--paper-raised);
+    border:1px solid var(--line-strong);
+    transition:transform .12s ease;
+  }
+  .switch input:checked{ background:var(--accent); border-color:var(--accent); }
+  .switch input:checked::after{ transform:translateX(14px); border-color:var(--accent); background:var(--accent-contrast); }
+
+  /* ---- Répartition liste / détail ---- */
+  .content-split{ display:flex; gap:20px; align-items:flex-start; }
+  .list-panel{ flex:0 0 60%; min-width:0; max-width:60%; }
+  .detail-panel{ flex:1 1 auto; min-width:0; }
+
+  .list-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .list-count{ font-size:12px; color:var(--ink-soft); }
+  .list-nav-hint{ display:flex; gap:12px; font-size:11px; color:var(--ink-faint); }
+  .list-nav-hint kbd{
+    font-family:'IBM Plex Mono', monospace;
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    padding:0 4px;
+    margin-right:3px;
+    background:var(--paper-raised);
+  }
+
+  .table-scroll{
+    overflow-x:auto;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    box-shadow:var(--shadow-panel);
+  }
+  table.register{
+    width:100%;
+    min-width:980px;
+    border-collapse:collapse;
+    table-layout:fixed;
+  }
+  table.register col.c-thumb{ width:5%; }
+  table.register col.c-artist{ width:13%; }
+  table.register col.c-title{ width:12%; }
+  table.register col.c-year{ width:6%; }
+  table.register col.c-status{ width:11%; }
+  table.register col.c-price{ width:9%; }
+  table.register col.c-loc{ width:11%; }
+  table.register col.c-dim{ width:12%; }
+  table.register col.c-tech{ width:13%; }
+  table.register col.c-mod{ width:8%; }
+
+  table.register thead th{
+    text-align:left;
+    padding:7px 8px;
+    border-bottom:1px solid var(--line-strong);
+    background:var(--paper-sunken);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:10px;
+    font-weight:600;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  table.register th.num, table.register td.num{ text-align:right; }
+  table.register tbody td{
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+    font-size:12.5px;
+    vertical-align:middle;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  table.register tbody tr{ cursor:pointer; }
+  table.register tbody tr:hover td{ background:var(--paper-sunken); }
+  table.register tbody tr.is-selected td{
+    background:var(--accent-soft);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  table.register tbody tr.is-selected td:first-child{ padding-left:7px; }
+  table.register tbody tr:last-child td{ border-bottom:none; }
+
+  .swatch{
+    width:26px; height:26px;
+    border-radius:2px;
+    border:1px solid var(--line-strong);
+    display:block;
+  }
+  .cell-artist{ font-weight:500; }
+  .cell-title{ font-style:italic; }
+  .cell-mono{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .status{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px;
+  }
+  .status .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .status--dispo .dot{ background:var(--status-dispo); }
+  .status--reservee .dot{ background:var(--status-reservee); }
+  .status--vendue .dot{ background:var(--status-vendue); }
+  .status--depot .dot{ background:var(--status-depot); }
+
+  /* ============ Panneau de détail — fiche d'inventaire ============ */
+  .detail-panel{
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    box-shadow:var(--shadow-panel);
+  }
+  .detail-header{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:10px;
+    padding:16px 20px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .detail-header .inv{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .detail-title{ font-size:19px; font-weight:600; margin:2px 0 2px; }
+  .detail-sub{ font-size:12.5px; color:var(--ink-soft); }
+  .detail-sub .yr{ font-family:'IBM Plex Mono', monospace; }
+
+  .media-row{ display:flex; gap:8px; padding:14px 20px; border-bottom:1px solid var(--line); }
+  .media-flat{
+    flex:1 1 0;
+    height:92px;
+    border-radius:2px;
+    border:1px solid var(--line-strong);
+    position:relative;
+  }
+  .media-flat span{
+    position:absolute; left:6px; bottom:5px;
+    font-size:9.5px;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    color:rgba(244,242,230,.92);
+    text-shadow:0 1px 2px rgba(0,0,0,.5);
+    font-weight:600;
+  }
+
+  .detail-section{ padding:16px 20px; border-bottom:1px solid var(--line); }
+  .detail-section:last-of-type{ border-bottom:none; }
+  .section-eyebrow{
+    display:flex; align-items:baseline; gap:8px;
+    margin-bottom:12px;
+  }
+  .section-eyebrow .idx{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-faint);
+  }
+
+  .cartel-grid{
+    display:grid;
+    grid-template-columns:118px 1fr;
+    row-gap:8px; column-gap:10px;
+  }
+  .cartel-grid dt{ grid-column:1; }
+  .cartel-grid dd{ grid-column:2; margin:0; font-size:12.5px; }
+  .cartel-grid dd.mono{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .status-price-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px 16px;
+  }
+  .sp-block{ display:flex; flex-direction:column; gap:4px; }
+  .sp-value{ font-size:14px; font-weight:600; }
+  .sp-value.mono{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .sp-value.muted{ font-weight:500; color:var(--ink-soft); font-size:13px; }
+  .sp-tag{ font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+
+  .visibility-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line-strong);
+  }
+  .visibility-row .state{ font-size:12px; color:var(--ink-soft); }
+
+  .ledger-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .ledger-list li{ display:flex; gap:10px; font-size:12.5px; }
+  .ledger-list .date{
+    flex:0 0 66px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    padding-top:1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ledger-list .txt{ color:var(--ink); }
+  .ledger-list .who{ color:var(--ink-soft); }
+
+  .doc-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .doc-list li{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12.5px; }
+  .doc-list .doc-name{ display:flex; gap:8px; align-items:baseline; }
+  .doc-list .doc-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9.5px;
+    color:var(--ink-faint);
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    padding:0 4px;
+  }
+  .doc-list .doc-meta{ color:var(--ink-soft); font-size:11.5px; white-space:nowrap; }
+  .doc-list .doc-meta.due{ color:var(--status-reservee); }
+
+  .request-card{
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:11px 12px;
+    background:var(--paper);
+  }
+  .request-card .top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  .request-card .from{ font-weight:600; font-size:12.5px; }
+  .request-card .when{ font-size:11px; color:var(--ink-faint); font-family:'IBM Plex Mono', monospace; }
+  .request-card p{ margin:0 0 8px; font-size:12.5px; font-style:italic; color:var(--ink-soft); }
+  .req-status{
+    display:inline-flex; align-items:center;
+    font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; font-weight:600;
+    padding:2px 7px;
+    border-radius:3px;
+    background:var(--status-reservee-bg);
+    color:var(--status-reservee);
+  }
+
+  .actions-row{
+    display:flex; flex-wrap:wrap; gap:8px;
+    padding:16px 20px;
+  }
+  .actions-row .btn{ flex:1 1 auto; justify-content:center; }
+
+  /* ============ Responsive ============ */
+  @media (max-width:960px){
+    .shell{ flex-direction:column; }
+    .primary-nav{ width:100%; flex:none; flex-direction:row; flex-wrap:wrap; align-items:center; padding:10px 14px; gap:12px; }
+    .nav-list{ flex-direction:row; flex-wrap:wrap; }
+    .nav-foot{ margin-top:0; padding-top:0; border-top:none; margin-left:auto; }
+    .content-split{ flex-direction:column; }
+    .list-panel, .detail-panel{ max-width:100%; flex:1 1 100%; }
+    .summary-bar{ flex-wrap:wrap; }
+    .summary-item{ padding:10px 16px 10px 0; margin-right:16px; }
+    .status-price-grid{ grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="shell">
+
+  <!-- ============ Navigation principale ============ -->
+  <nav class="primary-nav" aria-label="Navigation principale">
+    <button type="button" class="gallery-switch">
+      <span class="caps" style="color:var(--ink-faint)">Galerie</span>
+      <span class="row">
+        <span class="name">Galerie Sainte-Avoye</span>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+      </span>
+    </button>
+
+    <ul class="nav-list">
+      <li><a href="#">Tableau de bord</a></li>
+      <li><a href="#" class="is-active" aria-current="page">Œuvres</a></li>
+      <li><a href="#">Artistes</a></li>
+      <li><a href="#">Expositions</a></li>
+      <li><a href="#">Contacts</a></li>
+      <li><a href="#">Documents</a></li>
+      <li><a href="#">Ventes</a></li>
+      <li><a href="#">Mouvements</a></li>
+      <li><a href="#">Newsletter</a></li>
+      <li><a href="#">Site</a></li>
+      <li><a href="#">Réglages</a></li>
+    </ul>
+
+    <div class="nav-foot">
+      <div class="who">Claire Morel</div>
+      <div class="role">Direction</div>
+    </div>
+  </nav>
+
+  <!-- ============ Colonne principale ============ -->
+  <div class="main">
+
+    <!-- Barre haute -->
+    <header class="topbar">
+      <div class="breadcrumb"><b>Œuvres</b></div>
+      <div class="search-field">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M13.5 13.5L10.6 10.6"/></svg>
+        <input type="text" placeholder="Rechercher une œuvre, un artiste, un contact…" aria-label="Rechercher">
+        <span class="kbd-hint">/</span>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4.5 7l3.5 3.5L11.5 7"/><path d="M2.5 13h11"/></svg>
+          Importer
+        </button>
+        <button type="button" class="btn">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V2M4.5 5L8 1.5 11.5 5"/><path d="M2.5 13h11"/></svg>
+          Exporter
+        </button>
+        <button type="button" class="btn btn-primary">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>
+          Nouvelle œuvre
+          <span class="kbd-hint">N</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Bandeau de synthèse : ligne de compteurs -->
+    <div class="summary-bar">
+      <div class="summary-item">
+        <span class="num tnum">148</span>
+        <span class="lbl">Œuvres disponibles</span>
+      </div>
+      <div class="summary-item alert">
+        <span class="num tnum">6</span>
+        <span class="lbl">Demandes à traiter</span>
+      </div>
+      <div class="summary-item">
+        <span class="num tnum">3</span>
+        <span class="lbl">Échéances de documents cette semaine</span>
+      </div>
+      <div class="summary-item">
+        <span class="num tnum">2</span>
+        <span class="lbl">Ventes ce mois</span>
+      </div>
+    </div>
+
+    <div class="workspace">
+
+      <!-- Filtres -->
+      <div class="filters-row">
+        <div class="field">
+          <label class="caps" for="f-artiste">Artiste</label>
+          <select id="f-artiste">
+            <option>Tous les artistes</option>
+            <option>Elsa Vanderhoeven</option>
+            <option>Malik Aouissi</option>
+            <option>Juno Petrova</option>
+            <option>Anton Riis</option>
+            <option>Camille Ferrand</option>
+            <option>Nadia Belkacem</option>
+            <option>Yuki Tanabe</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="caps" for="f-statut">Statut</label>
+          <select id="f-statut">
+            <option>Tous statuts</option>
+            <option>Disponible</option>
+            <option>Réservée</option>
+            <option>Vendue</option>
+            <option>En dépôt</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="caps" for="f-loc">Localisation</label>
+          <select id="f-loc">
+            <option>Toutes localisations</option>
+            <option>Salle 1</option>
+            <option>Salle 2</option>
+            <option>Réserve</option>
+            <option>Chez client</option>
+            <option>Dépôt externe</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="caps" for="f-annee">Année</label>
+          <select id="f-annee">
+            <option>Toutes années</option>
+            <option>2026</option>
+            <option>2025</option>
+            <option>2024</option>
+            <option>2023</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="caps" for="f-prix">Prix</label>
+          <select id="f-prix">
+            <option>Tous prix</option>
+            <option>Moins de 5 000 €</option>
+            <option>5 000 – 10 000 €</option>
+            <option>10 000 – 20 000 €</option>
+            <option>Sur demande</option>
+          </select>
+        </div>
+        <div class="field field-toggle">
+          <label class="caps" for="f-visible">Visibles sur le site</label>
+          <span class="switch"><input type="checkbox" id="f-visible"></span>
+        </div>
+      </div>
+
+      <div class="content-split">
+
+        <!-- ============ Liste des œuvres ============ -->
+        <section class="list-panel" aria-label="Liste des œuvres">
+          <div class="list-head">
+            <span class="list-count">12 œuvres affichées sur 148</span>
+            <span class="list-nav-hint">
+              <span><kbd>↑↓</kbd>naviguer</span>
+              <span><kbd>⏎</kbd>ouvrir</span>
+            </span>
+          </div>
+
+          <div class="table-scroll">
+            <table class="register">
+              <colgroup>
+                <col class="c-thumb"><col class="c-artist"><col class="c-title"><col class="c-year">
+                <col class="c-status"><col class="c-price"><col class="c-loc"><col class="c-dim"><col class="c-tech"><col class="c-mod">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" aria-label="Vignette"></th>
+                  <th scope="col">Artiste</th>
+                  <th scope="col">Titre</th>
+                  <th scope="col" class="num">Année</th>
+                  <th scope="col">Statut</th>
+                  <th scope="col" class="num">Prix</th>
+                  <th scope="col">Localisation</th>
+                  <th scope="col">Dimensions</th>
+                  <th scope="col">Technique</th>
+                  <th scope="col">Modifiée</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="is-selected" aria-selected="true" tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-1)" role="img" aria-label="Vignette de Bassin"></span></td>
+                  <td class="cell-artist">Elsa Vanderhoeven</td>
+                  <td class="cell-title">Bassin</td>
+                  <td class="num cell-mono">2026</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">18 000 €</td>
+                  <td>Salle 1</td>
+                  <td class="cell-mono">162 × 130 cm</td>
+                  <td>Huile sur toile</td>
+                  <td class="cell-mono">11 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-1)" role="img" aria-label="Vignette de Sans titre (nuit)"></span></td>
+                  <td class="cell-artist">Elsa Vanderhoeven</td>
+                  <td class="cell-title">Sans titre (nuit)</td>
+                  <td class="num cell-mono">2025</td>
+                  <td><span class="status status--reservee"><span class="dot"></span>réservée</span></td>
+                  <td class="num cell-mono">9 500 €</td>
+                  <td>Salle 1</td>
+                  <td class="cell-mono">81 × 65 cm</td>
+                  <td>Huile et cire sur toile</td>
+                  <td class="cell-mono">10 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-1)" role="img" aria-label="Vignette de Réservoir II"></span></td>
+                  <td class="cell-artist">Elsa Vanderhoeven</td>
+                  <td class="cell-title">Réservoir II</td>
+                  <td class="num cell-mono">2025</td>
+                  <td><span class="status status--vendue"><span class="dot"></span>vendue</span></td>
+                  <td class="num cell-mono">12 000 €</td>
+                  <td>Chez client</td>
+                  <td class="cell-mono">130 × 97 cm</td>
+                  <td>Huile sur toile</td>
+                  <td class="cell-mono">4 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-2)" role="img" aria-label="Vignette de Relevé n° 7"></span></td>
+                  <td class="cell-artist">Malik Aouissi</td>
+                  <td class="cell-title">Relevé n° 7</td>
+                  <td class="num cell-mono">2026</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">4 200 €</td>
+                  <td>Réserve, tiroir 3</td>
+                  <td class="cell-mono">76 × 56 cm</td>
+                  <td>Encre et graphite sur papier</td>
+                  <td class="cell-mono">9 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-2)" role="img" aria-label="Vignette de Relevé n° 4"></span></td>
+                  <td class="cell-artist">Malik Aouissi</td>
+                  <td class="cell-title">Relevé n° 4</td>
+                  <td class="num cell-mono">2025</td>
+                  <td><span class="status status--depot"><span class="dot"></span>en dépôt</span></td>
+                  <td class="num cell-mono">3 800 €</td>
+                  <td>Galerie Meyer, Bruxelles</td>
+                  <td class="cell-mono">76 × 56 cm</td>
+                  <td>Encre sur papier</td>
+                  <td class="cell-mono">28 août</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-3)" role="img" aria-label="Vignette de Stèle, édition 2/5"></span></td>
+                  <td class="cell-artist">Juno Petrova</td>
+                  <td class="cell-title">Stèle</td>
+                  <td class="num cell-mono">2024</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">6 800 €</td>
+                  <td>Réserve, étagère B</td>
+                  <td class="cell-mono">48 × 22 × 20 cm</td>
+                  <td>Grès émaillé, éd. 2/5 + 2&nbsp;EA</td>
+                  <td class="cell-mono">2 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-3)" role="img" aria-label="Vignette de Stèle, édition 1/5"></span></td>
+                  <td class="cell-artist">Juno Petrova</td>
+                  <td class="cell-title">Stèle</td>
+                  <td class="num cell-mono">2024</td>
+                  <td><span class="status status--vendue"><span class="dot"></span>vendue</span></td>
+                  <td class="num cell-mono">6 800 €</td>
+                  <td>Chez client</td>
+                  <td class="cell-mono">48 × 22 × 20 cm</td>
+                  <td>Grès émaillé, éd. 1/5</td>
+                  <td class="cell-mono">15 juin</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-4)" role="img" aria-label="Vignette de Hors-champ"></span></td>
+                  <td class="cell-artist">Anton Riis</td>
+                  <td class="cell-title">Hors-champ</td>
+                  <td class="num cell-mono">2025</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">7 400 €</td>
+                  <td>Réserve, meuble à plans</td>
+                  <td class="cell-mono">110 × 90 cm</td>
+                  <td>Tirage pigmentaire, épreuve 1/5</td>
+                  <td class="cell-mono">1 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-5)" role="img" aria-label="Vignette de Le dormeur"></span></td>
+                  <td class="cell-artist">Camille Ferrand</td>
+                  <td class="cell-title">Le dormeur</td>
+                  <td class="num cell-mono">2026</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">sur demande</td>
+                  <td>Salle 2</td>
+                  <td class="cell-mono">200 × 150 cm</td>
+                  <td>Acrylique sur papier marouflé sur toile</td>
+                  <td class="cell-mono">11 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-5)" role="img" aria-label="Vignette de Veilleuse"></span></td>
+                  <td class="cell-artist">Camille Ferrand</td>
+                  <td class="cell-title">Veilleuse</td>
+                  <td class="num cell-mono">2024</td>
+                  <td><span class="status status--reservee"><span class="dot"></span>réservée</span></td>
+                  <td class="num cell-mono">8 200 €</td>
+                  <td>Salle 2</td>
+                  <td class="cell-mono">100 × 81 cm</td>
+                  <td>Acrylique sur toile</td>
+                  <td class="cell-mono">7 sept.</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-6)" role="img" aria-label="Vignette de Seuil (installation)"></span></td>
+                  <td class="cell-artist">Nadia Belkacem</td>
+                  <td class="cell-title">Seuil (installation)</td>
+                  <td class="num cell-mono">2023</td>
+                  <td><span class="status status--depot"><span class="dot"></span>en dépôt</span></td>
+                  <td class="num cell-mono">sur demande</td>
+                  <td>FRAC, prêt jusqu'au 15 déc.</td>
+                  <td class="cell-mono">240 × 180 × 60 cm</td>
+                  <td>Bois, laiton, son</td>
+                  <td class="cell-mono">20 août</td>
+                </tr>
+                <tr tabindex="0">
+                  <td><span class="swatch" style="background:var(--swatch-2)" role="img" aria-label="Vignette de Carte muette"></span></td>
+                  <td class="cell-artist">Yuki Tanabe</td>
+                  <td class="cell-title">Carte muette</td>
+                  <td class="num cell-mono">2026</td>
+                  <td><span class="status status--dispo"><span class="dot"></span>disponible</span></td>
+                  <td class="num cell-mono">5 600 €</td>
+                  <td>Réserve, râtelier 2</td>
+                  <td class="cell-mono">60 × 50 cm</td>
+                  <td>Huile sur lin</td>
+                  <td class="cell-mono">8 sept.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ Panneau de détail — fiche d'inventaire ============ -->
+        <aside class="detail-panel" aria-label="Fiche de l'œuvre sélectionnée">
+
+          <div class="detail-header">
+            <div>
+              <span class="caps">Fiche d'inventaire</span>
+              <h2 class="detail-title">Bassin</h2>
+              <div class="detail-sub">Elsa Vanderhoeven · <span class="yr">2026</span></div>
+            </div>
+            <span class="inv">SAV-2026-041</span>
+          </div>
+
+          <div class="media-row">
+            <div class="media-flat" style="background:var(--swatch-1)" role="img" aria-label="Vue d'ensemble de Bassin"><span>Vue d'ensemble</span></div>
+            <div class="media-flat" style="background:var(--swatch-1); filter:brightness(1.08)" role="img" aria-label="Détail de Bassin"><span>Détail</span></div>
+            <div class="media-flat" style="background:var(--swatch-1); filter:brightness(0.85)" role="img" aria-label="Verso de Bassin"><span>Verso</span></div>
+          </div>
+
+          <div class="detail-section">
+            <dl class="cartel-grid">
+              <dt class="caps">Technique</dt>
+              <dd>Huile sur toile</dd>
+              <dt class="caps">Dimensions</dt>
+              <dd class="mono">162 × 130 cm</dd>
+              <dt class="caps">Signature</dt>
+              <dd>Signée et datée au dos</dd>
+              <dt class="caps">Exposition</dt>
+              <dd><em>Le Temps suspendu</em>, 5 sept. – 25 oct. 2026</dd>
+            </dl>
+          </div>
+
+          <div class="detail-section">
+            <div class="status-price-grid">
+              <div class="sp-block">
+                <span class="sp-tag">Statut</span>
+                <span class="status status--dispo" style="font-size:13px"><span class="dot"></span>disponible</span>
+              </div>
+              <div class="sp-block">
+                <span class="sp-tag">Localisation</span>
+                <span class="sp-value" style="font-size:13px;font-weight:500">Salle 1, accrochée</span>
+              </div>
+              <div class="sp-block">
+                <span class="sp-tag">Prix public HT</span>
+                <span class="sp-value mono tnum">18 000 €</span>
+              </div>
+              <div class="sp-block">
+                <span class="sp-tag">Prix artiste · interne</span>
+                <span class="sp-value mono tnum muted">9 000 €</span>
+              </div>
+            </div>
+            <div class="visibility-row">
+              <span class="caps" style="color:var(--ink)">Visible sur le site</span>
+              <span style="display:flex;align-items:center;gap:8px">
+                <span class="state">Oui</span>
+                <span class="switch"><input type="checkbox" checked aria-label="Visible sur le site"></span>
+              </span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-eyebrow">
+              <span class="idx mono">01</span>
+              <span class="caps">Historique</span>
+            </div>
+            <ul class="ledger-list">
+              <li><span class="date mono">12 mai</span><span class="txt">Créée par <span class="who">Claire Morel</span></span></li>
+              <li><span class="date mono">2 sept.</span><span class="txt">Accrochée en <span class="who">Salle 1</span></span></li>
+              <li><span class="date mono">8 sept.</span><span class="txt">Demande de prix reçue de <span class="who">Hélène Rambert</span></span></li>
+              <li><span class="date mono">11 sept.</span><span class="txt">Fiche PDF générée</span></li>
+            </ul>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-eyebrow">
+              <span class="idx mono">02</span>
+              <span class="caps">Documents</span>
+            </div>
+            <ul class="doc-list">
+              <li>
+                <span class="doc-name"><span class="doc-tag">PDF</span>Certificat d'authenticité</span>
+                <span class="doc-meta mono">11 sept. 2026</span>
+              </li>
+              <li>
+                <span class="doc-name"><span class="doc-tag">CTR</span>Contrat de représentation Vanderhoeven</span>
+                <span class="doc-meta due mono">échéance 31 déc. 2026</span>
+              </li>
+              <li>
+                <span class="doc-name"><span class="doc-tag">FAC</span>Facture d'achat matériel</span>
+                <span class="doc-meta mono">avril 2026</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-eyebrow">
+              <span class="idx mono">03</span>
+              <span class="caps">Demandes</span>
+            </div>
+            <div class="request-card">
+              <div class="top">
+                <span class="from">Hélène Rambert</span>
+                <span class="when mono">8 sept. 2026</span>
+              </div>
+              <p>« Est-elle encore disponible pour une visite jeudi ? »</p>
+              <span class="req-status">à traiter</span>
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button type="button" class="btn">Fiche PDF</button>
+            <button type="button" class="btn btn-primary">Créer une offre</button>
+            <button type="button" class="btn">Ajouter à une viewing room</button>
+            <button type="button" class="btn">Enregistrer un mouvement</button>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+  </div>
+</div>

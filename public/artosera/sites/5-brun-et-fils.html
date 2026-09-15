@@ -1,0 +1,942 @@
+<meta charset="utf-8">
+<title>Brun &amp; Fils — Galerie de photographie, Lyon</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Newsreader:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fond:       #17181a;
+    --fond-2:     #0f1011;
+    --blanc:      #f2ede3;
+    --ambre:      #c9a76b;
+    --filet:      rgba(242,237,227,0.16);
+    --filet-fort: rgba(242,237,227,0.28);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0;
+    background:var(--fond);
+    color:var(--blanc);
+    font-family:"Archivo", "Helvetica Neue", Arial, sans-serif;
+    font-weight:300;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  img{ display:block; max-width:100%; height:auto; }
+  a{ color:inherit; text-decoration:none; }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible{
+    outline:1px solid var(--ambre);
+    outline-offset:4px;
+  }
+
+  h1,h2,h3{ margin:0; font-weight:400; }
+
+  .serif-italic{
+    font-family:"Newsreader", "Iowan Old Style", Georgia, serif;
+    font-style:italic;
+    font-weight:400;
+  }
+
+  .wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:0 44px;
+  }
+
+  .hairline{ border:none; border-top:1px solid var(--filet); margin:0; }
+
+  .eyebrow{
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    color:var(--ambre);
+  }
+
+  .kicker{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#a29c8f;
+  }
+
+  .section-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    margin-bottom:44px;
+    flex-wrap:wrap;
+  }
+  .section-title{
+    font-size:clamp(26px,3.4vw,38px);
+    letter-spacing:.01em;
+  }
+  .section-note{
+    max-width:340px;
+    font-size:14px;
+    color:#a29c8f;
+    text-align:right;
+  }
+
+  section{ padding:88px 0; }
+
+  /* ---------- header ---------- */
+  header.site-header{
+    position:sticky;
+    top:0;
+    z-index:30;
+    background:rgba(23,24,26,0.94);
+    -webkit-backdrop-filter:blur(6px);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--filet);
+  }
+  .header-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:28px;
+    padding:24px 44px;
+  }
+  .logo{
+    font-size:19px;
+    letter-spacing:.05em;
+    white-space:nowrap;
+  }
+  .logo .amp{
+    font-family:"Newsreader", Georgia, serif;
+    font-style:italic;
+    color:var(--ambre);
+    padding:0 2px;
+  }
+  .logo small{
+    display:block;
+    margin-top:3px;
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:.26em;
+    text-transform:uppercase;
+    color:#a29c8f;
+  }
+
+  .primary-nav{
+    display:flex;
+    align-items:center;
+    gap:30px;
+    flex-wrap:wrap;
+  }
+  .primary-nav a{
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#d6d1c5;
+    padding:4px 0;
+    border-bottom:1px solid transparent;
+  }
+  .primary-nav a:hover{ border-bottom-color:var(--ambre); color:var(--blanc); }
+
+  .lang-switch{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+    letter-spacing:.08em;
+  }
+  .lang-switch button{
+    background:none;
+    border:1px solid var(--filet);
+    color:#a29c8f;
+    padding:5px 9px;
+    cursor:pointer;
+    font-family:inherit;
+    letter-spacing:.08em;
+  }
+  .lang-switch button[aria-pressed="true"]{
+    color:var(--fond);
+    background:var(--blanc);
+    border-color:var(--blanc);
+  }
+
+  .nav-toggle{ display:none; }
+
+  /* ---------- exposition en cours ---------- */
+  .expo{
+    padding-top:76px;
+  }
+  .expo-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:64px;
+    align-items:center;
+  }
+  .expo-plate{
+    aspect-ratio:4/5;
+    background:
+      radial-gradient(140% 110% at 22% 18%, rgba(201,167,107,0.16), transparent 55%),
+      linear-gradient(155deg,#25262a 0%, #131315 62%, #0b0b0c 100%);
+    border:1px solid var(--filet-fort);
+    position:relative;
+  }
+  .expo-plate::after{
+    content:"";
+    position:absolute;
+    inset:26px;
+    border:1px solid rgba(242,237,227,0.10);
+  }
+  .expo-plate figcaption{
+    position:absolute;
+    left:26px;
+    right:26px;
+    bottom:22px;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:rgba(242,237,227,0.5);
+  }
+  .expo-copy .eyebrow{ margin-bottom:18px; }
+  .expo-artist{
+    font-size:14px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#d6d1c5;
+    margin-bottom:10px;
+  }
+  .expo-title{
+    font-size:clamp(30px,4vw,46px);
+    line-height:1.12;
+    margin-bottom:20px;
+  }
+  .expo-meta{
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    font-size:13px;
+    color:#a29c8f;
+    margin-bottom:22px;
+  }
+  .expo-meta span{ white-space:nowrap; }
+  .expo-text{
+    max-width:46ch;
+    color:#cfcabf;
+    margin-bottom:30px;
+  }
+  .expo-link{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ambre);
+    border-bottom:1px solid rgba(201,167,107,0.45);
+    padding-bottom:4px;
+  }
+  .expo-link:hover{ border-bottom-color:var(--ambre); }
+  .expo-link::after{ content:"→"; font-size:14px; }
+
+  /* ---------- œuvres disponibles ---------- */
+  .oeuvres-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:56px 40px;
+  }
+  .oeuvre-plate{
+    background:var(--fond-2);
+    border:1px solid var(--filet);
+    padding:16px;
+    margin-bottom:20px;
+  }
+  .oeuvre-swatch{
+    aspect-ratio:4/5;
+    position:relative;
+    overflow:hidden;
+  }
+  .oeuvre-swatch::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:var(--sw);
+  }
+  .oeuvre-swatch::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,0.06), transparent 60%);
+  }
+  .oeuvre-tag{
+    position:absolute;
+    left:12px;
+    bottom:12px;
+    z-index:2;
+    font-size:9.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:rgba(242,237,227,0.68);
+  }
+  .oeuvre-cartel .cartel-line{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#a29c8f;
+    margin-bottom:9px;
+  }
+  .oeuvre-cartel .cartel-line strong{
+    color:var(--blanc);
+    font-weight:500;
+  }
+  .oeuvre-title{
+    font-size:19px;
+    margin-bottom:8px;
+  }
+  .oeuvre-details{
+    font-size:12.5px;
+    letter-spacing:.03em;
+    color:#a29c8f;
+    margin-bottom:14px;
+    line-height:1.6;
+  }
+  .oeuvre-foot{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    border-top:1px solid var(--filet);
+    padding-top:12px;
+  }
+  .oeuvre-price{
+    font-size:14px;
+    font-variant-numeric:tabular-nums;
+    color:var(--blanc);
+  }
+  .oeuvre-cta{
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ambre);
+    border-bottom:1px solid rgba(201,167,107,0.4);
+    white-space:nowrap;
+  }
+  .oeuvre-cta:hover{ border-bottom-color:var(--ambre); }
+
+  /* ---------- artistes ---------- */
+  .artistes-section{ background:var(--fond-2); }
+  .artistes-grid{
+    columns:4;
+    column-gap:40px;
+  }
+  .artistes-grid a{
+    display:block;
+    break-inside:avoid;
+    padding:14px 0;
+    border-top:1px solid var(--filet);
+    font-size:15px;
+    letter-spacing:.02em;
+    color:#e4dfd3;
+  }
+  .artistes-grid a:hover{ color:var(--ambre); }
+  .artistes-grid a .dates{
+    display:block;
+    margin-top:3px;
+    font-size:11px;
+    letter-spacing:.06em;
+    color:#7d786d;
+  }
+
+  /* ---------- agenda ---------- */
+  .agenda-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--filet);
+    border:1px solid var(--filet);
+  }
+  .agenda-item{
+    background:var(--fond);
+    padding:34px 32px;
+  }
+  .agenda-kind{
+    font-size:10.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ambre);
+    margin-bottom:16px;
+  }
+  .agenda-title{
+    font-size:20px;
+    margin-bottom:8px;
+    line-height:1.3;
+  }
+  .agenda-dates{
+    font-size:13px;
+    color:#cfcabf;
+    margin-bottom:6px;
+  }
+  .agenda-lieu{
+    font-size:12.5px;
+    color:#8a8578;
+  }
+
+  /* ---------- atelier ---------- */
+  .atelier-section{ background:var(--fond-2); }
+  .atelier-intro{
+    max-width:64ch;
+    color:#cfcabf;
+    margin-bottom:56px;
+    font-size:15.5px;
+  }
+  .atelier-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:64px;
+  }
+  .atelier-block figure{ margin:0 0 26px; }
+  .atelier-frame{
+    background:var(--fond);
+    border:1px solid var(--filet-fort);
+    padding:14px;
+  }
+  .atelier-frame img{ width:100%; }
+  .atelier-cap{
+    margin-top:10px;
+    font-size:11px;
+    letter-spacing:.06em;
+    color:#7d786d;
+  }
+  .atelier-block h3{
+    font-size:21px;
+    margin-bottom:12px;
+  }
+  .atelier-block p{
+    font-size:14.5px;
+    color:#a29c8f;
+    margin:0 0 14px;
+  }
+  .atelier-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    font-size:13.5px;
+    color:#cfcabf;
+  }
+  .atelier-list li{
+    padding:9px 0;
+    border-top:1px solid var(--filet);
+  }
+  .atelier-list li:last-child{ border-bottom:1px solid var(--filet); }
+
+  /* ---------- newsletter ---------- */
+  .newsletter{
+    padding:70px 0;
+    border-top:1px solid var(--filet);
+    border-bottom:1px solid var(--filet);
+  }
+  .newsletter-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:40px;
+    flex-wrap:wrap;
+  }
+  .newsletter p{
+    max-width:38ch;
+    margin:0;
+    font-size:15px;
+    color:#cfcabf;
+  }
+  .newsletter form{
+    display:flex;
+    gap:0;
+    flex:0 0 auto;
+    min-width:340px;
+  }
+  .newsletter input[type="email"]{
+    flex:1;
+    background:transparent;
+    border:1px solid var(--filet-fort);
+    border-right:none;
+    padding:13px 16px;
+    color:var(--blanc);
+    font-family:inherit;
+    font-size:13.5px;
+  }
+  .newsletter input[type="email"]::placeholder{ color:#7d786d; }
+  .newsletter button{
+    background:var(--ambre);
+    color:#161311;
+    border:1px solid var(--ambre);
+    padding:13px 22px;
+    font-family:inherit;
+    font-size:11.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .newsletter button:hover{ background:#dab77c; border-color:#dab77c; }
+
+  /* ---------- footer ---------- */
+  footer.site-footer{ padding:64px 0 30px; }
+  .footer-grid{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr 1fr;
+    gap:32px;
+    margin-bottom:56px;
+  }
+  .footer-grid h4{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#7d786d;
+    margin-bottom:16px;
+    font-weight:400;
+  }
+  .footer-grid p, .footer-grid address{
+    font-style:normal;
+    font-size:13.5px;
+    color:#cfcabf;
+    margin:0 0 6px;
+    line-height:1.7;
+  }
+  .footer-grid a{ color:#cfcabf; }
+  .footer-grid a:hover{ color:var(--ambre); }
+  .footer-logo{
+    font-size:20px;
+    letter-spacing:.05em;
+    margin-bottom:14px;
+  }
+  .footer-logo .amp{ font-family:"Newsreader", Georgia, serif; font-style:italic; color:var(--ambre); }
+  .footer-bottom{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    padding-top:24px;
+    border-top:1px solid var(--filet);
+    font-size:11.5px;
+    color:#6f6a5f;
+  }
+  .footer-bottom .socials{ display:flex; gap:18px; }
+  .demo-note{
+    text-align:center;
+    font-size:10px;
+    color:#514d44;
+    padding-top:22px;
+    letter-spacing:.02em;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1020px){
+    .expo-grid{ grid-template-columns:1fr; gap:36px; }
+    .expo{ padding-top:56px; }
+    .oeuvres-grid{ grid-template-columns:repeat(2,1fr); }
+    .artistes-grid{ columns:3; }
+    .agenda-grid{ grid-template-columns:1fr; }
+    .atelier-grid{ grid-template-columns:1fr; gap:44px; }
+    .footer-grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  @media (max-width:720px){
+    .wrap{ padding:0 22px; }
+    .header-row{ padding:18px 22px; gap:10px; }
+    .primary-nav{ display:none; }
+    .logo{ font-size:16px; }
+    .logo small{ font-size:8.5px; letter-spacing:.18em; }
+    .lang-switch{ gap:4px; flex:0 0 auto; }
+    .lang-switch button{ padding:4px 7px; font-size:10px; }
+    section{ padding:60px 0; }
+    .oeuvres-grid{ grid-template-columns:1fr; }
+    .artistes-grid{ columns:2; }
+    .section-head{ align-items:flex-start; }
+    .section-note{ text-align:left; }
+    .newsletter-row{ flex-direction:column; align-items:flex-start; }
+    .newsletter form{ width:100%; min-width:0; }
+    .footer-grid{ grid-template-columns:1fr 1fr; gap:26px 20px; }
+    .footer-bottom{ flex-direction:column; align-items:flex-start; }
+  }
+
+  @media (max-width:460px){
+    .footer-grid{ grid-template-columns:1fr; }
+    .agenda-item{ padding:28px 22px; }
+  }
+</style>
+
+<header class="site-header">
+  <div class="header-row wrap">
+    <a href="#" class="logo">Brun <span class="amp">&amp;</span> Fils
+      <small>Galerie de photographie · Lyon</small>
+    </a>
+    <nav class="primary-nav" aria-label="Navigation principale">
+      <a href="#artistes">Artistes</a>
+      <a href="#expositions">Expositions</a>
+      <a href="#foires">Foires</a>
+      <a href="#atelier">Éditions</a>
+      <a href="#atelier">La galerie</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="Choix de la langue">
+      <button type="button" aria-pressed="true">FR</button>
+      <button type="button" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="expo" id="expositions">
+    <div class="wrap expo-grid">
+      <figure class="expo-plate">
+        <figcaption>Vue d'accrochage · salle 1 · Brun &amp; Fils</figcaption>
+      </figure>
+      <div class="expo-copy">
+        <span class="eyebrow">Exposition en cours</span>
+        <p class="expo-artist">Noor El-Amin</p>
+        <h1 class="expo-title serif-italic">Zahra et les autres</h1>
+        <div class="expo-meta">
+          <span>12 septembre — 8 novembre 2026</span>
+          <span>Brun &amp; Fils, 8 quai Saint-Vincent, Lyon 1er</span>
+        </div>
+        <p class="expo-text">Vingt tirages inédits consacrés aux femmes du quartier de Zamalek, entre studio et rue, portraits composés avec la lumière franche du Caire de midi.</p>
+        <a class="expo-link" href="#oeuvres">Voir l'exposition</a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hairline wrap">
+
+  <section id="oeuvres">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Œuvres disponibles</span>
+          <h2 class="section-title">Tirages en réserve</h2>
+        </div>
+        <p class="section-note">Épreuves vintage et tirages modernes, argentiques et pigmentaires, numérotés et documentés par l'atelier.</p>
+      </div>
+
+      <div class="oeuvres-grid">
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#2a2b2c,#0c0c0d)">
+              <span class="oeuvre-tag">Gélatino-argentique d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Lucien Faverolles</strong><span>1962</span></p>
+            <p class="oeuvre-title serif-italic">Quai de Seine, brume</p>
+            <p class="oeuvre-details">Tirage gélatino-argentique d'époque · 24 × 30 cm · épreuve vintage, pièce unique · cachet de l'artiste au verso</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">8&nbsp;500&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#26242a,#0b0a0c)">
+              <span class="oeuvre-tag">Gélatino-argentique d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Ilse Wachter</strong><span>1958</span></p>
+            <p class="oeuvre-title serif-italic">Porträt einer Unbekannten</p>
+            <p class="oeuvre-details">Tirage gélatino-argentique d'époque · 30 × 24 cm · épreuve vintage, tirage unique</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">Prix sur demande</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#2c2823,#0d0b09)">
+              <span class="oeuvre-tag">Tirage pigmentaire</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Youssef Ben Amor</strong><span>2019</span></p>
+            <p class="oeuvre-title serif-italic">Dunes, Chegaga</p>
+            <p class="oeuvre-details">Tirage pigmentaire sur papier baryté · 80 × 120 cm · tirage moderne, édition de 5 + 2 EA, exemplaire 2/5</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">6&nbsp;200&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#28292d,#0a0a0c)">
+              <span class="oeuvre-tag">Gélatino-argentique d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Odile Ravier</strong><span>1949</span></p>
+            <p class="oeuvre-title serif-italic">Nature morte au miroir brisé</p>
+            <p class="oeuvre-details">Tirage gélatino-argentique d'époque · 18 × 24 cm · épreuve vintage, pièce unique</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">12&nbsp;000&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#232629,#0a0b0c)">
+              <span class="oeuvre-tag">Tirage pigmentaire</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Klara Sundqvist</strong><span>2021</span></p>
+            <p class="oeuvre-title serif-italic">Archipel, no.&nbsp;7</p>
+            <p class="oeuvre-details">Tirage pigmentaire sur papier coton · 100 × 70 cm · tirage moderne, édition de 6 + 2 EA, exemplaire 4/6</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">4&nbsp;800&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#2d271e,#0c0a07)">
+              <span class="oeuvre-tag">Tirage au charbon d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Henri Sabatier</strong><span>1932</span></p>
+            <p class="oeuvre-title serif-italic">Le Pont suspendu</p>
+            <p class="oeuvre-details">Tirage au charbon d'époque · 22 × 28 cm · épreuve vintage, pièce unique · provenance galerie Le Verrier, 1934</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">34&nbsp;000&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#292a24,#0b0c09)">
+              <span class="oeuvre-tag">Tirage argentique moderne</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Noor El-Amin</strong><span>2022</span></p>
+            <p class="oeuvre-title serif-italic">Zahra, Le Caire</p>
+            <p class="oeuvre-details">Tirage argentique moderne sur papier fibre · 50 × 60 cm · édition de 7 + 2 EA, exemplaire 1/7</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">3&nbsp;400&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#24262a,#09090b)">
+              <span class="oeuvre-tag">Gélatino-argentique d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Paolo Ricci</strong><span>1955</span></p>
+            <p class="oeuvre-title serif-italic">Piazza, mezzogiorno</p>
+            <p class="oeuvre-details">Tirage gélatino-argentique d'époque · 30 × 40 cm · épreuve vintage tirée par l'artiste</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">22&nbsp;000&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="oeuvre">
+          <div class="oeuvre-plate">
+            <div class="oeuvre-swatch" style="--sw:linear-gradient(160deg,#2b2826,#0c0a09)">
+              <span class="oeuvre-tag">Gélatino-argentique d'époque</span>
+            </div>
+          </div>
+          <div class="oeuvre-cartel">
+            <p class="cartel-line"><strong>Édouard Prat</strong><span>1938</span></p>
+            <p class="oeuvre-title serif-italic">Étude, atelier</p>
+            <p class="oeuvre-details">Tirage gélatino-argentique d'époque · 13 × 18 cm · épreuve vintage, pièce unique</p>
+            <div class="oeuvre-foot">
+              <span class="oeuvre-price">1&nbsp;950&nbsp;€</span>
+              <a class="oeuvre-cta" href="#contact">Demander le dossier</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="artistes-section" id="artistes">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Artistes représentés</span>
+          <h2 class="section-title">Le fonds de la galerie</h2>
+        </div>
+        <p class="section-note">Photographes du XXe siècle et scène contemporaine, en représentation exclusive ou en dépôt.</p>
+      </div>
+      <nav class="artistes-grid" aria-label="Liste des artistes représentés">
+        <a href="#contact">Lucien Faverolles<span class="dates">1908 – 1986</span></a>
+        <a href="#contact">Ilse Wachter<span class="dates">1921 – 2004</span></a>
+        <a href="#contact">Marc-Antoine Delcourt<span class="dates">1934 – 1999</span></a>
+        <a href="#contact">Youssef Ben Amor<span class="dates">né en 1958</span></a>
+        <a href="#contact">Odile Ravier<span class="dates">1912 – 1991</span></a>
+        <a href="#contact">Klara Sundqvist<span class="dates">née en 1972</span></a>
+        <a href="#contact">Henri Sabatier<span class="dates">1899 – 1968</span></a>
+        <a href="#contact">Noor El-Amin<span class="dates">née en 1980</span></a>
+        <a href="#contact">Jean-Baptiste Cormier<span class="dates">1927 – 2003</span></a>
+        <a href="#contact">Agnès Thorvald<span class="dates">née en 1965</span></a>
+        <a href="#contact">Paolo Ricci<span class="dates">1915 – 1994</span></a>
+        <a href="#contact">Sabine Kessler<span class="dates">née en 1977</span></a>
+        <a href="#contact">Édouard Prat<span class="dates">1903 – 1979</span></a>
+        <a href="#contact">Mei-Ling Zhou<span class="dates">née en 1969</span></a>
+      </nav>
+    </div>
+  </section>
+
+  <section id="agenda">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Agenda</span>
+          <h2 class="section-title">Expositions &amp; foires</h2>
+        </div>
+      </div>
+      <div class="agenda-grid">
+        <div class="agenda-item">
+          <p class="agenda-kind">Exposition à venir</p>
+          <h3 class="agenda-title serif-italic">Archipel</h3>
+          <p class="agenda-dates">21 novembre 2026 — 17 janvier 2027</p>
+          <p class="agenda-lieu">Brun &amp; Fils, 8 quai Saint-Vincent, Lyon 1er</p>
+        </div>
+        <div class="agenda-item">
+          <p class="agenda-kind">Exposition à venir</p>
+          <h3 class="agenda-title serif-italic">Vintage — un siècle de tirage argentique</h3>
+          <p class="agenda-dates">30 janvier — 28 mars 2027</p>
+          <p class="agenda-lieu">Brun &amp; Fils, 8 quai Saint-Vincent, Lyon 1er</p>
+        </div>
+        <div class="agenda-item" id="foires">
+          <p class="agenda-kind">Foire</p>
+          <h3 class="agenda-title serif-italic">Paris Photo</h3>
+          <p class="agenda-dates">5 — 9 novembre 2026</p>
+          <p class="agenda-lieu">Grand Palais, Paris · stand B24</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="atelier-section" id="atelier">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">La maison</span>
+          <h2 class="section-title">L'atelier de tirage</h2>
+        </div>
+      </div>
+      <p class="atelier-intro">Fondée en 1976 par Antoine Brun, la galerie a conservé son atelier de tirage intégré, quai Saint-Vincent. Chaque épreuve qui sort de nos presses — argentique ou pigmentaire — est tirée, montée et numérotée sur place, sous le regard des mêmes mains depuis trois générations.</p>
+
+      <div class="atelier-grid">
+        <div class="atelier-block">
+          <figure>
+            <div class="atelier-frame">
+              <img src="../img/reserve.jpg" alt="Réserve de la galerie Brun et Fils, tirages classés sur des racks métalliques" width="640" height="800" loading="eager">
+            </div>
+            <figcaption class="atelier-cap">La réserve, quai Saint-Vincent — plus de deux mille tirages catalogués</figcaption>
+          </figure>
+          <h3>Tirage argentique &amp; pigmentaire</h3>
+          <p>Nos tireurs réalisent aussi bien le tirage argentique traditionnel, en chambre noire, que le tirage pigmentaire sur presse à jet d'encre pour les artistes contemporains du fonds.</p>
+          <ul class="atelier-list">
+            <li>Tirage argentique gélatino-bromure, formats jusqu'à 60 × 80 cm</li>
+            <li>Tirage pigmentaire sur papier baryté ou coton, formats jusqu'à 150 cm</li>
+            <li>Montage, marouflage et encadrement sur mesure</li>
+          </ul>
+        </div>
+
+        <div class="atelier-block">
+          <figure>
+            <div class="atelier-frame">
+              <img src="../img/bureau.jpg" alt="Bureau de la galerie Brun et Fils où sont examinés les tirages avant expertise" width="720" height="480" loading="lazy">
+            </div>
+            <figcaption class="atelier-cap">Le bureau d'expertise, sur rendez-vous</figcaption>
+          </figure>
+          <h3>Estimation &amp; expertise</h3>
+          <p>Datation, identification du procédé, distinction entre épreuve vintage et tirage moderne : la galerie établit des certificats d'authenticité reconnus par les maisons de ventes.</p>
+          <ul class="atelier-list">
+            <li>Expertise d'un tirage isolé ou d'un fonds d'atelier</li>
+            <li>Rédaction de certificats pour succession, don ou vente</li>
+            <li>Rendez-vous sur présentation des œuvres, quai Saint-Vincent</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="newsletter">
+    <div class="wrap newsletter-row">
+      <p>Recevez les nouvelles acquisitions, les dates de vernissage et le calendrier des foires.</p>
+      <form action="#" method="post">
+        <label for="newsletter-email" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Adresse e-mail</label>
+        <input id="newsletter-email" type="email" name="email" placeholder="Adresse e-mail" required>
+        <button type="submit">S'inscrire</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" id="contact">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Brun <span class="amp">&amp;</span> Fils</div>
+        <address>
+          8 quai Saint-Vincent<br>
+          69001 Lyon, France
+        </address>
+        <p>Maison fondée en 1976</p>
+      </div>
+      <div>
+        <h4>Horaires</h4>
+        <p>Mardi — samedi<br>11h – 13h · 14h – 19h</p>
+        <p>Fermé les jours fériés</p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p><a href="tel:+33478280915">04 78 28 09 15</a></p>
+        <p><a href="mailto:galerie@brunetfils-lyon.fr">galerie@brunetfils-lyon.fr</a></p>
+      </div>
+      <div>
+        <h4>Suivre</h4>
+        <p><a href="#">Instagram</a></p>
+        <p><a href="#">Lettre d'information</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Galerie Brun &amp; Fils</span>
+      <div class="socials">
+        <a href="#">Mentions légales</a>
+        <a href="#">Politique de confidentialité</a>
+      </div>
+    </div>
+    <p class="demo-note">Modèle de démonstration Artosera · galerie fictive</p>
+  </div>
+</footer>

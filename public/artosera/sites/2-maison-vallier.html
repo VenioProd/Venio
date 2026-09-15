@@ -1,0 +1,938 @@
+<meta charset="utf-8">
+<title>Maison Vallier — Tableaux modernes &amp; dessins de maîtres, Paris</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivoire:#F4EEE0;
+    --ivoire-2:#ECE3CF;
+    --encre:#221D17;
+    --brun:#6B5B45;
+    --prusse:#17314E;
+    --filet:#CBBE9C;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+
+  html{ background:var(--ivoire); }
+
+  body{
+    margin:0;
+    background:var(--ivoire);
+    color:var(--encre);
+    font-family:"Spectral", Georgia, "Times New Roman", serif;
+    font-weight:400;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  img{ max-width:100%; display:block; }
+
+  a{ color:inherit; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--prusse);
+    outline-offset:3px;
+  }
+
+  .eyebrow{
+    font-family:"Work Sans", Arial, Helvetica, sans-serif;
+    font-size:.72rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--brun);
+  }
+
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding-inline:clamp(20px,4vw,56px);
+  }
+
+  /* ===== Masthead ===== */
+
+  .masthead{
+    border-bottom:3px double var(--encre);
+    padding-top:clamp(18px,3vw,30px);
+    padding-bottom:16px;
+  }
+
+  .masthead-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+
+  .wordmark{
+    font-family:"Spectral", Georgia, serif;
+    font-weight:500;
+    font-size:clamp(1.5rem,3.4vw,2.1rem);
+    letter-spacing:.045em;
+    text-decoration:none;
+    color:var(--encre);
+    white-space:nowrap;
+  }
+
+  .primary-nav{
+    display:flex;
+    flex-wrap:wrap;
+    column-gap:clamp(14px,2.4vw,28px);
+    row-gap:6px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.82rem;
+    letter-spacing:.05em;
+  }
+
+  .primary-nav a{
+    text-decoration:none;
+    padding-bottom:2px;
+    border-bottom:1px solid transparent;
+  }
+
+  .primary-nav a:hover{ border-bottom-color:var(--prusse); }
+
+  .lang-switch{
+    display:flex;
+    gap:8px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.76rem;
+    letter-spacing:.08em;
+    color:var(--brun);
+  }
+
+  .lang-switch .is-active{ color:var(--encre); font-weight:600; }
+
+  .masthead-sub{
+    margin:12px 0 0;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.8rem;
+    letter-spacing:.03em;
+    color:var(--brun);
+  }
+
+  /* ===== Section scaffolding: margin column + content ===== */
+
+  section{ padding-block:clamp(46px,7vw,84px); }
+
+  .section-grid{
+    display:grid;
+    grid-template-columns:152px minmax(0,1fr);
+    column-gap:44px;
+  }
+
+  .margin-col{
+    border-right:1px solid var(--filet);
+    padding-right:20px;
+  }
+
+  .margin-col .eyebrow{ display:block; margin-bottom:10px; }
+
+  .margin-col .margin-detail{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.78rem;
+    color:var(--brun);
+    line-height:1.7;
+  }
+
+  .folio{
+    text-align:center;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.72rem;
+    letter-spacing:.2em;
+    color:var(--brun);
+  }
+  .folio::before,.folio::after{ content:"—"; margin:0 10px; }
+
+  @media (max-width:860px){
+    .section-grid{ grid-template-columns:1fr; }
+    .margin-col{
+      border-right:none;
+      border-bottom:1px solid var(--filet);
+      padding-right:0;
+      padding-bottom:14px;
+      margin-bottom:22px;
+      display:flex;
+      align-items:baseline;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .margin-col .eyebrow{ margin-bottom:0; }
+  }
+
+  h2.title{
+    margin:0 0 28px;
+    font-weight:400;
+    font-size:clamp(1.5rem,3vw,1.9rem);
+    letter-spacing:.01em;
+  }
+
+  /* ===== Exposition en cours ===== */
+
+  .expo-current{
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(220px,.85fr);
+    gap:clamp(28px,4vw,56px);
+    align-items:start;
+  }
+
+  @media (max-width:760px){
+    .expo-current{ grid-template-columns:1fr; }
+  }
+
+  .expo-artist{
+    margin:0 0 2px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-weight:600;
+    font-size:.95rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+
+  .expo-title{
+    margin:0 0 6px;
+    font-style:italic;
+    font-weight:400;
+    font-size:clamp(1.5rem,3.2vw,2.05rem);
+    line-height:1.22;
+    color:var(--prusse);
+  }
+
+  .expo-meta{
+    margin:0 0 22px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.85rem;
+    color:var(--brun);
+    letter-spacing:.02em;
+  }
+
+  .expo-text p{ margin:0 0 14px; max-width:52ch; }
+
+  .expo-text p:first-of-type::first-letter{
+    float:left;
+    font-family:"Spectral", Georgia, serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:3.4rem;
+    line-height:.82;
+    color:var(--prusse);
+    padding:4px 8px 0 0;
+  }
+
+  .expo-link{
+    display:inline-block;
+    margin-top:6px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.82rem;
+    letter-spacing:.06em;
+    text-decoration:none;
+    border-bottom:1px solid var(--encre);
+    padding-bottom:2px;
+  }
+  .expo-link:hover{ color:var(--prusse); border-color:var(--prusse); }
+
+  .expo-plate{
+    background:var(--prusse);
+    color:var(--ivoire);
+    aspect-ratio:4/5;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+
+  .expo-plate-frame{
+    flex:1;
+    border:1px solid rgba(244,238,224,.42);
+    padding-top:6px;
+    padding-bottom:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+
+  .expo-plate-frame::before,.expo-plate-frame::after{
+    content:"";
+    position:absolute;
+    left:16px; right:16px;
+    height:1px;
+    background:rgba(244,238,224,.3);
+  }
+  .expo-plate-frame::before{ top:34%; }
+  .expo-plate-frame::after{ top:66%; }
+
+  .expo-plate-caption{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.7rem;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    text-align:center;
+    padding:0 8px;
+  }
+
+  .expo-plate-foot{
+    margin-top:14px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.68rem;
+    letter-spacing:.1em;
+    text-align:center;
+    color:rgba(244,238,224,.72);
+  }
+
+  /* ===== Œuvres disponibles ===== */
+
+  .work-list{ display:flex; flex-direction:column; }
+
+  .work{
+    padding-block:26px;
+    border-bottom:1px solid var(--filet);
+  }
+  .work:first-child{ padding-top:0; }
+
+  .work-lead{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+
+  .work-artist{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-weight:600;
+    font-size:.86rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  .work-leader{
+    flex:1;
+    border-bottom:1px dotted var(--filet);
+    height:0;
+    transform:translateY(-5px);
+    min-width:16px;
+  }
+
+  .work-price{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.92rem;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+
+  .work-title{
+    margin:8px 0 4px;
+    font-style:italic;
+    font-size:1.18rem;
+  }
+
+  .work-details{
+    margin:0 0 10px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.82rem;
+    color:var(--brun);
+    letter-spacing:.01em;
+  }
+
+  .work-cta{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.78rem;
+    letter-spacing:.05em;
+    text-decoration:none;
+    border-bottom:1px solid var(--brun);
+    padding-bottom:1px;
+  }
+  .work-cta:hover{ color:var(--prusse); border-color:var(--prusse); }
+
+  /* ===== Artistes ===== */
+
+  .artist-grid{
+    columns:3 220px;
+    column-gap:40px;
+  }
+
+  @media (max-width:600px){ .artist-grid{ columns:1; } }
+
+  .artist-grid li{
+    break-inside:avoid;
+    list-style:none;
+    padding:11px 0;
+    border-bottom:1px solid var(--filet);
+    font-size:1.02rem;
+  }
+
+  .artist-grid{ margin:0; padding:0; }
+
+  .artist-years{
+    display:block;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.72rem;
+    letter-spacing:.04em;
+    color:var(--brun);
+    margin-top:2px;
+  }
+
+  /* ===== Agenda ===== */
+
+  .agenda-list{
+    display:flex;
+    flex-direction:column;
+    gap:30px;
+  }
+
+  .agenda-item{
+    display:grid;
+    grid-template-columns:150px minmax(0,1fr);
+    gap:24px;
+    align-items:start;
+    padding-bottom:28px;
+    border-bottom:1px solid var(--filet);
+  }
+  .agenda-item:last-child{ border-bottom:none; padding-bottom:0; }
+
+  @media (max-width:640px){
+    .agenda-item{ grid-template-columns:1fr; }
+  }
+
+  .agenda-date{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.8rem;
+    letter-spacing:.04em;
+    color:var(--prusse);
+    font-weight:600;
+  }
+
+  .agenda-kind{
+    display:block;
+    margin-top:4px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.68rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brun);
+  }
+
+  .agenda-title{
+    margin:0 0 6px;
+    font-style:italic;
+    font-size:1.16rem;
+  }
+
+  .agenda-place{
+    margin:0 0 10px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.85rem;
+    color:var(--brun);
+  }
+
+  .agenda-fair{
+    display:grid;
+    grid-template-columns:minmax(0,1.3fr) minmax(180px,.9fr);
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width:600px){ .agenda-fair{ grid-template-columns:1fr; } }
+
+  .agenda-fair figure{ margin:0; }
+  .agenda-fair figcaption{
+    margin-top:8px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.72rem;
+    color:var(--brun);
+    font-style:italic;
+  }
+
+  /* ===== Publications ===== */
+
+  .pub-layout{
+    display:grid;
+    grid-template-columns:minmax(0,1.2fr) minmax(240px,.8fr);
+    gap:clamp(30px,4vw,56px);
+    align-items:start;
+  }
+  @media (max-width:760px){ .pub-layout{ grid-template-columns:1fr; } }
+
+  .pub-layout p{ max-width:56ch; margin:0 0 16px; }
+
+  .pub-list{
+    margin:22px 0 0;
+    padding:0;
+    list-style:none;
+    border-top:1px solid var(--filet);
+  }
+
+  .pub-list li{
+    padding:14px 0;
+    border-bottom:1px solid var(--filet);
+  }
+
+  .pub-name{ font-style:italic; }
+
+  .pub-meta{
+    display:block;
+    margin-top:3px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.76rem;
+    color:var(--brun);
+  }
+
+  .pub-figures{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .pub-figures figure{ margin:0; }
+
+  .pub-figures img{
+    width:100%;
+    height:auto;
+    border:1px solid var(--filet);
+  }
+
+  .pub-figures figcaption{
+    margin-top:8px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.74rem;
+    color:var(--brun);
+    font-style:italic;
+    line-height:1.5;
+  }
+
+  /* ===== Newsletter ===== */
+
+  .newsletter{
+    background:var(--ivoire-2);
+    border-top:1px solid var(--filet);
+    border-bottom:1px solid var(--filet);
+  }
+
+  .newsletter .wrap{
+    padding-block:clamp(34px,5vw,50px);
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+  }
+
+  .newsletter p{
+    margin:0;
+    max-width:44ch;
+    font-size:1.02rem;
+  }
+
+  .newsletter form{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .newsletter input[type="email"]{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.88rem;
+    padding:11px 14px;
+    border:1px solid var(--encre);
+    background:var(--ivoire);
+    color:var(--encre);
+    min-width:220px;
+  }
+
+  .newsletter button{
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.82rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:11px 22px;
+    background:var(--encre);
+    color:var(--ivoire);
+    border:1px solid var(--encre);
+    cursor:pointer;
+  }
+  .newsletter button:hover{ background:var(--prusse); border-color:var(--prusse); }
+
+  /* ===== Footer ===== */
+
+  footer{ padding-block:clamp(44px,6vw,70px) 26px; }
+
+  .footer-grid{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr;
+    gap:34px;
+    padding-bottom:30px;
+    border-bottom:1px solid var(--filet);
+  }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:480px){ .footer-grid{ grid-template-columns:1fr; } }
+
+  .footer-grid h3{
+    margin:0 0 12px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.74rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brun);
+    font-weight:600;
+  }
+
+  .footer-grid p, .footer-grid address{
+    margin:0 0 6px;
+    font-style:normal;
+    font-size:.92rem;
+  }
+
+  .footer-grid a{ text-decoration:none; border-bottom:1px solid transparent; }
+  .footer-grid a:hover{ border-bottom-color:var(--encre); }
+
+  .footer-about p{ max-width:42ch; color:var(--brun); font-size:.88rem; }
+
+  .footer-bottom{
+    margin-top:20px;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    gap:10px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.72rem;
+    letter-spacing:.03em;
+    color:var(--brun);
+  }
+
+  .demo-note{
+    text-align:center;
+    margin-top:22px;
+    font-family:"Work Sans", Arial, sans-serif;
+    font-size:.66rem;
+    letter-spacing:.03em;
+    color:var(--filet);
+  }
+</style>
+
+<header class="masthead" id="accueil">
+  <div class="wrap">
+    <div class="masthead-row">
+      <a class="wordmark" href="#accueil">Maison Vallier</a>
+      <nav class="primary-nav" aria-label="Navigation principale">
+        <a href="#artistes">Artistes</a>
+        <a href="#expositions">Expositions</a>
+        <a href="#agenda">Foires</a>
+        <a href="#publications">Publications</a>
+        <a href="#maison">La galerie</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="lang-switch" aria-hidden="true">
+        <span class="is-active">FR</span><span>EN</span>
+      </div>
+    </div>
+    <p class="masthead-sub">Tableaux modernes &amp; dessins de maîtres du XXe siècle — 9, avenue Matignon, Paris 8e — depuis 1954</p>
+  </div>
+</header>
+
+<main>
+
+  <section id="expositions">
+    <div class="wrap section-grid">
+      <div class="margin-col">
+        <span class="eyebrow">Exposition en cours</span>
+        <span class="margin-detail">05 septembre —<br>19 décembre 2026<br><br>Salle haute<br>9, avenue Matignon</span>
+      </div>
+      <div>
+        <div class="expo-current">
+          <div>
+            <p class="expo-artist">Margit Holzner</p>
+            <h2 class="expo-title">Le Trait retrouvé — dessins, 1950–1975</h2>
+            <p class="expo-meta">5 septembre – 19 décembre 2026 · Maison Vallier, salle haute</p>
+            <div class="expo-text">
+              <p>Près de cinquante feuilles, pour la plupart inédites, retracent trois décennies de pratique du dessin chez Margit Holzner : fusains d'atelier, études de figures inclinées, cahiers de croquis pris sur le vif à Montparnasse puis à Vienne. On y suit une main qui cherche, reprend, efface, et qui ne cède rien à l'anecdote.</p>
+              <p>L'accrochage réunit des œuvres conservées en collection privée depuis leur acquisition directe auprès de l'artiste, présentées pour la première fois hors atelier.</p>
+            </div>
+            <a class="expo-link" href="#oeuvres">Voir l'exposition</a>
+          </div>
+          <div class="expo-plate" role="img" aria-label="Composition typographique évoquant l'accrochage de l'exposition en salle haute">
+            <div class="expo-plate-frame">
+              <span class="expo-plate-caption">Accrochage<br>Salle haute</span>
+            </div>
+            <p class="expo-plate-foot">Margit Holzner, 1950–1975</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="folio">01</p>
+  </section>
+
+  <section id="oeuvres">
+    <div class="wrap section-grid">
+      <div class="margin-col">
+        <span class="eyebrow">Œuvres disponibles</span>
+        <span class="margin-detail">Peintures, gouaches et dessins de la seconde moitié du XXe siècle</span>
+      </div>
+      <div>
+        <h2 class="title">Œuvres disponibles</h2>
+        <div class="work-list">
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Julien Maréchal</span>
+              <span class="work-leader"></span>
+              <span class="work-price">185&nbsp;000&nbsp;€</span>
+            </div>
+            <p class="work-title">Les Toits de Montparnasse</p>
+            <p class="work-details">1954 · huile sur toile · 65 × 92 cm · signée et datée en bas à droite</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Ilona Kessler</span>
+              <span class="work-leader"></span>
+              <span class="work-price">Prix sur demande</span>
+            </div>
+            <p class="work-title">Nature morte au pichet bleu</p>
+            <p class="work-details">1961 · huile sur toile · 46 × 55 cm · provenance atelier de l'artiste</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Gustave Ridel</span>
+              <span class="work-leader"></span>
+              <span class="work-price">18&nbsp;500&nbsp;€</span>
+            </div>
+            <p class="work-title">Étude pour un nu assis</p>
+            <p class="work-details">1947 · encre et lavis sur papier · 32 × 24 cm · cachet d'atelier au verso</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Wladimir Sorel</span>
+              <span class="work-leader"></span>
+              <span class="work-price">62&nbsp;000&nbsp;€</span>
+            </div>
+            <p class="work-title">Port de Collioure, le soir</p>
+            <p class="work-details">1958 · gouache sur papier marouflé sur toile · 50 × 65 cm</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Margit Holzner</span>
+              <span class="work-leader"></span>
+              <span class="work-price">24&nbsp;000&nbsp;€</span>
+            </div>
+            <p class="work-title">Sans titre (Figure inclinée)</p>
+            <p class="work-details">1965 · fusain et craie sur papier · 60 × 45 cm · pièce unique</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Bronisław Ackerman</span>
+              <span class="work-leader"></span>
+              <span class="work-price">240&nbsp;000&nbsp;€</span>
+            </div>
+            <p class="work-title">Composition en gris et ocre</p>
+            <p class="work-details">1959 · huile sur toile · 81 × 100 cm · exposé au Salon de Mai, 1960</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Paul-Émile Sarrazin</span>
+              <span class="work-leader"></span>
+              <span class="work-price">95&nbsp;000&nbsp;€</span>
+            </div>
+            <p class="work-title">Torse</p>
+            <p class="work-details">1968 · bronze à patine brune · épreuve 3/8 (édition de 8 + 2 EA) · 42 cm (hauteur)</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+          <article class="work">
+            <div class="work-lead">
+              <span class="work-artist">Suzanne Trevisan</span>
+              <span class="work-leader"></span>
+              <span class="work-price">Prix sur demande</span>
+            </div>
+            <p class="work-title">La Liseuse</p>
+            <p class="work-details">1972 · huile sur toile · 73 × 60 cm</p>
+            <a class="work-cta" href="#contact">Demander le dossier</a>
+          </article>
+
+        </div>
+      </div>
+    </div>
+    <p class="folio">02</p>
+  </section>
+
+  <section id="artistes">
+    <div class="wrap section-grid">
+      <div class="margin-col">
+        <span class="eyebrow">Répertoire</span>
+        <span class="margin-detail">14 artistes représentés en représentation exclusive ou en dépôt</span>
+      </div>
+      <div>
+        <h2 class="title">Artistes représentés</h2>
+        <ul class="artist-grid">
+          <li>Julien Maréchal<span class="artist-years">1912–1988</span></li>
+          <li>Ilona Kessler<span class="artist-years">1908–1975</span></li>
+          <li>Marc-Aurèle Pinson<span class="artist-years">1919–2001</span></li>
+          <li>Suzanne Trevisan<span class="artist-years">1921–1999</span></li>
+          <li>Wladimir Sorel<span class="artist-years">1905–1969</span></li>
+          <li>Odile Charvet<span class="artist-years">1930–2015</span></li>
+          <li>Bronisław Ackerman<span class="artist-years">1911–1983</span></li>
+          <li>Léonie Fabron<span class="artist-years">1925–2004</span></li>
+          <li>Gustave Ridel<span class="artist-years">1898–1962</span></li>
+          <li>Ana Kowalczyk<span class="artist-years">née en 1934</span></li>
+          <li>Étienne Vaugirard<span class="artist-years">1907–1971</span></li>
+          <li>Margit Holzner<span class="artist-years">1916–1994</span></li>
+          <li>Paul-Émile Sarrazin<span class="artist-years">1922–1996</span></li>
+          <li>Ruth Ellenstein<span class="artist-years">1928–2010</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="folio">03</p>
+  </section>
+
+  <section id="agenda">
+    <div class="wrap section-grid">
+      <div class="margin-col">
+        <span class="eyebrow">Agenda</span>
+        <span class="margin-detail">Calendrier 2026 – 2027<br>expositions &amp; foires</span>
+      </div>
+      <div>
+        <h2 class="title">Agenda</h2>
+        <div class="agenda-list">
+
+          <div class="agenda-item">
+            <div>
+              <span class="agenda-date">14 janvier – 28 février 2027</span>
+              <span class="agenda-kind">Exposition</span>
+            </div>
+            <div>
+              <h3 class="agenda-title">Wladimir Sorel — Rétrospective, 1948–1969</h3>
+              <p class="agenda-place">Maison Vallier, 9 avenue Matignon, Paris 8e</p>
+              <p>Une quarantaine de peintures et gouaches, des paysages catalans du tournant des années 1950 aux compositions tardives, en collaboration avec les ayants droit de l'artiste.</p>
+            </div>
+          </div>
+
+          <div class="agenda-item">
+            <div>
+              <span class="agenda-date">11 mars – 24 avril 2027</span>
+              <span class="agenda-kind">Exposition collective</span>
+            </div>
+            <div>
+              <h3 class="agenda-title">École de Paris, la deuxième génération</h3>
+              <p class="agenda-place">Maison Vallier, 9 avenue Matignon, Paris 8e</p>
+              <p>Autour d'Ackerman, Kessler et Ellenstein, un accrochage consacré aux artistes venus à Paris entre 1945 et 1955, entre héritage et rupture.</p>
+            </div>
+          </div>
+
+          <div class="agenda-item agenda-fair">
+            <div>
+              <span class="agenda-date">13 – 18 mars 2027</span>
+              <span class="agenda-kind">Foire</span>
+              <h3 class="agenda-title">TEFAF Maastricht</h3>
+              <p class="agenda-place">MECC, Maastricht, Pays-Bas — stand Maison Vallier</p>
+              <p>Présentation d'un ensemble resserré de tableaux et dessins choisis pour leur provenance, dans la section Modern.</p>
+            </div>
+            <figure>
+              <img src="../img/foire.jpg" alt="Un galeriste de la Maison Vallier sur un stand de foire d'art, tableaux accrochés en arrière-plan" width="760" height="510" loading="eager">
+              <figcaption>Le stand Maison Vallier, TEFAF Maastricht, édition précédente.</figcaption>
+            </figure>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <p class="folio">04</p>
+  </section>
+
+  <section id="publications">
+    <div class="wrap section-grid">
+      <div class="margin-col">
+        <span class="eyebrow">Publications &amp; expertise</span>
+        <span class="margin-detail">Catalogues raisonnés, monographies et constats de provenance établis par la maison</span>
+      </div>
+      <div>
+        <h2 class="title">Publications et catalogues raisonnés</h2>
+        <div class="pub-layout">
+          <div>
+            <p>La Maison Vallier publie et tient à jour les catalogues raisonnés des artistes dont elle assure le suivi de l'œuvre, en lien avec les archives de famille et les comités d'experts compétents. Chaque tableau proposé à la vente fait l'objet d'un examen du châssis, du dos de toile et des étiquettes d'exposition, seuls véritables témoins de sa provenance.</p>
+            <p>Ce travail de constat, mené en réserve avant toute présentation en salle, accompagne chaque dossier d'œuvre remis aux acquéreurs : historique des propriétaires successifs, expositions, bibliographie.</p>
+            <ul class="pub-list">
+              <li>
+                <span class="pub-name">Catalogue raisonné Wladimir Sorel, 1946–1969</span>
+                <span class="pub-meta">Éditions Maison Vallier, 2011 — 2 volumes, 640 numéros</span>
+              </li>
+              <li>
+                <span class="pub-name">Bronisław Ackerman, une peinture de la reconstruction</span>
+                <span class="pub-meta">Monographie, Éditions Maison Vallier, 2019</span>
+              </li>
+              <li>
+                <span class="pub-name">Margit Holzner, le dessin comme journal</span>
+                <span class="pub-meta">Catalogue d'exposition, 2026, 96 pages</span>
+              </li>
+            </ul>
+          </div>
+          <div class="pub-figures">
+            <figure>
+              <img src="../img/verso.jpg" alt="Dos d'une toile ancienne montrant châssis, cachets de marchand et étiquettes d'expositions successives" width="480" height="596" loading="lazy">
+              <figcaption>Dos de toile, cachets et étiquettes d'expositions — un des principaux éléments de provenance examinés avant tout achat.</figcaption>
+            </figure>
+            <figure>
+              <img src="../img/manipulation.jpg" alt="Mains gantées examinant la surface d'une œuvre sur papier lors d'un constat d'état" width="360" height="447" loading="lazy">
+              <figcaption>Constat d'état, établi en réserve avant présentation en salle.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="folio">05</p>
+  </section>
+
+</main>
+
+<div class="newsletter">
+  <div class="wrap">
+    <p>Recevez, quelques fois par an, les nouvelles acquisitions, les dates d'accrochage et les rendez-vous de foire de la Maison Vallier.</p>
+    <form action="#" onsubmit="event.preventDefault()">
+      <label for="newsletter-email" class="visually-hidden" style="position:absolute;left:-9999px;">Adresse e-mail</label>
+      <input id="newsletter-email" type="email" name="email" placeholder="Adresse e-mail" required>
+      <button type="submit">S'inscrire</button>
+    </form>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-about" id="maison">
+        <h3>La galerie</h3>
+        <p>Fondée en 1954 par Antoine Vallier, la galerie est aujourd'hui dirigée par sa petite-fille, Camille Vallier. Trois générations d'un même regard porté sur la peinture d'après-guerre, l'École de Paris et le dessin de maîtres du XXe siècle.</p>
+      </div>
+      <div id="contact">
+        <h3>Contact</h3>
+        <address>
+          9, avenue Matignon<br>75008 Paris, France
+        </address>
+        <p><a href="tel:+33142660512">+33 1 42 66 05 12</a></p>
+        <p><a href="mailto:cabinet@maison-vallier.paris">cabinet@maison-vallier.paris</a></p>
+      </div>
+      <div>
+        <h3>Horaires &amp; suivi</h3>
+        <p>Mardi – samedi<br>10h – 13h · 14h – 19h</p>
+        <p>Et sur rendez-vous</p>
+        <p><a href="#" aria-label="Maison Vallier sur Instagram (lien de démonstration)">Instagram</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Maison Vallier — tous droits réservés</span>
+      <span>Mentions légales · Politique de confidentialité</span>
+    </div>
+    <p class="demo-note">Modèle de démonstration Artosera · galerie fictive</p>
+  </div>
+</footer>
