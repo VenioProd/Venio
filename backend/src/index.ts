@@ -49,6 +49,7 @@ import adminQualiopiQuestRoutes from './routes/admin/qualiopiQuestionnaires.js'
 import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import publicContactRoutes from './routes/public/contact.js'
 import publicAnalyticsRoutes from './routes/public/analytics.js'
+import artoseraDevisRoutes from './routes/public/artoseraDevis.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminChangeRequestRoutes from './routes/admin/changeRequests.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
@@ -195,6 +196,11 @@ app.use('/api/external', externalRoutes)
 // conserve le format d'erreur agent pour les JSON invalides et les payloads
 // trop volumineux. Il doit être monté avant le parser global (2 MiB).
 app.use('/api/v1/agent', requestIdMiddleware, agentJsonBodyParser, agentRoutes)
+
+// Devis Artosera : route publique appelée par la page commerciale, qui poste
+// son PDF en base64. Montée ici, avant le parser global (2 MiB), car elle
+// porte son propre parser à 8 MiB. Elle gère ses erreurs de parsing.
+app.use('/api/artosera', artoseraDevisRoutes)
 
 app.use(express.json({ limit: '2mb' }))
 

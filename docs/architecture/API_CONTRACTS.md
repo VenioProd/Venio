@@ -116,10 +116,43 @@ token. Il est appliqué en mémoire, donc par processus ; les réponses exposent
 `X-RateLimit-Limit` et `X-RateLimit-Remaining`, ou `429 RATE_LIMITED` avec
 `Retry-After`.
 
+## Devis Artosera
+
+`POST /api/artosera/devis` envoie par e-mail le devis produit par la page
+commerciale Artosera (`venio.paris/artosera/devis`). La route est **publique**
+et sans authentification : la page est utilisée en rendez-vous, hors session.
+
+Corps attendu, en JSON :
+
+| Champ | Contenu |
+| --- | --- |
+| `to` | Adresse e-mail de la galerie destinataire. Une seule adresse. |
+| `galerie`, `interlocuteur` | Libellés repris dans la trace ; facultatifs. |
+| `subject` | Objet du message, sur une ligne. |
+| `body` | Corps en texte brut ; chaque ligne devient un paragraphe en HTML. |
+| `filename` | Nom souhaité de la pièce jointe. |
+| `pdfBase64` | PDF du devis encodé en base64, sans préfixe `data:`. |
+| `devis` | État complet du devis, conservé tel quel pour la trace. |
+
+Réponses : `200 { ok: true }` après remise au serveur SMTP, `400 { ok: false, error }`
+si le destinataire, l'objet, le corps ou le PDF sont invalides, `413` au-delà
+de 8 MiB de JSON, `429` au-delà de 10 envois par IP sur 15 minutes, `502` si
+l'envoi SMTP échoue et `503` si la trace ne peut pas être écrite.
+
+Le parser JSON de cette route accepte 8 MiB, le PDF décodé 5 MiB. Le sujet et
+les libellés sont débarrassés de leurs caractères de contrôle, et le nom de
+fichier est réduit à son basename : le contenu vient du navigateur et sert à
+la fois d'en-tête SMTP et de nom sur disque.
+
+Chaque envoi est mis en copie cachée à `ARTOSERA_DEVIS_BCC`
+(défaut `contact@venio.paris`) et archivé avant expédition sous
+`uploads/artosera-devis/<jour>/<référence>/`, qui contient le PDF envoyé et un
+`devis.json` portant l'état du devis, le destinataire et l'IP appelante.
+
 ## Limites applicatives transverses
 
-- Le parser JSON général est limité à 2 MiB ; le parser dédié de l'API agent
-  est limité à 8 MiB. Ses erreurs de syntaxe et de taille restent normalisées
+- Le parser JSON général est limité à 2 MiB ; les parsers dédiés de l'API
+  agent et de `POST /api/artosera/devis` sont limités à 8 MiB. Ses erreurs de syntaxe et de taille restent normalisées
   (`MALFORMED_JSON` / `PAYLOAD_TOO_LARGE`) pour les consommateurs agent.
 - Le backend applique un quota global de 200 requêtes par minute et par IP.
 - Les tentatives de connexion sont limitées à 5 par IP sur 15 minutes, en ne
