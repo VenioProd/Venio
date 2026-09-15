@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Artosera interactive quote: tick the services and features, the price is worked out live.">
 <meta name="robots" content="noindex">
+<link rel="alternate" hreflang="fr" href="/artosera/devis">
+<link rel="alternate" hreflang="en" href="/artosera/quote">
+<link rel="stylesheet" href="/artosera/languages.css">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Artosera Quote</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -163,7 +166,7 @@
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   @media print {
     .bar { position: static; border-bottom: 1px solid #000; }
-    .tools, .btn, .panel.com, .sig .actions, .sig .status { display: none; }
+    .language-bar, .tools, .btn, .panel.com, .sig .actions, .sig .status { display: none; }
     .row.off { display: none; }
     .row:hover { background: transparent; }
     .panel { background: transparent; }
@@ -174,7 +177,13 @@
 </head>
 <body>
 <div class="page">
-  <p style="margin:0 0 14px"><a class="backlink" href="/artosera">← Artosera overview</a></p>
+  <div class="language-bar">
+    <a class="backlink" href="/artosera/en">← Artosera overview</a>
+    <nav class="language-switch" aria-label="Language">
+      <a href="/artosera/devis" lang="fr" hreflang="fr" aria-label="Français">FR</a>
+      <a href="/artosera/quote" lang="en" hreflang="en" aria-label="English" aria-current="page">EN</a>
+    </nav>
+  </div>
   <header class="mast">
     <div>
       <p class="eyebrow">Artosera · management platform for art galleries</p>
