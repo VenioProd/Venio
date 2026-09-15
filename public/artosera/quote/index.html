@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Artosera interactive quote: build your gallery’s scope and get the price live.">
+<meta name="description" content="Artosera interactive quote: tick the services and features, the price is worked out live.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Artosera Quote</title>
@@ -108,7 +108,10 @@
 
   /* Groupes et lignes */
   .group { padding: 34px 0 4px; }
-  .group h2.gt { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.02em; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+  .group h2.gt { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.02em; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .svc { display: inline-flex; align-items: center; gap: 11px; cursor: pointer; }
+  .svc input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+  .svc:hover span { color: var(--accent); }
   .group h2.gt .cnt { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); }
   .head { display: grid; grid-template-columns: 34px minmax(0, 1fr) 96px 104px; gap: 14px; padding-bottom: 8px; margin-top: 12px; border-bottom: 1px solid var(--rule); font-family: var(--display); font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
   .head .r { text-align: right; }
@@ -145,6 +148,8 @@
   .sig { background: var(--surface); border: 1px solid var(--hair); padding: 18px 20px; }
   .sig h3 { font-family: var(--display); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
   .sig p { margin: 0 0 10px; font-size: 14.5px; }
+  .sig .dest { font-size: 13.5px; color: var(--muted); margin: 14px 0 0; }
+  .sig .dest b { color: var(--ink); font-weight: 600; }
   .sig .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .sig .status { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
   .sig .status.ok { color: var(--ok); }
@@ -305,9 +310,10 @@
       <h3>What has been agreed</h3>
       <p>The summary brings together the ticked lines, the migration, and the subscription and commitment chosen. It stands as the quote for the pilot gallery and the build of the platform.</p>
       <p>Go-live estimated at thirteen weeks after signature, including data migration.</p>
+      <p class="dest">The PDF is sent to <b>contact@venio.paris</b> with the ticked scope and the amounts.</p>
       <div class="actions">
         <button class="btn go" type="button" id="bPdf">Download the PDF</button>
-        <button class="btn" type="button" id="bMail">Send by email</button>
+        <button class="btn" type="button" id="bMail">Send to Venio</button>
         <button class="btn q" type="button" id="bPrint">Print</button>
       </div>
       <div class="status" id="status"></div>
@@ -371,6 +377,7 @@
   const TIER = { e: { n: "Essential", p: 149, r: 1 }, g: { n: "Gallery", p: 249, r: 2 } };
   const MIG = { base: 900, parMilleOeuvres: 300, parSite: 450 };
   const KEY = "artosera-quote-en-v1";
+  const DEST = "contact@venio.paris";
   const ALL = GROUPS.flatMap(g => g.items);
   const eur = n => new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.round(n));
   const nf = n => new Intl.NumberFormat("en-GB").format(n);
@@ -389,7 +396,7 @@
   const host = el("groups");
   host.innerHTML = GROUPS.map(g => `
     <section class="group" id="g-${g.id}">
-      <h2 class="gt">${g.title} <span class="cnt" data-cnt="${g.id}"></span></h2>
+      <h2 class="gt"><label class="svc"><input type="checkbox" class="svc-box" data-group="${g.id}" aria-label="Select the whole ${g.title} service"><span>${g.title}</span></label> <span class="cnt" data-cnt="${g.id}"></span></h2>
       <div class="head"><span></span><span>Module</span><span>Plan</span><span class="r">Implementation</span></div>
       ${g.items.map(i => `
         <label class="row" for="c-${i.id}" data-id="${i.id}">
@@ -399,7 +406,8 @@
           <span class="price">${eur(i.p)}</span>
         </label>`).join("")}
     </section>`).join("");
-  const boxes = [...host.querySelectorAll('input[type="checkbox"]')];
+  const boxes = [...host.querySelectorAll('.row input[type="checkbox"]')];
+  const svcBoxes = [...host.querySelectorAll('.svc-box')];
   const rows = [...host.querySelectorAll(".row")];
 
   // ---- Fields
@@ -444,6 +452,8 @@
     rows.forEach(r => r.classList.toggle("off", !picked.has(r.dataset.id)));
     GROUPS.forEach(g => {
       const n = g.items.filter(i => picked.has(i.id)).length, somme = g.items.filter(i => picked.has(i.id)).reduce((s, i) => s + i.p, 0);
+      const sb = host.querySelector(`.svc-box[data-group="${g.id}"]`);
+      if (sb) { sb.checked = n === g.items.length; sb.indeterminate = n > 0 && n < g.items.length; }
       host.querySelector(`[data-cnt="${g.id}"]`).textContent = `${n} / ${g.items.length}` + (somme ? ` · ${eur(somme)}` : "");
     });
     el("migHint").textContent = `${eur(MIG.base)} base fee, ${eur(MIG.parMilleOeuvres)} per thousand artworks, ${eur(MIG.parSite)} per site. Artworks and sites at zero: no migration.`;
@@ -463,6 +473,14 @@
 
   // ---- Interactions
   boxes.forEach(b => b.addEventListener("change", () => { b.checked ? picked.add(b.dataset.id) : picked.delete(b.dataset.id); render(); }));
+  svcBoxes.forEach(b => b.addEventListener("change", () => {
+    const g = GROUPS.find(x => x.id === b.dataset.group);
+    const toutRetenu = g.items.every(i => picked.has(i.id));
+    g.items.forEach(i => toutRetenu ? picked.delete(i.id) : picked.add(i.id));
+    boxes.forEach(x => { x.checked = picked.has(x.dataset.id); });
+    render();
+  }));
+
   const setAll = ids => { picked = new Set(ids); boxes.forEach(b => { b.checked = picked.has(b.dataset.id); }); render(); };
   el("bReco").addEventListener("click", () => setAll(ALL.filter(i => i.r).map(i => i.id)));
   el("bNone").addEventListener("click", () => setAll([]));
@@ -511,7 +529,15 @@
 
     section("Implementation — modules selected");
     if (!c.chosen.length) { txt("No modules selected beyond the core.", M, y); y += 8; }
-    GROUPS.forEach(g => g.items.filter(i => picked.has(i.id)).forEach(i => rowPdf(i.n, i.d, eur(i.p))));
+    GROUPS.forEach(g => {
+      const kept = g.items.filter(i => picked.has(i.id));
+      if (!kept.length) return;
+      need(12); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(168, 18, 47);
+      txt(g.title, M, y); txt(eur(kept.reduce((a, i) => a + i.p, 0)), R, y, { align: "right" });
+      doc.setTextColor(23, 20, 15); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); y += 5;
+      kept.forEach(i => rowPdf(i.n, i.d, eur(i.p)));
+      y += 2;
+    });
     y += 2; need(8); doc.setFont("helvetica", "bold"); txt("Implementation", M, y); txt(eur(c.base.impl) + (c.adjusted.impl ? " (adjusted)" : ""), R, y, { align: "right" }); doc.setFont("helvetica", "normal"); y += 10;
 
     section("Data migration");
@@ -570,14 +596,18 @@
   // ---- Email. Served from venio.paris: the route sends the PDF as an attachment. Elsewhere: PDF downloaded + pre-filled email.
   el("bMail").addEventListener("click", async () => {
     readFields();
-    if (!S.mail || !F.mail.checkValidity()) { status("Enter the gallery's e-mail address before sending.", "err"); F.mail.focus(); return; }
+    if (S.mail && !F.mail.checkValidity()) { status("The gallery email address is not valid.", "err"); F.mail.focus(); return; }
     const c = compute();
     const galerie = S.name || "your gallery";
     const subject = `Artosera quote — ${galerie}`;
     const body = [
       `Hello${S.who ? " " + S.who : ""},`, "",
       `Here is a summary of what we agreed for ${galerie}:`, "",
-      ...c.chosen.map(i => `— ${i.n}: ${eur(i.p)}`),
+      ...GROUPS.flatMap(g => {
+        const kept = g.items.filter(i => picked.has(i.id));
+        return kept.length ? [`${g.title} — ${eur(kept.reduce((a, i) => a + i.p, 0))}`,
+          ...kept.map(i => `    · ${i.n}: ${eur(i.p)}`), ""] : [];
+      }),
       "", `Implementation: ${eur(c.net.impl)}`, `Data migration: ${eur(c.net.mig)}`,
       `${c.tier.n} subscription: ${eur(c.net.sub)} per month, ${S.eng ? S.eng + "-month commitment" : "no commitment"}`,
       S.disc ? `Discount applied: ${S.disc}%` : null,
@@ -593,14 +623,14 @@
         if (!window.jspdf) throw new Error("pdf");
         const { doc, filename } = buildPdf();
         const b64 = doc.output("datauristring").split(",")[1];
-        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: S.mail, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
+        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: DEST, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
         if (!r.ok) throw new Error(String(r.status));
-        status(`Sent to ${S.mail}, PDF attached.`, "ok"); return;
+        status(`Sent to ${DEST}, PDF attached.`, "ok"); return;
       } catch (e) { status("Sending from the server failed; the PDF has been downloaded and the e-mail opens instead.", "err"); }
     }
     await savePdf();
-    window.location.href = `mailto:${encodeURIComponent(S.mail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    status(`PDF downloaded, e-mail opened for ${S.mail}: attach the file before sending.`, "ok");
+    window.location.href = `mailto:${encodeURIComponent(DEST)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    status(`PDF downloaded, e-mail opened for ${DEST}: attach the file before sending.`, "ok");
   });
 
   // ---- Start
