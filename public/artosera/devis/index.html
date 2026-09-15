@@ -46,6 +46,8 @@
 
   /* En-tête */
   .mast { border-top: 6px solid var(--rule); padding-top: 16px; display: grid; grid-template-columns: 1fr auto; gap: 18px 40px; align-items: end; }
+  .backlink { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--hair); }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
   .eyebrow { font-family: var(--display); font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
   h1 { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 5.2vw, 52px); line-height: 0.96; letter-spacing: -0.035em; margin: 0; text-wrap: balance; }
   .lede { font-size: 17px; max-width: 62ch; margin: 16px 0 0; }
@@ -167,6 +169,7 @@
 </head>
 <body>
 <div class="page">
+  <p style="margin:0 0 14px"><a class="backlink" href="/artosera">← Présentation Artosera</a></p>
   <header class="mast">
     <div>
       <p class="eyebrow">Artosera · plateforme de gestion pour galeries d'art</p>
