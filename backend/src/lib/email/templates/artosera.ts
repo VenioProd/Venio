@@ -47,9 +47,16 @@ export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput)
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
   const bcc = artoseraDevisBcc()
 
+  // Le préheader suit la langue du récapitulatif : c'est le seul indice de
+  // langue disponible, la page anglaise ne postant que le devis structuré.
+  const preheader =
+    input.recap?.lang === 'en'
+      ? `Artosera quote${input.galerie ? ' — ' + input.galerie : ''} · PDF attached.`
+      : `Devis Artosera${input.galerie ? ' — ' + input.galerie : ''} · PDF en pièce jointe.`
+
   const html = emailLayout({
     title: input.subject,
-    preheader: `Devis Artosera${input.galerie ? ' — ' + input.galerie : ''} · PDF en pièce jointe.`,
+    preheader,
     body: input.recap ? renderDevisRecap(input.recap, input) : renderEmailBody(input.body),
   })
 
@@ -77,19 +84,42 @@ const GRIS = '#5E584E'
 const FILET = '#DFDAD1'
 const PALE = '#F4F2EE'
 
+/** Libellés fixes du récapitulatif, selon la langue posée par la page (fr par défaut). */
+const LABELS = {
+  fr: {
+    devisPour: 'Devis établi pour',
+    galerieAPreciser: 'Galerie à préciser',
+    perimetreRetenu: 'Périmètre retenu',
+    aucuneFonction: 'Aucune fonction retenue au-delà du socle compris dans l’abonnement.',
+    remarques: 'Remarques et conditions particulières',
+    piedDePage:
+      'Le devis complet est en pièce jointe. Prix en euros hors taxes, valable 60 jours. Mise en service estimée à treize semaines après signature, reprise des données comprise.',
+  },
+  en: {
+    devisPour: 'Quote prepared for',
+    galerieAPreciser: 'Gallery to be confirmed',
+    perimetreRetenu: 'Selected scope',
+    aucuneFonction: 'No module selected beyond the core included in the subscription.',
+    remarques: 'Notes and special terms',
+    piedDePage:
+      'The full quote is attached. Prices in euros, excluding VAT, valid for 60 days. Go-live estimated at thirteen weeks after signature, data migration included.',
+  },
+} as const
+
 /**
  * Corps HTML du devis : un tableau par service, puis les totaux. Écrit en
  * tableaux et styles en ligne, seule mise en forme que les clients de
  * messagerie rendent de façon fiable.
  */
 function renderDevisRecap(recap: ArtoseraDevisRecap, input: SendArtoseraDevisEmailInput): string {
+  const t = LABELS[recap.lang]
   const e = (v: string | undefined) => escapeHtml(v ?? '')
   const cellule = `padding:7px 0;border-bottom:1px solid ${FILET};font-size:14px;color:${ENCRE};`
   const montant = `${cellule}text-align:right;white-space:nowrap;`
 
   const entete = `
-    <p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${GRIS}">Devis établi pour</p>
-    <p style="margin:0 0 2px;font-size:19px;font-weight:700;color:${ENCRE}">${e(input.galerie) || 'Galerie à préciser'}</p>
+    <p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${GRIS}">${t.devisPour}</p>
+    <p style="margin:0 0 2px;font-size:19px;font-weight:700;color:${ENCRE}">${e(input.galerie) || t.galerieAPreciser}</p>
     <p style="margin:0 0 18px;font-size:14px;color:${GRIS}">${[e(input.interlocuteur), e(input.to)].filter(Boolean).join(' · ')}</p>
     <p style="margin:0 0 22px;font-size:14px;color:${ENCRE}">${e(recap.offre)}${recap.engagement ? ' · ' + e(recap.engagement) : ''}</p>`
 
@@ -132,17 +162,17 @@ function renderDevisRecap(recap: ArtoseraDevisRecap, input: SendArtoseraDevisEma
     .join('')
 
   return `${entete}
-    <h2 style="margin:0 0 10px;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:${ENCRE};border-bottom:2px solid ${ENCRE};padding-bottom:6px">Périmètre retenu</h2>
-    ${services || `<p style="font-size:14px;color:${GRIS}">Aucune fonction retenue au-delà du socle compris dans l'abonnement.</p>`}
+    <h2 style="margin:0 0 10px;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:${ENCRE};border-bottom:2px solid ${ENCRE};padding-bottom:6px">${t.perimetreRetenu}</h2>
+    ${services || `<p style="font-size:14px;color:${GRIS}">${t.aucuneFonction}</p>`}
     ${complements ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px">${complements}</table>` : ''}
     ${recap.remise ? `<p style="margin:0 0 12px;font-size:14px;color:${CERISE}">${e(recap.remise)}</p>` : ''}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border:1px solid ${FILET}">${totaux}</table>
     ${
       recap.notes
         ? `<div style="background:${PALE};padding:14px 16px;margin:0 0 20px">
-      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:${GRIS}">Remarques et conditions particulières</p>
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:${GRIS}">${t.remarques}</p>
       <p style="margin:0;font-size:14px;color:${ENCRE};white-space:pre-line">${e(recap.notes)}</p></div>`
         : ''
     }
-    <p style="margin:0;font-size:13px;color:${GRIS}">Le devis complet est en pièce jointe. Prix en euros hors taxes, valable 60 jours. Mise en service estimée à treize semaines après signature, reprise des données comprise.</p>`
+    <p style="margin:0;font-size:13px;color:${GRIS}">${t.piedDePage}</p>`
 }

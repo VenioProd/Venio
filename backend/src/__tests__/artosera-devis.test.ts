@@ -255,4 +255,32 @@ describe('récapitulatif structuré', () => {
     if (!result.ok) return
     expect(result.submission.recap).toBeNull()
   })
+
+  it('conserve lang: "en" quand la page anglaise le pose', () => {
+    const result = validateArtoseraDevis({
+      ...base,
+      recap: { totaux: [{ libelle: 'Total', montant: '100 €' }], lang: 'en' },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap?.lang).toBe('en')
+  })
+
+  it('retombe sur "fr" pour une langue non reconnue', () => {
+    const result = validateArtoseraDevis({
+      ...base,
+      recap: { totaux: [{ libelle: 'Total', montant: '100 €' }], lang: 'de' },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap?.lang).toBe('fr')
+
+    const withNumber = validateArtoseraDevis({
+      ...base,
+      recap: { totaux: [{ libelle: 'Total', montant: '100 €' }], lang: 42 },
+    })
+    expect(withNumber.ok).toBe(true)
+    if (!withNumber.ok) return
+    expect(withNumber.submission.recap?.lang).toBe('fr')
+  })
 })

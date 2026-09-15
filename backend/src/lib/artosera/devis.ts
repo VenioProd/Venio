@@ -39,6 +39,8 @@ export interface ArtoseraDevisRecap {
   remise: string
   totaux: { libelle: string; montant: string }[]
   notes: string
+  /** Langue de composition de l'e-mail. La page anglaise du devis pose 'en' ; tout le reste vaut 'fr'. */
+  lang: 'fr' | 'en'
 }
 
 export type ArtoseraDevisRejection =
@@ -200,6 +202,10 @@ function normalizeRecap(value: unknown): ArtoseraDevisRecap | null {
       })
     : []
 
+  // Seuls 'fr' et 'en' sont des langues connues ; toute autre valeur (absente,
+  // mal typée, ou un code qu'on ne gère pas) retombe sur le français.
+  const lang = raw.lang === 'en' ? 'en' : 'fr'
+
   const recap: ArtoseraDevisRecap = {
     offre: court(raw.offre),
     engagement: court(raw.engagement),
@@ -209,6 +215,7 @@ function normalizeRecap(value: unknown): ArtoseraDevisRecap | null {
     remise: court(raw.remise),
     totaux,
     notes: normalizeMultiLine(raw.notes ?? '', RECAP_LIMITS.notes) ?? '',
+    lang,
   }
   return services.length || totaux.length ? recap : null
 }
