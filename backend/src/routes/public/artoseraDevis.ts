@@ -86,6 +86,9 @@ router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request,
     filename: submission.filename,
     pdf: submission.pdf,
     reference: archive.reference,
+    recap: submission.recap,
+    galerie: submission.galerie,
+    interlocuteur: submission.interlocuteur,
   })
 
   if (!result.sent) {

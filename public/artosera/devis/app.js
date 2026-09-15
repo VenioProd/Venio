@@ -159,82 +159,175 @@
     const c = compute();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const W = 210, M = 18, R = W - M; let y = 20;
+    const W = 210, H = 297, M = 16, R = W - M, COL = R - M;
+    const INK = [23, 20, 15], CERISE = [168, 18, 47], GRIS = [94, 88, 78], FILET = [223, 218, 209], PALE = [244, 242, 238];
+    const money = n => eur(n).replace(/[\u202f\u00a0\u2009]/g, " ");
+    const nombre = n => nf(n).replace(/[\u202f\u00a0\u2009]/g, " ");
     const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-    const txt = (s, x, yy, o = {}) => doc.text(String(s), x, yy, o);
-    const line = (yy, w = 0.2) => { doc.setLineWidth(w); doc.line(M, yy, R, yy); };
-    const need = h => { if (y + h > 277) { doc.addPage(); y = 20; } };
-
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(168, 18, 47);
-    txt("ARTOSERA · PLATEFORME DE GESTION POUR GALERIES D'ART", M, y); y += 8;
-    doc.setFontSize(22); doc.setTextColor(23, 20, 15); txt("Devis", M, y);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(94, 88, 78);
-    txt(`Établi le ${dateStr} par Venio, Paris`, R, y - 5, { align: "right" }); txt("Valable 60 jours · prix en euros hors taxes", R, y, { align: "right" });
-    y += 6; line(y, 0.8); y += 8;
-
-    doc.setTextColor(23, 20, 15); doc.setFontSize(10);
     const galerie = S.name || "Galerie à préciser";
-    doc.setFont("helvetica", "bold"); txt(galerie, M, y); doc.setFont("helvetica", "normal");
-    const who = [S.who, S.mail].filter(Boolean).join(" · "); if (who) { y += 5; txt(who, M, y); }
-    y += 5; txt(`Abonnement ${c.tier.n} · ${S.eng ? "engagement " + S.eng + " mois" : "mensuel, sans engagement"}`, M, y);
-    y += 10;
+    let y = 0;
 
-    const section = (title) => { need(14); doc.setFont("helvetica", "bold"); doc.setFontSize(11); txt(title, M, y); y += 3; line(y, 0.5); y += 6; doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); };
-    const rowPdf = (name, desc, amount) => {
-      const lines = desc ? doc.splitTextToSize(desc, R - M - 40) : [];
-      const h = 5 + lines.length * 4 + 2; need(h);
-      doc.setFont("helvetica", "bold"); txt(name, M, y); doc.setFont("helvetica", "normal"); txt(amount, R, y, { align: "right" });
-      if (lines.length) { doc.setTextColor(94, 88, 78); doc.setFontSize(8.5); doc.text(lines, M, y + 4); doc.setFontSize(9.5); doc.setTextColor(23, 20, 15); }
-      y += h; doc.setDrawColor(223, 218, 209); line(y - 1.5, 0.2); doc.setDrawColor(23, 20, 15);
-    };
+    const setFont = (style, size, color) => { doc.setFont("helvetica", style); doc.setFontSize(size); doc.setTextColor(...(color || INK)); };
+    const txt = (s, x, yy, opt) => doc.text(String(s), x, yy, opt);
+    const right = (s, yy) => doc.text(String(s), R, yy, { align: "right" });
+    const rule = (yy, color, w) => { doc.setDrawColor(...(color || FILET)); doc.setLineWidth(w || 0.2); doc.line(M, yy, R, yy); };
+    const need = h => { if (y + h > H - 22) { doc.addPage(); y = 24; } };
 
-    section("Compris dans l'abonnement");
-    doc.setTextColor(94, 88, 78); doc.setFontSize(8.5);
-    doc.text(doc.splitTextToSize("Fiche d'œuvre, photos, statut, recherche · fiche artiste FR/EN · carnet d'adresses · accès depuis tout appareil, plusieurs utilisateurs · domaine de la galerie, HTTPS · hébergement en France, sauvegarde quotidienne · maintenance et mises à jour · assistance par e-mail · export complet et réversibilité au contrat.", R - M), M, y);
-    y += 16; doc.setTextColor(23, 20, 15); doc.setFontSize(9.5);
+    // ---- En-tête : aplat encre, identité à gauche, nature du document à droite
+    doc.setFillColor(...INK); doc.rect(0, 0, W, 34, "F");
+    setFont("bold", 20, [255, 255, 255]); txt("Artosera", M, 16);
+    setFont("normal", 9, [190, 185, 175]); txt("par Venio · plateforme de gestion pour galeries d'art", M, 22.5);
+    setFont("bold", 13, [255, 255, 255]); txt("DEVIS", R, 14, { align: "right" });
+    setFont("normal", 8.5, [190, 185, 175]);
+    txt(dateStr, R, 20, { align: "right" });
+    txt("Valable 60 jours · prix en euros hors taxes", R, 25, { align: "right" });
+    y = 46;
 
-    section("Mise en œuvre — briques retenues");
-    if (!c.chosen.length) { txt("Aucune brique retenue au-delà du socle.", M, y); y += 8; }
+    // ---- Destinataire et conditions, deux colonnes
+    const midX = M + COL / 2 + 4;
+    setFont("bold", 8, GRIS); txt("ÉTABLI POUR", M, y); txt("CONDITIONS", midX, y);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.2);
+    doc.line(M, y + 1.6, M + COL / 2 - 4, y + 1.6); doc.line(midX, y + 1.6, R, y + 1.6);
+    y += 7;
+    setFont("bold", 11.5, INK); txt(galerie, M, y);
+    setFont("normal", 9.5, INK); txt(`Offre ${c.tier.n}`, midX, y);
+    y += 5;
+    setFont("normal", 9.5, GRIS);
+    const coords = [S.who, S.mail].filter(Boolean).join(" · ");
+    if (coords) txt(coords, M, y);
+    txt(S.eng ? `Engagement ${S.eng} mois` : "Mensuel, sans engagement", midX, y);
+    y += 5;
+    txt("Mise en service estimée à treize semaines", midX, y);
+    y += 12;
+
+    // ---- Périmètre retenu
+    setFont("bold", 12, INK); txt("Périmètre retenu", M, y);
+    setFont("normal", 9, GRIS); right(`${c.chosen.length} fonction${c.chosen.length > 1 ? "s" : ""} sur ${ALL.length}`, y);
+    y += 2.5; rule(y, INK, 0.6); y += 7;
+
+    if (!c.chosen.length) {
+      setFont("normal", 9.5, GRIS); txt("Aucune fonction retenue au-delà du socle compris dans l'abonnement.", M, y); y += 8;
+    }
+
     GROUPS.forEach(g => {
       const retenues = g.items.filter(i => picked.has(i.id));
       if (!retenues.length) return;
-      need(12); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(168, 18, 47);
-      txt(g.title, M, y); txt(eur(retenues.reduce((a, i) => a + i.p, 0)), R, y, { align: "right" });
-      doc.setTextColor(23, 20, 15); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); y += 5;
-      retenues.forEach(i => rowPdf(i.n, i.d, eur(i.p)));
-      y += 2;
+      need(22);
+      // bandeau du service
+      doc.setFillColor(...PALE); doc.rect(M, y - 4.6, COL, 7.4, "F");
+      setFont("bold", 10, CERISE); txt(g.title.toUpperCase(), M + 2.5, y);
+      setFont("bold", 10, INK); right(money(retenues.reduce((a, i) => a + i.p, 0)) + "  ", y);
+      y += 8;
+      retenues.forEach(i => {
+        const desc = doc.splitTextToSize(i.d, COL - 34);
+        const h = 4.6 + desc.length * 3.5 + 3.4;
+        need(h + 4);
+        setFont("bold", 9.5, INK); txt(i.n, M + 2.5, y);
+        setFont("normal", 9.5, INK); right(money(i.p) + "  ", y);
+        setFont("normal", 7.8, GRIS); doc.text(desc, M + 2.5, y + 3.9);
+        y += h;
+        doc.setDrawColor(...FILET); doc.setLineWidth(0.15); doc.line(M + 2.5, y - 2, R - 2, y - 2);
+      });
+      y += 4;
     });
-    y += 2; need(8); doc.setFont("helvetica", "bold"); txt("Mise en œuvre", M, y); txt(eur(c.base.impl) + (c.adjusted.impl ? " (ajustée)" : ""), R, y, { align: "right" }); doc.setFont("helvetica", "normal"); y += 10;
 
-    section("Reprise des données");
-    if (c.base.mig > 0) rowPdf("Reprise de l'inventaire, des contacts, des documents et du site", `${nf(S.oeuvres)} œuvres · ${S.sites} site${S.sites > 1 ? "s" : ""} existant${S.sites > 1 ? "s" : ""} · redirections des anciennes adresses comprises`, eur(c.base.mig) + (c.adjusted.mig ? " (ajustée)" : ""));
-    else { txt("Aucune reprise demandée.", M, y); y += 8; }
-    y += 4;
+    // ---- Reprise et abonnement
+    need(34);
+    y += 2; setFont("bold", 12, INK); txt("Reprise et abonnement", M, y);
+    y += 2.5; rule(y, INK, 0.6); y += 7;
+    const ligne = (titre, detail, montant) => {
+      const d = doc.splitTextToSize(detail, COL - 44);
+      need(6 + d.length * 3.5);
+      setFont("bold", 9.5, INK); txt(titre, M + 2.5, y);
+      setFont("normal", 9.5, INK); right(montant + "  ", y);
+      setFont("normal", 7.8, GRIS); doc.text(d, M + 2.5, y + 3.9);
+      y += 4.6 + d.length * 3.5 + 3.4;
+      doc.setDrawColor(...FILET); doc.setLineWidth(0.15); doc.line(M + 2.5, y - 2, R - 2, y - 2);
+    };
+    ligne("Reprise des données",
+      c.base.mig > 0 ? `${nombre(S.oeuvres)} œuvres · ${S.sites} site${S.sites > 1 ? "s" : ""} existant${S.sites > 1 ? "s" : ""} · import de l'inventaire, des contacts et des documents, redirections comprises` : "Aucune reprise demandée",
+      money(c.base.mig) + (c.adjusted.mig ? " ajustée" : ""));
+    ligne(`Abonnement ${c.tier.n}`,
+      `${S.eng ? "Engagement " + S.eng + " mois" : "Mensuel, sans engagement"} · socle compris · hébergement en France, sauvegarde quotidienne`,
+      money(c.base.sub) + " / mois" + (c.adjusted.sub ? " ajusté" : ""));
+    y += 6;
 
-    section("Abonnement");
-    rowPdf(`Offre ${c.tier.n}`, `${S.eng ? "Engagement " + S.eng + " mois" : "Mensuel, sans engagement"} · socle compris · hébergement en France`, `${eur(c.base.sub)} / mois` + (c.adjusted.sub ? " (ajusté)" : ""));
-    y += 4;
+    // ---- Totaux, encadré à droite
+    const boxW = 92, boxX = R - boxW;
+    const remise = S.disc > 0;
+    const lignes = 3 + (remise ? 1 : 0);
+    const listH = 6 + lignes * 5.6;
+    need(listH + 20);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.3); doc.rect(boxX, y, boxW, listH);
+    let by = y + 7;
+    const totLigne = (l, a, couleur) => {
+      setFont("normal", 9, couleur || GRIS); txt(l, boxX + 5, by);
+      setFont("normal", 9, couleur || INK); txt(a, boxX + boxW - 5, by, { align: "right" }); by += 5.6;
+    };
+    totLigne("Mise en œuvre", money(c.net.impl));
+    totLigne("Reprise des données", money(c.net.mig));
+    totLigne("Abonnement, par mois", money(c.net.sub));
+    if (remise) totLigne(`Remise ${S.disc} % appliquée`, "—", CERISE);
+    setFont("normal", 7.5, GRIS);
+    doc.text(doc.splitTextToSize("Mise en œuvre et reprise réglées une fois, à la livraison et avant la bascule. Abonnement mensuel par galerie.", boxX - M - 8), M, y + 6);
+    y += listH;
+    doc.setFillColor(...INK); doc.rect(boxX, y, boxW, 15, "F");
+    setFont("normal", 8, [190, 185, 175]); txt("PREMIÈRE ANNÉE, TOUT COMPRIS", boxX + 5, y + 5.5);
+    setFont("bold", 14, [255, 255, 255]); txt(money(c.year), boxX + boxW - 5, y + 12, { align: "right" });
+    y += 24;
 
-    need(40); section("Total");
-    const tot = (l, a, bold) => { doc.setFont("helvetica", bold ? "bold" : "normal"); txt(l, M, y); txt(a, R, y, { align: "right" }); y += 6; };
-    if (S.disc > 0) { tot(`Remise ${S.disc} % sur la mise en œuvre, la reprise et l'abonnement`, `− ${eur((c.base.impl - c.net.impl) + (c.base.mig - c.net.mig))} · − ${eur(c.base.sub - c.net.sub)} / mois`); }
-    tot("Mise en œuvre, à la livraison", eur(c.net.impl));
-    tot("Reprise des données, avant la bascule", eur(c.net.mig));
-    tot(`Abonnement ${c.tier.n}, par mois`, eur(c.net.sub));
-    y += 1; line(y, 0.8); y += 7;
-    doc.setFontSize(12); tot("Première année, tout compris", eur(c.year), true); doc.setFontSize(9.5); doc.setFont("helvetica", "normal");
+    // ---- Remarques
     if (S.notes) {
-      y += 2; section("Remarques et conditions particulières");
-      const nl = doc.splitTextToSize(S.notes, R - M); need(nl.length * 4.2 + 6); doc.text(nl, M, y); y += nl.length * 4.2 + 4;
+      const n = doc.splitTextToSize(S.notes, COL - 10);
+      need(n.length * 4 + 16);
+      doc.setFillColor(...PALE); doc.rect(M, y, COL, n.length * 4 + 12, "F");
+      setFont("bold", 8, GRIS); txt("REMARQUES ET CONDITIONS PARTICULIÈRES", M + 5, y + 6);
+      setFont("normal", 9, INK); doc.text(n, M + 5, y + 11.5);
+      y += n.length * 4 + 18;
     }
-    y += 4; doc.setTextColor(94, 88, 78); doc.setFontSize(8.5);
-    doc.text(doc.splitTextToSize("Mise en service estimée à treize semaines après signature, reprise des données comprise. Toute brique non retenue peut être ajoutée plus tard : la plateforme est la même, seules les fonctions ouvertes changent. Données hébergées en France, export complet à tout moment.", R - M), M, y);
-    y += 18; doc.setTextColor(23, 20, 15);
-    need(30); doc.setFontSize(8.5);
-    txt("Pour la galerie — nom, date, signature", M, y); txt("Pour Venio — nom, date, signature", W / 2 + 4, y); y += 14; doc.setDrawColor(150); doc.line(M, y, W / 2 - 4, y); doc.line(W / 2 + 4, y, R, y);
 
+    // ---- Socle compris, deux colonnes à hauteur mesurée
+    const socle = ["Fiche d'œuvre, photos, statut, recherche", "Fiche artiste FR et EN", "Carnet d'adresses",
+      "Accès depuis tout appareil, plusieurs utilisateurs", "Domaine de la galerie, HTTPS",
+      "Hébergement en France, sauvegarde quotidienne", "Maintenance et mises à jour", "Assistance par e-mail",
+      "Export complet et réversibilité au contrat"];
+    const colW = COL / 2 - 6, moitie = Math.ceil(socle.length / 2);
+    setFont("normal", 7.8, GRIS);
+    const hauteurs = socle.map(t => doc.splitTextToSize("— " + t, colW).length * 3.6);
+    const hCol = [0, 1].map(k => hauteurs.slice(k * moitie, (k + 1) * moitie).reduce((a, b) => a + b, 0));
+    need(Math.max(...hCol) + 14);
+    setFont("bold", 8, GRIS); txt("COMPRIS DANS L'ABONNEMENT, SANS SUPPLÉMENT", M, y);
+    const yListe = y + 5;
+    setFont("normal", 7.8, GRIS);
+    [0, 1].forEach(k => {
+      let yy = yListe;
+      socle.slice(k * moitie, (k + 1) * moitie).forEach(t => {
+        const l = doc.splitTextToSize("— " + t, colW);
+        doc.text(l, M + k * (COL / 2 + 6), yy);
+        yy += l.length * 3.6;
+      });
+    });
+    y = yListe + Math.max(...hCol) + 10;
+
+    // ---- Signatures
+    need(26);
+    setFont("bold", 8, GRIS);
+    txt("POUR LA GALERIE", M, y); txt("POUR VENIO", M + COL / 2 + 4, y);
+    setFont("normal", 7.5, GRIS);
+    txt("nom, date, signature", M, y + 4); txt("nom, date, signature", M + COL / 2 + 4, y + 4);
+    doc.setDrawColor(...FILET); doc.setLineWidth(0.3);
+    doc.line(M, y + 18, M + COL / 2 - 6, y + 18); doc.line(M + COL / 2 + 4, y + 18, R, y + 18);
+
+    // ---- Pied de page sur chaque page
     const n = doc.getNumberOfPages();
-    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(151, 144, 127); txt(`Artosera est conçu et développé à Paris par Venio · devis ${galerie} · page ${i} / ${n}`, M, 290); }
+    for (let i = 1; i <= n; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...FILET); doc.setLineWidth(0.2); doc.line(M, H - 14, R, H - 14);
+      setFont("normal", 7.5, GRIS);
+      txt("Artosera est conçu et développé à Paris par Venio · contact@venio.paris", M, H - 9.5);
+      txt(`${galerie} · ${i} / ${n}`, R, H - 9.5, { align: "right" });
+    }
+
     const slug = (galerie || "galerie").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     return { doc, filename: `devis-artosera-${slug}-${new Date().toISOString().slice(0, 10)}.pdf` };
   }
@@ -289,7 +382,26 @@
         if (!window.jspdf) throw new Error("pdf");
         const { doc, filename } = buildPdf();
         const b64 = doc.output("datauristring").split(",")[1];
-        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: DEST, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
+        const recap = {
+          offre: `Offre ${c.tier.n}`,
+          engagement: (S.eng ? `Engagement ${S.eng} mois` : "Mensuel, sans engagement"),
+          services: GROUPS.flatMap(g => {
+            const retenues = g.items.filter(i => picked.has(i.id));
+            return retenues.length ? [{ titre: g.title, sousTotal: eur(retenues.reduce((a, i) => a + i.p, 0)),
+              lignes: retenues.map(i => ({ nom: i.n, prix: eur(i.p) })) }] : [];
+          }),
+          reprise: c.base.mig ? { detail: `Reprise des données · ${nf(S.oeuvres)} œuvres · ${S.sites} site${S.sites > 1 ? "s" : ""} existant${S.sites > 1 ? "s" : ""}`, montant: eur(c.base.mig) } : null,
+          abonnement: { detail: `Abonnement ${c.tier.n} · ${S.eng ? "engagement " + S.eng + " mois" : "sans engagement"} · socle compris`, montant: `${eur(c.base.sub)} / mois` },
+          remise: S.disc ? `Remise de ${S.disc} % appliquée sur la mise en œuvre, la reprise et l'abonnement` : "",
+          totaux: [
+            { libelle: "Mise en œuvre", montant: eur(c.net.impl) },
+            { libelle: "Reprise des données", montant: eur(c.net.mig) },
+            { libelle: "Abonnement, par mois", montant: eur(c.net.sub) },
+            { libelle: "Première année, tout compris", montant: eur(c.year) },
+          ],
+          notes: S.notes,
+        };
+        const r = await fetch("/api/artosera/devis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: DEST, galerie: S.name, interlocuteur: S.who, subject, body, filename, pdfBase64: b64, recap, devis: { picked: [...picked], S, totals: c.net, tier: c.tier.n, year: c.year } }) });
         if (!r.ok) throw new Error(String(r.status));
         status(`Envoyé à ${DEST}, PDF en pièce jointe.`, "ok"); return;
       } catch (e) { status("L'envoi depuis le serveur a échoué ; le PDF est téléchargé et le mail s'ouvre à la place.", "err"); }
