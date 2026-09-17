@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import './ProofBar.css'
 
 interface Engagement {
@@ -24,8 +25,8 @@ const ProofBar = () => {
     <section className="mc-proof" aria-label="Nos engagements">
       <div className="mc-container">
         <dl className="mc-proof-grid">
-          {ENGAGEMENTS.map((engagement) => (
-            <div key={engagement.num} className="mc-proof-cell">
+          {ENGAGEMENTS.map((engagement, i) => (
+            <div key={engagement.num} className="mc-proof-cell" style={{ '--mc-i': i } as CSSProperties}>
               <dt>
                 <span className="mc-proof-num">{engagement.num}</span>
                 {engagement.label}

@@ -123,10 +123,43 @@ html.theme-monolithe .mc-faq-a {
   }
 }
 
+/* ─── Ouverture animée ───────────────────────────────────────────────────
+   `<details>` reste natif : il s'ouvre sans JavaScript, le clavier et les
+   lecteurs d'écran le connaissent, et la réponse ne quitte jamais le DOM.
+   La hauteur s'anime par ::details-content, qui cible exactement ce que
+   l'élément masque — là où un max-height chiffré forcerait à deviner.
+
+   `interpolate-size` est ce qui autorise l'interpolation vers `auto` ; sans
+   lui (moteur trop ancien), rien ne casse : l'accordéon s'ouvre d'un coup,
+   comme aujourd'hui. */
+
+html.theme-monolithe {
+  interpolate-size: allow-keywords;
+}
+
+html.theme-monolithe .mc-faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    block-size 0.3s var(--mc-ease),
+    opacity 0.3s var(--mc-ease),
+    content-visibility 0.3s allow-discrete;
+}
+
+html.theme-monolithe .mc-faq-item[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.theme-monolithe .mc-faq-q-text,
   html.theme-monolithe .mc-faq-sign::before,
   html.theme-monolithe .mc-faq-sign::after {
+    transition: none;
+  }
+
+  html.theme-monolithe .mc-faq-item::details-content {
     transition: none;
   }
 }

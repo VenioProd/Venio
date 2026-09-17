@@ -927,6 +927,163 @@
   }
 }
 
+/* ═══ MOUVEMENT ═══
+
+   Trois mécaniques, une seule règle : rien de ce qui porte du sens ne dépend
+   d'une animation pour être lu.
+
+   — le hero entre au CHARGEMENT (@keyframes, pas d'observateur) : un
+     IntersectionObserver qui ne se déclenche pas laisserait le titre
+     invisible, ce que le premier écran ne pardonne pas ;
+   — les blocs suivants entrent au SCROLL (.mh-reveal + useReveal) ;
+   — les grilles décalent leurs enfants d'un cran par --mh-i.               */
+
+/* ─── Fond vidéo du hero ─────────────────────────────────────────────────
+   Décor et rien d'autre : muet, sans message, retiré de l'ordre de lecture.
+   Le dégradé l'éteint avant le bas de section pour qu'il ne concurrence
+   jamais le texte. Si le fichier ne charge pas il ne manque rien : le fond
+   noir du thème est déjà la couleur attendue. */
+
+.mh-home .mh-hero-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.22;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 50%, transparent 100%);
+}
+.mh-home #mh-releve > .bd-grain {
+  z-index: 1;
+}
+.mh-home #mh-releve > .mh-container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Connexion comptée : le décor est la première chose qu'on retire. */
+@media (prefers-reduced-data: reduce) {
+  .mh-home .mh-hero-video {
+    display: none;
+  }
+}
+
+/* ─── Entrée du hero ─────────────────────────────────────────────────────
+   `both` retient l'état initial pendant le délai et garde l'état final
+   après : sans lui, chaque bloc apparaît à sa place avant de démarrer. */
+
+@keyframes mh-intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mh-home .mh-intro {
+  animation: mh-intro-rise 0.72s var(--mh-ease) both;
+  animation-delay: calc(var(--mh-i, 0) * 90ms);
+}
+
+/* ─── L'élévation cotée se dessine comme un relevé ───────────────────────
+   Dans l'ordre d'un vrai dessin technique : l'objet d'abord, les cotes
+   ensuite, les annotations en dernier. C'est ce que le bloc raconte — on ne
+   décore pas un site, on le relève. */
+
+.mh-home .mh-plate {
+  animation: mh-intro-rise 0.8s var(--mh-ease) 260ms both;
+}
+
+@keyframes mh-plate-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mh-plate-fill {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 1 — l'objet mesuré */
+.mh-home .mh-plate .mh-pl-frame {
+  stroke-dasharray: 1320;
+  stroke-dashoffset: 1320;
+  animation: mh-plate-draw 1.1s var(--mh-ease) 420ms both;
+}
+.mh-home .mh-plate .mh-pl-node,
+.mh-home .mh-plate .mh-pl-dot {
+  animation: mh-plate-fill 0.5s var(--mh-ease) both;
+  animation-delay: calc(760ms + var(--mh-n, 0) * 70ms);
+}
+
+/* 2 — les cotes */
+.mh-home .mh-plate .mh-pl-ext,
+.mh-home .mh-plate .mh-pl-dim,
+.mh-home .mh-plate .mh-pl-lead {
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: mh-plate-draw 0.9s var(--mh-ease) 1150ms both;
+}
+
+/* 3 — les annotations */
+.mh-home .mh-plate .mh-pl-arrow,
+.mh-home .mh-plate .mh-pl-t,
+.mh-home .mh-plate .mh-pl-badge,
+.mh-home .mh-plate .mh-pl-anchor {
+  animation: mh-plate-fill 0.5s var(--mh-ease) 1560ms both;
+}
+
+/* ─── Cascade et survol des cartes ───────────────────────────────────────
+   Une seule déclaration de `transition` par carte, et pour une raison : le
+   raccourci remplace la liste entière. `.mh-job` déclarait `transition:
+   background` après `.mh-reveal`, à spécificité égale — les trois métiers
+   apparaissaient donc d'un coup, sans le fondu que la classe promettait.
+   Tout est réuni ici, entrée et survol, avec un délai par propriété.
+
+   Le survol ne soulève rien : les filets entre cartes sont les gouttières
+   de la grille, une carte qui se décale les ouvrirait. C'est un liseré
+   intérieur qui marque la cible, sans toucher à la mise en page. */
+
+.mh-home .mh-spec,
+.mh-home .mh-job {
+  transition:
+    opacity 0.6s var(--mh-ease),
+    transform 0.6s var(--mh-ease),
+    background-color 0.25s var(--mh-ease),
+    box-shadow 0.25s var(--mh-ease);
+  transition-delay: calc(var(--mh-i, 0) * 80ms), calc(var(--mh-i, 0) * 80ms), 0s, 0s;
+}
+.mh-home .mh-spec:hover,
+.mh-home .mh-job:hover,
+.mh-home .mh-job:focus-visible {
+  background-color: var(--mh-bg-3);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.4);
+}
+.mh-home .mh-job .mh-job-go span {
+  display: inline-block;
+  transition: transform 0.24s var(--mh-ease);
+}
+.mh-home .mh-job:hover .mh-job-go span,
+.mh-home .mh-job:focus-visible .mh-job-go span {
+  transform: translateX(4px);
+}
+
+/* Le numéro prend l'accent au survol : le seul endroit de la carte où la
+   couleur ne coûte rien à la lisibilité du texte. */
+.mh-home .mh-spec .mh-spec-num {
+  transition: color 0.24s var(--mh-ease);
+}
+.mh-home .mh-spec:hover .mh-spec-num {
+  color: rgb(var(--primary-rgb));
+}
+
 /* ═══ MOUVEMENT RÉDUIT ═══ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -945,5 +1102,35 @@
   }
   .mh-home .mh-rd-name {
     fill: var(--mh-ink-2);
+  }
+
+  /* Le wildcard ci-dessus coupe les animations, pas les états qu'elles
+     étaient chargées d'annuler : chacun est remis à sa valeur finale, sans
+     quoi le hero resterait vide et l'élévation cotée, non dessinée. */
+  .mh-home .mh-intro,
+  .mh-home .mh-plate {
+    opacity: 1;
+    transform: none;
+  }
+  .mh-home .mh-plate .mh-pl-frame,
+  .mh-home .mh-plate .mh-pl-ext,
+  .mh-home .mh-plate .mh-pl-dim,
+  .mh-home .mh-plate .mh-pl-lead {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+  .mh-home .mh-plate .mh-pl-node,
+  .mh-home .mh-plate .mh-pl-dot,
+  .mh-home .mh-plate .mh-pl-arrow,
+  .mh-home .mh-plate .mh-pl-t,
+  .mh-home .mh-plate .mh-pl-badge,
+  .mh-home .mh-plate .mh-pl-anchor {
+    opacity: 1;
+  }
+
+  /* Une vidéo de décor est du mouvement pur : elle n'a aucune raison de
+     survivre à la demande. */
+  .mh-home .mh-hero-video {
+    display: none;
   }
 }

@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { GrainOverlay } from '../components/BrutalDeco'
+import { useReveal } from '../hooks/useReveal'
 import SitePlate from '../components/home/SitePlate'
 import TierDial, { type HomeTier } from '../components/home/TierDial'
 import ProofRadar from '../components/home/ProofRadar'
@@ -129,22 +130,10 @@ const RENDEZ_VOUS: { cle: string; valeur: string }[] = [
 ]
 
 const Home = () => {
-  useEffect(() => {
-    const els = document.querySelectorAll('.mh-home .mh-reveal')
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('mh-visible')
-            io.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
-    )
-    els.forEach((el) => io.observe(el))
-    return () => io.disconnect()
-  }, [])
+  // Même observateur que les autres pages publiques. Le hero, lui, ne passe
+  // pas par là : son entrée est une animation au chargement, jamais
+  // conditionnée à un observateur qui pourrait ne pas se déclencher.
+  useReveal('.mh-home .mh-reveal', 'mh-visible')
 
   return (
     <div className="mh-home">
@@ -157,16 +146,31 @@ const Home = () => {
 
       {/* ─── 02 · RELEVÉ ─── */}
       <section id="mh-releve">
+        {/* Décor, jamais information : la vidéo est muette, sans son ni
+            message, masquée au clavier et coupée dès que le visiteur demande
+            moins de mouvement. La page reste entière si elle ne charge pas. */}
+        <video
+          className="mh-hero-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          <source src="/hero-monolithe.mp4" type="video/mp4" />
+        </video>
         <GrainOverlay opacity={0.035} />
         <div className="mh-container mh-releve-grid">
           <div className="mh-releve-text">
-            <p className="mh-eyebrow mh-mono">
+            <p className="mh-eyebrow mh-mono mh-intro" style={{ '--mh-i': 0 } as CSSProperties}>
               <i aria-hidden="true" /> Venio — studio web à Paris
             </p>
-            <h1 className="mh-releve-title">
+            <h1 className="mh-releve-title mh-intro" style={{ '--mh-i': 1 } as CSSProperties}>
               Sites web et plateformes sur mesure, <span className="mh-accent">à Paris.</span>
             </h1>
-            <p className="mh-releve-sub">
+            <p className="mh-releve-sub mh-intro" style={{ '--mh-i': 2 } as CSSProperties}>
               Faits pour vous, et qui vous ressemblent. On dessine et on code votre site à partir de ce que vous avez à
               dire. Pas à partir d’un modèle acheté dans lequel on glisserait vos textes.
             </p>
@@ -174,8 +178,10 @@ const Home = () => {
             {/* Le hero est un lieu d'action : les trois repères qui occupaient
                 cette place disaient déjà ce que dit le ProofBar juste en
                 dessous, en moins complet. */}
-            <DualCta align="start" />
-            <TrustLine />
+            <div className="mh-intro" style={{ '--mh-i': 3 } as CSSProperties}>
+              <DualCta align="start" />
+              <TrustLine />
+            </div>
           </div>
 
           <SitePlate />
@@ -254,8 +260,8 @@ const Home = () => {
           </header>
 
           <div className="mh-specs">
-            {ARGUMENTS.map((a) => (
-              <article key={a.num} className="mh-spec mh-reveal">
+            {ARGUMENTS.map((a, i) => (
+              <article key={a.num} className="mh-spec mh-reveal" style={{ '--mh-i': i } as CSSProperties}>
                 <span className="mh-mono mh-spec-num">{a.num}</span>
                 <h3>{a.titre}</h3>
                 <p>{a.texte}</p>
@@ -282,8 +288,8 @@ const Home = () => {
           </header>
 
           <div className="mh-jobs">
-            {METIERS.map((m) => (
-              <Link key={m.num} to={m.to} className="mh-job mh-reveal">
+            {METIERS.map((m, i) => (
+              <Link key={m.num} to={m.to} className="mh-job mh-reveal" style={{ '--mh-i': i } as CSSProperties}>
                 <span className="mh-mono mh-job-num">
                   {m.num} — {m.nom}
                 </span>

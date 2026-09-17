@@ -52,6 +52,23 @@ html.theme-monolithe .mc-proof-cell dd {
   color: var(--text-primary);
 }
 
+/* Le bandeau prolonge l'entrée du hero, une cellule après l'autre. C'est le
+   contenu qui entre, pas la cellule : animer l'opacité de la cellule ferait
+   transparaître la couleur de filet que porte la grille, et les quatre cases
+   clignoteraient en gris avant de se poser. */
+@keyframes mc-proof-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+html.theme-monolithe .mc-proof-cell > dt,
+html.theme-monolithe .mc-proof-cell > dd {
+  animation: mc-proof-in 0.6s var(--mc-ease) both;
+  animation-delay: calc(420ms + var(--mc-i, 0) * 90ms);
+}
+
 @media (max-width: 900px) {
   html.theme-monolithe .mc-proof-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -61,5 +78,14 @@ html.theme-monolithe .mc-proof-cell dd {
 @media (max-width: 560px) {
   html.theme-monolithe .mc-proof-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-proof-cell > dt,
+  html.theme-monolithe .mc-proof-cell > dd {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
