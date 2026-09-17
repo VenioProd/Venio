@@ -4,7 +4,6 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import SitesPricingTable from '../components/SitesPricingTable'
 import ServiceOfferLinks from '../components/ServiceOfferLinks'
-import ProofBar from '../components/conversion/ProofBar'
 import DualCta from '../components/conversion/DualCta'
 import TrustLine from '../components/conversion/TrustLine'
 import Faq from '../components/conversion/Faq'
@@ -31,8 +30,6 @@ const ServicesSites: React.FC = () => {
           </p>
         </div>
       </section>
-
-      <ProofBar />
 
       <section className="ms-block">
         <div className="ms-container ms-twocol">

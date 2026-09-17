@@ -117,8 +117,6 @@ const Methode = () => {
         </div>
       </section>
 
-      {/* Pas de ProofBar ici : la page décrit déjà le déroulé étape par étape,
-          le bandeau d'engagements n'y ajouterait qu'une redite. */}
       <section className="mp-block">
         <div className="mp-container mp-reveal">
           <Faq items={METHODE_FAQ} />

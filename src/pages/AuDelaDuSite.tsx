@@ -102,8 +102,6 @@ const AuDelaDuSite = () => {
         </div>
       </section>
 
-      {/* Pas de ProofBar ici : ses quatre engagements parlent du site, alors que
-          cette page parle des trois métiers qui l'entourent. */}
       <section className="mp-block">
         <div className="mp-container mp-reveal">
           <Faq items={AU_DELA_FAQ} />

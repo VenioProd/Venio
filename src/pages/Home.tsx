@@ -7,7 +7,6 @@ import { useReveal } from '../hooks/useReveal'
 import SitePlate from '../components/home/SitePlate'
 import TierDial, { type HomeTier } from '../components/home/TierDial'
 import ProofRadar from '../components/home/ProofRadar'
-import ProofBar from '../components/conversion/ProofBar'
 import DualCta from '../components/conversion/DualCta'
 import TrustLine from '../components/conversion/TrustLine'
 import Faq from '../components/conversion/Faq'
@@ -176,8 +175,8 @@ const Home = () => {
             </p>
 
             {/* Le hero est un lieu d'action : les trois repères qui occupaient
-                cette place disaient déjà ce que dit le ProofBar juste en
-                dessous, en moins complet. */}
+                cette place répétaient la section « Trois choses qu'on vous
+                garantit », qui les dit en entier. */}
             <div className="mh-intro" style={{ '--mh-i': 3 } as CSSProperties}>
               <DualCta align="start" />
               <TrustLine />
@@ -187,8 +186,6 @@ const Home = () => {
           <SitePlate />
         </div>
       </section>
-
-      <ProofBar />
 
       {/* ─── 03 · CADRAN DES CINQ PALIERS ─── */}
       <section id="mh-paliers">
