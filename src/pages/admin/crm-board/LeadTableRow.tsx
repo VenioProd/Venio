@@ -175,7 +175,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               <button
                 className="crm-btn-notes"
                 onClick={() => onTransferToArrow(lead._id)}
-                title="Transf\u00e9rer vers Arrow \u00c9coles"
+                title={'Transf\u00e9rer vers Arrow \u00c9coles'}
                 style={{ color: 'var(--primary)' }}
               >
                 <svg
@@ -195,7 +195,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
             <button
               className="crm-btn-notes"
               onClick={() => onExpandLead(lead)}
-              title="Voir/\u00e9diter les notes d'interactions"
+              title={"Voir/\u00e9diter les notes d'interactions"}
             >
               <svg
                 viewBox="0 0 24 24"
