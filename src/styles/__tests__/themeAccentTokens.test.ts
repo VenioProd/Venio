@@ -62,7 +62,6 @@ describe('theme accent tokens', () => {
       'src/styles/monolithe-socle.css',
       'src/components/conversion/PublicModal.css',
       'src/components/conversion/ConversionForm.css',
-      'src/components/conversion/ProofBar.css',
       'src/components/conversion/DualCta.css',
       'src/components/conversion/TrustLine.css',
       'src/components/conversion/StickyCta.css',

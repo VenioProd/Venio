@@ -5,6 +5,11 @@
  * Les couleurs viennent toutes de la feuille (classes CSS), jamais d'attributs.
  */
 
+import type { CSSProperties } from 'react'
+
+/** Rang d'apparition d'un élément du relevé, lu par la feuille via --mh-n. */
+const n = (rang: number) => ({ '--mh-n': rang }) as CSSProperties
+
 const BADGES: { n: string; cx: number; cy: number }[] = [
   { n: '01', cx: 322, cy: 318 },
   { n: '02', cx: 56, cy: 30 },
@@ -23,17 +28,20 @@ const SitePlate = () => (
       role="img"
       aria-label="Schéma d'un site web, annoté de trois repères : le design est dessiné pour vous, le code vous appartient, rien n'est bloqué techniquement."
     >
-      {/* ─── l'objet mesuré ─── */}
+      {/* ─── l'objet mesuré ───
+          --mh-n donne le rang d'apparition quand le relevé se dessine :
+          la barre de titre, puis les blocs, de haut en bas et de gauche à
+          droite, comme on lirait la page. Voir monolithe-home.css. */}
       <rect className="mh-pl-frame" x="96" y="52" width="452" height="200" rx="5" />
-      <rect className="mh-pl-node" x="112" y="68" width="420" height="18" rx="5" />
-      <circle className="mh-pl-dot" cx="506" cy="77" r="2.6" />
-      <circle className="mh-pl-dot" cx="516" cy="77" r="2.6" />
-      <circle className="mh-pl-dot" cx="526" cy="77" r="2.6" />
-      <rect className="mh-pl-node mh-pl-node--live" x="112" y="98" width="262" height="62" rx="5" />
-      <rect className="mh-pl-node" x="386" y="98" width="146" height="62" rx="5" />
-      <rect className="mh-pl-node" x="112" y="172" width="132" height="62" rx="5" />
-      <rect className="mh-pl-node" x="256" y="172" width="132" height="62" rx="5" />
-      <rect className="mh-pl-node" x="400" y="172" width="132" height="62" rx="5" />
+      <rect className="mh-pl-node" style={n(0)} x="112" y="68" width="420" height="18" rx="5" />
+      <circle className="mh-pl-dot" style={n(1)} cx="506" cy="77" r="2.6" />
+      <circle className="mh-pl-dot" style={n(1)} cx="516" cy="77" r="2.6" />
+      <circle className="mh-pl-dot" style={n(1)} cx="526" cy="77" r="2.6" />
+      <rect className="mh-pl-node mh-pl-node--live" style={n(2)} x="112" y="98" width="262" height="62" rx="5" />
+      <rect className="mh-pl-node" style={n(3)} x="386" y="98" width="146" height="62" rx="5" />
+      <rect className="mh-pl-node" style={n(4)} x="112" y="172" width="132" height="62" rx="5" />
+      <rect className="mh-pl-node" style={n(5)} x="256" y="172" width="132" height="62" rx="5" />
+      <rect className="mh-pl-node" style={n(6)} x="400" y="172" width="132" height="62" rx="5" />
 
       {/* ─── repère 01 : le design ─── */}
       <line className="mh-pl-ext" x1="96" y1="256" x2="96" y2="300" />
