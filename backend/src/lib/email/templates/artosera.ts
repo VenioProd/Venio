@@ -36,9 +36,9 @@ export function artoseraDevisBcc(): string[] {
 
 /**
  * Envoie le devis Artosera à la galerie, PDF en pièce jointe, avec Venio en
- * copie cachée. Le sujet et le corps viennent de la page commerciale : ils
- * sont repris tels quels, la validation en amont ayant déjà retiré ce qui
- * pourrait servir à forger des en-têtes.
+ * copie cachée. Le sujet et le corps viennent de la page commerciale : la
+ * validation en amont a retiré ce qui pourrait servir à forger des en-têtes,
+ * et tout ce qui entre dans le HTML est échappé ici.
  */
 export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput): Promise<ArtoseraDevisEmailResult> {
   const transporter = getTransporter()
@@ -54,8 +54,11 @@ export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput)
       ? `Artosera quote${input.galerie ? ' — ' + input.galerie : ''} · PDF attached.`
       : `Devis Artosera${input.galerie ? ' — ' + input.galerie : ''} · PDF en pièce jointe.`
 
+  // emailLayout insère `title` brut dans son <h1> (send.ts lui passe un
+  // objet déjà échappé) : l'objet vient ici d'une route publique, on
+  // l'échappe donc avant de le lui confier.
   const html = emailLayout({
-    title: input.subject,
+    title: escapeHtml(input.subject),
     preheader,
     body: input.recap ? renderDevisRecap(input.recap, input) : renderEmailBody(input.body),
   })

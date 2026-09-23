@@ -177,6 +177,75 @@ describe('POST /api/artosera/devis', () => {
     await expect(fsp.readFile(path.join(directory, 'passwd.pdf'))).resolves.toBeInstanceOf(Buffer)
   })
 
+  it('échappe un objet porteur de HTML dans le corps du mail, sans balise active', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.26')
+      .send(
+        validBody({
+          subject: 'Devis <a href="https://evil.example">cliquez ici</a><script>alert(1)</script>',
+        }),
+      )
+
+    expect(response.status).toBe(200)
+
+    const { html } = sendMail.mock.calls[0][0]
+    expect(html).toContain('&lt;a href=&quot;https://evil.example&quot;&gt;cliquez ici&lt;/a&gt;')
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+    expect(html).not.toMatch(/<a\s[^>]*evil\.example/)
+    expect(html).not.toContain('<script')
+  })
+
+  it('échappe la galerie, l’interlocuteur, le corps et le récapitulatif venus du navigateur', async () => {
+    const hostile = '<img src=x onerror="alert(1)">'
+    const sansRecap = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.27')
+      .send(validBody({ galerie: hostile, interlocuteur: hostile, body: `Bonjour,\n${hostile}` }))
+    expect(sansRecap.status).toBe(200)
+
+    const avecRecap = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.28')
+      .send(
+        validBody({
+          galerie: hostile,
+          interlocuteur: hostile,
+          recap: {
+            offre: hostile,
+            engagement: hostile,
+            services: [{ titre: hostile, sousTotal: hostile, lignes: [{ nom: hostile, prix: hostile }] }],
+            reprise: { detail: hostile, montant: hostile },
+            abonnement: { detail: hostile, montant: hostile },
+            remise: hostile,
+            totaux: [{ libelle: hostile, montant: hostile }],
+            notes: hostile,
+          },
+        }),
+      )
+    expect(avecRecap.status).toBe(200)
+
+    for (const [message] of sendMail.mock.calls) {
+      expect(message.html).not.toContain('<img')
+      expect(message.html).toContain('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;')
+    }
+  })
+
+  it('laisse intact un objet banal, accents et apostrophe typographique compris', async () => {
+    const subject = 'Devis Artosera — Galerie de l’Étoile & Associés, été 2026'
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.29')
+      .send(validBody({ subject }))
+
+    expect(response.status).toBe(200)
+
+    const message = sendMail.mock.calls[0][0]
+    expect(message.subject).toBe(subject)
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(message.html)?.[1]
+    expect(h1).toBe('Devis Artosera — Galerie de l’Étoile &amp; Associés, été 2026')
+  })
+
   it('répond 502 quand l’envoi SMTP échoue, en conservant la trace du devis', async () => {
     sendMail.mockRejectedValueOnce(new Error('SMTP indisponible'))
 
