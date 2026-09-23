@@ -41,6 +41,11 @@ export interface ArtoseraDevisRecap {
   notes: string
   /** Langue de composition de l'e-mail. La page anglaise du devis pose 'en' ; tout le reste vaut 'fr'. */
   lang: 'fr' | 'en'
+  /**
+   * Nature de l'envoi. La page modules pose 'selection' : une liste de modules
+   * et de services retenus, sans aucun montant. Tout le reste vaut 'devis'.
+   */
+  kind: 'devis' | 'selection'
 }
 
 export type ArtoseraDevisRejection =
@@ -54,8 +59,7 @@ export type ArtoseraDevisRejection =
   | 'devis_too_large'
 
 export type ArtoseraDevisValidation =
-  | { ok: true; submission: ArtoseraDevisSubmission }
-  | { ok: false; reason: ArtoseraDevisRejection }
+  { ok: true; submission: ArtoseraDevisSubmission } | { ok: false; reason: ArtoseraDevisRejection }
 
 const MAX_LENGTHS = {
   to: 254,
@@ -205,17 +209,24 @@ function normalizeRecap(value: unknown): ArtoseraDevisRecap | null {
   // Seuls 'fr' et 'en' sont des langues connues ; toute autre valeur (absente,
   // mal typée, ou un code qu'on ne gère pas) retombe sur le français.
   const lang = raw.lang === 'en' ? 'en' : 'fr'
+  // Même principe : seule la valeur exacte 'selection' change la rédaction ;
+  // les pages devis existantes, qui ne posent rien, restent des devis.
+  const kind = raw.kind === 'selection' ? 'selection' : 'devis'
+  // Une sélection ne porte aucun montant : les blocs chiffrés sont écartés
+  // même si la page en envoyait.
+  const chiffre = kind === 'devis'
 
   const recap: ArtoseraDevisRecap = {
     offre: court(raw.offre),
     engagement: court(raw.engagement),
     services,
-    reprise: bloc(raw.reprise),
-    abonnement: bloc(raw.abonnement),
-    remise: court(raw.remise),
+    reprise: chiffre ? bloc(raw.reprise) : null,
+    abonnement: chiffre ? bloc(raw.abonnement) : null,
+    remise: chiffre ? court(raw.remise) : '',
     totaux,
     notes: normalizeMultiLine(raw.notes ?? '', RECAP_LIMITS.notes) ?? '',
     lang,
+    kind,
   }
   return services.length || totaux.length ? recap : null
 }

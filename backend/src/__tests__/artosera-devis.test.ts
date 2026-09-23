@@ -353,3 +353,192 @@ describe('récapitulatif structuré', () => {
     expect(withNumber.submission.recap?.lang).toBe('fr')
   })
 })
+
+describe('variante « sélection » (recap.kind)', () => {
+  let validateArtoseraDevis: typeof import('../lib/artosera/devis.js').validateArtoseraDevis
+
+  beforeAll(async () => {
+    ;({ validateArtoseraDevis } = await import('../lib/artosera/devis.js'))
+  })
+
+  const recapDevis = {
+    offre: 'Offre Galerie',
+    services: [{ titre: 'Le bureau', sousTotal: '2 250 €', lignes: [{ nom: 'Inventaire complet', prix: '800 €' }] }],
+    totaux: [{ libelle: 'Première année', montant: '15 738 €' }],
+  }
+
+  /** Sélection telle que la page modules la poste : des réponses, aucun montant. */
+  const recapSelection = {
+    kind: 'selection',
+    lang: 'fr',
+    offre: 'Sélection de modules',
+    engagement: '',
+    services: [
+      { titre: 'Le cœur', sousTotal: 'Compris', lignes: [{ nom: 'Fiches œuvres', prix: '' }] },
+      { titre: 'Modules indispensables', sousTotal: '2', lignes: [{ nom: 'Module Alpha', prix: 'Indispensable' }] },
+      { titre: 'Services demandés', sousTotal: '1', lignes: [{ nom: 'Service Beta', prix: 'Oui' }] },
+    ],
+    totaux: [
+      { libelle: 'Modules retenus', montant: '3 sur 18' },
+      { libelle: 'Services demandés', montant: '1 sur 8' },
+    ],
+    notes: 'Remarque fictive.',
+  }
+
+  function selectionBody(recap: Record<string, unknown>) {
+    return validBody({
+      subject: 'Votre sélection Artosera',
+      filename: 'artosera-selection-galerie-test-2026-09-23.pdf',
+      recap,
+    })
+  }
+
+  it('retombe sur "devis" quand kind est absent', () => {
+    const result = validateArtoseraDevis({ ...validBody(), recap: recapDevis })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap?.kind).toBe('devis')
+  })
+
+  it('retombe sur "devis" pour un kind inconnu ou mal typé', () => {
+    for (const kind of ['quote', 'SELECTION', 42, null]) {
+      const result = validateArtoseraDevis({ ...validBody(), recap: { ...recapDevis, kind } })
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.submission.recap?.kind).toBe('devis')
+    }
+  })
+
+  it('conserve kind: "selection"', () => {
+    const result = validateArtoseraDevis(selectionBody(recapSelection))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.submission.recap?.kind).toBe('selection')
+  })
+
+  it('rédige le mail de devis comme avant quand kind est absent', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.30')
+      .send(validBody({ recap: recapDevis }))
+
+    expect(response.status).toBe(200)
+    const message = sendMail.mock.calls[0][0]
+    expect(message.subject).toBe('Devis Artosera — Galerie Test')
+    expect(message.html).toContain('Devis Artosera — Galerie Test · PDF en pièce jointe.')
+    expect(message.html).toContain('Devis établi pour')
+    expect(message.html).toContain('valable 60 jours')
+    expect(message.html).toContain('800 €')
+  })
+
+  it('rédige le mail de devis pour un kind inconnu', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.31')
+      .send(validBody({ recap: { ...recapDevis, kind: 'inconnu' } }))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toContain('Devis établi pour')
+    expect(html).not.toContain('Sélection établie pour')
+  })
+
+  it('rédige une sélection sans devis, prix ni validité, en gardant en-tête et archive', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.32')
+      .send(selectionBody(recapSelection))
+
+    expect(response.status).toBe(200)
+    const message = sendMail.mock.calls[0][0]
+    const html: string = message.html
+
+    // L'objet reste celui posté par la page ; seul le préheader est imposé par le gabarit.
+    expect(message.subject).toBe('Votre sélection Artosera')
+    expect(html).toContain('Sélection Artosera — Galerie Test · PDF en pièce jointe.')
+    expect(html).toContain('Sélection établie pour')
+    expect(html).toContain('Votre sélection complète est en pièce jointe.')
+    expect(html).toContain('Nous revenons vers vous avec une proposition chiffrée.')
+    expect(html).toContain('Indispensable')
+    expect(html).toContain('Oui')
+    expect(html).not.toMatch(/devis/i)
+    expect(html).not.toMatch(/valable/i)
+    expect(html).not.toContain('€')
+
+    // Même enveloppe que le devis : en-tête de référence et archive disque.
+    const [directory] = await archivedDirectories()
+    expect(directory).toBeDefined()
+    expect(message.headers['X-Artosera-Devis']).toBe(path.basename(directory))
+    const trace = JSON.parse(await fsp.readFile(path.join(directory, 'devis.json'), 'utf8'))
+    expect(trace.subject).toBe('Votre sélection Artosera')
+    await expect(
+      fsp.readFile(path.join(directory, 'artosera-selection-galerie-test-2026-09-23.pdf')),
+    ).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('rend les lignes à prix vide avec une cellule de droite vide', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.33')
+      .send(selectionBody(recapSelection))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toMatch(/>Fiches œuvres<\/td><td [^>]*><\/td><\/tr>/)
+  })
+
+  it('habille la sélection en Halo clair, sans la cerise ni la mise en page Venio du devis', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.35')
+      .send(selectionBody(recapSelection))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toContain('#69598f')
+    expect(html).toContain('#f6f6fa')
+    expect(html).toContain("'DM Serif Display',Georgia")
+    expect(html).toMatch(/>Artosera<\/td>/)
+    expect(html.toLowerCase()).not.toContain('#a8122f')
+    expect(html.toLowerCase()).not.toContain('#0ea5e9')
+    expect(html).not.toMatch(/<img\b/i)
+  })
+
+  it('échappe l’objet dans le titre de la sélection', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.36')
+      .send(validBody({ subject: 'Sélection <b>test</b>', recap: recapSelection }))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toContain('Sélection &lt;b&gt;test&lt;/b&gt;')
+    expect(html).not.toContain('<b>test</b>')
+  })
+
+  it('garde la cerise pour le devis', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.37')
+      .send(validBody({ recap: recapDevis }))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toContain('#A8122F')
+    expect(html).not.toContain('#69598f')
+  })
+
+  it('rédige la sélection en anglais quand la page pose lang: "en"', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('X-Forwarded-For', '198.51.100.34')
+      .send(selectionBody({ ...recapSelection, lang: 'en' }))
+
+    expect(response.status).toBe(200)
+    const html: string = sendMail.mock.calls[0][0].html
+    expect(html).toContain('Artosera selection — Galerie Test · PDF attached.')
+    expect(html).toContain('Selection prepared for')
+    expect(html).not.toMatch(/quote/i)
+    expect(html).not.toMatch(/valid for/i)
+  })
+})
