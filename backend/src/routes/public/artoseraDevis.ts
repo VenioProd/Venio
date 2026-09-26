@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit'
 import logger from '../../lib/logger.js'
 import { archiveArtoseraDevis, validateArtoseraDevis, type ArtoseraDevisRejection } from '../../lib/artosera/devis.js'
 import { sendArtoseraDevisEmail } from '../../lib/email.js'
+import { ARTOSERA_SITE_RECIPIENT, artoseraSiteCors, isArtoseraSiteOrigin } from '../../lib/artosera/origin.js'
 
 const router = express.Router()
 
@@ -46,6 +47,23 @@ const devisLimiter = rateLimit({
   message: { ok: false, error: 'Trop d’envois successifs. Réessayez dans quelques minutes.' },
 })
 
+/**
+ * Quota supplémentaire pour le site artosera.com. La page est ouverte à tout
+ * internet, pas seulement au commercial en rendez-vous : chaque envoi atterrit
+ * dans la boîte contact et laisse jusqu'à 5 MiB d'archive sur disque. Un
+ * prospect envoie une sélection, rarement plus de deux ; 5 par heure et par IP
+ * couvrent une correction ou un renvoi sans laisser inonder la boîte.
+ * Il s'ajoute au quota commun ci-dessus, qui reste en vigueur.
+ */
+const siteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !isArtoseraSiteOrigin(req.headers.origin),
+  message: { ok: false, error: 'Trop d’envois successifs. Réessayez plus tard.' },
+})
+
 const REJECTION_MESSAGES: Record<ArtoseraDevisRejection, string> = {
   invalid_body: 'Requête invalide.',
   invalid_recipient: 'Adresse e-mail du destinataire invalide.',
@@ -55,12 +73,22 @@ const REJECTION_MESSAGES: Record<ArtoseraDevisRejection, string> = {
   invalid_pdf: 'Le PDF du devis est illisible.',
   pdf_too_large: 'Le PDF du devis dépasse la taille maximale acceptée.',
   devis_too_large: 'Le détail du devis dépasse la taille maximale acceptée.',
+  invalid_selection: 'La sélection est vide ou illisible.',
 }
 
-router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request, res: Response) => {
-  const validation = validateArtoseraDevis(req.body)
+// Préflight du site : artoseraSiteCors y répond (204). Les autres origines
+// ont déjà reçu la réponse du CORS global, inchangée.
+router.options('/devis', artoseraSiteCors)
+
+// Le CORS passe avant les quotas et le parser : un 429 ou un 400 doit rester
+// lisible par la page du site.
+router.post('/devis', artoseraSiteCors, devisLimiter, siteLimiter, artoseraJsonBodyParser, async (req: Request, res: Response) => {
+  const origin = isArtoseraSiteOrigin(req.headers.origin) ? req.headers.origin : null
+  // Depuis artosera.com, le destinataire est imposé : `to` ne sert plus que
+  // de Reply-To, et rien n'est envoyé à l'adresse saisie par le prospect.
+  const validation = validateArtoseraDevis(req.body, origin ? { forcedRecipient: ARTOSERA_SITE_RECIPIENT } : {})
   if (!validation.ok) {
-    logger.warn({ reason: validation.reason, ip: req.ip }, 'Artosera devis rejected')
+    logger.warn({ reason: validation.reason, ip: req.ip, origin }, 'Artosera devis rejected')
     return res.status(400).json({ ok: false, error: REJECTION_MESSAGES[validation.reason] })
   }
 
@@ -71,6 +99,7 @@ router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request,
     archive = await archiveArtoseraDevis(submission, {
       ip: req.ip ?? null,
       userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'].slice(0, 300) : null,
+      origin,
     })
   } catch (err) {
     // L'archive précède l'envoi : un devis parti sans trace serait pire qu'un
@@ -81,6 +110,7 @@ router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request,
 
   const result = await sendArtoseraDevisEmail({
     to: submission.to,
+    replyTo: submission.replyTo,
     subject: submission.subject,
     body: submission.body,
     filename: submission.filename,
@@ -89,6 +119,7 @@ router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request,
     recap: submission.recap,
     galerie: submission.galerie,
     interlocuteur: submission.interlocuteur,
+    siteSelection: submission.siteSelection,
   })
 
   if (!result.sent) {
@@ -103,6 +134,7 @@ router.post('/devis', devisLimiter, artoseraJsonBodyParser, async (req: Request,
     {
       reference: archive.reference,
       to: submission.to,
+      origin,
       galerie: submission.galerie,
       filename: submission.filename,
       pdfBytes: submission.pdf.length,

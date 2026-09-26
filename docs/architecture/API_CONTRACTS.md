@@ -149,6 +149,67 @@ Chaque envoi est mis en copie cachée à `ARTOSERA_DEVIS_BCC`
 `uploads/artosera-devis/<jour>/<référence>/`, qui contient le PDF envoyé et un
 `devis.json` portant l'état du devis, le destinataire et l'IP appelante.
 
+### Appel depuis le site artosera.com
+
+La page `composer.html` du site statique artosera.com (« Composer mon
+Artosera ») appelle la même route en cross-origin. Seules les origines exactes
+`https://artosera.com` et `https://www.artosera.com` sont admises, et pour cette
+route uniquement : le CORS global reste limité à `CORS_ORIGIN`, avec
+credentials, pour toutes les autres routes et toutes les autres origines.
+
+- **CORS** : préflight `OPTIONS` → `204`, `Access-Control-Allow-Origin` égal à
+  l'origine appelante, `Access-Control-Allow-Methods: POST`,
+  `Access-Control-Allow-Headers: Content-Type`, `Access-Control-Max-Age: 600`,
+  `Vary: Origin`, **sans** `Access-Control-Allow-Credentials`. Le `fetch` du site
+  ne doit pas envoyer de cookies (`credentials: 'omit'`, valeur par défaut en
+  cross-origin). Les réponses d'erreur (`400`, `413`, `429`, `502`, `503`) portent
+  les mêmes en-têtes CORS et restent lisibles par la page.
+- **Destinataire imposé** : l'envoi part toujours à `contact@venio.paris`.
+  L'adresse saisie par le prospect (`email`, ou `to` à défaut) est posée en
+  `Reply-To` si elle est valide, ignorée sinon (l'envoi part quand même,
+  `Reply-To` retombe sur l'expéditeur). Aucun e-mail n'est envoyé au prospect,
+  et aucune copie cachée n'est ajoutée.
+- **Corps attendu** (JSON, `Content-Type: application/json`) :
+
+  | Champ | Obligatoire | Contenu |
+  | --- | --- | --- |
+  | `pdfBase64` | oui | PDF de la sélection en base64 (préfixe `data:application/pdf;base64,` toléré), 5 MiB décodés au plus, doit commencer par `%PDF-`. |
+  | `selection` | oui | Objet ci-dessous ; au moins un module ou un accompagnement exploitable. |
+  | `email` | non | Adresse saisie par le prospect → `Reply-To`. |
+  | `galerie` | non | 160 caractères au plus. |
+  | `interlocuteur` | non | 120 caractères au plus. |
+  | `lang` | non | `fr` (défaut) ou `en` : libellés de l'e-mail et de l'objet. |
+  | `filename` | non | Nom de la pièce jointe, réduit à `[a-z0-9._-]` + `.pdf`. |
+  | `devis` | non | État brut libre (256 Kio JSON au plus), archivé tel quel. |
+
+  `selection` : `coeur` (tableau de `{ titre, items: string[] }`, affiché
+  « Compris »), `modules` (tableau de `{ titre, groupe?, choix }`, `choix` parmi
+  `indispensable`, `interessant`, `plus-tard`, `pas-pour-nous`),
+  `accompagnement` (tableau de `{ titre, choix }`, `choix` parmi `oui`,
+  `a-discuter`, `non`), `notes` (texte libre, 4 000 caractères). Une entrée au
+  choix inconnu ou sans titre est écartée ; d'autres clés (`id`…) sont ignorées.
+  `subject`, `body`, `to` comme destinataire et `recap` sont ignorés.
+- **Rédaction** : objet calculé côté serveur, « Sélection Artosera — <galerie>
+  (<n> modules indispensables) » (« Artosera selection — … (<n> essential
+  modules) » en anglais). E-mail HTML Halo clair sans ressource distante
+  (gabarit `email/templates/artoseraSiteSelection.ts`) et version texte : bloc
+  « Qui » (galerie, interlocuteur, e-mail cliquable, langue, date de réception),
+  cœur, modules par réponse, accompagnement par réponse, remarques, nom du PDF
+  joint. Tout contenu saisi est échappé.
+- **Réponses** : `200 { ok: true }` ; `400 { ok: false, error }` (PDF absent ou
+  illisible, sélection vide `La sélection est vide ou illisible.`, JSON
+  invalide) ; `413` au-delà de 8 MiB de JSON ; `429` sur quota ; `502` si le SMTP
+  échoue ; `503` si l'archive ne peut pas être écrite.
+- **Quota** : en plus du quota commun (10 envois / 15 min / IP), 5 envois par
+  heure et par IP depuis ces origines. La page est ouverte à tout internet et
+  chaque envoi arrive dans la boîte contact avec jusqu'à 5 MiB d'archive.
+- **Trace** : `devis.json` porte en plus `replyTo`, `origin` et `selection` normalisée.
+
+L'origine est lue dans l'en-tête `Origin`, que seul un navigateur garantit.
+Un client hors navigateur qui la falsifie n'obtient qu'un envoi vers
+`contact@venio.paris` ; sans elle, il retombe sur le comportement de la page
+venio.paris, inchangé.
+
 ## Limites applicatives transverses
 
 - Le parser JSON général est limité à 2 MiB ; les parsers dédiés de l'API

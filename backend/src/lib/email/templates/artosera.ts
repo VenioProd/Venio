@@ -2,10 +2,14 @@ import { getTransporter, escapeHtml } from '../transport.js'
 import { emailLayout } from '../layout.js'
 import { renderEmailBody } from '../send.js'
 import type { ArtoseraDevisRecap } from '../../artosera/devis.js'
+import type { ArtoseraSiteSelection } from '../../artosera/siteSelection.js'
+import { renderSiteSelectionHtml, renderSiteSelectionText } from './artoseraSiteSelection.js'
 
 export interface SendArtoseraDevisEmailInput {
   /** Adresse de la galerie, déjà validée par la couche de validation. */
   to: string
+  /** Adresse de réponse validée ; absente, la réponse revient à l'expéditeur. */
+  replyTo?: string | null
   subject: string
   /** Corps en texte brut ; chaque ligne devient un paragraphe côté HTML. */
   body: string
@@ -17,6 +21,9 @@ export interface SendArtoseraDevisEmailInput {
   interlocuteur?: string
   /** Référence d'archive, jointe pour retrouver la trace disque depuis l'e-mail. */
   reference: string
+  /** Sélection du site artosera.com : quand elle est là, HTML et texte viennent du gabarit dédié. */
+  siteSelection?: ArtoseraSiteSelection | null
+  receivedAt?: Date
 }
 
 export interface ArtoseraDevisEmailResult {
@@ -45,7 +52,9 @@ export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput)
   if (!transporter) return { sent: false, error: 'SMTP non configuré' }
 
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@venio.paris'
-  const bcc = artoseraDevisBcc()
+  // Une copie cachée vers le destinataire lui-même ferait doublon (cas des
+  // sélections du site, adressées à contact@venio.paris).
+  const bcc = artoseraDevisBcc().filter((address) => address !== input.to.toLowerCase())
 
   // Le préheader suit la langue et la nature du récapitulatif : ce sont les
   // seuls indices disponibles, la page ne postant que le récapitulatif
@@ -58,8 +67,21 @@ export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput)
   // `title` brut dans son <h1> (send.ts lui passe un objet déjà échappé) :
   // l'objet vient ici d'une route publique, on l'échappe donc avant de le
   // lui confier.
-  const html =
-    input.recap?.kind === 'selection'
+  const site = input.siteSelection
+    ? {
+        selection: input.siteSelection,
+        subject: input.subject,
+        galerie: input.galerie ?? '',
+        interlocuteur: input.interlocuteur ?? '',
+        replyTo: input.replyTo ?? null,
+        filename: input.filename,
+        reference: input.reference,
+        receivedAt: input.receivedAt ?? new Date(),
+      }
+    : null
+  const html = site
+    ? renderSiteSelectionHtml(site)
+    : input.recap?.kind === 'selection'
       ? renderSelectionEmail(input.recap, input, preheader)
       : emailLayout({
           title: escapeHtml(input.subject),
@@ -72,9 +94,9 @@ export async function sendArtoseraDevisEmail(input: SendArtoseraDevisEmailInput)
       from: `"Venio — Artosera" <${from}>`,
       to: input.to,
       bcc: bcc.length > 0 ? bcc : undefined,
-      replyTo: from,
+      replyTo: input.replyTo || from,
       subject: input.subject,
-      text: input.body,
+      text: site ? renderSiteSelectionText(site) : input.body,
       html,
       headers: { 'X-Artosera-Devis': input.reference },
       attachments: [{ filename: input.filename, content: input.pdf, contentType: 'application/pdf' }],

@@ -1,6 +1,12 @@
 import crypto from 'crypto'
 import fsp from 'fs/promises'
 import path from 'path'
+import {
+  normalizeSiteLang,
+  normalizeSiteSelection,
+  siteSelectionSubject,
+  type ArtoseraSiteSelection,
+} from './siteSelection.js'
 
 /**
  * Devis Artosera envoyé depuis la page commerciale (venio.paris/artosera/devis).
@@ -14,6 +20,12 @@ import path from 'path'
 export interface ArtoseraDevisSubmission {
   /** Destinataire — une seule adresse, déjà normalisée en minuscules. */
   to: string
+  /**
+   * Adresse de réponse. Posée uniquement quand le destinataire est imposé
+   * (envoi depuis artosera.com) : c'est l'adresse saisie par le prospect,
+   * quand elle est valide. Null sinon — la réponse va alors à l'expéditeur.
+   */
+  replyTo: string | null
   galerie: string
   interlocuteur: string
   /** Sujet sur une seule ligne : les caractères de contrôle sont retirés (injection d'en-tête SMTP). */
@@ -27,6 +39,12 @@ export interface ArtoseraDevisSubmission {
   devis: unknown
   /** Récapitulatif structuré, source du corps HTML de l'e-mail. Absent = corps texte seul. */
   recap: ArtoseraDevisRecap | null
+  /**
+   * Sélection du site artosera.com (destinataire imposé). Quand elle est là,
+   * l'objet est calculé côté serveur et l'e-mail vient du gabarit dédié ;
+   * `recap` est alors null.
+   */
+  siteSelection: ArtoseraSiteSelection | null
 }
 
 /** Récapitulatif normalisé : rien n'en sort qui n'ait été validé ici. */
@@ -57,6 +75,7 @@ export type ArtoseraDevisRejection =
   | 'invalid_pdf'
   | 'pdf_too_large'
   | 'devis_too_large'
+  | 'invalid_selection'
 
 export type ArtoseraDevisValidation =
   { ok: true; submission: ArtoseraDevisSubmission } | { ok: false; reason: ArtoseraDevisRejection }
@@ -231,22 +250,58 @@ function normalizeRecap(value: unknown): ArtoseraDevisRecap | null {
   return services.length || totaux.length ? recap : null
 }
 
-export function validateArtoseraDevis(body: unknown): ArtoseraDevisValidation {
+function normalizeEmail(value: unknown): string | null {
+  const email = normalizeSingleLine(value, MAX_LENGTHS.to)?.toLowerCase() ?? null
+  return email && EMAIL_RE.test(email) ? email : null
+}
+
+export interface ArtoseraDevisValidationOptions {
+  /**
+   * Destinataire imposé par le serveur (envoi depuis artosera.com). L'adresse
+   * du prospect (`email`, ou `to` à défaut) n'est alors plus un destinataire :
+   * elle devient le Reply-To si elle est valide. Le corps doit porter une
+   * `selection` ; objet et texte sont calculés ici, `subject`/`body` ignorés.
+   */
+  forcedRecipient?: string
+}
+
+export function validateArtoseraDevis(
+  body: unknown,
+  options: ArtoseraDevisValidationOptions = {},
+): ArtoseraDevisValidation {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, reason: 'invalid_body' }
   const raw = body as Record<string, unknown>
 
-  const to = normalizeSingleLine(raw.to, MAX_LENGTHS.to)?.toLowerCase() ?? null
-  if (!to || !EMAIL_RE.test(to)) return { ok: false, reason: 'invalid_recipient' }
+  const forced = options.forcedRecipient ? normalizeEmail(options.forcedRecipient) : null
+  if (options.forcedRecipient && !forced) return { ok: false, reason: 'invalid_recipient' }
+
+  // Destinataire imposé : l'adresse du prospect ne sert qu'à répondre, et une
+  // adresse invalide n'empêche pas la sélection d'arriver.
+  const to = forced ?? normalizeEmail(raw.to)
+  if (!to) return { ok: false, reason: 'invalid_recipient' }
+  const replyTo = forced ? normalizeEmail(raw.email ?? raw.to) : null
 
   const galerie = normalizeSingleLine(raw.galerie ?? '', MAX_LENGTHS.galerie)
   const interlocuteur = normalizeSingleLine(raw.interlocuteur ?? '', MAX_LENGTHS.interlocuteur)
   if (galerie === null || interlocuteur === null) return { ok: false, reason: 'invalid_text' }
 
-  const subject = normalizeSingleLine(raw.subject, MAX_LENGTHS.subject)
-  if (!subject) return { ok: false, reason: 'invalid_subject' }
-
-  const bodyText = normalizeMultiLine(raw.body, MAX_LENGTHS.body)
-  if (!bodyText) return { ok: false, reason: 'invalid_text' }
+  let siteSelection: ArtoseraSiteSelection | null = null
+  let subject: string | null
+  let bodyText: string | null
+  if (forced) {
+    const selectionRaw =
+      raw.selection && typeof raw.selection === 'object' ? (raw.selection as Record<string, unknown>) : null
+    siteSelection = normalizeSiteSelection(raw.selection, normalizeSiteLang(raw.lang ?? selectionRaw?.lang))
+    if (!siteSelection) return { ok: false, reason: 'invalid_selection' }
+    subject = siteSelectionSubject(siteSelection, galerie).slice(0, MAX_LENGTHS.subject)
+    // Le texte de l'e-mail est composé par le gabarit ; rien du navigateur n'y entre.
+    bodyText = ''
+  } else {
+    subject = normalizeSingleLine(raw.subject, MAX_LENGTHS.subject)
+    if (!subject) return { ok: false, reason: 'invalid_subject' }
+    bodyText = normalizeMultiLine(raw.body, MAX_LENGTHS.body)
+    if (!bodyText) return { ok: false, reason: 'invalid_text' }
+  }
 
   const decoded = decodePdf(raw.pdfBase64)
   if (!decoded.ok) return { ok: false, reason: decoded.reason }
@@ -268,6 +323,7 @@ export function validateArtoseraDevis(body: unknown): ArtoseraDevisValidation {
     ok: true,
     submission: {
       to,
+      replyTo,
       galerie,
       interlocuteur,
       subject,
@@ -275,7 +331,8 @@ export function validateArtoseraDevis(body: unknown): ArtoseraDevisValidation {
       filename: sanitizePdfFilename(raw.filename),
       pdf: decoded.pdf,
       devis,
-      recap: normalizeRecap(raw.recap),
+      recap: forced ? null : normalizeRecap(raw.recap),
+      siteSelection,
     },
   }
 }
@@ -301,7 +358,7 @@ export function artoseraStorageRoot(): string {
  */
 export async function archiveArtoseraDevis(
   submission: ArtoseraDevisSubmission,
-  context: { receivedAt?: Date; ip?: string | null; userAgent?: string | null } = {},
+  context: { receivedAt?: Date; ip?: string | null; userAgent?: string | null; origin?: string | null } = {},
 ): Promise<ArtoseraDevisArchive> {
   const receivedAt = context.receivedAt ?? new Date()
   const day = receivedAt.toISOString().slice(0, 10)
@@ -322,6 +379,8 @@ export async function archiveArtoseraDevis(
         reference,
         receivedAt: receivedAt.toISOString(),
         to: submission.to,
+        replyTo: submission.replyTo,
+        origin: context.origin ?? null,
         galerie: submission.galerie,
         interlocuteur: submission.interlocuteur,
         subject: submission.subject,
@@ -331,6 +390,7 @@ export async function archiveArtoseraDevis(
         ip: context.ip ?? null,
         userAgent: context.userAgent ?? null,
         devis: submission.devis,
+        ...(submission.siteSelection ? { selection: submission.siteSelection } : {}),
       },
       null,
       2,

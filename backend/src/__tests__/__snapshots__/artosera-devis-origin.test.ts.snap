@@ -1,0 +1,122 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`gabarit de la sélection du site > rend un HTML et un texte stables (snapshot) 1`] = `
+"<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+  <title>Sélection Artosera — Galerie Exemple (2 modules indispensables)</title>
+  <style>
+    :root { color-scheme: light only; }
+    @media only screen and (max-width: 600px) {
+      .enveloppe { padding: 20px 10px !important; }
+      .carte { padding: 22px 18px !important; border-radius: 16px !important; }
+      .titre { font-size: 24px !important; }
+      .label { width: 96px !important; }
+      .detail { display: none !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f6f6fa;font-family:'DM Sans',Helvetica,Arial,sans-serif;color:#303044;">
+  <div style="display:none;font-size:1px;color:#f6f6fa;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Nouvelle sélection composée sur artosera.com &mdash; Galerie Exemple</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa;">
+    <tr>
+      <td class="enveloppe" align="center" style="padding:40px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="padding:0 6px 20px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="font-family:'DM Serif Display',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;letter-spacing:-0.5px;color:#303044;">Artosera</td>
+                <td align="right" style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-transform:uppercase;letter-spacing:.12em;color:#69598f;">Sélection Artosera</td>
+              </tr></table>
+            </td>
+          </tr>
+          <tr>
+            <td class="carte" style="background-color:#ffffff;border:1px solid #e6e4ee;border-radius:20px;padding:32px;">
+              <h1 class="titre" style="margin:0 0 8px;font-family:'DM Serif Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;line-height:1.2;letter-spacing:-0.5px;color:#303044;">Galerie Exemple</h1>
+              <p style="margin:0 0 22px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;color:#6c6a7e;">Un prospect a composé sa sélection sur artosera.com. Répondre à ce message lui écrit directement.</p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eeebf6;border-radius:14px;">
+                <tr><td style="padding:14px 18px;">
+                  <p style="margin:0 0 6px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#69598f;">Qui</p>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="label" width="120" style="padding:5px 12px 5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;vertical-align:top;white-space:nowrap;">Galerie</td><td style="padding:5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Galerie Exemple</td></tr><tr><td class="label" width="120" style="padding:5px 12px 5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;vertical-align:top;white-space:nowrap;">Interlocuteur</td><td style="padding:5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Prospect Exemple</td></tr><tr><td class="label" width="120" style="padding:5px 12px 5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;vertical-align:top;white-space:nowrap;">E-mail</td><td style="padding:5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;"><a href="mailto:prospect@exemple-galerie.fr" style="color:#69598f;text-decoration:underline;">prospect@exemple-galerie.fr</a></td></tr><tr><td class="label" width="120" style="padding:5px 12px 5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;vertical-align:top;white-space:nowrap;">Langue</td><td style="padding:5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Français</td></tr><tr><td class="label" width="120" style="padding:5px 12px 5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;vertical-align:top;white-space:nowrap;">Reçue le</td><td style="padding:5px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">26 septembre 2026 à 12:00</td></tr></table>
+                </td></tr>
+              </table>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;">Le cœur <span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:20px;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;vertical-align:middle;">Compris</span></h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;"><p style="margin:0 0 2px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#303044;">Jour 1</p><p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;">Fiches œuvres &middot; Contacts</p></td></tr><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;"><p style="margin:0 0 2px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#303044;">Jour 2</p><p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;">Ventes</p></td></tr></table>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;">Modules</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #69598f;background-color:#69598f;color:#ffffff;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Indispensables&nbsp;&middot;&nbsp;2</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Module Alpha</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;">Vendre</td></tr><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Module Beta</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;">Vendre</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #eeebf6;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Intéressants&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Module Gamma</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;">Exposer</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #f1f0f4;background-color:#f1f0f4;color:#6c6a7e;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Plus tard&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Module Delta</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;">Exposer</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #e6e4ee;background-color:#ffffff;color:#6c6a7e;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Pas pour nous&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Module Epsilon</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;">Gérer</td></tr></table></td></tr></table>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;margin-top:10px;">Accompagnement</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #69598f;background-color:#69598f;color:#ffffff;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Oui&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Reprise des données</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;"></td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #eeebf6;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">À discuter&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Formation</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;"></td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #e6e4ee;background-color:#ffffff;color:#6c6a7e;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Non&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td class="ligne" style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Site de galerie</td><td class="detail" style="padding:8px 0 8px 12px;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;text-align:right;"></td></tr></table></td></tr></table>
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;margin-top:10px;">Remarques</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e6e4ee;border-radius:14px;">
+                <tr><td style="padding:14px 18px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;white-space:pre-line;">Deux lignes
+de remarques.</td></tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-top:1px solid #e6e4ee;">
+                <tr><td style="padding:14px 0 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;">PDF de la sélection en pièce jointe&nbsp;: <strong style="color:#303044;font-weight:600;">artosera-selection-galerie-exemple.pdf</strong></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:20px 0 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c6a7e;font-size:11px;">
+              Référence 2026-09-26-120000-abcdef &middot; Venio &mdash; Artosera
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"
+`;
+
+exports[`gabarit de la sélection du site > rend un HTML et un texte stables (snapshot) 2`] = `
+"Sélection Artosera — Galerie Exemple
+
+Un prospect a composé sa sélection sur artosera.com. Répondre à ce message lui écrit directement.
+
+QUI
+Galerie : Galerie Exemple
+Interlocuteur : Prospect Exemple
+E-mail : prospect@exemple-galerie.fr
+Langue : Français
+Reçue le : 26 septembre 2026 à 12:00
+
+LE CŒUR (Compris)
+- Jour 1 : Fiches œuvres, Contacts
+- Jour 2 : Ventes
+
+MODULES
+Indispensables (2)
+- Module Alpha (Vendre)
+- Module Beta (Vendre)
+Intéressants (1)
+- Module Gamma (Exposer)
+Plus tard (1)
+- Module Delta (Exposer)
+Pas pour nous (1)
+- Module Epsilon (Gérer)
+
+ACCOMPAGNEMENT
+Oui (1)
+- Reprise des données
+À discuter (1)
+- Formation
+Non (1)
+- Site de galerie
+
+REMARQUES
+Deux lignes
+de remarques.
+
+PDF de la sélection en pièce jointe : artosera-selection-galerie-exemple.pdf
+Référence 2026-09-26-120000-abcdef"
+`;
