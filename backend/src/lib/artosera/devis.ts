@@ -2,8 +2,9 @@ import crypto from 'crypto'
 import fsp from 'fs/promises'
 import path from 'path'
 import {
-  normalizeSiteLang,
+  bodyLang,
   normalizeSiteSelection,
+  siteSelectionFromRecap,
   siteSelectionSubject,
   type ArtoseraSiteSelection,
 } from './siteSelection.js'
@@ -289,9 +290,13 @@ export function validateArtoseraDevis(
   let subject: string | null
   let bodyText: string | null
   if (forced) {
-    const selectionRaw =
-      raw.selection && typeof raw.selection === 'object' ? (raw.selection as Record<string, unknown>) : null
-    siteSelection = normalizeSiteSelection(raw.selection, normalizeSiteLang(raw.lang ?? selectionRaw?.lang))
+    // `selection` structurée de préférence ; à défaut, le récapitulatif générique
+    // que poste le composeur est converti (voir siteSelectionFromRecap).
+    const lang = bodyLang(raw)
+    siteSelection =
+      raw.selection !== undefined && raw.selection !== null
+        ? normalizeSiteSelection(raw.selection, lang)
+        : siteSelectionFromRecap(raw.recap, lang)
     if (!siteSelection) return { ok: false, reason: 'invalid_selection' }
     subject = siteSelectionSubject(siteSelection, galerie).slice(0, MAX_LENGTHS.subject)
     // Le texte de l'e-mail est composé par le gabarit ; rien du navigateur n'y entre.
