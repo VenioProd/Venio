@@ -50,6 +50,7 @@ import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import publicContactRoutes from './routes/public/contact.js'
 import publicAnalyticsRoutes from './routes/public/analytics.js'
 import artoseraDevisRoutes from './routes/public/artoseraDevis.js'
+import { withArtoseraSiteCorsBypass } from './lib/artosera/origin.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminChangeRequestRoutes from './routes/admin/changeRequests.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
@@ -166,12 +167,16 @@ app.use(
   }),
 )
 
-// CORS
+// CORS — global limité à CORS_ORIGIN. Seule exception : la route publique du
+// devis Artosera appelée depuis artosera.com, qui porte son propre CORS (sans
+// credentials) dans son router. Voir lib/artosera/origin.ts.
 app.use(
-  cors({
-    origin: corsOrigin,
-    credentials: true,
-  }),
+  withArtoseraSiteCorsBypass(
+    cors({
+      origin: corsOrigin,
+      credentials: true,
+    }),
+  ),
 )
 
 // Global rate limit: 200 requests per minute per IP
