@@ -45,10 +45,6 @@ function isChoice<T extends string>(list: readonly T[], value: unknown): value i
   return typeof value === 'string' && (list as readonly string[]).includes(value)
 }
 
-export function normalizeSiteLang(...candidates: unknown[]): SiteSelectionLang {
-  return candidates.some((c) => c === 'en') ? 'en' : 'fr'
-}
-
 /**
  * Normalise la sélection postée par le composeur. Une entrée mal formée ou à
  * choix inconnu est écartée ; une sélection sans aucun module ni
@@ -165,4 +161,111 @@ export function siteSelectionSubject(selection: ArtoseraSiteSelection, galerie: 
   const t = SITE_SELECTION_LABELS[selection.lang]
   const n = selection.modules.filter((m) => m.choix === 'indispensable').length
   return `${t.titre} — ${galerie || t.nonPrecise} (${t.compteIndispensables(n)})`
+}
+
+/** Clé de comparaison des libellés : minuscules, sans accents ni ponctuation superflue. */
+function labelKey(value: unknown): string {
+  return line(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/œ/g, 'oe')
+    .replace(/[’']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Titres de groupe du récapitulatif posté par le composeur, FR et EN. */
+const MODULE_GROUP_TITLES: Record<string, ModuleChoice> = {
+  'modules indispensables': 'indispensable',
+  'essential modules': 'indispensable',
+  'modules interessants': 'interessant',
+  'interesting modules': 'interessant',
+  'modules pour plus tard': 'plus-tard',
+  'modules for later': 'plus-tard',
+  'modules ecartes': 'pas-pour-nous',
+  'modules set aside': 'pas-pour-nous',
+}
+
+/** Réponses isolées, telles qu'affichées dans une pastille, FR et EN. */
+const MODULE_LABELS: Record<string, ModuleChoice> = {
+  indispensable: 'indispensable',
+  essential: 'indispensable',
+  interessant: 'interessant',
+  interesting: 'interessant',
+  'plus tard': 'plus-tard',
+  later: 'plus-tard',
+  'pas pour nous': 'pas-pour-nous',
+  'not for us': 'pas-pour-nous',
+}
+
+const SERVICE_LABELS: Record<string, ServiceChoice> = {
+  oui: 'oui',
+  yes: 'oui',
+  'a discuter': 'a-discuter',
+  'to discuss': 'a-discuter',
+  non: 'non',
+  no: 'non',
+}
+
+const CORE_KEYS = new Set(['le coeur', 'the core', 'compris', 'included'])
+
+/**
+ * Convertit le récapitulatif générique (`recap.services[].lignes[]`) posté par
+ * le composeur en sélection structurée. Pour chaque ligne, dans l'ordre :
+ * un `choix` explicite s'il est connu ; sinon le groupe du cœur (titre « Le
+ * cœur » ou sous-total « Compris ») ; sinon le titre du groupe de modules ;
+ * sinon la pastille (`prix`) d'accompagnement ou de module. Une ligne qui ne
+ * correspond à rien est écartée. Null si rien d'exploitable.
+ */
+export function siteSelectionFromRecap(value: unknown, lang: SiteSelectionLang): ArtoseraSiteSelection | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const raw = value as Record<string, unknown>
+  const groups = Array.isArray(raw.services) ? raw.services.slice(0, LIMITS.coeur + 10) : []
+
+  const coeur: ArtoseraSiteSelection['coeur'] = []
+  const modules: { titre: string; groupe: string; choix: ModuleChoice }[] = []
+  const accompagnement: { titre: string; choix: ServiceChoice }[] = []
+
+  for (const g of groups) {
+    if (!g || typeof g !== 'object' || Array.isArray(g)) continue
+    const group = g as Record<string, unknown>
+    const isCore = CORE_KEYS.has(labelKey(group.titre)) || CORE_KEYS.has(labelKey(group.sousTotal))
+    const groupChoice = MODULE_GROUP_TITLES[labelKey(group.titre)]
+    const lignes = Array.isArray(group.lignes) ? group.lignes.slice(0, LIMITS.modules) : []
+
+    for (const l of lignes) {
+      if (!l || typeof l !== 'object' || Array.isArray(l)) continue
+      const ligne = l as Record<string, unknown>
+      const titre = line(ligne.nom)
+      if (!titre) continue
+      const prix = labelKey(ligne.prix)
+
+      if (isChoice(MODULE_CHOICES, ligne.choix)) modules.push({ titre, groupe: '', choix: ligne.choix })
+      else if (isChoice(SERVICE_CHOICES, ligne.choix)) accompagnement.push({ titre, choix: ligne.choix })
+      else if (isCore) coeur.push({ titre, items: line(ligne.prix) ? [line(ligne.prix)] : [] })
+      else if (groupChoice) modules.push({ titre, groupe: '', choix: groupChoice })
+      else if (SERVICE_LABELS[prix]) accompagnement.push({ titre, choix: SERVICE_LABELS[prix] })
+      else if (MODULE_LABELS[prix]) modules.push({ titre, groupe: '', choix: MODULE_LABELS[prix] })
+    }
+  }
+
+  return normalizeSiteSelection(
+    {
+      coeur: coeur.slice(0, LIMITS.coeur),
+      modules,
+      accompagnement,
+      notes: raw.notes,
+    },
+    lang,
+  )
+}
+
+/** Langue d'un corps posté : `lang`, puis `selection.lang`, puis `recap.lang` ; français par défaut. */
+export function bodyLang(body: unknown): SiteSelectionLang {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return 'fr'
+  const raw = body as Record<string, unknown>
+  const nested = (v: unknown) => (v && typeof v === 'object' ? (v as Record<string, unknown>).lang : undefined)
+  const first = [raw.lang, nested(raw.selection), nested(raw.recap)].find((v) => v === 'fr' || v === 'en')
+  return first === 'en' ? 'en' : 'fr'
 }

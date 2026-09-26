@@ -320,6 +320,413 @@ describe('envoi depuis artosera.com', () => {
   })
 })
 
+/** Corps tel que le composeur d'artosera.com le poste (contrat `recap`), données fictives. */
+function composerBody(lang: 'fr' | 'en') {
+  const fr = lang === 'fr'
+  return {
+    to: 'Prospect@Exemple-Galerie.fr',
+    galerie: 'Galerie Exemple',
+    interlocuteur: 'Prospect Exemple',
+    subject: fr ? 'Ma sélection Artosera · Galerie Exemple' : 'My Artosera selection · Galerie Exemple',
+    body: 'Texte libre du navigateur.',
+    filename: 'artosera-selection-galerie-exemple-2026-09-26.pdf',
+    pdfBase64: PDF_BYTES.toString('base64'),
+    devis: { page: 'composer', v: 1, lang, responses: { m1: 'indispensable' } },
+    recap: {
+      kind: 'selection',
+      lang,
+      offre: fr ? 'Le cœur compris : 24 fonctions et 4 garanties' : 'The core included: 24 functions and 4 guarantees',
+      engagement: '',
+      services: [
+        {
+          titre: fr ? 'Le cœur' : 'The core',
+          sousTotal: fr ? 'Compris' : 'Included',
+          lignes: [
+            { nom: 'Inventaire', prix: fr ? '12 fonctions' : '12 functions' },
+            { nom: 'Contacts', prix: fr ? '1 fonction' : '1 function' },
+          ],
+        },
+        {
+          titre: fr ? 'Modules indispensables' : 'Essential modules',
+          sousTotal: '2',
+          lignes: [
+            { nom: 'Module Alpha', prix: '' },
+            { nom: 'Module Beta', prix: '' },
+          ],
+        },
+        {
+          titre: fr ? 'Modules intéressants' : 'Interesting modules',
+          sousTotal: '1',
+          lignes: [{ nom: 'Module Gamma', prix: '' }],
+        },
+        {
+          titre: fr ? 'Modules pour plus tard' : 'Modules for later',
+          sousTotal: '1',
+          lignes: [{ nom: 'Module Delta', prix: '' }],
+        },
+        {
+          titre: fr ? 'Modules écartés' : 'Modules set aside',
+          sousTotal: '1',
+          lignes: [{ nom: 'Module Epsilon', prix: '' }],
+        },
+        {
+          titre: fr ? 'Accompagnement' : 'Onboarding and support',
+          sousTotal: fr ? '1 sur 3' : '1 of 3',
+          lignes: [
+            { nom: 'Reprise des données', prix: fr ? 'Oui' : 'Yes' },
+            { nom: 'Formation', prix: fr ? 'À discuter' : 'To discuss' },
+            { nom: 'Site de galerie', prix: fr ? 'Non' : 'No' },
+          ],
+        },
+      ],
+      totaux: [{ libelle: fr ? 'Modules retenus' : 'Modules selected', montant: fr ? '4 sur 5' : '4 of 5' }],
+      notes: 'Une remarque.',
+    },
+  }
+}
+
+describe('corps « recap » du composeur artosera.com', () => {
+  it.each(['fr', 'en'] as const)('convertit le recap (%s) vers le gabarit de sélection', async (lang) => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', lang === 'fr' ? '203.0.113.70' : '203.0.113.71')
+      .send(composerBody(lang))
+
+    expect(response.status).toBe(200)
+    const message = sendMail.mock.calls[0][0]
+    expect(message.to).toBe('contact@venio.paris')
+    expect(message.replyTo).toBe('prospect@exemple-galerie.fr')
+    expect(message.subject).toBe(
+      lang === 'fr'
+        ? 'Sélection Artosera — Galerie Exemple (2 modules indispensables)'
+        : 'Artosera selection — Galerie Exemple (2 essential modules)',
+    )
+    const text: string = message.text
+    const html: string = message.html
+    if (lang === 'fr') {
+      expect(text).toContain('Indispensables (2)\n- Module Alpha\n- Module Beta')
+      expect(text).toContain('Intéressants (1)\n- Module Gamma')
+      expect(text).toContain('Plus tard (1)\n- Module Delta')
+      expect(text).toContain('Pas pour nous (1)\n- Module Epsilon')
+      expect(text).toContain('Oui (1)\n- Reprise des données')
+      expect(text).toContain('À discuter (1)\n- Formation')
+      expect(text).toContain('Non (1)\n- Site de galerie')
+      expect(text).toContain('- Inventaire : 12 fonctions')
+    } else {
+      expect(text).toContain('Essential (2)\n- Module Alpha\n- Module Beta')
+      expect(text).toContain('Not for us (1)\n- Module Epsilon')
+      expect(text).toContain('To discuss (1)\n- Formation')
+    }
+    expect(text).toContain('Une remarque.')
+    expect(text).not.toContain('Texte libre du navigateur.')
+    // L'en-tête « Qui » montre l'adresse du prospect, jamais la boîte Venio.
+    expect(html).toContain('href="mailto:prospect@exemple-galerie.fr"')
+    expect(html).not.toContain('contact@venio.paris')
+  })
+
+  it('préfère un `choix` explicite posé sur une ligne', async () => {
+    const body = composerBody('fr')
+    body.recap.services.push({
+      titre: 'Autre',
+      sousTotal: '',
+      lignes: [{ nom: 'Module Zeta', prix: '', choix: 'indispensable' } as never],
+    })
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.72')
+      .send(body)
+
+    expect(response.status).toBe(200)
+    expect(sendMail.mock.calls[0][0].subject).toContain('(3 modules indispensables)')
+  })
+})
+
+describe('codes d’erreur', () => {
+  it('renvoie un code stable et un message anglais quand lang vaut "en"', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.80')
+      .send({ ...composerBody('en'), pdfBase64: '' })
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ ok: false, code: 'missing_pdf', error: 'The PDF is missing.' })
+  })
+
+  it('garde le français par défaut, code compris', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.81')
+      .send({ ...composerBody('fr'), recap: undefined })
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({
+      ok: false,
+      code: 'invalid_selection',
+      error: 'La sélection est vide ou illisible.',
+    })
+  })
+
+  it('code les refus émis avant lecture du corps (JSON invalide, quota)', async () => {
+    const malformed = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.82')
+      .set('Content-Type', 'application/json')
+      .send('{"to":')
+    expect(malformed.status).toBe(400)
+    expect(malformed.body.code).toBe('malformed_json')
+
+    const ip = '203.0.113.83'
+    for (let i = 0; i < 5; i += 1) {
+      await request(app)
+        .post('/api/artosera/devis')
+        .set('Origin', SITE)
+        .set('X-Forwarded-For', ip)
+        .send(composerBody('fr'))
+    }
+    const limited = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', ip)
+      .send(composerBody('fr'))
+    expect(limited.status).toBe(429)
+    expect(limited.body).toMatchObject({ ok: false, code: 'rate_limited' })
+  })
+})
+
+/** Réponses telles que le composeur les pose dans `devis.responses`. */
+const RESPONSES = {
+  facturation: 'indispensable',
+  coffre: 'indispensable',
+  'mode-foire': 'interessant',
+  mouvements: 'plus-tard',
+  'artsy-artnet': 'pas-pour-nous',
+  'reprise-donnees': 'oui',
+  formation: 'a-discuter',
+  'site-galerie': 'non',
+}
+
+function prospectBody(overrides: Record<string, unknown> = {}, lang: 'fr' | 'en' = 'fr') {
+  const base = composerBody(lang)
+  return {
+    ...base,
+    to: 'Ana@Exemple-Galerie.fr',
+    interlocuteur: 'Ana Exemple',
+    website: '',
+    devis: { ...base.devis, responses: RESPONSES },
+    ...overrides,
+  }
+}
+
+function mailTo(address: string) {
+  return sendMail.mock.calls.map((c) => c[0]).find((m) => m.to === address)
+}
+
+describe('récapitulatif au prospect', () => {
+  beforeEach(async () => {
+    const { resetProspectQuota } = await import('../lib/artosera/prospectQuota.js')
+    resetProspectQuota()
+  })
+
+  it('envoie le mail interne puis le récapitulatif au prospect, sans pièce jointe ni texte libre', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.90')
+      .send(
+        prospectBody({
+          subject: 'SUJET-LIBRE',
+          body: 'CORPS-LIBRE',
+          recap: { ...composerBody('fr').recap, notes: 'NOTES-LIBRES', offre: 'OFFRE-LIBRE' },
+        }),
+      )
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ ok: true })
+    expect(sendMail).toHaveBeenCalledTimes(2)
+    expect(sendMail.mock.calls[0][0].to).toBe('contact@venio.paris')
+
+    const mail = mailTo('ana@exemple-galerie.fr')
+    expect(mail).toBeDefined()
+    expect(mail.subject).toBe('Votre sélection Artosera')
+    expect(mail.replyTo).toBe('contact@venio.paris')
+    expect(mail.attachments).toBeUndefined()
+    expect(mail.bcc).toBeUndefined()
+    for (const part of [mail.html, mail.text]) {
+      expect(part).toContain('Bonjour Ana Exemple,')
+      expect(part).toContain('Galerie Exemple')
+      expect(part).toContain('Facturation complète')
+      expect(part).toContain('Le coffre')
+      expect(part).toContain('Reprise des données')
+      expect(part).toContain('https://artosera.com/composer.html')
+      for (const libre of [
+        'SUJET-LIBRE',
+        'CORPS-LIBRE',
+        'NOTES-LIBRES',
+        'OFFRE-LIBRE',
+        'Module Alpha',
+        'Une remarque',
+      ]) {
+        expect(part).not.toContain(libre)
+      }
+    }
+    // « Non » n'est pas un accompagnement demandé.
+    expect(mail.text).not.toContain('Nouveau site de la galerie')
+    expect(mail.text).toContain('Indispensables (2)\n- Facturation complète\n- Le coffre')
+    expect(mail.text).toContain('À discuter (1)\n- Formation')
+    expect(mail.text).toContain('parce que vous avez demandé')
+  })
+
+  it('rédige le récapitulatif en anglais quand recap.lang vaut "en"', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.91')
+      .send(prospectBody({}, 'en'))
+
+    expect(response.status).toBe(200)
+    const mail = mailTo('ana@exemple-galerie.fr')
+    expect(mail.subject).toBe('Your Artosera selection')
+    expect(mail.html).toContain('<html lang="en">')
+    expect(mail.html).toContain('https://artosera.com/en/composer.html')
+    expect(mail.text).toContain('Essential (2)\n- Full invoicing\n- The Vault')
+    expect(mail.text).toContain('Hello Ana Exemple,')
+  })
+
+  it('ignore les identifiants hors liste blanche et les réponses hors de leur type', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.92')
+      .send(
+        prospectBody({
+          devis: {
+            responses: {
+              facturation: 'oui',
+              formation: 'indispensable',
+              'module-pirate': 'indispensable',
+              '<b>x</b>': 'oui',
+              coffre: 'interessant',
+              __proto__: { coffre: 'indispensable' },
+            },
+          },
+        }),
+      )
+
+    expect(response.status).toBe(200)
+    const mail = mailTo('ana@exemple-galerie.fr')
+    expect(mail.text).toContain('Intéressants (1)\n- Le coffre')
+    expect(mail.text).not.toContain('Facturation complète')
+    expect(mail.text).not.toContain('Formation')
+    expect(mail.text).not.toContain('module-pirate')
+    expect(mail.html).not.toContain('pirate')
+    expect(mail.text).toContain('Aucun accompagnement demandé')
+  })
+
+  it('n’envoie rien au prospect si aucune réponse ne passe la liste blanche', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.93')
+      .send(prospectBody({ devis: { responses: { inconnu: 'indispensable' } } }))
+
+    expect(response.status).toBe(200)
+    expect(sendMail).toHaveBeenCalledTimes(1)
+    expect(sendMail.mock.calls[0][0].to).toBe('contact@venio.paris')
+  })
+
+  it('retombe sur une formule générique si galerie ou interlocuteur ne passent pas le filtre strict', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.94')
+      .send(prospectBody({ galerie: 'Gagnez sur www.spam.example', interlocuteur: 'x'.repeat(81) }))
+
+    expect(response.status).toBe(200)
+    const mail = mailTo('ana@exemple-galerie.fr')
+    for (const part of [mail.html, mail.text]) {
+      expect(part).toContain('Bonjour,')
+      expect(part).toContain('Merci d’avoir composé votre sélection.')
+      expect(part).not.toContain('spam')
+      expect(part).not.toContain('xxxxxxxx')
+    }
+  })
+
+  it('n’envoie qu’un récapitulatif par adresse et par 24 h ; le mail interne part toujours', async () => {
+    const first = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.95')
+      .send(prospectBody())
+    expect(first.status).toBe(200)
+    expect(sendMail).toHaveBeenCalledTimes(2)
+
+    sendMail.mockClear()
+    const second = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.96')
+      .send(prospectBody({ to: '  ANA@exemple-galerie.FR ' }))
+
+    expect(second.status).toBe(200)
+    expect(second.body).toEqual({ ok: true })
+    expect(sendMail).toHaveBeenCalledTimes(1)
+    expect(sendMail.mock.calls[0][0].to).toBe('contact@venio.paris')
+  })
+
+  it('libère l’adresse après 24 h', async () => {
+    const { reserveProspectEmail } = await import('../lib/artosera/prospectQuota.js')
+    const t0 = Date.UTC(2026, 8, 26)
+    expect(reserveProspectEmail('a@b.fr', t0)).toBe(true)
+    expect(reserveProspectEmail('A@B.fr', t0 + 23 * 3600_000)).toBe(false)
+    expect(reserveProspectEmail('a@b.fr', t0 + 24 * 3600_000)).toBe(true)
+  })
+
+  it('pot de miel rempli : 200 ok, aucun envoi, aucune archive', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', SITE)
+      .set('X-Forwarded-For', '203.0.113.97')
+      .send(prospectBody({ website: 'https://spam.example' }))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ ok: true })
+    expect(sendMail).not.toHaveBeenCalled()
+    expect(await fsp.readdir(storageDir)).toEqual([])
+  })
+
+  it('n’envoie rien au prospect depuis venio.paris', async () => {
+    const response = await request(app)
+      .post('/api/artosera/devis')
+      .set('Origin', VENIO)
+      .set('X-Forwarded-For', '203.0.113.98')
+      .send(prospectBody({ subject: 'Devis', body: 'Bonjour.' }))
+
+    expect(response.status).toBe(200)
+    expect(sendMail).toHaveBeenCalledTimes(1)
+    expect(sendMail.mock.calls[0][0].to).toBe('ana@exemple-galerie.fr')
+    expect(sendMail.mock.calls[0][0].attachments).toHaveLength(1)
+  })
+
+  it('rend un HTML et un texte stables (snapshot)', async () => {
+    const { parseComposerResponses } = await import('../lib/artosera/composerCatalog.js')
+    const { renderProspectHtml, renderProspectText } = await import('../lib/email/templates/artoseraProspect.js')
+    const input = {
+      to: 'ana@exemple-galerie.fr',
+      lang: 'fr' as const,
+      responses: parseComposerResponses({ responses: RESPONSES }),
+      galerie: 'Galerie Exemple',
+      interlocuteur: 'Ana Exemple',
+    }
+    expect(renderProspectHtml(input)).toMatchSnapshot()
+    expect(renderProspectText(input)).toMatchSnapshot()
+  })
+})
+
 describe('envoi depuis venio.paris (inchangé)', () => {
   it('envoie à l’adresse postée, Venio en copie cachée, sans Reply-To prospect', async () => {
     const response = await request(app)

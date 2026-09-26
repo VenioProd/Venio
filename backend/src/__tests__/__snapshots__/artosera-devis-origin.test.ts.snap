@@ -120,3 +120,104 @@ de remarques.
 PDF de la sélection en pièce jointe : artosera-selection-galerie-exemple.pdf
 Référence 2026-09-26-120000-abcdef"
 `;
+
+exports[`récapitulatif au prospect > rend un HTML et un texte stables (snapshot) 1`] = `
+"<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+  <title>Votre sélection Artosera</title>
+  <style>
+    :root { color-scheme: light only; }
+    @media only screen and (max-width: 600px) {
+      .enveloppe { padding: 20px 10px !important; }
+      .carte { padding: 22px 18px !important; border-radius: 16px !important; }
+      .titre { font-size: 24px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f6f6fa;font-family:'DM Sans',Helvetica,Arial,sans-serif;color:#303044;">
+  <div style="display:none;font-size:1px;color:#f6f6fa;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Le récapitulatif de votre sélection, et la suite.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa;">
+    <tr>
+      <td class="enveloppe" align="center" style="padding:40px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="padding:0 6px 20px;font-family:'DM Serif Display',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;letter-spacing:-0.5px;color:#303044;">Artosera</td>
+          </tr>
+          <tr>
+            <td class="carte" style="background-color:#ffffff;border:1px solid #e6e4ee;border-radius:20px;padding:32px;">
+              <h1 class="titre" style="margin:0 0 18px;font-family:'DM Serif Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;line-height:1.2;letter-spacing:-0.5px;color:#303044;">Votre sélection Artosera</h1>
+              <p style="margin:0 0 10px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#303044;">Bonjour Ana Exemple,</p>
+              <p style="margin:0 0 4px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#303044;">Merci d’avoir composé la sélection de Galerie Exemple. La voici en résumé ; nous l’avons bien reçue.</p>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;">Le cœur <span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:20px;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;vertical-align:middle;">Compris</span></h2>
+              <p style="margin:0 0 4px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">La réserve &middot; Le carnet &middot; L’accrochage &middot; La vente &middot; L’équipe</p>
+              <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.55;color:#6c6a7e;">Avec&nbsp;: Hébergement en France &middot; Sauvegardes &middot; Mises à jour &middot; Export complet, à tout moment</p>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;">Vos modules</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #69598f;background-color:#69598f;color:#ffffff;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Indispensables&nbsp;&middot;&nbsp;2</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Facturation complète</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Le coffre</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #eeebf6;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Intéressants&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Mode foire</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #f1f0f4;background-color:#f1f0f4;color:#6c6a7e;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Plus tard&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Mouvements</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #e6e4ee;background-color:#ffffff;color:#6c6a7e;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Pas pour nous&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Artsy et Artnet</td></tr></table></td></tr></table>
+
+              <h2 style="margin:28px 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.3px;color:#303044;margin-top:10px;">L’accompagnement demandé</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #69598f;background-color:#69598f;color:#ffffff;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">Oui&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Reprise des données</td></tr></table></td></tr><tr><td style="padding:0 0 18px;"><span style="display:inline-block;padding:3px 11px;border-radius:20px;border:1px solid #eeebf6;background-color:#eeebf6;color:#69598f;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;">À discuter&nbsp;&middot;&nbsp;1</span><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;"><tr><td style="padding:8px 0;border-top:1px solid #e6e4ee;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#303044;">Formation</td></tr></table></td></tr></table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0;background-color:#eeebf6;border-radius:14px;">
+                <tr><td style="padding:16px 18px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#303044;">
+                  <p style="margin:0 0 8px;font-weight:600;">Nous revenons vers vous rapidement avec une proposition adaptée.</p>
+                  <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#303044;">Votre sélection reste enregistrée dans votre navigateur : vous pouvez la modifier ou retélécharger le PDF sur la page <a href="https://artosera.com/composer.html" style="color:#69598f;text-decoration:underline;">Composer mon Artosera</a>.</p>
+                </td></tr>
+              </table>
+
+              <p style="margin:22px 0 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#303044;">L’équipe Artosera</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 8px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.55;color:#6c6a7e;font-size:11px;text-align:center;">
+              Vous recevez ce message parce que vous avez demandé l’envoi de votre sélection sur artosera.com. Il n’y a pas d’inscription à une liste de diffusion. Pour nous écrire, répondez simplement à ce message.<br>
+              Artosera &middot; Venio &middot; <a href="https://artosera.com" style="color:#69598f;text-decoration:none;">artosera.com</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"
+`;
+
+exports[`récapitulatif au prospect > rend un HTML et un texte stables (snapshot) 2`] = `
+"Bonjour Ana Exemple,
+
+Merci d’avoir composé la sélection de Galerie Exemple. La voici en résumé ; nous l’avons bien reçue.
+
+LE CŒUR (Compris)
+La réserve · Le carnet · L’accrochage · La vente · L’équipe
+Avec : Hébergement en France · Sauvegardes · Mises à jour · Export complet, à tout moment
+
+VOS MODULES
+Indispensables (2)
+- Facturation complète
+- Le coffre
+Intéressants (1)
+- Mode foire
+Plus tard (1)
+- Mouvements
+Pas pour nous (1)
+- Artsy et Artnet
+
+L’ACCOMPAGNEMENT DEMANDÉ
+Oui (1)
+- Reprise des données
+À discuter (1)
+- Formation
+
+Nous revenons vers vous rapidement avec une proposition adaptée.
+Votre sélection reste enregistrée dans votre navigateur : vous pouvez la modifier ou retélécharger le PDF sur la page « Composer mon Artosera » : https://artosera.com/composer.html
+
+L’équipe Artosera
+
+--
+Vous recevez ce message parce que vous avez demandé l’envoi de votre sélection sur artosera.com. Il n’y a pas d’inscription à une liste de diffusion. Pour nous écrire, répondez simplement à ce message."
+`;

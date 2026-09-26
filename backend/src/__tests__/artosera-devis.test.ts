@@ -129,7 +129,11 @@ describe('POST /api/artosera/devis', () => {
       .send(validBody({ to: 'pas-une-adresse' }))
 
     expect(response.status).toBe(400)
-    expect(response.body).toEqual({ ok: false, error: 'Adresse e-mail du destinataire invalide.' })
+    expect(response.body).toEqual({
+      ok: false,
+      code: 'invalid_recipient',
+      error: 'Adresse e-mail du destinataire invalide.',
+    })
     expect(sendMail).not.toHaveBeenCalled()
     expect(await archivedDirectories()).toEqual([])
   })
@@ -141,7 +145,7 @@ describe('POST /api/artosera/devis', () => {
       .send(validBody({ pdfBase64: '' }))
 
     expect(missing.status).toBe(400)
-    expect(missing.body).toEqual({ ok: false, error: 'Le PDF du devis est absent.' })
+    expect(missing.body).toEqual({ ok: false, code: 'missing_pdf', error: 'Le PDF du devis est absent.' })
 
     const notAPdf = await request(app)
       .post('/api/artosera/devis')
@@ -149,7 +153,7 @@ describe('POST /api/artosera/devis', () => {
       .send(validBody({ pdfBase64: Buffer.from('MZ ceci est un exécutable').toString('base64') }))
 
     expect(notAPdf.status).toBe(400)
-    expect(notAPdf.body).toEqual({ ok: false, error: 'Le PDF du devis est illisible.' })
+    expect(notAPdf.body).toEqual({ ok: false, code: 'invalid_pdf', error: 'Le PDF du devis est illisible.' })
     expect(sendMail).not.toHaveBeenCalled()
   })
 
@@ -255,7 +259,11 @@ describe('POST /api/artosera/devis', () => {
       .send(validBody())
 
     expect(response.status).toBe(502)
-    expect(response.body).toEqual({ ok: false, error: 'L’envoi de l’e-mail a échoué. Réessayez dans un instant.' })
+    expect(response.body).toEqual({
+      ok: false,
+      code: 'send_failed',
+      error: 'L’envoi de l’e-mail a échoué. Réessayez dans un instant.',
+    })
     expect(await archivedDirectories()).toHaveLength(1)
   })
 
@@ -267,7 +275,11 @@ describe('POST /api/artosera/devis', () => {
       .send('{"to":')
 
     expect(response.status).toBe(400)
-    expect(response.body).toEqual({ ok: false, error: 'Le corps de la requête doit être un JSON valide.' })
+    expect(response.body).toEqual({
+      ok: false,
+      code: 'malformed_json',
+      error: 'Le corps de la requête doit être un JSON valide.',
+    })
     expect(sendMail).not.toHaveBeenCalled()
   })
 })

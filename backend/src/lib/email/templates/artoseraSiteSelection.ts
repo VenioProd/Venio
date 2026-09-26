@@ -29,7 +29,7 @@ export interface SiteSelectionEmailInput {
   receivedAt: Date
 }
 
-const HALO = {
+export const HALO = {
   fond: '#f6f6fa',
   surface: '#ffffff',
   texte: '#303044',
@@ -42,7 +42,7 @@ const HALO = {
 } as const
 
 /** Pastille par réponse : l'intensité suit l'intérêt exprimé. */
-const PASTILLES: Record<string, { fond: string; texte: string }> = {
+export const PASTILLES: Record<string, { fond: string; texte: string }> = {
   indispensable: { fond: HALO.accent, texte: '#ffffff' },
   interessant: { fond: HALO.lavis, texte: HALO.accent },
   'plus-tard': { fond: '#f1f0f4', texte: HALO.secondaire },
