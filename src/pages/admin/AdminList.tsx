@@ -303,7 +303,7 @@ const AdminList = () => {
       <ConfirmModal
         isOpen={deleteTarget !== null}
         title="Supprimer un administrateur"
-        message="Supprimer cet administrateur ? Cette action est irr\u00e9versible."
+        message={'Supprimer cet administrateur ? Cette action est irr\u00e9versible.'}
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         variant="danger"

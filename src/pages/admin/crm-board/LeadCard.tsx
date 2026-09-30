@@ -55,7 +55,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       <div className="crm-card-row">
         {lead.priority && <span className="crm-badge">{lead.priority}</span>}
         {lead.source && <span className="crm-badge">{lead.source}</span>}
-        {lead.budget != null && <span className="crm-badge">{lead.budget} \u20ac</span>}
+        {lead.budget != null && <span className="crm-badge">{`${lead.budget.toLocaleString('fr-FR')} \u20ac`}</span>}
       </div>
       <div className="crm-card-row" style={{ marginTop: 8 }}>
         <CustomSelect
