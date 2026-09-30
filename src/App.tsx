@@ -13,7 +13,6 @@ import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
 import CookieConsent from './components/CookieConsent'
 import PublicAnalytics from './components/PublicAnalytics'
-import { ConversionProvider } from './context/ConversionContext'
 import StickyCta from './components/conversion/StickyCta'
 import './App.css'
 
@@ -37,7 +36,7 @@ const PublicHeader = lazy(() => import('./components/PublicHeader'))
 const PublicFooter = lazy(() => import('./components/PublicFooter'))
 const Home = lazy(() => import('./pages/Home'))
 const ServicesSites = lazy(() => import('./pages/ServicesSites'))
-const AuDelaDuSite = lazy(() => import('./pages/AuDelaDuSite'))
+const ConseilCommunication = lazy(() => import('./pages/ConseilCommunication'))
 const Realisations = lazy(() => import('./pages/Realisations'))
 const Methode = lazy(() => import('./pages/Methode'))
 const CaseStudyDetail = lazy(() =>
@@ -214,14 +213,15 @@ function AppShell() {
                   {/* Site vitrine */}
                   <Route path="/" element={<Home />} />
                   <Route path="/services/sites" element={<ServicesSites />} />
-                  <Route path="/au-dela-du-site" element={<AuDelaDuSite />} />
-                  {/* Redirections 301 : anciennes pages services fusionnées et /poles retiré de la nav */}
-                  <Route path="/services/conseil" element={<Navigate to="/au-dela-du-site#conseil" replace />} />
+                  <Route path="/conseil-communication" element={<ConseilCommunication />} />
+                  {/* Redirections : anciennes pages services fusionnées, /au-dela-du-site et /poles retirés de la nav */}
+                  <Route path="/au-dela-du-site" element={<Navigate to="/conseil-communication" replace />} />
+                  <Route path="/services/conseil" element={<Navigate to="/conseil-communication" replace />} />
                   <Route
                     path="/services/developpement"
-                    element={<Navigate to="/au-dela-du-site#developpement" replace />}
+                    element={<Navigate to="/conseil-communication#et-aussi" replace />}
                   />
-                  <Route path="/services/communication" element={<Navigate to="/au-dela-du-site#marque" replace />} />
+                  <Route path="/services/communication" element={<Navigate to="/conseil-communication" replace />} />
                   <Route path="/poles" element={<Navigate to="/a-propos#poles" replace />} />
                   <Route path="/realisations" element={<Realisations />} />
                   <Route path="/realisations/:slug" element={<CaseStudyDetail />} />
@@ -798,19 +798,8 @@ function AppShell() {
   )
 }
 
-/**
- * Le socle de conversion enveloppe l'application entière plutôt que le seul
- * sous-arbre public : les pages publiques et la barre flottante — montée à
- * côté du bandeau cookies, loin des routes — doivent lire le même contexte,
- * et envelopper AppShell sans le réindenter garde le montage chirurgical.
- * Les modales ne sont montées qu'à l'ouverture : l'admin n'en porte rien.
- */
 function App() {
-  return (
-    <ConversionProvider>
-      <AppShell />
-    </ConversionProvider>
-  )
+  return <AppShell />
 }
 
 export default App

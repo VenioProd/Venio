@@ -17,8 +17,10 @@ for (const viewport of [
   })
 }
 
-test('contact form uses the deterministic test transport and records a success state', async ({ page }) => {
+test('qualification form walks the five steps and sends the need summary', async ({ page }) => {
+  let payload: Record<string, unknown> | null = null
   await page.route('**/api/contact', async (route) => {
+    payload = route.request().postDataJSON() as Record<string, unknown>
     await route.fulfill({
       status: 202,
       contentType: 'application/json',
@@ -31,19 +33,37 @@ test('contact form uses the deterministic test transport and records a success s
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/contact')
-  await expect(page.getByRole('textbox', { name: 'Prénom', exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Nom', exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Email', exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Votre message', exact: true })).toBeVisible()
-  await expect(page.getByRole('checkbox', { name: /J’accepte que Venio utilise ces informations/ })).toBeVisible()
-  await page.getByPlaceholder('Prénom').fill('Ada')
-  await page.getByPlaceholder('Nom', { exact: true }).fill('Lovelace')
-  await page.getByPlaceholder('Email').fill('ada@example.test')
-  await page.getByPlaceholder('Votre message').fill('Bonjour, voici un projet de test.')
-  await page.getByRole('checkbox', { name: /J’accepte que Venio utilise ces informations/ }).check()
-  await page.getByRole('button', { name: 'Demander l’appel' }).click()
+  const next = page.getByRole('button', { name: /Continuer|Envoyer ma demande/ })
+
+  // 1 · Besoin
+  await page.getByRole('button', { name: /Mieux communiquer/ }).click()
+  await next.click()
+  // 2 · Précisions, propres au besoin choisi
+  await page.getByRole('button', { name: 'Pas assez de demandes' }).click()
   await expect(
-    page.getByText('Merci, votre message a bien été reçu. Nous vous répondrons sous 48 h ouvrées.'),
+    page.getByRole('complementary', { name: 'Relevé de votre besoin' }).getByText('Acquisition et mesure'),
   ).toBeVisible()
+  await next.click()
+  // 3 · Entreprise, 4 · Cadre : facultatifs
+  await next.click()
+  await next.click()
+  // 5 · Coordonnées
+  await page.getByLabel('Prénom').fill('Ada')
+  await page.getByLabel('E-mail').fill('ada@example.test')
+  await page.getByRole('checkbox', { name: /J'accepte que Venio utilise ces informations/ }).check()
+  await next.click()
+
+  await expect(page.getByText(/C'est noté, Ada\./)).toBeVisible()
+  expect(payload).not.toBeNull()
+  expect((payload as unknown as { qualification: { need: string[]; pain: string[] } }).qualification).toMatchObject({
+    need: ['com'],
+    pain: ['demandes'],
+  })
   await page.screenshot({ path: `${captures}/contact-mobile.png`, fullPage: true })
+})
+
+test('old « Au-delà du site » address leads to the consulting page', async ({ page }) => {
+  await page.goto('/au-dela-du-site')
+  await expect(page).toHaveURL(/\/conseil-communication$/)
+  await expect(page.locator('h1')).toHaveCount(1)
 })

@@ -3,19 +3,16 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../../context/AuthContext'
 import { I18nProvider } from '../../context/I18nContext'
-import { ConversionProvider } from '../../context/ConversionContext'
 import StickyCta from './StickyCta'
 
 const CONSENT_KEY = 'venio_cookie_consent'
 
-function renderStickyCta() {
+function renderStickyCta(path = '/') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
         <I18nProvider>
-          <ConversionProvider>
-            <StickyCta />
-          </ConversionProvider>
+          <StickyCta />
         </I18nProvider>
       </AuthProvider>
     </MemoryRouter>,
@@ -42,19 +39,27 @@ describe('barre d’action flottante', () => {
     window.localStorage.setItem(CONSENT_KEY, 'accepted')
     renderStickyCta()
 
-    expect(screen.queryByRole('region', { name: 'Prendre rendez-vous' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Réserver 30 minutes' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Décrire mon besoin' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Décrire mon besoin' })).toBeNull()
   })
 
-  it('apparaît après le premier écran avec deux boutons nommés', () => {
+  it('apparaît après le premier écran avec un lien vers le formulaire', () => {
     window.localStorage.setItem(CONSENT_KEY, 'accepted')
     renderStickyCta()
 
     scrollPastFirstScreen()
 
-    expect(screen.getByRole('region', { name: 'Prendre rendez-vous' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Réserver 30 minutes' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Être rappelé' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Décrire mon besoin' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Décrire mon besoin' })).toHaveAttribute('href', '/contact')
+  })
+
+  it('se retire sur la page contact, où le formulaire est déjà affiché', () => {
+    window.localStorage.setItem(CONSENT_KEY, 'accepted')
+    renderStickyCta('/contact?besoin=com')
+
+    scrollPastFirstScreen()
+
+    expect(screen.queryByRole('region', { name: 'Décrire mon besoin' })).toBeNull()
   })
 
   it('cède le bas d’écran au bandeau cookies tant que le consentement n’est pas tranché', () => {
@@ -62,7 +67,7 @@ describe('barre d’action flottante', () => {
 
     scrollPastFirstScreen()
 
-    expect(screen.queryByRole('region', { name: 'Prendre rendez-vous' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Décrire mon besoin' })).toBeNull()
   })
 
   it('réserve sa hauteur au pied de page quand elle est visible, et la rend ensuite', () => {

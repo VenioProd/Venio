@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import DualCta from '../components/conversion/DualCta'
-import TrustLine from '../components/conversion/TrustLine'
+import NeedStart from '../components/qualification/NeedStart'
+import { InstrumentRings } from '../components/graphics'
 import Faq from '../components/conversion/Faq'
 import { METHODE_FAQ } from '../content/faq'
-import { useReveal } from '../hooks/useReveal'
-import '../styles/monolithe-pages.css'
+import { useEffect, useRef } from 'react'
+import './Methode.css'
 
 const STEPS = [
   {
@@ -41,11 +41,50 @@ const STEPS = [
   },
 ]
 
+const FACTORS = [
+  { title: 'Les contenus', text: 'Textes et photos fournis ou à produire' },
+  { title: 'Les validations', text: 'Une personne qui décide, ou un comité' },
+  { title: 'Les intégrations', text: 'Paiement, CRM, outils existants' },
+  { title: 'Le périmètre', text: 'Ce qui s’ajoute en cours de route' },
+]
+
+/** Allume chaque nœud quand son étape atteint le tiers haut de l'écran. */
+const useLitNodes = () => {
+  const listRef = useRef<HTMLOListElement>(null)
+
+  useEffect(() => {
+    const items = Array.from(listRef.current?.querySelectorAll<HTMLElement>('li[data-step]') ?? [])
+    const lightAll = () => items.forEach((el) => el.classList.add('is-lit'))
+    if (
+      typeof IntersectionObserver === 'undefined' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      lightAll()
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-lit')
+            io.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.35, rootMargin: '0px 0px -12% 0px' },
+    )
+    items.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+
+  return listRef
+}
+
 const Methode = () => {
-  useReveal('.mp-page .mp-reveal', 'mp-visible')
+  const timelineRef = useLitNodes()
 
   return (
-    <div className="mp-page">
+    <div className="mt-page">
       <SEO
         title="Méthode de travail — étapes, livrables et cadence"
         description="Découvrez comment Venio cadre, conçoit, construit, recette et transmet un projet web : étapes, livrables et rythme de travail."
@@ -53,96 +92,80 @@ const Methode = () => {
       />
       <StructuredData type="method" />
 
-      <section className="mp-hero">
-        <div className="mp-hero-lines" aria-hidden="true" />
-        <div className="mp-container mp-hero-content">
-          <p className="mp-eyebrow">Venio · Méthode</p>
-          <h1 className="mp-title">Faire avancer un projet, sans brouillard.</h1>
-          <p className="mp-lede">Des étapes visibles, des livrables nommés et un rythme de décision clair.</p>
+      <section className="mt-hero">
+        <InstrumentRings />
+        <div className="mt-shell mt-hero-body">
+          <p className="mt-eyebrow">Méthode</p>
+          <h1>
+            Faire avancer un projet, <span>sans brouillard.</span>
+          </h1>
+          <p className="mt-lede">
+            Des étapes visibles, des livrables nommés et un rythme de décision clair. Pour un site comme pour une
+            mission de conseil.
+          </p>
         </div>
       </section>
 
-      <section className="mp-block">
-        <div className="mp-container">
-          <div className="mp-head mp-reveal">
-            <span className="mp-index" aria-hidden="true">
-              I
-            </span>
-            <span className="mp-kicker">Le déroulé</span>
-          </div>
-          <div className="mp-method-steps">
-            {STEPS.map((step) => (
-              <article className="mp-method-step mp-reveal" key={step.number}>
-                <span className="mp-method-number">{step.number}</span>
-                <div>
+      <section className="mt-band mt-band--flush">
+        <div className="mt-shell">
+          <ol className="mt-timeline" ref={timelineRef}>
+            {STEPS.map((step, index) => (
+              <li key={step.number} data-step={step.number} style={{ ['--i' as string]: index }}>
+                <span className="mt-node" aria-hidden="true">
+                  {step.number}
+                </span>
+                <div className="mt-step">
                   <h2>{step.title}</h2>
-                  <p className="mp-method-cadence">{step.cadence}</p>
-                </div>
-                <div>
-                  <h3>Livrables</h3>
+                  <p className="mt-cad">{step.cadence}</p>
+                  <h3 className="mt-lab">Livrables</h3>
                   <ul>
                     {step.deliverables.map((deliverable) => (
                       <li key={deliverable}>{deliverable}</li>
                     ))}
                   </ul>
                 </div>
-              </article>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="mt-band">
+        <div className="mt-shell mt-split">
+          <div>
+            <p className="mt-eyebrow">Ce qui fait varier le délai</p>
+            <h2 className="mt-h2">
+              Le calendrier dépend <span>surtout de vous.</span>
+            </h2>
+            <p className="mt-sub">
+              Les délais des offres sont des repères pour un projet dont les contenus et les validations arrivent à
+              temps. Voilà ce qui les allonge : le calendrier commence réellement quand le périmètre et les contenus
+              sont prêts.
+            </p>
+            <p className="mt-sub">
+              <Link className="mt-link" to="/services/sites">
+                Comparer les cinq offres, leurs budgets indicatifs et leurs délais <span aria-hidden="true">→</span>
+              </Link>
+            </p>
+          </div>
+          <div className="mt-plate">
+            {FACTORS.map((factor) => (
+              <p key={factor.title}>
+                <b>{factor.title}</b>
+                <span>{factor.text}</span>
+              </p>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mp-block">
-        <div className="mp-container">
-          <div className="mp-head mp-reveal">
-            <span className="mp-index" aria-hidden="true">
-              II
-            </span>
-            <span className="mp-kicker">Ce qui fait varier le délai</span>
-          </div>
-          <div className="mp-prose mp-reveal">
-            <p className="mp-strong">
-              Le calendrier commence réellement quand le périmètre et les contenus sont prêts.
-            </p>
-            <p>
-              Les délais affichés dans les offres sont des repères pour un projet dont les contenus, validations et
-              accès nécessaires arrivent au fil de l&apos;eau. Une intégration externe, une fonctionnalité sur mesure ou
-              un aller-retour de validation supplémentaire peut modifier le planning : nous le signalons au jalon
-              concerné.
-            </p>
-            <p>
-              <Link to="/services/sites">Comparer les cinq offres, leurs budgets indicatifs et leurs délais</Link>.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mp-block">
-        <div className="mp-container mp-reveal">
+      <section className="mt-band">
+        <div className="mt-shell">
           <Faq items={METHODE_FAQ} />
         </div>
       </section>
 
-      <section className="mp-cta">
-        <div className="mp-container">
-          <h2 className="mp-cta-titre">
-            Un projet clair<span className="mp-dot">.</span>
-          </h2>
-          <p className="mp-cta-texte">
-            Choisissez le palier qui correspond à votre besoin ; le cadrage sert à confirmer le périmètre plutôt qu’à le
-            deviner.
-          </p>
-          <DualCta />
-          <TrustLine />
-          {/* La comparaison des offres reste accessible, mais derrière les deux
-              actions du socle : bouton fantôme. */}
-          <p className="mp-cta-alt">
-            <Link className="mc-btn mc-btn--ghost" to="/services/sites">
-              Voir les offres <span className="mp-ar">→</span>
-            </Link>
-          </p>
-        </div>
-      </section>
+      <NeedStart preset="methode" />
     </div>
   )
 }

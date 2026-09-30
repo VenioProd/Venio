@@ -8,9 +8,28 @@ Versionnement [SemVer](https://semver.org/lang/fr/) (`MAJOR.MINOR.PATCH`).
 
 ## [Unreleased]
 
+### Refonte du site public et pôle conseil marketing & communication
+
+#### Ajouté
+
+- **Conseil & communication** : nouvelle page `/conseil-communication` (diagnostic, positionnement, plan de communication, contenus, acquisition). `/au-dela-du-site`, `/services/conseil` et `/services/communication` y redirigent en 301.
+- **Formulaire de qualification** : cinq étapes (besoin, précisions, entreprise, cadre, coordonnées) avec relevé en direct et piste proposée ; `POST /api/contact` accepte un objet `qualification` validé par listes blanches, repris dans le lead, l'activité CRM et la notification interne.
+- **Graphismes partagés** : `InstrumentRings`, `LineIcon`, `FormulaThumb`, hook `useSpotlight`.
+
+#### Modifié
+
+- **Home** : hero et contenus élargis à la communication, radar des réalisations animé, section de bas de page « Parlez-nous de votre besoin » à la place de l'appel de trente minutes.
+- **Sites web, Réalisations, Méthode, À propos** : refonte visuelle dans la charte existante.
+- **Appels à l'action** : « Réserver 30 minutes » et « Être rappelé » deviennent « Décrire mon besoin ».
+
+#### Supprimé
+
+- Modales de réservation et de rappel (`BookingModal`, `CallbackModal`, `PublicModal`, `ConversionContext`) et page `AuDelaDuSite`.
+
 ### Audit de stabilisation (sprint « Stabiliser et alléger »)
 
 #### Ajouté
+
 - **CI** : workflow GitHub Actions (typecheck + test:all + lint) sur chaque PR, deploy gated par CI verte.
 - **DX** : ESLint 9 flat config (front + back), Prettier 3, Husky 9, lint-staged, commitlint Conventional Commits.
 - **Logs structurés** : passage de tous les `console.log` runtime backend à `pino` + middleware `pino-http`.
@@ -22,6 +41,7 @@ Versionnement [SemVer](https://semver.org/lang/fr/) (`MAJOR.MINOR.PATCH`).
 - **Maintenance auto** : Dependabot sur npm (root + backend) + github-actions, hebdomadaire, groupé minor+patch.
 
 #### Modifié
+
 - **TypeScript** strict : `noUnusedLocals` + `noUnusedParameters` activés, nombre de `: any` réduit
   (51 → ≤ 25 dans `src/`), typages User étendus (`title`, `customPermissions`).
 - **Architecture** : aucun fichier > 800 lignes dans `src/pages/` ou `backend/src/routes/`. Top 10 (jusqu'à 1702 lignes)
@@ -30,11 +50,13 @@ Versionnement [SemVer](https://semver.org/lang/fr/) (`MAJOR.MINOR.PATCH`).
 - **Boot** : sortie des migrations du chemin de démarrage backend.
 
 #### Supprimé
+
 - Markdowns racine obsolètes (audit, design summaries) + dossier `design-backup/`.
 - Cibles de déploiement inutilisées (IONOS scripts).
 - Dépendances mortes : `html2canvas`, downgrade `lucide-react ^1.16.0` vers la version utilisée.
 
 #### Corrigé
+
 - 45 TODO/FIXME triagés (corrigés, supprimés ou convertis en issues tracker).
 - Tests flaky permission documentés.
 

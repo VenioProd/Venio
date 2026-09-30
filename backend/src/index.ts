@@ -388,12 +388,13 @@ app.use('/api/client', clientFileRoutes)
 // non-standard API methods.
 app.all(['/api', '/api/{*path}'], apiNotFound)
 
-// Redirections 301 : pages services fusionnées dans /au-dela-du-site et /poles
+// Redirections 301 : pages services fusionnées dans /conseil-communication et /poles
 // retiré de la navigation publique (contenu repris dans /a-propos).
 const legacyPublicRedirects: Record<string, string> = {
-  '/services/conseil': '/au-dela-du-site#conseil',
-  '/services/developpement': '/au-dela-du-site#developpement',
-  '/services/communication': '/au-dela-du-site#marque',
+  '/au-dela-du-site': '/conseil-communication',
+  '/services/conseil': '/conseil-communication',
+  '/services/developpement': '/conseil-communication#et-aussi',
+  '/services/communication': '/conseil-communication',
   '/poles': '/a-propos#poles',
 }
 app.get(Object.keys(legacyPublicRedirects), (req: Request, res: Response) => {

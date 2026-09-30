@@ -2,29 +2,35 @@ import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import DualCta from '../components/conversion/DualCta'
-import TrustLine from '../components/conversion/TrustLine'
-import { PORTFOLIO_PROJECTS, type PortfolioFilter } from '../content/portfolioProjects'
-import { useReveal } from '../hooks/useReveal'
+import ProofRadar from '../components/home/ProofRadar'
+import NeedStart from '../components/qualification/NeedStart'
+import { InstrumentRings } from '../components/graphics'
+import { PORTFOLIO_PROJECTS, type PortfolioCategory } from '../content/portfolioProjects'
+import { useSpotlight } from '../hooks/useSpotlight'
 import './Realisations.css'
 
-const filters: Array<{ key: 'all' | PortfolioFilter; label: string }> = [
-  { key: 'all', label: 'Tous' },
+type Filter = 'all' | PortfolioCategory
+
+const FILTERS: Array<{ key: Filter; label: string }> = [
+  { key: 'all', label: 'Tout' },
   { key: 'site', label: 'Sites & marques' },
-  { key: 'product', label: 'Produits' },
-  { key: 'b2b', label: 'B2B' },
+  { key: 'produit', label: 'Produits' },
 ]
 
+const CATEGORY_LABEL: Record<PortfolioCategory, string> = {
+  site: 'Site & marque',
+  produit: 'Produit',
+}
+
 const Realisations = () => {
-  useReveal('.portfolio-page .portfolio-reveal', 'is-visible')
-  const [activeFilter, setActiveFilter] = useState<'all' | PortfolioFilter>('all')
+  const [activeFilter, setActiveFilter] = useState<Filter>('all')
+  const gridRef = useSpotlight<HTMLDivElement>()
   const projects =
-    activeFilter === 'all'
-      ? PORTFOLIO_PROJECTS
-      : PORTFOLIO_PROJECTS.filter((project) => project.filters.includes(activeFilter))
+    activeFilter === 'all' ? PORTFOLIO_PROJECTS : PORTFOLIO_PROJECTS.filter((p) => p.category === activeFilter)
+  const total = String(PORTFOLIO_PROJECTS.length).padStart(2, '0')
 
   return (
-    <main className="portfolio-page">
+    <main className="rl-page">
       <SEO
         title="Réalisations — sites, marques et projets digitaux"
         description="Sites, identités, produits et expériences numériques signés Venio. Découvrez une sélection de réalisations publiées."
@@ -32,20 +38,20 @@ const Realisations = () => {
       />
       <StructuredData type="realisations" />
 
-      <section className="portfolio-hero">
-        <div className="portfolio-shell portfolio-reveal">
-          <p className="portfolio-eyebrow">Venio · Réalisations</p>
+      <section className="rl-hero">
+        <InstrumentRings />
+        <div className="rl-shell rl-hero-body">
+          <p className="rl-eyebrow">Réalisations</p>
           <h1>
-            Nos <span>réalisations.</span>
+            Comprendre avant de décorer. <span>Puis créer une vraie singularité.</span>
           </h1>
-          <div className="portfolio-hero-bottom">
-            <p>
-              Sites identitaires, outils métier et produits numériques. Une sélection de projets réellement en ligne,
-              conçus pour être clairs, crédibles et mémorables.
+          <div className="rl-hero-bottom">
+            <p className="rl-lede">
+              Sites, marques et produits signés Venio. La plupart tournent en ce moment : vous pouvez aller voir.
             </p>
-            <dl className="portfolio-stats" aria-label="Chiffres clés du portfolio">
+            <dl className="rl-stats" aria-label="Chiffres clés du portfolio">
               <div>
-                <dt>09</dt>
+                <dt>{total}</dt>
                 <dd>réalisations</dd>
               </div>
               <div>
@@ -61,118 +67,70 @@ const Realisations = () => {
         </div>
       </section>
 
-      <section className="portfolio-selection">
-        <div className="portfolio-shell">
-          <div className="portfolio-selection-head portfolio-reveal">
-            <div>
-              <p className="portfolio-eyebrow">Travaux choisis</p>
-              <h2>
-                Des projets,
-                <br />
-                pas des promesses.
-              </h2>
-            </div>
-            <div className="portfolio-filters" aria-label="Filtrer les réalisations">
-              {filters.map((filter) => (
-                <button
-                  className={activeFilter === filter.key ? 'is-active' : ''}
-                  key={filter.key}
-                  onClick={() => setActiveFilter(filter.key)}
-                  type="button"
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="portfolio-grid" aria-live="polite">
-            {projects.map((project, index) => (
-              <article
-                className={`portfolio-card portfolio-card--${project.layout} portfolio-reveal`}
-                key={project.slug}
+      <section className="rl-band rl-band--radar">
+        <div className="rl-shell">
+          <ProofRadar />
+        </div>
+      </section>
+
+      <section className="rl-band">
+        <div className="rl-shell">
+          <div className="rl-filters" role="group" aria-label="Filtrer les réalisations">
+            {FILTERS.map((filter) => (
+              <button
+                className="rl-chip"
+                key={filter.key}
+                aria-pressed={activeFilter === filter.key}
+                onClick={() => setActiveFilter(filter.key)}
+                type="button"
               >
-                <div className="portfolio-visual">
-                  <span className="portfolio-index">{String(index + 1).padStart(2, '0')}/09</span>
-                  <img
-                    className="portfolio-desktop-shot"
-                    src={project.desktopImage}
-                    alt={`${project.title} sur ordinateur`}
-                  />
-                  <img className="portfolio-phone-shot" src={project.mobileImage} alt={`${project.title} sur mobile`} />
-                </div>
-                <div className="portfolio-card-content">
-                  <div className="portfolio-card-top">
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rl-grid" ref={gridRef} aria-live="polite">
+            {projects.map((project, index) => (
+              <article className="rl-card vn-spot" key={project.slug} style={{ ['--i' as string]: index }}>
+                <a
+                  className="rl-cover"
+                  href={project.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  <img src={project.desktopImage} alt="" loading="lazy" decoding="async" />
+                </a>
+                <div className="rl-card-body">
+                  <div className="rl-card-top">
                     <span>{project.eyebrow}</span>
-                    <span>2026</span>
+                    <span>{CATEGORY_LABEL[project.category]}</span>
                   </div>
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
-                  <ul className="portfolio-tags" aria-label={`Expertises ${project.title}`}>
+                  <ul className="rl-tags" aria-label={`Expertises ${project.title}`}>
                     {project.tags.map((tag) => (
                       <li key={tag}>{tag}</li>
                     ))}
                   </ul>
-                  <a className="portfolio-link" href={project.url} target="_blank" rel="noreferrer">
+                  <a className="rl-link" href={project.url} target="_blank" rel="noreferrer">
                     {project.linkLabel} <span aria-hidden="true">↗</span>
                   </a>
                 </div>
               </article>
             ))}
           </div>
+
+          <p className="rl-more">
+            <Link to="/contact">
+              Parlons-en <span aria-hidden="true">→</span>
+            </Link>
+          </p>
         </div>
       </section>
 
-      <section className="portfolio-principles">
-        <div className="portfolio-shell portfolio-principles-grid portfolio-reveal">
-          <div>
-            <p className="portfolio-eyebrow">Fil conducteur</p>
-            <h2>
-              Pas un style.
-              <br />
-              Une méthode.
-            </h2>
-          </div>
-          <div className="portfolio-principles-list">
-            <p>
-              <b>01</b>
-              <span>
-                <strong>Comprendre avant de décorer.</strong>Chaque interface part d’un rôle, d’un contexte et d’une
-                décision à rendre plus simple.
-              </span>
-            </p>
-            <p>
-              <b>02</b>
-              <span>
-                <strong>Créer une vraie singularité.</strong>Le design doit appartenir au projet — pas au template
-                utilisé la semaine précédente.
-              </span>
-            </p>
-            <p>
-              <b>03</b>
-              <span>
-                <strong>Construire pour de vrai.</strong>Responsive, contenu, intégrations et exploitation : la promesse
-                ne s’arrête pas à la maquette.
-              </span>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="portfolio-cta">
-        <div className="portfolio-shell portfolio-reveal">
-          <p>Un projet qui mérite mieux qu’un site interchangeable ?</p>
-          {/* Le lien historique garde sa taille : sur cette page, c'est le
-              titre du bloc autant qu'une action. Les deux boutons du socle
-              viennent dessous, en actions concrètes. */}
-          <Link to="/contact">
-            Parlons-en <span aria-hidden="true">→</span>
-          </Link>
-          <div className="portfolio-cta-alt">
-            <DualCta />
-            <TrustLine />
-          </div>
-        </div>
-      </section>
+      <NeedStart preset="realisations" />
     </main>
   )
 }

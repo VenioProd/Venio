@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { isAdminRole } from '../../lib/permissions'
-import DualCta from './DualCta'
+import { Link, useLocation } from 'react-router-dom'
 import './StickyCta.css'
 
 /**
@@ -36,6 +36,7 @@ const hasCookieChoice = (): boolean => {
  */
 const StickyCta = () => {
   const { user } = useAuth()
+  const { pathname } = useLocation()
   const barRef = useRef<HTMLDivElement>(null)
   const [scrolledPast, setScrolledPast] = useState(false)
   const [consentSettled, setConsentSettled] = useState(hasCookieChoice)
@@ -67,7 +68,9 @@ const StickyCta = () => {
   }, [consentSettled])
 
   const isAdmin = Boolean(user && isAdminRole(user.role))
-  const visible = scrolledPast && consentSettled && !isAdmin
+  // Sur /contact, le formulaire est déjà là : la barre renverrait à la page ouverte.
+  const onContact = pathname.startsWith('/contact')
+  const visible = scrolledPast && consentSettled && !isAdmin && !onContact
 
   // La hauteur réelle est posée sur <html> : le pied de page la consomme en
   // padding-bottom (voir StickyCta.css), et elle retombe à sa valeur par
@@ -89,10 +92,12 @@ const StickyCta = () => {
   if (!visible) return null
 
   return (
-    <div className="mc-sticky" ref={barRef} role="region" aria-label="Prendre rendez-vous">
+    <div className="mc-sticky" ref={barRef} role="region" aria-label="Décrire mon besoin">
       <div className="mc-sticky-inner mc-container">
         <p className="mc-sticky-label">Parlons de votre projet</p>
-        <DualCta />
+        <Link to="/contact" className="mc-btn mc-btn--primary" data-analytics-cta="sticky_decrire_besoin">
+          Décrire mon besoin
+        </Link>
       </div>
     </div>
   )

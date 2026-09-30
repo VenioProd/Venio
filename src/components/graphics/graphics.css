@@ -1,0 +1,294 @@
+/* ═══════════════════════════════════════════
+   Graphismes partagés du site public — préfixe vn-
+   Anneaux d'instrument, icônes au trait, vignettes de formules,
+   halo qui suit la souris, reflet des mots accentués et des boutons.
+   Aucune couleur d'accent en dur : tout passe par les tokens de thème.
+   Chaque effet s'éteint avec prefers-reduced-motion.
+   ═══════════════════════════════════════════ */
+
+:root {
+  --vn-line: var(--border-color, rgba(255, 255, 255, 0.14));
+  --vn-line-2: var(--accent-border, rgba(255, 255, 255, 0.3));
+  --vn-ink: var(--text-primary, #fff);
+  --vn-ink-2: var(--text-secondary, #9b9b9b);
+  --vn-ink-3: var(--text-muted, #6e6e6e);
+  --vn-bg: var(--bg-primary, #0a0a0a);
+  --vn-bg-3: var(--bg-card-hover, #1c1c1c);
+  --vn-accent: var(--primary);
+  --vn-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes vn-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes vn-shine {
+  0%,
+  55% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -20% 0;
+  }
+}
+
+/* ─── Anneaux d'instrument ─── */
+
+.vn-rings {
+  position: absolute;
+  right: -160px;
+  top: 50%;
+  width: 680px;
+  max-width: none;
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+.vn-rings__out {
+  transform-origin: 340px 340px;
+  animation: vn-rot 140s linear infinite;
+}
+.vn-rings__in {
+  transform-origin: 340px 340px;
+  animation: vn-rot 90s linear infinite reverse;
+}
+.vn-rings__edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+}
+.vn-rings__tick {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+.vn-rings__tick--major {
+  stroke: rgba(var(--primary-rgb), 0.55);
+}
+.vn-rings__label {
+  font: 500 9px var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.12em;
+  fill: var(--vn-ink-3);
+}
+.vn-rings__dots {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-dasharray: 2 6;
+}
+.vn-rings__dash {
+  fill: none;
+  stroke: rgba(var(--primary-rgb), 0.25);
+  stroke-dasharray: 60 14 6 14;
+}
+.vn-rings__arc {
+  fill: none;
+  stroke: var(--vn-accent);
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.vn-rings__cross {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+.vn-rings__core {
+  fill: var(--vn-accent);
+}
+@media (max-width: 700px) {
+  .vn-rings {
+    width: 460px;
+    right: -240px;
+    opacity: 0.35;
+  }
+}
+
+/* ─── Icônes au trait ─── */
+
+.vn-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--vn-line);
+  border-radius: 10px;
+  background: var(--vn-bg);
+  color: var(--vn-accent);
+  flex-shrink: 0;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+.vn-ic svg {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+}
+.vn-ic path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.3s var(--vn-ease) calc(var(--vn-d, 0ms) + 250ms);
+}
+/* Armée : tracé en attente, il se dessine quand l'icône entre à l'écran. */
+.vn-ic.is-armed path {
+  stroke-dashoffset: 1;
+}
+.vn-ic--sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+.vn-ic--sm svg {
+  width: 16px;
+  height: 16px;
+}
+.vn-spot:hover .vn-ic,
+.vn-ic:hover {
+  border-color: var(--vn-line-2);
+  box-shadow: 0 0 18px rgba(var(--primary-rgb), 0.25);
+}
+
+/* ─── Vignettes de formules ─── */
+
+.vn-thumb {
+  display: block;
+}
+.vn-thumb svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.vn-thumb rect,
+.vn-thumb circle {
+  fill: var(--vn-bg-3);
+  transition: fill 0.4s;
+}
+.vn-thumb .vn-thumb__hl {
+  fill: rgba(var(--primary-rgb), 0.35);
+}
+.vn-thumb .vn-thumb__frame {
+  fill: none;
+  stroke: var(--vn-line);
+  stroke-width: 1;
+  transition: stroke 0.4s;
+}
+.vn-thumb.is-active rect:not(.vn-thumb__frame),
+.vn-spot:hover .vn-thumb rect:not(.vn-thumb__frame) {
+  fill: rgba(255, 255, 255, 0.14);
+}
+.vn-thumb.is-active .vn-thumb__hl,
+.vn-spot:hover .vn-thumb .vn-thumb__hl {
+  fill: var(--vn-accent);
+}
+.vn-thumb.is-active .vn-thumb__frame,
+.vn-spot:hover .vn-thumb .vn-thumb__frame {
+  stroke: var(--vn-line-2);
+}
+
+/* ─── Halo qui suit la souris ─── */
+
+.vn-spot {
+  position: relative;
+  isolation: isolate;
+}
+.vn-spot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--primary-rgb), 0.13),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+  z-index: -1;
+}
+.vn-spot:hover::before {
+  opacity: 1;
+}
+
+/* ─── Reflet des mots accentués ─── */
+
+.vn-shine {
+  color: var(--vn-accent);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .vn-shine {
+    background: linear-gradient(
+      100deg,
+      var(--vn-accent) 0 42%,
+      rgb(var(--primary-light-rgb)) 50%,
+      var(--vn-accent) 58% 100%
+    );
+    background-size: 250% 100%;
+    background-position: 120% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: vn-shine 7s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 90ms + 1.4s);
+  }
+}
+
+/* ─── Boutons : reflet au survol, halo sur le principal ───
+   Opt-in : à poser sur un conteneur (.vn-fx) ou directement sur un bouton (.vn-btn). */
+
+.vn-fx .mc-btn,
+.vn-btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow 0.35s,
+    transform 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+.vn-fx .mc-btn::after,
+.vn-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.vn-fx .mc-btn:hover::after,
+.vn-btn:hover::after {
+  transform: translateX(120%);
+  transition: transform 0.75s var(--vn-ease);
+}
+.vn-fx .mc-btn--primary:hover,
+.vn-btn--primary:hover {
+  box-shadow:
+    0 0 0 4px rgba(var(--primary-rgb), 0.12),
+    0 10px 34px rgba(var(--primary-rgb), 0.35);
+}
+.vn-fx .mc-btn:active,
+.vn-btn:active {
+  transform: scale(0.97);
+}
+
+/* ─── Mouvement réduit ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  .vn-rings__out,
+  .vn-rings__in,
+  .vn-shine {
+    animation: none;
+  }
+  .vn-ic path,
+  .vn-ic.is-armed path {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+  .vn-fx .mc-btn:hover::after,
+  .vn-btn:hover::after {
+    transition: none;
+  }
+}

@@ -6,6 +6,7 @@ import { sendContactReceiptEmail } from '../../lib/email.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
 import { validateContactSubmission } from '../../lib/publicContact.js'
+import { qualificationHeadline, qualificationLines } from '../../lib/contactQualification.js'
 
 const router = express.Router()
 
@@ -34,7 +35,17 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
 
   const { submission } = result
   const now = new Date()
-  const contactName = `${submission.firstName} ${submission.lastName}`
+  const contactName = `${submission.firstName} ${submission.lastName}`.trim()
+  const { qualification } = submission
+  const qualificationText = qualification ? qualificationLines(qualification).join('\n') : ''
+  // Ce que l'équipe lit dans la fiche du lead : le relevé d'abord, puis le
+  // mot libre laissé par la personne.
+  const readableNote = [
+    qualificationText && `Relevé de qualification\n${qualificationText}`,
+    submission.message && `Message : ${submission.message}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   try {
     let lead = await Lead.findOne({ contactEmail: submission.email }).sort({ updatedAt: -1 })
@@ -49,6 +60,7 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         source: 'FORMULAIRE_SITE',
         status: 'LEAD',
         serviceType: submission.subject,
+        notes: qualification ? readableNote : '',
         lastContactAt: now,
         statusChangedAt: now,
         createdBy: null,
@@ -59,6 +71,10 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
       if (submission.phone) lead.contactPhone = submission.phone
       if (submission.company) lead.company = submission.company
       lead.serviceType = submission.subject
+      if (qualification) {
+        const stamp = `${now.toISOString().slice(0, 10)} · nouvelle demande`
+        lead.notes = [lead.notes, `${stamp}\n${readableNote}`].filter(Boolean).join('\n\n')
+      }
       lead.lastContactAt = now
       await lead.save()
     }
@@ -72,15 +88,18 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         subject: submission.subject,
         message: submission.message,
         consent: true,
+        ...(qualification ? { qualification, qualificationSummary: qualificationText.split('\n') } : {}),
       },
     )
 
     void notifySuperAdmins({
       type: 'CRM_LEAD_CREATED',
       title: isNewLead ? 'Nouveau contact site' : 'Nouveau message de contact',
-      message: 'Un contact est disponible dans le CRM.',
+      message: qualification
+        ? `Demande qualifiée : ${qualificationHeadline(qualification)}. Le relevé est dans la fiche du lead.`
+        : 'Un contact est disponible dans le CRM.',
       link: '/admin/crm',
-      metadata: { leadId: String(lead._id), source: 'FORMULAIRE_SITE' },
+      metadata: { leadId: String(lead._id), source: 'FORMULAIRE_SITE', ...(qualification ? { qualified: true } : {}) },
     })
 
     void sendContactReceiptEmail({ to: submission.email, firstName: submission.firstName }).then((emailResult) => {
