@@ -1,7 +1,11 @@
 export type PortfolioFilter = 'site' | 'product' | 'b2b'
 
+export type PortfolioCategory = 'site' | 'produit'
+
 export interface PortfolioProject {
   slug: string
+  /** Catégorie d'affichage (filtres de la page Réalisations) : un projet, une seule. */
+  category: PortfolioCategory
   title: string
   eyebrow: string
   description: string
@@ -23,6 +27,7 @@ const shot = (name: string) => `/portfolio/${name}.jpg`
 export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   {
     slug: 'venio',
+    category: 'site',
     title: 'Venio',
     eyebrow: 'Studio digital · B2B',
     description:
@@ -37,6 +42,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'formatio',
+    category: 'site',
     title: 'Formatio',
     eyebrow: 'Formation professionnelle',
     description:
@@ -51,6 +57,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'absys',
+    category: 'site',
     title: 'Absys',
     eyebrow: 'École · Enseignement supérieur',
     description:
@@ -65,6 +72,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'cauchemar',
+    category: 'site',
     title: 'Cauchemar',
     eyebrow: 'Agence créative',
     description:
@@ -79,6 +87,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'yumi',
+    category: 'produit',
     title: 'Yumi',
     eyebrow: 'Produit RH · SaaS',
     description:
@@ -93,6 +102,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'jiraya',
+    category: 'produit',
     title: 'Jiraya',
     eyebrow: 'EdTech · Simulation',
     description:
@@ -107,6 +117,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'hanami',
+    category: 'produit',
     title: 'Hanami',
     eyebrow: 'Expérience éditoriale',
     description:
@@ -121,6 +132,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'decisio',
+    category: 'site',
     title: 'Decisio',
     eyebrow: 'Communication juridique · B2B',
     description:
@@ -135,6 +147,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
   },
   {
     slug: 'absys-simulator',
+    category: 'produit',
     title: 'Absys Simulator',
     eyebrow: 'EdTech · Simulation',
     description:

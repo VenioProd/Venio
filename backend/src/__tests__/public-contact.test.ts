@@ -139,6 +139,73 @@ describe('POST /api/contact', () => {
     expect(await Lead.countDocuments({ contactEmail: 'trop-long@example.test' })).toBe(0)
   })
 
+  it('stocke un relevé de qualification validé, lisible dans le lead et l’activité CRM', async () => {
+    const response = await request(app)
+      .post('/api/contact')
+      .set('X-Forwarded-For', '198.51.100.30')
+      .send(
+        validBody({
+          email: 'quali@example.test',
+          lastName: '',
+          subject: '',
+          message: '',
+          qualification: {
+            need: ['site', 'com', 'site'],
+            formule: 'business',
+            pain: ['pub'],
+            activite: '  Cabinet   d’avocats ',
+            taille: '2-10',
+            quand: '3m',
+            budget: 'b2',
+            decide: 'associes',
+            reponse: 'appel',
+            siteUrl: 'https://exemple.test',
+          },
+        }),
+      )
+
+    expect(response.status).toBe(202)
+    const lead = await Lead.findOne({ contactEmail: 'quali@example.test' }).lean()
+    expect(lead?.contactName).toBe('Ana')
+    expect(lead?.serviceType).toContain('Un nouveau site, Mieux communiquer')
+    expect(lead?.notes).toContain('Besoin : Un nouveau site, Mieux communiquer')
+    expect(lead?.notes).toContain('Budget : 3 000 à 8 000 €')
+    expect(lead?.notes).toContain('Activité : Cabinet d’avocats')
+
+    const activity = await LeadActivity.findOne({ leadId: lead!._id }).lean()
+    expect(activity?.payload).toMatchObject({
+      qualification: { need: ['site', 'com'], formule: 'business', budget: 'b2', reponse: 'appel' },
+    })
+    expect((activity?.payload as { qualificationSummary: string[] }).qualificationSummary).toContain(
+      'Formule de site : Business',
+    )
+  })
+
+  it('refuse un relevé hors liste blanche, avec clé inconnue ou trop long', async () => {
+    const send = (qualification: unknown, n: number) =>
+      request(app)
+        .post('/api/contact')
+        .set('X-Forwarded-For', `198.51.100.4${n}`)
+        .send(validBody({ email: `bad${n}@example.test`, qualification }))
+
+    expect((await send({ need: ['nimporte'] }, 0)).status).toBe(400)
+    expect((await send({ need: [] }, 1)).status).toBe(400)
+    expect((await send({ need: ['site'], extra: 'x' }, 2)).status).toBe(400)
+    expect((await send({ need: ['site'], budget: 'b9' }, 3)).status).toBe(400)
+    expect((await send({ need: ['site'], flou: 'x'.repeat(1001) }, 4)).status).toBe(400)
+    expect((await send({ need: ['site'], siteUrl: 'javascript:alert(1)' }, 5)).status).toBe(400)
+    expect((await send('site', 6)).status).toBe(400)
+    expect(await Lead.countDocuments()).toBe(0)
+  })
+
+  it('reste rétrocompatible : le message reste obligatoire sans relevé', async () => {
+    const response = await request(app)
+      .post('/api/contact')
+      .set('X-Forwarded-For', '198.51.100.31')
+      .send(validBody({ message: '' }))
+    expect(response.status).toBe(400)
+  })
+
   it('limite les tentatives répétées par adresse IP', async () => {
     const ip = '198.51.100.14'
     for (let index = 0; index < 5; index += 1) {

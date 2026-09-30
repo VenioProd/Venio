@@ -1,3 +1,5 @@
+import { qualificationHeadline, validateQualification, type ContactQualification } from './contactQualification.js'
+
 export interface ContactSubmission {
   firstName: string
   lastName: string
@@ -7,6 +9,8 @@ export interface ContactSubmission {
   company: string
   subject: string
   message: string
+  /** Relevé du formulaire en cinq étapes ; absent pour l'ancien payload. */
+  qualification?: ContactQualification
 }
 
 export type ContactValidationResult =
@@ -57,24 +61,51 @@ export function validateContactSubmission(body: unknown, now = Date.now()): Cont
   // autres champs facultatifs. Une valeur trop longue reste un refus explicite.
   const phone = normalizeSingleLine(raw.phone ?? '', MAX_LENGTHS.phone)
   const company = normalizeSingleLine(raw.company ?? '', MAX_LENGTHS.company)
-  const subject = normalizeSingleLine(raw.subject ?? '', MAX_LENGTHS.subject)
-  const message = normalizeMessage(raw.message)
+  let subject = normalizeSingleLine(raw.subject ?? '', MAX_LENGTHS.subject)
+  let message = normalizeMessage(raw.message ?? '')
+
+  // Le relevé est optionnel (rétrocompatibilité), mais s'il est fourni il doit
+  // être entièrement conforme : aucune clé ni valeur hors liste blanche.
+  let qualification: ContactQualification | undefined
+  if (raw.qualification !== undefined && raw.qualification !== null) {
+    const parsed = validateQualification(raw.qualification)
+    if (!parsed.ok) return { ok: false, reason: 'invalid' }
+    qualification = parsed.qualification
+  }
+
+  // Sans relevé, le message reste obligatoire ; avec un relevé, il devient un
+  // complément facultatif.
+  if (message === '' && !qualification) message = null
+
+  if (qualification && subject === '') {
+    subject = `Qualification : ${qualificationHeadline(qualification)}`.slice(0, MAX_LENGTHS.subject)
+  }
 
   if (
     !firstName ||
-    !lastName ||
+    lastName === null ||
+    (!lastName && !qualification) ||
     !email ||
     !isEmail(email) ||
     phone === null ||
     company === null ||
     subject === null ||
-    !message
+    message === null
   ) {
     return { ok: false, reason: 'invalid' }
   }
 
   return {
     ok: true,
-    submission: { firstName, lastName, email, phone, company, subject, message },
+    submission: {
+      firstName,
+      lastName,
+      email,
+      phone,
+      company,
+      subject,
+      message,
+      ...(qualification ? { qualification } : {}),
+    },
   }
 }

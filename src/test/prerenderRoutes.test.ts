@@ -25,7 +25,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8')
 const ROUTE_TO_PAGE: Record<string, string> = {
   '': 'Home',
   '/services/sites': 'ServicesSites',
-  '/au-dela-du-site': 'AuDelaDuSite',
+  '/conseil-communication': 'ConseilCommunication',
   '/realisations': 'Realisations',
   '/methode': 'Methode',
   '/a-propos': 'APropos',
@@ -43,6 +43,8 @@ const ROUTE_TO_PAGE: Record<string, string> = {
  */
 const H1_ECARTS_ASSUMES: Record<string, string> = {
   '/services/sites': 'La page titre « Sites web » ; le prerender précise « sur mesure » pour la recherche.',
+  '/conseil-communication':
+    'La page titre « La plupart des communications ne servent à rien. » ; le prerender annonce le métier, plus explicite pour un moteur.',
   '/methode':
     'La page titre « Faire avancer un projet, sans brouillard. » ; le prerender annonce « Méthode de travail », plus explicite pour un moteur.',
 }

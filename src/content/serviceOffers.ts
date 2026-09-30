@@ -11,8 +11,8 @@ export const serviceOffers: readonly ServiceOfferLink[] = [
     to: '/services/sites',
   },
   {
-    label: 'Au-delà du site',
-    description: 'Conseil, développement sur mesure et communication.',
-    to: '/au-dela-du-site',
+    label: 'Conseil & communication',
+    description: 'Diagnostic, positionnement, plan de communication, contenus et mesure.',
+    to: '/conseil-communication',
   },
 ]

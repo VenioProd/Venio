@@ -7,12 +7,12 @@ export const publicRoutes = [
     path: '',
     priority: '1.0',
     changefreq: 'weekly',
-    title: 'Site web sur mesure à Paris · Venio',
+    title: 'Site web, conseil marketing et communication à Paris · Venio',
     description:
       "On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous.",
-    h1: 'Sites web et plateformes sur mesure, à Paris.',
+    h1: 'Sites web, plateformes et communication',
     content:
-      "Venio dessine et code des sites et des plateformes sur mesure à Paris : faits pour vous, et qui vous ressemblent. Votre site vous appartient — n'importe quel développeur peut le reprendre après nous — et rien n'est impossible parce que l'outil ne le permet pas.",
+      "Venio clarifie ce que vous avez à dire, puis le fait savoir : un site dessiné et codé pour vous, et une communication qui sert à quelque chose. Le site vous appartient — n'importe quel développeur peut le reprendre après nous.",
   },
   {
     path: '/services/sites',
@@ -26,15 +26,15 @@ export const publicRoutes = [
       'Pas de modèle tout fait. Venio crée des sites utiles, performants et cohérents avec votre activité, de la stratégie au déploiement.',
   },
   {
-    path: '/au-dela-du-site',
+    path: '/conseil-communication',
     priority: '0.8',
     changefreq: 'monthly',
-    title: 'Conseil, développeur et agence communication à Paris | Venio',
+    title: 'Conseil marketing et communication à Paris | Venio',
     description:
-      'Autour du site : conseil stratégique, développeur sur mesure et agence communication à Paris. Trois métiers activés seulement si vous en avez besoin.',
-    h1: 'Au-delà du site',
+      'Diagnostic, positionnement, plan de communication, contenus et mesure : cinq prestations indépendantes, chacune avec un livrable écrit que vous gardez.',
+    h1: 'Conseil marketing et communication',
     content:
-      'Conseil stratégique, développement sur mesure et communication : trois métiers Venio, activés seulement quand ils servent votre projet.',
+      'On clarifie ce que vous dites, on choisit où le dire, et on coupe ce qui ne rapporte pas. Chaque étape produit un document que vous gardez.',
   },
   {
     path: '/realisations',
@@ -65,7 +65,7 @@ export const publicRoutes = [
     title: 'À propos de Venio, studio digital à Paris | Venio',
     description:
       'Découvrez Venio, studio digital à Paris : une approche directe de la stratégie, de la marque et du développement web.',
-    h1: 'Pourquoi Venio existe',
+    h1: 'Le marché est saturé de promesses creuses.',
     content:
       'Venio aide les organisations à construire ce qui doit exister : une marque solide, un digital utile et des décisions assumées.',
   },

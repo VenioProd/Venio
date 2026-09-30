@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { type VenioIconName } from '../VenioIcon'
+import FormulaThumb, { type FormulaKind } from '../graphics/FormulaThumb'
 
 /**
  * Cadran des cinq paliers — bloc 03 de la home « Instrument ».
@@ -20,6 +21,8 @@ export type HomeTier = {
   pourQui: string
   incl: string[]
   featured: boolean
+  /** Vignette filaire de la formule, affichée dans le panneau. */
+  thumb?: FormulaKind
 }
 
 /* Géométrie : les cinq graduations sont sur le même cercle, sinon
@@ -135,8 +138,10 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
               </g>
             ))}
 
-            <circle className="mh-dial-halo" cx={mark.point.x} cy={mark.point.y} r="13" />
-            <circle className="mh-dial-marker" cx={mark.point.x} cy={mark.point.y} r="4.5" />
+            <g className="mh-dial-cursor" style={{ transform: `translate(${mark.point.x}px, ${mark.point.y}px)` }}>
+              <circle className="mh-dial-halo" cx="0" cy="0" r="13" />
+              <circle className="mh-dial-marker" cx="0" cy="0" r="4.5" />
+            </g>
 
             <line
               className="mh-dial-axis"
@@ -193,6 +198,11 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
 
       <div className="mh-tier">
         <div className="mh-tier-main">
+          {tier.thumb && (
+            <div key={tier.num} className="mh-tier-thumb">
+              <FormulaThumb kind={tier.thumb} active />
+            </div>
+          )}
           <span className="mh-mono mh-tier-num">
             Formule {tier.num}
             {tier.featured ? ' — la plus choisie' : ''}

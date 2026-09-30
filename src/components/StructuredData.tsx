@@ -1,14 +1,13 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
-import { APROPOS_FAQ, AU_DELA_FAQ, HOME_FAQ, METHODE_FAQ, SITES_FAQ, type FaqItem } from '../content/faq'
+import { APROPOS_FAQ, HOME_FAQ, METHODE_FAQ, SITES_FAQ, type FaqItem } from '../content/faq'
 
 /** Une page balisée sans FAQ visible serait un faux signal : la table suit
     exactement les pages qui affichent l'accordéon. */
 const FAQ_BY_TYPE: Record<string, FaqItem[]> = {
   home: HOME_FAQ,
   'service-sites': SITES_FAQ,
-  'au-dela-du-site': AU_DELA_FAQ,
   method: METHODE_FAQ,
   apropos: APROPOS_FAQ,
 }
@@ -47,38 +46,35 @@ const StructuredData = ({ type = 'home' }) => {
       case 'contact':
         return [baseOrganization, baseWebSite]
 
-      case 'au-dela-du-site':
+      case 'conseil-communication':
         return [
           baseOrganization,
           {
             '@context': 'https://schema.org',
             '@type': 'ItemList',
             itemListElement: [
-              {
-                '@type': 'Service',
-                position: 1,
-                serviceType: 'Conseil Stratégique',
-                provider: baseOrganization,
-                areaServed: 'FR',
-                description: 'Audit sans détour, décisions et priorités.',
-              },
-              {
-                '@type': 'Service',
-                position: 2,
-                serviceType: 'Développement sur mesure',
-                provider: baseOrganization,
-                areaServed: 'FR',
-                description: 'Outils métier et applications construits autour de votre façon de travailler.',
-              },
-              {
-                '@type': 'Service',
-                position: 3,
-                serviceType: 'Communication & Branding',
-                provider: baseOrganization,
-                areaServed: 'FR',
-                description: 'Identité, voix et système de marque cohérents dans le temps.',
-              },
-            ],
+              [
+                'Diagnostic marketing et communication',
+                'État des lieux écrit : ce qui marche, ce qui coûte pour rien, les décisions à prendre.',
+              ],
+              [
+                'Positionnement et messages',
+                'Positionnement, messages, preuves et ton, présentés de la même façon partout.',
+              ],
+              [
+                'Plan de communication',
+                'Canaux, rythme et budget tenables par votre équipe, et liste de ce qu’on arrête.',
+              ],
+              ['Contenus et réseaux sociaux', 'Ligne éditoriale, formats, gabarits et calendrier.'],
+              ['Acquisition et mesure', 'Référencement, campagnes et tableau de suivi mensuel.'],
+            ].map(([serviceType, description], index) => ({
+              '@type': 'Service',
+              position: index + 1,
+              serviceType,
+              provider: baseOrganization,
+              areaServed: 'FR',
+              description,
+            })),
           },
         ]
 

@@ -1,13 +1,12 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import DualCta from '../components/conversion/DualCta'
-import TrustLine from '../components/conversion/TrustLine'
+import ProofRadar from '../components/home/ProofRadar'
+import NeedStart from '../components/qualification/NeedStart'
+import { InstrumentRings } from '../components/graphics'
 import Faq from '../components/conversion/Faq'
 import { APROPOS_FAQ } from '../content/faq'
-import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
+import './APropos.css'
 
 const POLES = [
   { name: 'Decisio', desc: 'Communication juridique', link: 'https://decisio.paris' },
@@ -16,8 +15,6 @@ const POLES = [
 ]
 
 const APropos = () => {
-  useReveal('.mp-page .mp-reveal', 'mp-visible')
-
   return (
     <div className="mp-page">
       <SEO
@@ -27,27 +24,79 @@ const APropos = () => {
       />
       <StructuredData type="apropos" />
 
-      <section className="mp-hero">
-        <div className="mp-hero-lines" aria-hidden="true" />
-        <div className="mp-container mp-hero-content">
-          <p className="mp-eyebrow">Venio · À propos</p>
-          <h1 className="mp-title">Pourquoi Venio existe</h1>
-          <p className="mp-lede">
-            <b>Le marché est saturé de promesses creuses.</b> Nous, on construit le reste.
+      <section className="ap-hero">
+        <InstrumentRings />
+        <div className="ap-shell ap-hero-body">
+          <p className="ap-eyebrow">À propos</p>
+          <h1>
+            Le marché est saturé <span>de promesses creuses.</span>
+          </h1>
+          <p className="ap-lede">
+            Des consultants qui valident tout, des sites copiés-collés, des modes suivies sans réfléchir. Venio existe
+            pour faire le reste : clarifier, décider, construire.
           </p>
+        </div>
+      </section>
+
+      <section className="ap-band ap-band--flush">
+        <div className="ap-shell ap-manif">
+          <div className="ap-plate">
+            <div className="ap-plate-h">
+              <h2>Ce qu’on refuse</h2>
+              <span className="ap-no" aria-hidden="true">
+                ✕
+              </span>
+            </div>
+            <ul className="ap-list ap-list--no">
+              <li>Le jargon marketing vide</li>
+              <li>Les promesses qu’on ne peut pas tenir</li>
+              <li>Les tendances suivies par mimétisme</li>
+              <li>Les stratégies sans objectif concret</li>
+            </ul>
+          </div>
+          <div className="ap-plate">
+            <div className="ap-plate-h">
+              <h2>Ce qu’on assume</h2>
+              <span className="ap-yes" aria-hidden="true">
+                ✓
+              </span>
+            </div>
+            <ul className="ap-list ap-list--yes">
+              <li>Dire non quand un projet ne sert à rien</li>
+              <li>Choisir les projets qu’on prend</li>
+              <li>Faire une chose à fond plutôt que tout à moitié</li>
+              <li>Vous laisser repartir avec tout ce qu’on a produit</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="ap-band">
+        <div className="ap-shell">
+          <p className="ap-eyebrow">Ce qu’on fait tourner nous-mêmes</p>
+          <h2 className="ap-h2">
+            On ne fait pas que livrer des sites. <span>On en fait vivre.</span>
+          </h2>
+          <p className="ap-sub">
+            Nos propres logiciels servent tous les jours : formation, RH, comptabilité, acquisition. C’est là qu’on
+            apprend ce qui marche vraiment.
+          </p>
+          <div className="ap-radar">
+            <ProofRadar />
+          </div>
         </div>
       </section>
 
       {/* §I — Le refus */}
       <section className="mp-block">
         <div className="mp-container">
-          <div className="mp-head mp-reveal">
+          <div className="mp-head">
             <span className="mp-index" aria-hidden="true">
               I
             </span>
             <span className="mp-kicker">Le refus</span>
           </div>
-          <div className="mp-prose mp-reveal">
+          <div className="mp-prose">
             <p className="mp-strong">Venio existe parce que le marché est saturé de mensonges.</p>
             <p>
               Des conseillers qui valident tout pour facturer des mois. Des prestataires qui copient-collent un modèle
@@ -67,14 +116,14 @@ const APropos = () => {
       {/* §II — La méthode */}
       <section className="mp-block">
         <div className="mp-container">
-          <div className="mp-head mp-reveal">
+          <div className="mp-head">
             <span className="mp-index" aria-hidden="true">
               II
             </span>
             <span className="mp-kicker">Notre méthode</span>
           </div>
           <div className="mp-piliers">
-            <div className="mp-pilier mp-reveal">
+            <div className="mp-pilier">
               <span className="mp-pilier-num">01</span>
               <h3 className="mp-pilier-titre">Lucidité</h3>
               <p className="mp-pilier-texte">
@@ -82,7 +131,7 @@ const APropos = () => {
                 dit.
               </p>
             </div>
-            <div className="mp-pilier mp-reveal">
+            <div className="mp-pilier">
               <span className="mp-pilier-num">02</span>
               <h3 className="mp-pilier-titre">Efficacité</h3>
               <p className="mp-pilier-texte">
@@ -90,7 +139,7 @@ const APropos = () => {
                 marchent. Pas de présentations creuses.
               </p>
             </div>
-            <div className="mp-pilier mp-reveal">
+            <div className="mp-pilier">
               <span className="mp-pilier-num">03</span>
               <h3 className="mp-pilier-titre">Refus du mensonge</h3>
               <p className="mp-pilier-texte">
@@ -105,13 +154,13 @@ const APropos = () => {
       {/* §III — Comment on travaille */}
       <section className="mp-block">
         <div className="mp-container">
-          <div className="mp-head mp-reveal">
+          <div className="mp-head">
             <span className="mp-index" aria-hidden="true">
               III
             </span>
             <span className="mp-kicker">Comment on travaille</span>
           </div>
-          <div className="mp-prose mp-reveal">
+          <div className="mp-prose">
             <p className="mp-strong">
               Venio choisit ses projets. On dit non quand il le faut. On préfère perdre un client que perdre en
               crédibilité.
@@ -133,13 +182,13 @@ const APropos = () => {
       {/* §IV — Nos pôles */}
       <section id="poles" className="mp-block">
         <div className="mp-container">
-          <div className="mp-head mp-reveal">
+          <div className="mp-head">
             <span className="mp-index" aria-hidden="true">
               IV
             </span>
             <span className="mp-kicker">Nos pôles</span>
           </div>
-          <div className="mp-prose mp-reveal">
+          <div className="mp-prose">
             <p className="mp-strong">
               Venio travaille avec trois pôles spécialisés. Pas des cases sur une plaquette : des entités dédiées à un
               seul domaine, avec une vraie expertise.
@@ -149,7 +198,7 @@ const APropos = () => {
 
           <div style={{ marginTop: 'var(--mp-sp-l)' }}>
             {POLES.map((p) => (
-              <a key={p.name} className="mp-row mp-reveal" href={p.link} target="_blank" rel="noopener noreferrer">
+              <a key={p.name} className="mp-row" href={p.link} target="_blank" rel="noopener noreferrer">
                 <div>
                   <div className="mp-row-name">{p.name}</div>
                   <div className="mp-row-desc">{p.desc}</div>
@@ -165,30 +214,12 @@ const APropos = () => {
 
       {/* §V — Questions fréquentes */}
       <section className="mp-block">
-        <div className="mp-container mp-reveal">
+        <div className="mp-container">
           <Faq items={APROPOS_FAQ} />
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="mp-cta">
-        <div className="mp-container">
-          <h2 className="mp-cta-titre">
-            Parlons<span className="mp-dot">.</span>
-          </h2>
-          <p className="mp-cta-texte">
-            Si vous êtes arrivé jusqu'ici, c'est que vous comprenez. La suite se passe de vive voix.
-          </p>
-          <DualCta />
-          <TrustLine />
-          {/* Le lien historique reste, en action secondaire sous le socle. */}
-          <p className="mp-cta-alt">
-            <Link className="mc-btn mc-btn--ghost" to="/contact" data-analytics-cta="about_final_contact">
-              Prendre contact <span className="mp-ar">→</span>
-            </Link>
-          </p>
-        </div>
-      </section>
+      <NeedStart preset="a-propos" />
     </div>
   )
 }

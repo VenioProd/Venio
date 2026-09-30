@@ -1,6 +1,7 @@
-/services/conseil        /au-dela-du-site#conseil        301
-/services/developpement  /au-dela-du-site#developpement  301
-/services/communication  /au-dela-du-site#marque         301
+/au-dela-du-site         /conseil-communication          301
+/services/conseil        /conseil-communication          301
+/services/developpement  /conseil-communication#et-aussi 301
+/services/communication  /conseil-communication          301
 /poles                   /a-propos#poles                 301
 
 /*    /index.html   200

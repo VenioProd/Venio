@@ -23,7 +23,7 @@ describe('Realisations', () => {
   it('renders the selected published portfolio without the removed V&A catalogue', () => {
     renderPage()
 
-    expect(screen.getByRole('heading', { name: /nos réalisations/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /comprendre avant de décorer/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Decisio' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /voir le site/i })[0]).toHaveAttribute('target', '_blank')
     expect(screen.queryByText(/catalogue v&a/i)).not.toBeInTheDocument()
@@ -38,7 +38,10 @@ describe('Realisations', () => {
   it('filters the published projects without changing their external-link behaviour', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Produits' }))
+    const produits = screen.getByRole('button', { name: 'Produits' })
+    fireEvent.click(produits)
+
+    expect(produits).toHaveAttribute('aria-pressed', 'true')
 
     expect(screen.getByRole('heading', { name: 'Yumi' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Absys Simulator' })).toBeInTheDocument()
