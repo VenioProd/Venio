@@ -76,7 +76,19 @@ export async function checkLoginCredentials(
       return { kind: 'rejected', status: 401, body: { error: 'Code 2FA invalide' } }
     }
     if (recovery.valid) {
-      user.twoFactorRecoveryCodeHashes = recovery.hashes
+      // Consommation atomique en base : deux connexions simultanées avec le
+      // même code ne peuvent pas réussir toutes les deux. Le tableau en mémoire
+      // n'est pas réécrit, pour qu'une sauvegarde ultérieure du document ne
+      // fasse pas renaître un code consommé entre-temps par une autre requête.
+      const usedHash = (user.twoFactorRecoveryCodeHashes ?? []).find((hash) => !recovery.hashes.includes(hash))
+      const pulled = await User.updateOne(
+        { _id: user._id, twoFactorRecoveryCodeHashes: usedHash },
+        { $pull: { twoFactorRecoveryCodeHashes: usedHash } },
+      )
+      if (pulled.modifiedCount !== 1) {
+        audit('LOGIN_FAILED', user._id, { reason: '2fa_invalid' })
+        return { kind: 'rejected', status: 401, body: { error: 'Code 2FA invalide' } }
+      }
       audit('MFA_RECOVERY_CODE_USED', user._id)
     }
     mfaVerifiedAt = new Date()

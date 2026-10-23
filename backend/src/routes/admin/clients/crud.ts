@@ -87,6 +87,12 @@ router.get(
   },
 )
 
+// Choisir le mot de passe d'un compte client, c'est pouvoir s'y connecter :
+// réservé au navigateur, comme les identifiants des comptes internes.
+function refuseFromDevice(res: Response) {
+  return error(res, 403, 'Cette action se fait depuis le navigateur.', 'BROWSER_SESSION_REQUIRED')
+}
+
 router.post(
   '/',
   requirePermission(PERMISSIONS.MANAGE_CLIENTS),
@@ -100,6 +106,8 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
       }
+
+      if (req.user!.deviceId) return refuseFromDevice(res)
 
       const { email, password, name } = req.body || {}
 
@@ -280,6 +288,7 @@ router.patch(
       // Un mot de passe réécrit par l'admin doit invalider les sessions ouvertes,
       // comme le font /api/auth/change-password et /api/auth/reset-password.
       const passwordChanged = Boolean(req.body?.password)
+      if (passwordChanged && req.user!.deviceId) return refuseFromDevice(res)
       if (passwordChanged) {
         payload.passwordHash = await bcrypt.hash(String(req.body.password), 10)
         payload.passwordChangedAt = new Date()

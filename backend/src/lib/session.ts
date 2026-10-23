@@ -144,6 +144,9 @@ export async function authenticateSession(
     const device = await MobileDevice.exists({
       _id: session.deviceId,
       userId: session.userId,
+      // Un login engagé avant un changement de mot de passe ne doit pas
+      // produire un appareil valable après la révocation.
+      sessionVersion: user.sessionVersion ?? 0,
       revokedAt: null,
       expiresAt: { $gt: new Date() },
     })

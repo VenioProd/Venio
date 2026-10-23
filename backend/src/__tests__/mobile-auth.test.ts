@@ -10,7 +10,7 @@ import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
 import MobileDevice from '../models/MobileDevice.js'
 import { createSession, revokeUserSessions } from '../lib/session.js'
-import { createTotpSecret } from '../lib/mfa.js'
+import { createRecoveryCodes, createTotpSecret } from '../lib/mfa.js'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 
 const app = express()
@@ -127,6 +127,39 @@ describe('auth native', () => {
     const totp = new TOTP({ issuer: 'Venio', label: 'commercial@example.test', secret })
     const res = await login(DEVICE, { totpCode: totp.generate() }).expect(200)
     expect((await MobileDevice.findById(res.body.device.id).lean())?.mfaVerifiedAt).toBeInstanceOf(Date)
+  })
+
+  it('ne livre pas les secrets MFA, et une connexion ne consomme un code de secours qu’une fois', async () => {
+    process.env.MFA_ENABLED = 'true'
+    const { codes, hashes } = await createRecoveryCodes(2)
+    await createUser({
+      role: 'ADMIN',
+      twoFactorEnabled: true,
+      twoFactorSecret: createTotpSecret(),
+      twoFactorRecoveryCodeHashes: hashes,
+    })
+
+    const attempts = await Promise.all([1, 2].map(() => login(DEVICE, { recoveryCode: codes[0] })))
+    expect(attempts.map((r) => r.status).sort()).toEqual([200, 401])
+    const { accessToken } = attempts.find((r) => r.status === 200)!.body
+    expect((await User.findOne().lean())?.twoFactorRecoveryCodeHashes).toHaveLength(1)
+
+    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${accessToken}`).expect(200)
+    expect(me.body.user).not.toHaveProperty('twoFactorSecret')
+    expect(me.body.user).not.toHaveProperty('twoFactorRecoveryCodeHashes')
+  })
+
+  it('invalide un appareil émis avec une version périmée, et redemande la MFA quand elle est réarmée', async () => {
+    await createUser({ twoFactorEnabled: true, twoFactorSecret: createTotpSecret() })
+    const a = (await login().expect(200)).body
+    // Course : le mot de passe a changé entre la vérification et l'émission.
+    await MobileDevice.updateOne({ _id: a.device.id }, { $inc: { sessionVersion: -1 } })
+    await asBearer(a.accessToken).expect(401)
+
+    // Connecté MFA désactivée, puis MFA réarmée : le refresh échoue.
+    const b = (await login({ ...DEVICE, installationId: 'install-0002' }).expect(200)).body
+    process.env.MFA_ENABLED = 'true'
+    await request(app).post('/api/auth/mobile/refresh').send({ refreshToken: b.refreshToken }).expect(401)
   })
 
   it("refuse les comptes clients et l'enrôlement MFA en attente", async () => {

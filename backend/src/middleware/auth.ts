@@ -10,27 +10,41 @@ const MFA_ENROLLMENT_ALLOWED_PATHS = new Set([
 ])
 
 /**
- * Ce qui crée des accès, change des identifiants ou expose des secrets reste
- * réservé au navigateur : un appareil perdu ou volé ne doit pas permettre de
- * s'approprier le compte ni d'en ouvrir d'autres.
+ * Surfaces ouvertes à l'app native. Liste blanche plutôt que liste noire : une
+ * route qui crée des comptes, change des identifiants ou expose des secrets
+ * (stagiaires, administrateurs, MFA, jetons agent, coffre d'outils…) reste
+ * réservée au navigateur sans qu'on ait à la penser, y compris quand elle est
+ * ajoutée plus tard. Un appareil perdu ne doit pas permettre de s'approprier
+ * le compte ni d'en ouvrir d'autres.
  */
-const BEARER_FORBIDDEN_PREFIXES = [
-  '/api/admin/agent-tokens',
-  '/api/admin/admins',
-  '/api/admin/users',
-  '/api/admin/2fa',
-  '/api/admin/backups',
-  '/api/admin/tool-access',
-  '/api/admin/accounting',
-  '/api/admin/webhooks',
-  '/api/auth/profile',
-  '/api/auth/change-password',
+const BEARER_ALLOWED_PREFIXES = [
+  '/api/auth/me',
+  '/api/auth/mobile',
+  '/api/mobile',
+  '/api/notification-preferences',
+  '/api/admin/crm',
+  '/api/admin/interactions',
+  '/api/admin/clients',
+  '/api/admin/projects',
+  '/api/admin/quote-proposals',
+  '/api/admin/quote-templates',
+  '/api/admin/billing',
+  '/api/admin/notifications',
+  '/api/admin/dashboard',
+  '/api/admin/analytics',
+  '/api/admin/calendar',
+  '/api/admin/tickets',
+  '/api/admin/change-requests',
+  '/api/admin/messaging',
+  '/api/admin/activity-center',
+  '/api/admin/inbox',
+  '/api/admin/search',
 ]
 
-function isBearerForbidden(path: string): boolean {
+function isBearerAllowed(path: string): boolean {
   // Le routage Express ignore la casse : la comparaison aussi.
   const normalized = path.toLowerCase()
-  return BEARER_FORBIDDEN_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+  return BEARER_ALLOWED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
 }
 
 /**
@@ -96,7 +110,7 @@ async function authenticateBearer(
       invalid()
       return
     }
-    if (isBearerForbidden(path)) {
+    if (!isBearerAllowed(path)) {
       res.status(403).json({
         error: 'Cette action se fait depuis le navigateur.',
         code: 'BROWSER_SESSION_REQUIRED',

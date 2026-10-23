@@ -11,9 +11,10 @@ export interface IMobileRefreshToken {
   updatedAt: Date
 }
 
-// Les jetons consommés restent en base 30 jours après leur expiration : c'est
-// leur présence qui permet de reconnaître un rejeu et de révoquer l'appareil.
-const RETENTION_AFTER_EXPIRY_S = 30 * 24 * 60 * 60
+// Les jetons consommés restent en base aussi longtemps que peut vivre leur
+// appareil (180 jours) : c'est leur présence qui permet de reconnaître un
+// rejeu et de révoquer l'appareil.
+const RETENTION_AFTER_EXPIRY_S = 180 * 24 * 60 * 60
 
 const mobileRefreshTokenSchema = new mongoose.Schema<IMobileRefreshToken>(
   {

@@ -126,7 +126,8 @@ router.post('/logout', auth, async (req: Request, res: Response, next: NextFunct
 // GET /api/auth/me
 router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('-passwordHash')
+    // Le secret TOTP et les empreintes des codes de secours ne quittent jamais le serveur.
+    const user = await User.findById(req.user!.id).select('-passwordHash -twoFactorSecret -twoFactorRecoveryCodeHashes')
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }

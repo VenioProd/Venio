@@ -6,6 +6,7 @@ import MobileRefreshToken from '../models/MobileRefreshToken.js'
 import User from '../models/User.js'
 import { ADMIN_ROLES } from './permissions.js'
 import { createSession } from './session.js'
+import { isMfaEnabled } from './mfa.js'
 
 export const ACCESS_TOKEN_PREFIX = 'vnm_at_'
 export const REFRESH_TOKEN_PREFIX = 'vnm_rt_'
@@ -83,7 +84,8 @@ export type RefreshOutcome =
 /**
  * Rotation d'un refresh token. Chaque jeton ne sert qu'une fois : sa
  * consommation est atomique, et présenter un jeton déjà consommé révoque tout
- * l'appareil, car l'un des deux porteurs est forcément illégitime.
+ * l'appareil. On ne sait pas lequel des deux porteurs est légitime (ce peut
+ * être l'app qui a perdu une réponse) : couper les deux est le seul choix sûr.
  */
 export async function rotateRefreshToken(rawToken: string, ip: string): Promise<RefreshOutcome> {
   if (!rawToken.startsWith(REFRESH_TOKEN_PREFIX)) return { kind: 'invalid' }
@@ -115,13 +117,15 @@ export async function rotateRefreshToken(rawToken: string, ip: string): Promise<
 
   // Mot de passe changé, droits modifiés, compte désactivé : l'appareil ne
   // survit pas à ce que la session navigateur ne survivrait pas non plus.
-  const user = await User.findById(device.userId).select('role status isActive sessionVersion').lean()
+  const user = await User.findById(device.userId).select('role status isActive sessionVersion twoFactorEnabled').lean()
   if (
     !user ||
     !user.isActive ||
     user.status === 'ARCHIVE' ||
     !canUseMobileApp(user.role) ||
-    (user.sessionVersion ?? 0) !== device.sessionVersion
+    (user.sessionVersion ?? 0) !== device.sessionVersion ||
+    // MFA réarmée après une connexion qui ne l'a pas passée : on redemande.
+    (isMfaEnabled() && user.twoFactorEnabled && !device.mfaVerifiedAt)
   ) {
     await revokeDevice(device._id, 'CREDENTIALS_CHANGED')
     return { kind: 'invalid' }
