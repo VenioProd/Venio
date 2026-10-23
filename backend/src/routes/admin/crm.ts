@@ -463,7 +463,7 @@ router.get(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (isLeadOutOfScope(req, lead)) {
+      if (req.user!.role !== 'COMMERCIAL' && isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       return res.json({ lead })
@@ -503,7 +503,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
-      if (!lead || isLeadOutOfScope(req, lead)) {
+      if (!lead || (req.user!.role !== 'COMMERCIAL' && isLeadOutOfScope(req, lead))) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       const activities = await LeadActivity.find({ leadId: req.params.id })
@@ -534,8 +534,8 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await loadLeadInScope(req, res)
-      if (!lead) return undefined
+      const lead = await Lead.findOne({ _id: req.params.id, ...leadScopeFilter(req) }).select('company budget')
+      if (!lead) return res.status(404).json({ error: 'Lead not found' })
 
       const projects = await Project.find({ sourceLead: lead._id }).select('name status createdAt').lean()
       const projectIds = projects.map((project) => project._id)
@@ -578,8 +578,8 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await loadLeadInScope(req, res)
-      if (!lead) return undefined
+      const lead = await Lead.findOne({ _id: req.params.id, ...leadScopeFilter(req) }).select('clientAccountId')
+      if (!lead) return res.status(404).json({ error: 'Lead not found' })
 
       if (!lead.clientAccountId) {
         return res.json({ candidates: [], reason: 'NO_CLIENT_ACCOUNT' })
@@ -690,7 +690,7 @@ router.get(
     try {
       const now = new Date()
       const { period, since } = resolvePeriod(req.query.period, now)
-      const seesEveryone = req.user!.role === 'SUPER_ADMIN'
+      const seesEveryone = req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'COMMERCIAL'
 
       // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
       // sur deux populations différentes ne veut rien dire — c'est l'erreur que

@@ -1,3 +1,4 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { ILead } from '../types/models/index.js'
 import { createNotification } from '../lib/notifications.js'
@@ -75,5 +76,7 @@ leadSchema.index({ company: 1 })
 leadSchema.index({ clientAccountId: 1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
+
+syncTombstones(leadSchema, 'leads')
 
 export default mongoose.model<ILead>('Lead', leadSchema)

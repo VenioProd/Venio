@@ -1,10 +1,12 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { body, param, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requireAnyPermission, requirePermission, userHasPermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import QuoteTemplate from '../../models/QuoteTemplate.js'
+import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import ChangeRequest from '../../models/ChangeRequest.js'
@@ -53,15 +55,77 @@ async function loadEditable(res: Response, id: string) {
   return proposal
 }
 
+async function initializeProposal(proposal: IQuoteProposal) {
+  proposal.selectedOptionalLineIds = proposal.lines
+    .filter((line) => line.isOptional && line.isSelectedByDefault)
+    .map((line) => line._id)
+  proposal.specification.content = buildSpecificationMarkdown({
+    title: proposal.title,
+    questions: proposal.questions.toObject(),
+    answers: [],
+    lines: proposal.lines.toObject(),
+    selectedOptionalLineIds: proposal.selectedOptionalLineIds,
+  })
+  await proposal.save()
+}
+
 router.get(
   '/',
-  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filter: Record<string, unknown> = {}
       if (req.query.project) filter.project = req.query.project
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()
       return res.json({ proposals })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.get(
+  '/:id',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  param('id').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id).lean()
+      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      return res.json({ proposal })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.post(
+  '/from-template',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  body('templateId').isMongoId(),
+  body('project').isMongoId(),
+  body('title').optional().isString().trim().notEmpty(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Modèle, projet ou titre invalide' })
+      const template = await QuoteTemplate.findOne({ _id: req.body.templateId, isActive: true }).lean()
+      if (!template) return res.status(404).json({ error: 'Modèle actif non trouvé' })
+      const project = await Project.findById(req.body.project).lean()
+      if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
+      const proposal = new QuoteProposal({
+        project: project._id,
+        client: project.client,
+        createdBy: req.user!.id,
+        title: req.body.title ?? template.title,
+        intro: template.intro,
+        questions: template.questions,
+        lines: template.lines,
+        status: 'DRAFT',
+        expiresAt: new Date(Date.now() + template.validityDays * 86400000),
+      })
+      await initializeProposal(proposal)
+      return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
       return next(err)
     }
@@ -93,17 +157,7 @@ router.post(
         lines: req.body.lines ?? [],
       })
 
-      proposal.selectedOptionalLineIds = proposal.lines
-        .filter((line) => line.isOptional && line.isSelectedByDefault)
-        .map((line) => line._id)
-      proposal.specification.content = buildSpecificationMarkdown({
-        title: proposal.title,
-        questions: proposal.questions.toObject(),
-        answers: [],
-        lines: proposal.lines.toObject(),
-        selectedOptionalLineIds: proposal.selectedOptionalLineIds,
-      })
-      await proposal.save()
+      await initializeProposal(proposal)
 
       return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
@@ -138,12 +192,21 @@ router.patch(
 
 router.post(
   '/:id/send',
-  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   param('id').isMongoId(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const proposal = await loadEditable(res, req.params.id as string)
-      if (!proposal) return
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id)
+      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      if (!(await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) && String(proposal.createdBy) !== req.user!.id) {
+        return res
+          .status(403)
+          .json({ error: 'Vous ne pouvez envoyer que vos propositions', code: 'NOT_PROPOSAL_OWNER' })
+      }
+      if (proposal.status === 'SIGNED') {
+        return res.status(409).json({ error: 'Une proposition signée est figée', code: 'PROPOSAL_ALREADY_SIGNED' })
+      }
       if (proposal.status !== 'DRAFT') {
         return res.status(409).json({ error: 'Seul un brouillon peut être envoyé', code: 'PROPOSAL_NOT_DRAFT' })
       }
