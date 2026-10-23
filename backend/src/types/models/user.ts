@@ -1,4 +1,5 @@
 import type { Document, Types } from 'mongoose'
+import type { AppTheme } from '../../lib/appTheme.js'
 import type {
   UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus,
 } from '../enums.js'
@@ -43,6 +44,7 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   sessionVersion: number
+  appTheme?: AppTheme
   locale: 'fr' | 'en' | null
   colorTheme?:
     | 'sky'

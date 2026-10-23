@@ -301,6 +301,8 @@ app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/push', pushRoutes)
+app.use('/api/mobile/push', auth, (await import('./routes/mobile/push.js')).default)
+app.use('/api/mobile/theme', auth, (await import('./routes/mobile/theme.js')).default)
 app.use('/api/notification-preferences', notificationPreferencesRoutes)
 
 app.use('/api/admin/users', auth, requireMfa, adminUserRoutes)

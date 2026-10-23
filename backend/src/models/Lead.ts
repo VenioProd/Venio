@@ -1,5 +1,7 @@
 import mongoose from 'mongoose'
 import type { ILead } from '../types/models/index.js'
+import { createNotification } from '../lib/notifications.js'
+import logger from '../lib/logger.js'
 
 const leadSchema = new mongoose.Schema<ILead>(
   {
@@ -20,6 +22,7 @@ const leadSchema = new mongoose.Schema<ILead>(
     },
     budget: { type: Number, default: null },
     nextActionAt: { type: Date, default: null },
+    followUpNotifiedFor: { type: Date, default: null },
     lastContactAt: { type: Date, default: null },
     notes: { type: String, default: '' },
     serviceType: { type: String, default: '' }, // Type de service proposé
@@ -42,6 +45,29 @@ const leadSchema = new mongoose.Schema<ILead>(
   },
   { timestamps: true },
 )
+
+// Le modèle couvre aussi les sauvegardes de l'API agent et du planificateur.
+leadSchema.pre('save', async function () {
+  this.$locals.assignmentChanged = false
+  if (!this.isModified('assignedTo') || !this.assignedTo) return
+  const previous = this.isNew
+    ? null
+    : await (this.constructor as mongoose.Model<ILead>).findById(this._id).select('assignedTo').lean()
+  this.$locals.assignmentChanged = String(previous?.assignedTo || '') !== String(this.assignedTo)
+})
+leadSchema.post('save', async function (lead) {
+  if (!lead.$locals.assignmentChanged) return
+  lead.$locals.assignmentChanged = false
+  if (!lead.assignedTo || String(lead.assignedTo) === lead.$locals.assignmentActorId) return
+  await createNotification({
+    recipient: lead.assignedTo,
+    type: 'LEAD_ASSIGNED',
+    title: 'Lead assigné',
+    message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
+    link: `/admin/crm/leads/${lead._id}`,
+    metadata: { leadId: String(lead._id) },
+  }).catch(() => logger.warn('[crm] Échec notification d’assignation'))
+})
 
 leadSchema.index({ status: 1, priority: 1 })
 leadSchema.index({ assignedTo: 1, nextActionAt: 1 })
