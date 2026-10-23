@@ -20,6 +20,12 @@ const APP_VERSION = pkg.version
 
 import authRoutes from './routes/auth.js'
 import mobileAuthRoutes from './routes/mobileAuth.js'
+import mobilePushRoutes from './routes/mobile/push.js'
+import mobilePreferenceRoutes from './routes/mobile/preferences.js'
+import adminQuoteTemplateRoutes from './routes/admin/quoteTemplates.js'
+import mobileTodayRoutes from './routes/mobile/today.js'
+import mobileSyncRoutes from './routes/mobile/sync.js'
+import mobileInteractionRoutes from './routes/mobile/interactions.js'
 import projectRoutes from './routes/projects.js'
 import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
@@ -301,8 +307,8 @@ app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/push', pushRoutes)
-app.use('/api/mobile/push', auth, (await import('./routes/mobile/push.js')).default)
-app.use('/api/mobile/theme', auth, (await import('./routes/mobile/theme.js')).default)
+app.use('/api/mobile/push', auth, mobilePushRoutes)
+app.use('/api/mobile/preferences', auth, mobilePreferenceRoutes)
 app.use('/api/notification-preferences', notificationPreferencesRoutes)
 
 app.use('/api/admin/users', auth, requireMfa, adminUserRoutes)
@@ -312,10 +318,10 @@ app.use('/api/admin/admins', auth, requireMfa, adminAdminsRoutes)
 app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
 app.use('/api/admin/quote-proposals', adminQuoteProposalRoutes)
-app.use('/api/admin/quote-templates', (await import('./routes/admin/quoteTemplates.js')).default)
-app.use('/api/mobile/today', (await import('./routes/mobile/today.js')).default)
-app.use('/api/mobile/sync', (await import('./routes/mobile/sync.js')).default)
-app.use('/api/mobile/interactions', (await import('./routes/mobile/interactions.js')).default)
+app.use('/api/admin/quote-templates', adminQuoteTemplateRoutes)
+app.use('/api/mobile/today', mobileTodayRoutes)
+app.use('/api/mobile/sync', mobileSyncRoutes)
+app.use('/api/mobile/interactions', mobileInteractionRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)

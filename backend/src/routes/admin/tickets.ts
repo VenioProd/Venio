@@ -289,6 +289,7 @@ router.post(
           title: `Nouveau ticket : ${ticket.title}`,
           message: `${user.name} a cree un ticket (${catLabel})`,
           link: '/admin/tickets',
+          metadata: { ticketId: String(ticket._id), ticketTitle: ticket.title, actorName: user.name },
         }).catch(() => {})
       }
 

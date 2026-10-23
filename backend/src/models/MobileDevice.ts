@@ -34,6 +34,7 @@ export interface IMobileDevice {
   revokedReason: MobileDeviceRevokeReason | null
   apnsToken: string | null
   apnsEnvironment: ApnsEnvironment | null
+  apnsLanguage: 'fr' | 'en' | null
   apnsUpdatedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -65,6 +66,8 @@ const mobileDeviceSchema = new mongoose.Schema<IMobileDevice>(
     revokedReason: { type: String, enum: [...MOBILE_DEVICE_REVOKE_REASONS, null], default: null },
     apnsToken: { type: String, default: null },
     apnsEnvironment: { type: String, enum: [...APNS_ENVIRONMENTS, null], default: null },
+    // Langue du système de l'appareil, utilisée quand l'app suit le système.
+    apnsLanguage: { type: String, enum: ['fr', 'en', null], default: null },
     apnsUpdatedAt: { type: Date, default: null },
   },
   { timestamps: true },

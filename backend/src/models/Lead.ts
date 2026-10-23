@@ -62,7 +62,7 @@ leadSchema.post('save', async function (lead) {
   if (!lead.assignedTo || String(lead.assignedTo) === lead.$locals.assignmentActorId) return
   await createNotification({
     recipient: lead.assignedTo,
-    type: 'LEAD_ASSIGNED',
+    type: 'CRM_LEAD_ASSIGNED',
     title: 'Lead assigné',
     message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
     link: `/admin/crm/leads/${lead._id}`,

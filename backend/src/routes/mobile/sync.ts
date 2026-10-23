@@ -139,7 +139,18 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         : req.query.cursor || null
     const responseItems =
       type === 'interactions'
-        ? items.map((item) => toTimelineEntry(item as Parameters<typeof toTimelineEntry>[0]))
+        ? items.map((item) => {
+            const interaction = item as Parameters<typeof toTimelineEntry>[0] & {
+              subjectType: string
+              subjectId: unknown
+            }
+            // La timeline ne dit pas à qui l'échange se rattache ; l'app hors ligne en a besoin.
+            return {
+              ...toTimelineEntry(interaction),
+              subjectType: interaction.subjectType,
+              subjectId: String(interaction.subjectId),
+            }
+          })
         : items
     return res.json({ items: responseItems, nextCursor, hasMore })
   } catch (err) {

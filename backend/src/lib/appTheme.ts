@@ -21,6 +21,10 @@ export function isAppTheme(value: unknown): value is AppTheme {
   const { theme, background, accent } = value as Record<string, unknown>
   if (theme !== 'glass' && theme !== 'neon') return false
   const options = APP_THEMES[theme]
-  return typeof background === 'string' && (options.backgrounds as readonly string[]).includes(background)
-    && typeof accent === 'string' && (options.accents as readonly string[]).includes(accent)
+  return (
+    typeof background === 'string' &&
+    (options.backgrounds as readonly string[]).includes(background) &&
+    typeof accent === 'string' &&
+    (options.accents as readonly string[]).includes(accent)
+  )
 }

@@ -4,7 +4,7 @@ import { userHasPermission } from '../middleware/role.js'
 import { PERMISSIONS } from './permissions.js'
 import Lead from '../models/Lead.js'
 import User from '../models/User.js'
-import { isLeadOutOfScope } from './crmScope.js'
+import { canReadLead, isLeadOutOfScope } from './crmScope.js'
 import type { InteractionSubjectType } from '../types/models/index.js'
 
 interface ResolvedSubject {
@@ -16,7 +16,15 @@ interface ResolvedSubject {
   label: string
 }
 
-// Les droits suivent le sujet, y compris pour les échanges saisis hors ligne.
+/**
+ * Résout le sujet d'une interaction et contrôle l'accès. La permission dépend
+ * de la nature du sujet : le journal d'un lead suit les permissions du CRM,
+ * celui d'un client celles des comptes clients. Partagé par les routes admin
+ * et par l'app native, y compris pour les échanges saisis hors ligne.
+ *
+ * Un sujet hors périmètre répond 404 et non 403 : on ne doit pas pouvoir
+ * déduire l'existence du lead d'un collègue.
+ */
 export async function resolveSubject(
   req: Request,
   res: Response,
@@ -41,7 +49,7 @@ export async function resolveSubject(
       return null
     }
     const lead = await Lead.findById(subjectId).select('company contactName contactEmail assignedTo createdBy')
-    if (!lead || ((mode === 'write' || req.user!.role !== 'COMMERCIAL') && isLeadOutOfScope(req, lead))) {
+    if (!lead || (mode === 'write' ? isLeadOutOfScope(req, lead) : !canReadLead(req, lead))) {
       res.status(404).json({ error: 'Lead not found' })
       return null
     }

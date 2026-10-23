@@ -10,7 +10,7 @@ const projectUpdateSchema = new mongoose.Schema<IProjectUpdate>(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 syncTombstones(projectUpdateSchema, 'projectUpdates')

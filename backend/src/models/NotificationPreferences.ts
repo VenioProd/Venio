@@ -39,7 +39,7 @@ export default mongoose.model('NotificationPreferences', notificationPreferences
 
 export const NOTIFICATION_TYPES: NotificationType[] = [
   'CRM_LEAD_CREATED',
-  'LEAD_ASSIGNED',
+  'CRM_LEAD_ASSIGNED',
   'LEAD_FOLLOW_UP_DUE',
   'QUOTE_PROPOSAL_VIEWED',
   'QUOTE_PROPOSAL_SIGNED',

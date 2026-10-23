@@ -5,7 +5,6 @@ import { PERMISSIONS } from '../../lib/permissions.js'
 import Lead from '../../models/Lead.js'
 import Task from '../../models/Task.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
-import AuditLog from '../../models/AuditLog.js'
 import logger from '../../lib/logger.js'
 
 const router = express.Router()
@@ -89,7 +88,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const quoteFilter = {
       createdBy: req.user!.id,
       status: 'SENT',
-      _id: { $in: await AuditLog.distinct('metadata.proposalId', { action: 'QUOTE_PROPOSAL_VIEWED' }) },
+      firstViewedAt: { $ne: null },
     }
     const [overdue, today, hotLeadsWithoutAction, newInboundLeads, meetingResult, quoteItems, quoteTotal] =
       await Promise.all([
@@ -109,7 +108,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ),
         meetings,
         QuoteProposal.find(quoteFilter)
-          .select('_id project client title status expiresAt createdBy createdAt updatedAt')
+          .select('_id project client title status expiresAt firstViewedAt createdBy createdAt updatedAt')
           .sort({ updatedAt: -1, _id: 1 })
           .limit(50)
           .lean(),

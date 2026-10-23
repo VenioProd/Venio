@@ -10,7 +10,7 @@ export interface ChannelPreferences {
 
 export type NotificationType =
   | 'CRM_LEAD_CREATED'
-  | 'LEAD_ASSIGNED'
+  | 'CRM_LEAD_ASSIGNED'
   | 'LEAD_FOLLOW_UP_DUE'
   | 'QUOTE_PROPOSAL_VIEWED'
   | 'QUOTE_PROPOSAL_SIGNED'
@@ -47,7 +47,7 @@ export async function updateNotificationPreferences(
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string; description: string }> = {
   CRM_LEAD_CREATED: { label: 'Nouveau lead', description: 'Un contact est arrivé dans le CRM.' },
-  LEAD_ASSIGNED: { label: 'Lead assigné', description: 'Un lead vous est confié.' },
+  CRM_LEAD_ASSIGNED: { label: 'Lead assigné', description: 'Un lead vous est confié.' },
   LEAD_FOLLOW_UP_DUE: { label: 'Relance à effectuer', description: 'Une action commerciale arrive à échéance.' },
   QUOTE_PROPOSAL_VIEWED: { label: 'Devis consulté', description: 'Un client a consulté votre proposition.' },
   QUOTE_PROPOSAL_SIGNED: { label: 'Devis signé', description: 'Un client a signé votre proposition.' },

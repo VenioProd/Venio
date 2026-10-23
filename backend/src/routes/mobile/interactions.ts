@@ -75,6 +75,7 @@ router.post(
   body('occurredAt').optional().isISO8601(),
   body('subject').optional().isString().trim().isLength({ max: INTERACTION_SUBJECT_MAX_LENGTH }),
   body('body').isString().isLength({ min: 1, max: INTERACTION_BODY_MAX_LENGTH }),
+  body('lang').optional({ values: 'null' }).isIn(['fr', 'en']),
   async (req: Request, res: Response, next: NextFunction) => {
     let storedFile: string | undefined
     try {
@@ -97,6 +98,7 @@ router.post(
         occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt).toISOString() : null,
         subject: req.body.subject ?? '',
         body: req.body.body,
+        lang: (req.body.lang ?? null) as 'fr' | 'en' | null,
       }
       const clientRequestId = req.get('Idempotency-Key')!.toLowerCase()
       const clientRequestHash = createHash('sha256').update(JSON.stringify(normalized)).digest('hex')

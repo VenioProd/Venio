@@ -142,10 +142,11 @@ export async function createNotification({
         }
         return Promise.all([
           sendPushToUser(recipientId, payload),
-          sendApnsToUser(recipientId, {
-            ...payload,
-            data: { notificationId: notification ? String(notification._id) : null },
-          }),
+          sendApnsToUser(
+            recipientId,
+            { ...payload, data: { notificationId: notification ? String(notification._id) : null } },
+            metadata,
+          ),
         ])
       })
       .catch((err) => {

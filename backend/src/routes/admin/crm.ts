@@ -24,7 +24,7 @@ import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
-import { leadScopeFilter, isLeadOutOfScope } from '../../lib/crmScope.js'
+import { canReadLead, leadScopeFilter, isLeadOutOfScope, readsWholeCrm } from '../../lib/crmScope.js'
 import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
@@ -463,7 +463,7 @@ router.get(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (req.user!.role !== 'COMMERCIAL' && isLeadOutOfScope(req, lead)) {
+      if (!canReadLead(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       return res.json({ lead })
@@ -503,7 +503,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
-      if (!lead || (req.user!.role !== 'COMMERCIAL' && isLeadOutOfScope(req, lead))) {
+      if (!lead || !canReadLead(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       const activities = await LeadActivity.find({ leadId: req.params.id })
@@ -690,7 +690,7 @@ router.get(
     try {
       const now = new Date()
       const { period, since } = resolvePeriod(req.query.period, now)
-      const seesEveryone = req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'COMMERCIAL'
+      const seesEveryone = readsWholeCrm(req)
 
       // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
       // sur deux populations différentes ne veut rien dire — c'est l'erreur que

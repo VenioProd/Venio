@@ -27,6 +27,7 @@ export interface TimelineEntry {
   author: TimelineAuthor | null
   recipients: { email: string; name: string; status: string; error: string }[]
   audio?: { filename: string; originalName: string; mimeType: string; size: number; url: string }
+  lang?: 'fr' | 'en'
   deliveryStatus: string
 }
 
@@ -67,6 +68,7 @@ export function toTimelineEntry(item: {
   recipients?: { email: string; name?: string; status: string; error?: string }[]
   deliveryStatus?: string
   audio?: { filename: string; originalName: string; mimeType: string; size: number } | null
+  lang?: 'fr' | 'en' | null
 }): TimelineEntry {
   return {
     id: String(item._id),
@@ -86,6 +88,7 @@ export function toTimelineEntry(item: {
     })),
     deliveryStatus: item.deliveryStatus || 'NONE',
     ...(item.audio ? { audio: { ...item.audio, url: `/api/mobile/interactions/${item._id}/audio` } } : {}),
+    ...(item.lang ? { lang: item.lang } : {}),
   }
 }
 
@@ -101,6 +104,7 @@ export interface LogInteractionInput {
   author?: Types.ObjectId | string | null
   recipients?: { email: string; name?: string; status: 'SENT' | 'FAILED'; error?: string }[]
   deliveryStatus?: 'NONE' | 'SENT' | 'PARTIAL' | 'FAILED'
+  lang?: 'fr' | 'en' | null
   clientRequestId?: string
   clientRequestHash?: string
   audio?: { filename: string; originalName: string; mimeType: string; size: number }
@@ -108,6 +112,7 @@ export interface LogInteractionInput {
 
 export async function logInteraction(input: LogInteractionInput) {
   return Interaction.create({
+    lang: input.lang ?? null,
     clientRequestId: input.clientRequestId,
     clientRequestHash: input.clientRequestHash,
     audio: input.audio,

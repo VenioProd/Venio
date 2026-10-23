@@ -16,7 +16,7 @@ import crmRoutes from '../routes/admin/crm.js'
 import billingRoutes from '../routes/admin/billing.js'
 
 const app = express().use(express.json())
-let cookie: string
+let bearer: string
 let author: string
 let project: string
 beforeAll(async () => {
@@ -42,8 +42,8 @@ beforeEach(async () => {
     platform: 'ios',
     expiresAt: new Date(Date.now() + 30 * 86400000),
   })
-  const session = await createSession(author, { deviceId: String(device._id) })
-  cookie = `venio_session=${session.token}`
+  const session = await createSession(author, { deviceId: String(device._id), tokenPrefix: 'vnm_at_' })
+  bearer = `Bearer ${session.token}`
 })
 
 it('crée au prix du modèle, initialise les options et envoie seulement son devis', async () => {
@@ -59,7 +59,7 @@ it('crée au prix du modèle, initialise les options et envoie seulement son dev
   })
   const created = await request(app)
     .post('/api/admin/quote-proposals/from-template')
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .send({ templateId: template._id, project, lines: [{ unitPrice: 1 }], status: 'SIGNED', createdBy: project })
     .expect(201)
   const proposal = created.body.proposal
@@ -72,36 +72,40 @@ it('crée au prix du modèle, initialise les options et envoie seulement son dev
   expect(proposal.selectedOptionalLineIds).toEqual([proposal.lines[0]._id])
   expect(proposal.specification.content).toContain('Option')
   expect(new Date(proposal.expiresAt).getTime() - Date.now()).toBeGreaterThan(9 * 86400000)
-  await request(app).post(`/api/admin/quote-proposals/${proposal._id}/send`).set('Cookie', cookie).expect(200)
+  await request(app).post(`/api/admin/quote-proposals/${proposal._id}/send`).set('Authorization', bearer).expect(200)
   await QuoteProposal.findByIdAndUpdate(proposal._id, { status: 'DRAFT', createdBy: new mongoose.Types.ObjectId() })
   const forbidden = await request(app)
     .post(`/api/admin/quote-proposals/${proposal._id}/send`)
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .expect(403)
   expect(forbidden.body.code).toBe('NOT_PROPOSAL_OWNER')
   await request(app)
     .patch(`/api/admin/quote-proposals/${proposal._id}`)
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .send({ title: 'x' })
     .expect(403)
-  await request(app).post(`/api/admin/quote-proposals/${proposal._id}/cancel`).set('Cookie', cookie).expect(403)
+  await request(app).post(`/api/admin/quote-proposals/${proposal._id}/cancel`).set('Authorization', bearer).expect(403)
   await request(app)
     .post(`/api/admin/quote-proposals/${proposal._id}/rebuild-document`)
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .expect(403)
-  await request(app).post('/api/admin/quote-proposals').set('Cookie', cookie).send({ project, title: 'x' }).expect(403)
-  await request(app).post(`/api/admin/billing/projects/${project}/quotes`).set('Cookie', cookie).expect(403)
-  await request(app).get(`/api/admin/quote-proposals/${proposal._id}`).set('Cookie', cookie).expect(200)
-  await request(app).get('/api/admin/quote-templates').set('Cookie', cookie).expect(200)
-  await request(app).delete(`/api/admin/quote-templates/${template._id}`).set('Cookie', cookie).expect(403)
+  await request(app)
+    .post('/api/admin/quote-proposals')
+    .set('Authorization', bearer)
+    .send({ project, title: 'x' })
+    .expect(403)
+  await request(app).post(`/api/admin/billing/projects/${project}/quotes`).set('Authorization', bearer).expect(403)
+  await request(app).get(`/api/admin/quote-proposals/${proposal._id}`).set('Authorization', bearer).expect(200)
+  await request(app).get('/api/admin/quote-templates').set('Authorization', bearer).expect(200)
+  await request(app).delete(`/api/admin/quote-templates/${template._id}`).set('Authorization', bearer).expect(403)
 })
 
 it('le commercial lit aussi les leads de ses collègues', async () => {
   const lead = await Lead.create({ company: 'Autre', assignedTo: new mongoose.Types.ObjectId() })
-  const response = await request(app).get('/api/admin/crm/leads').set('Cookie', cookie).expect(200)
+  const response = await request(app).get('/api/admin/crm/leads').set('Authorization', bearer).expect(200)
   expect(response.body.leads.map((item: any) => item._id)).toContain(String(lead._id))
-  await request(app).get(`/api/admin/crm/leads/${lead._id}`).set('Cookie', cookie).expect(200)
-  await request(app).get(`/api/admin/crm/leads/${lead._id}/activities`).set('Cookie', cookie).expect(200)
+  await request(app).get(`/api/admin/crm/leads/${lead._id}`).set('Authorization', bearer).expect(200)
+  await request(app).get(`/api/admin/crm/leads/${lead._id}/activities`).set('Authorization', bearer).expect(200)
 })
 
 it('classe les relances aux bornes du jour parisien de changement d’heure', async () => {
@@ -116,12 +120,12 @@ it('classe les relances aux bornes du jour parisien de changement d’heure', as
       { company: 'Chaud', assignedTo: author, leadTemperature: 'CHAUD' },
       { company: 'Entrant', source: 'FORMULAIRE_SITE', createdAt: '2026-10-24T12:00:00Z' },
     ])
-    const result = await request(app).get('/api/mobile/today?tz=Europe/Paris').set('Cookie', cookie).expect(200)
+    const result = await request(app).get('/api/mobile/today?tz=Europe/Paris').set('Authorization', bearer).expect(200)
     expect(result.body.followUps.overdue.items.map((x: any) => x.company)).toEqual(['Retard'])
     expect(result.body.followUps.today.items.map((x: any) => x.company)).toEqual(['Début', 'Fin'])
     expect(result.body.hotLeadsWithoutAction.total).toBe(1)
     expect(result.body.newInboundLeads.total).toBe(1)
-    await request(app).get('/api/mobile/today?tz=invalid').set('Cookie', cookie).expect(400)
+    await request(app).get('/api/mobile/today?tz=invalid').set('Authorization', bearer).expect(400)
   } finally {
     vi.restoreAllMocks()
   }
@@ -139,7 +143,7 @@ it('pagine les dates identiques sans perte et exclut les écritures de moins de 
     const result = await request(app)
       .get('/api/mobile/sync/leads')
       .query({ cursor, limit: 2 })
-      .set('Cookie', cookie)
+      .set('Authorization', bearer)
       .expect(200)
     ids.push(...result.body.items.map((x: any) => x._id))
     cursor = result.body.nextCursor
@@ -156,7 +160,7 @@ it('publie les suppressions autorisées et impose une resynchro après 90 jours'
   const { default: SyncTombstone } = await import('../models/SyncTombstone.js')
   await SyncTombstone.updateMany({}, { $set: { deletedAt: new Date(Date.now() - 10000) } })
   await User.findByIdAndUpdate(author, { deniedPermissions: ['view_projects'] })
-  const result = await request(app).get('/api/mobile/sync/deletions').set('Cookie', cookie).expect(200)
+  const result = await request(app).get('/api/mobile/sync/deletions').set('Authorization', bearer).expect(200)
   expect(result.body.items.map((x: any) => [x.entityType, x.entityId])).toEqual([['leads', String(lead._id)]])
   const old = Buffer.from(
     JSON.stringify({ u: new Date(Date.now() - 91 * 86400000).toISOString(), id: String(lead._id) }),
@@ -164,7 +168,7 @@ it('publie les suppressions autorisées et impose une resynchro après 90 jours'
   const expired = await request(app)
     .get('/api/mobile/sync/deletions')
     .query({ cursor: old })
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .expect(410)
   expect(expired.body.code).toBe('SYNC_RESET_REQUIRED')
 })
@@ -172,42 +176,55 @@ it('publie les suppressions autorisées et impose une resynchro après 90 jours'
 it('journalise une seule interaction malgré les rejeux concurrents et refuse le changement de corps', async () => {
   const lead = await Lead.create({ company: 'Appelé', assignedTo: author })
   const key = randomUUID()
-  const payload = { subjectType: 'LEAD', subjectId: String(lead._id), kind: 'CALL', body: 'Rappel demain' }
+  const payload = {
+    subjectType: 'LEAD',
+    subjectId: String(lead._id),
+    kind: 'CALL',
+    body: 'Call back tomorrow',
+    lang: 'en',
+  }
   const post = () =>
-    request(app).post('/api/mobile/interactions').set('Cookie', cookie).set('Idempotency-Key', key).send(payload)
+    request(app).post('/api/mobile/interactions').set('Authorization', bearer).set('Idempotency-Key', key).send(payload)
   const results = await Promise.all([post(), post()])
   expect(results.map((r) => r.status).sort()).toEqual([200, 201])
   expect(results[0].body.interaction._id).toBe(results[1].body.interaction._id)
   expect(await Interaction.countDocuments()).toBe(1)
   const conflict = await request(app)
     .post('/api/mobile/interactions')
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .set('Idempotency-Key', key)
     .send({ ...payload, body: 'Autre' })
     .expect(409)
   expect(conflict.body.code).toBe('IDEMPOTENCY_CONFLICT')
-  await request(app).post('/api/mobile/interactions').set('Cookie', cookie).send(payload).expect(400)
+  await request(app).post('/api/mobile/interactions').set('Authorization', bearer).send(payload).expect(400)
+
+  // L'original est conservé avec sa langue, et la synchro dit à quel lead il se rattache.
+  await Interaction.updateMany({}, { $set: { updatedAt: new Date(Date.now() - 5000) } }, { timestamps: false })
+  const synced = await request(app).get('/api/mobile/sync/interactions').set('Authorization', bearer).expect(200)
+  expect(synced.body.items).toMatchObject([
+    { body: 'Call back tomorrow', lang: 'en', subjectType: 'LEAD', subjectId: String(lead._id) },
+  ])
 })
 
 it('réserve l’édition des modèles à la facturation et archive sans supprimer', async () => {
   await User.findByIdAndUpdate(author, { grantedPermissions: ['manage_billing'] })
   const created = await request(app)
     .post('/api/admin/quote-templates')
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .send({ name: 'Standard', title: 'Devis', lines: [{ description: 'Travail', unitPrice: 42 }] })
     .expect(201)
   const id = created.body.template._id
   await request(app)
     .patch(`/api/admin/quote-templates/${id}`)
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .send({ validityDays: 15 })
     .expect(200)
-  await request(app).delete(`/api/admin/quote-templates/${id}`).set('Cookie', cookie).expect(200)
-  const listed = await request(app).get('/api/admin/quote-templates').set('Cookie', cookie).expect(200)
+  await request(app).delete(`/api/admin/quote-templates/${id}`).set('Authorization', bearer).expect(200)
+  const listed = await request(app).get('/api/admin/quote-templates').set('Authorization', bearer).expect(200)
   expect(listed.body.templates).toEqual([])
   await request(app)
     .post('/api/admin/quote-proposals/from-template')
-    .set('Cookie', cookie)
+    .set('Authorization', bearer)
     .send({ templateId: id, project })
     .expect(404)
   const { default: QuoteTemplate } = await import('../models/QuoteTemplate.js')
@@ -216,7 +233,6 @@ it('réserve l’édition des modèles à la facturation et archive sans supprim
 
 it('lit le calendrier local et repère un devis consulté, même si le calendrier tombe ensuite en panne', async () => {
   const { default: Task } = await import('../models/Task.js')
-  const { default: AuditLog } = await import('../models/AuditLog.js')
   await Task.create({ project, title: 'RDV', assignee: author, createdBy: author, dueDate: new Date() })
   const proposal = await QuoteProposal.create({
     project,
@@ -224,20 +240,17 @@ it('lit le calendrier local et repère un devis consulté, même si le calendrie
     createdBy: author,
     title: 'Vu',
     status: 'SENT',
+    firstViewedAt: new Date(),
   })
-  await AuditLog.create({
-    action: 'QUOTE_PROPOSAL_VIEWED',
-    userId: author,
-    metadata: { proposalId: String(proposal._id) },
-  })
-  const first = await request(app).get('/api/mobile/today').set('Cookie', cookie).expect(200)
+  await QuoteProposal.create({ project, client: author, createdBy: author, title: 'Pas encore vu', status: 'SENT' })
+  const first = await request(app).get('/api/mobile/today').set('Authorization', bearer).expect(200)
   expect(first.body.meetings.total).toBe(1)
   expect(first.body.quotesViewedNotSigned.items.map((x: any) => x._id)).toEqual([String(proposal._id)])
   const failure = vi.spyOn(Task, 'find').mockImplementation(() => {
     throw new Error('Calendrier indisponible')
   })
   try {
-    const fallback = await request(app).get('/api/mobile/today').set('Cookie', cookie).expect(200)
+    const fallback = await request(app).get('/api/mobile/today').set('Authorization', bearer).expect(200)
     expect(fallback.body.meetings).toEqual({ items: [], total: 0 })
   } finally {
     failure.mockRestore()
@@ -259,8 +272,8 @@ it('protège les types de synchro et date les mises à jour de projet', async ()
   const update = await ProjectUpdate.create({ project, createdBy: author, title: 'Point' })
   expect(update.updatedAt).toBeInstanceOf(Date)
   await User.findByIdAndUpdate(author, { deniedPermissions: ['view_projects', 'view_billing', 'manage_quotes'] })
-  await request(app).get('/api/mobile/sync/projects').set('Cookie', cookie).expect(403)
-  await request(app).get('/api/mobile/sync/quotes').set('Cookie', cookie).expect(403)
+  await request(app).get('/api/mobile/sync/projects').set('Authorization', bearer).expect(403)
+  await request(app).get('/api/mobile/sync/quotes').set('Authorization', bearer).expect(403)
 })
 
 it('conserve un seul audio lors de deux créations concurrentes et le sert après contrôle des droits', async () => {
@@ -273,7 +286,7 @@ it('conserve un seul audio lors de deux créations concurrentes et le sert aprè
   const post = () =>
     request(app)
       .post('/api/mobile/interactions')
-      .set('Cookie', cookie)
+      .set('Authorization', bearer)
       .set('Idempotency-Key', key)
       .field('subjectType', 'LEAD')
       .field('subjectId', String(lead._id))
@@ -287,9 +300,9 @@ it('conserve un seul audio lors de deux créations concurrentes et le sert aprè
     expect(files).toHaveLength(1)
     expect(await readFile(resolve(dir, files[0]))).toEqual(Buffer.from('audio synthétique'))
     const audioUrl = results[0].body.audio.url
-    await request(app).get(audioUrl).set('Cookie', cookie).expect(200)
+    await request(app).get(audioUrl).set('Authorization', bearer).expect(200)
     await User.findByIdAndUpdate(author, { deniedPermissions: ['view_crm'] })
-    await request(app).get(audioUrl).set('Cookie', cookie).expect(403)
+    await request(app).get(audioUrl).set('Authorization', bearer).expect(403)
   } finally {
     for (const name of (await readdir(dir).catch(() => [] as string[])).filter((name) => !before.has(name)))
       await unlink(resolve(dir, name))

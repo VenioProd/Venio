@@ -1,8 +1,6 @@
 import type { Document, Types } from 'mongoose'
 import type { AppTheme } from '../../lib/appTheme.js'
-import type {
-  UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus,
-} from '../enums.js'
+import type { UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus } from '../enums.js'
 
 // ─── User ───
 export interface IUserAddress {
@@ -45,6 +43,7 @@ export interface IUser extends Document {
   isActive: boolean
   sessionVersion: number
   appTheme?: AppTheme
+  appLocale: 'system' | 'fr' | 'en'
   locale: 'fr' | 'en' | null
   colorTheme?:
     | 'sky'

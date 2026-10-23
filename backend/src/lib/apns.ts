@@ -3,6 +3,9 @@ import { sign } from 'node:crypto'
 import MobileDevice, { type ApnsEnvironment } from '../models/MobileDevice.js'
 import type { PushPayload } from './webPush.js'
 import logger from './logger.js'
+import User from '../models/User.js'
+import type { NotificationType } from '../types/enums.js'
+import { pushLanguageFor, pushTextFor, type PushLanguage } from './pushText.js'
 
 const sessions = new Map<string, ClientHttp2Session>()
 let cachedToken: { value: string; issuedAt: number } | undefined
@@ -37,6 +40,8 @@ function sessionFor(environment: ApnsEnvironment): ClientHttp2Session {
   const existing = sessions.get(host)
   if (existing && !existing.closed && !existing.destroyed) return existing
   const session = connect(`https://${host}`)
+  // Une connexion inactive ne doit pas retenir l'arrêt du processus.
+  session.unref()
   sessions.set(host, session)
   const discard = () => {
     if (sessions.get(host) === session) sessions.delete(host)
@@ -72,8 +77,12 @@ function send(session: ClientHttp2Session, token: string, bundleId: string, auth
       reject(new Error('Délai APNs dépassé'))
       stream.close()
     })
-    stream.on('response', (headers) => { status = Number(headers[':status']) })
-    stream.on('data', (chunk: string) => { response += chunk })
+    stream.on('response', (headers) => {
+      status = Number(headers[':status'])
+    })
+    stream.on('data', (chunk: string) => {
+      response += chunk
+    })
     stream.on('error', reject)
     stream.on('end', () => {
       let reason: string | undefined
@@ -89,7 +98,11 @@ function send(session: ClientHttp2Session, token: string, bundleId: string, auth
   })
 }
 
-export async function sendApnsToUser(userId: string, payload: PushPayload): Promise<void> {
+export async function sendApnsToUser(
+  userId: string,
+  payload: PushPayload,
+  metadata: Record<string, unknown> = {},
+): Promise<void> {
   const config = configuration()
   if (!config) return
   const devices = await MobileDevice.find({
@@ -99,27 +112,45 @@ export async function sendApnsToUser(userId: string, payload: PushPayload): Prom
     apnsToken: { $type: 'string', $ne: '' },
   }).lean()
   if (!devices.length) return
+  const user = await User.findById(userId).select('appLocale locale').lean()
   const authorization = providerToken(config)
-  // Les métadonnées Web Push peuvent contenir des données personnelles : seul l'identifiant est repris.
-  const body = JSON.stringify({
-    aps: {
-      alert: { title: payload.title, body: payload.body || '' },
-      sound: 'default',
-      ...(typeof payload.unreadCount === 'number' ? { badge: payload.unreadCount } : {}),
-      'thread-id': payload.tag,
-    },
-    type: payload.tag,
-    link: payload.link || '/',
-    notificationId: payload.data?.notificationId ?? null,
-  })
+  // Les métadonnées servent seulement à rédiger le texte : la charge utile
+  // n'emporte que des identifiants en plus du titre et du message.
+  const bodyFor = (language: PushLanguage) => {
+    const text = pushTextFor(
+      payload.tag as NotificationType | undefined,
+      { title: payload.title, body: payload.body || '' },
+      metadata,
+      language,
+    )
+    return JSON.stringify({
+      aps: {
+        alert: text,
+        sound: 'default',
+        ...(typeof payload.unreadCount === 'number' ? { badge: payload.unreadCount } : {}),
+        'thread-id': payload.tag,
+      },
+      type: payload.tag,
+      link: payload.link || '/',
+      notificationId: payload.data?.notificationId ?? null,
+    })
+  }
   await Promise.all(
     devices.map(async (device) => {
       if (!device.apnsToken || !device.apnsEnvironment) return
       try {
+        const language = pushLanguageFor(user?.appLocale, device.apnsLanguage, user?.locale)
         const { status, reason } = await send(
-          sessionFor(device.apnsEnvironment), device.apnsToken, config.bundleId, authorization, body,
+          sessionFor(device.apnsEnvironment),
+          device.apnsToken,
+          config.bundleId,
+          authorization,
+          bodyFor(language),
         )
-        if (status === 410 || (status === 400 && ['BadDeviceToken', 'Unregistered', 'DeviceTokenNotForTopic'].includes(reason || ''))) {
+        if (
+          status === 410 ||
+          (status === 400 && ['BadDeviceToken', 'Unregistered', 'DeviceTokenNotForTopic'].includes(reason || ''))
+        ) {
           // Un jeton remplacé pendant l'envoi ne doit pas être effacé par une ancienne réponse.
           await MobileDevice.updateOne(
             { _id: device._id, apnsToken: device.apnsToken, apnsEnvironment: device.apnsEnvironment },

@@ -168,19 +168,24 @@ export async function processLeadFollowUps(): Promise<{ notified: number }> {
     nextActionAt: { $lte: now, $ne: null },
     status: { $nin: ['WON', 'LOST'] },
     assignedTo: { $ne: null },
+    // Ne relit pas, à chaque minute, les échéances déjà notifiées.
+    $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
   }).select('assignedTo nextActionAt followUpNotifiedFor company')
   let notified = 0
   for (const lead of leads) {
     const due = lead.nextActionAt!
     // Au premier passage, les anciennes échéances sont consommées sans rafale de notifications.
     const stale = !lead.followUpNotifiedFor && due.getTime() < now.getTime() - 7 * 86400000
-    const result = await Lead.updateOne({
-      _id: lead._id,
-      nextActionAt: due,
-      assignedTo: lead.assignedTo,
-      status: { $nin: ['WON', 'LOST'] },
-      followUpNotifiedFor: { $ne: due },
-    }, { $set: { followUpNotifiedFor: due } })
+    const result = await Lead.updateOne(
+      {
+        _id: lead._id,
+        nextActionAt: due,
+        assignedTo: lead.assignedTo,
+        status: { $nin: ['WON', 'LOST'] },
+        followUpNotifiedFor: { $ne: due },
+      },
+      { $set: { followUpNotifiedFor: due } },
+    )
     if (!result.modifiedCount || stale) continue
     await createNotification({
       recipient: lead.assignedTo!,
