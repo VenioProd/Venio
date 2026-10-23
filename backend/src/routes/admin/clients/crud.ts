@@ -87,8 +87,8 @@ router.get(
   },
 )
 
-// Choisir le mot de passe d'un compte client, c'est pouvoir s'y connecter :
-// réservé au navigateur, comme les identifiants des comptes internes.
+// Choisir le mot de passe ou l'email d'un compte client, c'est pouvoir s'y
+// connecter : réservé au navigateur, comme les identifiants des comptes internes.
 function refuseFromDevice(res: Response) {
   return error(res, 403, 'Cette action se fait depuis le navigateur.', 'BROWSER_SESSION_REQUIRED')
 }
@@ -252,6 +252,10 @@ router.patch(
         return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
       }
 
+      // L'email est l'identifiant : le changer, c'est pouvoir recevoir le lien
+      // de réinitialisation du mot de passe à la place du client.
+      if (req.user!.deviceId && (req.body?.password || req.body?.email !== undefined)) return refuseFromDevice(res)
+
       const payload: Record<string, any> = normalizeClientPayload(req.body || {})
 
       if (req.body?.email !== undefined) {
@@ -288,7 +292,6 @@ router.patch(
       // Un mot de passe réécrit par l'admin doit invalider les sessions ouvertes,
       // comme le font /api/auth/change-password et /api/auth/reset-password.
       const passwordChanged = Boolean(req.body?.password)
-      if (passwordChanged && req.user!.deviceId) return refuseFromDevice(res)
       if (passwordChanged) {
         payload.passwordHash = await bcrypt.hash(String(req.body.password), 10)
         payload.passwordChangedAt = new Date()

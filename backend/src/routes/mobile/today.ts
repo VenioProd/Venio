@@ -6,6 +6,7 @@ import Lead from '../../models/Lead.js'
 import Task from '../../models/Task.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import logger from '../../lib/logger.js'
+import { leadScopeFilter } from '../../lib/crmScope.js'
 
 const router = express.Router()
 router.use(auth, requireAdmin, requirePermission(PERMISSIONS.VIEW_CRM))
@@ -103,6 +104,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
             source: 'FORMULAIRE_SITE',
             createdAt: { $gte: new Date(Date.now() - 7 * 86400000) },
             $or: [{ assignedTo: null }, { assignedTo: req.user!.id }],
+            $and: [leadScopeFilter(req)],
           },
           { createdAt: -1, _id: 1 },
         ),

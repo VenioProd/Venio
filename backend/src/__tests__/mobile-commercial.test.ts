@@ -14,6 +14,7 @@ import QuoteProposal from '../models/QuoteProposal.js'
 import quoteRoutes from '../routes/admin/quoteProposals.js'
 import crmRoutes from '../routes/admin/crm.js'
 import billingRoutes from '../routes/admin/billing.js'
+import clientRoutes from '../routes/admin/clients/index.js'
 
 const app = express().use(express.json())
 let bearer: string
@@ -24,6 +25,7 @@ beforeAll(async () => {
   app.use('/api/admin/quote-proposals', quoteRoutes)
   app.use('/api/admin/crm', crmRoutes)
   app.use('/api/admin/billing', billingRoutes)
+  app.use('/api/admin/clients', clientRoutes)
   app.use('/api/admin/quote-templates', (await import('../routes/admin/quoteTemplates.js')).default)
   app.use('/api/mobile/today', (await import('../routes/mobile/today.js')).default)
   app.use('/api/mobile/sync', (await import('../routes/mobile/sync.js')).default)
@@ -98,6 +100,22 @@ it('crée au prix du modèle, initialise les options et envoie seulement son dev
   await request(app).get(`/api/admin/quote-proposals/${proposal._id}`).set('Authorization', bearer).expect(200)
   await request(app).get('/api/admin/quote-templates').set('Authorization', bearer).expect(200)
   await request(app).delete(`/api/admin/quote-templates/${template._id}`).set('Authorization', bearer).expect(403)
+
+  // Le projet d'un collègue n'est pas dans son portefeuille ; celui issu de son lead l'est.
+  const foreign = await Project.create({ name: 'Autre', client: author, assignedTo: new mongoose.Types.ObjectId() })
+  const outOfScope = await request(app)
+    .post('/api/admin/quote-proposals/from-template')
+    .set('Authorization', bearer)
+    .send({ templateId: template._id, project: foreign._id })
+    .expect(403)
+  expect(outOfScope.body.code).toBe('PROJECT_OUT_OF_SCOPE')
+  const lead = await Lead.create({ company: 'Prospect', assignedTo: author })
+  const fromLead = await Project.create({ name: 'Issu du lead', client: author, sourceLead: lead._id })
+  await request(app)
+    .post('/api/admin/quote-proposals/from-template')
+    .set('Authorization', bearer)
+    .send({ templateId: template._id, project: fromLead._id })
+    .expect(201)
 })
 
 it('le commercial lit aussi les leads de ses collègues', async () => {
@@ -307,4 +325,20 @@ it('conserve un seul audio lors de deux créations concurrentes et le sert aprè
     for (const name of (await readdir(dir).catch(() => [] as string[])).filter((name) => !before.has(name)))
       await unlink(resolve(dir, name))
   }
+})
+
+it("réserve au navigateur l'email et le mot de passe d'un compte client", async () => {
+  const client = await User.create({
+    name: 'Client',
+    email: 'client@test.invalid',
+    passwordHash: 'x',
+    role: 'CLIENT',
+    ownerAdminId: author,
+  })
+  for (const body of [{ email: 'pirate@test.invalid' }, { password: 'choisi-par-moi' }]) {
+    const res = await request(app).patch(`/api/admin/clients/${client._id}`).set('Authorization', bearer).send(body)
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('BROWSER_SESSION_REQUIRED')
+  }
+  expect((await User.findById(client._id).lean())?.email).toBe('client@test.invalid')
 })

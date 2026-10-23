@@ -23,7 +23,7 @@ const permissions: Record<SyncEntityType, Permission[]> = {
   leads: [PERMISSIONS.VIEW_CRM],
   interactions: [PERMISSIONS.VIEW_CRM],
   projects: [PERMISSIONS.VIEW_PROJECTS],
-  projectPhases: [PERMISSIONS.VIEW_PROJECTS],
+  projectPhases: [PERMISSIONS.VIEW_PHASES],
   projectUpdates: [PERMISSIONS.VIEW_PROJECTS],
   quotes: [PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.VIEW_BILLING],
 }

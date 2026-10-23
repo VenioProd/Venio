@@ -128,7 +128,7 @@ Les routes protégées par une session acceptent `Authorization: Bearer <access>
 /api/admin/inbox                /api/admin/search
 ```
 
-Tout le reste répond `403 BROWSER_SESSION_REQUIRED` en Bearer : création de comptes (administrateurs, stagiaires), identifiants, MFA, jetons agent, coffre d'outils, sauvegardes, comptabilité, webhooks, profil et mot de passe. C'est une liste blanche : une route ajoutée plus tard reste fermée à l'app tant qu'on ne l'y ajoute pas. Dans `/api/admin/clients`, choisir le mot de passe d'un compte client (création ou modification) reste aussi réservé au navigateur.
+Tout le reste répond `403 BROWSER_SESSION_REQUIRED` en Bearer : création de comptes (administrateurs, stagiaires), identifiants, MFA, jetons agent, coffre d'outils, sauvegardes, comptabilité, webhooks, profil et mot de passe. C'est une liste blanche : une route ajoutée plus tard reste fermée à l'app tant qu'on ne l'y ajoute pas. Dans `/api/admin/clients`, choisir le mot de passe d'un compte client ou changer son email (son identifiant) reste aussi réservé au navigateur.
 
 Autres limites :
 
@@ -227,7 +227,7 @@ Permission `manage_quotes`, donnée au rôle `COMMERCIAL`. Elle permet de suivre
 | `POST /api/admin/quote-proposals/from-template` | idem | Crée un brouillon. `201 { proposal }`. |
 | `POST /api/admin/quote-proposals/:id/send` | idem | `DRAFT` → `SENT`. `200 { proposal }`. |
 
-`POST /from-template` : `{ "templateId": "…", "project": "…", "title": "…" }` (`title` facultatif, sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Erreurs : `400` (identifiants invalides), `404` (modèle inactif ou projet absent).
+`POST /from-template` : `{ "templateId": "…", "project": "…", "title": "…" }` (`title` facultatif, sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Sans `manage_billing`, le projet doit être dans son portefeuille : on en est responsable, ou il est issu d'un lead qui nous est assigné ou qu'on a créé. Erreurs : `400` (identifiants invalides), `403 PROJECT_OUT_OF_SCOPE`, `404` (modèle inactif ou projet absent).
 
 `POST /:id/send` : sans `manage_billing`, on n'envoie que les devis dont on est l'auteur (`403 NOT_PROPOSAL_OWNER`). Erreurs : `409 PROPOSAL_ALREADY_SIGNED`, `409 PROPOSAL_NOT_DRAFT`, `404`.
 
@@ -257,7 +257,7 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 | `followUps.today` | Mes leads ouverts dont la relance tombe aujourd'hui. | Par heure de relance. |
 | `meetings` | Mes tâches et rendez-vous du calendrier dus aujourd'hui. | Par échéance. |
 | `hotLeadsWithoutAction` | Mes leads ouverts `CHAUD` ou `TRES_CHAUD` sans relance prévue. | Plus récemment modifié d'abord. |
-| `newInboundLeads` | Leads du formulaire du site créés depuis 7 jours, non assignés ou assignés à moi. | Plus récent d'abord. |
+| `newInboundLeads` | Leads du formulaire du site créés depuis 7 jours, non assignés ou assignés à moi, dans mon périmètre CRM de lecture. | Plus récent d'abord. |
 | `quotesViewedNotSigned` | Mes devis envoyés, déjà consultés, pas encore signés. | Plus récemment modifié d'abord. |
 
 « Mes leads » = `assignedTo` est l'utilisateur. Lead ouvert = statut ni `WON` ni `LOST`.
@@ -275,7 +275,7 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 | `leads` | `view_crm` | Leads, forme de `/api/admin/crm/leads/:id`. |
 | `interactions` | `view_crm` (et `manage_clients` pour ceux des clients) | Entrées de timeline, plus `subjectType` et `subjectId`. |
 | `projects` | `view_projects` | Projets. |
-| `projectPhases` | `view_projects` | Étapes de projet (`project` = id du projet). |
+| `projectPhases` | `view_phases` | Étapes de projet (`project` = id du projet). |
 | `projectUpdates` | `view_projects` | Mises à jour publiées au client (`project` = id du projet). |
 | `quotes` | `manage_quotes` ou `view_billing` | Devis. |
 | `deletions` | selon les types lisibles | `{ _id, entityType, entityId, deletedAt }`. |

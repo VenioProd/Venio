@@ -6,6 +6,8 @@ import { PERMISSIONS } from '../../lib/permissions.js'
 import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import QuoteTemplate from '../../models/QuoteTemplate.js'
+import Lead from '../../models/Lead.js'
+import { isLeadOutOfScope } from '../../lib/crmScope.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
@@ -69,6 +71,18 @@ async function initializeProposal(proposal: IQuoteProposal) {
   await proposal.save()
 }
 
+/**
+ * Sans la facturation, on ne chiffre que ses propres affaires : un projet dont
+ * on est responsable, ou issu d'un lead qui nous est assigné ou qu'on a créé.
+ */
+async function canQuoteProject(req: Request, project: { assignedTo?: unknown; sourceLead?: unknown }) {
+  if (await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) return true
+  if (String(project.assignedTo ?? '') === req.user!.id) return true
+  if (!project.sourceLead) return false
+  const lead = await Lead.findById(project.sourceLead).select('assignedTo createdBy').lean()
+  return Boolean(lead) && !isLeadOutOfScope(req, lead!)
+}
+
 router.get(
   '/',
   requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
@@ -113,6 +127,11 @@ router.post(
       if (!template) return res.status(404).json({ error: 'Modèle actif non trouvé' })
       const project = await Project.findById(req.body.project).lean()
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
+      if (!(await canQuoteProject(req, project))) {
+        return res
+          .status(403)
+          .json({ error: "Ce projet n'est pas dans votre portefeuille", code: 'PROJECT_OUT_OF_SCOPE' })
+      }
       const proposal = new QuoteProposal({
         project: project._id,
         client: project.client,
