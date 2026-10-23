@@ -22,23 +22,29 @@ public struct ThemeSelection: Codable, Sendable, Equatable {
     public let theme: ThemeKind
     public let background: String
     public let accent: String
+    public let locale: String
+    public let autoTranslate: Bool
 
     public static let `default` = Self(theme: .glass, background: "mist", accent: "sky")
 
-    public init(theme: ThemeKind, background: String, accent: String) {
+    public init(theme: ThemeKind, background: String, accent: String, locale: String = "system", autoTranslate: Bool = true) {
+        self.locale = ["system", "fr", "en"].contains(locale) ? locale : "system"
+        self.autoTranslate = autoTranslate
         self.theme = theme
         let valid = theme.backgrounds.contains(background) && theme.accents.contains(accent)
         self.background = valid ? background : theme.backgrounds[0]
         self.accent = valid ? accent : theme.accents[0]
     }
 
-    private enum CodingKeys: String, CodingKey { case theme, background, accent }
+    private enum CodingKeys: String, CodingKey { case theme, background, accent, locale, autoTranslate }
 
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         self.init(theme: try values.decode(ThemeKind.self, forKey: .theme),
                   background: try values.decode(String.self, forKey: .background),
-                  accent: try values.decode(String.self, forKey: .accent))
+                  accent: try values.decode(String.self, forKey: .accent),
+                  locale: try values.decodeIfPresent(String.self, forKey: .locale) ?? "system",
+                  autoTranslate: try values.decodeIfPresent(Bool.self, forKey: .autoTranslate) ?? true)
     }
 }
 

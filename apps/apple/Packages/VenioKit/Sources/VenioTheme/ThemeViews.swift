@@ -100,6 +100,7 @@ public struct ThemeHost<Content: View>: View {
     public var body: some View {
         content
             .environment(manager)
+            .environment(\.locale, manager.locale)
             .environment(\.venioPalette, manager.palette)
             .foregroundStyle(manager.palette.textPrimary.color)
             .tint(manager.palette.accentText.color)

@@ -25,6 +25,13 @@ public struct UserDefaultsThemeStore: ThemePreferenceStore {
 @Observable @MainActor public final class ThemeManager {
     public private(set) var selection: ThemeSelection
     public var preferredIsDark: Bool? { hasPreference ? palette.isDark : nil }
+    public var locale: Locale {
+        if selection.locale == "system" {
+            let language = Locale.preferredLanguages.first ?? "fr"
+            return Locale(identifier: language.hasPrefix("fr") ? "fr_FR" : "en_US")
+        }
+        return Locale(identifier: selection.locale == "fr" ? "fr_FR" : "en_US")
+    }
     public var palette: ThemePalette { ThemePalette(selection) }
     public private(set) var suggestion: ThemeSelection?
     private var hasPreference: Bool

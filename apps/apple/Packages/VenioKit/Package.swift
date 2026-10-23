@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "VenioKit",
+    defaultLocalization: "fr",
     platforms: [.iOS("27.0"), .macOS("27.0"), .watchOS("27.0")],
     products: [
         .library(name: "VenioCore", targets: ["VenioCore"]),
@@ -12,7 +13,7 @@ let package = Package(
     targets: [
         .target(name: "VenioCore"),
         .target(name: "VenioTheme"),
-        .target(name: "VenioCommercial", dependencies: ["VenioCore", "VenioTheme"]),
+        .target(name: "VenioCommercial", dependencies: ["VenioCore", "VenioTheme"], resources: [.process("Resources")]),
         .testTarget(name: "VenioCoreTests", dependencies: ["VenioCore"]),
         .testTarget(name: "VenioThemeTests", dependencies: ["VenioTheme"])
     ],

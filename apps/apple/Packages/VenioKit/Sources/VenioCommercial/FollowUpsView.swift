@@ -3,65 +3,65 @@ import VenioCore
 import VenioTheme
 
 public struct FollowUpsView: View {
-    private let api: any VenioAPI
-    private let clock: DemoClock
-    @State private var agenda: TodayAgenda?
-    @State private var failed = false
-    @Environment(\.venioPalette) private var palette
-
-    public init(api: any VenioAPI, clock: DemoClock) {
-        self.api = api
-        self.clock = clock
+    @Environment(\.locale) private var locale
+    @State private var store: CommercialStore
+    public init(api: any VenioAPI, clock: DemoClock = DemoClock()) {
+        _store = State(initialValue: CommercialStore(api: api, clock: clock))
     }
-
     public var body: some View {
         NavigationStack {
             List {
-                if let agenda {
-                    Section("En retard") {
-                        ForEach(agenda.overdue) { lead in row(lead, overdue: true) }
-                    }
-                    Section("Aujourd’hui") {
-                        ForEach(agenda.followUps) { lead in row(lead, overdue: false) }
-                    }
-                    if agenda.overdue.isEmpty && agenda.followUps.isEmpty {
-                        Text("Aucune relance aujourd’hui")
-                    }
-                } else if failed {
-                    Text("Relances indisponibles")
-                } else {
-                    ProgressView("Chargement")
-                }
+                if store.hasLoaded {
+                    Section { ForEach(store.agenda.overdue) { row($0, overdue: true) } } header: { VText("En retard") }
+                    Section { ForEach(store.agenda.followUps) { row($0, overdue: false) } } header: { VText("Aujourd’hui") }
+                    if store.agenda.overdue.isEmpty && store.agenda.followUps.isEmpty { VText("Aucune relance aujourd’hui") }
+                } else if store.failed {
+                    VText("Relances indisponibles")
+                    Button { Task { await store.load() } } label: { VText("Réessayer") }
+                } else { ProgressView { VText("Chargement") } }
             }
+            .navigationDestination(for: String.self) { id in WatchLeadDetailView(id: id) }
             .scrollContentBackground(.hidden)
             .background { ThemedBackground() }
-            .navigationTitle("Relances")
+            .navigationTitle(CommercialStrings.text("Relances", locale: locale))
         }
-        .task {
-            do {
-                let user = try await api.currentUser()
-                async let leads = api.leads()
-                async let quotes = api.quotes()
-                async let appointments = api.appointments()
-                agenda = try await TodayAgenda(leads: leads, quotes: quotes, appointments: appointments, now: clock.now, calendar: clock.calendar, userId: user.id)
-            } catch { failed = true }
-        }
-        .environment(\.calendar, clock.calendar)
-        .environment(\.timeZone, clock.calendar.timeZone)
+        .environment(store)
+        .task { await store.load() }
     }
-
     private func row(_ lead: Lead, overdue: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(lead.company).font(.headline)
-            if let date = lead.nextActionAt {
-                if overdue {
-                    Text(date, format: .dateTime.day().month()).foregroundStyle(palette.urgent.color)
-                } else {
-                    Text(date, format: .dateTime.hour().minute()).foregroundStyle(palette.accentText.color)
+        NavigationLink(value: lead.id) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(verbatim: lead.company).font(.headline)
+                if let date = lead.nextActionAt {
+                    let formats = CommercialFormats(locale: locale)
+                    CommercialBadge(text: overdue ? CommercialStrings.text("En retard", locale: locale) + " · " + formats.date(date) : formats.time(date),
+                                    tone: overdue ? .urgent : .accent)
                 }
             }
-        }
-        .foregroundStyle(palette.textPrimary.color)
-        .listRowBackground(palette.base.color.opacity(0.85))
+        }.listRowBackground(Color.clear)
+    }
+}
+
+public struct WatchLeadDetailView: View {
+    @Environment(CommercialStore.self) private var store
+    @Environment(\.locale) private var locale
+    @Environment(\.openURL) private var openURL
+    let id: String
+    public init(id: String) { self.id = id }
+    public var body: some View {
+        ScrollView {
+            if let lead = store.leads.first(where: { $0.id == id }) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(verbatim: lead.company).font(.headline)
+                    Text(verbatim: lead.contactName).font(.subheadline)
+                    CommercialBadge(text: CommercialStrings.format("Score %lld", locale: locale, lead.score ?? 0))
+                    Button {
+                        if let url = lead.phoneURL { openURL(url) }
+                    } label: {
+                        Label { VText("Appeler") } icon: { Image(systemName: "phone.fill").accessibilityHidden(true) }
+                    }.venioPrimaryButton().disabled(lead.phoneURL == nil)
+                }.padding()
+            } else { VText("Lead indisponible") }
+        }.background { ThemedBackground() }
     }
 }

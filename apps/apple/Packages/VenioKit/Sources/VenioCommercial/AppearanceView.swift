@@ -4,78 +4,71 @@ import VenioTheme
 
 public struct AppearanceView: View {
     @Environment(ThemeManager.self) private var manager
-    @Environment(\.venioPalette) private var palette
-
+    @Environment(\.locale) private var locale
     public init() {}
-
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Réglages › Apparence").font(.largeTitle.bold())
-                if let suggestion = manager.suggestion {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Votre appareil est en mode sombre. Le fond Nuit est disponible.")
-                        Button("Choisir Nuit") { manager.select(suggestion) }.venioPrimaryButton()
-                    }
-                    .venioCard()
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    Picker("Thème", selection: Binding(get: { manager.selection.theme }, set: selectTheme)) {
-                        Text("Liquid glass").tag(ThemeKind.glass)
-                        Text("Néon").tag(ThemeKind.neon)
-                    }
-                    .pickerStyle(.segmented)
-                    choices("Fond", keys: manager.selection.theme.backgrounds, selected: manager.selection.background) { key in
-                        manager.select(ThemeSelection(theme: manager.selection.theme, background: key, accent: manager.selection.accent))
-                    }
-                    choices("Accent", keys: manager.selection.theme.accents, selected: manager.selection.accent) { key in
-                        manager.select(ThemeSelection(theme: manager.selection.theme, background: manager.selection.background, accent: key))
-                    }
-                }
-                .venioCard()
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Aperçu").font(.headline)
-                    Text("Maison Calder").font(.title2.bold())
-                    Text("Proposition · 14 800 €").foregroundStyle(palette.textSecondary.color)
-                    Text("Devis consulté").foregroundStyle(palette.accentText.color)
-                    Button("Action principale") {}.venioPrimaryButton().disabled(true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .venioCard()
+        CommercialPage {
+            if let suggestion = manager.suggestion {
+                VStack(alignment: .leading, spacing: 12) {
+                    VText("Votre appareil est en mode sombre. Le fond Nuit est disponible.")
+                    Button { appearance(theme: suggestion.theme, background: suggestion.background, accent: suggestion.accent) } label: {
+                        VText("Choisir Nuit")
+                    }.venioPrimaryButton()
+                }.venioCard()
             }
-            .padding()
-            .frame(maxWidth: 720)
-            .frame(maxWidth: .infinity)
-        }
-        .background { ThemedBackground() }
-        .navigationTitle("Apparence")
+            VStack(alignment: .leading, spacing: 18) {
+                VText("Thème").font(.headline)
+                Picker(CommercialStrings.text("Thème", locale: locale), selection: Binding(get: { manager.selection.theme }, set: { theme in
+                    appearance(theme: theme, background: theme.backgrounds[0], accent: theme.accents[0])
+                })) {
+                    VText("Liquid glass").tag(ThemeKind.glass)
+                    VText("Néon").tag(ThemeKind.neon)
+                }.pickerStyle(.segmented)
+                choices("Fond", keys: manager.selection.theme.backgrounds, selected: manager.selection.background) { key in
+                    appearance(theme: manager.selection.theme, background: key, accent: manager.selection.accent)
+                }
+                choices("Accent", keys: manager.selection.theme.accents, selected: manager.selection.accent) { key in
+                    appearance(theme: manager.selection.theme, background: manager.selection.background, accent: key)
+                }
+            }.venioCard()
+            VStack(alignment: .leading, spacing: 14) {
+                VText("Aperçu en direct").font(.headline)
+                Text(verbatim: "Maison Calder").font(.title2.bold())
+                VText("Site vitrine + SEO").font(.subheadline)
+                Text(verbatim: CommercialFormats(locale: locale).money(14800)).font(.title2.bold())
+                ViewThatFits(in: .horizontal) {
+                    HStack { previewBadges }
+                    VStack(alignment: .leading) { previewBadges }
+                }
+                Text(verbatim: CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, "10:30"))
+            }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
+        }.navigationTitle(CommercialStrings.text("Apparence", locale: locale))
     }
-
-    private func selectTheme(_ theme: ThemeKind) {
-        manager.select(ThemeSelection(theme: theme, background: theme.backgrounds[0], accent: theme.accents[0]))
+    @ViewBuilder private var previewBadges: some View {
+        CommercialBadge(text: CommercialStrings.text("Proposition", locale: locale))
+        CommercialBadge(text: CommercialStrings.text("Très chaud", locale: locale), tone: .warning)
+        CommercialBadge(text: CommercialStrings.format("Score %lld", locale: locale, 86))
     }
-
+    private func appearance(theme: ThemeKind, background: String, accent: String) {
+        manager.select(ThemeSelection(theme: theme, background: background, accent: accent,
+                                      locale: manager.selection.locale, autoTranslate: manager.selection.autoTranslate))
+    }
     private func choices(_ title: String, keys: [String], selected: String, action: @escaping (String) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110))], alignment: .leading) {
+            VText(title).font(.headline)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], alignment: .leading) {
                 ForEach(keys, id: \.self) { key in
                     Button { action(key) } label: {
-                        HStack {
-                            Image(systemName: selected == key ? "checkmark.circle.fill" : "circle")
-                            Text(label(key))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(10)
-                        .background(palette.base.color.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selected == key ? .isSelected : [])
+                        Label {
+                            VText(label(key))
+                        } icon: {
+                            Image(systemName: selected == key ? "checkmark.circle.fill" : "circle").accessibilityHidden(true)
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                    }.buttonStyle(.bordered).accessibilityAddTraits(selected == key ? .isSelected : [])
                 }
             }
         }
     }
-
     private func label(_ key: String) -> String {
         switch key {
         case "mist": "Brume"

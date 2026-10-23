@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "Stockage indisponible": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stockage indisponible"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage unavailable"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

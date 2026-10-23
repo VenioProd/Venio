@@ -286,13 +286,15 @@ public struct ProjectUpdate: Codable, Sendable, Identifiable {
     public var project: String
     public var title: String
     public var description: String
+    public var author: String
     public var createdAt: Date
 
-    public init(id: String, project: String, title: String, description: String = "", createdAt: Date) {
+    public init(id: String, project: String, title: String, description: String = "", author: String = "", createdAt: Date) {
         self.id = id
         self.project = project
         self.title = title
         self.description = description
+        self.author = author
         self.createdAt = createdAt
     }
 }

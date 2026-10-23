@@ -18,14 +18,14 @@ public struct MockVenioAPI: VenioAPI {
         let lea = Self.lea.id
         let hugo = Self.hugo.id
         return [
-            Lead(id: "lead-calder", company: "Maison Calder", contactName: "Claire Calder", source: "Scan de carte de visite — Vivatech Paris", status: .proposal, budget: 14800, nextActionAt: DemoClock.date(23, hour: 10, minute: 30), serviceType: "Site vitrine + SEO", leadTemperature: .veryHot, assignedTo: lea, score: 86, createdAt: DemoClock.date(13, hour: 17, minute: 48)),
+            Lead(id: "lead-calder", company: "Maison Calder", contactName: "Claire Calder", contactEmail: "claire@maison-calder.example", contactPhone: "+33 6 00 00 00 01", source: "Scan de carte de visite — Vivatech Paris", status: .proposal, budget: 14800, nextActionAt: DemoClock.date(23, hour: 10, minute: 30), serviceType: "Site vitrine + SEO", leadTemperature: .veryHot, assignedTo: lea, score: 86, notes: "La cliente souhaite revoir la proposition la semaine prochaine.", createdAt: DemoClock.date(13, hour: 17, minute: 48)),
             Lead(id: "lead-nova", company: "Atelier Nova", contactName: "Malik Benali", status: .demo, budget: 22500, nextActionAt: DemoClock.date(23, hour: 14), serviceType: "E-commerce", leadTemperature: .hot, assignedTo: lea, score: 74, createdAt: DemoClock.date(10)),
-            Lead(id: "lead-ferrand", company: "Cabinet Ferrand Avocats", contactName: "Sophie Ferrand", status: .contacted, budget: 9600, nextActionAt: DemoClock.date(21), serviceType: "Site + espace client", leadTemperature: .warm, assignedTo: lea, score: 58, createdAt: DemoClock.date(10)),
+            Lead(id: "lead-ferrand", company: "Cabinet Ferrand Avocats", contactName: "Sophie Ferrand", contactEmail: "sophie@ferrand.example", contactPhone: "+33 6 00 00 00 02", status: .contacted, budget: 9600, nextActionAt: DemoClock.date(21), serviceType: "Site + espace client", leadTemperature: .warm, assignedTo: lea, score: 58, createdAt: DemoClock.date(10)),
             Lead(id: "lead-halles", company: "Brasserie Les Halles", contactName: "Julien Roux", status: .qualified, budget: 6400, nextActionAt: nil, serviceType: "Site + réservation", leadTemperature: .hot, assignedTo: lea, score: 69, createdAt: DemoClock.date(10)),
-            Lead(id: "lead-okami", company: "Studio Okami", contactName: "Yuki Tanaka", source: "Formulaire du site", status: .lead, budget: 38000, nextActionAt: nil, serviceType: "App mobile", leadTemperature: .warm, assignedTo: nil, score: 41, createdAt: DemoClock.date(23, hour: 8, minute: 52)),
+            Lead(id: "lead-okami", company: "Studio Okami", contactName: "Yuki Tanaka", source: "Formulaire du site", status: .lead, budget: 38000, nextActionAt: nil, serviceType: "App mobile", leadTemperature: .warm, assignedTo: nil, score: 41, notes: "We would like to discuss the mobile app requirements next week.", createdAt: DemoClock.date(23, hour: 8, minute: 52)),
             Lead(id: "lead-aubin", company: "Clinique Saint-Aubin", contactName: "Dr Paul Aubin", status: .proposal, budget: 31000, nextActionAt: DemoClock.date(26), serviceType: "Plateforme de RDV", leadTemperature: .hot, assignedTo: hugo, score: 80, createdAt: DemoClock.date(10)),
             Lead(id: "lead-verlaine", company: "Domaine Verlaine", contactName: "Anne Verlaine", status: .contacted, budget: 12000, nextActionAt: DemoClock.date(27), serviceType: "E-commerce vins", leadTemperature: .cold, assignedTo: hugo, score: 35, createdAt: DemoClock.date(10)),
-            Lead(id: "lead-arcadie", company: "Fondation Arcadie", contactName: "Marc Delorme", status: .demo, budget: 18200, nextActionAt: DemoClock.date(23, hour: 16), serviceType: "Refonte de site", leadTemperature: .warm, assignedTo: lea, score: 62, createdAt: DemoClock.date(10))
+            Lead(id: "lead-arcadie", company: "Fondation Arcadie", contactName: "Marc Delorme", contactEmail: "marc@arcadie.example", contactPhone: "+33 6 00 00 00 03", status: .demo, budget: 18200, nextActionAt: DemoClock.date(23, hour: 16), serviceType: "Refonte de site", leadTemperature: .warm, assignedTo: lea, score: 62, createdAt: DemoClock.date(10))
         ]
     }
 
@@ -36,6 +36,9 @@ public struct MockVenioAPI: VenioAPI {
 
     public func timeline(leadId: String) async throws -> [TimelineEntry] {
         _ = try await lead(id: leadId)
+        if leadId == "lead-okami" {
+            return TimelineEntry.merged(activities: [], interactions: [Interaction(id: "okami-note", subjectType: .lead, subjectId: leadId, kind: .note, direction: .incoming, occurredAt: DemoClock.date(23, hour: 9), subject: "Project requirements", body: "Please send the proposal in English before our next meeting.", author: Self.lea.id)])
+        }
         guard leadId == "lead-calder" else { return [] }
         let activities = [
             LeadActivity(id: "calder-viewed", leadId: leadId, type: "QUOTE_VIEWED", label: "La cliente a ouvert le devis DV-2026-041", actorId: nil, createdAt: DemoClock.date(22, hour: 18, minute: 12)),
@@ -84,7 +87,7 @@ public struct MockVenioAPI: VenioAPI {
         switch id {
         case "project-pilote":
             current = 3; day = 20; update = "Maquettes validées, début du développement"
-            requests = [ChangeRequest(id: "request-pilote", project: id, title: "Demande de modification", status: .toEstimate)]
+            requests = [ChangeRequest(id: "request-pilote", project: id, title: "Ajout de la réservation de groupes", status: .toEstimate)]
         case "project-riviere":
             current = 4; day = 21; update = "Version de recette en ligne"
             tickets = [ProjectTicket(id: "ticket-apple-pay", project: id, title: "Paiement Apple Pay refusé", status: .open)]
@@ -102,7 +105,13 @@ public struct MockVenioAPI: VenioAPI {
             else { status = .upcoming }
             return ProjectPhase(id: "\(id)-phase-\(order)", project: id, title: title, order: order, status: status, dueAt: nil)
         }
-        return ProjectDetail(project: project, phases: phases, requests: requests, tickets: tickets, updates: [ProjectUpdate(id: "\(id)-update", project: id, title: update, createdAt: DemoClock.date(day))])
+        var updates = [ProjectUpdate(id: "\(id)-update", project: id, title: update,
+            description: id == "project-riviere" ? "The review version is now available. Please share your feedback." : "",
+            author: Self.raphael.name, createdAt: DemoClock.date(day))]
+        if id == "project-pilote" {
+            updates.append(ProjectUpdate(id: "pilote-signed", project: id, title: "Devis DV-2026-038 signé, projet ouvert", author: "automatique", createdAt: DemoClock.date(9)))
+        }
+        return ProjectDetail(project: project, phases: phases, requests: requests, tickets: tickets, updates: updates)
     }
 
     public enum MockError: Error { case notFound }
