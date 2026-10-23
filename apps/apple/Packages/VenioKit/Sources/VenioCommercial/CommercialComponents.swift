@@ -47,38 +47,33 @@ struct LeadRow: View {
     var icon: String = "building.2"
     var urgent = false
     var showsAssignee = false
-    var highlight = false
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon).foregroundStyle(urgent ? palette.urgent.color : palette.accentText.color)
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(urgent ? palette.urgent.color : palette.accentText.color)
+                .frame(width: 34, height: 34)
+                .background((urgent ? palette.urgent.color : palette.accent.color).opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(verbatim: lead.company).font(.headline)
-                if let subtitle { Text(verbatim: subtitle).font(.subheadline).foregroundStyle(palette.textSecondary.color) }
-                else {
-                    Text(verbatim: lead.contactName + " · " + CommercialStrings.text(lead.serviceType, locale: locale))
-                        .font(.subheadline).foregroundStyle(palette.textSecondary.color)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(verbatim: lead.company).font(.subheadline.weight(.semibold))
+                Text(verbatim: subtitle ?? (lead.contactName + " · " + CommercialStrings.text(lead.serviceType, locale: locale)))
+                    .font(.caption).foregroundStyle(palette.textSecondary.color)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(verbatim: CommercialFormats(locale: locale).money(lead.budget))
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                if let badge { CommercialBadge(text: badge, tone: urgent ? .urgent : .accent) }
+                else if showsAssignee {
+                    CommercialBadge(text: store.initials(lead.assignedTo))
+                        .accessibilityLabel(Text(verbatim: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale)))
                 }
-                ViewThatFits(in: .horizontal) {
-                    HStack { metadata }
-                    VStack(alignment: .leading) { metadata }
-                }
-            }
-            Spacer(minLength: 0)
+            }.fixedSize(horizontal: true, vertical: false)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .venioCard()
-        .overlay {
-            if highlight { RoundedRectangle(cornerRadius: 22).strokeBorder(palette.accent.color.opacity(0.5), lineWidth: 1) }
-        }
-    }
-    @ViewBuilder private var metadata: some View {
-        Text(verbatim: CommercialFormats(locale: locale).money(lead.budget)).font(.subheadline.weight(.semibold).monospacedDigit())
-        if showsAssignee {
-            Text(verbatim: store.initials(lead.assignedTo)).font(.caption.bold())
-                .accessibilityLabel(Text(verbatim: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale)))
-        }
-        if let badge { CommercialBadge(text: badge, tone: urgent ? .urgent : .accent) }
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 }
 

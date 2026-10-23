@@ -6,6 +6,7 @@ import VenioTheme
 public struct PipelineView: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
@@ -14,7 +15,7 @@ public struct PipelineView: View {
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     private var compact: Bool {
         #if os(iOS)
-        sizeClass == .compact
+        sizeClass != .regular
         #else
         false
         #endif
@@ -23,29 +24,56 @@ public struct PipelineView: View {
         @Bindable var store = store
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
+                VText("Pipeline").font(.largeTitle.bold())
                 Picker(CommercialStrings.text("Portée", locale: locale), selection: $store.allLeads) {
                     Text(verbatim: CommercialStrings.format("Mes leads %lld", locale: locale,
                         PipelineSummary(leads: store.leads, scope: .mine(store.currentUser?.id ?? "")).count)).tag(false)
                     Text(verbatim: CommercialStrings.format("Tous %lld", locale: locale,
                         PipelineSummary(leads: store.leads, scope: .all).count)).tag(true)
                 }.pickerStyle(.segmented)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
                     total("Valeur totale", amount: store.summary.amount)
                     total("Valeur pondérée", amount: store.summary.weighted)
                 }
                 if compact {
-                    ForEach(store.summary.stages) { stage in stageColumn(stage) }
+                    ForEach(store.summary.stages.filter { store.allLeads || $0.count > 0 }) { stage in
+                        VStack(alignment: .leading, spacing: 10) {
+                            stageHeader(stage)
+                            if stage.count > 0 {
+                                VStack(spacing: 0) {
+                                    let leads = store.visibleLeads.filter { $0.status == stage.id }
+                                    ForEach(leads) { lead in
+                                        Button { onLead(lead.id) } label: {
+                                            LeadRow(lead: lead, showsAssignee: true)
+                                        }.buttonStyle(.plain)
+                                        if lead.id != leads.last?.id { Divider() }
+                                    }
+                                }.venioCard()
+                            }
+                        }
+                    }
                 } else {
                     ScrollView(.horizontal) {
                         HStack(alignment: .top, spacing: 18) {
-                            ForEach(store.summary.stages) { stage in stageColumn(stage).frame(width: 300) }
+                            ForEach(store.summary.stages) { stage in
+                                VStack(alignment: .leading, spacing: 12) {
+                                    stageHeader(stage)
+                                    ForEach(store.visibleLeads.filter { $0.status == stage.id }) { lead in
+                                        Button { onLead(lead.id) } label: { kanbanCard(lead) }
+                                            .buttonStyle(.plain)
+                                    }
+                                }.frame(width: 260)
+                            }
                         }.padding(.bottom)
                     }
                 }
             }.padding()
         }
         .background { ThemedBackground() }
-        .navigationTitle(CommercialStrings.text("Pipeline", locale: locale))
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     private func total(_ title: String, amount: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -53,20 +81,52 @@ public struct PipelineView: View {
             Text(verbatim: formats.money(amount)).font(.title2.bold().monospacedDigit())
         }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
     }
-    private func stageColumn(_ stage: PipelineSummary.Stage) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                SectionHeading(title: stage.id.label, count: stage.count)
-                Text(verbatim: formats.percent(stage.id.probability) + " · " + formats.money(stage.amount)).font(.subheadline)
-                Text(verbatim: CommercialStrings.text("Pondéré", locale: locale) + " " + formats.money(stage.weighted)).font(.caption)
-            }.padding(.horizontal, 4)
-            ForEach(store.visibleLeads.filter { $0.status == stage.id }) { lead in
-                Button { onLead(lead.id) } label: {
-                    LeadRow(lead: lead, showsAssignee: true,
-                            highlight: store.allLeads && lead.assignedTo == store.currentUser?.id)
-                }.buttonStyle(.plain)
+    private func stageHeader(_ stage: PipelineSummary.Stage) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                VText(stage.id.label).font(.headline)
+                CommercialBadge(text: formats.number(stage.count))
+                Spacer(minLength: 4)
+                Text(verbatim: formats.money(stage.amount)).font(.subheadline.weight(.semibold).monospacedDigit())
+            }
+            Text(verbatim: formats.percent(stage.id.probability) + " · " +
+                 CommercialStrings.format("pond. %@", locale: locale, formats.money(stage.weighted)))
+                .font(.caption).foregroundStyle(palette.textSecondary.color)
+        }
+    }
+    private func kanbanCard(_ lead: Lead) -> some View {
+        let mine = lead.assignedTo == store.currentUser?.id
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                CommercialBadge(text: CommercialStrings.text(lead.leadTemperature.label, locale: locale), tone: .warning)
+                Spacer()
+                Text(verbatim: store.initials(lead.assignedTo)).font(.caption.bold())
+                    .accessibilityLabel(Text(verbatim: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale)))
+            }
+            Text(verbatim: lead.company).font(.headline)
+            Text(verbatim: lead.contactName + " · " + CommercialStrings.text(lead.serviceType, locale: locale))
+                .font(.caption).foregroundStyle(palette.textSecondary.color)
+            HStack {
+                Text(verbatim: formats.money(lead.budget)).font(.headline.monospacedDigit())
+                Spacer()
+                if let score = lead.score {
+                    Text(verbatim: CommercialStrings.format("Score %lld", locale: locale, score)).font(.caption)
+                }
+            }
+            if let date = lead.nextActionAt {
+                Text(verbatim: CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
+                    .font(.caption).foregroundStyle(date < store.clock.now ? palette.urgent.color : palette.accentText.color)
+            } else {
+                VText("Aucune action prévue").font(.caption).foregroundStyle(palette.textSecondary.color)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading).venioCard()
+        .overlay {
+            if store.allLeads && mine {
+                RoundedRectangle(cornerRadius: 22).strokeBorder(palette.accent.color, lineWidth: 1)
+            }
+        }
+        .opacity(store.allLeads && !mine ? 0.75 : 1)
     }
 }
 #endif

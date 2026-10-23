@@ -1,31 +1,33 @@
 # Venio Apple
 
-XcodeGen génère le projet non versionné. Prérequis : Xcode 27.1, Swift 6.4, XcodeGen 2.46 ; plateformes Apple 27, langage Swift 6.
+Apps natives iPhone, iPad, Mac et Apple Watch. **XcodeGen** : le projet se décrit dans un `project.yml` lisible et sans conflits de fusion ; le `.xcodeproj` est généré, jamais versionné. Prérequis : Xcode 27.1, Swift 6.4, XcodeGen ≥ 2.46.
+
+## Build
 
 Depuis `apps/apple/` :
 
 ```sh
 xcodegen generate
-xcodebuild -scheme Venio -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/DerivedData -packageCachePath .build/pkgcache -IDEPackageSupportDisableManifestSandbox=1 CODE_SIGNING_ALLOWED=NO build
-xcodebuild -scheme Venio -destination 'platform=macOS' -derivedDataPath .build/DerivedData -packageCachePath .build/pkgcache -IDEPackageSupportDisableManifestSandbox=1 CODE_SIGNING_ALLOWED=NO build
-xcodebuild -scheme VenioWatch -destination 'generic/platform=watchOS Simulator' -derivedDataPath .build/DerivedData -packageCachePath .build/pkgcache -IDEPackageSupportDisableManifestSandbox=1 CODE_SIGNING_ALLOWED=NO build
-cd Packages/VenioKit
-swift test --disable-sandbox --cache-path .build/swiftpm-cache
+xcodebuild -scheme Venio -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/DerivedData CODE_SIGNING_ALLOWED=NO build
+xcodebuild -scheme Venio -destination 'platform=macOS' -derivedDataPath .build/DerivedData CODE_SIGNING_ALLOWED=NO build
+xcodebuild -scheme VenioWatch -destination 'generic/platform=watchOS Simulator' -derivedDataPath .build/DerivedData CODE_SIGNING_ALLOWED=NO build
+(cd Packages/VenioKit && swift test)
 ```
 
-- `App/` : app iPhone, iPad et Mac ; choix de l’espace selon le rôle, lancement avec `CachedVenioAPI(MockVenioAPI)`.
-- `WatchApp/` : relances en retard et du jour, fiche et appel.
-- `VenioCore` : DTO, calculs purs, contrat API, mock et cache SwiftData des listes leads/projets.
-- `VenioTheme` : palettes, contraste WCAG, préférences locales, fond et cartes Glass/Néon.
-- `VenioCommercial` : store Observation partagé, agenda, pipeline (liste/kanban), fiches leads, projets en lecture seule, apparence et langue. `CommercialFormats.swift` centralise nombres, euros et dates à Paris.
-- `Resources/Localizable.xcstrings` : interface française et anglaise ; catalogue par cible contenant des chaînes. Les previews couvrent chaque écran en Glass et Néon.
+Arguments de lancement utiles aux captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|settings`, `-VenioLead lead-calder`.
 
-Les identités sont fictives ; Léa Martin est connectée. L’horloge de démo fixe le 23 octobre 2026 à 9:41 à Paris. Aucun réseau applicatif : le cache conserve les listes leads/projets, les autres lectures restent déléguées au mock. Les coordonnées de démonstration sont fictives ; les liens téléphone/e-mail passent par le système. Relance, Étape et Devis restent désactivés.
+## Structure
 
-Les préférences locales conservent `theme/background/accent/locale/autoTranslate` derrière `ThemePreferenceStore`. Une ancienne sélection sans langue prend `system`, avec traduction auto activée. La langue change dans l’environnement SwiftUI et les catalogues du package sont résolus explicitement dans la langue choisie.
+- `App/` : app iOS/iPadOS/macOS. `TabView` adaptatif (onglets en bas sur iPhone, barre en haut sur iPad, barre latérale sur Mac). Le rôle choisit l'espace ; l'espace admin est un placeholder.
+- `WatchApp/` : les relances du jour, fiche et appel.
+- `Packages/VenioKit` :
+  - `VenioCore` : modèles alignés sur `backend/src/models`, calculs purs (`PipelineSummary`, `TodayAgenda`), contrat `VenioAPI`, `MockVenioAPI`, cache SwiftData (`CachedVenioAPI`).
+  - `VenioTheme` : Liquid glass et Néon, 5 fonds × 5 accents, contraste WCAG testé sur les 50 combinaisons, préférences locales (`theme/background/accent/locale/autoTranslate`) derrière un protocole de store.
+  - `VenioCommercial` : Aujourd'hui, Pipeline (liste ou kanban), fiche lead, projets en lecture seule, Réglages (Apparence, Langue), `TranslatableText`. Chaînes FR/EN dans `Resources/Localizable.xcstrings`.
 
-`TranslatableText` détecte la langue avec NaturalLanguage et traduit sur iOS/macOS avec Apple Translation, uniquement si le modèle est installé. Noms identifiés, coordonnées, références et nombres portent l’attribut d’exclusion de traduction. Sans modèle ou en cas d’échec : original silencieux. Watch conserve l’original. Les traductions ne sont pas stockées.
+## Ce qui reste mocké
 
-Arguments de lancement (cible app, lus via UserDefaults) : `-VenioTheme glass|neon`, `-VenioBackground mist|…`, `-VenioAccent sky|…`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|settings`, `-VenioLead lead-calder`. Avec une fiche lead et un onglet Projets/Réglages, Pipeline est choisi. Watch prend en charge les arguments d’apparence et de langue.
-
-Pour signer sur appareil, sélectionner son équipe dans Xcode ; la signature reste activée dans le projet.
+- Toutes les données : `MockVenioAPI` reprend `docs/apps-natives/maquettes/donnees-demo.md` (Léa Martin connectée, horloge figée au vendredi 23 octobre 2026, 9:41, Paris). Aucun appel réseau : la vraie API se branchera par une implémentation de `VenioAPI` quand le contrat `docs/apps-natives/api-mobile.md` sera publié.
+- Les préférences restent locales (pas encore de synchro serveur).
+- Relance, Étape et Devis sont visibles mais désactivés sur la fiche lead.
+- La traduction automatique (Apple Translation) ne fonctionne pas dans le simulateur iOS, qui répond `unsupported` : l'original s'affiche. À vérifier sur appareil ou sur Mac.

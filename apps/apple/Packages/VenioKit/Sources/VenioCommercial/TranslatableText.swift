@@ -15,6 +15,10 @@ public struct TranslatableText: View {
     @State private var requestCount = 0
     @State private var manuallyRequestedFor: String?
     @State private var sourceLanguage: String?
+    #if canImport(Translation) && !os(watchOS)
+    @State private var availability: LanguageAvailability.Status?
+    @State private var configuration: TranslationSession.Configuration?
+    #endif
 
     public init(_ text: String, preserving terms: [String] = []) {
         original = text
@@ -33,8 +37,19 @@ public struct TranslatableText: View {
                         VText(showsOriginal ? "Original" : "Traduit")
                     } icon: { Image(systemName: "translate").accessibilityHidden(true) }
                 }.font(.caption).buttonStyle(.plain)
-            } else if sourceLanguage != nil && sourceLanguage != target && !preferences.selection.autoTranslate {
-                Button { manuallyRequestedFor = identity; requestCount += 1 } label: { VText("Traduire") }.font(.caption)
+            } else if availability == .supported || (availability == .installed && !preferences.selection.autoTranslate) {
+                Button {
+                    if availability == .supported, let sourceLanguage {
+                        if configuration != nil { configuration?.invalidate() }
+                        else {
+                            configuration = TranslationSession.Configuration(source: Locale.Language(identifier: sourceLanguage),
+                                                                             target: Locale.Language(identifier: target))
+                        }
+                    } else {
+                        manuallyRequestedFor = identity
+                        requestCount += 1
+                    }
+                } label: { VText("Traduire") }.font(.caption)
             }
             #endif
         }
@@ -42,11 +57,21 @@ public struct TranslatableText: View {
         .task(id: identity + String(requestCount)) {
             translation = nil
             showsOriginal = false
+            availability = nil
+            configuration = nil
             let recognizer = NLLanguageRecognizer()
             recognizer.processString(original)
             sourceLanguage = recognizer.dominantLanguage?.rawValue
-            if preferences.selection.autoTranslate || manuallyRequestedFor == identity { await translate() }
+            guard let sourceLanguage, sourceLanguage != target else { return }
+            let status = await LanguageAvailability().status(from: Locale.Language(identifier: sourceLanguage),
+                                                              to: Locale.Language(identifier: target))
+            guard !Task.isCancelled else { return }
+            availability = status
+            if status == .installed && (preferences.selection.autoTranslate || manuallyRequestedFor == identity) {
+                await translate()
+            }
         }
+        .translationTask(configuration, action: translateWithDownload)
         #endif
     }
 
@@ -79,6 +104,15 @@ public struct TranslatableText: View {
             }
         }
         return text
+    }
+
+    nonisolated private func translateWithDownload(_ session: TranslationSession) async {
+        let text = await protectedText
+        do {
+            let response = try await session.translate(text)
+            try Task.checkCancellation()
+            await MainActor.run { translation = response.targetText }
+        } catch { return }
     }
 
     @MainActor private func translate() async {

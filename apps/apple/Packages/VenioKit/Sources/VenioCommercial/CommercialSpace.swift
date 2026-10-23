@@ -25,36 +25,17 @@ public enum CommercialTab: String, CaseIterable, Identifiable {
 }
 
 public struct CommercialSpace: View {
-    @Environment(\.locale) private var locale
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    #endif
     @State private var tab: CommercialTab
-    @State private var sidebar: CommercialTab?
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
-    @State private var projectPath: [String] = []
-    @State private var leadID: String?
-    @State private var projectID: String?
 
     public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
-        let selected = initialLeadID != nil && initialTab != .today && initialTab != .pipeline ? .pipeline : initialTab
-        _tab = State(initialValue: selected)
-        _sidebar = State(initialValue: selected)
-        _todayPath = State(initialValue: selected == .today ? initialLeadID.map { [$0] } ?? [] : [])
-        _pipelinePath = State(initialValue: selected == .pipeline ? initialLeadID.map { [$0] } ?? [] : [])
-        _leadID = State(initialValue: initialLeadID)
+        _tab = State(initialValue: initialLeadID == nil ? initialTab : .pipeline)
+        _todayPath = State(initialValue: [])
+        _pipelinePath = State(initialValue: initialLeadID.map { [$0] } ?? [])
     }
 
     public var body: some View {
-        #if os(iOS)
-        if sizeClass == .compact { tabs } else { split }
-        #else
-        split
-        #endif
-    }
-
-    private var tabs: some View {
         TabView(selection: $tab) {
             NavigationStack(path: $todayPath) {
                 TodayView { todayPath.append($0) }
@@ -64,38 +45,14 @@ public struct CommercialSpace: View {
                 PipelineView { pipelinePath.append($0) }
                     .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
             }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
-            NavigationStack(path: $projectPath) {
-                ProjectsView { projectPath.append($0) }
-                    .navigationDestination(for: String.self) { ProjectDetailView(id: $0) }
-            }.tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
+            ProjectsTab()
+                .tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
             NavigationStack { SettingsView() }
                 .tabItem { tabLabel(.settings) }.tag(CommercialTab.settings)
         }
+        .tabViewStyle(.sidebarAdaptable)
     }
 
-    private var split: some View {
-        NavigationSplitView {
-            List(CommercialTab.allCases, selection: $sidebar) { item in tabLabel(item).tag(item) }
-                .navigationTitle(CommercialStrings.text("Venio", locale: locale))
-                .scrollContentBackground(.hidden)
-                .background { ThemedBackground() }
-        } content: {
-            switch sidebar ?? .today {
-            case .today: TodayView { leadID = $0; projectID = nil }
-            case .pipeline: PipelineView { leadID = $0; projectID = nil }
-            case .projects: ProjectsView { projectID = $0; leadID = nil }
-            case .settings: SettingsView()
-            }
-        } detail: {
-            if let leadID { LeadDetailView(id: leadID) }
-            else if let projectID { ProjectDetailView(id: projectID) }
-            else {
-                ContentUnavailableView(CommercialStrings.text("Sélectionnez une fiche", locale: locale), systemImage: "sidebar.right")
-                    .background { ThemedBackground() }
-            }
-        }
-        .onChange(of: sidebar) { _, _ in leadID = nil; projectID = nil }
-    }
     private func tabLabel(_ item: CommercialTab) -> some View {
         Label { VText(item.title) } icon: { Image(systemName: item.icon).accessibilityHidden(true) }
     }

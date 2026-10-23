@@ -8,6 +8,16 @@ public struct LeadDetailView: View {
     @Environment(\.locale) private var locale
     @Environment(\.openURL) private var openURL
     @Environment(\.venioPalette) private var palette
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+    private var regular: Bool {
+        #if os(iOS)
+        sizeClass == .regular
+        #else
+        true
+        #endif
+    }
     let id: String
     public init(id: String) { self.id = id }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
@@ -16,43 +26,61 @@ public struct LeadDetailView: View {
             if let lead = store.leads.first(where: { $0.id == id }) {
                 CommercialPage {
                     header(lead)
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], alignment: .leading, spacing: 12) {
-                        metric("Montant", value: formats.money(lead.budget))
-                        metric("Probabilité", value: formats.percent(lead.status.probability))
-                        metric("Assigné à", value: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale))
-                    }.venioCard()
-                    nextAction(lead)
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 95))], spacing: 14) {
-                        action("Appeler", icon: "phone", url: lead.phoneURL)
-                        action("E-mail", icon: "envelope", url: lead.emailURL)
-                        action("Relance", icon: "clock", url: nil)
-                        action("Étape", icon: "arrow.right.circle", url: nil)
-                        action("Devis", icon: "doc.text", url: nil)
-                    }
-                    if !lead.notes.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            VText("Note").font(.headline)
-                            TranslatableText(lead.notes, preserving: store.contentIdentifiers)
-                        }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
-                    }
-                    VStack(alignment: .leading, spacing: 18) {
-                        SectionHeading(title: "Timeline", count: store.timeline[id, default: []].count)
-                        ForEach(store.timeline[id, default: []]) { entry in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(verbatim: formats.timestamp(entry.date)).font(.caption).foregroundStyle(palette.textSecondary.color)
-                                TranslatableText(entry.title, preserving: store.contentIdentifiers)
-                                if !entry.body.isEmpty { TranslatableText(entry.body, preserving: store.contentIdentifiers).font(.subheadline) }
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                            Divider()
+                    if regular {
+                        HStack(alignment: .top, spacing: 22) {
+                            information(lead).frame(maxWidth: .infinity)
+                            timeline.frame(maxWidth: .infinity)
                         }
-                    }.venioCard()
+                    } else {
+                        information(lead)
+                        timeline
+                    }
                 }
-                .navigationTitle(lead.company)
+                .navigationTitle("")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
             } else {
                 ContentUnavailableView(CommercialStrings.text("Lead indisponible", locale: locale), systemImage: "person.crop.circle.badge.questionmark")
             }
         }
         .background { ThemedBackground() }
+    }
+    private func information(_ lead: Lead) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], alignment: .leading, spacing: 12) {
+                metric("Montant", value: formats.money(lead.budget))
+                metric("Probabilité", value: formats.percent(lead.status.probability))
+                metric("Assigné à", value: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale))
+            }.venioCard()
+            nextAction(lead)
+            HStack(spacing: 6) {
+                action("Appeler", icon: "phone", url: lead.phoneURL)
+                action("E-mail", icon: "envelope", url: lead.emailURL)
+                action("Relance", icon: "clock", url: nil)
+                action("Étape", icon: "arrow.right.circle", url: nil)
+                action("Devis", icon: "doc.text", url: nil)
+            }
+            if !lead.notes.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    VText("Note").font(.headline)
+                    TranslatableText(lead.notes, preserving: store.contentIdentifiers)
+                }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
+            }
+        }
+    }
+    private var timeline: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            SectionHeading(title: "Timeline", count: store.timeline[id, default: []].count)
+            ForEach(store.timeline[id, default: []]) { entry in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(verbatim: formats.timestamp(entry.date)).font(.caption).foregroundStyle(palette.textSecondary.color)
+                    TranslatableText(entry.title, preserving: store.contentIdentifiers)
+                    if !entry.body.isEmpty { TranslatableText(entry.body, preserving: store.contentIdentifiers).font(.subheadline) }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                Divider()
+            }
+        }.venioCard()
     }
     private func header(_ lead: Lead) -> some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -87,7 +115,7 @@ public struct LeadDetailView: View {
                 if store.clock.calendar.isDate(date, inSameDayAs: store.clock.now) {
                     Text(verbatim: CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, formats.time(date)))
                 } else {
-                    Text(verbatim: CommercialStrings.format("Relance du %@", locale: locale, formats.timestamp(date)))
+                    Text(verbatim: CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
                 }
                 CommercialBadge(text: formats.countdown(to: date, from: store.clock.now), tone: date < store.clock.now ? .urgent : .accent)
             } else { VText("Aucune action prévue") }
@@ -100,8 +128,9 @@ public struct LeadDetailView: View {
             VStack(spacing: 8) {
                 Image(systemName: icon).font(.title3).accessibilityHidden(true)
                 VText(title).font(.caption)
-            }.frame(maxWidth: .infinity).padding(.vertical, 8)
-        }.buttonStyle(.bordered).disabled(url == nil)
+            }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(palette.accent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(url == nil)
     }
 }
 #endif

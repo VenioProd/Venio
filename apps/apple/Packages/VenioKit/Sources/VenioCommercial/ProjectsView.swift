@@ -3,14 +3,57 @@ import SwiftUI
 import VenioCore
 import VenioTheme
 
+struct ProjectsTab: View {
+    @Environment(CommercialStore.self) private var store
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+    @State private var selectedProjectID: String?
+    @State private var path: [String] = []
+    private var regular: Bool {
+        #if os(iOS)
+        sizeClass == .regular
+        #else
+        true
+        #endif
+    }
+    var body: some View {
+        Group {
+            if regular {
+                NavigationSplitView {
+                    ProjectsView(selectedID: selectedProjectID) { selectedProjectID = $0 }
+                        .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 400)
+                } detail: {
+                    if let selectedProjectID { ProjectDetailView(id: selectedProjectID) }
+                    else { ProjectsView { selectedProjectID = $0 } }
+                }
+            } else {
+                NavigationStack(path: $path) {
+                    ProjectsView { path.append($0) }
+                        .navigationDestination(for: String.self) { ProjectDetailView(id: $0) }
+                }
+            }
+        }
+        .onChange(of: store.projects.map(\.id), initial: true) { _, ids in
+            if selectedProjectID == nil { selectedProjectID = ids.first }
+        }
+    }
+}
+
 public struct ProjectsView: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
+    private let selectedID: String?
     private let onProject: (String) -> Void
-    public init(onProject: @escaping (String) -> Void = { _ in }) { self.onProject = onProject }
+    public init(selectedID: String? = nil, onProject: @escaping (String) -> Void = { _ in }) {
+        self.selectedID = selectedID
+        self.onProject = onProject
+    }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     public var body: some View {
         CommercialPage {
+            VText("Projets").font(.largeTitle.bold())
             CommercialBadge(text: CommercialStrings.text("Lecture seule", locale: locale))
             ForEach(store.projects) { project in
                 Button { onProject(project.id) } label: {
@@ -29,9 +72,18 @@ public struct ProjectsView: View {
                             Text(verbatim: CommercialStrings.format("Livraison %@", locale: locale, formats.date(date, template: "dMMMyyyy"))).font(.caption)
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
-                }.buttonStyle(.plain)
+                        .overlay {
+                            if project.id == selectedID {
+                                RoundedRectangle(cornerRadius: 22).strokeBorder(palette.accent.color, lineWidth: 1)
+                            }
+                        }
+                }.buttonStyle(.plain).accessibilityAddTraits(project.id == selectedID ? .isSelected : [])
             }
-        }.navigationTitle(CommercialStrings.text("Projets", locale: locale))
+        }
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 
@@ -62,7 +114,11 @@ public struct ProjectDetailView: View {
                             Divider()
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
-                }.navigationTitle(detail.project.client)
+                }
+                .navigationTitle("")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
             } else {
                 ContentUnavailableView(CommercialStrings.text("Projet indisponible", locale: locale), systemImage: "folder.badge.questionmark")
             }
