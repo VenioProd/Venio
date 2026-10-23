@@ -195,7 +195,7 @@ describe('VENIO-104 — login et MFA', () => {
 })
 
 describe('VENIO-104 — permissions backend and data scoping', () => {
-  it('enforces the recipe matrix and keeps CRM and ticket data scoped outside SUPER_ADMIN', async () => {
+  it('enforces the recipe matrix with full commercial CRM reading and scoped tickets', async () => {
     for (const scenario of scenarios) {
       const agent = await loginAs(scenario.role)
 
@@ -204,7 +204,7 @@ describe('VENIO-104 — permissions backend and data scoping', () => {
       if (scenario.canReadCrm) {
         const companies = crm.body.leads.map((lead: { company: string }) => lead.company)
         const expectedCompanies =
-          scenario.role === 'SUPER_ADMIN'
+          (scenario.role === 'SUPER_ADMIN' || scenario.role === 'COMMERCIAL')
             ? scenarios.map(({ role }) => `VENIO-104 lead ${role}`)
             : [`VENIO-104 lead ${scenario.role}`]
         expect(companies.sort()).toEqual(expectedCompanies.sort())

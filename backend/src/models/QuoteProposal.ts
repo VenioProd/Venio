@@ -1,7 +1,8 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IQuoteProposal } from '../types/models/index.js'
 
-const questionSchema = new mongoose.Schema(
+export const questionSchema = new mongoose.Schema(
   {
     type: {
       type: String,
@@ -25,7 +26,7 @@ const answerSchema = new mongoose.Schema(
   { _id: false },
 )
 
-const lineSchema = new mongoose.Schema(
+export const lineSchema = new mongoose.Schema(
   {
     description: { type: String, required: true, trim: true },
     detail: { type: String, default: '' },
@@ -85,5 +86,7 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
 
 quoteProposalSchema.index({ project: 1, status: 1 })
 quoteProposalSchema.index({ client: 1, status: 1 })
+
+syncTombstones(quoteProposalSchema, 'quotes')
 
 export default mongoose.model<IQuoteProposal>('QuoteProposal', quoteProposalSchema)

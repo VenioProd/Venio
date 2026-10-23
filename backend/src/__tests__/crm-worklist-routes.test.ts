@@ -96,7 +96,7 @@ describe('GET /api/admin/crm/worklist', () => {
     expect(response.body.counts).toEqual({ overdue: 0, today: 0, upcoming: 0, drifting: 0 })
   })
 
-  it("restreint un commercial aux leads qui lui sont assignés ou qu'il a créés", async () => {
+  it("inclut les leads des collègues dans la lecture commerciale", async () => {
     await createLead({ company: 'AMoi', nextActionAt: daysFromNow(-3) })
     await createLead({
       company: 'ParMoi',
@@ -109,7 +109,7 @@ describe('GET /api/admin/crm/worklist', () => {
     actAs(commercialId, 'COMMERCIAL')
     const response = await request(app).get('/api/admin/crm/worklist').expect(200)
 
-    expect(response.body.groups.overdue.map((l: { company: string }) => l.company).sort()).toEqual(['AMoi', 'ParMoi'])
+    expect(response.body.groups.overdue.map((l: { company: string }) => l.company).sort()).toEqual(['AMoi', 'AUnAutre', 'ParMoi'])
   })
 
   it('applique les seuils configurés dans CrmSettings au lieu des valeurs par défaut', async () => {
@@ -149,10 +149,10 @@ describe('GET /api/admin/crm/worklist', () => {
 // (chantier « journal des échanges ») : voir interactions-routes.test.ts.
 
 describe('GET /api/admin/crm/leads/:id/activities', () => {
-  it('renvoie 404 sur un lead hors du périmètre du commercial', async () => {
+  it('permet au commercial de lire les activités des autres leads', async () => {
     const lead = await createLead({ assignedTo: otherCommercialId })
     actAs(commercialId, 'COMMERCIAL')
-    await request(app).get(`/api/admin/crm/leads/${lead._id}/activities`).expect(404)
+    await request(app).get(`/api/admin/crm/leads/${lead._id}/activities`).expect(200)
   })
 })
 

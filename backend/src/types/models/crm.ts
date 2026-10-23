@@ -40,6 +40,9 @@ export interface IInteraction extends Document {
   /** Identifiant du document d'origine, pour rendre la migration idempotente.
    *  Absent hors migration : voir l'index partiel du modèle. */
   migratedFrom?: string
+  clientRequestId?: string
+  clientRequestHash?: string
+  audio?: { filename: string; originalName: string; mimeType: string; size: number } | null
   createdAt: Date
   updatedAt: Date
 }

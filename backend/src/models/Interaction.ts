@@ -1,3 +1,4 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IInteraction } from '../types/models/index.js'
 
@@ -45,6 +46,17 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     // Pas de valeur par défaut : le champ doit rester ABSENT hors migration,
     // sinon l'index unique ci-dessous voit autant de `null` que de documents.
     migratedFrom: { type: String },
+    clientRequestId: { type: String, select: false },
+    clientRequestHash: { type: String, select: false },
+    audio: {
+      type: new mongoose.Schema({
+        filename: { type: String, required: true },
+        originalName: { type: String, required: true },
+        mimeType: { type: String, required: true },
+        size: { type: Number, required: true },
+      }, { _id: false }),
+      default: null,
+    },
   },
   { timestamps: true },
 )
@@ -57,5 +69,11 @@ interactionSchema.index(
   { migratedFrom: 1 },
   { unique: true, partialFilterExpression: { migratedFrom: { $type: 'string' } } },
 )
+
+interactionSchema.index({ author: 1, clientRequestId: 1 }, {
+  unique: true, partialFilterExpression: { clientRequestId: { $type: 'string' } },
+})
+
+syncTombstones(interactionSchema, 'interactions')
 
 export default mongoose.model<IInteraction>('Interaction', interactionSchema)

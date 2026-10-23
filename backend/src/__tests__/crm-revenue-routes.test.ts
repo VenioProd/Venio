@@ -106,10 +106,10 @@ describe('GET /crm/leads/:id/revenue', () => {
     expect(response.body.summary).toEqual({ signed: 0, collected: 0, documents: 0 })
   })
 
-  it('refuse un lead hors périmètre', async () => {
+  it('lit aussi le revenu des leads des collègues', async () => {
     const lead = await seedLead({ assignedTo: otherCommercialId })
     actAs(commercialId, 'COMMERCIAL')
-    await request(app).get(`/api/admin/crm/leads/${lead._id}/revenue`).expect(404)
+    await request(app).get(`/api/admin/crm/leads/${lead._id}/revenue`).expect(200)
   })
 })
 

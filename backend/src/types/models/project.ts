@@ -198,4 +198,5 @@ export interface IProjectUpdate extends Document {
   description: string
   createdBy: Types.ObjectId
   createdAt: Date
+  updatedAt: Date
 }
