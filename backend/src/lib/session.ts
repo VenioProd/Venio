@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import type { Response } from 'express'
 import AuthSession, { hashSessionToken } from '../models/AuthSession.js'
 import User from '../models/User.js'
+import MobileDevice from '../models/MobileDevice.js'
 import type { JwtPayload } from '../types/express.js'
 
 export const SESSION_COOKIE = 'venio_session'
@@ -38,7 +39,13 @@ export function readSessionCookie(cookieHeader: string | undefined): string | nu
 
 export async function createSession(
   userId: string,
-  options: { impersonatorId?: string; mfaVerifiedAt?: Date; mfaEnrollmentOnly?: boolean; ttlMs?: number } = {},
+  options: {
+    impersonatorId?: string
+    mfaVerifiedAt?: Date
+    mfaEnrollmentOnly?: boolean
+    ttlMs?: number
+    deviceId?: string
+  } = {},
 ): Promise<{ token: string; expiresAt: Date }> {
   const user = await User.findById(userId).select('sessionVersion').lean()
   if (!user) throw new Error('Cannot create a session for an unknown user')
@@ -53,6 +60,7 @@ export async function createSession(
     impersonatorId: options.impersonatorId ?? null,
     mfaVerifiedAt: options.mfaVerifiedAt ?? null,
     mfaEnrollmentOnly: options.mfaEnrollmentOnly ?? false,
+    deviceId: options.deviceId ?? null,
   })
   return { token, expiresAt }
 }
@@ -95,11 +103,19 @@ export async function revokeUserSessions(userId: string): Promise<void> {
   await AuthSession.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: new Date() } })
 }
 
-export async function authenticateSession(token: string): Promise<JwtPayload | null> {
+/**
+ * `cookie` n'accepte que les sessions navigateur, `bearer` que les access
+ * tokens de l'app native : un jeton ne change jamais de transport.
+ */
+export async function authenticateSession(
+  token: string,
+  transport: 'cookie' | 'bearer' = 'cookie',
+): Promise<JwtPayload | null> {
   const session = await AuthSession.findOne({
     tokenHash: hashSessionToken(token),
     revokedAt: null,
     expiresAt: { $gt: new Date() },
+    deviceId: transport === 'bearer' ? { $ne: null } : null,
   }).lean()
   if (!session) return null
 
@@ -113,6 +129,18 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
     return null
   }
 
+  // Un access token natif meurt avec son appareil, y compris s'il a été émis
+  // pendant que la révocation de l'appareil était en cours.
+  if (session.deviceId) {
+    const device = await MobileDevice.exists({
+      _id: session.deviceId,
+      userId: session.userId,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    })
+    if (!device) return null
+  }
+
   return {
     id: String(user._id),
     role: user.role,
@@ -122,5 +150,6 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
     mfaVerifiedAt: session.mfaVerifiedAt?.getTime(),
     mfaEnrollmentOnly: session.mfaEnrollmentOnly || undefined,
     impersonatorId: session.impersonatorId ? String(session.impersonatorId) : undefined,
+    deviceId: session.deviceId ? String(session.deviceId) : undefined,
   }
 }

@@ -10,6 +10,7 @@ export interface IAuthSession {
   impersonatorId: Types.ObjectId | null
   mfaVerifiedAt: Date | null
   mfaEnrollmentOnly: boolean
+  deviceId: Types.ObjectId | null
   createdAt: Date
   updatedAt: Date
 }
@@ -31,6 +32,9 @@ const authSessionSchema = new mongoose.Schema<IAuthSession>(
     // A password-authenticated privileged user whose enrollment grace period
     // expired may only call the MFA enrollment endpoints until verification.
     mfaEnrollmentOnly: { type: Boolean, required: true, default: false },
+    // Renseigné pour les access tokens de l'app native : la session suit alors
+    // le cycle de vie de l'appareil (MobileDevice) qui l'a obtenue.
+    deviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'MobileDevice', default: null, index: true },
   },
   { timestamps: true },
 )
