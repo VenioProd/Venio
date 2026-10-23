@@ -3,6 +3,7 @@ import type { Response } from 'express'
 import AuthSession, { hashSessionToken } from '../models/AuthSession.js'
 import User from '../models/User.js'
 import MobileDevice from '../models/MobileDevice.js'
+import MobileRefreshToken from '../models/MobileRefreshToken.js'
 import type { JwtPayload } from '../types/express.js'
 
 export const SESSION_COOKIE = 'venio_session'
@@ -45,12 +46,13 @@ export async function createSession(
     mfaEnrollmentOnly?: boolean
     ttlMs?: number
     deviceId?: string
+    tokenPrefix?: string
   } = {},
 ): Promise<{ token: string; expiresAt: Date }> {
   const user = await User.findById(userId).select('sessionVersion').lean()
   if (!user) throw new Error('Cannot create a session for an unknown user')
 
-  const token = crypto.randomBytes(32).toString('base64url')
+  const token = (options.tokenPrefix ?? '') + crypto.randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + (options.ttlMs ?? SESSION_TTL_MS))
   await AuthSession.create({
     userId,
@@ -99,8 +101,15 @@ export async function revokeSession(token: string | null): Promise<void> {
   )
 }
 
+/** Révoque tout : sessions navigateur, appareils natifs et leurs refresh tokens. */
 export async function revokeUserSessions(userId: string): Promise<void> {
-  await AuthSession.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: new Date() } })
+  const now = new Date()
+  await MobileDevice.updateMany(
+    { userId, revokedAt: null },
+    { $set: { revokedAt: now, revokedReason: 'CREDENTIALS_CHANGED', apnsToken: null, apnsEnvironment: null } },
+  )
+  await MobileRefreshToken.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: now } })
+  await AuthSession.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: now } })
 }
 
 /**

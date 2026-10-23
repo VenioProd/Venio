@@ -19,6 +19,7 @@ const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url),
 const APP_VERSION = pkg.version
 
 import authRoutes from './routes/auth.js'
+import mobileAuthRoutes from './routes/mobileAuth.js'
 import projectRoutes from './routes/projects.js'
 import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
@@ -290,6 +291,9 @@ const authLimiter = rateLimit({
 })
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/auth/login', loginLimiter)
+// App native : même quota de tentatives que le login web, partagé par IP.
+app.use('/api/auth/mobile/login', loginLimiter)
+app.use('/api/auth/mobile', authLimiter, mobileAuthRoutes)
 app.use('/api/auth/forgot-password', passwordResetLimiter)
 app.use('/api/auth/reset-password', passwordResetLimiter)
 app.use('/api/auth', authLimiter, authRoutes)

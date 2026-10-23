@@ -1,15 +1,6 @@
 // ─── User ───
 export type UserRole =
-  | 'CLIENT'
-  | 'SUPER_ADMIN'
-  | 'ADMIN'
-  | 'MANAGER'
-  | 'RH'
-  | 'COMMERCIAL'
-  | 'COMPTABLE'
-  | 'VIEWER'
-  | 'STAGIAIRE'
-  | 'AGENT'
+  'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE' | 'AGENT'
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
@@ -188,6 +179,9 @@ export type AuditAction =
   | 'MFA_DISABLED'
   | 'MFA_STEP_UP'
   | 'MFA_RECOVERY_CODE_USED'
+  // ── App native ──
+  | 'MOBILE_DEVICE_REVOKED'
+  | 'MOBILE_REFRESH_REUSE'
   // ── Comptabilité ──
   | 'ACCOUNTING_ENTRY_CREATE'
   | 'ACCOUNTING_ENTRY_UPDATE'
@@ -302,12 +296,7 @@ export type VatDeclarationType = 'CA3' | 'CA12'
 export type VatDeclarationStatus = 'DRAFT' | 'SUBMITTED'
 export type ExternalSourceStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED'
 export type ExternalTransactionStatus =
-  | 'RECEIVED'
-  | 'CLASSIFIED'
-  | 'POSTED'
-  | 'REJECTED'
-  | 'DUPLICATE'
-  | 'AWAITING_REVIEW'
+  'RECEIVED' | 'CLASSIFIED' | 'POSTED' | 'REJECTED' | 'DUPLICATE' | 'AWAITING_REVIEW'
 
 // ─── CRM Settings ───
 export type EscalationAction = 'NOTIFY_MANAGER' | 'REASSIGN' | 'BOTH'

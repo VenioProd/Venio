@@ -29,6 +29,9 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'MFA_DISABLED',
         'MFA_STEP_UP',
         'MFA_RECOVERY_CODE_USED',
+        // ── App native ──
+        'MOBILE_DEVICE_REVOKED',
+        'MOBILE_REFRESH_REUSE',
         // ── Comptabilité ──
         'ACCOUNTING_ENTRY_CREATE',
         'ACCOUNTING_ENTRY_UPDATE',
