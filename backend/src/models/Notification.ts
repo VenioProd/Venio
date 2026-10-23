@@ -7,6 +7,11 @@ const notificationSchema = new mongoose.Schema<INotification>(
     type: {
       type: String,
       enum: [
+        'CRM_LEAD_CREATED',
+        'LEAD_ASSIGNED',
+        'LEAD_FOLLOW_UP_DUE',
+        'QUOTE_PROPOSAL_VIEWED',
+        'QUOTE_PROPOSAL_SIGNED',
         'TASK_ASSIGNED',
         'TASK_UPDATED',
         'PROJECT_UPDATE',

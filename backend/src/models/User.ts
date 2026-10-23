@@ -66,6 +66,14 @@ const userSchema = new mongoose.Schema<IUser>(
     isActive: { type: Boolean, default: true },
     // Incremented when credentials or authorizations change to revoke issued JWTs.
     sessionVersion: { type: Number, default: 0 },
+    appTheme: {
+      type: new mongoose.Schema({
+        theme: { type: String, required: true, enum: ['glass', 'neon'] },
+        background: { type: String, required: true },
+        accent: { type: String, required: true },
+      }, { _id: false }),
+      default: undefined,
+    },
     locale: { type: String, enum: ['fr', 'en'], default: null },
     colorTheme: {
       type: String,

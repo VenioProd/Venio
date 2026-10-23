@@ -58,6 +58,7 @@ export interface IQuoteProposal extends Document {
   intro: string
   status: QuoteProposalStatus
   expiresAt: Date | null
+  firstViewedAt: Date | null
   questions: Types.DocumentArray<IQuoteQuestion>
   answers: Types.DocumentArray<IQuoteAnswer>
   lines: Types.DocumentArray<IQuoteLine>

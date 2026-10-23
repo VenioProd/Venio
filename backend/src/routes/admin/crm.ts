@@ -270,7 +270,9 @@ router.post(
         payload.score = calculateLeadScore(payload as any, settings.scoringWeights)
       }
 
-      const lead = await Lead.create(payload)
+      const lead = new Lead(payload)
+      lead.$locals.assignmentActorId = req.user!.id
+      await lead.save()
 
       // Log creation activity (if enabled)
       if (settings.activityLogging) {
@@ -283,18 +285,6 @@ router.post(
         if (assignee) {
           notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
         }
-      }
-
-      // Notif in-app à l'assigné (toujours, même si email désactivé)
-      if (lead.assignedTo && String(lead.assignedTo) !== req.user!.id) {
-        createNotification({
-          recipient: lead.assignedTo,
-          type: 'CRM_LEAD_ASSIGNED',
-          title: `Nouveau lead assigné`,
-          message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
-          link: `/admin/crm/leads/${lead._id}`,
-          metadata: { leadId: String(lead._id) },
-        }).catch(() => {})
       }
 
       // Auto-create client account when lead is WON
@@ -324,6 +314,8 @@ router.patch(
       if (isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
+
+      lead.$locals.assignmentActorId = req.user!.id
 
       // Load settings for automation control
       const settings = await CrmSettings.getSettings()
@@ -436,18 +428,6 @@ router.patch(
           if (assignee) {
             notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
           }
-        }
-
-        // Notif in-app au nouvel assigné (toujours)
-        if (newAssignee && newAssignee !== req.user!.id) {
-          createNotification({
-            recipient: newAssignee,
-            type: 'CRM_LEAD_ASSIGNED',
-            title: `Lead réassigné à vous`,
-            message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
-            link: `/admin/crm/leads/${lead._id}`,
-            metadata: { leadId: String(lead._id) },
-          }).catch(() => {})
         }
       }
 

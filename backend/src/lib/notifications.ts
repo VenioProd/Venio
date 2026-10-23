@@ -2,6 +2,7 @@ import type { Types } from 'mongoose'
 import type { NotificationType } from '../types/enums.js'
 import Notification from '../models/Notification.js'
 import { sendPushToUser } from './webPush.js'
+import { sendApnsToUser } from './apns.js'
 import { shouldNotify } from './notificationPreferences.js'
 import { getIo } from '../realtime/ioSingleton.js'
 import logger from './logger.js'
@@ -131,14 +132,21 @@ export async function createNotification({
       .then(async (allowed) => {
         if (!allowed) return
         const unreadCount = await Notification.countDocuments({ recipient, isRead: false }).catch(() => undefined)
-        return sendPushToUser(recipientId, {
+        const payload = {
           title,
           body: message || '',
           link: link || '/',
           tag: type,
           data: { notificationId: notification ? String(notification._id) : null, type, ...(metadata || {}) },
           unreadCount: typeof unreadCount === 'number' ? unreadCount : undefined,
-        })
+        }
+        return Promise.all([
+          sendPushToUser(recipientId, payload),
+          sendApnsToUser(recipientId, {
+            ...payload,
+            data: { notificationId: notification ? String(notification._id) : null },
+          }),
+        ])
       })
       .catch((err) => {
         logger.warn({ data: { recipientId, err: err?.message } }, '[notifications] push fail')

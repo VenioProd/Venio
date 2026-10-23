@@ -38,6 +38,11 @@ const notificationPreferencesSchema = new mongoose.Schema(
 export default mongoose.model('NotificationPreferences', notificationPreferencesSchema)
 
 export const NOTIFICATION_TYPES: NotificationType[] = [
+  'CRM_LEAD_CREATED',
+  'LEAD_ASSIGNED',
+  'LEAD_FOLLOW_UP_DUE',
+  'QUOTE_PROPOSAL_VIEWED',
+  'QUOTE_PROPOSAL_SIGNED',
   'TASK_ASSIGNED',
   'TASK_UPDATED',
   'PROJECT_UPDATE',

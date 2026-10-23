@@ -68,6 +68,7 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
       default: 'DRAFT',
     },
     expiresAt: { type: Date, default: null },
+    firstViewedAt: { type: Date, default: null },
     questions: { type: [questionSchema], default: [] },
     answers: { type: [answerSchema], default: [] },
     lines: { type: [lineSchema], default: [] },
