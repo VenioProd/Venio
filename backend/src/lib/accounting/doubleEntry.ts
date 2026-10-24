@@ -26,14 +26,30 @@ function roundCents(n: number | null | undefined): number {
  */
 export async function ensureFiscalYearFor(date: Date | string, session?: ClientSession): Promise<IFiscalYear> {
   const target = date instanceof Date ? date : new Date(date)
-  const existing = await FiscalYear.findOne({ startDate: { $lte: target }, endDate: { $gte: target } }).session(
-    session ?? null,
-  )
-  if (existing) return existing
+  const covering = await FiscalYear.find({ startDate: { $lte: target }, endDate: { $gte: target } })
+    .limit(2)
+    .session(session ?? null)
+  if (covering.length > 1) {
+    const err = new Error('Plusieurs exercices couvrent cette date') as Error & { status?: number }
+    err.status = 409
+    throw err
+  }
+  if (covering[0]) return covering[0]
   const year = target.getUTCFullYear()
   const start = new Date(Date.UTC(year, 0, 1))
   const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999))
   const code = `FY-${year}`
+  // Un exercice calendaire créé d'office ne doit jamais empiéter sur un exercice défini à la main.
+  const overlapping = await FiscalYear.exists({
+    code: { $ne: code },
+    startDate: { $lte: end },
+    endDate: { $gte: start },
+  }).session(session ?? null)
+  if (overlapping) {
+    const err = new Error('Aucun exercice ne couvre cette date') as Error & { status?: number }
+    err.status = 409
+    throw err
+  }
   const now = new Date()
   const fiscal = await FiscalYear.findOneAndUpdate(
     { code },

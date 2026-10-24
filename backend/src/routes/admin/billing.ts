@@ -73,6 +73,7 @@ router.post(
               quantity: Number(l.quantity) || 1,
               unitPrice: Number(l.unitPrice) || budgetAmount,
               taxRate: Number(l.taxRate) || 0,
+              total: l.total === undefined || l.total === null ? undefined : Number(l.total),
             }))
           : [
               {
@@ -144,6 +145,7 @@ router.post(
               quantity: Number(l.quantity) || 1,
               unitPrice: Number(l.unitPrice) || budgetAmount,
               taxRate: Number(l.taxRate) || 0,
+              total: l.total === undefined || l.total === null ? undefined : Number(l.total),
             }))
           : [
               {
@@ -247,6 +249,7 @@ router.patch(
             quantity: Number(l.quantity) || 1,
             unitPrice: Number(l.unitPrice) || 0,
             taxRate: Number(l.taxRate) || 0,
+            total: l.total === undefined || l.total === null ? undefined : Number(l.total),
           })),
         )
         doc.lines = totals.lines

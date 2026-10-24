@@ -16,7 +16,7 @@ import { createCreditNote } from '../lib/projectFinance/creditNotes.js'
 import { beneficiaryStatement } from '../lib/projectFinance/rules.js'
 import { toCents } from '../lib/projectFinance/money.js'
 import { invoiceAmountsCents } from '../lib/projectFinance/invoicing.js'
-import { billingVatBreakdown } from '../lib/projectFinance/vatBreakdown.js'
+import { billingVatBreakdown, computeBillingTotals } from '../lib/projectFinance/vatBreakdown.js'
 import { buildFacturXMinimum } from '../lib/facturx.js'
 import billingRoutes from '../routes/admin/billing.js'
 import agentBillingRoutes from '../routes/agent/billing.js'
@@ -631,4 +631,37 @@ it('rapproche la TVA uniquement sur les bases taxables sans inverser leur signe'
     { lines: [{ total: -0.01, taxRate: 20 }], subtotal: -0.01, taxTotal: 0.01, total: 0 },
   ])
     expect(() => billingVatBreakdown(invalid)).toThrow(expect.objectContaining({ status: 400 }))
+})
+
+it('n’accorde le centime de tolérance qu’aux documents historiques fractionnaires', () => {
+  expect(() => invoiceAmountsCents({ subtotal: 100, taxTotal: 20, total: 120.01 })).toThrow()
+  expect(invoiceAmountsCents({ subtotal: 29.985, taxTotal: 5.997, total: 35.982 })).toEqual({
+    htCents: 2999,
+    vatCents: 599,
+    ttcCents: 3598,
+  })
+})
+
+it('respecte le total de ligne imposé par l’appelant (remise)', () => {
+  const totals = computeBillingTotals([{ description: 'Remisé', quantity: 1, unitPrice: 100, taxRate: 20, total: 80 }])
+  expect(totals).toMatchObject({ subtotal: 80, taxTotal: 16, total: 96 })
+  expect(totals.lines[0]!.total).toBe(80)
+})
+
+it('reporte l’écart de TVA sur un groupe taxable de même signe, même à côté d’une base négative', () => {
+  const groups = billingVatBreakdown({
+    lines: [
+      { total: 10, taxRate: 0 },
+      { total: -0.06, taxRate: 5.5 },
+      { total: 0.024, taxRate: 20 },
+    ],
+    subtotal: 9.964,
+    taxTotal: 0.0015,
+    total: 9.9655,
+  })
+  expect(groups.map(({ rate, htCents, taxCents }) => ({ rate, htCents, taxCents }))).toEqual([
+    { rate: 20, htCents: 2, taxCents: 1 },
+    { rate: 5.5, htCents: -6, taxCents: 0 },
+    { rate: 0, htCents: 1000, taxCents: 0 },
+  ])
 })

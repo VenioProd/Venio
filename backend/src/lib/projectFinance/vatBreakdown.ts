@@ -13,12 +13,15 @@ interface BillingLine {
   quantity: number
   unitPrice: number
   taxRate: number
+  /** Total HT imposé par l'appelant (remise) ; à défaut, quantité × prix. */
+  total?: number
 }
 
 export function computeBillingTotals<T extends BillingLine>(lines: T[]) {
   const byRate = new Map<number, number>()
   const roundedLines = lines.map((line) => {
-    const cents = toCents(line.quantity * line.unitPrice)
+    const imposed = line.total !== undefined && Number.isFinite(line.total)
+    const cents = toCents(imposed ? line.total! : line.quantity * line.unitPrice)
     const bp = Math.round(line.taxRate * 100)
     assertBp(bp, 'Taux de TVA')
     const htCents = (byRate.get(bp) ?? 0) + cents
@@ -69,21 +72,21 @@ export function billingVatBreakdown(doc: VatDocument) {
     if (!found || Math.abs(group.htCents) > Math.abs(found.htCents)) return group
     return found
   }, undefined)
-  const largestTaxable = grouped
-    .filter((group) => group.rate > 0)
-    .reduce<typeof largest>((found, group) => {
-      if (!found || Math.abs(group.htCents) > Math.abs(found.htCents)) return group
-      return found
-    }, undefined)
   if (largest) {
     largest.htCents += htDifference
     assertCents(largest.htCents, 'Base HT rapprochée')
   }
-  if (largestTaxable) {
-    largestTaxable.taxCents += taxDifference
-    assertCents(largestTaxable.taxCents, 'TVA rapprochée')
-  } else if (taxDifference !== 0) {
-    throw moneyError('Document incohérent : TVA sans base taxable')
+  if (taxDifference !== 0) {
+    // L'écart va au plus fort groupe taxable qui garde une TVA du signe de sa base.
+    const target = grouped
+      .filter((group) => group.rate > 0 && (group.taxCents + taxDifference) * group.htCents >= 0)
+      .reduce<typeof largest>((found, group) => {
+        if (!found || Math.abs(group.htCents) > Math.abs(found.htCents)) return group
+        return found
+      }, undefined)
+    if (!target) throw moneyError('Document incohérent : écart de TVA sans base taxable compatible')
+    target.taxCents += taxDifference
+    assertCents(target.taxCents, 'TVA rapprochée')
   }
   for (const group of grouped) {
     if (group.htCents * group.taxCents < 0) {

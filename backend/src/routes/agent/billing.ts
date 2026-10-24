@@ -20,6 +20,9 @@ import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
  * Numérotation auto via Sequence (DEV-0001, FAC-0001…). L'agent peut aussi
  * fournir un `number` explicite (rare, pour migration). Le numéro est unique.
  *
+ * Totaux en centimes : le total HT d'une ligne vaut `lines.total` s'il est
+ * fourni (remise), sinon `quantity * unitPrice` ; TVA calculée par taux.
+ *
  * Transitions de statut typées via endpoints dédiés :
  *   POST /:id/issue       DRAFT → ISSUED (+ issuedAt)
  *   POST /:id/mark-sent   ISSUED → SENT  (+ sentAt)
@@ -53,6 +56,7 @@ interface RawBillingLine {
   quantity?: unknown
   unitPrice?: unknown
   taxRate?: unknown
+  total?: unknown
 }
 
 interface NormalizedLine {
@@ -81,7 +85,7 @@ function normalizeLines(raw: unknown): NormalizedLine[] {
       quantity,
       unitPrice,
       taxRate,
-      total: quantity * unitPrice,
+      total: l.total === undefined || l.total === null ? quantity * unitPrice : Number(l.total),
     }
   })
 }

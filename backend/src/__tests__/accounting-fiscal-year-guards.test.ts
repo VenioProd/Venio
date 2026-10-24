@@ -81,8 +81,8 @@ it('refuse la dernière seconde non couverte sans modifier l’exercice clôtur�
 
 it('refuse sans session une écriture si l’exercice est clôturé après sa lecture', async () => {
   const fiscal = await ensureFiscalYearFor('2026-06-01')
-  const find = FiscalYear.findOne
-  vi.spyOn(FiscalYear, 'findOne').mockImplementationOnce(function (...args) {
+  const find = FiscalYear.find
+  vi.spyOn(FiscalYear, 'find').mockImplementationOnce(function (...args) {
     return find.apply(FiscalYear, args).post(async () => {
       await FiscalYear.updateOne({ _id: fiscal._id }, { status: 'CLOTURE' })
     })
@@ -150,4 +150,45 @@ it('clôture et reporte les soldes avec le résultat sans permettre une seconde 
   await close(entry.fiscalYear).expect(400)
   await expect(createEntry(entryInput())).rejects.toMatchObject({ status: 423 })
   expect(await AccountingEntry.countDocuments({ source: 'AN' })).toBe(1)
+})
+
+it('refuse un exercice calendaire qui empiéterait sur un exercice défini à la main, et une date ambiguë', async () => {
+  await FiscalYear.create({
+    code: 'FY-2026-S',
+    label: 'Exercice décalé',
+    status: 'CLOTURE',
+    startDate: '2026-04-01',
+    endDate: '2026-09-30T23:59:59.999Z',
+  })
+  await expect(createEntry(entryInput('2026-12-01'))).rejects.toMatchObject({ status: 409 })
+  await expect(createEntry(entryInput('2026-08-01'))).rejects.toMatchObject({ status: 423 })
+  expect(await FiscalYear.countDocuments()).toBe(1)
+  await FiscalYear.create({
+    code: 'FY-2027-A',
+    label: 'A',
+    startDate: '2027-01-01',
+    endDate: '2027-12-31T23:59:59.999Z',
+  })
+  await FiscalYear.create({
+    code: 'FY-2027-B',
+    label: 'B',
+    startDate: '2027-06-01',
+    endDate: '2028-05-31T23:59:59.999Z',
+  })
+  await expect(createEntry(entryInput('2027-07-01'))).rejects.toMatchObject({ status: 409 })
+  expect(await AccountingEntry.countDocuments()).toBe(0)
+})
+
+it('refuse une clôture dont l’exercice suivant serait l’exercice clôturé lui-même', async () => {
+  const fiscal = await FiscalYear.create({
+    code: 'FY-2026',
+    label: 'Premier semestre',
+    startDate: '2026-01-01',
+    endDate: '2026-06-30T23:59:59.999Z',
+  })
+  await createEntry(entryInput('2026-03-01'))
+  await close(fiscal._id).expect(400)
+  expect((await FiscalYear.findById(fiscal._id))!.status).toBe('OUVERT')
+  expect(await AccountingEntry.countDocuments({ source: 'AN' })).toBe(0)
+  expect(await AccountingEntry.countDocuments({ status: 'LOCKED' })).toBe(0)
 })

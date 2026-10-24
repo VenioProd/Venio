@@ -218,6 +218,14 @@ router.post(
             status: 400,
           })
         }
+        if (String(nextFy._id) === String(fy._id) || nextFy.startDate <= fy.endDate) {
+          throw Object.assign(
+            new Error(`L'exercice suivant ${nextFy.code} doit commencer après la fin de ${fy.code}`),
+            {
+              status: 400,
+            },
+          )
+        }
 
         // 4. Soldes des comptes bilan (classes 1-5) sur l'exercice clôturé.
         const balanceRows = await computeAccountBalances(
@@ -360,6 +368,9 @@ router.post(
         fy.status = 'CLOTURE'
         fy.closedAt = now
         fy.closedBy = req.user!.id as unknown as typeof fy.closedBy
+        if (String(openingEntry.fiscalYear) !== String(nextFy._id)) {
+          throw Object.assign(new Error(`L'écriture d'à-nouveaux ne tombe pas dans ${nextFy.code}`), { status: 400 })
+        }
         fy.openingEntryId = openingEntry._id as typeof fy.openingEntryId
         await fy.save({ session })
 

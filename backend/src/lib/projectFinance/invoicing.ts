@@ -13,7 +13,10 @@ export function invoiceAmountsCents(doc: Pick<IBillingDocument, 'subtotal' | 'ta
   const htCents = toCents(doc.subtotal)
   const ttcCents = toCents(doc.total)
   const taxCents = ttcCents - htCents
-  if (Math.abs(taxCents - toCents(doc.taxTotal)) > 1) throw moneyError('Facture incohérente : HT + TVA ≠ TTC')
+  // Seuls les documents historiques à montants fractionnaires (29,985 €…) ont droit à un centime d'écart.
+  const fractional = [doc.subtotal, doc.taxTotal, doc.total].some((amount) => toCents(amount) / 100 !== amount)
+  const allowedGap = fractional ? 1 : 0
+  if (Math.abs(taxCents - toCents(doc.taxTotal)) > allowedGap) throw moneyError('Facture incohérente : HT + TVA ≠ TTC')
   return { htCents, vatCents: taxCents, ttcCents }
 }
 
