@@ -48,7 +48,7 @@ import SwiftData
     let source = FailingAPI()
     let api = CachedVenioAPI(upstream: source, container: container)
     let fresh = try await api.leads()
-    #expect(fresh.count == 8)
+    #expect(fresh.filter { $0.status.isOpen }.count == 8)
     await source.goOffline()
     let cached = try await api.leads()
     #expect(Set(cached.map(\.id)) == Set(fresh.map(\.id)))
@@ -70,5 +70,45 @@ private actor FailingAPI: VenioAPI {
     func appointments() async throws -> [Appointment] { try await mock.appointments() }
     func projects() async throws -> [Project] { try await mock.projects() }
     func project(id: String) async throws -> ProjectDetail { try await mock.project(id: id) }
+    func quoteTemplates() async throws -> [QuoteTemplate] { try await mock.quoteTemplates() }
+    func createQuote(templateId: String, projectId: String, title: String?) async throws -> QuoteProposal {
+        try await mock.createQuote(templateId: templateId, projectId: projectId, title: title)
+    }
+    func sendQuote(id: String) async throws -> QuoteProposal { try await mock.sendQuote(id: id) }
+    func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry { try await mock.createInteraction(draft) }
+    func updateLead(id: String, patch: LeadPatch) async throws -> Lead { try await mock.updateLead(id: id, patch: patch) }
     enum Failure: Error { case offline }
+}
+
+@Test func salesFiguresOnDemo() async throws {
+    let api = MockVenioAPI()
+    let figures = try await SalesFigures(leads: api.leads(), quotes: api.quotes(), userId: MockVenioAPI.lea.id,
+        now: api.clock.now, calendar: api.clock.calendar, monthlyTarget: api.monthlyTarget())
+    #expect(figures.signedThisMonth == 27300)
+    #expect(figures.monthlyTarget == 40000)
+    #expect(figures.targetPercent == 68)
+    #expect(figures.months.map(\.amount) == [18200, 24600, 9800, 15400, 31200, 27300])
+    #expect(figures.conversionPercent == 24)
+    #expect(figures.averageCycleDays == 34)
+    #expect(Dictionary(uniqueKeysWithValues: figures.lossReasons.map { ($0.reason, $0.percent) }) ==
+        ["budget": 42, "concurrent": 28, "timing": 18, "sans réponse": 12])
+}
+
+@Test func interactionIdempotency() async throws {
+    let api = MockVenioAPI()
+    var draft = InteractionDraft(idempotencyKey: UUID(), subjectType: .lead, subjectId: "lead-calder",
+        kind: .note, body: "Compte rendu", direction: .none, occurredAt: api.clock.now)
+    let first = try await api.createInteraction(draft)
+    let replay = try await api.createInteraction(draft)
+    #expect(first.id == replay.id)
+    draft.body = "Autre contenu"
+    await #expect(throws: VenioAPIError(code: "IDEMPOTENCY_CONFLICT")) { try await api.createInteraction(draft) }
+}
+
+@Test func quoteWriteRules() async throws {
+    let api = MockVenioAPI()
+    await #expect(throws: VenioAPIError(code: "PROJECT_OUT_OF_SCOPE")) {
+        try await api.createQuote(templateId: "template-site", projectId: "project-aubin", title: nil)
+    }
+    await #expect(throws: VenioAPIError(code: "PROPOSAL_NOT_DRAFT")) { try await api.sendQuote(id: "quote-041") }
 }

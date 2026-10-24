@@ -6,6 +6,8 @@ import VenioCore
     public private(set) var leads: [Lead] = []
     public private(set) var timeline: [String: [TimelineEntry]] = [:]
     public private(set) var quotes: [QuoteProposal] = []
+    public private(set) var templates: [QuoteTemplate] = []
+    public let monthlyTarget: Decimal?
     public private(set) var appointments: [Appointment] = []
     public private(set) var projects: [Project] = []
     public private(set) var projectDetails: [String: ProjectDetail] = [:]
@@ -17,9 +19,10 @@ import VenioCore
     public let clock: DemoClock
     private let api: any VenioAPI
 
-    public init(api: any VenioAPI, clock: DemoClock = DemoClock()) {
+    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), monthlyTarget: Decimal? = nil) {
         self.api = api
         self.clock = clock
+        self.monthlyTarget = monthlyTarget
     }
 
     public var visibleLeads: [Lead] {
@@ -47,14 +50,16 @@ import VenioCore
                 hasLoaded = true
                 return
             }
-            async let fetchedLeads = api.leads()
-            async let fetchedQuotes = api.quotes()
-            async let fetchedAppointments = api.appointments()
-            async let fetchedProjects = api.projects()
+            let canReadCRM = user.permissions.contains("view_crm")
+            let canQuote = !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"])
+            async let fetchedLeads: [Lead] = canReadCRM ? api.leads() : []
+            async let fetchedQuotes: [QuoteProposal] = canQuote ? api.quotes() : []
+            async let fetchedAppointments: [Appointment] = canReadCRM ? api.appointments() : []
+            async let fetchedProjects: [Project] = user.permissions.contains("view_projects") ? api.projects() : []
             let (newLeads, newQuotes, newAppointments, newProjects) = try await
                 (fetchedLeads, fetchedQuotes, fetchedAppointments, fetchedProjects)
             var newTimeline: [String: [TimelineEntry]] = [:]
-            for lead in newLeads {
+            for lead in newLeads where lead.status.isOpen {
                 newTimeline[lead.id] = try await api.timeline(leadId: lead.id).sorted { $0.date > $1.date }
             }
             var details: [String: ProjectDetail] = [:]
@@ -65,6 +70,7 @@ import VenioCore
             quotes = newQuotes
             appointments = newAppointments
             projects = newProjects
+            templates = canQuote ? try await api.quoteTemplates() : []
             timeline = newTimeline
             projectDetails = details
             hasLoaded = true
@@ -73,10 +79,35 @@ import VenioCore
         } catch { failed = true }
     }
 
+    public var canManageQuotes: Bool {
+        !(currentUser?.permissions ?? []).isDisjoint(with: ["manage_quotes", "manage_billing"])
+    }
+    public var canViewFigures: Bool {
+        canManageQuotes && currentUser?.permissions.contains("view_crm") == true
+    }
+    public var figures: SalesFigures {
+        SalesFigures(leads: leads, quotes: quotes, userId: currentUser?.id ?? "", now: clock.now,
+                     calendar: clock.calendar, monthlyTarget: monthlyTarget)
+    }
+    func linkedProject(for lead: Lead) -> Project? {
+        guard let client = lead.clientAccountId else { return nil }
+        let matches = projects.filter { $0.client == client }
+        return matches.count == 1 ? matches.first : nil
+    }
+    func createQuote(templateId: String, projectId: String) async throws -> QuoteProposal {
+        let quote = try await api.createQuote(templateId: templateId, projectId: projectId, title: nil)
+        quotes = try await api.quotes()
+        return quote
+    }
+    func sendQuote(id: String) async throws {
+        _ = try await api.sendQuote(id: id)
+        quotes = try await api.quotes()
+    }
+
     var contentIdentifiers: [String] {
         leads.flatMap { [$0.company, $0.contactName, $0.contactEmail, $0.contactPhone] }
             + projects.flatMap { [$0.client, $0.projectNumber] }
-            + quotes.map(\.reference)
+            + quotes.compactMap(\.reference)
             + [currentUser?.name ?? "", "Léa", "Hugo Bernard", "Raphaël B.", "Vivatech Paris", "Apple Pay"]
     }
 

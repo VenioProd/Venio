@@ -18,6 +18,7 @@ public struct LeadDetailView: View {
         true
         #endif
     }
+    @State private var showingQuote = false
     let id: String
     public init(id: String) { self.id = id }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
@@ -45,6 +46,11 @@ public struct LeadDetailView: View {
             }
         }
         .background { ThemedBackground() }
+        .sheet(isPresented: $showingQuote) {
+            if let lead = store.leads.first(where: { $0.id == id }), let project = store.linkedProject(for: lead) {
+                NewQuoteView(projectId: project.id)
+            }
+        }
     }
     private func information(_ lead: Lead) -> some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -59,7 +65,18 @@ public struct LeadDetailView: View {
                 action("E-mail", icon: "envelope", url: lead.emailURL)
                 action("Relance", icon: "clock", url: nil)
                 action("Étape", icon: "arrow.right.circle", url: nil)
-                action("Devis", icon: "doc.text", url: nil)
+                if store.canManageQuotes {
+                    Button { showingQuote = true } label: {
+                        VStack(spacing: 8) {
+                            Image(systemName: "doc.text").font(.title3).accessibilityHidden(true)
+                            VText("Devis").font(.caption)
+                        }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(palette.accent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                    }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(store.linkedProject(for: lead) == nil)
+                }
+            }
+            if store.canManageQuotes && store.linkedProject(for: lead) == nil {
+                VText("Le devis demande un projet lié").font(.caption).foregroundStyle(palette.textSecondary.color)
             }
             if !lead.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {

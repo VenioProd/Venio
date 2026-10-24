@@ -9,8 +9,8 @@ public struct RootView: View {
     private let initialTab: CommercialTab
     private let initialLeadID: String?
 
-    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
-        _store = State(initialValue: CommercialStore(api: api, clock: clock))
+    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), initialTab: CommercialTab = .today, initialLeadID: String? = nil, monthlyTarget: Decimal? = nil) {
+        _store = State(initialValue: CommercialStore(api: api, clock: clock, monthlyTarget: monthlyTarget))
         self.initialTab = initialTab
         self.initialLeadID = initialLeadID
     }

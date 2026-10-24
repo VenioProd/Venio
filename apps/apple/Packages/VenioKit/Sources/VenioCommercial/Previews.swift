@@ -3,7 +3,7 @@ import VenioCore
 import VenioTheme
 
 private struct CommercialPreview<Content: View>: View {
-    @State private var store = CommercialStore(api: MockVenioAPI())
+    @State private var store = CommercialStore(api: MockVenioAPI(), monthlyTarget: MockVenioAPI().monthlyTarget())
     @State private var theme: ThemeManager
     let content: Content
     init(_ kind: ThemeKind, @ViewBuilder content: () -> Content) {
@@ -39,8 +39,8 @@ private struct CommercialPreview<Content: View>: View {
 #Preview("Langue · Néon") { CommercialPreview(.neon) { NavigationStack { LanguageView() } } }
 #Preview("Administration · Glass") { CommercialPreview(.glass) { AdminPlaceholderView() } }
 #Preview("Administration · Néon") { CommercialPreview(.neon) { AdminPlaceholderView() } }
-#Preview("Racine · Glass") { CommercialPreview(.glass) { RootView(api: MockVenioAPI()) } }
-#Preview("Racine · Néon") { CommercialPreview(.neon) { RootView(api: MockVenioAPI()) } }
+#Preview("Racine · Glass") { CommercialPreview(.glass) { RootView(api: MockVenioAPI(), monthlyTarget: MockVenioAPI().monthlyTarget()) } }
+#Preview("Racine · Néon") { CommercialPreview(.neon) { RootView(api: MockVenioAPI(), monthlyTarget: MockVenioAPI().monthlyTarget()) } }
 #endif
 #Preview("Relances · Glass") { CommercialPreview(.glass) { FollowUpsView(api: MockVenioAPI()) } }
 #Preview("Relances · Néon") { CommercialPreview(.neon) { FollowUpsView(api: MockVenioAPI()) } }

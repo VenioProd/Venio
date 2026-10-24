@@ -60,7 +60,7 @@ public struct ProjectsView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(verbatim: project.client).font(.title3.bold())
                         Text(verbatim: project.projectNumber + " · " + CommercialStrings.text(project.name, locale: locale)).font(.subheadline)
-                        if let detail = store.projectDetails[project.id], let phase = detail.phases.first(where: { $0.status == .active }) {
+                        if store.currentUser?.permissions.contains("view_phases") == true, let detail = store.projectDetails[project.id], let phase = detail.phases.first(where: { $0.status == .active }) {
                             Text(verbatim: CommercialStrings.text(phase.title, locale: locale) + " · " +
                                 CommercialStrings.format("Phase %lld sur %lld", locale: locale, phase.order, detail.phases.count))
                                 .font(.subheadline)
@@ -99,7 +99,7 @@ public struct ProjectDetailView: View {
             if let detail = store.projectDetails[id] {
                 CommercialPage {
                     header(detail)
-                    phases(detail)
+                    if store.currentUser?.permissions.contains("view_phases") == true { phases(detail) }
                     finances(detail.project)
                     requests(detail)
                     VStack(alignment: .leading, spacing: 18) {
@@ -132,7 +132,7 @@ public struct ProjectDetailView: View {
             ProgressView(value: Double(detail.project.progress), total: 100) {
                 VText("Avancement")
             } currentValueLabel: { Text(verbatim: formats.percent(Decimal(detail.project.progress) / 100)) }
-            if let phase = detail.phases.first(where: { $0.status == .active }) {
+            if store.currentUser?.permissions.contains("view_phases") == true, let phase = detail.phases.first(where: { $0.status == .active }) {
                 VText("Phase en cours").font(.caption)
                 Text(verbatim: CommercialStrings.text(phase.title, locale: locale)).font(.title3.bold())
                 Text(verbatim: CommercialStrings.format("Phase %lld sur %lld", locale: locale, phase.order, detail.phases.count))

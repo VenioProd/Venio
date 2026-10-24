@@ -98,6 +98,13 @@ public struct CachedVenioAPI: VenioAPI {
         return result
     }
 
+    public func quoteTemplates() async throws -> [QuoteTemplate] { try await upstream.quoteTemplates() }
+    public func createQuote(templateId: String, projectId: String, title: String?) async throws -> QuoteProposal {
+        try await upstream.createQuote(templateId: templateId, projectId: projectId, title: title)
+    }
+    public func sendQuote(id: String) async throws -> QuoteProposal { try await upstream.sendQuote(id: id) }
+    public func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry { try await upstream.createInteraction(draft) }
+    public func updateLead(id: String, patch: LeadPatch) async throws -> Lead { try await upstream.updateLead(id: id, patch: patch) }
     public func currentUser() async throws -> UserSummary { try await upstream.currentUser() }
     public func lead(id: String) async throws -> Lead {
         do { return try await upstream.lead(id: id) }

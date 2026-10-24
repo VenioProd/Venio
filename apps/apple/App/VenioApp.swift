@@ -7,6 +7,7 @@ import VenioCommercial
 @main struct VenioApp: App {
     @State private var themes: ThemeManager
     private let clock = DemoClock()
+    private let monthlyTarget: Decimal
     private let api: (any VenioAPI)?
     private let initialTab: CommercialTab
     private let initialLeadID: String?
@@ -26,16 +27,18 @@ import VenioCommercial
         _themes = State(initialValue: manager)
         initialTab = defaults.string(forKey: "VenioTab").flatMap(CommercialTab.init(rawValue:)) ?? .today
         initialLeadID = defaults.string(forKey: "VenioLead")
+        let mock = MockVenioAPI(clock: clock)
+        monthlyTarget = mock.monthlyTarget()
         do {
             let container = try ModelContainer(for: CachedLead.self, CachedProject.self)
-            api = CachedVenioAPI(upstream: MockVenioAPI(clock: clock), container: container)
+            api = CachedVenioAPI(upstream: mock, container: container)
         } catch { api = nil }
     }
 
     var body: some Scene {
         WindowGroup {
             ThemeHost(manager: themes) {
-                if let api { RootView(api: api, clock: clock, initialTab: initialTab, initialLeadID: initialLeadID) }
+                if let api { RootView(api: api, clock: clock, initialTab: initialTab, initialLeadID: initialLeadID, monthlyTarget: monthlyTarget) }
                 else { StorageUnavailableView() }
             }
             .environment(\.calendar, clock.calendar)

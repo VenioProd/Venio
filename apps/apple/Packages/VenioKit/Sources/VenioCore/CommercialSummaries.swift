@@ -84,7 +84,7 @@ public struct TodayAgenda: Sendable {
                 && calendar.isDate($0.createdAt, inSameDayAs: now)
         }.sorted { $0.createdAt < $1.createdAt }
         viewedQuotes = quotes.filter {
-            $0.createdBy == userId && $0.status == .sent && $0.viewedAt != nil && $0.viewedAt! <= now
-        }.sorted { $0.viewedAt! > $1.viewedAt! }
+            $0.createdBy == userId && $0.status == .sent && $0.firstViewedAt != nil && $0.firstViewedAt! <= now
+        }.sorted { $0.firstViewedAt! > $1.firstViewedAt! }
     }
 }

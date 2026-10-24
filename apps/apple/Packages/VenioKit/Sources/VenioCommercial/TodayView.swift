@@ -4,6 +4,7 @@ import VenioCore
 import VenioTheme
 
 public struct TodayView: View {
+    @State private var showingSettings = false
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
     #if os(iOS)
@@ -28,47 +29,61 @@ public struct TodayView: View {
                     VText("Aujourd’hui").font(.largeTitle.bold())
                 }
                 Spacer()
-                Text(verbatim: store.currentUser?.initials ?? "?").font(.headline).padding()
-                    .background(.ultraThinMaterial, in: Circle())
-                    .accessibilityLabel(Text(verbatim: store.currentUser?.name ?? ""))
+                Button { showingSettings = true } label: {
+                    VStack(spacing: 4) {
+                        Text(verbatim: store.currentUser?.initials ?? "?").font(.headline)
+                        VText("Réglages").font(.caption)
+                    }.padding().background(.ultraThinMaterial, in: Capsule())
+                }.buttonStyle(.plain)
             }
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 22) {
-                agendaSection("En retard", leads: store.agenda.overdue, icon: "exclamationmark.triangle", urgent: true) { lead in
-                    lead.nextActionAt.map { CommercialStrings.format("Relance du %@", locale: locale, formats.date($0)) } ?? ""
-                } badge: { _ in CommercialStrings.text("En retard", locale: locale) }
-                agendaSection("Relances du jour", leads: store.agenda.followUps, icon: "clock") { lead in
-                    CommercialStrings.text("Relance", locale: locale) + " · " + lead.contactName
-                } badge: { lead in lead.nextActionAt.map(formats.time) ?? "" }
-                VStack(alignment: .leading, spacing: 10) {
-                    SectionHeading(title: "RDV du jour", count: store.agenda.appointments.count)
-                    VStack(spacing: 0) {
-                        ForEach(store.agenda.appointments) { appointment in
-                            if let lead = store.leads.first(where: { $0.id == appointment.leadId }) {
-                                leadButton(lead, subtitle: CommercialStrings.text("Démo en visio", locale: locale) + " · " + lead.contactName,
-                                           badge: formats.time(appointment.startsAt), icon: "video")
-                                if appointment.id != store.agenda.appointments.last?.id { Divider() }
+            if store.currentUser?.permissions.contains("view_crm") == true {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 22) {
+                    agendaSection("En retard", leads: store.agenda.overdue, icon: "exclamationmark.triangle", urgent: true) { lead in
+                        lead.nextActionAt.map { CommercialStrings.format("Relance du %@", locale: locale, formats.date($0)) } ?? ""
+                    } badge: { _ in CommercialStrings.text("En retard", locale: locale) }
+                    agendaSection("Relances du jour", leads: store.agenda.followUps, icon: "clock") { lead in
+                        CommercialStrings.text("Relance", locale: locale) + " · " + lead.contactName
+                    } badge: { lead in lead.nextActionAt.map(formats.time) ?? "" }
+                    VStack(alignment: .leading, spacing: 10) {
+                        SectionHeading(title: "RDV du jour", count: store.agenda.appointments.count)
+                        VStack(spacing: 0) {
+                            ForEach(store.agenda.appointments) { appointment in
+                                if let lead = store.leads.first(where: { $0.id == appointment.leadId }) {
+                                    leadButton(lead, subtitle: CommercialStrings.text("Démo en visio", locale: locale) + " · " + lead.contactName,
+                                               badge: formats.time(appointment.startsAt), icon: "video")
+                                    if appointment.id != store.agenda.appointments.last?.id { Divider() }
+                                }
                             }
-                        }
-                    }.venioCard()
-                }
-                VStack(alignment: .leading, spacing: 10) {
-                    SectionHeading(title: "Devis vu, pas signé", count: store.agenda.viewedQuotes.count)
-                    VStack(spacing: 0) {
-                        ForEach(store.agenda.viewedQuotes) { quote in
-                            if let lead = store.leads.first(where: { $0.company == quote.client }) {
-                                leadButton(lead, subtitle: quote.reference + " · " + (quote.viewedAt.map(formats.timestamp) ?? ""),
-                                           badge: CommercialStrings.text("Vu", locale: locale), icon: "eye")
-                                if quote.id != store.agenda.viewedQuotes.last?.id { Divider() }
+                        }.venioCard()
+                    }
+                    VStack(alignment: .leading, spacing: 10) {
+                        SectionHeading(title: "Devis vu, pas signé", count: store.agenda.viewedQuotes.count)
+                        VStack(spacing: 0) {
+                            ForEach(store.agenda.viewedQuotes) { quote in
+                                if let lead = store.leads.first(where: { $0.company == quote.client }) {
+                                    leadButton(lead, subtitle: (quote.reference ?? quote.title) + " · " + (quote.firstViewedAt.map(formats.timestamp) ?? ""),
+                                               badge: CommercialStrings.text("Vu", locale: locale), icon: "eye")
+                                    if quote.id != store.agenda.viewedQuotes.last?.id { Divider() }
+                                }
                             }
-                        }
-                    }.venioCard()
+                        }.venioCard()
+                    }
+                    agendaSection("Lead chaud sans action", leads: store.agenda.hotWithoutAction, icon: "flame") { lead in
+                        CommercialStrings.text(lead.leadTemperature.label, locale: locale) + " · " + CommercialStrings.format("Score %lld", locale: locale, lead.score ?? 0)
+                    } badge: { _ in CommercialStrings.text("Planifier", locale: locale) }
+                    agendaSection("Nouveau lead entrant", leads: store.agenda.incoming, icon: "person.badge.plus") { lead in
+                        formats.time(lead.createdAt) + " · " + CommercialStrings.text(lead.source, locale: locale)
+                    } badge: { _ in CommercialStrings.text("Non assigné", locale: locale) }
                 }
-                agendaSection("Lead chaud sans action", leads: store.agenda.hotWithoutAction, icon: "flame") { lead in
-                    CommercialStrings.text(lead.leadTemperature.label, locale: locale) + " · " + CommercialStrings.format("Score %lld", locale: locale, lead.score ?? 0)
-                } badge: { _ in CommercialStrings.text("Planifier", locale: locale) }
-                agendaSection("Nouveau lead entrant", leads: store.agenda.incoming, icon: "person.badge.plus") { lead in
-                    formats.time(lead.createdAt) + " · " + CommercialStrings.text(lead.source, locale: locale)
-                } badge: { _ in CommercialStrings.text("Non assigné", locale: locale) }
+            }
+        }
+        .sheet(isPresented: $showingSettings) {
+            NavigationStack {
+                SettingsView().toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button { showingSettings = false } label: { VText("Fermer") }
+                    }
+                }
             }
         }
         .navigationTitle("")

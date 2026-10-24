@@ -96,12 +96,14 @@ public struct UserSummary: Codable, Sendable, Identifiable {
     public var name: String
     public var initials: String
     public var role: UserRole
+    public var permissions: Set<String>
 
-    public init(id: String, name: String, initials: String, role: UserRole) {
+    public init(id: String, name: String, initials: String, role: UserRole, permissions: Set<String> = []) {
         self.id = id
         self.name = name
         self.initials = initials
         self.role = role
+        self.permissions = permissions
     }
 }
 
@@ -122,8 +124,12 @@ public struct Lead: Codable, Sendable, Identifiable {
     public var score: Int?
     public var notes: String
     public var createdAt: Date
+    public var updatedAt: Date
+    public var statusChangedAt: Date?
+    public var lostReason: String
+    public var clientAccountId: String?
 
-    public init(id: String, company: String, contactName: String, contactEmail: String = "", contactPhone: String = "", source: String = "", status: LeadStage, priority: Priority = .normal, budget: Decimal?, nextActionAt: Date?, serviceType: String, leadTemperature: LeadTemperature, assignedTo: String?, score: Int?, notes: String = "", createdAt: Date) {
+    public init(id: String, company: String, contactName: String, contactEmail: String = "", contactPhone: String = "", source: String = "", status: LeadStage, priority: Priority = .normal, budget: Decimal?, nextActionAt: Date?, serviceType: String, leadTemperature: LeadTemperature, assignedTo: String?, score: Int?, notes: String = "", createdAt: Date, updatedAt: Date? = nil, statusChangedAt: Date? = nil, lostReason: String = "", clientAccountId: String? = nil) {
         self.id = id
         self.company = company
         self.contactName = contactName
@@ -140,6 +146,10 @@ public struct Lead: Codable, Sendable, Identifiable {
         self.score = score
         self.notes = notes
         self.createdAt = createdAt
+        self.updatedAt = updatedAt ?? createdAt
+        self.statusChangedAt = statusChangedAt
+        self.lostReason = lostReason
+        self.clientAccountId = clientAccountId
     }
 }
 
@@ -194,10 +204,13 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var status: QuoteStatus
     public var lines: [QuoteLine]
     public var signature: QuoteSignature
-    public var viewedAt: Date?
-    public var reference: String
+    public var firstViewedAt: Date?
+    public var expiresAt: Date?
+    public var createdAt: Date
+    public var updatedAt: Date
+    public var reference: String?
 
-    public init(id: String, project: String, client: String, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, viewedAt: Date?, reference: String) {
+    public init(id: String, project: String, client: String, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil) {
         self.id = id
         self.project = project
         self.client = client
@@ -206,7 +219,10 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
         self.status = status
         self.lines = lines
         self.signature = signature
-        self.viewedAt = viewedAt
+        self.firstViewedAt = firstViewedAt
+        self.expiresAt = expiresAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
         self.reference = reference
     }
 }

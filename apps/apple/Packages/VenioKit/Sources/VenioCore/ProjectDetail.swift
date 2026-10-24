@@ -4,11 +4,15 @@ public struct QuoteLine: Codable, Sendable {
     public var description: String
     public var quantity: Decimal
     public var unitPrice: Decimal
+    public var taxRate: Decimal
+    public var isOptional: Bool
 
-    public init(description: String, quantity: Decimal, unitPrice: Decimal) {
+    public init(description: String, quantity: Decimal, unitPrice: Decimal, taxRate: Decimal = 0, isOptional: Bool = false) {
         self.description = description
         self.quantity = quantity
         self.unitPrice = unitPrice
+        self.taxRate = taxRate
+        self.isOptional = isOptional
     }
 }
 
@@ -19,7 +23,9 @@ public struct QuoteSignature: Codable, Sendable {
 }
 
 extension QuoteProposal {
-    public var amountHT: Decimal { lines.reduce(0) { $0 + $1.quantity * $1.unitPrice } }
+    public var amountHT: Decimal { lines.filter { !$0.isOptional }.reduce(0) { $0 + $1.quantity * $1.unitPrice } }
+    public var amountTax: Decimal { lines.filter { !$0.isOptional }.reduce(0) { $0 + $1.quantity * $1.unitPrice * $1.taxRate / 100 } }
+    public var amountTTC: Decimal { amountHT + amountTax }
 }
 
 public struct ProjectBudget: Codable, Sendable {

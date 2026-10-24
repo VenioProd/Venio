@@ -6,6 +6,11 @@ public protocol VenioAPI: Sendable {
     func lead(id: String) async throws -> Lead
     func timeline(leadId: String) async throws -> [TimelineEntry]
     func quotes() async throws -> [QuoteProposal]
+    func quoteTemplates() async throws -> [QuoteTemplate]
+    func createQuote(templateId: String, projectId: String, title: String?) async throws -> QuoteProposal
+    func sendQuote(id: String) async throws -> QuoteProposal
+    func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry
+    func updateLead(id: String, patch: LeadPatch) async throws -> Lead
     func appointments() async throws -> [Appointment]
     func projects() async throws -> [Project]
     func project(id: String) async throws -> ProjectDetail

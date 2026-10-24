@@ -4,14 +4,15 @@ import VenioCore
 import VenioTheme
 
 public enum CommercialTab: String, CaseIterable, Identifiable {
-    case today, pipeline, projects, settings
+    case today, pipeline, projects, quotes, figures
     public var id: Self { self }
     var title: String {
         switch self {
         case .today: "Aujourd’hui"
         case .pipeline: "Pipeline"
         case .projects: "Projets"
-        case .settings: "Réglages"
+        case .quotes: "Devis"
+        case .figures: "Chiffres"
         }
     }
     var icon: String {
@@ -19,12 +20,14 @@ public enum CommercialTab: String, CaseIterable, Identifiable {
         case .today: "sun.max"
         case .pipeline: "chart.bar.xaxis"
         case .projects: "folder"
-        case .settings: "gearshape"
+        case .quotes: "doc.text"
+        case .figures: "chart.xyaxis.line"
         }
     }
 }
 
 public struct CommercialSpace: View {
+    @Environment(CommercialStore.self) private var store
     @State private var tab: CommercialTab
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
@@ -41,16 +44,29 @@ public struct CommercialSpace: View {
                 TodayView { todayPath.append($0) }
                     .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
             }.tabItem { tabLabel(.today) }.tag(CommercialTab.today)
-            NavigationStack(path: $pipelinePath) {
-                PipelineView { pipelinePath.append($0) }
-                    .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
-            }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
-            ProjectsTab()
-                .tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
-            NavigationStack { SettingsView() }
-                .tabItem { tabLabel(.settings) }.tag(CommercialTab.settings)
+            if store.currentUser?.permissions.contains("view_crm") == true {
+                NavigationStack(path: $pipelinePath) {
+                    PipelineView { pipelinePath.append($0) }
+                        .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
+                }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
+            }
+            if store.currentUser?.permissions.contains("view_projects") == true {
+                ProjectsTab().tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
+            }
+            if store.canManageQuotes {
+                NavigationStack { QuotesView() }.tabItem { tabLabel(.quotes) }.tag(CommercialTab.quotes)
+            }
+            if store.canViewFigures {
+                NavigationStack { SalesFiguresView() }.tabItem { tabLabel(.figures) }.tag(CommercialTab.figures)
+            }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .onAppear {
+            if tab == .quotes && !store.canManageQuotes { tab = .today }
+            if tab == .figures && !store.canViewFigures { tab = .today }
+            if tab == .pipeline && store.currentUser?.permissions.contains("view_crm") != true { tab = .today }
+            if tab == .projects && store.currentUser?.permissions.contains("view_projects") != true { tab = .today }
+        }
     }
 
     private func tabLabel(_ item: CommercialTab) -> some View {
