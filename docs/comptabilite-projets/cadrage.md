@@ -1,0 +1,292 @@
+# Espace comptabilité par projet — cadrage
+
+Statut : **à valider** (24 octobre 2026).
+Demande d'origine : « un espace très spécifique de comptabilité. type de paiement par projet, payeur par projet, répartition des gains ht, etc, bien complet comme espace ».
+
+## 1. Décisions prises
+
+| Sujet | Décision |
+| --- | --- |
+| Modes de facturation | Forfait simple, échéancier en % (acompte / jalons / solde), abonnement récurrent. Pas de régie. |
+| Payeurs | Un ou plusieurs payeurs par projet, chacun avec sa quote-part, ses coordonnées de facturation et son moyen de paiement. |
+| Bénéficiaires | Associés, commerciaux, freelances / sous-traitants, apporteurs d'affaires. |
+| Base de répartition | **CA HT encaissé**. Une part n'est due qu'à l'encaissement, au prorata. |
+| Règles | Un % par bénéficiaire, propre à chaque projet, pré-rempli depuis un modèle réutilisable. Pas de montant fixe, de palier ni de plafond. |
+| Part non attribuée | Reste en société. La somme des % ne dépasse jamais 100 %. |
+| Arrondi | Chaque part est arrondie au centime inférieur ; l'écart va à la société. |
+| Coûts directs | Suivis pour afficher la marge, sans effet sur les parts. |
+| Versements | Relevé dû / versé / restant par bénéficiaire ; une écriture est générée à chaque versement saisi. |
+| Encaissements | Partiels, plusieurs par facture, saisis à la main ou remontés par Stripe. |
+| Droits | Les rôles compta voient tout. Un associé ou un commercial connecté voit son seul relevé. Freelances et apporteurs reçoivent un relevé PDF, sans accès. |
+| Changement de % | Ne vaut que pour les encaissements suivants. Les parts déjà calculées sont figées. Chaque version de règles est conservée. |
+| Atomicité | Vraies transactions Mongo. Tests sur `MongoMemoryReplSet`. La prod doit passer en replica set mono-nœud avant la mise en service (opération faite par l'utilisateur). |
+| Abonnements | Une facture brouillon par payeur et par période, relue puis émise à la main. |
+| Remboursement / avoir après répartition | Régularisation négative des parts. Un restant peut devenir négatif ; il est déduit des versements suivants. |
+
+## 2. Ce qui existe et sur quoi on construit
+
+- `BillingDocument` (QUOTE / INVOICE) porte les factures, en euros décimaux. `createSaleEntryFromBilling` passe l'écriture de vente (journal VE, 411 / 706 / 44571), idempotente par clé `billing:sale:<id>`.
+- `createPaymentEntryFromBilling` passe l'encaissement **en totalité** quand la facture devient `PAID` (BQ, 512 / 411). Il n'existe aucun encaissement partiel.
+- `createEntry` (`lib/accounting/doubleEntry.ts`) refuse un exercice `CLOTURE` (423) et gère l'idempotence par `idempotencyKey` unique. Il n'accepte pas de session Mongo.
+- Aucune transaction Mongo n'est utilisée dans le code aujourd'hui.
+- `Project.billing` (`amountInvoiced`, `billingStatus`, `quoteReference`) est saisi à la main.
+- Permissions : `view_accounting`, `manage_accounting`, `lock_accounting`, `view_billing`, `manage_billing`.
+
+Principe : **l'écriture comptable reste la source de vérité**. L'espace ajoute des objets métier (payeurs, échéances, encaissements, parts, versements), et chacun de ceux qui bougent de l'argent est adossé à une écriture.
+
+## 3. Conventions de calcul
+
+- Tous les nouveaux montants sont des **centimes entiers** (`…Cents`). Les % sont des **points de base entiers** : 1 bp = 0,01 %, 100 % = 10 000 bp. 33,33 % s'écrit 3 333.
+- Conversion depuis les euros décimaux de `BillingDocument` : une seule fonction `toCents(euros)`, qui passe par la représentation à deux décimales pour éviter les erreurs de flottant (1,005 € donne 101 et non 100). Elle est testée.
+- Deux arrondis, et seulement deux, dans un module unique (`lib/projectFinance/money.ts`), calculés en `BigInt` pour ne jamais dépasser `Number.MAX_SAFE_INTEGER` :
+  - `floorBp(cents, bp)` : part d'un montant, arrondie vers −∞. Sert à toutes les quotes-parts et à toutes les parts de bénéficiaires.
+  - `divHalfUp(n, d)` : division arrondie au plus proche, demi vers le haut, symétrique pour les négatifs. Sert à la TVA et à la conversion TTC → HT.
+- La TVA d'une facture reste calculée comme aujourd'hui, ligne par ligne, au demi-centime supérieur.
+- Dans chaque découpage, **une seule part reçoit le reste** et elle est désignée par la règle. Ainsi la somme tombe juste par construction.
+
+## 4. Règles de calcul, avec exemples
+
+Tous les exemples utilisent un projet fictif « Projet Démo », TVA 20 %.
+
+### R1 — Échéancier en %
+
+Chaque échéance vaut `floorBp(totalHT, %)`, sauf la **dernière (solde)**, qui reçoit le reste. La somme des % doit faire exactement 10 000 bp.
+
+Forfait 9 999,99 € HT, échéancier 33,33 % / 33,33 % / 33,34 % :
+
+| Échéance | % | HT | TVA | TTC |
+| --- | --- | ---: | ---: | ---: |
+| Acompte | 33,33 % | 3 332,99 | 666,60 | 3 999,59 |
+| Jalon maquettes | 33,33 % | 3 332,99 | 666,60 | 3 999,59 |
+| Solde | 33,34 % | 3 334,01 | 666,80 | 4 000,81 |
+| **Total** | 100 % | **9 999,99** | **2 000,00** | **11 999,99** |
+
+Un forfait simple est un échéancier à une seule échéance de 100 %.
+
+Déclencheur d'une échéance : une date, ou un jalon de projet marqué livré. Une échéance due et non facturée apparaît dans « à facturer ».
+
+### R2 — Répartition d'une échéance entre payeurs
+
+Chaque payeur reçoit `floorBp(HT échéance, quote-part)`, sauf le **payeur principal** (par défaut le client du projet), qui reçoit le reste. Chaque payeur reçoit sa propre facture, avec sa propre TVA. La somme des quotes-parts doit faire 10 000 bp.
+
+Acompte de 3 332,99 € HT, OPCO 70 % / client 30 % (client principal) :
+
+| Payeur | Quote-part | HT | TVA | TTC |
+| --- | --- | ---: | ---: | ---: |
+| OPCO | 70 % | 2 333,09 | 466,62 | 2 799,71 |
+| Client (principal) | 30 % | 999,90 | 199,98 | 1 199,88 |
+| **Total** | | **3 332,99** | **666,60** | **3 999,59** |
+
+Les totaux recoupent la ligne « Acompte » de R1 au centime.
+
+### R3 — HT encaissé à partir d'un encaissement TTC
+
+Un encaissement est en TTC ; la répartition se fait sur le HT. Le calcul est **cumulatif par facture**, pour que la somme des HT encaissés retombe exactement sur le HT de la facture :
+
+- `HT cumulé = HT facture` si le cumul encaissé égale le TTC de la facture ;
+- sinon `HT cumulé = divHalfUp(cumul encaissé × HT facture, TTC facture)` ;
+- HT de l'encaissement = HT cumulé après − HT cumulé avant.
+
+Facture client de l'acompte : 999,90 € HT, 1 199,88 € TTC, payée en trois fois.
+
+| Encaissement | TTC | Cumul TTC | HT cumulé | HT de l'encaissement |
+| --- | ---: | ---: | ---: | ---: |
+| E1 | 400,00 | 400,00 | 333,33 | 333,33 |
+| E2 | 400,00 | 800,00 | 666,67 | 333,34 |
+| E3 | 399,88 | 1 199,88 | 999,90 | 333,23 |
+| **Total** | **1 199,88** | | | **999,90** |
+
+Un encaissement qui dépasserait le reste dû de la facture est refusé.
+
+### R4 — Répartition d'un encaissement entre bénéficiaires
+
+Pour chaque encaissement, avec la version de règles **en vigueur à sa date** :
+
+- chaque bénéficiaire reçoit `floorBp(HT encaissement, son %)` ;
+- la société reçoit le reste.
+
+Règles v1 : commercial 10 %, freelance 35 %, apporteur 5 %, associé A 20 %, associé B 20 % (total 90 %, société 10 %).
+
+E1, base 333,33 € HT :
+
+| Bénéficiaire | % | Calcul exact | Part |
+| --- | --- | ---: | ---: |
+| Commercial | 10 % | 33,333 | 33,33 |
+| Freelance | 35 % | 116,6655 | 116,66 |
+| Apporteur | 5 % | 16,6665 | 16,66 |
+| Associé A | 20 % | 66,666 | 66,66 |
+| Associé B | 20 % | 66,666 | 66,66 |
+| Société | reste | 33,333 | 33,36 |
+| **Total** | | | **333,33** |
+
+Les centimes perdus par les bénéficiaires (3 centimes ici) vont à la société. Un bénéficiaire perd au plus 1 centime par encaissement. C'est le choix assumé : personne n'est jamais surpayé.
+
+### R5 — Changement de % en cours de projet
+
+Une nouvelle version de règles prend effet à une date, qui ne peut pas précéder le dernier encaissement réparti du projet. Les parts des encaissements antérieurs restent figées.
+
+Règles v2, en vigueur avant E2 : le freelance passe de 35 % à 30 %, le reste est inchangé (société 15 %).
+
+| Bénéficiaire | E1 (v1) base 333,33 | E2 (v2) base 333,34 | E3 (v2) base 333,23 | Total |
+| --- | ---: | ---: | ---: | ---: |
+| Commercial | 33,33 | 33,33 | 33,32 | 99,98 |
+| Freelance | 116,66 | 100,00 | 99,96 | 316,62 |
+| Apporteur | 16,66 | 16,66 | 16,66 | 49,98 |
+| Associé A | 66,66 | 66,66 | 66,64 | 199,96 |
+| Associé B | 66,66 | 66,66 | 66,64 | 199,96 |
+| Société | 33,36 | 50,03 | 50,01 | 133,40 |
+| **Total** | **333,33** | **333,34** | **333,23** | **999,90** |
+
+### R6 — Remboursement après répartition
+
+Un remboursement est un encaissement négatif, **imputé sur un encaissement précis**. Son HT se calcule avec R3 (le cumul TTC de la facture baisse). Les parts sont recalculées sur le reste net de l'encaissement imputé, avec la version de règles de cet encaissement :
+
+`régularisation = floorBp(base − HT remboursé, %) − floorBp(base, %)`, et la société prend le reste.
+
+Ainsi un remboursement total annule exactement les parts d'origine, au centime.
+
+Remboursement de 150,00 € TTC sur la facture déjà soldée, imputé sur E1 :
+
+- HT cumulé : 1 049,88 € TTC encaissés nets, donc `divHalfUp(104 988 × 99 990, 119 988)` = 874,90 € ; HT remboursé = 999,90 − 874,90 = **125,00 €**.
+- Base nette de E1 : 333,33 − 125,00 = 208,33 €.
+
+| Bénéficiaire | Part E1 | Part recalculée sur 208,33 | Régularisation |
+| --- | ---: | ---: | ---: |
+| Commercial | 33,33 | 20,83 | −12,50 |
+| Freelance | 116,66 | 72,91 | −43,75 |
+| Apporteur | 16,66 | 10,41 | −6,25 |
+| Associé A | 66,66 | 41,66 | −25,00 |
+| Associé B | 66,66 | 41,66 | −25,00 |
+| Société | 33,36 | 20,86 | −12,50 |
+| **Total** | **333,33** | **208,33** | **−125,00** |
+
+Le HT remboursé imputé sur un encaissement ne peut pas dépasser sa base nette.
+
+### R7 — Relevé d'un bénéficiaire
+
+`dû = Σ parts (régularisations comprises)`, `versé = Σ versements HT`, `restant = dû − versé`. Le restant peut être négatif après un remboursement.
+
+Relevé du freelance sur « Projet Démo », après R5, R6 et un versement :
+
+| Ligne | Montant HT |
+| --- | ---: |
+| Part E1 | 116,66 |
+| Part E2 | 100,00 |
+| Part E3 | 99,96 |
+| Régularisation remboursement E1 | −43,75 |
+| **Dû** | **272,87** |
+| Versement du 15/11 (facture FL-0042) | −116,66 |
+| **Restant** | **156,21** |
+
+Contrôle projet : la somme de toutes les parts, société comprise, égale le HT encaissé net (999,90 − 125,00 = 874,90 €). Ce contrôle est un invariant testé.
+
+### R8 — Versement et écriture
+
+Une part est un montant HT. Le versement saisit le HT, la TVA éventuelle de la facture du bénéficiaire, la date, la référence et le mode (`BANQUE` ou `PAIE`).
+
+Versement au freelance de 116,66 € HT + TVA 20 % = 23,33 €, soit 139,99 € TTC (journal AC puis BQ, ou une écriture BQ unique, à trancher avec l'expert-comptable) :
+
+| Compte | Débit | Crédit |
+| --- | ---: | ---: |
+| 604 Sous-traitance (compte du bénéficiaire) | 116,66 | |
+| 44566 TVA déductible | 23,33 | |
+| 512 Banque | | 139,99 |
+| **Total** | **139,99** | **139,99** |
+
+Mode `PAIE` (commercial salarié) : le versement est tracé dans le relevé, sans écriture ; la commission passe par la paie.
+
+### R9 — Abonnement
+
+Montant HT par période (mensuelle, trimestrielle, annuelle), date de début, date de fin facultative. À chaque échéance, une facture brouillon par payeur (découpage R2). Pas de prorata : la première période commence à la date de début. Une période déjà générée ne l'est jamais deux fois (clé d'idempotence `abonnement:<projet>:<période>:<payeur>`).
+
+Exemple : maintenance 150,00 € HT par mois, client seul, du 1er novembre : le 1er de chaque mois, un brouillon de 150,00 € HT, 30,00 € de TVA, 180,00 € TTC.
+
+### R10 — Marge
+
+`marge = HT encaissé net − coûts directs`. Les coûts directs sont les lignes de classe 6 rattachées au projet (voir § 5). La fiche affiche aussi le montant reversé aux bénéficiaires et ce qui reste à la société.
+
+Exemple : HT encaissé net 874,90 €, licences 200,00 € HT, donc marge 674,90 €.
+
+## 5. Modèle de données proposé
+
+Nouveaux modèles (montants en centimes, % en bp) :
+
+- **`ProjectFinance`** (un par projet) : mode (`FORFAIT`, `ECHEANCIER`, `ABONNEMENT`), total HT du contrat, taux de TVA par défaut, échéances (`label`, `percentBp`, déclencheur date ou jalon, statut, factures liées), abonnement (`amountHtCents`, période, début, fin, prochaine échéance), payeurs (`kind` client / tiers / filiale, référence, `shareBp`, payeur principal, coordonnées de facturation, moyen de paiement : virement, CB, prélèvement, Stripe), date d'activation de la répartition.
+- **`Beneficiary`** : type (associé, commercial, freelance, apporteur), utilisateur Venio lié s'il est interne, nom, e-mail, SIRET, assujetti TVA, compte de charge par défaut, mode de versement (`BANQUE` ou `PAIE`).
+- **`ShareTemplate`** : modèle de règles réutilisable (nom, liste bénéficiaire → bp).
+- **`ShareRuleVersion`** : version immuable des règles d'un projet (numéro, date d'effet, règles, auteur, motif).
+- **`ProjectPayment`** (encaissement) : facture, payeur, montant TTC signé (négatif pour un remboursement), HT calculé (R3), moyen, date, référence, encaissement imputé (pour un remboursement), version de règles appliquée, écriture liée, source (`MANUAL` ou `STRIPE`), clé d'idempotence unique.
+- **`ShareAllocation`** : une ligne par bénéficiaire et par encaissement, société comprise (montant signé, bp appliqué, version).
+- **`ShareSettlement`** (versement) : bénéficiaire, projet facultatif, HT, TVA, date, référence de sa facture, mode, écriture liée.
+
+Modifications de l'existant :
+
+- `BillingDocument` : type `CREDIT_NOTE` (avoir) avec lien vers la facture d'origine, champ `payer`, statut `PARTIALLY_PAID`, lien vers l'échéance ou la période d'abonnement.
+- `AccountingLine` : champ analytique facultatif `project`, pour rattacher un coût ou un produit à un projet.
+- `createEntry` et `createSaleEntryFromBilling` : paramètre `session` facultatif pour les transactions.
+- Passage de facture à `PAID` : il crée un `ProjectPayment` pour le reste dû, au lieu de l'écriture en totalité actuelle. Sinon, un même encaissement serait compté deux fois.
+- `Project.billing` devient calculé depuis les factures ; la saisie manuelle disparaît.
+
+## 6. Écritures générées
+
+| Événement | Journal | Écriture | Clé d'idempotence |
+| --- | --- | --- | --- |
+| Facture émise | VE | existante : 411 / 706 / 44571, tiers = payeur | `billing:sale:<facture>` |
+| Avoir émis | VE | inverse de la facture, au prorata des lignes | `billing:credit:<avoir>` |
+| Encaissement | BQ | 512 (ou compte Stripe) / 411, lettrage partiel | `payment:<encaissement>` |
+| Remboursement | BQ | 411 / 512 | `payment:<encaissement>` |
+| Versement `BANQUE` | BQ (ou AC + BQ) | compte du bénéficiaire + 44566 / 512 | `settlement:<versement>` |
+| Coût direct saisi dans l'espace | AC | 6xx + 44566 / 401, ligne analytique projet | `cost:<coût>` |
+
+Chaque génération :
+
+- s'exécute dans **une transaction** avec l'objet métier et ses parts : un encaissement, ses `ShareAllocation` et son écriture passent ensemble ou pas du tout ;
+- est **idempotente** : rejouer la même requête rend le même résultat, sans doublon ;
+- est **refusée** si la date tombe dans un exercice clôturé (423), et l'encaissement n'est alors pas enregistré.
+
+## 7. Suivi et sorties
+
+**Fiche comptable du projet** (onglet du projet) : mode, payeurs, échéancier ou abonnement, factures, encaissements, règles et historique des versions, parts par bénéficiaire, coûts, marge. Indicateurs : facturé, encaissé, reste à facturer, reste à encaisser, en retard.
+
+**Tableau de bord de l'espace** : totaux sur tous les projets, factures en retard avec relance, à facturer (échéances dues, brouillons d'abonnement), prévisionnel de trésorerie sur 6 et 12 mois (échéances à venir, abonnements, factures ouvertes à leur date d'échéance), restant dû par bénéficiaire.
+
+**Relevé bénéficiaire** : à l'écran (rôles compta, ou le bénéficiaire lui-même s'il est interne) et en PDF.
+
+**Exports** : CSV des encaissements, des parts et des versements ; FEC existant (les nouvelles écritures y figurent naturellement) ; relevé PDF.
+
+Définitions :
+
+- facturé = Σ HT des factures émises − Σ HT des avoirs ;
+- reste à facturer = total HT du contrat − facturé (abonnement : périodes échues non facturées) ;
+- reste à encaisser = Σ TTC émis − Σ encaissements nets ;
+- en retard = facture dont l'échéance est passée et le reste à encaisser positif.
+
+## 8. Droits
+
+- `view_accounting` : lecture de tout l'espace. `manage_accounting` : saisie (payeurs, règles, encaissements, versements, coûts).
+- Un utilisateur interne lié à un `Beneficiary` voit **uniquement** son relevé, via une route dédiée (`/me`), jamais les parts des autres ni les montants du projet au-delà de sa base.
+- Un ADMIN sans `view_accounting` ne voit rien de l'espace.
+- Freelances et apporteurs : aucun accès, relevé PDF.
+
+## 9. Découpage en lots
+
+0. **Socle** : `MongoMemoryReplSet` dans les tests, helper de transaction, module `money.ts` (`toCents`, `floorBp`, `divHalfUp`) et tests de R1 à R7 avec les exemples ci-dessus.
+1. **Modèles et règles** : `ProjectFinance`, `Beneficiary`, `ShareTemplate`, `ShareRuleVersion`, routes CRUD, validations (somme des quotes-parts = 100 %, somme des parts ≤ 100 %).
+2. **Facturation** : échéancier vers factures par payeur, avoirs, brouillons d'abonnement.
+3. **Encaissements** : encaissements partiels et remboursements, parts, écritures BQ, le tout en transaction ; raccord avec le passage à `PAID`.
+4. **Versements et coûts** : versements et leurs écritures, coûts directs analytiques, marge.
+5. **Écrans** : fiche projet, tableau de bord, relevés, modèles de règles.
+6. **Exports et Stripe** : CSV, relevé PDF, remontée des paiements Stripe (mini-cadrage dédié au rapprochement facture ↔ paiement Stripe).
+
+## 10. Points ouverts
+
+À valider avec l'expert-comptable, sans bloquer les lots 0 à 3 (les comptes sont paramétrables par bénéficiaire) :
+
+- Compte des parts d'associés : honoraires facturés par leur structure (622) ou compte courant d'associé (455). Une répartition de résultat entre associés projet par projet n'a pas de traduction comptable directe ; il faut savoir comment ils sont réellement payés.
+- Versement : écriture BQ unique, ou facture du bénéficiaire en AC puis règlement en BQ.
+- Compte d'attente Stripe et frais (627).
+
+À trancher plus tard :
+
+- Historique : par défaut, pas de répartition rétroactive. Chaque projet a une date d'activation, et seuls les encaissements postérieurs sont répartis.
+- Exposition dans l'API agent (`/api/v1/agent/*`) et lecture depuis l'app Mac : hors périmètre de ce chantier.
