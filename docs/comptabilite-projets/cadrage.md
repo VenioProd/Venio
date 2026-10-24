@@ -301,3 +301,56 @@ Définitions :
 
 - Historique : par défaut, pas de répartition rétroactive. Chaque projet a une date d'activation, et seuls les encaissements postérieurs sont répartis.
 - Exposition dans l'API agent (`/api/v1/agent/*`) et lecture depuis l'app Mac : hors périmètre de ce chantier.
+
+## 11. Lot 6 — exports et Stripe (cadrage du 25 octobre 2026, à valider)
+
+### Décisions
+
+| Sujet | Décision |
+| --- | --- |
+| Paiement Stripe | Lien de paiement par facture, créé par Venio (Stripe Checkout). |
+| Comptabilisation | Compte d'attente Stripe et frais : le paiement passe par 512800, la commission en 627800, le virement de Stripe vers la banque solde l'attente. |
+| Remboursements | Faits dans le tableau de bord Stripe uniquement. Venio ne déclenche jamais de sortie d'argent chez Stripe ; il enregistre le remboursement que Stripe lui notifie. |
+| Exports | Relevé bénéficiaire PDF, fiche projet PDF, CSV des encaissements et des parts, CSV des versements et des coûts. |
+
+### Paiement par lien
+
+- Chaque facture émise avec un reste dû peut porter un **lien de paiement Venio** permanent : une URL publique à jeton secret (stocké haché, comme les liens des testeurs beta), reprise dans l'e-mail et le PDF. Un clic crée une session Stripe Checkout pour le **reste dû du moment**, en euros, avec l'identifiant de la facture en métadonnée, puis redirige vers Stripe. Une facture soldée, annulée ou couverte par un avoir en brouillon n'ouvre plus de session.
+- Une seule session ouverte à la fois par facture ; toute session précédente est expirée chez Stripe quand une nouvelle est créée ou qu'un autre encaissement arrive.
+- Le paiement remonte par **webhook signé** (`checkout.session.completed`, payé). Venio vérifie la signature, enregistre l'événement une seule fois (identifiant d'événement unique), récupère la commission sur la transaction de solde Stripe, puis enregistre l'encaissement par le circuit existant (R3 et R4, parts comprises), méthode et source `STRIPE`, clé d'idempotence liée au paiement Stripe.
+- Tout cas anormal ne s'enregistre pas en silence : montant supérieur au reste dû, facture annulée ou introuvable, exercice clôturé, devise autre que l'euro, contestation (`charge.dispute.*`). L'événement part dans une **file Stripe à traiter**, visible dans l'espace comptable, avec le motif et un bouton pour rejouer une fois le problème réglé.
+
+### Écritures Stripe
+
+Exemple : la facture client de 1 199,88 € TTC est payée par carte ; Stripe retient 18,25 € de commission.
+
+| Événement | Compte | Débit | Crédit |
+| --- | --- | ---: | ---: |
+| Paiement | 512800 Stripe, compte d'attente | 1 181,63 | |
+| | 627800 Commissions sur paiements | 18,25 | |
+| | 411 Client | | 1 199,88 |
+| Virement Stripe vers la banque | 512000 Banque | 1 181,63 | |
+| | 512800 Stripe, compte d'attente | | 1 181,63 |
+
+Le reste dû de la facture baisse du **brut** (1 199,88 €) : la commission est une charge de Venio, pas une remise au client. Les parts se calculent sur le HT encaissé, comme pour tout encaissement. Un remboursement notifié par Stripe passe 411 au débit et 512800 au crédit pour le montant remboursé ; Stripe ne rend pas la commission, qui reste en charge. Il régularise les parts selon R6, imputé sur l'encaissement Stripe d'origine.
+
+Le compte 512800 est ajouté au plan comptable par défaut. La TVA sur la commission Stripe (facturée depuis l'Irlande, autoliquidation) est **hors périmètre** : à traiter avec l'expert-comptable.
+
+### Sécurité
+
+- Clés Stripe (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) en variables d'environnement uniquement, jamais en base ni dans les journaux. En développement et en tests, mode test Stripe ; les tests simulent Stripe et signent leurs webhooks avec la bibliothèque officielle.
+- La route du webhook lit le corps brut, refuse toute signature invalide ou trop ancienne et ne fait confiance à aucun montant reçu sans l'avoir relu par l'API Stripe.
+- Le lien public de paiement ne révèle que le numéro de la facture, le nom du payeur et le reste dû ; il est limité en débit.
+
+### Exports
+
+- **Relevé bénéficiaire PDF** : dû, versé, restant, détail par projet, parts et versements, sur une période ; dans le style des factures existantes.
+- **Fiche projet PDF** : facturé, encaissé, reste à encaisser, coûts directs, marge, échéancier, parts par bénéficiaire.
+- **CSV** (séparateur point-virgule, montants en euros avec virgule, encodage UTF-8 avec BOM pour Excel) : encaissements et remboursements avec leurs parts ; versements et coûts directs. Filtres par période et par projet.
+- Droits : `view_accounting` ; le relevé personnel PDF est aussi accessible depuis « Mon relevé ».
+
+### Découpage
+
+- **6a — exports** (sans argent en mouvement) : effort `high`.
+- **6b — Stripe** (argent réel entrant, webhook, signature, idempotence) : effort `xhigh` recommandé, contre-audit Astra ciblé sur le webhook et les rapprochements.
+- Avant la mise en prod de 6b : compte Stripe en mode live, webhook déclaré dans le tableau de bord Stripe, clés posées sur le serveur. Ces trois opérations sont à faire par l'utilisateur.
