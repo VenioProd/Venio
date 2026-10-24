@@ -1,0 +1,16 @@
+{
+  "Simulator Target Bundle": "paris.venio.app.watchkitapp",
+  "aps": {
+    "alert": {
+      "title": "Devis consulté",
+      "body": "Maison Calder · Site vitrine"
+    },
+    "sound": "default",
+    "badge": 3,
+    "thread-id": "QUOTE_PROPOSAL_VIEWED",
+    "category": "VENIO_QUOTE"
+  },
+  "type": "QUOTE_PROPOSAL_VIEWED",
+  "link": "/admin/projets/project-calder",
+  "notificationId": "mock-watch-quote-viewed"
+}

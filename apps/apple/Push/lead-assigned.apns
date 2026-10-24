@@ -1,0 +1,16 @@
+{
+  "Simulator Target Bundle": "paris.venio.app",
+  "aps": {
+    "alert": {
+      "title": "Lead assigné",
+      "body": "Maison Calder — Claire Calder"
+    },
+    "sound": "default",
+    "badge": 3,
+    "thread-id": "CRM_LEAD_ASSIGNED",
+    "category": "VENIO_LEAD"
+  },
+  "type": "CRM_LEAD_ASSIGNED",
+  "link": "/admin/crm/leads/lead-calder",
+  "notificationId": "mock-lead-assigned"
+}

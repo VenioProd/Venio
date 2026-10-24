@@ -1,0 +1,105 @@
+name: Venio
+options:
+  minimumXcodeGenVersion: 2.46.0
+  developmentLanguage: fr
+  knownRegions: [fr, en]
+  xcodeVersion: '27.1'
+  deploymentTarget:
+    iOS: '27.0'
+    macOS: '27.0'
+    watchOS: '27.0'
+packages:
+  VenioKit:
+    path: Packages/VenioKit
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+    GENERATE_INFOPLIST_FILE: YES
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+    INFOPLIST_KEY_CFBundleDisplayName: Venio
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  Venio:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: App
+        excludes: [Info-Debug.plist]
+      - Shared
+    info:
+      path: .build/Venio-Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: paris.venio.app
+            CFBundleURLSchemes: [venio]
+        NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
+        NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
+        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app
+        CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]: App/Venio-iOS.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]: App/Venio-iOS.entitlements
+        TARGETED_DEVICE_FAMILY: '1,2'
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+      configs:
+        Debug:
+          INFOPLIST_FILE: App/Info-Debug.plist
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
+      - package: VenioKit
+        product: VenioCommercial
+      - target: VenioWatch
+        platformFilter: iOS
+        embed: true
+  VenioWatch:
+    type: application
+    platform: watchOS
+    sources: [WatchApp, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.watchkitapp
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: paris.venio.app
+        INFOPLIST_KEY_WKWatchKitApp: YES
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
+      - package: VenioKit
+        product: VenioCommercial
+  VenioUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: Venio
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.uitests
+        TEST_TARGET_NAME: Venio
+schemes:
+  VenioE2E:
+    build:
+      targets:
+        Venio: all
+        VenioUITests: [test]
+    test:
+      targets: [VenioUITests]
+  Venio:
+    build:
+      targets:
+        Venio: all
+  VenioWatch:
+    build:
+      targets:
+        VenioWatch: all

@@ -1,0 +1,57 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "NSMicrophoneUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio utilise le micro pour enregistrer vos notes vocales."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio uses the microphone to record your voice notes."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio transcribes voice notes on this device without sending them to a transcription service."
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio utilise la caméra pour lire les cartes de visite."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio uses the camera to read business cards."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
