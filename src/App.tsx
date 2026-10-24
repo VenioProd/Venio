@@ -122,6 +122,11 @@ const MonEspace = lazy(() => import('./pages/admin/mon-espace'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
+const ProjectFinanceDashboard = lazy(() => import('./pages/admin/accounting/projects/ProjectsDashboard'))
+const AccountingBeneficiaries = lazy(() => import('./pages/admin/accounting/projects/BeneficiariesPage'))
+const AccountingBeneficiaryDetail = lazy(() => import('./pages/admin/accounting/projects/BeneficiaryDetail'))
+const AccountingShareTemplates = lazy(() => import('./pages/admin/accounting/projects/ShareTemplatesPage'))
+const MyAccountingStatement = lazy(() => import('./pages/admin/accounting/projects/MyStatementPage'))
 const AccountingSettings = lazy(() => import('./pages/admin/accounting/Settings'))
 const ChartOfAccounts = lazy(() => import('./pages/admin/accounting/ChartOfAccounts'))
 const AccountingJournals = lazy(() => import('./pages/admin/accounting/Journals'))
@@ -287,6 +292,7 @@ function AppShell() {
                     <Route path="decisions" element={<DecisionsList />} />
                     <Route path="mon-espace" element={<MonEspace />} />
                     <Route path="profil" element={<AdminProfile />} />
+                    <Route path="mon-releve" element={<MyAccountingStatement />} />
 
                     {/* Clients */}
                     <Route
@@ -628,6 +634,38 @@ function AppShell() {
                     />
 
                     {/* Comptabilité */}
+                    <Route
+                      path="comptabilite/projets"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                          <ProjectFinanceDashboard />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="comptabilite/beneficiaires"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                          <AccountingBeneficiaries />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="comptabilite/beneficiaires/:id"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                          <AccountingBeneficiaryDetail />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="comptabilite/modeles-repartition"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                          <AccountingShareTemplates />
+                        </RequirePermission>
+                      }
+                    />
                     <Route
                       path="comptabilite"
                       element={

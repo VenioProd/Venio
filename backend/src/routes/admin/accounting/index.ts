@@ -5,6 +5,7 @@ import creditNotesRouter from './creditNotes.js'
 import paymentsRouter from './payments.js'
 import settlementsRouter from './settlements.js'
 import projectFinanceRouter from './projectFinance.js'
+import projectFinanceDashboardRouter from './projectFinanceDashboard.js'
 import settingsRouter from './settings.js'
 import fiscalYearsRouter from './fiscalYears.js'
 import chartOfAccountsRouter from './chartOfAccounts.js'
@@ -22,6 +23,7 @@ import externalTransactionsRouter from './externalTransactions.js'
 // /audit-log reste à porter en Phase G avec le système d'audit étendu.
 const router = express.Router()
 
+router.use('/project-finance', projectFinanceDashboardRouter)
 router.use(creditNotesRouter)
 router.use(paymentsRouter)
 router.use(settlementsRouter)
