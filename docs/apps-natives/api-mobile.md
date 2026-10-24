@@ -401,3 +401,16 @@ Un montant hors taxes par commercial et par mois, en euros, pour l'écran Mes ch
 - Variables d'environnement APNs : `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY` (contenu PEM de la clé `.p8`, les retours à la ligne peuvent être écrits `\n`). Sans elles, l'envoi APNs est désactivé et le reste fonctionne.
 - Reprise des données : `npm --prefix backend run migrate:project-update-timestamps:dry`, puis sans `:dry`. Elle date les mises à jour de projet antérieures à la synchro, sans quoi l'app ne les verrait jamais.
 - Reprise des références de devis : `npm --prefix backend run migrate:quote-references:dry`, puis sans `:dry`, aussitôt après le déploiement. Elle numérote les devis existants dans l'ordre de création ; les devis créés entre le déploiement et la reprise gardent leur numéro, donc l'ordre n'est garanti qu'en lançant la reprise tout de suite.
+
+## 10. Changements du lot 2
+
+Ce que l'app doit prendre en compte par rapport à la première version du contrat :
+
+1. **Devis** : `reference` (`DV-AAAA-NNN`) sur chaque devis, dans les réponses, la synchro (`quotes`) et `quotesViewedNotSigned`.
+2. **Devis sur un lead** : `POST /from-template` accepte `leadId` à la place de `project` (exactement l'un des deux). Le devis a alors `project: null`, `client: null`, `leadId`. Nouvelle route `POST /:id/attach-project`. `send` renvoie `409 PROPOSAL_NOT_ATTACHED` tant que le devis n'a pas de projet. Nouvelles erreurs : `403 LEAD_OUT_OF_SCOPE`, `409 PROPOSAL_ALREADY_ATTACHED`. Filtre `?lead=` sur la liste.
+3. **`canQuote`** : booléen sur chaque élément des synchros `projects` et `leads`.
+4. **Objectifs** : `GET /api/mobile/sales-targets`, et pour les administrateurs `/api/admin/sales-targets` (désormais accessible en Bearer).
+5. **Tickets** : filtre `?project=` et champ `project` facultatif à la création.
+6. **Aujourd'hui** : `meetings` change de forme (`Meeting` au lieu de `Event` : `source`, `startsAt`, `endsAt`, `lead`, `projectId`, `projectName` ; plus de `type`, `date` ni `metadata`). Les interactions acceptent `endsAt` pour un `MEETING`.
+7. **Leads hors ligne** : `Idempotency-Key` facultatif sur `POST /api/admin/crm/leads` et `PATCH /api/admin/crm/leads/:id` ; les `5xx` sont rejoués comme les autres réponses. Réassigner le lead d'un collègue renvoie `403 LEAD_ASSIGNMENT_FORBIDDEN`.
+8. **Push** : `aps.category` (`VENIO_LEAD`, `VENIO_FOLLOW_UP`, `VENIO_QUOTE`, `VENIO_PROJECT`).
