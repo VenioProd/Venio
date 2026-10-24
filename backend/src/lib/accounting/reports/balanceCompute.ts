@@ -1,4 +1,4 @@
-import mongoose, { type Types, type PipelineStage } from 'mongoose'
+import mongoose, { type ClientSession, type Types, type PipelineStage } from 'mongoose'
 import AccountingLine from '../../../models/AccountingLine.js'
 import type { AccountType } from '../../../types/enums.js'
 
@@ -51,9 +51,7 @@ function buildLineMatch(filter: BalanceFilter): Record<string, unknown> {
   if (accountCode) match.accountCode = String(accountCode)
   if (Array.isArray(accountCodePrefixes) && accountCodePrefixes.length > 0) {
     // Filtre par préfixes : un OR de regex ^prefix
-    const escaped = accountCodePrefixes.map((p) =>
-      String(p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    )
+    const escaped = accountCodePrefixes.map((p) => String(p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     match.accountCode = { $regex: `^(${escaped.join('|')})` }
   }
   return match
@@ -86,7 +84,10 @@ interface RawBalanceRow {
  * Filtre uniquement les écritures VALIDATED et LOCKED (jamais DRAFT).
  * balance = debit - credit (positif si débit, négatif si crédit)
  */
-export async function computeAccountBalances(filter: BalanceFilter = {}): Promise<AccountBalance[]> {
+export async function computeAccountBalances(
+  filter: BalanceFilter = {},
+  session?: ClientSession,
+): Promise<AccountBalance[]> {
   const lineMatch = buildLineMatch(filter)
 
   const pipeline: PipelineStage[] = [
@@ -100,10 +101,7 @@ export async function computeAccountBalances(filter: BalanceFilter = {}): Promis
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },
@@ -146,7 +144,7 @@ export async function computeAccountBalances(filter: BalanceFilter = {}): Promis
     { $sort: { accountCode: 1 } },
   ]
 
-  let rows = (await AccountingLine.aggregate(pipeline)) as unknown as RawBalanceRow[]
+  let rows = (await AccountingLine.aggregate(pipeline).session(session ?? null)) as unknown as RawBalanceRow[]
 
   // Filtre éventuel par classe (post-aggregation pour pouvoir s'appuyer sur la jointure COA).
   if (filter.accountClass != null) {
@@ -201,10 +199,7 @@ export async function computeOpeningBalance(params: OpeningBalanceParams = {}): 
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },

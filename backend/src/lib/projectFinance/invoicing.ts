@@ -11,9 +11,9 @@ import { splitPayers, splitSchedule, subscriptionPeriodStart, subscriptionPeriod
 
 export function invoiceAmountsCents(doc: Pick<IBillingDocument, 'subtotal' | 'taxTotal' | 'total'>) {
   const htCents = toCents(doc.subtotal)
-  const taxCents = toCents(doc.taxTotal)
   const ttcCents = toCents(doc.total)
-  if (htCents + taxCents !== ttcCents) throw moneyError('Facture incohérente : HT + TVA ≠ TTC')
+  const taxCents = ttcCents - htCents
+  if (Math.abs(taxCents - toCents(doc.taxTotal)) > 1) throw moneyError('Facture incohérente : HT + TVA ≠ TTC')
   return { htCents, vatCents: taxCents, ttcCents }
 }
 

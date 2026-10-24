@@ -22,7 +22,7 @@ function roundCents(n: number | null | undefined): number {
 
 /**
  * Récupère ou crée l'exercice qui contient une date donnée.
- * Si aucun exercice ouvert ne couvre la date, en crée un par année calendaire.
+ * Si aucun exercice ne couvre la date, en crée un par année calendaire.
  */
 export async function ensureFiscalYearFor(date: Date | string, session?: ClientSession): Promise<IFiscalYear> {
   const target = date instanceof Date ? date : new Date(date)
@@ -32,14 +32,29 @@ export async function ensureFiscalYearFor(date: Date | string, session?: ClientS
   if (existing) return existing
   const year = target.getUTCFullYear()
   const start = new Date(Date.UTC(year, 0, 1))
-  const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59))
+  const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999))
   const code = `FY-${year}`
+  const now = new Date()
   const fiscal = await FiscalYear.findOneAndUpdate(
     { code },
-    { code, label: `Exercice ${year}`, startDate: start, endDate: end, status: 'OUVERT' },
-    { upsert: true, new: true, setDefaultsOnInsert: true, session },
+    {
+      $setOnInsert: {
+        code,
+        label: `Exercice ${year}`,
+        startDate: start,
+        endDate: end,
+        status: 'OUVERT',
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true, timestamps: false, session },
   )
-  // findOneAndUpdate avec upsert+new=true renvoie toujours le doc
+  if (!fiscal || fiscal.startDate > target || fiscal.endDate < target) {
+    const err = new Error('Aucun exercice ne couvre cette date') as Error & { status?: number }
+    err.status = 409
+    throw err
+  }
   return fiscal as IFiscalYear
 }
 
@@ -172,17 +187,15 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     err.status = 423
     throw err
   }
-  if (session) {
-    const updated = await FiscalYear.updateOne(
-      { _id: fiscalYear._id, status: 'OUVERT' },
-      { $currentDate: { updatedAt: true } },
-      { session },
-    )
-    if (updated.matchedCount === 0) {
-      const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
-      err.status = 423
-      throw err
-    }
+  const updated = await FiscalYear.updateOne(
+    { _id: fiscalYear._id, status: 'OUVERT' },
+    { $currentDate: { updatedAt: true } },
+    session ? { session } : undefined,
+  )
+  if (updated.matchedCount === 0) {
+    const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
+    err.status = 423
+    throw err
   }
 
   // Idempotency : si une écriture existe déjà avec cette clé, la retourner

@@ -20,6 +20,7 @@ import ProjectPayment from '../../models/ProjectPayment.js'
 import { issueProjectInvoice } from '../../lib/projectFinance/issueInvoice.js'
 import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
+import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
 
 const router = express.Router()
 
@@ -65,16 +66,13 @@ router.post(
       })
       const budgetAmount = (project as any).budget?.amount ?? 0
       const currency = (project as any).budget?.currency || 'EUR'
-      const lines =
+      const rawLines =
         req.body?.lines && Array.isArray(req.body.lines) && req.body.lines.length > 0
           ? req.body.lines.map((l: any) => ({
               description: l.description || (project as any).name || 'Prestation',
               quantity: Number(l.quantity) || 1,
               unitPrice: Number(l.unitPrice) || budgetAmount,
               taxRate: Number(l.taxRate) || 0,
-              total: Number.isFinite(Number(l.total))
-                ? Number(l.total)
-                : (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
             }))
           : [
               {
@@ -82,13 +80,10 @@ router.post(
                 quantity: 1,
                 unitPrice: budgetAmount,
                 taxRate: 0,
-                total: budgetAmount,
               },
             ]
 
-      const subtotal = lines.reduce((s: number, l: any) => s + (l.total || 0), 0)
-      const taxTotal = lines.reduce((s: number, l: any) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)
-      const total = subtotal + taxTotal
+      const { lines, subtotal, taxTotal, total } = computeBillingTotals(rawLines)
 
       const doc = await BillingDocument.create({
         type: 'QUOTE',
@@ -142,16 +137,13 @@ router.post(
 
       const budgetAmount = (project as any).budget?.amount ?? (project as any).billing?.amountInvoiced ?? 0
       const currency = (project as any).budget?.currency || 'EUR'
-      const lines =
+      const rawLines =
         req.body?.lines && Array.isArray(req.body.lines) && req.body.lines.length > 0
           ? req.body.lines.map((l: any) => ({
               description: l.description || (project as any).name || 'Prestation',
               quantity: Number(l.quantity) || 1,
               unitPrice: Number(l.unitPrice) || budgetAmount,
               taxRate: Number(l.taxRate) || 0,
-              total: Number.isFinite(Number(l.total))
-                ? Number(l.total)
-                : (Number(l.quantity) || 1) * (Number(l.unitPrice) || budgetAmount),
             }))
           : [
               {
@@ -159,13 +151,10 @@ router.post(
                 quantity: 1,
                 unitPrice: budgetAmount,
                 taxRate: 0,
-                total: budgetAmount,
               },
             ]
 
-      const subtotal = lines.reduce((s: number, l: any) => s + (l.total || 0), 0)
-      const taxTotal = lines.reduce((s: number, l: any) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)
-      const total = subtotal + taxTotal
+      const { lines, subtotal, taxTotal, total } = computeBillingTotals(rawLines)
 
       const doc = await BillingDocument.create({
         type: 'INVOICE',
@@ -252,16 +241,18 @@ router.patch(
         doc.note = body.note
       }
       if (body.lines && Array.isArray(body.lines)) {
-        doc.lines = body.lines.map((l: any) => ({
-          description: l.description || '',
-          quantity: Number(l.quantity) || 1,
-          unitPrice: Number(l.unitPrice) || 0,
-          taxRate: Number(l.taxRate) || 0,
-          total: Number.isFinite(Number(l.total)) ? Number(l.total) : 0,
-        }))
-        doc.subtotal = doc.lines.reduce((s: number, l: any) => s + (l.total || 0), 0)
-        doc.taxTotal = doc.lines.reduce((s: number, l: any) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)
-        doc.total = doc.subtotal + doc.taxTotal
+        const totals = computeBillingTotals(
+          body.lines.map((l: any) => ({
+            description: l.description || '',
+            quantity: Number(l.quantity) || 1,
+            unitPrice: Number(l.unitPrice) || 0,
+            taxRate: Number(l.taxRate) || 0,
+          })),
+        )
+        doc.lines = totals.lines
+        doc.subtotal = totals.subtotal
+        doc.taxTotal = totals.taxTotal
+        doc.total = totals.total
       }
       await doc.save()
 

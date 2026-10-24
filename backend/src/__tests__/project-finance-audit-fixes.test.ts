@@ -4,7 +4,7 @@ import mongoose, { type SaveOptions } from 'mongoose'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import request from 'supertest'
-import { writeFile, mkdir, rm, mkdtemp } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, rm, mkdtemp } from 'node:fs/promises'
 import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
 import { createSession } from '../lib/session.js'
 import { resetTransactionSupportCache, runInTransaction } from '../lib/transaction.js'
@@ -15,6 +15,8 @@ import { markInvoicePaid, recordPayment, recordRefund } from '../lib/projectFina
 import { createCreditNote } from '../lib/projectFinance/creditNotes.js'
 import { beneficiaryStatement } from '../lib/projectFinance/rules.js'
 import { toCents } from '../lib/projectFinance/money.js'
+import { invoiceAmountsCents } from '../lib/projectFinance/invoicing.js'
+import { billingVatBreakdown } from '../lib/projectFinance/vatBreakdown.js'
 import { buildFacturXMinimum } from '../lib/facturx.js'
 import billingRoutes from '../routes/admin/billing.js'
 import agentBillingRoutes from '../routes/agent/billing.js'
@@ -520,4 +522,113 @@ it('C13 refuse un relevé dont une somme dépasse les centimes entiers sûrs', (
   ]) {
     expect(() => beneficiaryStatement(allocations!, settlements!)).toThrow(expect.objectContaining({ status: 400 }))
   }
+})
+
+it('conserve le TTC historique fractionnaire dans le PDF, Factur-X, la vente et l’encaissement', async () => {
+  await BillingDocument.updateOne(
+    { _id: invoice._id },
+    {
+      subtotal: 29.985,
+      taxTotal: 5.997,
+      total: 35.982,
+      lines: [{ description: 'Prestation', quantity: 1.5, unitPrice: 19.99, total: 29.985, taxRate: 20 }],
+    },
+  )
+  const doc = await reload()
+  expect(invoiceAmountsCents(doc)).toEqual({ htCents: 2999, vatCents: 599, ttcCents: 3598 })
+  const sale = await createSaleEntryFromBilling(doc)
+  expect(sale.lines.map(({ accountCode, debit, credit }) => ({ accountCode, debit, credit }))).toEqual([
+    { accountCode: '411000', debit: 35.98, credit: 0 },
+    { accountCode: '706000', debit: 0, credit: 29.99 },
+    { accountCode: '445710', debit: 0, credit: 5.99 },
+  ])
+  const xml = buildFacturXMinimum({ doc })
+  expect(xml).toContain('<ram:TaxBasisTotalAmount>29.99</ram:TaxBasisTotalAmount>')
+  expect(xml).toContain('<ram:TaxTotalAmount currencyID="EUR">5.99</ram:TaxTotalAmount>')
+  expect(xml).toContain('<ram:GrandTotalAmount>35.98</ram:GrandTotalAmount>')
+  const { generateBillingPdf } = await vi.importActual<typeof import('../lib/pdfBilling.js')>('../lib/pdfBilling.js')
+  const PDFDocument = (await import('pdfkit')).default
+  const directory = await mkdtemp(path.join(tmpdir(), 'venio-fraction-'))
+  const text = vi.spyOn(PDFDocument.prototype, 'text')
+  try {
+    const file = path.join(directory, 'invoice.pdf')
+    await generateBillingPdf(doc, null, null, file, { settings: { legalName: 'Venio' } })
+    expect((await readFile(file)).subarray(0, 5).toString()).toBe('%PDF-')
+    const rendered = text.mock.calls.map((call) => call[0])
+    const format = (amount: number) =>
+      new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+    for (const amount of [29.99, 5.99, 35.98]) expect(rendered).toContain(format(amount))
+  } finally {
+    text.mockRestore()
+    await rm(directory, { recursive: true, force: true })
+  }
+  await pay(3598)
+  expect((await reload()).status).toBe('PAID')
+  expect((await reload()).total).toBe(35.982)
+})
+
+it('arrondit les nouvelles lignes et la TVA par taux dans les créations et modifications admin et agent', async () => {
+  const lines = [
+    { description: 'Prestation', quantity: 1.5, unitPrice: 19.99, taxRate: 20 },
+    { description: 'A', quantity: 1, unitPrice: 0.03, taxRate: 10 },
+    { description: 'B', quantity: 1, unitPrice: 0.03, taxRate: 10 },
+  ]
+  const check = (doc: { lines: { total: number }[]; subtotal: number; taxTotal: number; total: number }) => {
+    expect(doc.lines.map((line) => line.total)).toEqual([29.99, 0.03, 0.03])
+    expect([doc.subtotal, doc.taxTotal, doc.total]).toEqual([30.05, 6.01, 36.06])
+  }
+  for (const kind of ['quotes', 'invoices']) {
+    const response = await request(app)
+      .post(`/billing/projects/${projectId}/${kind}`)
+      .set('Cookie', cookie)
+      .send({ lines })
+      .expect(201)
+    check(response.body.document)
+    const updated = await request(app)
+      .patch(`/billing/${response.body.document._id}`)
+      .set('Cookie', cookie)
+      .send({ lines })
+      .expect(200)
+    check(updated.body.document)
+  }
+  for (const type of ['QUOTE', 'INVOICE']) {
+    const response = await request(app).post('/agent/billing').send({ type, project: projectId, lines }).expect(201)
+    check(response.body)
+    const updated = await request(app).patch(`/agent/billing/${response.body._id}`).send({ lines }).expect(200)
+    check(updated.body)
+  }
+})
+
+it('rapproche la TVA uniquement sur les bases taxables sans inverser leur signe', async () => {
+  await BillingDocument.updateOne(
+    { _id: invoice._id },
+    {
+      subtotal: 100.09,
+      taxTotal: 0.01,
+      total: 100.1,
+      lines: [
+        { description: 'Exonéré', quantity: 1, unitPrice: 100, total: 100, taxRate: 0 },
+        { description: 'A', quantity: 1, unitPrice: 0.03, total: 0.03, taxRate: 20 },
+        { description: 'B', quantity: 1, unitPrice: 0.06, total: 0.06, taxRate: 10 },
+      ],
+    },
+  )
+  const doc = await reload()
+  expect(billingVatBreakdown(doc)).toEqual([
+    { rate: 20, htCents: 3, taxCents: 1 },
+    { rate: 10, htCents: 6, taxCents: 0 },
+    { rate: 0, htCents: 10000, taxCents: 0 },
+  ])
+  const xml = buildFacturXMinimum({ doc })
+  expect(xml).not.toContain('<ram:CalculatedAmount>-')
+  expect(xml).toContain('<ram:GrandTotalAmount>100.10</ram:GrandTotalAmount>')
+  const sale = await createSaleEntryFromBilling(doc)
+  expect(sale.entry.totalDebit).toBe(100.1)
+  expect(sale.entry.totalCredit).toBe(100.1)
+  for (const invalid of [
+    { lines: [{ total: 100, taxRate: 0 }], subtotal: 100, taxTotal: 0.01, total: 100.01 },
+    { lines: [{ total: 0.01, taxRate: 20 }], subtotal: 0.01, taxTotal: -0.01, total: 0 },
+    { lines: [{ total: -0.01, taxRate: 20 }], subtotal: -0.01, taxTotal: 0.01, total: 0 },
+  ])
+    expect(() => billingVatBreakdown(invalid)).toThrow(expect.objectContaining({ status: 400 }))
 })

@@ -120,7 +120,12 @@ it('génère R1/R2 au centime et réutilise les factures sans consommer de numé
   expect((await Sequence.findOne({ name: 'invoiceNumber' }))!.value).toBe(2)
   expect(await BillingDocument.countDocuments()).toBe(2)
   expect(await AuditLog.countDocuments({ action: 'PROJECT_FINANCE_INVOICES_GENERATE' })).toBe(2)
-  expect(() => invoiceAmountsCents({ subtotal: 1, taxTotal: 0.2, total: 1.21 })).toThrow()
+  expect(invoiceAmountsCents({ subtotal: 1, taxTotal: 0.2, total: 1.21 })).toEqual({
+    htCents: 100,
+    vatCents: 21,
+    ttcCents: 121,
+  })
+  expect(() => invoiceAmountsCents({ subtotal: 1, taxTotal: 0.2, total: 1.22 })).toThrow()
 })
 
 it('deux générations concurrentes créent exactement une facture par payeur', async () => {

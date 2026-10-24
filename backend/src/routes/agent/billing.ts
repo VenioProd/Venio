@@ -9,6 +9,7 @@ import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
 import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
+import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
 
 /**
  * Routes agent pour la facturation (BillingDocument).
@@ -18,10 +19,6 @@ import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
  *
  * Numérotation auto via Sequence (DEV-0001, FAC-0001…). L'agent peut aussi
  * fournir un `number` explicite (rare, pour migration). Le numéro est unique.
- *
- * Calcul des totaux : `subtotal = Σ lines.total`, `taxTotal = Σ lines.total *
- * lines.taxRate/100`, `total = subtotal + taxTotal`. Si `lines.total` n'est
- * pas fourni, on calcule `quantity * unitPrice`.
  *
  * Transitions de statut typées via endpoints dédiés :
  *   POST /:id/issue       DRAFT → ISSUED (+ issuedAt)
@@ -56,7 +53,6 @@ interface RawBillingLine {
   quantity?: unknown
   unitPrice?: unknown
   taxRate?: unknown
-  total?: unknown
 }
 
 interface NormalizedLine {
@@ -80,21 +76,18 @@ function normalizeLines(raw: unknown): NormalizedLine[] {
     const quantity = Number(l.quantity) || 1
     const unitPrice = Number(l.unitPrice) || 0
     const taxRate = Number(l.taxRate) || 0
-    const lineTotal = l.total !== undefined && l.total !== null ? Number(l.total) : quantity * unitPrice
     return {
       description: String(l.description || ''),
       quantity,
       unitPrice,
       taxRate,
-      total: Number.isFinite(lineTotal) ? lineTotal : 0,
+      total: quantity * unitPrice,
     }
   })
 }
 
 function computeTotals(lines: NormalizedLine[]): ComputedTotals {
-  const subtotal = lines.reduce((s, l) => s + (l.total || 0), 0)
-  const taxTotal = lines.reduce((s, l) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)
-  return { lines, subtotal, taxTotal, total: subtotal + taxTotal }
+  return computeBillingTotals(lines)
 }
 
 async function nextBillingNumber(type: 'QUOTE' | 'INVOICE'): Promise<string> {
