@@ -14,7 +14,8 @@ const UUID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12
  *     rejouée telle quelle ;
  *   - même clé pour autre chose : 409 IDEMPOTENCY_CONFLICT ;
  *   - même clé pendant que la première s'exécute : 409 IDEMPOTENCY_IN_PROGRESS.
- * Une erreur serveur (5xx) libère la clé pour qu'un nouvel essai s'exécute.
+ * Toutes les réponses sont rejouées, erreurs serveur comprises : après un 5xx,
+ * l'app vérifie l'état du lead avant de retenter avec une nouvelle clé.
  * À monter après `auth`.
  */
 export default async function idempotentRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -38,22 +39,30 @@ export default async function idempotentRequest(req: Request, res: Response, nex
 
   try {
     const reserved = await UserIdempotencyKey.create(record)
+    let stored = false
+    const store = (body: unknown) => {
+      stored = true
+      return UserIdempotencyKey.updateOne(
+        { _id: reserved._id },
+        { $set: { responseStatus: res.statusCode || 200, responseBody: body } },
+      )
+    }
     const send = res.json.bind(res)
     res.json = (body: unknown) => {
-      const status = res.statusCode || 200
-      const persist =
-        status >= 500
-          ? UserIdempotencyKey.deleteOne({ _id: reserved._id })
-          : UserIdempotencyKey.updateOne(
-              { _id: reserved._id },
-              { $set: { responseStatus: status, responseBody: body } },
-            )
-      persist.then(
+      // Même une erreur serveur est enregistrée : la route a pu écrire avant
+      // d'échouer, et rejouer la requête dupliquerait cette écriture.
+      store(body).then(
         () => send(body),
         () => send(body),
       )
       return res
     }
+    // Une réponse qui ne passe pas par res.json (gestionnaire d'erreurs par
+    // défaut, fichier…) est enregistrée sans corps, pour ne pas laisser la clé
+    // bloquée « en cours ».
+    res.on('finish', () => {
+      if (!stored) store(null).catch(() => {})
+    })
     next()
   } catch (err) {
     if ((err as { code?: number }).code !== 11000) {
@@ -61,12 +70,8 @@ export default async function idempotentRequest(req: Request, res: Response, nex
       return
     }
     const existing = await UserIdempotencyKey.findOne({ userId: record.userId, key: record.key }).lean()
-    // Disparue entre-temps : la première requête a échoué en 5xx et l'a libérée.
-    if (!existing) {
-      res.status(409).json({ error: 'Réessayez dans un instant', code: 'IDEMPOTENCY_IN_PROGRESS' })
-      return
-    }
     if (
+      !existing ||
       existing.method !== record.method ||
       existing.path !== record.path ||
       existing.requestHash !== record.requestHash

@@ -184,7 +184,8 @@ L'app réenregistre son jeton à chaque lancement : Apple peut le changer. La d�
     "alert": { "title": "Devis signé", "body": "Refonte du site Dupont" },
     "sound": "default",
     "badge": 3,
-    "thread-id": "QUOTE_PROPOSAL_SIGNED"
+    "thread-id": "QUOTE_PROPOSAL_SIGNED",
+    "category": "VENIO_QUOTE"
   },
   "type": "QUOTE_PROPOSAL_SIGNED",
   "link": "/admin/projets/6719…",
@@ -192,22 +193,32 @@ L'app réenregistre son jeton à chaque lancement : Apple peut le changer. La d�
 }
 ```
 
+- `category` : la catégorie de notification, qui choisit l'interface longue (Apple Watch, notification développée) et ses actions. Absente pour les types hors du tableau ci-dessous.
 - `type` : le type de notification. `link` : la route web équivalente, que l'app traduit vers son écran. `badge` : le nombre de notifications non lues.
 - Aucune autre donnée : l'app recharge l'objet par l'API à l'ouverture.
 - Les préférences de notification (`/api/notification-preferences`, canal `push`) s'appliquent : un type coupé n'envoie ni Web Push ni APNs.
 
 ### Événements commerciaux
 
-| Type | Destinataire | Quand |
+| Type | Catégorie | Destinataire | Quand |
+| --- | --- | --- | --- |
+| `CRM_LEAD_CREATED` | `VENIO_LEAD` | Super-admins | Un contact arrive par le formulaire du site. |
+| `CRM_LEAD_ASSIGNED` | `VENIO_LEAD` | Le nouvel assigné | Un lead lui est assigné (création ou changement), sauf s'il s'est assigné lui-même. |
+| `LEAD_FOLLOW_UP_DUE` | `VENIO_FOLLOW_UP` | L'assigné | La relance (`nextActionAt`) d'un lead ouvert arrive à échéance. Une seule fois par échéance ; reporter la relance réarme l'alerte. |
+| `QUOTE_PROPOSAL_VIEWED` | `VENIO_QUOTE` | L'auteur du devis | Première consultation par le client. |
+| `QUOTE_PROPOSAL_SIGNED` | `VENIO_QUOTE` | L'auteur du devis | Signature par le client. |
+| `PHASE_VALIDATED`, `PHASE_REVISION_REQUESTED` | `VENIO_PROJECT` | Responsable du projet et super-admins | Le client valide une étape ou demande des retouches. |
+| `CHANGE_REQUEST_CREATED` | `VENIO_PROJECT` | Super-admins | Le client soumet une demande de modification. |
+| `TICKET_CREATED` | `VENIO_PROJECT` | Super-admins | Un ticket est ouvert. |
+
+Les quatre catégories, que l'app déclare (`UNNotificationCategory`) :
+
+| Catégorie | Contenu | Écran conseillé |
 | --- | --- | --- |
-| `CRM_LEAD_CREATED` | Super-admins | Un contact arrive par le formulaire du site. |
-| `CRM_LEAD_ASSIGNED` | Le nouvel assigné | Un lead lui est assigné (création ou changement), sauf s'il s'est assigné lui-même. |
-| `LEAD_FOLLOW_UP_DUE` | L'assigné | La relance (`nextActionAt`) d'un lead ouvert arrive à échéance. Une seule fois par échéance ; reporter la relance réarme l'alerte. |
-| `QUOTE_PROPOSAL_VIEWED` | L'auteur du devis | Première consultation par le client. |
-| `QUOTE_PROPOSAL_SIGNED` | L'auteur du devis | Signature par le client. |
-| `PHASE_VALIDATED`, `PHASE_REVISION_REQUESTED` | Responsable du projet et super-admins | Le client valide une étape ou demande des retouches. |
-| `CHANGE_REQUEST_CREATED` | Super-admins | Le client soumet une demande de modification. |
-| `TICKET_CREATED` | Super-admins | Un ticket est ouvert. |
+| `VENIO_LEAD` | Nouveau lead ou lead assigné : société et contact. | Fiche lead. |
+| `VENIO_FOLLOW_UP` | Relance due : société. | Fiche lead, relance au premier plan. |
+| `VENIO_QUOTE` | Devis consulté ou signé : titre du devis. | Fiche devis. |
+| `VENIO_PROJECT` | Étape, demande de modification ou ticket d'un projet. | Fiche projet. |
 
 Un commercial reçoit les événements projet s'il est responsable du projet. Les demandes de modification et les tickets ne lui sont pas envoyés aujourd'hui.
 
@@ -243,7 +254,7 @@ Rattacher un projet à son lead depuis le CRM ne donne aucun droit. L'app n'a pa
 
 Un `QuoteTemplate` : `{ _id, name, title, intro, questions[], lines[], validityDays, isActive, createdBy, createdAt, updatedAt }`, avec `questions` et `lines` au format de `QuoteProposal`. Les modèles se gèrent depuis le web (`manage_billing`).
 
-Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED`, `CANCELLED`), `firstViewedAt` (première consultation par le client, ou `null`), `expiresAt`, `lines[]`, `project` et `client` (`null` pour un devis sur lead pas encore rattaché), `leadId` (ou `null`) et `createdBy`.
+Un `QuoteProposal` porte notamment `reference` (numéro lisible et unique `DV-AAAA-NNN`, attribué à la création, année de création à Paris ; le numéro continue au-delà de 999), `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED`, `CANCELLED`), `firstViewedAt` (première consultation par le client, ou `null`), `expiresAt`, `lines[]`, `project` et `client` (`null` pour un devis sur lead pas encore rattaché), `leadId` (ou `null`) et `createdBy`.
 
 ## 5. Aujourd'hui
 
@@ -252,7 +263,7 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 ```json
 {
   "followUps": { "overdue": Bucket<Lead>, "today": Bucket<Lead> },
-  "meetings": Bucket<Event>,
+  "meetings": Bucket<Meeting>,
   "hotLeadsWithoutAction": Bucket<Lead>,
   "newInboundLeads": Bucket<Lead>,
   "quotesViewedNotSigned": Bucket<Quote>
@@ -265,7 +276,7 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 | --- | --- | --- |
 | `followUps.overdue` | Mes leads ouverts dont la relance est avant aujourd'hui. | Plus ancienne relance d'abord. |
 | `followUps.today` | Mes leads ouverts dont la relance tombe aujourd'hui. | Par heure de relance. |
-| `meetings` | Mes tâches et rendez-vous du calendrier dus aujourd'hui. | Par échéance. |
+| `meetings` | Mes rendez-vous du jour (interactions `MEETING` dont je suis l'auteur) et mes tâches dues aujourd'hui. | Par heure de début. |
 | `hotLeadsWithoutAction` | Mes leads ouverts `CHAUD` ou `TRES_CHAUD` sans relance prévue. | Plus récemment modifié d'abord. |
 | `newInboundLeads` | Leads du formulaire du site créés depuis 7 jours, non assignés ou assignés à moi, dans mon périmètre CRM de lecture. | Plus récent d'abord. |
 | `quotesViewedNotSigned` | Mes devis envoyés, déjà consultés, pas encore signés. | Plus récemment modifié d'abord. |
@@ -273,8 +284,14 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 « Mes leads » = `assignedTo` est l'utilisateur. Lead ouvert = statut ni `WON` ni `LOST`.
 
 - `Lead` : `{ _id, company, contactName, contactEmail, contactPhone, status, leadTemperature, nextActionAt, assignedTo, source, createdAt, updatedAt }`.
-- `Event` : `{ id, type, title, date, projectId, projectName, metadata }`, la forme du calendrier admin. Si le calendrier est indisponible, la liste est vide et le reste de la réponse arrive quand même.
-- `Quote` : `{ _id, project, client, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`.
+- `Meeting` : `{ id, source, title, startsAt, endsAt, lead, projectId, projectName }`.
+  - `source` : `interaction` (un rendez-vous saisi, section 7) ou `task` (une tâche du calendrier, `id` = `task_<id>`).
+  - `startsAt` : début ISO. Pour une tâche : sa date de début si elle tombe aujourd'hui, sinon son échéance.
+  - `endsAt` : fin ISO, ou `null` (toujours `null` pour une tâche).
+  - `lead` : `{ id, company }` pour un rendez-vous rattaché à un lead, sinon `null`.
+  - `projectId`, `projectName` : pour une tâche, sinon `null`.
+  - Si une des deux sources est indisponible, l'autre arrive quand même.
+- `Quote` : `{ _id, reference, project, client, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`.
 
 ## 6. Synchronisation hors ligne
 
@@ -321,7 +338,8 @@ Corps JSON, ou `multipart/form-data` quand un audio accompagne la note :
 | `body` | oui | texte, transcription vocale faite sur l'appareil comprise ; 1 à 20 000 caractères |
 | `lang` | non | `fr` ou `en`, langue du texte détectée sur l'appareil |
 | `direction` | non | `IN`, `OUT` ou `NONE` (défaut) |
-| `occurredAt` | non | date ISO 8601 ; maintenant par défaut |
+| `occurredAt` | non | date ISO 8601 ; maintenant par défaut. Début du rendez-vous pour `MEETING`. |
+| `endsAt` | non | date ISO 8601, `MEETING` seulement, après `occurredAt` (`400 INVALID_ENDS_AT` sinon) |
 | `subject` | non | 500 caractères au plus |
 | `audio` | non | fichier (multipart) `audio/m4a`, `audio/mp4`, `audio/aac` ou `audio/mpeg`, 15 Mo au plus |
 
@@ -348,10 +366,29 @@ Le rejeu compare le contenu hors audio : renvoyer la même clé avec le même te
 - la même clé, sur la même route avec le même corps, rejoue la réponse enregistrée (même statut, même corps), sans recréer ni remodifier le lead ;
 - la même clé pour une autre route, un autre lead ou un autre corps : `409 IDEMPOTENCY_CONFLICT` ;
 - la même clé pendant que la première requête s'exécute encore : `409 IDEMPOTENCY_IN_PROGRESS`. Réessayer un peu plus tard avec la même clé ;
-- une erreur serveur (5xx) libère la clé : le nouvel essai s'exécute ;
+- toutes les réponses sont rejouées, **erreurs serveur comprises** : une route a pu écrire avant d'échouer, et la rejouer dupliquerait l'écriture. Après un `5xx`, l'app recharge le lead (ou la synchro) pour voir ce qui a été enregistré, puis retente si besoin avec une **nouvelle** clé ;
 - `400 INVALID_IDEMPOTENCY_KEY` si la clé n'est pas un UUID.
 
-Une clé est conservée 24 heures : au-delà, un rejeu crée un nouveau lead. L'app génère une clé par opération (création, ou chaque modification) et la garde avec l'opération en file d'attente jusqu'à la réponse.
+Une clé est conservée 24 heures : au-delà, un rejeu crée un nouveau lead. Si le serveur s'arrête pendant l'exécution, la clé reste « en cours » jusqu'à son expiration.
+
+Réassignation : on ne réassigne un lead que s'il nous est assigné ou n'est assigné à personne ; sinon `403 LEAD_ASSIGNMENT_FORBIDDEN` (le super-admin réassigne tout). L'app génère une clé par opération (création, ou chaque modification) et la garde avec l'opération en file d'attente jusqu'à la réponse.
+
+### Objectif mensuel
+
+Un montant hors taxes par commercial et par mois, en euros, pour l'écran Mes chiffres.
+
+- `GET /api/mobile/sales-targets?from=AAAA-MM&to=AAAA-MM` (tout utilisateur connecté) → `{ "targets": [{ "month": "2026-10", "amount": 15000 }] }` : ses propres objectifs, du plus ancien au plus récent. Mois sans objectif absents. Par défaut le mois en cours (heure de Paris) ; sans `to`, `to` = `from` ; 24 mois au plus. Erreurs : `400 INVALID_MONTH`, `400 INVALID_RANGE`.
+- Réglage par un administrateur (droit `manage_admins`), depuis le web ou l'app :
+  - `GET /api/admin/sales-targets?month=AAAA-MM` → `{ targets: [{ _id, user, month, amount, updatedBy, createdAt, updatedAt }] }` ;
+  - `PUT /api/admin/sales-targets/:userId/:month` `{ "amount": 15000 }` → `200 { target }` (montant ≥ 0, deux décimales au plus) ;
+  - `DELETE /api/admin/sales-targets/:userId/:month` → `204`.
+  - Erreurs : `400 INVALID_MONTH`, `400 INVALID_SALES_TARGET`, `400 INVALID_AMOUNT`, `404 USER_NOT_FOUND` (l'utilisateur doit être un compte interne actif).
+
+### Tickets d'un projet
+
+- `GET /api/admin/tickets?project=<id>` filtre les tickets d'un projet, en plus des filtres existants (`status`, `category`, `priority`). `400` si l'identifiant est invalide.
+- `POST /api/admin/tickets` accepte `project` (facultatif) : le projet doit exister (`404`) et on doit y avoir accès, comme responsable, avec une tâche ou un brief, ou en super-admin (`403`).
+- Les tickets créés avant ce lot n'ont pas de projet.
 
 ## 8. Langues
 
@@ -363,3 +400,4 @@ Une clé est conservée 24 heures : au-delà, un rejeu crée un nouveau lead. L'
 
 - Variables d'environnement APNs : `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY` (contenu PEM de la clé `.p8`, les retours à la ligne peuvent être écrits `\n`). Sans elles, l'envoi APNs est désactivé et le reste fonctionne.
 - Reprise des données : `npm --prefix backend run migrate:project-update-timestamps:dry`, puis sans `:dry`. Elle date les mises à jour de projet antérieures à la synchro, sans quoi l'app ne les verrait jamais.
+- Reprise des références de devis : `npm --prefix backend run migrate:quote-references:dry`, puis sans `:dry`, aussitôt après le déploiement. Elle numérote les devis existants dans l'ordre de création ; les devis créés entre le déploiement et la reprise gardent leur numéro, donc l'ordre n'est garanti qu'en lançant la reprise tout de suite.

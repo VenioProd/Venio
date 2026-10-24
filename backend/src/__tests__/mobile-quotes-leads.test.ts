@@ -21,6 +21,10 @@ const app = express().use(express.json())
 app.use('/api/admin/quote-proposals', quoteRoutes)
 app.use('/api/admin/crm', crmRoutes)
 app.use('/api/mobile/sync', syncRoutes)
+// Comme le gestionnaire d'erreurs de l'application (src/index.ts), en JSON.
+app.use((_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  res.status(500).json({ error: 'Erreur serveur' })
+})
 
 let me: string
 let bearer: string
@@ -166,4 +170,55 @@ it('crée et modifie un lead une seule fois malgré les rejeux', async () => {
     .expect(400)
   // Sans clé, la route se comporte comme avant.
   await request(app).post('/api/admin/crm/leads').set('Authorization', bearer).send({ company: 'Web' }).expect(201)
+})
+
+it('ne rejoue pas une création de lead qui a échoué après avoir écrit', async () => {
+  // Conversion en client impossible (l'email est celui d'un compte interne) :
+  // la route enregistre le lead, puis échoue en 500.
+  const key = randomUUID()
+  const body = { company: 'Gagné', status: 'WON', contactEmail: 'com@test.invalid' }
+  const post = () =>
+    request(app).post('/api/admin/crm/leads').set('Authorization', bearer).set('Idempotency-Key', key).send(body)
+  expect((await post()).status).toBe(500)
+  // Le rejeu rend le même statut au lieu de recréer le lead.
+  expect((await post()).status).toBe(500)
+  expect(await Lead.countDocuments({ company: 'Gagné' })).toBe(1)
+})
+
+it("protège les comptes clients et l'assignation des leads d'un collègue", async () => {
+  // Un client sans propriétaire n'est pas capté en convertissant un lead à son email.
+  const orphan = await User.create({
+    name: 'Orphelin',
+    email: 'orphan@test.invalid',
+    passwordHash: 'secret',
+    role: 'CLIENT',
+  })
+  const mine = await Lead.create({ company: 'À moi', assignedTo: me, status: 'WON', contactEmail: orphan.email })
+  const converted = await request(app)
+    .post(`/api/admin/crm/leads/${mine._id}/convert-to-client`)
+    .set('Authorization', bearer)
+    .expect(201)
+  expect(converted.body.client).not.toHaveProperty('passwordHash')
+  expect((await User.findById(orphan._id).lean())?.ownerAdminId ?? null).toBeNull()
+
+  // Le lead gagné d'un collègue ne se convertit pas.
+  const theirs = await Lead.create({ company: 'Collègue', assignedTo: colleague, status: 'WON' })
+  await request(app)
+    .post(`/api/admin/crm/leads/${theirs._id}/convert-to-client`)
+    .set('Authorization', bearer)
+    .expect(404)
+
+  // Créateur du lead, mais assigné à un collègue : il ne le reprend pas.
+  const handedOver = await Lead.create({ company: 'Transmis', createdBy: me, assignedTo: colleague })
+  const res = await request(app)
+    .patch(`/api/admin/crm/leads/${handedOver._id}`)
+    .set('Authorization', bearer)
+    .send({ assignedTo: me })
+    .expect(403)
+  expect(res.body.code).toBe('LEAD_ASSIGNMENT_FORBIDDEN')
+  await request(app)
+    .patch(`/api/admin/crm/leads/${handedOver._id}`)
+    .set('Authorization', bearer)
+    .send({ notes: 'Toujours modifiable' })
+    .expect(200)
 })

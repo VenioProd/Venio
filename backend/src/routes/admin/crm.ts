@@ -103,7 +103,8 @@ async function ensureClientForWonLead(
     if (!client.companyName && lead.company) updatePayload.companyName = lead.company
     if (!client.serviceType && lead.serviceType) updatePayload.serviceType = lead.serviceType
     if (!client.phone && lead.contactPhone) updatePayload.phone = lead.contactPhone
-    if (!client.ownerAdminId && lead.assignedTo) updatePayload.ownerAdminId = lead.assignedTo
+    // Pas de propriétaire attribué à un compte existant : la propriété d'un
+    // client ouvre des droits (devis), et le lier par son email ne prouve rien.
     if (!client.name && (lead.contactName || lead.company)) {
       updatePayload.name = lead.contactName || lead.company
     }
@@ -327,6 +328,21 @@ router.patch(
       const oldAssignee = lead.assignedTo?.toString() || null
 
       const payload = normalizeLeadPayload(req.body || {})
+
+      // Le lead d'un collègue ne se reprend pas : l'assignation ouvre des
+      // droits (devis), et en être le créateur ne suffit pas pour la changer.
+      if (
+        payload.assignedTo !== undefined &&
+        req.user!.role !== 'SUPER_ADMIN' &&
+        oldAssignee &&
+        oldAssignee !== req.user!.id &&
+        String(payload.assignedTo ?? '') !== oldAssignee
+      ) {
+        return res.status(403).json({
+          error: 'Seul le titulaire du lead ou un super-admin peut le réassigner',
+          code: 'LEAD_ASSIGNMENT_FORBIDDEN',
+        })
+      }
 
       // La liste des motifs est fermée : accepter une valeur hors liste la
       // rendrait ouverte et les statistiques de perte inexploitables.
@@ -861,14 +877,19 @@ router.post(
     try {
       const settings = await CrmSettings.getSettings()
       const lead = await Lead.findById(req.params.id)
-      if (!lead) {
+      if (!lead || isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       if (lead.status !== 'WON') {
         return res.status(400).json({ error: 'Only WON leads can be converted to clients' })
       }
       const alreadyLinked = Boolean(lead.clientAccountId)
-      const client = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+      const linked = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+      // Le compte est relu sans ses secrets : le document chargé porte le hash
+      // du mot de passe et le second facteur.
+      const client = await User.findById(linked._id)
+        .select('-passwordHash -twoFactorSecret -twoFactorRecoveryCodeHashes')
+        .lean()
       return res.status(alreadyLinked ? 200 : 201).json({ client, lead })
     } catch (err) {
       return next(err)
