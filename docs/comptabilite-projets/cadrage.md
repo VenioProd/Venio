@@ -199,6 +199,12 @@ Versement au freelance de 116,66 € HT + TVA 20 % = 23,33 €, soit 139,99 € 
 
 Mode `PAIE` (commercial salarié) : le versement est tracé dans le relevé, sans écriture ; la commission passe par la paie.
 
+**Plafond** : le HT d'un versement ne dépasse jamais le restant du bénéficiaire, tous projets confondus, ni, s'il est rattaché à un projet, le restant sur ce projet. Un restant négatif, né d'un remboursement, bloque donc les versements jusqu'à ce que de nouvelles parts le couvrent.
+
+**Erreur de saisie** : un versement ne se modifie pas ; on l'annule par une contre-passation intégrale (écriture inverse à la date de l'annulation), une seule fois, puis on saisit le bon versement.
+
+Les écritures de versement ne sont pas rattachées au projet en analytique : une part reversée n'est pas un coût direct, elle ne compte pas dans la marge (R10).
+
 ### R9 — Abonnement
 
 Montant HT par période (mensuelle, trimestrielle, annuelle), date de début, date de fin facultative. À chaque échéance, une facture brouillon par payeur (découpage R2). Pas de prorata : la première période commence à la date de début. Une période déjà générée ne l'est jamais deux fois (clé d'idempotence `abonnement:<projet>:<période>:<payeur>`).
