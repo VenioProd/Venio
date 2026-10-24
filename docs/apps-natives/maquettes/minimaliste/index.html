@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accueil · Venio apps natives, piste minimaliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF7; --paper-2:#F1F1EC; --paper-3:#E9E9E3;
+  --ink:#0A0A0A; --ink-2:#4F4F4A; --ink-3:#8C8C84;
+  --line:#E2E2DB; --line-2:#CFCFC7;
+  --accent:#0EA5E9;
+  --f:'Archivo',-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--f);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;line-height:1.35;overflow-x:hidden}
+a{color:inherit}
+.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+
+/* ---- barre de navigation de la piste ---- */
+.top{border-bottom:1px solid var(--ink);padding:16px 24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 32px;background:var(--paper)}
+.top .brand{font-weight:800;letter-spacing:-.02em;font-size:17px;text-decoration:none}
+.top .brand span{color:var(--ink-3);font-weight:500;margin-left:8px}
+.top nav{display:flex;flex-wrap:wrap;gap:4px 22px;margin-left:auto}
+.top nav a{font-size:14px;font-weight:600;text-decoration:none;padding:4px 0;border-bottom:2px solid transparent;color:var(--ink-2)}
+.top nav a:hover{color:var(--ink)}
+.top nav a[aria-current]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* ---- page ---- */
+.wrap{max-width:1480px;margin:0 auto;padding:0 24px}
+.head{padding:56px 0 36px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px 64px;align-items:end;border-bottom:1px solid var(--line)}
+.head .k{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+.head h1{font-size:clamp(40px,6vw,80px);font-weight:800;letter-spacing:-.045em;line-height:.95}
+.head p{font-size:17px;color:var(--ink-2);max-width:520px}
+.head p b{color:var(--ink);font-weight:700}
+.grid{display:grid;gap:56px 32px;padding:48px 0 72px}
+.grid.phones{grid-template-columns:repeat(auto-fill,minmax(min(100%,417px),1fr))}
+.grid.watches{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.grid.wide{grid-template-columns:minmax(0,1fr)}
+.cell{min-width:0}
+.stage{display:flex;justify-content:center}
+.fit{position:relative;flex:none}
+.fit>.dev{position:absolute;left:0;top:0;transform-origin:0 0}
+figcaption{margin-top:20px;max-width:417px;margin-left:auto;margin-right:auto;border-top:1px solid var(--ink);padding-top:12px}
+.wide figcaption{max-width:none;margin-left:0;margin-right:0}
+figcaption .n{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin-right:10px}
+figcaption b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+figcaption p{font-size:14px;color:var(--ink-2);margin-top:6px;max-width:62ch}
+.foot{border-top:1px solid var(--ink);padding:20px 0 40px;display:flex;flex-wrap:wrap;gap:8px 32px;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+@media (max-width:760px){
+  .top{padding:14px 16px}.top nav{margin-left:0;width:100%}
+  .wrap{padding:0 16px}.head{grid-template-columns:1fr;padding:36px 0 28px}
+  .grid{gap:44px 24px;padding:32px 0 48px}
+}
+
+/* ---- éléments communs aux écrans ---- */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--ink);line-height:1.35;white-space:nowrap}
+.tag.fill{background:var(--ink);color:var(--paper)}
+.tag.acc{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.tag.soft{border-color:var(--line-2);color:var(--ink-2)}
+.temp{display:inline-flex;gap:2px;align-items:center}
+.temp s{display:block;width:5px;height:9px;background:var(--line-2);text-decoration:none}
+.temp s.on{background:var(--ink)}
+.av{width:22px;height:22px;border:1px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;border-radius:50%;flex:none;letter-spacing:0}
+.av.none{border-style:dashed;border-color:var(--ink-3);color:var(--ink-3)}
+.bar{height:3px;background:var(--line);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.bar.acc i{background:var(--accent)}
+.mute{color:var(--ink-3)}.mute2{color:var(--ink-2)}
+
+.hero{padding:72px 0 48px;border-bottom:1px solid var(--ink)}
+.hero .k{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:18px}
+.hero h1{font-size:clamp(56px,13vw,176px);font-weight:800;letter-spacing:-.06em;line-height:.88}
+.hero h1 span{color:var(--accent)}
+.lines{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:44px;border-top:1px solid var(--line)}
+.lines div{padding:18px 24px 0 0;font-size:18px;font-weight:600;letter-spacing:-.015em;line-height:1.3;max-width:360px}
+.lines div b{display:block;font-size:12px;letter-spacing:.1em;color:var(--ink-3);margin-bottom:8px}
+.sec{padding:48px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:220px 1fr;gap:24px 48px}
+.sec>h2{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding-top:6px}
+.sw{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:1px solid var(--ink)}
+.sw div{height:150px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;font-size:12px;font-weight:600;border-left:1px solid var(--line)}
+.sw div:first-child{border-left:0}
+.sw div b{font-size:13px;display:block}
+.sw div span{font-weight:500;opacity:.75;font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.note{font-size:14px;color:var(--ink-2);margin-top:14px;max-width:640px}
+.sp1{font-size:clamp(48px,9vw,120px);font-weight:800;letter-spacing:-.06em;line-height:.95}
+.sp1 small{font-size:.4em;letter-spacing:-.03em}
+.wg{display:flex;flex-wrap:wrap;gap:8px 32px;margin-top:20px;font-size:26px;letter-spacing:-.02em}
+.wg span small{font-size:11px;font-family:ui-monospace,Menlo,monospace;color:var(--ink-3);margin-left:6px;letter-spacing:0}
+.sc{display:grid;gap:0;margin-top:26px;border-top:1px solid var(--line)}
+.sc div{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink-3);font-size:12px;font-weight:600}
+.sc div b{color:var(--ink);letter-spacing:-.03em;font-weight:800}
+.rules{list-style:none}
+.rules li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--line);font-size:16px;font-weight:500}
+.rules li:first-child{border-top:0;padding-top:0}
+.rules li i{width:8px;height:8px;background:var(--ink);margin-top:8px;flex:none}
+.rules li i.a{background:var(--accent)}
+.links{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border-top:1px solid var(--ink)}
+.links a{display:flex;flex-direction:column;gap:6px;padding:22px 24px 26px 0;border-bottom:1px solid var(--line);text-decoration:none;position:relative}
+.links a:nth-child(even){padding-left:24px;border-left:1px solid var(--line)}
+.links a .n{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em}
+.links a b{font-size:44px;font-weight:800;letter-spacing:-.05em;line-height:1}
+.links a span{font-size:14px;color:var(--ink-2)}
+.links a .i{position:absolute;right:24px;top:22px;width:22px;height:22px}
+.links a:hover b{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:4px;text-underline-offset:6px}
+.mini2{height:150px;border:1px solid var(--line-2);padding:12px}
+@media (max-width:760px){
+ .lines{grid-template-columns:1fr}.sec{grid-template-columns:1fr;padding:36px 0}
+ .sw{grid-template-columns:repeat(2,1fr)}.sw div{height:96px;border-top:1px solid var(--line)}
+ .links{grid-template-columns:1fr}.links a:nth-child(even){padding-left:0;border-left:0}
+ .links a b{font-size:36px}.hero{padding-top:44px}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></symbol><symbol id="i-docplus" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M12.5 12v6M9.5 15h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-6M11 20V6M17 20v-9M3 20h18"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol><symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M4.5 4.5L3 6M19.5 4.5L21 6"/></symbol><symbol id="i-step" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-chevd" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol><symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-tray" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 5a3.5 3.5 0 0 1 0 6.5M18 14a7 7 0 0 1 4 6"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9"/><path d="M3 21h18"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" fill="currentColor" stroke="none"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7z"/><path d="M10 13l4-4"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol><symbol id="i-euro" viewBox="0 0 24 24"><path d="M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol><symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16"/><rect x="10" y="4" width="5" height="10"/><rect x="17" y="4" width="4" height="13"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3"/></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.8L8 15"/></symbol></defs></svg>
+<header class="top"><a class="brand" href="index.html">Venio<span>Apps natives · Minimaliste</span></a><nav><a href="index.html" aria-current="page">Accueil</a><a href="iphone.html">iPhone</a><a href="ipad.html">iPad</a><a href="watch.html">Watch</a><a href="mac.html">Mac</a></nav></header>
+
+<main class="wrap">
+<section class="hero"><div class="k">Piste 01 · Apps natives Venio · espace commercial et admin</div>
+<h1>Minimaliste<span>.</span></h1>
+<div class="lines"><div><b>01</b>Du blanc cassé, du noir profond, des filets fins. Ni ombre, ni dégradé, des aplats.</div><div><b>02</b>La hiérarchie passe par la taille et la graisse du texte, jamais par la couleur.</div><div><b>03</b>Un seul accent, le bleu sky, réservé à l'action, à l'état actif et aux courbes.</div></div></section>
+
+<section class="sec"><h2>Pages</h2><div class="links">
+<a href="iphone.html"><span class="n">01</span><b>iPhone</b><span>Commercial · 6 écrans · 393 × 852</span><svg class="i"><use href="#i-up"/></svg></a>
+<a href="ipad.html"><span class="n">02</span><b>iPad</b><span>Commercial · kanban et split view · 1194 × 834</span><svg class="i"><use href="#i-up"/></svg></a>
+<a href="watch.html"><span class="n">03</span><b>Watch</b><span>Commercial · 4 écrans · boîtier 46 mm</span><svg class="i"><use href="#i-up"/></svg></a>
+<a href="mac.html"><span class="n">04</span><b>Mac</b><span>Admin · vue business et projets en édition · 1440 × 900</span><svg class="i"><use href="#i-up"/></svg></a>
+</div></section>
+
+<section class="sec"><h2>Palette</h2><div><div class="sw"><div style="background:#FAFAF7;color:#0A0A0A"><b>Papier</b><span>#FAFAF7</span></div><div style="background:#F1F1EC;color:#0A0A0A"><b>Papier 2</b><span>#F1F1EC</span></div><div style="background:#E2E2DB;color:#0A0A0A"><b>Filet</b><span>#E2E2DB</span></div><div style="background:#8C8C84;color:#0A0A0A"><b>Encre 3</b><span>#8C8C84</span></div><div style="background:#4F4F4A;color:#FAFAF7"><b>Encre 2</b><span>#4F4F4A</span></div><div style="background:#0A0A0A;color:#FAFAF7"><b>Encre</b><span>#0A0A0A</span></div><div style="background:#0EA5E9;color:#0A0A0A"><b>Sky Venio</b><span>#0EA5E9</span></div></div>
+<p class="note">Le texte posé sur le bleu sky est toujours en encre : le blanc n'y atteint pas un contraste suffisant. Sur la montre, la palette s'inverse (fond noir, texte blanc cassé).</p></div></section>
+
+<section class="sec"><h2>Typographie</h2><div>
+<div class="sp1">152 500 €</div>
+<div class="wg"><span>Archivo 400<small>texte</small></span><span style="font-weight:500">500</span><span style="font-weight:600">600</span><span style="font-weight:700">700</span><span style="font-weight:800">800<small>titres, chiffres</small></span></div>
+<div class="sc"><div><span>Titre d'écran, 36 à 40 px · 800 · interlettrage −4 %</span><b style="font-size:36px">Pipeline</b></div><div><span>Chiffre clé, 24 à 42 px · 800 · chiffres tabulaires</span><b style="font-size:28px">65 370 €</b></div><div><span>Libellé de section, 11 px · 700 · capitales espacées</span><b style="font-size:11px;letter-spacing:.1em;font-weight:700;color:var(--ink-3)">VALEUR PONDÉRÉE</b></div><div><span>Texte courant, 14 à 16 px · 500</span><b style="font-size:15px;font-weight:500;letter-spacing:0">Relance aujourd'hui à 10:30</b></div></div></div></section>
+
+<section class="sec"><h2>Règles</h2><ul class="rules">
+<li><i class="a"></i>Le bleu sky : actions principales, onglet actif, courbes, avancement. Rien d'autre.</li>
+<li><i></i>Structure native Apple (tab bar, pile de navigation, sidebar, listes), en version épurée.</li>
+<li><i></i>Angles droits pour les filets, les tags et les graphes ; 8 à 14 px de rayon pour les contrôles.</li>
+<li><i></i>Graphes en financial timeline : aire sky avec voile léger, barres de volume, grille discrète, crosshair figé.</li>
+<li><i></i>Données de démo communes aux trois pistes : vendredi 23 octobre 2026, 9:41.</li>
+</ul></section>
+<div class="foot"><span>Venio · Apps natives · piste minimaliste</span><span>Pipeline 152 500 € · pondéré 65 370 €</span></div>
+</main>
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,mx=+(f.dataset.max||1);
+      var av=f.closest('.cell').clientWidth;
+      var s=Math.min(mx,av/w);
+      f.style.width=(w*s)+'px';f.style.height=(h*s)+'px';
+      f.firstElementChild.style.transform='scale('+s+')';
+    });
+  }
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
+})();
+</script>
+</body>
+</html>

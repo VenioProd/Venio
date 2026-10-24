@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mac · Venio apps natives, piste minimaliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF7; --paper-2:#F1F1EC; --paper-3:#E9E9E3;
+  --ink:#0A0A0A; --ink-2:#4F4F4A; --ink-3:#8C8C84;
+  --line:#E2E2DB; --line-2:#CFCFC7;
+  --accent:#0EA5E9;
+  --f:'Archivo',-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--f);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;line-height:1.35;overflow-x:hidden}
+a{color:inherit}
+.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+
+/* ---- barre de navigation de la piste ---- */
+.top{border-bottom:1px solid var(--ink);padding:16px 24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 32px;background:var(--paper)}
+.top .brand{font-weight:800;letter-spacing:-.02em;font-size:17px;text-decoration:none}
+.top .brand span{color:var(--ink-3);font-weight:500;margin-left:8px}
+.top nav{display:flex;flex-wrap:wrap;gap:4px 22px;margin-left:auto}
+.top nav a{font-size:14px;font-weight:600;text-decoration:none;padding:4px 0;border-bottom:2px solid transparent;color:var(--ink-2)}
+.top nav a:hover{color:var(--ink)}
+.top nav a[aria-current]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* ---- page ---- */
+.wrap{max-width:1480px;margin:0 auto;padding:0 24px}
+.head{padding:56px 0 36px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px 64px;align-items:end;border-bottom:1px solid var(--line)}
+.head .k{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+.head h1{font-size:clamp(40px,6vw,80px);font-weight:800;letter-spacing:-.045em;line-height:.95}
+.head p{font-size:17px;color:var(--ink-2);max-width:520px}
+.head p b{color:var(--ink);font-weight:700}
+.grid{display:grid;gap:56px 32px;padding:48px 0 72px}
+.grid.phones{grid-template-columns:repeat(auto-fill,minmax(min(100%,417px),1fr))}
+.grid.watches{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.grid.wide{grid-template-columns:minmax(0,1fr)}
+.cell{min-width:0}
+.stage{display:flex;justify-content:center}
+.fit{position:relative;flex:none}
+.fit>.dev{position:absolute;left:0;top:0;transform-origin:0 0}
+figcaption{margin-top:20px;max-width:417px;margin-left:auto;margin-right:auto;border-top:1px solid var(--ink);padding-top:12px}
+.wide figcaption{max-width:none;margin-left:0;margin-right:0}
+figcaption .n{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin-right:10px}
+figcaption b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+figcaption p{font-size:14px;color:var(--ink-2);margin-top:6px;max-width:62ch}
+.foot{border-top:1px solid var(--ink);padding:20px 0 40px;display:flex;flex-wrap:wrap;gap:8px 32px;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+@media (max-width:760px){
+  .top{padding:14px 16px}.top nav{margin-left:0;width:100%}
+  .wrap{padding:0 16px}.head{grid-template-columns:1fr;padding:36px 0 28px}
+  .grid{gap:44px 24px;padding:32px 0 48px}
+}
+
+/* ---- éléments communs aux écrans ---- */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--ink);line-height:1.35;white-space:nowrap}
+.tag.fill{background:var(--ink);color:var(--paper)}
+.tag.acc{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.tag.soft{border-color:var(--line-2);color:var(--ink-2)}
+.temp{display:inline-flex;gap:2px;align-items:center}
+.temp s{display:block;width:5px;height:9px;background:var(--line-2);text-decoration:none}
+.temp s.on{background:var(--ink)}
+.av{width:22px;height:22px;border:1px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;border-radius:50%;flex:none;letter-spacing:0}
+.av.none{border-style:dashed;border-color:var(--ink-3);color:var(--ink-3)}
+.bar{height:3px;background:var(--line);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.bar.acc i{background:var(--accent)}
+.mute{color:var(--ink-3)}.mute2{color:var(--ink-2)}
+
+.win{width:1440px;height:900px;border:1px solid var(--ink);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:248px 1fr;background:var(--paper);font-size:14px;color:var(--ink)}
+.side{background:var(--paper-2);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column}
+.lights{display:flex;gap:8px;padding:2px 8px 18px}
+.lights i{width:12px;height:12px;border-radius:50%;background:#D3D3CB;display:block}
+.brand2{display:flex;align-items:center;gap:8px;padding:0 10px 18px;font-weight:800;font-size:19px;letter-spacing:-.04em}
+.brand2 .tag{font-size:9.5px}
+.sl2{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:0 10px 8px}
+.it{display:flex;align-items:center;gap:11px;height:36px;padding:0 10px;border-radius:8px;font-size:14.5px;font-weight:500;color:var(--ink-2);position:relative;margin-bottom:2px}
+.it .i{width:19px;height:19px}
+.it .bd{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--ink-3)}
+.it.on{background:var(--paper-3);color:var(--ink);font-weight:700}
+.it.on::before{content:'';position:absolute;left:-12px;top:6px;bottom:6px;width:3px;background:var(--accent)}
+.it.on .bd{color:var(--ink)}
+.me{margin-top:auto;border-top:1px solid var(--line-2);padding:14px 10px 4px;display:flex;align-items:center;gap:10px}
+.me .av2{width:30px;height:30px;background:var(--ink);color:var(--paper);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.me b{display:block;font-size:13.5px}.me span{font-size:11.5px;color:var(--ink-3)}
+.mainw{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tb{flex:none;height:60px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 28px}
+.tb h1{font-size:22px;font-weight:800;letter-spacing:-.035em}
+.tb .cr{font-size:14px;color:var(--ink-3);font-weight:500}
+.tb .sp{flex:1}
+.tb .sg{display:flex;border:1px solid var(--ink);border-radius:8px;padding:2px}
+.tb .sg span{padding:4px 14px;font-size:13px;font-weight:600;border-radius:6px;color:var(--ink-2)}
+.tb .sg .on{background:var(--ink);color:var(--paper);font-weight:700}
+.mb{height:34px;border:1px solid var(--ink);border-radius:9px;padding:0 14px;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px;white-space:nowrap}
+.mb.p{background:var(--accent);border-color:var(--accent)}
+.mb .i{width:16px;height:16px}
+.srch2{height:34px;width:210px;border:1px solid var(--line-2);border-radius:9px;display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--ink-3);font-size:13px}
+.srch2 .i{width:15px;height:15px}
+.ct{flex:1;min-height:0;padding:24px 28px 0;overflow:hidden}
+.k4{display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--ink)}
+.k4>div{padding:12px 0 14px 20px;border-left:1px solid var(--line)}
+.k4>div:first-child{padding-left:0;border-left:0}
+.k4 small{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.k4 b{display:block;font-size:42px;font-weight:800;letter-spacing:-.055em;line-height:1.05;margin-top:4px}
+.k4 em{font-style:normal;font-size:12.5px;color:var(--ink-2)}
+.r2{display:grid;grid-template-columns:1fr 330px;gap:0;margin-top:22px;border-top:1px solid var(--ink)}
+.r2 .cp{padding:12px 24px 0 0;border-right:1px solid var(--line)}
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.sh h2{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.sh em{font-style:normal;font-size:12px;color:var(--ink-3)}
+.cnt{padding:12px 0 0 24px}
+.cr2{display:flex;align-items:center;gap:14px;height:56px;border-top:1px solid var(--line)}
+.cr2:first-of-type{border-top:0}
+.cr2 b.n{font-size:30px;font-weight:800;letter-spacing:-.05em;width:56px}
+.cr2 span{flex:1;font-size:14px;font-weight:600;line-height:1.25}
+.cr2 .i{width:16px;height:16px;color:var(--ink-3)}
+.r3{display:grid;grid-template-columns:1fr 330px;margin-top:22px;border-top:1px solid var(--ink)}
+.tbl{padding:12px 24px 0 0;border-right:1px solid var(--line)}
+table{width:100%;border-collapse:collapse}
+th{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:6px 0 8px;border-bottom:1px solid var(--line)}
+td{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+td.r,th.r{text-align:right}
+td b{font-weight:700}
+tr.tt td{border-bottom:0;font-weight:800;font-size:15px;padding-top:12px}
+.pj{padding:12px 0 0 24px}
+.pj .x{padding:9px 0;border-top:1px solid var(--line)}
+.pj .x:first-of-type{border-top:0;padding-top:0}
+.pj .x .a{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700}
+.pj .x .a span{font-weight:600;color:var(--ink-2)}
+.pj .x .bar{margin-top:7px;height:3px}
+.pj .x small{font-size:11.5px;color:var(--ink-2)}
+
+/* fenêtre 2 */
+.pe{flex:1;min-height:0;display:grid;grid-template-columns:272px 1fr 430px}
+.pl2{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.pl2 .q{padding:16px 20px 8px;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between}
+.pl2 .q b{color:var(--ink)}
+.pi{padding:11px 20px 11px 17px;border-top:1px solid var(--line);border-left:3px solid transparent}
+.pi.sel{background:var(--paper-2);border-left-color:var(--accent)}
+.pi .a{display:flex;justify-content:space-between;font-size:14.5px;font-weight:700;letter-spacing:-.015em}
+.pi .a span{font-size:12px;color:var(--ink-2)}
+.pi .s{font-size:12px;color:var(--ink-2)}
+.pi .bar{margin-top:7px;height:3px}
+.tri{padding:10px 20px;border-top:1px solid var(--line)}
+.tri b{display:block;font-size:13px;font-weight:700;line-height:1.25}
+.tri span{font-size:11.5px;color:var(--ink-2)}
+.tri .tag{margin-top:5px;font-size:9.5px}
+.pd{padding:20px 28px 0;border-right:1px solid var(--line);overflow:hidden;min-height:0}
+.pd .t1{display:flex;justify-content:space-between;align-items:flex-start}
+.pd h2.big{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.pd .s{font-size:13.5px;color:var(--ink-2);margin-top:5px}
+.sec3{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:20px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.sec3 em{font-style:normal;text-transform:none;letter-spacing:.01em;font-size:12px;color:var(--ink-2);font-weight:600}
+.ph2{display:flex;align-items:center;gap:12px;height:40px;border-top:1px solid var(--line);font-size:14px;font-weight:600}
+.ph2 .mk{width:16px;height:16px;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
+.ph2 .mk .i{width:11px;height:11px;stroke-width:3}
+.ph2.d .mk{background:var(--ink);color:var(--paper)}
+.ph2.c .mk{border-color:var(--accent);background:var(--accent)}
+.ph2.c .mk::after{content:'';width:6px;height:6px;background:var(--ink)}
+.ph2.f{color:var(--ink-3);font-weight:500}
+.ph2.f .mk{border-color:var(--line-2)}
+.ph2 .r{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:500}
+.sld{display:flex;align-items:center;gap:14px;padding:4px 0 12px 28px}
+.sld .bar{flex:1;height:4px;background:var(--line-2)}
+.sld .bar i{background:var(--accent)}
+.sld .bar::after{content:'';position:absolute;left:62%;top:-5px;width:2px;height:14px;background:var(--ink)}
+.sld b{font-size:20px;font-weight:800;letter-spacing:-.04em;width:52px;text-align:right}
+.fn{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--ink)}
+.fn div{padding:10px 0 10px 14px;border-left:1px solid var(--line)}
+.fn div:first-child{padding-left:0;border:0}
+.fn small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fn b{font-size:22px;font-weight:800;letter-spacing:-.04em}
+.req{border:1px solid var(--ink);border-radius:12px;padding:14px 16px;margin-top:2px}
+.req .a{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.req b{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.req p{font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.4}
+.req .m{font-size:11.5px;color:var(--ink-3);margin-top:8px}
+.req .acts{display:flex;gap:8px;margin-top:12px}
+.ed{padding:20px 28px 0;overflow:hidden;min-height:0;display:flex;flex-direction:column}
+.ed .hd2{display:flex;justify-content:space-between;align-items:center}
+.ed h3{font-size:22px;font-weight:800;letter-spacing:-.035em}
+.lab{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:16px 0 6px}
+.inp{border:1px solid var(--line-2);border-radius:9px;padding:9px 12px;font-size:14.5px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.inp .i{width:15px;height:15px;color:var(--ink-3)}
+.rt2{border:1px solid var(--ink);border-radius:10px;overflow:hidden}
+.rt2 .tb2{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:6px 8px;font-size:13px;font-weight:800;color:var(--ink-2)}
+.rt2 .tb2 span{width:28px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.rt2 .tb2 span.i2{font-style:italic;font-weight:700}
+.rt2 .tb2 span .i{width:15px;height:15px}
+.rt2 .bd2{padding:12px 14px;font-size:14.5px;line-height:1.5;min-height:112px}
+.rt2 .bd2 u{text-decoration:none;display:inline-block;width:2px;height:16px;background:var(--accent);vertical-align:-3px}
+.tg{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;font-weight:600}
+.tg:first-of-type{border-top:0}
+.tg .sw{margin-left:auto;width:36px;height:20px;border:1.5px solid var(--ink);border-radius:11px;position:relative;background:var(--paper)}
+.tg .sw::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--ink)}
+.tg .sw.on{background:var(--accent);border-color:var(--accent)}
+.tg .sw.on::after{left:18px}
+.pv{border-left:3px solid var(--accent);background:var(--paper-2);padding:10px 14px}
+.pv small{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3)}
+.pv p{font-size:14px;font-weight:600;margin-top:2px;line-height:1.35}
+.eb{display:flex;gap:10px;margin-top:auto;padding:14px 0 22px}
+.eb .mb{flex:1;justify-content:center;height:40px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></symbol><symbol id="i-docplus" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M12.5 12v6M9.5 15h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-6M11 20V6M17 20v-9M3 20h18"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol><symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M4.5 4.5L3 6M19.5 4.5L21 6"/></symbol><symbol id="i-step" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-chevd" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol><symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-tray" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 5a3.5 3.5 0 0 1 0 6.5M18 14a7 7 0 0 1 4 6"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9"/><path d="M3 21h18"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" fill="currentColor" stroke="none"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7z"/><path d="M10 13l4-4"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol><symbol id="i-euro" viewBox="0 0 24 24"><path d="M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol><symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16"/><rect x="10" y="4" width="5" height="10"/><rect x="17" y="4" width="4" height="13"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3"/></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.8L8 15"/></symbol></defs></svg>
+<header class="top"><a class="brand" href="index.html">Venio<span>Apps natives · Minimaliste</span></a><nav><a href="index.html">Accueil</a><a href="iphone.html">iPhone</a><a href="ipad.html">iPad</a><a href="watch.html">Watch</a><a href="mac.html" aria-current="page">Mac</a></nav></header>
+
+<main class="wrap">
+<div class="head"><div><div class="k">Espace admin · macOS · fenêtres 1440 × 900</div><h1>À la table,<br>tout le pilotage.</h1></div>
+<p><b>Raphaël B., administrateur.</b> Le Mac est surtout l'outil admin : une sidebar à sept entrées, de grands chiffres, des tableaux à filets. La courbe d'encaissements suit le style financial timeline, en angles droits et sans glow.</p></div>
+<div class="grid wide"><figure class="cell"><div class="stage"><div class="fit" data-w="1442" data-h="902"><div class="dev win"><aside class="side"><div class="lights"><i></i><i></i><i></i></div><div class="brand2">Venio<span class="tag fill">Admin</span></div><div class="sl2">Administration</div><div class="it on"><svg class="i"><use href="#i-trend"/></svg>Vue business<span class="bd"></span></div><div class="it"><svg class="i"><use href="#i-folder"/></svg>Projets<span class="bd"></span></div><div class="it"><svg class="i"><use href="#i-msg"/></svg>Messagerie<span class="bd">4</span></div><div class="it"><svg class="i"><use href="#i-activity"/></svg>Centre d'activité<span class="bd"></span></div><div class="it"><svg class="i"><use href="#i-ticket"/></svg>Tickets<span class="bd">5</span></div><div class="it"><svg class="i"><use href="#i-code"/></svg>Dev workspace<span class="bd">12</span></div><div class="it"><svg class="i"><use href="#i-users"/></svg>CRM<span class="bd"></span></div><div class="me"><div class="av2">RB</div><div><b>Raphaël B.</b><span>Administrateur</span></div></div></aside><div class="mainw"><div class="tb"><h1>Vue business</h1><span class="cr">Octobre 2026</span><div class="sp"></div><div class="srch2"><svg class="i"><use href="#i-search"/></svg>Rechercher</div><div class="sg"><span class="on">Mois</span><span>Trimestre</span><span>Année</span></div><span class="mb"><svg class="i"><use href="#i-up"/></svg>Exporter</span></div><div class="ct">
+<div class="k4"><div><small>CA facturé du mois</small><b>41 250 €</b><em>octobre 2026</em></div><div><small>Encaissé</small><b>33 800 €</b><em>sept. : 44 300 €</em></div><div><small>Trésorerie disponible</small><b>86 420 €</b><em>tous comptes</em></div><div><small>Factures en retard</small><b>7 450 €</b><em>3 factures</em></div></div>
+<div class="r2"><div class="cp"><div class="sh"><h2>Encaissements · cumul depuis mai</h2><em>courbe : cumul · barres : encaissé par mois</em></div><div style="width:770px;height:258px"><svg viewBox="0 0 770 258" width="100%" height="100%" font-family="Archivo,Helvetica,Arial,sans-serif" font-size="11.5" preserveAspectRatio="none" style="display:block"><defs><linearGradient id="gmac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0EA5E9" stop-opacity=".16"/><stop offset="1" stop-color="#0EA5E9" stop-opacity="0"/></linearGradient></defs><line x1="6" x2="706" y1="128.0" y2="128.0" stroke="#E2E2DB" stroke-width="1"/><text x="714" y="132.0" fill="#8C8C84">50 k€</text><line x1="6" x2="706" y1="98.0" y2="98.0" stroke="#E2E2DB" stroke-width="1"/><text x="714" y="102.0" fill="#8C8C84">100 k€</text><line x1="6" x2="706" y1="68.0" y2="68.0" stroke="#E2E2DB" stroke-width="1"/><text x="714" y="72.0" fill="#8C8C84">150 k€</text><line x1="6" x2="706" y1="38.0" y2="38.0" stroke="#E2E2DB" stroke-width="1"/><text x="714" y="42.0" fill="#8C8C84">200 k€</text><line x1="6" x2="706" y1="202.0" y2="202.0" stroke="#E2E2DB" stroke-width="1"/><text x="714" y="206.0" fill="#8C8C84">25 k€</text><line x1="6" x2="706" y1="226.0" y2="226.0" stroke="#0A0A0A" stroke-width="1"/><rect x="35.2" y="198.7" width="58.3" height="27.3" fill="#D6D6CE"/><rect x="151.8" y="192.3" width="58.3" height="33.7" fill="#D6D6CE"/><rect x="268.5" y="204.0" width="58.3" height="22.0" fill="#D6D6CE"/><rect x="385.2" y="196.6" width="58.3" height="29.4" fill="#D6D6CE"/><rect x="501.8" y="183.5" width="58.3" height="42.5" fill="#D6D6CE"/><rect x="618.5" y="193.6" width="58.3" height="32.4" fill="#0A0A0A"/><path d="M64.3,158.0 L64.3,141.0 L181.0,119.9 L297.7,106.2 L414.3,87.8 L531.0,61.2 L647.7,40.9 L647.7,158.0 Z" fill="url(#gmac)"/><polyline fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linejoin="miter" points="64.3,141.0 181.0,119.9 297.7,106.2 414.3,87.8 531.0,61.2 647.7,40.9"/><rect x="61.8" y="138.5" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="178.5" y="117.4" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="295.2" y="103.7" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="411.8" y="85.3" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="528.5" y="58.7" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><text x="64.3" y="254" text-anchor="middle" fill="#8C8C84" font-weight="500">mai</text><text x="181.0" y="254" text-anchor="middle" fill="#8C8C84" font-weight="500">juin</text><text x="297.7" y="254" text-anchor="middle" fill="#8C8C84" font-weight="500">juil.</text><text x="414.3" y="254" text-anchor="middle" fill="#8C8C84" font-weight="500">août</text><text x="531.0" y="254" text-anchor="middle" fill="#8C8C84" font-weight="500">sept.</text><text x="647.7" y="254" text-anchor="middle" fill="#0A0A0A" font-weight="700">oct.</text><line x1="647.7" x2="647.7" y1="20" y2="226.0" stroke="#0A0A0A" stroke-width="1" stroke-dasharray="3 3"/><line x1="6" x2="706" y1="40.9" y2="40.9" stroke="#0A0A0A" stroke-width="1" stroke-dasharray="3 3"/><rect x="642.7" y="35.9" width="10" height="10" fill="#0EA5E9" stroke="#FAFAF7" stroke-width="2"/><rect x="708" y="31.9" width="58" height="18" fill="#0A0A0A"/><text x="737.0" y="45.0" text-anchor="middle" fill="#FAFAF7" font-weight="700">195,1 k€</text><rect x="516.6" y="0" width="189.4" height="19" fill="#0A0A0A"/><text x="611.3" y="13" text-anchor="middle" fill="#FAFAF7" font-weight="600">oct. · +33 800 € encaissés</text></svg></div></div>
+<div class="cnt"><div class="sh"><h2>À traiter</h2></div>
+<div class="cr2"><b class="n">5</b><span>Tickets ouverts<br><em style="font-style:normal;font-weight:500;color:var(--ink-2);font-size:12px">dont Boulangerie Rivière</em></span><svg class="i"><use href="#i-chev"/></svg></div>
+<div class="cr2"><b class="n">3</b><span>Demandes de modification à trier</span><svg class="i"><use href="#i-chev"/></svg></div>
+<div class="cr2"><b class="n">12</b><span>Issues de dev en cours</span><svg class="i"><use href="#i-chev"/></svg></div>
+<div class="cr2"><b class="n">4</b><span>Messages non lus</span><svg class="i"><use href="#i-chev"/></svg></div></div></div>
+<div class="r3"><div class="tbl"><div class="sh"><h2>Factures en retard · 3</h2><em>échéances dépassées au 23 octobre</em></div>
+<table><tr><th>Facture</th><th>Client</th><th>Échéance</th><th>Retard</th><th class="r">Montant</th><th></th></tr><tr><td><b>FA-2026-101</b></td><td>Pharmacie du Parc</td><td>15 sept.</td><td><span class="tag fill">38 j</span></td><td class="r"><b>1 400 €</b></td><td class="r"><span class="mb" style="height:28px;font-size:12px">Relancer</span></td></tr><tr><td><b>FA-2026-108</b></td><td>Studio Marchand</td><td>30 sept.</td><td><span class="tag fill">23 j</span></td><td class="r"><b>3 650 €</b></td><td class="r"><span class="mb" style="height:28px;font-size:12px">Relancer</span></td></tr><tr><td><b>FA-2026-112</b></td><td>Librairie Duval</td><td>9 oct.</td><td><span class="tag fill">14 j</span></td><td class="r"><b>2 400 €</b></td><td class="r"><span class="mb" style="height:28px;font-size:12px">Relancer</span></td></tr><tr class="tt"><td colspan="4">Total en retard</td><td class="r">7 450 €</td><td></td></tr></table></div>
+<div class="pj"><div class="sh"><h2>Projets en construction · 4</h2></div><div class="x"><div class="a">Agence Pilote<span>62 %</span></div><div class="bar"><i style="width:62%"></i></div><small>Développement · livraison 28 nov.</small></div><div class="x"><div class="a">Boulangerie Rivière<span>85 %</span></div><div class="bar"><i style="width:85%"></i></div><small>Recette · livraison 6 nov.</small></div><div class="x"><div class="a">Cabinet Morel<span>30 %</span></div><div class="bar"><i style="width:30%"></i></div><small>Conception · livraison 15 déc.</small></div><div class="x"><div class="a">Lumen Formation<span>96 %</span></div><div class="bar acc"><i style="width:96%"></i></div><small>Mise en ligne · livraison 30 oct.</small></div></div></div>
+</div></div></div></div></div><figcaption><span class="n">01</span><b>Vue business et trésorerie</b><p>Quatre indicateurs du mois, les encaissements de mai à octobre en financial timeline, les compteurs à traiter, les trois factures en retard (7 450 €) et l'état des projets.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="1442" data-h="902"><div class="dev win"><aside class="side"><div class="lights"><i></i><i></i><i></i></div><div class="brand2">Venio<span class="tag fill">Admin</span></div><div class="sl2">Administration</div><div class="it"><svg class="i"><use href="#i-trend"/></svg>Vue business<span class="bd"></span></div><div class="it on"><svg class="i"><use href="#i-folder"/></svg>Projets<span class="bd"></span></div><div class="it"><svg class="i"><use href="#i-msg"/></svg>Messagerie<span class="bd">4</span></div><div class="it"><svg class="i"><use href="#i-activity"/></svg>Centre d'activité<span class="bd"></span></div><div class="it"><svg class="i"><use href="#i-ticket"/></svg>Tickets<span class="bd">5</span></div><div class="it"><svg class="i"><use href="#i-code"/></svg>Dev workspace<span class="bd">12</span></div><div class="it"><svg class="i"><use href="#i-users"/></svg>CRM<span class="bd"></span></div><div class="me"><div class="av2">RB</div><div><b>Raphaël B.</b><span>Administrateur</span></div></div></aside><div class="mainw"><div class="tb"><h1>Projets</h1><span class="cr">Agence Pilote</span><div class="sp"></div><span class="mb"><svg class="i"><use href="#i-eye"/></svg>Voir côté client</span><span class="mb">Enregistrer le brouillon</span><span class="mb p"><svg class="i"><use href="#i-send"/></svg>Publier</span></div><div class="pe">
+<div class="pl2"><div class="q"><span>Projets</span><b>4</b></div><div class="pi sel"><div class="a">Agence Pilote<span>62 %</span></div><div class="s">Plateforme de réservation</div><div class="bar acc"><i style="width:62%"></i></div></div><div class="pi"><div class="a">Boulangerie Rivière<span>85 %</span></div><div class="s">Site + click & collect</div><div class="bar"><i style="width:85%"></i></div></div><div class="pi"><div class="a">Cabinet Morel<span>30 %</span></div><div class="s">Espace client</div><div class="bar"><i style="width:30%"></i></div></div><div class="pi"><div class="a">Lumen Formation<span>96 %</span></div><div class="s">Plateforme e-learning</div><div class="bar"><i style="width:96%"></i></div></div><div class="q" style="margin-top:14px;border-top:1px solid var(--ink);padding-top:14px"><span>Demandes à trier</span><b>3</b></div><div class="tri"><b>Calendrier de disponibilités partagé</b><span>Agence Pilote</span><br><span class="tag fill">À chiffrer</span></div><div class="tri"><b>Export PDF des documents déposés</b><span>Cabinet Morel</span><br><span class="tag">Soumise</span></div><div class="tri"><b>Notification e-mail à chaque dépôt</b><span>Cabinet Morel</span><br><span class="tag">Soumise</span></div></div>
+<div class="pd"><div class="t1"><div><h2 class="big">Agence Pilote</h2><div class="s">Plateforme de réservation · P-2026-018 · livraison 28 nov. 2026</div></div><span class="tag">Développement · 3/5</span></div>
+<div class="sec3"><span>Phases</span><em>Marquer la phase terminée</em></div><div class="ph2 d"><span class="mk"><svg class="i"><use href="#i-check"/></svg></span>Cadrage<span class="r">terminée</span></div><div class="ph2 d"><span class="mk"><svg class="i"><use href="#i-check"/></svg></span>Conception<span class="r">terminée</span></div><div class="ph2 c"><span class="mk"></span>Développement<span class="r">en cours · 62 %</span></div><div class="sld"><div class="bar"><i style="width:62%"></i></div><b>62 %</b></div><div class="ph2 f"><span class="mk"></span>Recette<span class="r">à venir</span></div><div class="ph2 f"><span class="mk"></span>Mise en ligne<span class="r">à venir</span></div>
+<div class="sec3" style="padding-top:14px"><span>Finances</span><em>Facturation partielle</em></div>
+<div class="fn"><div><small>Budget</small><b>18 400 €</b></div><div><small>Facturé</small><b>9 200 €</b></div><div><small>Reste</small><b>9 200 €</b></div></div>
+<div class="sec3"><span>Demande de modification à trier</span><em>1 sur 3</em></div>
+<div class="req"><div class="a"><b>Calendrier de disponibilités partagé</b><span class="tag fill">À chiffrer</span></div>
+<p>Le client souhaite afficher dans la plateforme un calendrier de disponibilités commun à toutes ses équipes.</p>
+<div class="m">Soumise par Agence Pilote · 0 ticket ouvert</div>
+<div class="acts"><span class="mb p">Chiffrer</span><span class="mb">Convertir en ticket</span><span class="mb">Refuser</span></div></div></div>
+<div class="ed"><div class="hd2"><h3>Mise à jour client</h3><span class="tag soft">Brouillon</span></div>
+<div class="lab">Phase concernée</div><div class="inp">Développement · 3/5<svg class="i"><use href="#i-chevd"/></svg></div>
+<div class="lab">Titre</div><div class="inp">Développement en cours</div>
+<div class="lab">Message</div><div class="rt2"><div class="tb2"><span>B</span><span class="i2">I</span><span><svg class="i"><use href="#i-list"/></svg></span><span><svg class="i"><use href="#i-send"/></svg></span></div><div class="bd2">Le module de réservation est en cours de développement. Nous vous présenterons une première version dans les prochains jours.<u></u></div></div>
+<div class="lab">Diffusion</div>
+<div class="tg">Publier dans l'espace client<span class="sw on"></span></div>
+<div class="tg">Notifier le client par e-mail<span class="sw on"></span></div>
+<div class="lab">Aperçu côté client</div>
+<div class="pv"><small>23 OCT.</small><p>Développement en cours</p></div>
+<div class="lab">Dernière publication</div>
+<div class="pv" style="border-left-color:var(--line-2)"><small>20 OCT.</small><p>Maquettes validées, début du développement</p></div>
+<div class="eb"><span class="mb">Enregistrer le brouillon</span><span class="mb p"><svg class="i"><use href="#i-send"/></svg>Publier au client</span></div></div>
+</div></div></div></div></div><figcaption><span class="n">02</span><b>Projets en édition</b><p>Liste des projets et demandes à trier à gauche, fiche d'Agence Pilote au centre (phases, avancement, finances, demande à chiffrer), éditeur de mise à jour client à droite.</p></figcaption></figure></div>
+<div class="foot"><span>Données : donnees-demo.md</span><span>CA facturé 41 250 € · encaissé 33 800 € · trésorerie 86 420 €</span></div>
+</main>
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,mx=+(f.dataset.max||1);
+      var av=f.closest('.cell').clientWidth;
+      var s=Math.min(mx,av/w);
+      f.style.width=(w*s)+'px';f.style.height=(h*s)+'px';
+      f.firstElementChild.style.transform='scale('+s+')';
+    });
+  }
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
+})();
+</script>
+</body>
+</html>

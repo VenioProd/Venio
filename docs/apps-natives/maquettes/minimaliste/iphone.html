@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iPhone · Venio apps natives, piste minimaliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF7; --paper-2:#F1F1EC; --paper-3:#E9E9E3;
+  --ink:#0A0A0A; --ink-2:#4F4F4A; --ink-3:#8C8C84;
+  --line:#E2E2DB; --line-2:#CFCFC7;
+  --accent:#0EA5E9;
+  --f:'Archivo',-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--f);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;line-height:1.35;overflow-x:hidden}
+a{color:inherit}
+.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+
+/* ---- barre de navigation de la piste ---- */
+.top{border-bottom:1px solid var(--ink);padding:16px 24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 32px;background:var(--paper)}
+.top .brand{font-weight:800;letter-spacing:-.02em;font-size:17px;text-decoration:none}
+.top .brand span{color:var(--ink-3);font-weight:500;margin-left:8px}
+.top nav{display:flex;flex-wrap:wrap;gap:4px 22px;margin-left:auto}
+.top nav a{font-size:14px;font-weight:600;text-decoration:none;padding:4px 0;border-bottom:2px solid transparent;color:var(--ink-2)}
+.top nav a:hover{color:var(--ink)}
+.top nav a[aria-current]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* ---- page ---- */
+.wrap{max-width:1480px;margin:0 auto;padding:0 24px}
+.head{padding:56px 0 36px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px 64px;align-items:end;border-bottom:1px solid var(--line)}
+.head .k{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+.head h1{font-size:clamp(40px,6vw,80px);font-weight:800;letter-spacing:-.045em;line-height:.95}
+.head p{font-size:17px;color:var(--ink-2);max-width:520px}
+.head p b{color:var(--ink);font-weight:700}
+.grid{display:grid;gap:56px 32px;padding:48px 0 72px}
+.grid.phones{grid-template-columns:repeat(auto-fill,minmax(min(100%,417px),1fr))}
+.grid.watches{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.grid.wide{grid-template-columns:minmax(0,1fr)}
+.cell{min-width:0}
+.stage{display:flex;justify-content:center}
+.fit{position:relative;flex:none}
+.fit>.dev{position:absolute;left:0;top:0;transform-origin:0 0}
+figcaption{margin-top:20px;max-width:417px;margin-left:auto;margin-right:auto;border-top:1px solid var(--ink);padding-top:12px}
+.wide figcaption{max-width:none;margin-left:0;margin-right:0}
+figcaption .n{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin-right:10px}
+figcaption b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+figcaption p{font-size:14px;color:var(--ink-2);margin-top:6px;max-width:62ch}
+.foot{border-top:1px solid var(--ink);padding:20px 0 40px;display:flex;flex-wrap:wrap;gap:8px 32px;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+@media (max-width:760px){
+  .top{padding:14px 16px}.top nav{margin-left:0;width:100%}
+  .wrap{padding:0 16px}.head{grid-template-columns:1fr;padding:36px 0 28px}
+  .grid{gap:44px 24px;padding:32px 0 48px}
+}
+
+/* ---- éléments communs aux écrans ---- */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--ink);line-height:1.35;white-space:nowrap}
+.tag.fill{background:var(--ink);color:var(--paper)}
+.tag.acc{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.tag.soft{border-color:var(--line-2);color:var(--ink-2)}
+.temp{display:inline-flex;gap:2px;align-items:center}
+.temp s{display:block;width:5px;height:9px;background:var(--line-2);text-decoration:none}
+.temp s.on{background:var(--ink)}
+.av{width:22px;height:22px;border:1px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;border-radius:50%;flex:none;letter-spacing:0}
+.av.none{border-style:dashed;border-color:var(--ink-3);color:var(--ink-3)}
+.bar{height:3px;background:var(--line);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.bar.acc i{background:var(--accent)}
+.mute{color:var(--ink-3)}.mute2{color:var(--ink-2)}
+
+.phone{width:417px;height:876px;padding:12px;background:var(--ink);border-radius:68px}
+.screen{width:393px;height:852px;border-radius:56px;overflow:hidden;background:var(--paper);position:relative;display:flex;flex-direction:column;font-size:15px;color:var(--ink)}
+.island{position:absolute;top:11px;left:50%;margin-left:-62px;width:124px;height:36px;border-radius:20px;background:#000;z-index:5}
+.sb{flex:none;height:54px;display:flex;justify-content:space-between;align-items:center;padding:14px 30px 0 52px;font-weight:700;font-size:16.5px}
+.sb .r{display:flex;gap:6px;align-items:center}
+.home{position:absolute;bottom:8px;left:50%;margin-left:-67px;width:134px;height:5px;border-radius:3px;background:var(--ink)}
+.nav{flex:none;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px 0 14px}
+.nbtn{display:inline-flex;align-items:center;gap:1px;font-size:16px;font-weight:600}
+.nbtn .i{width:22px;height:22px}
+.nbtn.dis{color:var(--ink-3)}
+.nsq{width:34px;height:34px;border:1px solid var(--ink);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.nsq.acc{background:var(--accent);border-color:var(--accent)}
+.nsq .i{width:20px;height:20px}
+.nr{display:flex;gap:8px}
+.ntitle{font-size:16px;font-weight:700}
+.lt{flex:none;padding:2px 20px 12px}
+.lt .k{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.lt h1{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.lt .s{font-size:14px;color:var(--ink-2);margin-top:6px}
+.scr{flex:1;min-height:0;overflow:hidden;position:relative}
+.tabs{flex:none;height:83px;border-top:1px solid var(--line);display:flex;padding:0 6px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:10px;font-size:10px;font-weight:500;color:var(--ink-3);position:relative}
+.tab .i{width:25px;height:25px;stroke-width:1.6}
+.tab.on{color:var(--ink);font-weight:700}
+.tab.on .i{stroke-width:2}
+.tab.on::before{content:'';position:absolute;top:-1px;left:50%;margin-left:-14px;width:28px;height:2px;background:var(--accent)}
+
+.sec{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 7px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.sec b{color:var(--ink);font-weight:800}
+.row{display:flex;gap:14px;padding:11px 20px;border-top:1px solid var(--line);align-items:center}
+.row .t{width:48px;font-size:15px;font-weight:800;letter-spacing:-.01em;flex:none}
+.row .t.sm{font-size:12.5px;line-height:1.15}
+.row .ico{width:48px;flex:none;display:flex;align-items:center}
+.row .ico .i{width:22px;height:22px}
+.row .m{flex:1;min-width:0}
+.row .m b{display:block;font-size:16px;font-weight:700;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .r{flex:none;display:flex;align-items:center;gap:8px;color:var(--ink-3)}
+.row .r .i{width:15px;height:15px}
+.mini{border:1px solid var(--ink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap}
+.mini.acc{background:var(--accent);border-color:var(--accent)}
+.seg{display:flex;border:1px solid var(--ink);border-radius:10px;padding:2px;margin:0 20px}
+.seg span{flex:1;text-align:center;padding:6px 0;font-size:13.5px;font-weight:600;border-radius:8px;color:var(--ink-2)}
+.seg .on{background:var(--ink);color:var(--paper);font-weight:700}
+.kpis{display:flex;gap:0;padding:10px 20px 8px;margin-top:0}
+.kpis>div{flex:1}
+.kpis>div+div{border-left:1px solid var(--line);padding-left:16px}
+.kpis small{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.kpis b{display:block;font-size:27px;font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-top:2px}
+.kpis em{font-style:normal;font-size:12px;color:var(--ink-2)}
+.mine{padding:0 20px 8px;font-size:12.5px;color:var(--ink-2)}
+.mine b{color:var(--ink)}
+.stg{display:flex;justify-content:space-between;align-items:flex-end;padding:8px 20px 5px;background:var(--paper-2);border-top:1px solid var(--line)}
+.stg b{font-size:13.5px;font-weight:800;letter-spacing:-.01em}
+.stg b i{font-style:normal;font-weight:600;color:var(--ink-3);margin-left:6px;font-size:12px}
+.stg span{display:block;font-size:11.5px;color:var(--ink-2)}
+.stg .r{text-align:right}
+.stg .r b{font-size:14px}
+.ld{display:flex;gap:12px;align-items:center;padding:6px 20px;border-top:1px solid var(--line)}
+.ld .m{flex:1;min-width:0}
+.ld .m b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.ld .m span{display:block;font-size:12px;color:var(--ink-2)}
+.ld.o .m b{font-weight:500;color:var(--ink-2)}
+.ld .a{text-align:right}
+.ld .a b{display:block;font-size:14.5px;font-weight:700}
+.ld.o .a b{font-weight:500;color:var(--ink-2)}
+.ld .a .temp{margin-top:3px}
+
+/* fiche lead */
+.hd{padding:2px 20px 14px}
+.hd h1{font-size:32px;font-weight:800;letter-spacing:-.04em;line-height:1.02}
+.hd .s{font-size:14.5px;color:var(--ink-2);margin-top:4px}
+.hd .tags{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+.facts{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--ink)}
+.facts div{padding:10px 20px;border-bottom:1px solid var(--line)}
+.facts div:nth-child(odd){border-right:1px solid var(--line)}
+.facts small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.facts b{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+.next{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.next .sq{width:8px;height:8px;background:var(--accent);flex:none}
+.next b{font-size:15px;font-weight:700}
+.next span{font-size:12.5px;color:var(--ink-2);margin-left:auto}
+.qa{display:flex;gap:8px;padding:14px 20px 4px}
+.qa div{flex:1;height:64px;border:1px solid var(--ink);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:700}
+.qa div .i{width:22px;height:22px}
+.qa .p{background:var(--accent);border-color:var(--accent)}
+.lk{margin:10px 20px 2px;border:1px solid var(--line-2);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:12px}
+.lk .m{flex:1}
+.lk .m b{display:block;font-size:14.5px;font-weight:700}
+.lk .m span{font-size:12px;color:var(--ink-2)}
+.lk .a{font-weight:800;font-size:15px}
+.tl{padding:0 20px;position:relative}
+.tl .e{position:relative;padding:0 0 15px 24px}
+.tl .e::before{content:'';position:absolute;left:3px;top:11px;bottom:-4px;width:1px;background:var(--line-2)}
+.tl .e:last-child::before{display:none}
+.tl .e i{position:absolute;left:0;top:5px;width:7px;height:7px;background:var(--paper);border:1.5px solid var(--ink)}
+.tl .e.now i{background:var(--accent);border-color:var(--accent)}
+.tl .e small{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3)}
+.tl .e p{font-size:14px;font-weight:500;line-height:1.3}
+.tl .e p span{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line-2);padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px}
+.tl .e p span .i{width:11px;height:11px}
+
+/* saisie rapide */
+.cam{margin:4px 20px 0;height:164px;background:var(--ink);border-radius:14px;position:relative;overflow:hidden;color:var(--paper)}
+.card{position:absolute;left:52px;top:26px;width:236px;height:118px;background:var(--paper);color:var(--ink);padding:12px 14px;transform:rotate(-2.2deg);display:flex;flex-direction:column;justify-content:space-between}
+.card b{font-size:15px;font-weight:800;letter-spacing:-.02em;display:block}
+.card .n{font-size:11px;font-weight:700}
+.card .r{font-size:9.5px;color:var(--ink-2)}
+.card hr{border:0;border-top:1px solid var(--ink);width:28px;margin:5px 0}
+.cam .c{position:absolute;width:22px;height:22px;border:solid var(--accent)}
+.cam .c1{left:34px;top:12px;border-width:2px 0 0 2px}.cam .c2{right:34px;top:12px;border-width:2px 2px 0 0}
+.cam .c3{left:34px;bottom:12px;border-width:0 0 2px 2px}.cam .c4{right:34px;bottom:12px;border-width:0 2px 2px 0}
+.cam .ok{position:absolute;left:12px;bottom:-1px;right:12px;display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.chip .i{width:14px;height:14px}
+.scanned{padding:9px 20px 4px;display:flex;justify-content:space-between;align-items:center}
+.scanned .chip{color:var(--ink)}
+.scanned span.mute{font-size:11.5px}
+.sq6{display:inline-block;width:6px;height:6px;background:var(--accent)}
+.fld{display:flex;align-items:center;gap:12px;padding:0 20px;height:42px;border-top:1px solid var(--line)}
+.fld small{width:78px;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fld span{flex:1;font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fld .sq6{flex:none}
+.vn{margin:12px 20px 0;border:1px solid var(--ink);border-radius:14px;padding:12px 14px}
+.vn .h{display:flex;align-items:center;gap:12px}
+.vn .pl{width:34px;height:34px;background:var(--ink);color:var(--paper);border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.vn .pl .i{width:14px;height:14px}
+.vn .wv{flex:1;height:30px;display:flex;align-items:center;gap:2px}
+.vn .wv s{display:block;width:3px;background:var(--ink);text-decoration:none}
+.vn .wv s.f{background:var(--line-2)}
+.vn .tm{font-size:13px;font-weight:700}
+.vn p{font-size:12.5px;color:var(--ink-2);margin-top:8px;line-height:1.35}
+.vn p b{color:var(--ink);font-weight:700}
+.btn{height:50px;border-radius:13px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:700}
+.btn.p{background:var(--accent);border-color:var(--accent)}
+.btn .i{width:20px;height:20px}
+.btns{display:flex;gap:10px;padding:0 20px}
+.btns .btn{flex:1}
+.cta{padding:10px 20px 0}
+.cta small{display:block;text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:8px}
+
+/* fiche projet */
+.big{display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 10px}
+.big b{font-size:60px;font-weight:800;letter-spacing:-.06em;line-height:.9}
+.big b i{font-style:normal;font-size:28px;letter-spacing:-.03em}
+.big span{font-size:12.5px;color:var(--ink-2);text-align:right;line-height:1.35}
+.big span b{font-size:15px;letter-spacing:-.01em;line-height:1.2;display:block;color:var(--ink)}
+.steps{display:flex;gap:4px;padding:0 20px}
+.steps div{flex:1}
+.steps div i{display:block;height:4px;background:var(--line-2)}
+.steps div.d i{background:var(--ink)}
+.steps div.c i{background:var(--accent)}
+.steps div small{display:block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);margin-top:6px;line-height:1.15}
+.steps div.d small{color:var(--ink-2)}
+.steps div.c small{color:var(--ink)}
+.stepsl{display:flex;gap:4px;padding:0 20px}
+.sec2{padding:18px 20px 8px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between;align-items:baseline}
+.sec2 em{font-style:normal;letter-spacing:.02em;text-transform:none;font-size:12px;font-weight:600;color:var(--ink-2)}
+.fin{display:flex;border-top:1px solid var(--ink);padding:12px 20px 4px}
+.fin div{flex:1}
+.fin div+div{padding-left:16px;border-left:1px solid var(--line)}
+.fin small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fin b{font-size:19px;font-weight:800;letter-spacing:-.03em}
+.finbar{padding:8px 20px 0}
+.finbar .bar{height:5px}
+.finbar p{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-2);margin-top:6px}
+.rq{display:flex;gap:12px;align-items:center;padding:10px 20px;border-top:1px solid var(--line)}
+.rq .ico{width:22px;flex:none}
+.rq .ico .i{width:20px;height:20px}
+.rq .m{flex:1}
+.rq .m b{display:block;font-size:14.5px;font-weight:700}
+.rq .m span{font-size:12px;color:var(--ink-2)}
+.fil .e{padding:10px 20px;border-top:1px solid var(--line)}
+.fil .e small{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3)}
+.fil .e p{font-size:14px;font-weight:500;margin-top:2px}
+
+/* devis */
+.mods{display:flex;gap:6px;padding:0 20px;flex-wrap:wrap}
+.mods span{border:1px solid var(--line-2);border-radius:9px;padding:7px 11px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.mods span.on{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:700}
+.qh{display:flex;justify-content:space-between;align-items:flex-end;padding:14px 20px 8px}
+.qh b{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.qh span{font-size:12px;color:var(--ink-2);text-align:right;line-height:1.3}
+.ln{display:flex;justify-content:space-between;gap:12px;padding:11px 20px;border-top:1px solid var(--line);font-size:14px}
+.ln span{flex:1}
+.ln b{font-weight:700;white-space:nowrap}
+.tot{padding:6px 20px 0;border-top:1px solid var(--ink)}
+.tot div{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;color:var(--ink-2)}
+.tot div.g{color:var(--ink);font-weight:800;font-size:19px;letter-spacing:-.02em;padding-top:6px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></symbol><symbol id="i-docplus" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M12.5 12v6M9.5 15h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-6M11 20V6M17 20v-9M3 20h18"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol><symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M4.5 4.5L3 6M19.5 4.5L21 6"/></symbol><symbol id="i-step" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-chevd" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol><symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-tray" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 5a3.5 3.5 0 0 1 0 6.5M18 14a7 7 0 0 1 4 6"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9"/><path d="M3 21h18"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" fill="currentColor" stroke="none"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7z"/><path d="M10 13l4-4"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol><symbol id="i-euro" viewBox="0 0 24 24"><path d="M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol><symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16"/><rect x="10" y="4" width="5" height="10"/><rect x="17" y="4" width="4" height="13"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3"/></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.8L8 15"/></symbol></defs></svg>
+<header class="top"><a class="brand" href="index.html">Venio<span>Apps natives · Minimaliste</span></a><nav><a href="index.html">Accueil</a><a href="iphone.html" aria-current="page">iPhone</a><a href="ipad.html">iPad</a><a href="watch.html">Watch</a><a href="mac.html">Mac</a></nav></header>
+
+<main class="wrap">
+<div class="head"><div><div class="k">Espace commercial · iPhone · 393 × 852</div><h1>Le terrain,<br>en six écrans.</h1></div>
+<p><b>Léa Martin, vendredi 23 octobre, 9:41.</b> L'outil principal du commercial : tab bar à cinq entrées, navigation en pile, listes à filets fins. Hiérarchie par la taille et la graisse, un seul accent bleu pour l'action.</p></div>
+<div class="grid phones"><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span></span><div class="nr"><div class="nsq"><svg class="i"><use href="#i-search"/></svg></div><div class="nsq acc"><svg class="i"><use href="#i-plus"/></svg></div></div></div>
+<div class="lt"><div class="k">Vendredi 23 octobre</div><h1>Aujourd'hui</h1><div class="s">7 points à traiter, dont 3 rendez-vous et relances</div></div>
+<div class="scr">
+<div class="sec"><span>En retard</span><b>1</b></div>
+<div class="row"><div class="t sm">21<br>oct.</div><div class="m"><b>Cabinet Ferrand Avocats</b><span>Relance · Sophie Ferrand · 9 600 €</span></div><div class="r"><span class="tag fill">2 j</span><svg class="i"><use href="#i-chev"/></svg></div></div>
+<div class="sec"><span>Aujourd'hui</span><b>3</b></div>
+<div class="row"><div class="t">10:30</div><div class="m"><b>Maison Calder</b><span>Relance · Claire Calder · 14 800 €</span></div><div class="r"><svg class="i"><use href="#i-chev"/></svg></div></div>
+<div class="row"><div class="t">14:00</div><div class="m"><b>Atelier Nova</b><span>RDV démo en visio · Malik Benali</span></div><div class="r"><svg class="i" style="width:18px;height:18px"><use href="#i-video"/></svg><svg class="i"><use href="#i-chev"/></svg></div></div>
+<div class="row"><div class="t">16:00</div><div class="m"><b>Fondation Arcadie</b><span>Relance · Marc Delorme · 18 200 €</span></div><div class="r"><svg class="i"><use href="#i-chev"/></svg></div></div>
+<div class="sec"><span>À traiter</span><b>3</b></div>
+<div class="row"><div class="ico"><svg class="i"><use href="#i-flame"/></svg></div><div class="m"><b>Brasserie Les Halles</b><span>Lead chaud · aucune action prévue</span></div><div class="r"><span class="mini">Planifier</span></div></div>
+<div class="row"><div class="ico"><svg class="i"><use href="#i-tray"/></svg></div><div class="m"><b>Studio Okami</b><span>Entrant 8:52 · non assigné · 38 000 €</span></div><div class="r"><span class="mini acc">Prendre</span></div></div>
+<div class="row"><div class="ico"><svg class="i"><use href="#i-eye"/></svg></div><div class="m"><b>Devis DV-2026-041 vu</b><span>Maison Calder · 14 800 € · hier 18:12</span></div><div class="r"><span class="mini">Relancer</span></div></div>
+</div>
+<div class="tabs"><div class="tab on"><svg class="i"><use href="#i-sun"/></svg><span>Aujourd'hui</span></div><div class="tab"><svg class="i"><use href="#i-funnel"/></svg><span>Pipeline</span></div><div class="tab"><svg class="i"><use href="#i-folder"/></svg><span>Projets</span></div><div class="tab"><svg class="i"><use href="#i-doc"/></svg><span>Devis</span></div><div class="tab"><svg class="i"><use href="#i-bars"/></svg><span>Chiffres</span></div></div><div class="home"></div></div></div></div></div><figcaption><span class="n">01</span><b>Aujourd'hui</b><p>Retards, relances et rendez-vous classés par heure, puis les trois points à traiter : lead chaud sans action, entrant non assigné, devis vu.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span></span><div class="nr"><div class="nsq"><svg class="i"><use href="#i-filter"/></svg></div><div class="nsq acc"><svg class="i"><use href="#i-plus"/></svg></div></div></div>
+<div class="lt"><div class="k">Léa Martin</div><h1>Pipeline</h1></div>
+<div class="seg"><span>Mes leads</span><span class="on">Tous</span></div>
+<div class="kpis"><div><small>Valeur totale</small><b>152 500 €</b><em>8 leads</em></div><div><small>Pondérée</small><b>65 370 €</b><em>selon l'étape</em></div></div>
+<div class="mine"><b>Mes leads</b> : 5 leads · 71 500 €</div>
+<div class="scr"><div class="stg"><div><b>Proposition<i>70 %</i></b><span>2 leads</span></div><div class="r"><b>45 800 €</b><span>pondéré 32 060 €</span></div></div><div class="ld o"><div class="m"><b>Clinique Saint-Aubin</b><span>Plateforme de RDV</span></div><div class="a"><b>31 000 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span></div><span class="av">HB</span></div><div class="ld"><div class="m"><b>Maison Calder</b><span>Site vitrine + SEO</span></div><div class="a"><b>14 800 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s></span></div><span class="av">LM</span></div><div class="stg"><div><b>Démo<i>50 %</i></b><span>2 leads</span></div><div class="r"><b>40 700 €</b><span>pondéré 20 350 €</span></div></div><div class="ld"><div class="m"><b>Atelier Nova</b><span>E-commerce</span></div><div class="a"><b>22 500 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span></div><span class="av">LM</span></div><div class="ld"><div class="m"><b>Fondation Arcadie</b><span>Refonte de site</span></div><div class="a"><b>18 200 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span></div><span class="av">LM</span></div><div class="stg"><div><b>Contacté<i>35 %</i></b><span>2 leads</span></div><div class="r"><b>21 600 €</b><span>pondéré 7 560 €</span></div></div><div class="ld o"><div class="m"><b>Domaine Verlaine</b><span>E-commerce vins</span></div><div class="a"><b>12 000 €</b><span class="temp"><s class="on"></s><s class=""></s><s class=""></s><s class=""></s></span></div><span class="av">HB</span></div><div class="ld"><div class="m"><b>Cabinet Ferrand Avocats</b><span>Site + espace client</span></div><div class="a"><b>9 600 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span></div><span class="av">LM</span></div><div class="stg"><div><b>Qualifié<i>25 %</i></b><span>1 lead</span></div><div class="r"><b>6 400 €</b><span>pondéré 1 600 €</span></div></div><div class="ld"><div class="m"><b>Brasserie Les Halles</b><span>Site + réservation</span></div><div class="a"><b>6 400 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span></div><span class="av">LM</span></div><div class="stg"><div><b>Lead<i>10 %</i></b><span>1 lead</span></div><div class="r"><b>38 000 €</b><span>pondéré 3 800 €</span></div></div><div class="ld o"><div class="m"><b>Studio Okami</b><span>App mobile</span></div><div class="a"><b>38 000 €</b><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span></div><span class="av none">—</span></div></div>
+<div class="tabs"><div class="tab"><svg class="i"><use href="#i-sun"/></svg><span>Aujourd'hui</span></div><div class="tab on"><svg class="i"><use href="#i-funnel"/></svg><span>Pipeline</span></div><div class="tab"><svg class="i"><use href="#i-folder"/></svg><span>Projets</span></div><div class="tab"><svg class="i"><use href="#i-doc"/></svg><span>Devis</span></div><div class="tab"><svg class="i"><use href="#i-bars"/></svg><span>Chiffres</span></div></div><div class="home"></div></div></div></div></div><figcaption><span class="n">02</span><b>Pipeline</b><p>Liste par étape, de la plus avancée à la plus lointaine. Bascule Mes leads / Tous, valeur totale et pondérée ; les leads de Léa sont en gras.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span class="nbtn"><svg class="i"><use href="#i-chevl"/></svg>Pipeline</span><div class="nsq"><svg class="i"><use href="#i-dots"/></svg></div></div>
+<div class="hd"><h1>Maison Calder</h1><div class="s">Claire Calder · Site vitrine + SEO</div>
+<div class="tags"><span class="tag fill">Proposition</span><span class="tag">Très chaud</span><span class="tag soft">Score 86</span></div></div>
+<div class="facts"><div><small>Budget</small><b>14 800 €</b></div><div><small>Probabilité</small><b>70 %</b></div><div><small>Assignée à</small><b>Léa Martin</b></div><div><small>Source</small><b>Salon Vivatech</b></div></div>
+<div class="next"><span class="sq"></span><b>Relance aujourd'hui à 10:30</b><span>Dans 49 min</span></div>
+<div class="qa"><div class="p"><svg class="i"><use href="#i-phone"/></svg>Appeler</div><div><svg class="i"><use href="#i-mail"/></svg>E-mail</div><div><svg class="i"><use href="#i-alarm"/></svg>Relance</div><div><svg class="i"><use href="#i-step"/></svg>Étape</div><div><svg class="i"><use href="#i-docplus"/></svg>Devis</div></div>
+<div class="lk"><svg class="i" style="width:22px;height:22px"><use href="#i-doc"/></svg><div class="m"><b>DV-2026-041 · Site vitrine</b><span>Envoyé · vu le 22 oct. à 18:12</span></div><div class="a">14 800 €</div></div>
+<div class="sec2"><span>Historique</span><em>5 événements</em></div>
+<div class="tl"><div class="e now"><i></i><small>22 oct. · 18:12</small><p>La cliente a ouvert le devis <b>DV-2026-041</b></p></div><div class="e"><i></i><small>20 oct. · 11:05</small><p>Devis <b>DV-2026-041</b> envoyé par Léa</p></div><div class="e"><i></i><small>17 oct. · 15:30</small><p>RDV de découverte<span><svg class="i"><use href="#i-mic"/></svg>2:14</span></p></div><div class="e"><i></i><small>14 oct. · 09:20</small><p>Qualifié → Contacté</p></div><div class="e"><i></i><small>13 oct. · 17:48</small><p>Lead créé par scan de carte de visite, salon Vivatech Paris</p></div></div>
+<div class="home"></div></div></div></div></div><figcaption><span class="n">03</span><b>Fiche lead</b><p>Maison Calder : budget, probabilité, prochaine action, cinq gestes rapides, devis lié et historique.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span class="nbtn">Annuler</span><span class="ntitle">Nouveau lead</span><span class="nbtn">Créer</span></div>
+<div class="cam"><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
+<div class="card"><div><b>Éditions Marais</b><hr><div class="n">Camille Dufour</div><div class="r">Directrice de la communication</div></div><div class="r">c.dufour@editions-marais.fr<br>01 23 45 67 89</div></div></div>
+<div class="scanned"><span class="chip"><svg class="i"><use href="#i-check"/></svg>Carte lue, 5 champs remplis</span><span class="mute"><i class="sq6"></i> pré-rempli</span></div>
+<div class="fld"><small>Entreprise</small><span>Éditions Marais</span><i class="sq6"></i></div>
+<div class="fld"><small>Contact</small><span>Camille Dufour</span><i class="sq6"></i></div>
+<div class="fld"><small>Poste</small><span>Directrice de la communication</span><i class="sq6"></i></div>
+<div class="fld"><small>E-mail</small><span>c.dufour@editions-marais.fr</span><i class="sq6"></i></div>
+<div class="fld"><small>Téléphone</small><span>01 23 45 67 89</span><i class="sq6"></i></div>
+<div class="fld"><small>Service</small><span>Site vitrine + SEO</span><svg class="i" style="width:16px;height:16px"><use href="#i-chevd"/></svg></div>
+<div class="fld"><small>Assignée à</small><span>Léa Martin</span><svg class="i" style="width:16px;height:16px"><use href="#i-chevd"/></svg></div>
+<div class="vn"><div class="h"><div class="pl"><svg class="i"><use href="#i-play"/></svg></div><div class="wv"><s class="" style="height:6px"></s><s class="" style="height:12px"></s><s class="" style="height:18px"></s><s class="" style="height:10px"></s><s class="" style="height:24px"></s><s class="" style="height:16px"></s><s class="" style="height:8px"></s><s class="" style="height:20px"></s><s class="" style="height:26px"></s><s class="" style="height:14px"></s><s class="" style="height:22px"></s><s class="" style="height:10px"></s><s class="" style="height:16px"></s><s class="" style="height:28px"></s><s class="" style="height:12px"></s><s class="" style="height:18px"></s><s class="" style="height:8px"></s><s class="f" style="height:24px"></s><s class="f" style="height:14px"></s><s class="f" style="height:10px"></s><s class="f" style="height:20px"></s><s class="f" style="height:12px"></s><s class="f" style="height:6px"></s><s class="f" style="height:16px"></s></div><span class="tm">0:18</span></div>
+<p><b>Note vocale transcrite.</b> « Veut refondre le site avant la fin de l'année, budget à préciser. »</p></div>
+<div style="flex:1"></div>
+<div class="cta"><div class="btn p"><svg class="i"><use href="#i-check"/></svg>Créer le lead</div><small>Rattaché au lead avec la note vocale · prêt hors ligne</small></div>
+<div style="height:34px"></div>
+<div class="home"></div></div></div></div></div><figcaption><span class="n">04</span><b>Saisie rapide</b><p>Un lead créé en quelques secondes : carte de visite scannée, champs pré-remplis, note vocale transcrite et rattachée.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span class="nbtn"><svg class="i"><use href="#i-chevl"/></svg>Projets</span><span class="tag soft"><svg class="i" style="width:11px;height:11px"><use href="#i-lock"/></svg>Lecture seule</span></div>
+<div class="hd" style="padding-bottom:12px"><h1>Agence Pilote</h1><div class="s">Plateforme de réservation · P-2026-018</div></div>
+<div class="big"><b>62<i>%</i></b><span>Développement<b>phase 3 sur 5</b>Livraison le 28 nov. 2026</span></div>
+<div class="steps"><div class="d"><i></i><small>Cadrage</small></div><div class="d"><i></i><small>Conception</small></div><div class="c"><i></i><small>Développement</small></div><div class=""><i></i><small>Recette</small></div><div class=""><i></i><small>Mise en ligne</small></div></div>
+<div class="sec2" style="padding-top:20px"><span>Finances</span><em>Facturation partielle</em></div>
+<div class="fin"><div><small>Budget</small><b>18 400 €</b></div><div><small>Facturé</small><b>9 200 €</b></div><div><small>Reste</small><b>9 200 €</b></div></div>
+<div class="finbar"><div class="bar acc" style="height:5px"><i style="width:50%"></i></div><p><span>50 % facturé</span><span>statut : Partiel</span></p></div>
+<div class="sec2"><span>Demandes et tickets</span><em>1 demande · 0 ticket</em></div>
+<div class="rq"><div class="ico"><svg class="i"><use href="#i-pencil"/></svg></div><div class="m"><b>Calendrier de disponibilités partagé</b><span>Demande de modification</span></div><span class="tag">À chiffrer</span></div>
+<div class="sec2"><span>Mises à jour publiées au client</span></div>
+<div class="fil"><div class="e"><small>20 OCT.</small><p>Maquettes validées, début du développement</p></div><div class="e"><small>13 OCT.</small><p>Cadrage terminé, conception des maquettes en cours</p></div><div class="e"><small>9 OCT.</small><p>Devis signé, lancement du cadrage</p></div></div>
+<div class="home"></div></div></div></div></div><figcaption><span class="n">05</span><b>Fiche projet</b><p>Agence Pilote, en lecture seule : phases, avancement, finances, demande à chiffrer et mises à jour publiées au client.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="417" data-h="876"><div class="dev phone"><div class="screen"><div class="island"></div><div class="sb"><span>9:41</span><span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
+<div class="nav"><span class="nbtn">Annuler</span><span class="ntitle">Nouveau devis</span><span class="nbtn dis">DV-2026-042</span></div>
+<div class="sec2" style="padding-top:8px"><span>1 · Modèle</span></div>
+<div class="mods"><span>Site vitrine</span><span class="on">E-commerce</span><span>Plateforme sur mesure</span><span>Pack SEO</span></div>
+<div class="sec2"><span>2 · Client</span></div>
+<div class="rq" style="border-top:1px solid var(--ink)"><div class="ico"><svg class="i"><use href="#i-building"/></svg></div><div class="m"><b>Atelier Nova</b><span>Malik Benali · E-commerce</span></div><svg class="i" style="width:16px;height:16px"><use href="#i-chevd"/></svg></div>
+<div class="qh"><b>E-commerce</b><span>Valable 30 jours<br>jusqu'au 22 nov. 2026</span></div>
+<div><div class="ln"><span>Conception UX et UI de la boutique</span><b>5 500 €</b></div><div class="ln"><span>Développement e-commerce</span><b>12 000 €</b></div><div class="ln"><span>Paiement, livraison et intégrations</span><b>3 000 €</b></div><div class="ln"><span>Recette et formation</span><b>2 000 €</b></div></div>
+<div class="tot"><div><span>Total HT</span><span>22 500 €</span></div><div><span>TVA 20 %</span><span>4 500 €</span></div><div class="g"><span>Total TTC</span><span>27 000 €</span></div></div>
+<div style="flex:1"></div>
+<div class="btns"><div class="btn">Brouillon</div><div class="btn p" style="flex:2"><svg class="i"><use href="#i-send"/></svg>Envoyer à Malik</div></div>
+<div style="height:46px"></div>
+<div class="home"></div></div></div></div></div><figcaption><span class="n">06</span><b>Nouveau devis</b><p>Création depuis un modèle pour Atelier Nova, lignes éditables, totaux HT et TTC, enregistrement en brouillon ou envoi.</p></figcaption></figure></div>
+<div class="foot"><span>Données : donnees-demo.md</span><span>Total pipeline 152 500 € · pondéré 65 370 €</span></div>
+</main>
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,mx=+(f.dataset.max||1);
+      var av=f.closest('.cell').clientWidth;
+      var s=Math.min(mx,av/w);
+      f.style.width=(w*s)+'px';f.style.height=(h*s)+'px';
+      f.firstElementChild.style.transform='scale('+s+')';
+    });
+  }
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
+})();
+</script>
+</body>
+</html>
