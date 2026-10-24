@@ -121,3 +121,38 @@ export interface IShareAllocation extends Document {
   createdAt: Date
   updatedAt: Date
 }
+
+export interface IShareSettlement extends Document {
+  beneficiary: Types.ObjectId
+  project: Types.ObjectId | null
+  kind: 'SETTLEMENT' | 'REVERSAL'
+  htCents: number
+  vatCents: number
+  paidAt: Date
+  invoiceRef: string
+  note: string
+  mode: 'BANQUE' | 'PAIE'
+  reversalOf: Types.ObjectId | null
+  entry: Types.ObjectId | null
+  idempotencyKey: string
+  requestHash: string
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface IProjectCost extends Document {
+  project: Types.ObjectId
+  accountCode: string
+  label: string
+  supplier: string
+  htCents: number
+  vatCents: number
+  date: Date
+  entry: Types.ObjectId
+  idempotencyKey: string
+  requestHash: string
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}

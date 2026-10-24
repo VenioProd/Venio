@@ -86,6 +86,7 @@ async function resolveAccount(
 
 export interface CreateEntryLineInput {
   account: AccountRef
+  project?: Types.ObjectId | string | null
   label?: string
   debit?: number
   credit?: number
@@ -285,6 +286,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
       const { raw, account, debit, credit } = resolvedLines[i]!
       lineDocs.push({
         entry: entry._id,
+        project: raw.project ?? null,
         journalCode: journal.code,
         fiscalYear: fiscalYear._id,
         date: entryDate,

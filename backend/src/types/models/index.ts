@@ -123,4 +123,6 @@ export type {
   IProjectFinance,
   IProjectPayment,
   IShareAllocation,
+  IShareSettlement,
+  IProjectCost,
 } from './projectFinance.js'

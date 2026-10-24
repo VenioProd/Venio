@@ -3,6 +3,7 @@ import beneficiariesRouter from './beneficiaries.js'
 import shareTemplatesRouter from './shareTemplates.js'
 import creditNotesRouter from './creditNotes.js'
 import paymentsRouter from './payments.js'
+import settlementsRouter from './settlements.js'
 import projectFinanceRouter from './projectFinance.js'
 import settingsRouter from './settings.js'
 import fiscalYearsRouter from './fiscalYears.js'
@@ -23,6 +24,7 @@ const router = express.Router()
 
 router.use(creditNotesRouter)
 router.use(paymentsRouter)
+router.use(settlementsRouter)
 router.use('/beneficiaries', beneficiariesRouter)
 router.use('/share-templates', shareTemplatesRouter)
 router.use('/projects/:projectId', projectFinanceRouter)

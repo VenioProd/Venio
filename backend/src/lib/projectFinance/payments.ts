@@ -5,14 +5,16 @@ import ProjectPayment from '../../models/ProjectPayment.js'
 import ShareAllocation from '../../models/ShareAllocation.js'
 import ProjectFinance from '../../models/ProjectFinance.js'
 import ShareRuleVersion from '../../models/ShareRuleVersion.js'
+import ShareSettlement from '../../models/ShareSettlement.js'
 import type { IBillingDocument, IFinancePayer } from '../../types/models/index.js'
 import { createEntry, type CreateEntryLineInput } from '../accounting/doubleEntry.js'
 import { resolveBankAccount } from '../accounting/paymentToEntry.js'
 import { notifySuperAdmins } from '../notifyHelpers.js'
 import { runInTransaction } from '../transaction.js'
 import { invoiceAmountsCents } from './invoicing.js'
-import { assertCents, moneyError } from './money.js'
+import { assertCents, moneyError, toCents } from './money.js'
 import { allocatePayment, beneficiaryStatement, cumulativeHt, refundRegularisation, ruleVersionAt } from './rules.js'
+import { projectCostLines } from './settlements.js'
 
 function conflict(message: string) {
   const error = moneyError(message)
@@ -355,6 +357,11 @@ export async function projectFinanceSummary(projectId: string | Types.ObjectId) 
     const receivedTtcCents = payments.reduce((sum, payment) => sum + payment.amountTtcCents, 0)
     const receivedHtCents = payments.reduce((sum, payment) => sum + payment.htCents, 0)
     const allocations = await ShareAllocation.find({ project: projectId }).session(session)
+    const settlements = await ShareSettlement.find({ project: projectId }).session(session)
+    const costLines = await projectCostLines(projectId, session)
+    const directCostsCents = costLines.reduce((sum, line) => sum + toCents(line.debit) - toCents(line.credit), 0)
+    assertCents(directCostsCents)
+    const marginCents = receivedHtCents - directCostsCents
     if (allocations.reduce((sum, row) => sum + row.amountCents, 0) !== receivedHtCents) {
       throw new Error('La somme des parts du projet diffère du HT encaissé')
     }
@@ -365,11 +372,29 @@ export async function projectFinanceSummary(projectId: string | Types.ObjectId) 
       if (!grouped.has(key)) grouped.set(key, { beneficiary: row.beneficiary, amounts: [] })
       grouped.get(key)!.amounts.push(row.amountCents)
     }
+    for (const settlement of settlements) {
+      const key = String(settlement.beneficiary)
+      if (!grouped.has(key)) grouped.set(key, { beneficiary: settlement.beneficiary, amounts: [] })
+    }
     const beneficiaries = [...grouped.values()].map((group) => ({
       beneficiary: group.beneficiary,
-      dueCents: beneficiaryStatement(group.amounts, []).dueCents,
+      ...beneficiaryStatement(
+        group.amounts,
+        [
+          settlements
+            .filter((row) => String(row.beneficiary) === String(group.beneficiary))
+            .reduce((sum, row) => sum + row.htCents, 0),
+        ].filter((amount) => amount !== 0),
+      ),
     }))
-    for (const amount of [invoicedHtCents, invoicedTtcCents, receivedTtcCents, receivedHtCents, remainingTtcCents])
+    for (const amount of [
+      invoicedHtCents,
+      invoicedTtcCents,
+      receivedTtcCents,
+      receivedHtCents,
+      remainingTtcCents,
+      marginCents,
+    ])
       assertCents(amount)
     return {
       invoicedHtCents,
@@ -377,6 +402,8 @@ export async function projectFinanceSummary(projectId: string | Types.ObjectId) 
       receivedTtcCents,
       receivedHtCents,
       remainingTtcCents,
+      directCostsCents,
+      marginCents,
       overdueInvoices,
       beneficiaries,
     }
