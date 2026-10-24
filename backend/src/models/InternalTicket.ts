@@ -23,6 +23,7 @@ export interface IInternalTicket extends Document {
   priority: 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
   status: 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
   authorId: mongoose.Types.ObjectId
+  project?: mongoose.Types.ObjectId
   authorName: string
   attachments: ITicketFile[]
   replies: ITicketReply[]
@@ -54,6 +55,7 @@ const replySchema = new Schema<ITicketReply>(
 
 const internalTicketSchema = new Schema<IInternalTicket>(
   {
+    project: { type: Schema.Types.ObjectId, ref: 'Project', index: true },
     title: { type: String, required: true, trim: true },
     message: { type: String, required: true },
     category: { type: String, enum: ['QUESTION', 'DEMANDE', 'PROBLEME'], default: 'QUESTION' },

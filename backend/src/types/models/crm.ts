@@ -31,6 +31,7 @@ export interface IInteraction extends Document {
   kind: InteractionKind
   direction: InteractionDirection
   occurredAt: Date
+  endsAt?: Date
   subject: string
   body: string
   pinned: boolean

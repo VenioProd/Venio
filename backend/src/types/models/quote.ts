@@ -50,6 +50,7 @@ export interface IQuoteSpecification {
 }
 
 export interface IQuoteProposal extends Document {
+  reference?: string
   _id: Types.ObjectId
   /** Absent tant que le devis n'est rattaché qu'à un lead. */
   project: Types.ObjectId | null

@@ -28,6 +28,7 @@ const BEARER_ALLOWED_PREFIXES = [
   '/api/admin/projects',
   '/api/admin/quote-proposals',
   '/api/admin/quote-templates',
+  '/api/admin/sales-targets',
   '/api/admin/billing',
   '/api/admin/notifications',
   '/api/admin/dashboard',

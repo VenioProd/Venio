@@ -82,12 +82,19 @@ it('signe un JWT ES256 vérifiable et réutilise la session et le JWT', async ()
   ).toBe(true)
   expect(JSON.parse(Buffer.from(claims!, 'base64url').toString()).iss).toBe('test-team')
   expect(JSON.parse(transport.payload)).toEqual({
-    aps: { alert: { title: 'Test', body: '' }, sound: 'default', badge: 2, 'thread-id': 'CRM_LEAD_ASSIGNED' },
+    aps: {
+      alert: { title: 'Test', body: '' },
+      sound: 'default',
+      badge: 2,
+      'thread-id': 'CRM_LEAD_ASSIGNED',
+      category: 'VENIO_LEAD',
+    },
     type: 'CRM_LEAD_ASSIGNED',
     link: '/',
     notificationId: '123',
   })
   await sendApnsToUser(String(d.userId), { title: 'Test' })
+  expect(JSON.parse(transport.payload).aps).not.toHaveProperty('category')
   expect(transport.headers.authorization).toBe(`bearer ${jwt}`)
   expect(transport.connect).toHaveBeenCalledTimes(1)
 })

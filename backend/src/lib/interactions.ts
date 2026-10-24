@@ -21,6 +21,7 @@ export interface TimelineEntry {
   kind: string
   direction: string
   occurredAt: string
+  endsAt?: string
   label: string
   body: string
   pinned: boolean
@@ -61,6 +62,7 @@ export function toTimelineEntry(item: {
   kind: string
   direction: string
   occurredAt: Date | string
+  endsAt?: Date | string
   subject?: string
   body?: string
   pinned?: boolean
@@ -76,6 +78,7 @@ export function toTimelineEntry(item: {
     kind: item.kind,
     direction: item.direction,
     occurredAt: new Date(item.occurredAt).toISOString(),
+    ...(item.endsAt ? { endsAt: new Date(item.endsAt).toISOString() } : {}),
     label: interactionLabel(item.kind, item.subject || '', item.body || ''),
     body: item.body || '',
     pinned: Boolean(item.pinned),
@@ -98,6 +101,7 @@ export interface LogInteractionInput {
   kind: InteractionKind
   direction?: InteractionDirection
   occurredAt?: Date
+  endsAt?: Date
   subject?: string
   body?: string
   pinned?: boolean
@@ -121,6 +125,7 @@ export async function logInteraction(input: LogInteractionInput) {
     kind: input.kind,
     direction: input.direction ?? 'NONE',
     occurredAt: input.occurredAt ?? new Date(),
+    endsAt: input.endsAt,
     subject: input.subject ?? '',
     body: input.body ?? '',
     pinned: input.pinned ?? false,
