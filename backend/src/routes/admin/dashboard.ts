@@ -267,7 +267,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         {
           $match: {
             type: 'INVOICE',
-            status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
+            status: { $in: ['PAID', 'PARTIALLY_PAID', 'SENT', 'ACCEPTED'] },
             issuedAt: { $gte: periodStart },
           },
         },
@@ -290,7 +290,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         {
           $match: {
             type: 'INVOICE',
-            status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
+            status: { $in: ['PAID', 'PARTIALLY_PAID', 'SENT', 'ACCEPTED'] },
             issuedAt: { $gte: sixMonthsAgo },
           },
         },
@@ -345,7 +345,7 @@ router.get('/super', requireSuperAdmin, async (req: Request, res: Response, next
         {
           $match: {
             type: 'INVOICE',
-            status: { $in: ['PAID', 'SENT', 'ACCEPTED'] },
+            status: { $in: ['PAID', 'PARTIALLY_PAID', 'SENT', 'ACCEPTED'] },
             issuedAt: { $gte: periodPrevStart, $lt: periodStart },
           },
         },

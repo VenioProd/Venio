@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import type { IBillingDocument } from '../types/models/index.js'
 import { moneyError } from '../lib/projectFinance/money.js'
+import ProjectPayment from './ProjectPayment.js'
 
 const payerSchema = new mongoose.Schema(
   {
@@ -60,7 +61,7 @@ const billingDocumentSchema = new mongoose.Schema<IBillingDocument>(
     creditedInvoice: { type: mongoose.Schema.Types.ObjectId, ref: 'BillingDocument', default: null },
     status: {
       type: String,
-      enum: ['DRAFT', 'ISSUED', 'SENT', 'ACCEPTED', 'PAID', 'CANCELLED'],
+      enum: ['DRAFT', 'ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED'],
       default: 'DRAFT',
     },
     issuedAt: { type: Date, default: null },
@@ -91,10 +92,17 @@ billingDocumentSchema.index(
 billingDocumentSchema.post('init', function (doc) {
   doc.$locals.loadedStatus = doc.status
 })
-billingDocumentSchema.pre('save', function () {
+billingDocumentSchema.pre('save', async function () {
   if (this.type !== 'INVOICE' || this.isNew) return
   const amountsChanged = ['lines', 'subtotal', 'taxTotal', 'total'].some((field) => this.isModified(field))
   let message: string | null = null
+  if (this.isModified('status') && this.status === 'CANCELLED') {
+    const payments = await ProjectPayment.find({ invoice: this._id }).session(this.$session())
+    const received = payments.reduce((sum, payment) => sum + payment.amountTtcCents, 0)
+    if (received !== 0 || (this.$locals.loadedStatus === 'PAID' && payments.length === 0)) {
+      message = 'Remboursez les encaissements avant d’annuler la facture'
+    }
+  }
   if (amountsChanged && (this.financeLink || this.creditedInvoice)) {
     message = "Montants fixés par l'échéancier du projet"
   } else if (amountsChanged && this.$locals.loadedStatus !== 'DRAFT') {

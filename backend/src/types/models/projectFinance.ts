@@ -88,3 +88,36 @@ export interface IProjectFinance extends Document {
   createdAt: Date
   updatedAt: Date
 }
+
+export interface IProjectPayment extends Document {
+  project: Types.ObjectId
+  invoice: Types.ObjectId
+  payerId: Types.ObjectId | null
+  kind: 'PAYMENT' | 'REFUND'
+  amountTtcCents: number
+  htCents: number
+  method: IFinancePayer['paymentMethod']
+  receivedAt: Date
+  reference: string
+  reason: string
+  refundOf: Types.ObjectId | null
+  ruleVersion: Types.ObjectId | null
+  entry: Types.ObjectId
+  source: 'MANUAL' | 'STRIPE'
+  idempotencyKey: string
+  requestHash: string
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface IShareAllocation extends Document {
+  project: Types.ObjectId
+  payment: Types.ObjectId
+  beneficiary: Types.ObjectId | null
+  amountCents: number
+  bp: number | null
+  ruleVersion: Types.ObjectId | null
+  createdAt: Date
+  updatedAt: Date
+}

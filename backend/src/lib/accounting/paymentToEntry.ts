@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose'
+import type { ClientSession, Types } from 'mongoose'
 import BillingDocument from '../../models/BillingDocument.js'
 import ChartOfAccount from '../../models/ChartOfAccount.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
@@ -20,17 +20,20 @@ function round2(n: number | null | undefined): number {
  * Trouve le compte bancaire par défaut depuis CompanySettings,
  * ou le `counterAccount` du journal BQ, ou 512000 en fallback.
  */
-async function resolveBankAccount({ accountCode }: { accountCode?: string } = {}): Promise<IChartOfAccount | null> {
+export async function resolveBankAccount({
+  accountCode,
+  session,
+}: { accountCode?: string; session?: ClientSession } = {}): Promise<IChartOfAccount | null> {
   if (accountCode) {
-    const a = await ChartOfAccount.findOne({ code: accountCode, isActive: true })
+    const a = await ChartOfAccount.findOne({ code: accountCode, isActive: true }).session(session ?? null)
     if (a) return a
   }
-  const bqJournal = await Journal.findOne({ code: 'BQ' })
+  const bqJournal = await Journal.findOne({ code: 'BQ' }).session(session ?? null)
   if (bqJournal?.counterAccount) {
-    const a = await ChartOfAccount.findOne({ code: bqJournal.counterAccount, isActive: true })
+    const a = await ChartOfAccount.findOne({ code: bqJournal.counterAccount, isActive: true }).session(session ?? null)
     if (a) return a
   }
-  return ChartOfAccount.findOne({ code: DEFAULT_BANK_ACCOUNT, isActive: true })
+  return ChartOfAccount.findOne({ code: DEFAULT_BANK_ACCOUNT, isActive: true }).session(session ?? null)
 }
 
 export interface CreatePaymentEntryOptions {
@@ -49,7 +52,7 @@ export interface CreatePaymentEntryOptions {
  */
 export async function createPaymentEntryFromBilling(
   billingDocOrId: IBillingDocument | string | Types.ObjectId,
-  options: CreatePaymentEntryOptions = {}
+  options: CreatePaymentEntryOptions = {},
 ): Promise<CreateEntryResult> {
   const doc: IBillingDocument | null =
     typeof billingDocOrId === 'object' && (billingDocOrId as IBillingDocument)._id
@@ -100,7 +103,13 @@ export async function createPaymentEntryFromBilling(
       entry: saleEntry._id,
       accountCode: DEFAULT_CUSTOMER_ACCOUNT,
     })
-    lettrageCode = customerLine?.lettrage || doc.number?.replace(/[^A-Z0-9]/gi, '').slice(-8).toUpperCase() || ''
+    lettrageCode =
+      customerLine?.lettrage ||
+      doc.number
+        ?.replace(/[^A-Z0-9]/gi, '')
+        .slice(-8)
+        .toUpperCase() ||
+      ''
     // Si la ligne 411 de la vente n'est pas encore lettrée, la lettrer maintenant
     if (customerLine && !customerLine.lettrage && lettrageCode) {
       customerLine.lettrage = lettrageCode
@@ -108,7 +117,11 @@ export async function createPaymentEntryFromBilling(
       await customerLine.save()
     }
   } else {
-    lettrageCode = doc.number?.replace(/[^A-Z0-9]/gi, '').slice(-8).toUpperCase() || ''
+    lettrageCode =
+      doc.number
+        ?.replace(/[^A-Z0-9]/gi, '')
+        .slice(-8)
+        .toUpperCase() || ''
   }
 
   const lines = [

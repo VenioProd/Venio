@@ -23,6 +23,7 @@ import Project from '../../../models/Project.js'
 import ProjectFinance from '../../../models/ProjectFinance.js'
 import ShareRuleVersion from '../../../models/ShareRuleVersion.js'
 import projectFinanceErrors from './projectFinanceErrors.js'
+import { projectFinanceSummary } from '../../../lib/projectFinance/payments.js'
 
 const router = express.Router({ mergeParams: true })
 router.use(auth, requireAdmin)
@@ -64,6 +65,7 @@ router.get<ProjectParams>(
       res.json({
         finance,
         ruleVersion,
+        summary: await projectFinanceSummary(req.params.projectId),
         schedule: finance ? await installmentSchedule(finance) : [],
         ...(finance?.mode === 'ABONNEMENT' ? { subscriptionState: await subscriptionState(finance) } : {}),
       })
@@ -231,19 +233,31 @@ router.post<ProjectParams>(
   requireProject,
   async (req, res, next) => {
     try {
-      const lastVersion = await ShareRuleVersion.findOne({ project: req.params.projectId }).sort({ version: -1 }).lean()
-      const version = new ShareRuleVersion({
-        project: req.params.projectId,
-        version: (lastVersion?.version ?? 0) + 1,
-        effectiveFrom: req.body?.effectiveFrom,
-        rules: req.body?.rules,
-        reason: req.body?.reason,
-        createdBy: req.user!.id,
+      await validateShareRules(req.body?.rules)
+      const version = await runInTransaction(async (session) => {
+        // Une règle et un encaissement doivent observer le même ordre sur le projet.
+        await ProjectFinance.updateOne(
+          { project: req.params.projectId },
+          { $currentDate: { updatedAt: true } },
+          { session },
+        )
+        const lastVersion = await ShareRuleVersion.findOne({ project: req.params.projectId })
+          .sort({ version: -1 })
+          .session(session)
+          .lean()
+        const version = new ShareRuleVersion({
+          project: req.params.projectId,
+          version: (lastVersion?.version ?? 0) + 1,
+          effectiveFrom: req.body?.effectiveFrom,
+          rules: req.body?.rules,
+          reason: req.body?.reason,
+          createdBy: req.user!.id,
+        })
+        await version.validate()
+        assertVersionEffectiveDate(version.effectiveFrom, await lastAllocatedPaymentAt(req.params.projectId, session))
+        await version.save({ session })
+        return version
       })
-      await version.validate()
-      await validateShareRules(version.rules)
-      assertVersionEffectiveDate(version.effectiveFrom, await lastAllocatedPaymentAt(req.params.projectId))
-      await version.save()
       await recordAudit({
         action: 'SHARE_RULE_VERSION_CREATE',
         actor: buildActorFromReq(req),

@@ -47,7 +47,7 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
   return Array.from(ids)
 }
 
-const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PAID']
+const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID']
 
 router.get('/documents', async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -9,6 +9,7 @@ import requireMfa from '../middleware/mfa.js'
 import accountingRoutes from '../routes/admin/accounting/index.js'
 import User from '../models/User.js'
 import ProjectFinance from '../models/ProjectFinance.js'
+import ShareRuleVersion from '../models/ShareRuleVersion.js'
 import Project from '../models/Project.js'
 import ChartOfAccount from '../models/ChartOfAccount.js'
 import AuditLog from '../models/AuditLog.js'
@@ -52,7 +53,7 @@ async function beneficiary() {
 }
 beforeAll(async () => {
   await setupMongoReplSet()
-  await ProjectFinance.init()
+  await Promise.all([ProjectFinance.init(), ShareRuleVersion.init()])
 })
 afterAll(teardownMongo)
 beforeEach(async () => {

@@ -281,7 +281,7 @@ router.post(
   },
 )
 
-const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PAID']
+const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID']
 
 router.get('/:projectId/billing', async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -3,6 +3,7 @@ import { getNextSequence } from '../../models/Sequence.js'
 import { runInTransaction } from '../transaction.js'
 import { invoiceAmountsCents } from './invoicing.js'
 import { assertCents, divHalfUp, moneyError } from './money.js'
+import { assertInvoiceHasNoReceipts } from './payments.js'
 
 export async function createCreditNote({
   invoiceId,
@@ -27,7 +28,7 @@ export async function createCreditNote({
       invoice.type !== 'INVOICE' ||
       invoice.total <= 0 ||
       invoice.creditedInvoice ||
-      !['ISSUED', 'SENT', 'PAID'].includes(invoice.status)
+      !['ISSUED', 'SENT', 'PARTIALLY_PAID', 'PAID'].includes(invoice.status)
     ) {
       const err = moneyError('Un avoir exige une facture positive émise')
       err.status = 409
@@ -46,6 +47,7 @@ export async function createCreditNote({
     }
     // Deux avoirs concurrents doivent relire le cumul après le premier commit.
     await BillingDocument.updateOne({ _id: invoice._id }, { $currentDate: { updatedAt: true } }, { session })
+    await assertInvoiceHasNoReceipts(invoice, session)
     const previous = await BillingDocument.find({ creditedInvoice: invoice._id, status: { $ne: 'CANCELLED' } }).session(
       session,
     )

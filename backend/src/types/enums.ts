@@ -39,7 +39,7 @@ export type DocumentType = 'DEVIS' | 'FACTURE' | 'FICHIER_PROJET'
 
 // ─── Billing ───
 export type BillingDocumentType = 'QUOTE' | 'INVOICE'
-export type BillingDocumentStatus = 'DRAFT' | 'ISSUED' | 'SENT' | 'ACCEPTED' | 'PAID' | 'CANCELLED'
+export type BillingDocumentStatus = 'DRAFT' | 'ISSUED' | 'SENT' | 'ACCEPTED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED'
 
 // ─── Activity ───
 export type ActivityAction =
@@ -189,6 +189,8 @@ export type AuditAction =
   | 'PROJECT_FINANCE_SAVE'
   | 'PROJECT_FINANCE_INVOICES_GENERATE'
   | 'BILLING_CREDIT_NOTE_CREATE'
+  | 'PROJECT_PAYMENT_CREATE'
+  | 'PROJECT_REFUND_CREATE'
   | 'PROJECT_SUBSCRIPTION_INVOICES_GENERATE'
   | 'PROJECT_SUBSCRIPTION_PERIOD_GENERATE'
   | 'SHARE_RULE_VERSION_CREATE'

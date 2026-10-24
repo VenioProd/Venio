@@ -98,6 +98,10 @@ Facture client de l'acompte : 999,90 € HT, 1 199,88 € TTC, payée en trois f
 
 Un encaissement qui dépasserait le reste dû de la facture est refusé.
 
+**Après un avoir**, R3 s'applique aux montants nets de la facture : HT net = HT facture − HT des avoirs émis, TTC net = TTC facture − TTC des avoirs émis. Pour que ce rapport ne change jamais pendant qu'il y a de l'argent encaissé, un avoir ne se crée ni ne s'émet tant que le cumul encaissé net de la facture n'est pas nul : on rembourse d'abord, puis on émet l'avoir. Un encaissement est refusé tant qu'un avoir en brouillon existe sur la facture.
+
+**Factures payées avant la mise en service de l'espace** : elles portent déjà une écriture d'encaissement globale, sans encaissement détaillé. Leur reste dû est nul ; on n'y saisit ni encaissement ni remboursement, et une correction passe par une écriture manuelle.
+
 ### R4 — Répartition d'un encaissement entre bénéficiaires
 
 Pour chaque encaissement, avec la version de règles **en vigueur à sa date** :
@@ -160,7 +164,7 @@ Remboursement de 150,00 € TTC sur la facture déjà soldée, imputé sur E1 :
 | Société | 33,36 | 20,86 | −12,50 |
 | **Total** | **333,33** | **208,33** | **−125,00** |
 
-Le HT remboursé imputé sur un encaissement ne peut pas dépasser sa base nette.
+Le HT remboursé se calcule par R3 au niveau de la facture ; il peut donc dépasser d'un ou deux centimes la base nette de l'encaissement imputé (les deux HT ont été arrondis à des cumuls différents). Les parts des bénéficiaires se régularisent alors sur la base nette entière, et l'excédent s'ajoute à la part négative de la société. Au-delà de deux centimes, le remboursement est refusé : ce serait une incohérence, pas un arrondi.
 
 ### R7 — Relevé d'un bénéficiaire
 

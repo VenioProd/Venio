@@ -19,6 +19,7 @@ import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../li
 import { runInTransaction } from '../../lib/transaction.js'
 import { invoiceAmountsCents } from '../../lib/projectFinance/invoicing.js'
 import { moneyError } from '../../lib/projectFinance/money.js'
+import { markInvoicePaid, assertInvoiceHasNoReceipts } from '../../lib/projectFinance/payments.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 
 const router = express.Router()
@@ -226,17 +227,19 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const body = req.body || {}
-      const doc = await BillingDocument.findById(req.params.id)
+      let doc = await BillingDocument.findById(req.params.id)
       if (!doc) {
         return res.status(404).json({ error: 'Billing document not found' })
       }
+      if (body.status === 'PARTIALLY_PAID') {
+        return res.status(400).json({ error: 'Le statut partiellement payé est calculé depuis les encaissements' })
+      }
+      const markPaid = doc.type === 'INVOICE' && body.status === 'PAID'
 
-      const previousStatus = doc.status
-
-      if (body.status !== undefined) {
+      if (body.status !== undefined && !markPaid) {
         doc.status = body.status
       }
-      if (body.paidAt !== undefined) {
+      if (body.paidAt !== undefined && !markPaid) {
         doc.paidAt = body.paidAt ? new Date(body.paidAt) : null
       }
       if (body.dueAt !== undefined) {
@@ -259,37 +262,16 @@ router.patch(
       }
       await doc.save()
 
-      // Hook comptable : si la facture passe à PAID, générer l'écriture de banque
       let paymentEntry: unknown = null
-      if (doc.type === 'INVOICE' && previousStatus !== 'PAID' && doc.status === 'PAID') {
-        // S'assurer que paidAt est défini
-        if (!doc.paidAt) {
-          doc.paidAt = new Date()
-          await doc.save()
-        }
-        try {
-          const r = await createPaymentEntryFromBilling(doc, { userId: req.user!.id })
-          paymentEntry = r.entry
-        } catch (err) {
-          // Si la compta n'est pas configurée, on n'échoue pas la mise à jour
-          // de la facture : on retourne un avertissement.
-          return res.json({
-            document: doc.toObject(),
-            accounting: { warning: `Écriture de paiement non générée : ${(err as Error).message}` },
-          })
-        }
-      }
-
-      // Notif si la facture passe à PAID
-      if (doc.type === 'INVOICE' && previousStatus !== 'PAID' && doc.status === 'PAID') {
-        notifySuperAdmins({
-          type: 'BILLING_DOCUMENT_PAID',
-          title: `Facture payée 💰`,
-          message: `${doc.number} — ${doc.total.toLocaleString('fr-FR')} ${doc.currency} encaissés`,
-          link: `/admin/billing/${doc._id}`,
-          metadata: { documentId: String(doc._id) },
-          excludeUserId: req.user!.id,
-        }).catch(() => {})
+      if (markPaid) {
+        const result = await markInvoicePaid({
+          invoice: doc,
+          method: body.method,
+          paidAt: body.paidAt,
+          userId: req.user!.id,
+        })
+        if (result) paymentEntry = await AccountingEntry.findById(result.payment.entry).lean()
+        doc = (await BillingDocument.findById(doc._id))!
       }
 
       return res.json({
@@ -410,6 +392,9 @@ router.post(
             { $currentDate: { updatedAt: true } },
             { session },
           )
+          const original = await BillingDocument.findById(doc.creditedInvoice).session(session)
+          if (!original) throw moneyError('Facture d’origine introuvable')
+          await assertInvoiceHasNoReceipts(original, session)
           const current = await BillingDocument.findById(doc._id).session(session)
           if (!current || current.status !== doc.$locals.loadedStatus) {
             const err = moneyError('Le statut de l’avoir a changé ; rechargez-le')
@@ -421,8 +406,7 @@ router.post(
           if (wasDraft) current.status = 'ISSUED'
           await current.save({ session })
           const sale = await createSaleEntryFromBilling(current, { userId: req.user!.id, session })
-          const original = await BillingDocument.findById(current.creditedInvoice).session(session)
-          if (original?.financeLink?.kind === 'INSTALLMENT') {
+          if (original.financeLink?.kind === 'INSTALLMENT') {
             const credits = await BillingDocument.find({
               creditedInvoice: original._id,
               status: { $in: ['ISSUED', 'SENT', 'PAID'] },

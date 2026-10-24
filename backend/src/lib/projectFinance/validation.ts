@@ -4,6 +4,8 @@ import Beneficiary from '../../models/Beneficiary.js'
 import User from '../../models/User.js'
 import Subsidiary from '../../models/Subsidiary.js'
 import ProjectPhase from '../../models/ProjectPhase.js'
+import ProjectPayment from '../../models/ProjectPayment.js'
+import ShareAllocation from '../../models/ShareAllocation.js'
 import { moneyError } from './money.js'
 import { allocatePayment, splitPayers, splitSchedule } from './rules.js'
 
@@ -91,7 +93,18 @@ export async function validateProjectFinance(finance: IProjectFinance, session?:
   }
 }
 
-export async function lastAllocatedPaymentAt(_projectId: string | Types.ObjectId): Promise<Date | null> {
-  // Le lot 3 lira ici la date du dernier encaissement réparti du projet.
-  return null
+export async function lastAllocatedPaymentAt(
+  projectId: string | Types.ObjectId,
+  session: ClientSession,
+): Promise<Date | null> {
+  const payments = await ShareAllocation.distinct('payment', {
+    project: projectId,
+    beneficiary: { $ne: null },
+  }).session(session)
+  const last = await ProjectPayment.findOne({ _id: { $in: payments }, project: projectId, kind: 'PAYMENT' })
+    .sort({ receivedAt: -1 })
+    .select('receivedAt')
+    .session(session)
+    .lean()
+  return last?.receivedAt ?? null
 }
