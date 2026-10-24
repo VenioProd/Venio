@@ -56,10 +56,18 @@ const signatureSchema = new mongoose.Schema(
   { _id: false },
 )
 
+function requiredWithoutLead(this: { leadId?: unknown }): boolean {
+  return !this.leadId
+}
+
 const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
   {
-    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
-    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Un devis naît sur un projet, ou sur un lead seul tant que l'affaire n'a
+    // pas encore de projet. Il ne peut être envoyé qu'une fois rattaché à un
+    // projet : c'est par le projet que le client y accède.
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null, required: requiredWithoutLead },
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, required: requiredWithoutLead },
+    leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
     intro: { type: String, default: '' },
@@ -87,6 +95,7 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
 
 quoteProposalSchema.index({ project: 1, status: 1 })
 quoteProposalSchema.index({ client: 1, status: 1 })
+quoteProposalSchema.index({ leadId: 1 }, { partialFilterExpression: { leadId: { $type: 'objectId' } } })
 
 syncTombstones(quoteProposalSchema, 'quotes')
 

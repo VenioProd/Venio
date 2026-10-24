@@ -24,6 +24,7 @@ import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { canReadLead, leadScopeFilter, isLeadOutOfScope, readsWholeCrm } from '../../lib/crmScope.js'
 import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
 import Project from '../../models/Project.js'
@@ -210,6 +211,7 @@ router.get(
 router.post(
   '/leads',
   requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
   body('company').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('Email de contact invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -305,6 +307,7 @@ router.post(
 router.patch(
   '/leads/:id',
   requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id)

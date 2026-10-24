@@ -16,6 +16,7 @@ import MissionBrief from '../../models/MissionBrief.js'
 import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityType } from '../../models/SyncTombstone.js'
 import { leadScopeFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
+import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
 
 const router = express.Router()
 router.use(auth, requireAdmin)
@@ -26,6 +27,23 @@ const permissions: Record<SyncEntityType, Permission[]> = {
   projectPhases: [PERMISSIONS.VIEW_PHASES],
   projectUpdates: [PERMISSIONS.VIEW_PROJECTS],
   quotes: [PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.VIEW_BILLING],
+}
+
+type QuotableItem = { assignedTo?: unknown; client?: unknown; clientAccountId?: unknown }
+
+// L'app n'a pas à refaire la règle de portefeuille : le serveur dit, pour
+// chaque projet et chaque lead, si l'utilisateur peut y créer un devis.
+async function withCanQuote(req: Request, type: 'projects' | 'leads', items: QuotableItem[]) {
+  // `assignedTo` est peuplé sur les projets : on compare son identifiant.
+  const refs = items.map((item) => ({
+    ...item,
+    assignedTo: (item.assignedTo as { _id?: unknown } | null)?._id ?? item.assignedTo,
+  }))
+  const portfolio = await loadQuotePortfolio(req, type === 'projects' ? { projects: refs } : { leads: refs })
+  return items.map((item, index) => ({
+    ...item,
+    canQuote: type === 'projects' ? portfolio.canQuoteProject(refs[index]!) : portfolio.canQuoteLead(refs[index]!),
+  }))
 }
 
 router.get('/:type', async (req: Request, res: Response, next: NextFunction) => {
@@ -151,7 +169,9 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
               subjectId: String(interaction.subjectId),
             }
           })
-        : items
+        : type === 'projects' || type === 'leads'
+          ? await withCanQuote(req, type, items as QuotableItem[])
+          : items
     return res.json({ items: responseItems, nextCursor, hasMore })
   } catch (err) {
     return next(err)

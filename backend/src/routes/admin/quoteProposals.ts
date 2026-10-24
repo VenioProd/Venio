@@ -6,7 +6,9 @@ import { PERMISSIONS } from '../../lib/permissions.js'
 import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import QuoteTemplate from '../../models/QuoteTemplate.js'
-import User from '../../models/User.js'
+import Lead from '../../models/Lead.js'
+import { canReadLead } from '../../lib/crmScope.js'
+import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
@@ -71,15 +73,34 @@ async function initializeProposal(proposal: IQuoteProposal) {
 }
 
 /**
- * Sans la facturation, on ne chiffre que ses propres affaires : un projet dont
- * on est responsable, ou celui d'un client dont on est propriétaire. Le lead
- * d'origine ne suffit pas : son rattachement à un projet se déclare librement.
+ * Ce sur quoi porte un nouveau devis : un projet, ou un lead seul. Répond
+ * lui-même 404 ou 403 et renvoie null quand la cible n'est pas admissible.
  */
-async function canQuoteProject(req: Request, project: { assignedTo?: unknown; client?: unknown }) {
-  if (await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) return true
-  if (String(project.assignedTo ?? '') === req.user!.id) return true
-  const client = await User.findOne({ _id: project.client, role: 'CLIENT' }).select('ownerAdminId').lean()
-  return String(client?.ownerAdminId ?? '') === req.user!.id
+async function quoteTarget(req: Request, res: Response, wanted: { project?: string; leadId?: string }) {
+  if (wanted.project) {
+    const project = await Project.findById(wanted.project).select('client assignedTo').lean()
+    if (!project) {
+      res.status(404).json({ error: 'Projet non trouvé' })
+      return null
+    }
+    if (!(await loadQuotePortfolio(req, { projects: [project] })).canQuoteProject(project)) {
+      res.status(403).json({ error: "Ce projet n'est pas dans votre portefeuille", code: 'PROJECT_OUT_OF_SCOPE' })
+      return null
+    }
+    return { project: project._id, client: project.client, leadId: null }
+  }
+  const lead = await Lead.findById(wanted.leadId).select('assignedTo createdBy clientAccountId').lean()
+  if (!lead || !canReadLead(req, lead)) {
+    res.status(404).json({ error: 'Lead non trouvé' })
+    return null
+  }
+  if (!(await loadQuotePortfolio(req, { leads: [lead] })).canQuoteLead(lead)) {
+    res.status(403).json({ error: "Ce lead n'est pas dans votre portefeuille", code: 'LEAD_OUT_OF_SCOPE' })
+    return null
+  }
+  // Le compte client lié au lead n'est pas repris : sans projet, personne
+  // n'accède au devis, et le rattachement fixera le client à partir du projet.
+  return { project: null, client: null, leadId: lead._id }
 }
 
 router.get(
@@ -88,7 +109,8 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filter: Record<string, unknown> = {}
-      if (req.query.project) filter.project = req.query.project
+      if (req.query.project) filter.project = String(req.query.project)
+      if (req.query.lead) filter.leadId = String(req.query.lead)
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()
       return res.json({ proposals })
     } catch (err) {
@@ -117,23 +139,21 @@ router.post(
   '/from-template',
   requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   body('templateId').isMongoId(),
-  body('project').isMongoId(),
+  body('project').optional().isMongoId(),
+  body('leadId').optional().isMongoId(),
+  body().custom((value) => Boolean(value?.project) !== Boolean(value?.leadId)),
   body('title').optional().isString().trim().notEmpty(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Modèle, projet ou titre invalide' })
+      if (!validationResult(req).isEmpty()) {
+        return res.status(400).json({ error: 'Modèle, projet ou lead (un seul des deux), ou titre invalide' })
+      }
       const template = await QuoteTemplate.findOne({ _id: req.body.templateId, isActive: true }).lean()
       if (!template) return res.status(404).json({ error: 'Modèle actif non trouvé' })
-      const project = await Project.findById(req.body.project).lean()
-      if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
-      if (!(await canQuoteProject(req, project))) {
-        return res
-          .status(403)
-          .json({ error: "Ce projet n'est pas dans votre portefeuille", code: 'PROJECT_OUT_OF_SCOPE' })
-      }
+      const target = await quoteTarget(req, res, { project: req.body.project, leadId: req.body.leadId })
+      if (!target) return
       const proposal = new QuoteProposal({
-        project: project._id,
-        client: project.client,
+        ...target,
         createdBy: req.user!.id,
         title: req.body.title ?? template.title,
         intro: template.intro,
@@ -208,6 +228,50 @@ router.patch(
   },
 )
 
+// Un devis né sur un lead passe sur le projet de l'affaire quand il existe.
+router.post(
+  '/:id/attach-project',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  param('id').isMongoId(),
+  body('project').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id)
+      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      if (!(await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) && String(proposal.createdBy) !== req.user!.id) {
+        return res
+          .status(403)
+          .json({ error: 'Vous ne pouvez rattacher que vos propositions', code: 'NOT_PROPOSAL_OWNER' })
+      }
+      if (proposal.project) {
+        return res
+          .status(409)
+          .json({ error: 'Ce devis est déjà rattaché à un projet', code: 'PROPOSAL_ALREADY_ATTACHED' })
+      }
+      if (proposal.status !== 'DRAFT') {
+        return res.status(409).json({ error: 'Seul un brouillon peut être rattaché', code: 'PROPOSAL_NOT_DRAFT' })
+      }
+      const target = await quoteTarget(req, res, { project: req.body.project })
+      if (!target) return
+      // Conditionnel : deux rattachements simultanés ne peuvent pas s'écraser.
+      const attached = await QuoteProposal.findOneAndUpdate(
+        { _id: proposal._id, project: null, status: 'DRAFT' },
+        { $set: { project: target.project, client: target.client } },
+        { new: true },
+      ).lean()
+      if (!attached) {
+        return res
+          .status(409)
+          .json({ error: 'Ce devis est déjà rattaché à un projet', code: 'PROPOSAL_ALREADY_ATTACHED' })
+      }
+      return res.json({ proposal: attached })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
 router.post(
   '/:id/send',
   requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
@@ -227,6 +291,12 @@ router.post(
       }
       if (proposal.status !== 'DRAFT') {
         return res.status(409).json({ error: 'Seul un brouillon peut être envoyé', code: 'PROPOSAL_NOT_DRAFT' })
+      }
+      if (!proposal.project) {
+        return res.status(409).json({
+          error: 'Rattachez le devis à un projet avant de l’envoyer',
+          code: 'PROPOSAL_NOT_ATTACHED',
+        })
       }
       proposal.status = 'SENT'
       await proposal.save()
