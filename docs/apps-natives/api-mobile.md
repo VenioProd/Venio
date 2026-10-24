@@ -128,7 +128,7 @@ Les routes protégées par une session acceptent `Authorization: Bearer <access>
 /api/admin/inbox                /api/admin/search
 ```
 
-Tout le reste répond `403 BROWSER_SESSION_REQUIRED` en Bearer : création de comptes (administrateurs, stagiaires), identifiants, MFA, jetons agent, coffre d'outils, sauvegardes, comptabilité, webhooks, profil et mot de passe. C'est une liste blanche : une route ajoutée plus tard reste fermée à l'app tant qu'on ne l'y ajoute pas. Dans `/api/admin/clients`, choisir le mot de passe d'un compte client ou changer son email (son identifiant) reste aussi réservé au navigateur.
+Tout le reste répond `403 BROWSER_SESSION_REQUIRED` en Bearer : création de comptes (administrateurs, stagiaires), identifiants, MFA, jetons agent, coffre d'outils, sauvegardes, comptabilité, webhooks, profil et mot de passe. C'est une liste blanche : une route ajoutée plus tard reste fermée à l'app tant qu'on ne l'y ajoute pas. Dans `/api/admin/clients`, choisir le mot de passe d'un compte client, changer son email (son identifiant) ou lui envoyer des identifiants (`send-credentials`) reste aussi réservé au navigateur.
 
 Autres limites :
 
@@ -227,7 +227,7 @@ Permission `manage_quotes`, donnée au rôle `COMMERCIAL`. Elle permet de suivre
 | `POST /api/admin/quote-proposals/from-template` | idem | Crée un brouillon. `201 { proposal }`. |
 | `POST /api/admin/quote-proposals/:id/send` | idem | `DRAFT` → `SENT`. `200 { proposal }`. |
 
-`POST /from-template` : `{ "templateId": "…", "project": "…", "title": "…" }` (`title` facultatif, sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Sans `manage_billing`, le projet doit être dans son portefeuille : on en est responsable, ou il est issu d'un lead qui nous est assigné ou qu'on a créé. Erreurs : `400` (identifiants invalides), `403 PROJECT_OUT_OF_SCOPE`, `404` (modèle inactif ou projet absent).
+`POST /from-template` : `{ "templateId": "…", "project": "…", "title": "…" }` (`title` facultatif, sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Sans `manage_billing`, le projet doit être dans son portefeuille : on en est responsable, ou son client nous appartient (propriétaire du compte client). Rattacher un projet à son lead ne suffit pas. Erreurs : `400` (identifiants invalides), `403 PROJECT_OUT_OF_SCOPE`, `404` (modèle inactif ou projet absent).
 
 `POST /:id/send` : sans `manage_billing`, on n'envoie que les devis dont on est l'auteur (`403 NOT_PROPOSAL_OWNER`). Erreurs : `409 PROPOSAL_ALREADY_SIGNED`, `409 PROPOSAL_NOT_DRAFT`, `404`.
 

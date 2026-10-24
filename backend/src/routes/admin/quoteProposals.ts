@@ -6,8 +6,7 @@ import { PERMISSIONS } from '../../lib/permissions.js'
 import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import QuoteTemplate from '../../models/QuoteTemplate.js'
-import Lead from '../../models/Lead.js'
-import { isLeadOutOfScope } from '../../lib/crmScope.js'
+import User from '../../models/User.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
@@ -73,14 +72,14 @@ async function initializeProposal(proposal: IQuoteProposal) {
 
 /**
  * Sans la facturation, on ne chiffre que ses propres affaires : un projet dont
- * on est responsable, ou issu d'un lead qui nous est assigné ou qu'on a créé.
+ * on est responsable, ou celui d'un client dont on est propriétaire. Le lead
+ * d'origine ne suffit pas : son rattachement à un projet se déclare librement.
  */
-async function canQuoteProject(req: Request, project: { assignedTo?: unknown; sourceLead?: unknown }) {
+async function canQuoteProject(req: Request, project: { assignedTo?: unknown; client?: unknown }) {
   if (await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) return true
   if (String(project.assignedTo ?? '') === req.user!.id) return true
-  if (!project.sourceLead) return false
-  const lead = await Lead.findById(project.sourceLead).select('assignedTo createdBy').lean()
-  return Boolean(lead) && !isLeadOutOfScope(req, lead!)
+  const client = await User.findOne({ _id: project.client, role: 'CLIENT' }).select('ownerAdminId').lean()
+  return String(client?.ownerAdminId ?? '') === req.user!.id
 }
 
 router.get(

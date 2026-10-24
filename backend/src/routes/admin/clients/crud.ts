@@ -400,12 +400,15 @@ router.post(
   requirePermission(PERMISSIONS.MANAGE_CLIENTS),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Un courriel officiel avec un mot de passe choisi par l'expéditeur
+      // ferait un hameçonnage parfait depuis un appareil volé.
+      if (req.user!.deviceId) return refuseFromDevice(res)
       const { password } = req.body || {}
       if (!password) {
         return res.status(400).json({ error: 'Le mot de passe est requis.' })
       }
-      const client = await User.findById(req.params.id)
-      if (!client || client.role !== 'CLIENT') {
+      const client = await ensureClient(req.params.id as string, req)
+      if (!client) {
         return res.status(404).json({ error: 'Client not found' })
       }
       const result = await sendAdminCredentials({

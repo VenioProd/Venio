@@ -109,12 +109,30 @@ it('crée au prix du modèle, initialise les options et envoie seulement son dev
     .send({ templateId: template._id, project: foreign._id })
     .expect(403)
   expect(outOfScope.body.code).toBe('PROJECT_OUT_OF_SCOPE')
+  // Rattacher le projet d'un collègue à son propre lead n'ouvre pas le droit de le chiffrer.
   const lead = await Lead.create({ company: 'Prospect', assignedTo: author })
-  const fromLead = await Project.create({ name: 'Issu du lead', client: author, sourceLead: lead._id })
+  await request(app)
+    .post(`/api/admin/crm/leads/${lead._id}/projects/${foreign._id}`)
+    .set('Authorization', bearer)
+    .expect(200)
   await request(app)
     .post('/api/admin/quote-proposals/from-template')
     .set('Authorization', bearer)
-    .send({ templateId: template._id, project: fromLead._id })
+    .send({ templateId: template._id, project: foreign._id })
+    .expect(403)
+  // Le projet d'un client dont il est propriétaire, si.
+  const owned = await User.create({
+    name: 'Client',
+    email: 'owned@test.invalid',
+    passwordHash: 'x',
+    role: 'CLIENT',
+    ownerAdminId: author,
+  })
+  const ownedProject = await Project.create({ name: 'Son client', client: owned._id })
+  await request(app)
+    .post('/api/admin/quote-proposals/from-template')
+    .set('Authorization', bearer)
+    .send({ templateId: template._id, project: ownedProject._id })
     .expect(201)
 })
 
@@ -294,6 +312,43 @@ it('protège les types de synchro et date les mises à jour de projet', async ()
   await request(app).get('/api/mobile/sync/quotes').set('Authorization', bearer).expect(403)
 })
 
+it('ne synchronise les étapes, ni leurs suppressions, sans view_phases', async () => {
+  const { default: ProjectPhase } = await import('../models/ProjectPhase.js')
+  const phase = await ProjectPhase.create({ project, title: 'Maquettes', order: 0, createdBy: author })
+  await phase.deleteOne()
+  await ProjectPhase.create({ project, title: 'Recette', order: 1, createdBy: author })
+  await User.findByIdAndUpdate(author, { deniedPermissions: ['view_phases'] })
+  await new Promise((resolve) => setTimeout(resolve, 2100))
+
+  await request(app).get('/api/mobile/sync/projects').set('Authorization', bearer).expect(200)
+  await request(app).get('/api/mobile/sync/projectPhases').set('Authorization', bearer).expect(403)
+  const deletions = await request(app).get('/api/mobile/sync/deletions').set('Authorization', bearer).expect(200)
+  expect(deletions.body.items.map((item: { entityType: string }) => item.entityType)).not.toContain('projectPhases')
+})
+
+it('ne montre les leads entrants que dans le périmètre CRM de lecture', async () => {
+  const admin = await User.create({ name: 'Adm', email: 'adm@test.invalid', passwordHash: 'x', role: 'ADMIN' })
+  const device = await MobileDevice.create({
+    userId: admin._id,
+    name: 'iPad',
+    platform: 'ipados',
+    expiresAt: new Date(Date.now() + 86400000),
+  })
+  const session = await createSession(String(admin._id), { deviceId: String(device._id), tokenPrefix: 'vnm_at_' })
+  const inbound = { source: 'FORMULAIRE_SITE', assignedTo: null }
+  await Lead.create({ ...inbound, company: 'Hors périmètre', createdBy: author })
+  await Lead.create({ ...inbound, company: 'Le mien', createdBy: admin._id })
+
+  const adminView = await request(app)
+    .get('/api/mobile/today')
+    .set('Authorization', `Bearer ${session.token}`)
+    .expect(200)
+  expect(adminView.body.newInboundLeads.items.map((lead: { company: string }) => lead.company)).toEqual(['Le mien'])
+  // Le commercial lit tout le CRM : il voit les deux.
+  const commercialView = await request(app).get('/api/mobile/today').set('Authorization', bearer).expect(200)
+  expect(commercialView.body.newInboundLeads.total).toBe(2)
+})
+
 it('conserve un seul audio lors de deux créations concurrentes et le sert après contrôle des droits', async () => {
   const { readdir, readFile, unlink } = await import('node:fs/promises')
   const { resolve } = await import('node:path')
@@ -340,5 +395,11 @@ it("réserve au navigateur l'email et le mot de passe d'un compte client", async
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('BROWSER_SESSION_REQUIRED')
   }
+  const credentials = await request(app)
+    .post(`/api/admin/clients/${client._id}/send-credentials`)
+    .set('Authorization', bearer)
+    .send({ password: 'faux-mot-de-passe' })
+    .expect(403)
+  expect(credentials.body.code).toBe('BROWSER_SESSION_REQUIRED')
   expect((await User.findById(client._id).lean())?.email).toBe('client@test.invalid')
 })
