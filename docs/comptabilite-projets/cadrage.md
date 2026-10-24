@@ -221,7 +221,8 @@ Nouveaux modèles (montants en centimes, % en bp) :
 
 Modifications de l'existant :
 
-- `BillingDocument` : type `CREDIT_NOTE` (avoir) avec lien vers la facture d'origine, champ `payer`, statut `PARTIALLY_PAID`, lien vers l'échéance ou la période d'abonnement.
+- `BillingDocument` : instantané du `payer`, lien vers l'échéance ou la période d'abonnement (`financeLink`) et clé d'unicité (`financeKey`), statut `PARTIALLY_PAID`, lien vers la facture d'origine pour un avoir. Un avoir suit la convention déjà en place dans Venio (PDF, Factur-X) : une facture `INVOICE` à montants négatifs, ce qui nette naturellement les totaux de tous les écrans existants.
+- Les montants d'une facture émise, ou issue d'un échéancier, ne se modifient plus : on corrige par un avoir.
 - `AccountingLine` : champ analytique facultatif `project`, pour rattacher un coût ou un produit à un projet.
 - `createEntry` et `createSaleEntryFromBilling` : paramètre `session` facultatif pour les transactions.
 - Passage de facture à `PAID` : il crée un `ProjectPayment` pour le reste dû, au lieu de l'écriture en totalité actuelle. Sinon, un même encaissement serait compté deux fois.
@@ -232,7 +233,7 @@ Modifications de l'existant :
 | Événement | Journal | Écriture | Clé d'idempotence |
 | --- | --- | --- | --- |
 | Facture émise | VE | existante : 411 / 706 / 44571, tiers = payeur | `billing:sale:<facture>` |
-| Avoir émis | VE | inverse de la facture, au prorata des lignes | `billing:credit:<avoir>` |
+| Avoir émis | VE | inverse de la facture (706 et 44571 au débit, 411 au crédit) | `billing:sale:<avoir>` |
 | Encaissement | BQ | 512 (ou compte Stripe) / 411, lettrage partiel | `payment:<encaissement>` |
 | Remboursement | BQ | 411 / 512 | `payment:<encaissement>` |
 | Versement `BANQUE` | BQ (ou AC + BQ) | compte du bénéficiaire + 44566 / 512 | `settlement:<versement>` |

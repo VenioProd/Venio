@@ -37,6 +37,7 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'SHARE_TEMPLATE_UPDATE',
         'SHARE_TEMPLATE_DELETE',
         'PROJECT_FINANCE_SAVE',
+        'PROJECT_FINANCE_INVOICES_GENERATE',
         'SHARE_RULE_VERSION_CREATE',
         'ACCOUNTING_ENTRY_CREATE',
         'ACCOUNTING_ENTRY_UPDATE',

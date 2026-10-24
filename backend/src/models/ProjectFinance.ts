@@ -23,7 +23,6 @@ const installmentSchema = new mongoose.Schema<IFinanceInstallment>({
     dueDate: { type: Date, default: null },
     phase: { type: mongoose.Schema.Types.ObjectId, ref: 'ProjectPhase', default: null },
   },
-  status: { type: String, enum: ['PLANNED'], default: 'PLANNED' },
 })
 const subscriptionSchema = new mongoose.Schema<IFinanceSubscription>(
   {

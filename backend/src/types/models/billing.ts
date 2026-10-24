@@ -1,5 +1,21 @@
 import type { Document, Types } from 'mongoose'
 import type { BillingDocumentType, BillingDocumentStatus } from '../enums.js'
+import type { IFinancePayer } from './projectFinance.js'
+
+export interface IBillingPayer {
+  payerId: Types.ObjectId
+  kind: IFinancePayer['kind']
+  user: Types.ObjectId | null
+  subsidiary: Types.ObjectId | null
+  billingContact: IFinancePayer['billingContact']
+}
+
+export interface IBillingFinanceLink {
+  kind: 'INSTALLMENT' | 'SUBSCRIPTION'
+  installmentId: Types.ObjectId | null
+  periodStart: Date | null
+  periodEnd: Date | null
+}
 
 // ─── BillingDocument ───
 export interface IBillingLine {
@@ -16,6 +32,9 @@ export interface IBillingDocument extends Document {
   number: string
   project: Types.ObjectId
   client: Types.ObjectId
+  payer: IBillingPayer | null
+  financeLink: IBillingFinanceLink | null
+  financeKey: string | null
   status: BillingDocumentStatus
   issuedAt: Date | null
   dueAt: Date | null

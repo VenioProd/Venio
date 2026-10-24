@@ -2,12 +2,13 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import mongoose from 'mongoose'
 import request from 'supertest'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
 import { createSession } from '../lib/session.js'
 import auth from '../middleware/auth.js'
 import requireMfa from '../middleware/mfa.js'
 import accountingRoutes from '../routes/admin/accounting/index.js'
 import User from '../models/User.js'
+import ProjectFinance from '../models/ProjectFinance.js'
 import Project from '../models/Project.js'
 import ChartOfAccount from '../models/ChartOfAccount.js'
 import AuditLog from '../models/AuditLog.js'
@@ -49,7 +50,10 @@ async function beneficiary() {
   expect(result.status).toBe(201)
   return result.body.beneficiary._id as string
 }
-beforeAll(setupMongo)
+beforeAll(async () => {
+  await setupMongoReplSet()
+  await ProjectFinance.init()
+})
 afterAll(teardownMongo)
 beforeEach(async () => {
   await clearDb()

@@ -9,6 +9,13 @@ import {
   validateProjectFinance,
   validateShareRules,
 } from '../../../lib/projectFinance/validation.js'
+import { runInTransaction } from '../../../lib/transaction.js'
+import {
+  assertFinanceChangesAllowed,
+  generateInstallmentInvoices,
+  installmentSchedule,
+} from '../../../lib/projectFinance/invoicing.js'
+import BillingDocument from '../../../models/BillingDocument.js'
 import Project from '../../../models/Project.js'
 import ProjectFinance from '../../../models/ProjectFinance.js'
 import ShareRuleVersion from '../../../models/ShareRuleVersion.js'
@@ -51,7 +58,7 @@ router.get<ProjectParams>(
         )
         ruleVersion = versions.find((version) => version.version === selected.version)!
       }
-      res.json({ finance, ruleVersion })
+      res.json({ finance, ruleVersion, schedule: finance ? await installmentSchedule(finance) : [] })
     } catch (err) {
       next(err)
     }
@@ -74,16 +81,27 @@ router.put<ProjectParams>(
         payers: body.payers,
         shareActivationDate: body.shareActivationDate,
       })
-      await replacement.validate()
-      await validateProjectFinance(replacement)
-      let finance = await ProjectFinance.findOne({ project: req.params.projectId })
-      const before = finance?.toObject() ?? null
-      if (finance) {
-        finance.overwrite({ ...replacement.toObject(), _id: finance._id, createdAt: finance.createdAt })
-      } else {
-        finance = replacement
-      }
-      await finance.save()
+      const { finance, before } = await runInTransaction(async (session) => {
+        let finance = await ProjectFinance.findOne({ project: req.params.projectId }).session(session)
+        const before = finance?.toObject() ?? null
+        if (finance) {
+          const invoices = await BillingDocument.find({
+            project: req.params.projectId,
+            'financeLink.kind': 'INSTALLMENT',
+            financeKey: { $type: 'string' },
+          }).session(session)
+          assertFinanceChangesAllowed(finance, replacement, invoices)
+        }
+        await replacement.validate()
+        await validateProjectFinance(replacement, session)
+        if (finance) {
+          finance.overwrite({ ...replacement.toObject(), _id: finance._id, createdAt: finance.createdAt })
+        } else {
+          finance = new ProjectFinance(replacement.toObject())
+        }
+        await finance.save({ session })
+        return { finance, before }
+      })
       await recordAudit({
         action: 'PROJECT_FINANCE_SAVE',
         actor: buildActorFromReq(req),
@@ -93,6 +111,33 @@ router.put<ProjectParams>(
         after: finance.toObject(),
       })
       res.json({ finance })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+router.post<ProjectParams & { installmentId: string }>(
+  '/installments/:installmentId/invoices',
+  requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
+  async (req, res, next) => {
+    try {
+      const result = await generateInstallmentInvoices({
+        projectId: req.params.projectId,
+        installmentId: req.params.installmentId,
+        userId: req.user!.id,
+      })
+      await recordAudit({
+        action: 'PROJECT_FINANCE_INVOICES_GENERATE',
+        actor: buildActorFromReq(req),
+        entityType: 'ProjectFinance',
+        entityId: req.params.projectId,
+        extra: {
+          installmentId: req.params.installmentId,
+          invoiceIds: result.invoices.map((invoice) => String(invoice._id)),
+          alreadyExisted: result.alreadyExisted,
+        },
+      })
+      res.status(result.alreadyExisted ? 200 : 201).json(result)
     } catch (err) {
       next(err)
     }

@@ -46,7 +46,6 @@ export interface IFinanceInstallment {
     dueDate: Date | null
     phase: Types.ObjectId | null
   }
-  status: 'PLANNED'
 }
 
 export interface IFinanceSubscription {

@@ -1,77 +1,57 @@
+import { assertBp, assertCents, moneyError, toCents, vatCents } from '../projectFinance/money.js'
+import { invoiceAmountsCents } from '../projectFinance/invoicing.js'
 import type { Types } from 'mongoose'
 import BillingDocument from '../../models/BillingDocument.js'
 import ChartOfAccount from '../../models/ChartOfAccount.js'
 import VatRate from '../../models/VatRate.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import { createEntry, type CreateEntryResult, type CreateEntryLineInput } from './doubleEntry.js'
-import type {
-  IBillingDocument,
-  IBillingLine,
-  IChartOfAccount,
-  IVatRate,
-} from '../../types/models/index.js'
+import type { IBillingDocument, IBillingLine, IChartOfAccount, IVatRate } from '../../types/models/index.js'
 
 const DEFAULT_CUSTOMER_ACCOUNT = '411000'
 const DEFAULT_REVENUE_ACCOUNT = '706000'
 const DEFAULT_COLLECTED_VAT_ACCOUNT = '445710'
-
-function round2(n: number | null | undefined): number {
-  return Math.round(Number(n || 0) * 100) / 100
-}
 
 /**
  * Construit la clé d'idempotence pour une facture donnée.
  */
 export function buildBillingIdempotencyKey(
   billingDocId: Types.ObjectId | string,
-  kind: 'sale' | 'payment' = 'sale'
+  kind: 'sale' | 'payment' = 'sale',
 ): string {
   return `billing:${kind}:${String(billingDocId)}`
 }
 
 interface VatGroup {
   rate: number
-  ht: number
-  tax: number
-  ttc: number
+  htCents: number
+  taxCents: number
 }
 
-/**
- * Agrège les lignes d'une facture par taux de TVA pour générer
- * les écritures multi-taux conformes.
- */
 function aggregateLinesByVatRate(lines: IBillingLine[] | undefined): VatGroup[] {
-  const byRate = new Map<number, { ht: number; tax: number }>()
+  const byRate = new Map<number, number>()
   for (const line of lines || []) {
-    const rate = Number(line.taxRate || 0)
-    const total = Number(line.total || 0)
-    const taxAmount = total * (rate / 100)
-    if (!byRate.has(rate)) {
-      byRate.set(rate, { ht: 0, tax: 0 })
-    }
-    const acc = byRate.get(rate)!
-    acc.ht += total
-    acc.tax += taxAmount
+    const bp = Math.round(line.taxRate * 100)
+    assertBp(bp, 'Taux de TVA')
+    const htCents = (byRate.get(bp) ?? 0) + toCents(line.total)
+    assertCents(htCents, 'Base HT par taux')
+    byRate.set(bp, htCents)
   }
-  // Arrondir et formatter
-  const result: VatGroup[] = []
-  for (const [rate, { ht, tax }] of byRate.entries()) {
-    result.push({
-      rate,
-      ht: round2(ht),
-      tax: round2(tax),
-      ttc: round2(ht + tax),
-    })
-  }
-  // Trier par taux décroissant (norme française)
-  result.sort((a, b) => b.rate - a.rate)
-  return result
+  return [...byRate]
+    .map(([bp, htCents]) => ({
+      rate: bp / 100,
+      htCents,
+      taxCents: vatCents(htCents, bp),
+    }))
+    .sort((a, b) => b.rate - a.rate)
 }
 
 /**
  * Résout le compte 706 spécifique selon les serviceTypes du projet, ou fallback 706000.
  */
-async function resolveRevenueAccount(project: { serviceTypes?: string[] } | null | undefined): Promise<IChartOfAccount | null> {
+async function resolveRevenueAccount(
+  project: { serviceTypes?: string[] } | null | undefined,
+): Promise<IChartOfAccount | null> {
   // Heuristique : si le projet a un serviceType, on peut mapper vers 706100/706200/706300
   // Sinon, 706000 par défaut.
   const types = project?.serviceTypes || []
@@ -90,7 +70,9 @@ async function resolveCustomerAccount(): Promise<IChartOfAccount | null> {
   return ChartOfAccount.findOne({ code: DEFAULT_CUSTOMER_ACCOUNT, isActive: true })
 }
 
-async function resolveVatCollectedAccountFor(rate: number): Promise<{ account: IChartOfAccount | null; vatRate: IVatRate | null }> {
+async function resolveVatCollectedAccountFor(
+  rate: number,
+): Promise<{ account: IChartOfAccount | null; vatRate: IVatRate | null }> {
   // Cherche d'abord dans VatRate, sinon fallback 445710
   const vatRate = await VatRate.findOne({ rate: Number(rate), isActive: true })
   const code = vatRate?.collectedAccount || DEFAULT_COLLECTED_VAT_ACCOUNT
@@ -115,7 +97,7 @@ export interface CreateSaleEntryOptions {
  */
 export async function createSaleEntryFromBilling(
   billingDocOrId: IBillingDocument | string | Types.ObjectId,
-  options: CreateSaleEntryOptions = {}
+  options: CreateSaleEntryOptions = {},
 ): Promise<CreateEntryResult> {
   const doc: IBillingDocument | null =
     typeof billingDocOrId === 'object' && (billingDocOrId as IBillingDocument)._id
@@ -128,7 +110,9 @@ export async function createSaleEntryFromBilling(
     throw err
   }
   if (doc.type !== 'INVOICE') {
-    const err = new Error('Seules les factures (INVOICE) peuvent générer une écriture de vente') as Error & { status?: number }
+    const err = new Error('Seules les factures (INVOICE) peuvent générer une écriture de vente') as Error & {
+      status?: number
+    }
     err.status = 400
     throw err
   }
@@ -157,9 +141,14 @@ export async function createSaleEntryFromBilling(
 
   // Agrégation par taux de TVA
   const grouped = aggregateLinesByVatRate(doc.lines)
-  const totalHt = round2(grouped.reduce((s, g) => s + g.ht, 0))
-  const totalTax = round2(grouped.reduce((s, g) => s + g.tax, 0))
-  const totalTtc = round2(totalHt + totalTax)
+  const totalHtCents = grouped.reduce((sum, group) => sum + group.htCents, 0)
+  const totalTaxCents = grouped.reduce((sum, group) => sum + group.taxCents, 0)
+  const totalTtcCents = totalHtCents + totalTaxCents
+  assertCents(totalTtcCents, 'TTC de l’écriture')
+  if (doc.financeLink && totalTtcCents !== invoiceAmountsCents(doc).ttcCents) {
+    throw moneyError('Le TTC de l’écriture ne correspond pas à la facture du projet')
+  }
+  const totalTtc = totalTtcCents / 100
 
   if (totalTtc <= 0) {
     const err = new Error("Facture sans montant — pas d'écriture générée") as Error & { status?: number }
@@ -171,10 +160,19 @@ export async function createSaleEntryFromBilling(
   const lines: CreateEntryLineInput[] = []
 
   // 1) Client débit TTC (lettrage auto à partir du numéro facture)
-  const lettrageCode = doc.number ? doc.number.replace(/[^A-Z0-9]/gi, '').slice(-8).toUpperCase() : ''
+  let auxiliaryRef: CreateEntryLineInput['auxiliaryRef']
+  if (doc.payer?.kind === 'CLIENT') auxiliaryRef = { kind: 'CLIENT', id: doc.payer.user }
+  else if (doc.payer) auxiliaryRef = { kind: 'OTHER', id: doc.payer.subsidiary }
+  const lettrageCode = doc.number
+    ? doc.number
+        .replace(/[^A-Z0-9]/gi, '')
+        .slice(-8)
+        .toUpperCase()
+    : ''
   lines.push({
     account: customerAccount.code,
     label: `Facture ${doc.number}${project?.name ? ' — ' + project.name : ''}`,
+    auxiliaryRef,
     debit: totalTtc,
     credit: 0,
     lettrage: lettrageCode || undefined,
@@ -182,26 +180,26 @@ export async function createSaleEntryFromBilling(
 
   // 2) Prestations crédit HT (une ligne par taux si multi-TVA pour pouvoir afficher la base)
   for (const grp of grouped) {
-    if (grp.ht <= 0) continue
+    if (grp.htCents <= 0) continue
     lines.push({
       account: revenueAccount.code,
       label: `Prestations — base HT ${grp.rate}%`,
       debit: 0,
-      credit: grp.ht,
+      credit: grp.htCents / 100,
       vatRateValue: grp.rate,
     })
   }
 
   // 3) TVA collectée crédit par taux (uniquement si taux > 0)
   for (const grp of grouped) {
-    if (grp.tax <= 0) continue
+    if (grp.taxCents <= 0) continue
     const { account: vatAccount, vatRate } = await resolveVatCollectedAccountFor(grp.rate)
     if (!vatAccount) continue
     lines.push({
       account: vatAccount.code,
       label: `TVA collectée ${grp.rate}%`,
       debit: 0,
-      credit: grp.tax,
+      credit: grp.taxCents / 100,
       vatRate: vatRate?._id as Types.ObjectId | undefined,
       vatRateValue: grp.rate,
     })

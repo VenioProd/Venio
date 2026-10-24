@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose'
+import type { ClientSession, Types } from 'mongoose'
 import type { IProjectFinance, IShareRule } from '../../types/models/index.js'
 import Beneficiary from '../../models/Beneficiary.js'
 import User from '../../models/User.js'
@@ -20,7 +20,7 @@ export async function validateShareRules(rules: IShareRule[]): Promise<void> {
   if (count !== rules.length) throw moneyError('Chaque bénéficiaire doit exister et être actif')
 }
 
-export async function validateProjectFinance(finance: IProjectFinance): Promise<void> {
+export async function validateProjectFinance(finance: IProjectFinance, session?: ClientSession): Promise<void> {
   if (!Array.isArray(finance.installments) || !Array.isArray(finance.payers)) {
     throw moneyError('Les échéances et les payeurs doivent être des listes')
   }
@@ -53,7 +53,7 @@ export async function validateProjectFinance(finance: IProjectFinance): Promise<
       if (
         !trigger.phase ||
         trigger.dueDate ||
-        !(await ProjectPhase.exists({ _id: trigger.phase, project: finance.project }))
+        !(await ProjectPhase.exists({ _id: trigger.phase, project: finance.project }).session(session ?? null))
       ) {
         throw moneyError('Le jalon doit appartenir au projet et ne pas porter de date de déclenchement')
       }
@@ -70,11 +70,19 @@ export async function validateProjectFinance(finance: IProjectFinance): Promise<
   )
   for (const payer of finance.payers) {
     if (payer.kind === 'CLIENT') {
-      if (!payer.user || payer.subsidiary || !(await User.exists({ _id: payer.user, role: 'CLIENT' }))) {
+      if (
+        !payer.user ||
+        payer.subsidiary ||
+        !(await User.exists({ _id: payer.user, role: 'CLIENT' }).session(session ?? null))
+      ) {
         throw moneyError('Un payeur client exige un utilisateur client existant et aucune filiale')
       }
     } else if (payer.kind === 'SUBSIDIARY') {
-      if (!payer.subsidiary || payer.user || !(await Subsidiary.exists({ _id: payer.subsidiary }))) {
+      if (
+        !payer.subsidiary ||
+        payer.user ||
+        !(await Subsidiary.exists({ _id: payer.subsidiary }).session(session ?? null))
+      ) {
         throw moneyError('Un payeur filiale exige une filiale existante et aucun utilisateur')
       }
     } else if (payer.user || payer.subsidiary || !payer.billingContact?.name?.trim()) {

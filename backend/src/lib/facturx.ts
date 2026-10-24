@@ -17,6 +17,9 @@
  * main avec échappement strict pour éviter toute injection.
  */
 
+import { assertBp, toCents, vatCents } from './projectFinance/money.js'
+import type { IBillingPayer } from '../types/models/billing.js'
+
 const FACTURX_GUIDELINE_MINIMUM = 'urn:factur-x.eu:1p0:minimum'
 
 // Échappe les caractères XML obligatoires.
@@ -60,34 +63,28 @@ interface FacturXTotals {
 
 // Agrège les lignes de facture par taux de TVA.
 function aggregateTotals(lines: FacturXLine[] | undefined): FacturXTotals {
-  let basisTotal = 0
-  const byRate = new Map<number, { rate: number; basis: number; tax: number }>()
+  const byRate = new Map<number, number>()
   for (const line of lines || []) {
-    const basis = Number(line.total || 0)
-    const rate = Number(line.taxRate || 0)
-    basisTotal += basis
-    if (!byRate.has(rate)) byRate.set(rate, { rate, basis: 0, tax: 0 })
-    const agg = byRate.get(rate)!
-    agg.basis += basis
-    agg.tax += basis * (rate / 100)
+    const bp = Math.round((line.taxRate ?? 0) * 100)
+    assertBp(bp, 'Taux de TVA')
+    byRate.set(bp, (byRate.get(bp) ?? 0) + toCents(line.total ?? 0))
   }
-  let taxTotal = 0
+  let basisTotalCents = 0
+  let taxTotalCents = 0
   const grouped: FacturXTotals['byRate'] = []
-  for (const v of byRate.values()) {
-    const tax = Math.round(v.tax * 100) / 100
-    taxTotal += tax
-    grouped.push({ rate: v.rate, basis: Math.round(v.basis * 100) / 100, tax })
+  for (const [bp, htCents] of byRate) {
+    const taxCents = vatCents(htCents, bp)
+    basisTotalCents += htCents
+    taxTotalCents += taxCents
+    grouped.push({ rate: bp / 100, basis: htCents / 100, tax: taxCents / 100 })
   }
-  return {
-    basisTotal: Math.round(basisTotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
-    byRate: grouped,
-  }
+  return { basisTotal: basisTotalCents / 100, taxTotal: taxTotalCents / 100, byRate: grouped }
 }
 
 // Type minimaliste pour les entrées utilisateur (on n'impose pas IBillingDocument
 // car certaines props (companyName, vatNumber sur client) ne sont pas dans les types Project/User).
 export interface FacturXDoc {
+  payer?: IBillingPayer | null
   number?: string
   type?: string
   total?: number
@@ -102,6 +99,40 @@ export interface FacturXClient {
   name?: string
   vatNumber?: string
   siret?: string
+  email?: string
+  phone?: string
+  address?: {
+    line1?: string
+    line2?: string
+    zip?: string
+    city?: string
+    country?: string
+  }
+}
+
+export function billingBuyer(
+  payer: IBillingPayer | null | undefined,
+  client: FacturXClient | null | undefined,
+  subsidiary: { name?: string } | null | undefined,
+): FacturXClient | null {
+  const contact = payer?.billingContact
+  if (contact?.name?.trim()) {
+    return {
+      name: contact.name,
+      email: contact.email,
+      siret: contact.siret,
+      vatNumber: contact.vatNumber,
+      address: {
+        line1: contact.addressLine1,
+        line2: contact.addressLine2,
+        zip: contact.postalCode,
+        city: contact.city,
+        country: contact.country,
+      },
+    }
+  }
+  if (payer?.kind === 'SUBSIDIARY' && subsidiary?.name) return { name: subsidiary.name }
+  return client ?? null
 }
 
 export interface FacturXProject {
@@ -128,11 +159,13 @@ export function buildFacturXMinimum({
   client,
   project,
   settings,
+  subsidiary,
 }: {
   doc: FacturXDoc
   client?: FacturXClient | null
   project?: FacturXProject | null
   settings?: FacturXSettings | null
+  subsidiary?: { name?: string } | null
 }): string {
   if (!doc) throw new Error('doc requis pour Factur-X')
 
@@ -156,7 +189,7 @@ export function buildFacturXMinimum({
         <ram:BasisAmount>${toAmount(b.basis)}</ram:BasisAmount>
         <ram:CategoryCode>${b.rate > 0 ? 'S' : 'E'}</ram:CategoryCode>
         <ram:RateApplicablePercent>${toAmount(b.rate)}</ram:RateApplicablePercent>
-      </ram:ApplicableTradeTax>`
+      </ram:ApplicableTradeTax>`,
           )
           .join('\n')
       : `      <ram:ApplicableTradeTax>
@@ -187,22 +220,31 @@ export function buildFacturXMinimum({
           <ram:ID schemeID="VA">${esc(sellerVat)}</ram:ID>
         </ram:SpecifiedTaxRegistration>`
     : ''
-  const sellerAddressBlock = sellerAddrLine1 || sellerCity || sellerZip
-    ? `        <ram:PostalTradeAddress>
+  const sellerAddressBlock =
+    sellerAddrLine1 || sellerCity || sellerZip
+      ? `        <ram:PostalTradeAddress>
           <ram:PostcodeCode>${esc(sellerZip)}</ram:PostcodeCode>
           <ram:LineOne>${esc(sellerAddrLine1)}</ram:LineOne>
           <ram:CityName>${esc(sellerCity)}</ram:CityName>
           <ram:CountryID>${esc(sellerCountryCode)}</ram:CountryID>
         </ram:PostalTradeAddress>`
-    : ''
+      : ''
 
-  // Acheteur — nom client
-  const buyerName =
-    (client && (client.companyName || client.name)) ||
-    (project && project.name) ||
-    'Client'
-  const buyerVat = client?.vatNumber || ''
-  const buyerSiret = client?.siret || ''
+  const buyer = billingBuyer(doc.payer, client, subsidiary)
+  const buyerName = (buyer && (buyer.companyName || buyer.name)) || (project && project.name) || 'Client'
+  const buyerAddress = buyer?.address
+  const buyerAddressBlock =
+    buyerAddress && (buyerAddress.line1 || buyerAddress.zip || buyerAddress.city)
+      ? `        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${esc(buyerAddress.zip)}</ram:PostcodeCode>
+          <ram:LineOne>${esc(buyerAddress.line1)}</ram:LineOne>
+          <ram:LineTwo>${esc(buyerAddress.line2)}</ram:LineTwo>
+          <ram:CityName>${esc(buyerAddress.city)}</ram:CityName>
+          <ram:CountryID>${esc(countryToIsoCode(buyerAddress.country))}</ram:CountryID>
+        </ram:PostalTradeAddress>`
+      : ''
+  const buyerVat = buyer?.vatNumber || ''
+  const buyerSiret = buyer?.siret || ''
   const buyerIdBlock = buyerSiret
     ? `        <ram:SpecifiedLegalOrganization>
           <ram:ID schemeID="0009">${esc(buyerSiret)}</ram:ID>
@@ -253,6 +295,7 @@ ${sellerVatBlock}
       <ram:BuyerTradeParty>
         <ram:Name>${esc(buyerName)}</ram:Name>
 ${buyerIdBlock}
+${buyerAddressBlock}
 ${buyerVatBlock}
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>

@@ -292,6 +292,7 @@ router.get('/:projectId/billing', async (req: Request, res: Response, next: Next
     const documents = await BillingDocument.find({
       project: access.project._id,
       status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+      'payer.kind': { $nin: ['SUBSIDIARY', 'THIRD_PARTY'] },
     })
       .sort({ issuedAt: -1, createdAt: -1 })
       .select('-pdfStoragePath -createdBy')
@@ -318,6 +319,7 @@ router.get(
         _id: req.params.documentId,
         project: access.project._id,
         status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+        'payer.kind': { $nin: ['SUBSIDIARY', 'THIRD_PARTY'] },
       }).lean()
       if (!document?.pdfStoragePath) {
         return res.status(404).json({ error: 'Document non disponible' })
