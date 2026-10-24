@@ -1,0 +1,49 @@
+.payment-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f5f6f8;
+  color: #172035;
+}
+.payment-panel {
+  width: min(100%, 480px);
+  padding: clamp(24px, 6vw, 48px);
+  background: white;
+  border: 1px solid #dce1e9;
+  border-radius: 16px;
+}
+.payment-panel h1 {
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+.payment-panel h2 {
+  font-size: 1.1rem;
+  margin-top: 32px;
+}
+.payment-panel p {
+  line-height: 1.6;
+}
+.payment-panel .payment-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+.payment-panel button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: #243d77;
+  font: inherit;
+  cursor: pointer;
+}
+.payment-panel button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.payment-panel [role='alert'] {
+  color: #a01c26;
+}

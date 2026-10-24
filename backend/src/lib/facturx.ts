@@ -17,6 +17,10 @@
  * main avec échappement strict pour éviter toute injection.
  */
 
+import { billingVatBreakdown } from './projectFinance/vatBreakdown.js'
+import type { Types } from 'mongoose'
+import type { IBillingPayer } from '../types/models/billing.js'
+
 const FACTURX_GUIDELINE_MINIMUM = 'urn:factur-x.eu:1p0:minimum'
 
 // Échappe les caractères XML obligatoires.
@@ -52,42 +56,13 @@ interface FacturXLine {
   taxRate?: number
 }
 
-interface FacturXTotals {
-  basisTotal: number
-  taxTotal: number
-  byRate: Array<{ rate: number; basis: number; tax: number }>
-}
-
-// Agrège les lignes de facture par taux de TVA.
-function aggregateTotals(lines: FacturXLine[] | undefined): FacturXTotals {
-  let basisTotal = 0
-  const byRate = new Map<number, { rate: number; basis: number; tax: number }>()
-  for (const line of lines || []) {
-    const basis = Number(line.total || 0)
-    const rate = Number(line.taxRate || 0)
-    basisTotal += basis
-    if (!byRate.has(rate)) byRate.set(rate, { rate, basis: 0, tax: 0 })
-    const agg = byRate.get(rate)!
-    agg.basis += basis
-    agg.tax += basis * (rate / 100)
-  }
-  let taxTotal = 0
-  const grouped: FacturXTotals['byRate'] = []
-  for (const v of byRate.values()) {
-    const tax = Math.round(v.tax * 100) / 100
-    taxTotal += tax
-    grouped.push({ rate: v.rate, basis: Math.round(v.basis * 100) / 100, tax })
-  }
-  return {
-    basisTotal: Math.round(basisTotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
-    byRate: grouped,
-  }
-}
-
 // Type minimaliste pour les entrées utilisateur (on n'impose pas IBillingDocument
 // car certaines props (companyName, vatNumber sur client) ne sont pas dans les types Project/User).
 export interface FacturXDoc {
+  payer?: IBillingPayer | null
+  creditedInvoice?: Types.ObjectId | null
+  subtotal?: number
+  taxTotal?: number
   number?: string
   type?: string
   total?: number
@@ -102,6 +77,40 @@ export interface FacturXClient {
   name?: string
   vatNumber?: string
   siret?: string
+  email?: string
+  phone?: string
+  address?: {
+    line1?: string
+    line2?: string
+    zip?: string
+    city?: string
+    country?: string
+  }
+}
+
+export function billingBuyer(
+  payer: IBillingPayer | null | undefined,
+  client: FacturXClient | null | undefined,
+  subsidiary: { name?: string } | null | undefined,
+): FacturXClient | null {
+  const contact = payer?.billingContact
+  if (contact?.name?.trim()) {
+    return {
+      name: contact.name,
+      email: contact.email,
+      siret: contact.siret,
+      vatNumber: contact.vatNumber,
+      address: {
+        line1: contact.addressLine1,
+        line2: contact.addressLine2,
+        zip: contact.postalCode,
+        city: contact.city,
+        country: contact.country,
+      },
+    }
+  }
+  if (payer?.kind === 'SUBSIDIARY' && subsidiary?.name) return { name: subsidiary.name }
+  return client ?? null
 }
 
 export interface FacturXProject {
@@ -128,21 +137,25 @@ export function buildFacturXMinimum({
   client,
   project,
   settings,
+  subsidiary,
 }: {
   doc: FacturXDoc
   client?: FacturXClient | null
   project?: FacturXProject | null
   settings?: FacturXSettings | null
+  subsidiary?: { name?: string } | null
 }): string {
   if (!doc) throw new Error('doc requis pour Factur-X')
 
   const issueDate = toFormat102(doc.issuedAt || doc.createdAt)
   const currency = doc.currency || (settings && settings.currency) || 'EUR'
-  const grandTotal = Number(doc.total || 0)
+  const grouped = billingVatBreakdown(doc)
+  const basisTotal = grouped.reduce((sum, group) => sum + group.htCents, 0) / 100
+  const taxTotal = grouped.reduce((sum, group) => sum + group.taxCents, 0) / 100
+  const grandTotal = grouped.reduce((sum, group) => sum + group.htCents + group.taxCents, 0) / 100
   // 381 = avoir, 380 = facture commerciale
   const typeCode = grandTotal < 0 ? '381' : '380'
-
-  const { basisTotal, taxTotal, byRate } = aggregateTotals(doc.lines)
+  const byRate = grouped.map((group) => ({ rate: group.rate, basis: group.htCents / 100, tax: group.taxCents / 100 }))
 
   // Si pas de TVA détectée (ex : franchise en base), on construit tout de même
   // une ligne CategoryTradeTax à 0 % pour rester conforme à l'EN 16931.
@@ -156,7 +169,7 @@ export function buildFacturXMinimum({
         <ram:BasisAmount>${toAmount(b.basis)}</ram:BasisAmount>
         <ram:CategoryCode>${b.rate > 0 ? 'S' : 'E'}</ram:CategoryCode>
         <ram:RateApplicablePercent>${toAmount(b.rate)}</ram:RateApplicablePercent>
-      </ram:ApplicableTradeTax>`
+      </ram:ApplicableTradeTax>`,
           )
           .join('\n')
       : `      <ram:ApplicableTradeTax>
@@ -187,22 +200,31 @@ export function buildFacturXMinimum({
           <ram:ID schemeID="VA">${esc(sellerVat)}</ram:ID>
         </ram:SpecifiedTaxRegistration>`
     : ''
-  const sellerAddressBlock = sellerAddrLine1 || sellerCity || sellerZip
-    ? `        <ram:PostalTradeAddress>
+  const sellerAddressBlock =
+    sellerAddrLine1 || sellerCity || sellerZip
+      ? `        <ram:PostalTradeAddress>
           <ram:PostcodeCode>${esc(sellerZip)}</ram:PostcodeCode>
           <ram:LineOne>${esc(sellerAddrLine1)}</ram:LineOne>
           <ram:CityName>${esc(sellerCity)}</ram:CityName>
           <ram:CountryID>${esc(sellerCountryCode)}</ram:CountryID>
         </ram:PostalTradeAddress>`
-    : ''
+      : ''
 
-  // Acheteur — nom client
-  const buyerName =
-    (client && (client.companyName || client.name)) ||
-    (project && project.name) ||
-    'Client'
-  const buyerVat = client?.vatNumber || ''
-  const buyerSiret = client?.siret || ''
+  const buyer = billingBuyer(doc.payer, client, subsidiary)
+  const buyerName = (buyer && (buyer.companyName || buyer.name)) || (project && project.name) || 'Client'
+  const buyerAddress = buyer?.address
+  const buyerAddressBlock =
+    buyerAddress && (buyerAddress.line1 || buyerAddress.zip || buyerAddress.city)
+      ? `        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${esc(buyerAddress.zip)}</ram:PostcodeCode>
+          <ram:LineOne>${esc(buyerAddress.line1)}</ram:LineOne>
+          <ram:LineTwo>${esc(buyerAddress.line2)}</ram:LineTwo>
+          <ram:CityName>${esc(buyerAddress.city)}</ram:CityName>
+          <ram:CountryID>${esc(countryToIsoCode(buyerAddress.country))}</ram:CountryID>
+        </ram:PostalTradeAddress>`
+      : ''
+  const buyerVat = buyer?.vatNumber || ''
+  const buyerSiret = buyer?.siret || ''
   const buyerIdBlock = buyerSiret
     ? `        <ram:SpecifiedLegalOrganization>
           <ram:ID schemeID="0009">${esc(buyerSiret)}</ram:ID>
@@ -253,6 +275,7 @@ ${sellerVatBlock}
       <ram:BuyerTradeParty>
         <ram:Name>${esc(buyerName)}</ram:Name>
 ${buyerIdBlock}
+${buyerAddressBlock}
 ${buyerVatBlock}
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>

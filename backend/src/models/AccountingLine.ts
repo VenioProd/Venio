@@ -4,6 +4,7 @@ import type { IAccountingLine } from '../types/models/index.js'
 const accountingLineSchema = new mongoose.Schema<IAccountingLine>(
   {
     entry: { type: mongoose.Schema.Types.ObjectId, ref: 'AccountingEntry', required: true },
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null },
     journalCode: { type: String, required: true, uppercase: true },
     fiscalYear: { type: mongoose.Schema.Types.ObjectId, ref: 'FiscalYear', required: true },
     date: { type: Date, required: true },
@@ -28,11 +29,12 @@ const accountingLineSchema = new mongoose.Schema<IAccountingLine>(
     },
     sortIndex: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 accountingLineSchema.index({ entry: 1, sortIndex: 1 })
 accountingLineSchema.index({ accountCode: 1, date: 1 })
+accountingLineSchema.index({ project: 1, accountCode: 1 })
 accountingLineSchema.index({ account: 1, date: 1 })
 accountingLineSchema.index({ accountCode: 1, lettrage: 1 })
 accountingLineSchema.index({ fiscalYear: 1, journalCode: 1, date: 1 })

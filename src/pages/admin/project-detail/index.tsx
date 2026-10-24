@@ -22,6 +22,8 @@ import ProjectPhasesTab from './ProjectPhasesTab'
 import { useProjectContent } from './hooks/useProjectContent'
 import { useProjectPhases } from './hooks/useProjectPhases'
 
+const ProjectAccountingTab = React.lazy(() => import('../accounting/projects/ProjectAccountingTab'))
+
 const AdminProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -68,6 +70,7 @@ const AdminProjectDetail = () => {
   const canViewBilling = hasPermission(user, PERMISSIONS.VIEW_BILLING)
   const canViewPhases = hasPermission(user, PERMISSIONS.VIEW_PHASES)
   const canManagePhases = hasPermission(user, PERMISSIONS.MANAGE_PHASES)
+  const canViewAccounting = hasPermission(user, PERMISSIONS.VIEW_ACCOUNTING)
 
   const ensurePermission = (allowed: boolean, message: string): boolean => {
     if (!allowed) {
@@ -496,6 +499,14 @@ const AdminProjectDetail = () => {
 
       {/* Onglets */}
       <div className="admin-tabs" style={{ marginTop: 24 }}>
+        {canViewAccounting && (
+          <button
+            className={`admin-tab ${activeTab === 'accounting' ? 'active' : ''}`}
+            onClick={() => setActiveTab('accounting')}
+          >
+            Comptabilité
+          </button>
+        )}
         <button
           className={`admin-tab ${activeTab === 'details' ? 'active' : ''}`}
           onClick={() => setActiveTab('details')}
@@ -546,6 +557,11 @@ const AdminProjectDetail = () => {
       </div>
 
       {/* Contenu des onglets */}
+      {activeTab === 'accounting' && id && canViewAccounting && (
+        <React.Suspense fallback={<p role="status">Chargement de la comptabilité…</p>}>
+          <ProjectAccountingTab key={id} projectId={id} clientId={project?.client?._id} />
+        </React.Suspense>
+      )}
       {activeTab === 'details' && (
         <ProjectDetailsTab
           project={project}

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { MongoMemoryServer } from 'mongodb-memory-server'
+import { MongoMemoryReplSet, MongoMemoryServer } from 'mongodb-memory-server'
 
 /**
  * Helpers de test pour démarrer une instance Mongo en mémoire pour un
@@ -13,11 +13,21 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
  *   beforeEach(clearDb)
  */
 
-let server: MongoMemoryServer | null = null
+let server: MongoMemoryServer | MongoMemoryReplSet | null = null
 
 export async function setupMongo(): Promise<void> {
   if (server) return
   server = await MongoMemoryServer.create()
+  await mongoose.connect(server.getUri())
+}
+
+/**
+ * Variante replica set mono-nœud, pour les tests qui ont besoin de transactions.
+ * S'utilise à la place de setupMongo, avec le même teardownMongo.
+ */
+export async function setupMongoReplSet(): Promise<void> {
+  if (server) return
+  server = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } })
   await mongoose.connect(server.getUri())
 }
 

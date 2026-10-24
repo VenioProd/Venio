@@ -160,6 +160,7 @@ export interface IAccountingEntry extends Document {
 // ─── AccountingLine ───
 export interface IAccountingLine extends Document {
   entry: Types.ObjectId
+  project: Types.ObjectId | null
   journalCode: string
   fiscalYear: Types.ObjectId
   date: Date
