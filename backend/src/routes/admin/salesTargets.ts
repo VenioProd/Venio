@@ -38,6 +38,7 @@ router.use(
         _id: req.params.userId,
         role: { $in: ADMIN_ROLES },
         isActive: true,
+        status: { $ne: 'ARCHIVE' },
         archivedAt: null,
       })
       if (!user) return res.status(404).json({ error: 'Utilisateur interne actif introuvable', code: 'USER_NOT_FOUND' })

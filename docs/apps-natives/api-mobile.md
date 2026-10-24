@@ -222,18 +222,28 @@ Permission `manage_quotes`, donnée au rôle `COMMERCIAL`. Elle permet de suivre
 | Route | Droit | Effet |
 | --- | --- | --- |
 | `GET /api/admin/quote-templates` | `manage_quotes` ou `manage_billing` | `{ templates: [QuoteTemplate] }`, modèles actifs, par nom. |
-| `GET /api/admin/quote-proposals?project=<id>` | idem | `{ proposals: [QuoteProposal] }`, du plus récent au plus ancien. |
+| `GET /api/admin/quote-proposals?project=<id>&lead=<id>` | idem | `{ proposals: [QuoteProposal] }`, du plus récent au plus ancien ; filtres facultatifs. |
 | `GET /api/admin/quote-proposals/:id` | idem | `{ proposal }`. `404` si absent. |
-| `POST /api/admin/quote-proposals/from-template` | idem | Crée un brouillon. `201 { proposal }`. |
+| `POST /api/admin/quote-proposals/from-template` | idem | Crée un brouillon sur un projet ou sur un lead. `201 { proposal }`. |
+| `POST /api/admin/quote-proposals/:id/attach-project` | idem | Rattache un devis né sur un lead à un projet. `200 { proposal }`. |
 | `POST /api/admin/quote-proposals/:id/send` | idem | `DRAFT` → `SENT`. `200 { proposal }`. |
 
-`POST /from-template` : `{ "templateId": "…", "project": "…", "title": "…" }` (`title` facultatif, sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Sans `manage_billing`, le projet doit être dans son portefeuille : on en est responsable, ou son client nous appartient (propriétaire du compte client). Rattacher un projet à son lead ne suffit pas. Erreurs : `400` (identifiants invalides), `403 PROJECT_OUT_OF_SCOPE`, `404` (modèle inactif ou projet absent).
+**Portefeuille.** Avec `manage_billing`, on chiffre tout. Avec `manage_quotes` seulement, on chiffre :
 
-`POST /:id/send` : sans `manage_billing`, on n'envoie que les devis dont on est l'auteur (`403 NOT_PROPOSAL_OWNER`). Erreurs : `409 PROPOSAL_ALREADY_SIGNED`, `409 PROPOSAL_NOT_DRAFT`, `404`.
+- un **projet** dont on est responsable, ou dont le compte client nous appartient (propriétaire du client) ;
+- un **lead** qui nous est assigné, ou dont le compte client nous appartient.
+
+Rattacher un projet à son lead depuis le CRM ne donne aucun droit. L'app n'a pas à refaire cette règle : la synchro donne `canQuote` pour chaque projet et chaque lead (section 6).
+
+`POST /from-template` : `{ "templateId": "…", "project": "…" }` **ou** `{ "templateId": "…", "leadId": "…" }`, exactement l'un des deux, plus `title` facultatif (sinon celui du modèle). L'introduction, les questions et les lignes viennent du modèle ; `expiresAt` = maintenant + `validityDays` du modèle. Tout autre champ envoyé est ignoré. Erreurs : `400` (identifiants invalides, ou projet et lead fournis ensemble ou ni l'un ni l'autre), `403 PROJECT_OUT_OF_SCOPE`, `403 LEAD_OUT_OF_SCOPE`, `404` (modèle inactif, projet ou lead absent).
+
+**Devis sur un lead.** Il naît sans projet ni client (`project: null`, `client: null`, `leadId` renseigné). C'est un brouillon que le client ne voit pas encore : il y accède par le projet. Pour l'envoyer, le rattacher d'abord avec `POST /:id/attach-project` `{ "project": "…" }`. Le projet suit la règle de portefeuille, et le client du devis devient celui du projet. Erreurs : `403 NOT_PROPOSAL_OWNER` (sans `manage_billing`, seulement ses devis), `403 PROJECT_OUT_OF_SCOPE`, `409 PROPOSAL_ALREADY_ATTACHED`, `409 PROPOSAL_NOT_DRAFT`, `404`.
+
+`POST /:id/send` : sans `manage_billing`, on n'envoie que les devis dont on est l'auteur (`403 NOT_PROPOSAL_OWNER`). Erreurs : `409 PROPOSAL_NOT_ATTACHED` (devis sur lead pas encore rattaché), `409 PROPOSAL_ALREADY_SIGNED`, `409 PROPOSAL_NOT_DRAFT`, `404`.
 
 Un `QuoteTemplate` : `{ _id, name, title, intro, questions[], lines[], validityDays, isActive, createdBy, createdAt, updatedAt }`, avec `questions` et `lines` au format de `QuoteProposal`. Les modèles se gèrent depuis le web (`manage_billing`).
 
-Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED`, `CANCELLED`), `firstViewedAt` (première consultation par le client, ou `null`), `expiresAt`, `lines[]`, `project`, `client` et `createdBy`.
+Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED`, `CANCELLED`), `firstViewedAt` (première consultation par le client, ou `null`), `expiresAt`, `lines[]`, `project` et `client` (`null` pour un devis sur lead pas encore rattaché), `leadId` (ou `null`) et `createdBy`.
 
 ## 5. Aujourd'hui
 
@@ -272,13 +282,15 @@ Un `QuoteProposal` porte notamment `status` (`DRAFT`, `SENT`, `SIGNED`, `EXPIRED
 
 | `type` | Droit | Éléments |
 | --- | --- | --- |
-| `leads` | `view_crm` | Leads, forme de `/api/admin/crm/leads/:id`. |
+| `leads` | `view_crm` | Leads, forme de `/api/admin/crm/leads/:id`, plus `canQuote`. |
 | `interactions` | `view_crm` (et `manage_clients` pour ceux des clients) | Entrées de timeline, plus `subjectType` et `subjectId`. |
-| `projects` | `view_projects` | Projets. |
+| `projects` | `view_projects` | Projets, plus `canQuote`. |
 | `projectPhases` | `view_phases` | Étapes de projet (`project` = id du projet). |
 | `projectUpdates` | `view_projects` | Mises à jour publiées au client (`project` = id du projet). |
 | `quotes` | `manage_quotes` ou `view_billing` | Devis. |
 | `deletions` | selon les types lisibles | `{ _id, entityType, entityId, deletedAt }`. |
+
+`canQuote` (booléen, calculé par le serveur) dit si l'utilisateur peut créer un devis sur ce projet ou ce lead (règle de portefeuille, section 4). Il vaut `false` sans `manage_quotes` ni `manage_billing`. Il est calculé au moment de la synchro : un changement de droits ou de propriétaire de client ne modifie pas l'élément et ne le refait donc pas descendre. Il sert à afficher ou masquer l'action ; le serveur revérifie à la création (`403 PROJECT_OUT_OF_SCOPE` ou `LEAD_OUT_OF_SCOPE`).
 
 Le périmètre suit celui du web : un commercial lit tout le CRM ; hors super-admin, les projets sont ceux dont on est responsable ou sur lesquels on a une tâche ou un brief.
 
@@ -327,6 +339,19 @@ Erreurs : `400 IDEMPOTENCY_KEY_REQUIRED`, `400 INVALID_AUDIO`, `400` (champ inva
 Le rejeu compare le contenu hors audio : renvoyer la même clé avec le même texte rend l'interaction existante, sans stocker un second fichier.
 
 `GET /api/mobile/interactions/:id/audio` renvoie le fichier audio, avec le même contrôle d'accès que la fiche du lead ou du client.
+
+### Leads créés ou modifiés hors ligne
+
+`POST /api/admin/crm/leads` et `PATCH /api/admin/crm/leads/:id` acceptent un en-tête facultatif `Idempotency-Key: <UUID>`. Sans lui, rien ne change. Avec lui :
+
+- la première requête s'exécute ; sa réponse est enregistrée **avant** d'être envoyée ;
+- la même clé, sur la même route avec le même corps, rejoue la réponse enregistrée (même statut, même corps), sans recréer ni remodifier le lead ;
+- la même clé pour une autre route, un autre lead ou un autre corps : `409 IDEMPOTENCY_CONFLICT` ;
+- la même clé pendant que la première requête s'exécute encore : `409 IDEMPOTENCY_IN_PROGRESS`. Réessayer un peu plus tard avec la même clé ;
+- une erreur serveur (5xx) libère la clé : le nouvel essai s'exécute ;
+- `400 INVALID_IDEMPOTENCY_KEY` si la clé n'est pas un UUID.
+
+Une clé est conservée 24 heures : au-delà, un rejeu crée un nouveau lead. L'app génère une clé par opération (création, ou chaque modification) et la garde avec l'opération en file d'attente jusqu'à la réponse.
 
 ## 8. Langues
 
