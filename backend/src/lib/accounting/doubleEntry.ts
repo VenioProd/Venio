@@ -171,6 +171,18 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     err.status = 423
     throw err
   }
+  if (session) {
+    const updated = await FiscalYear.updateOne(
+      { _id: fiscalYear._id, status: 'OUVERT' },
+      { $currentDate: { updatedAt: true } },
+      { session },
+    )
+    if (updated.matchedCount === 0) {
+      const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
+      err.status = 423
+      throw err
+    }
+  }
 
   // Idempotency : si une écriture existe déjà avec cette clé, la retourner
   if (idempotencyKey) {

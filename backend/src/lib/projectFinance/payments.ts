@@ -141,13 +141,29 @@ async function recordMovement(input: Movement) {
         if (!selectedVersion) throw conflict('Version de répartition de l’encaissement introuvable')
       }
       const rules = (selectedVersion?.rules ?? []).map((rule) => ({ key: String(rule.beneficiary), bp: rule.bp }))
-      // Le centime déjà porté par la société ne réduit pas la base des bénéficiaires sous zéro.
-      const base = Math.max(0, original.htCents + refunds.reduce((sum, payment) => sum + payment.htCents, 0))
-      const regularised = Math.min(Math.abs(htCents), base)
-      const excess = Math.abs(htCents) - regularised
-      if (excess > 2 || regularised < 0) throw conflict('Le HT remboursé dépasse la base nette de l’encaissement')
-      allocation = regularised === 0 ? allocatePayment(0, rules) : refundRegularisation(base, regularised, rules)
-      allocation.companyCents -= excess
+      if (input.amountTtcCents === remaining) {
+        const rows = await ShareAllocation.find({
+          payment: { $in: [original._id, ...refunds.map((payment) => payment._id)] },
+        }).session(session)
+        const beneficiaries = rules.map((rule) => ({
+          key: rule.key,
+          cents:
+            0 -
+            rows.filter((row) => String(row.beneficiary) === rule.key).reduce((sum, row) => sum + row.amountCents, 0),
+        }))
+        allocation = {
+          beneficiaries,
+          companyCents: htCents - beneficiaries.reduce((sum, part) => sum + part.cents, 0),
+        }
+      } else {
+        // Le centime déjà porté par la société ne réduit pas la base des bénéficiaires sous zéro.
+        const base = Math.max(0, original.htCents + refunds.reduce((sum, payment) => sum + payment.htCents, 0))
+        const regularised = Math.min(Math.abs(htCents), base)
+        const excess = Math.abs(htCents) - regularised
+        if (excess > 2 || regularised < 0) throw conflict('Le HT remboursé dépasse la base nette de l’encaissement')
+        allocation = regularised === 0 ? allocatePayment(0, rules) : refundRegularisation(base, regularised, rules)
+        allocation.companyCents -= excess
+      }
     } else {
       await ProjectFinance.updateOne({ project: invoice.project }, { $currentDate: { updatedAt: true } }, { session })
       const finance = await ProjectFinance.findOne({ project: invoice.project }).session(session)
@@ -310,7 +326,7 @@ export async function markInvoicePaid({
     method: paymentMethod ?? 'VIREMENT',
     receivedAt: paidAt ?? new Date(),
     userId,
-    idempotencyKey: `mark-paid:${invoice._id}:${balance.receivedTtcCents}`,
+    idempotencyKey: `mark-paid:${invoice._id}:${balance.payments.length}`,
   })
 }
 

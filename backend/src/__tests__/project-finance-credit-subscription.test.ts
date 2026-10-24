@@ -156,7 +156,7 @@ it('émet la TVA cumulative même quand elle diffère du recalcul au taux', asyn
   const emitted = await issue(doc._id).expect(200)
   expect(emitted.body.accounting.saleEntry.totalDebit).toBe(0.03)
   expect(buildFacturXMinimum({ doc })).toContain('<ram:TaxTotalAmount currencyID="EUR">-0.01</ram:TaxTotalAmount>')
-  doc.lines[0]!.total = -0.03
+  doc.lines[0]!.total = -0.04
   await expect(
     createSaleEntryFromBilling({ ...doc.toObject(), _id: new mongoose.Types.ObjectId() } as typeof doc),
   ).rejects.toThrow()

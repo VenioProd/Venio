@@ -1,7 +1,8 @@
 import mongoose from 'mongoose'
 import type { IBillingDocument } from '../types/models/index.js'
-import { moneyError } from '../lib/projectFinance/money.js'
+import { assertCents, moneyError } from '../lib/projectFinance/money.js'
 import ProjectPayment from './ProjectPayment.js'
+import AccountingEntry from './AccountingEntry.js'
 
 const payerSchema = new mongoose.Schema(
   {
@@ -96,6 +97,26 @@ billingDocumentSchema.pre('save', async function () {
   if (this.type !== 'INVOICE' || this.isNew) return
   const amountsChanged = ['lines', 'subtotal', 'taxTotal', 'total'].some((field) => this.isModified(field))
   let message: string | null = null
+  if (
+    (this.financeLink || this.creditedInvoice) &&
+    this.isModified('status') &&
+    this.$locals.loadedStatus === 'DRAFT' &&
+    !['DRAFT', 'CANCELLED'].includes(this.status)
+  ) {
+    const sale = await AccountingEntry.exists({ idempotencyKey: `billing:sale:${this._id}` }).session(this.$session())
+    if (!sale) message = 'Émettez ce document par la génération du PDF'
+  }
+  if (this.isModified('status') && this.total > 0 && !this.creditedInvoice) {
+    const payments = await ProjectPayment.find({ invoice: this._id }).session(this.$session())
+    const received = payments.reduce((sum, payment) => sum + payment.amountTtcCents, 0)
+    assertCents(received, 'Cumul encaissé')
+    const paymentStatus = ['PARTIALLY_PAID', 'PAID'].includes(this.status)
+    if (payments.length === 0 && this.$locals.loadedStatus === 'PAID') {
+      message = 'Le statut d’une facture payée historique ne peut plus être modifié'
+    } else if ((received > 0 && !paymentStatus) || (received === 0 && paymentStatus)) {
+      message = 'Le statut de paiement est calculé depuis les encaissements'
+    }
+  }
   if (this.isModified('status') && this.status === 'CANCELLED') {
     const payments = await ProjectPayment.find({ invoice: this._id }).session(this.$session())
     const received = payments.reduce((sum, payment) => sum + payment.amountTtcCents, 0)

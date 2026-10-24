@@ -395,7 +395,7 @@ it('PATCH PAID encaisse seulement le reste et protège les factures historiques'
     amountTtcCents: 79988,
     method: 'CB',
     receivedAt: new Date('2026-01-12'),
-    idempotencyKey: `mark-paid:${invoiceId}:40000`,
+    idempotencyKey: `mark-paid:${invoiceId}:1`,
   })
   expect((await BillingDocument.findById(invoiceId))!.status).toBe('PAID')
   await request(app).patch(`/billing/${invoiceId}`).set('Cookie', cookie).send({ status: 'PAID' }).expect(200)

@@ -17,7 +17,7 @@
  * main avec échappement strict pour éviter toute injection.
  */
 
-import { assertBp, toCents, vatCents } from './projectFinance/money.js'
+import { billingVatBreakdown } from './projectFinance/vatBreakdown.js'
 import type { Types } from 'mongoose'
 import type { IBillingPayer } from '../types/models/billing.js'
 
@@ -56,37 +56,12 @@ interface FacturXLine {
   taxRate?: number
 }
 
-interface FacturXTotals {
-  basisTotal: number
-  taxTotal: number
-  byRate: Array<{ rate: number; basis: number; tax: number }>
-}
-
-// Agrège les lignes de facture par taux de TVA.
-function aggregateTotals(lines: FacturXLine[] | undefined): FacturXTotals {
-  const byRate = new Map<number, number>()
-  for (const line of lines || []) {
-    const bp = Math.round((line.taxRate ?? 0) * 100)
-    assertBp(bp, 'Taux de TVA')
-    byRate.set(bp, (byRate.get(bp) ?? 0) + toCents(line.total ?? 0))
-  }
-  let basisTotalCents = 0
-  let taxTotalCents = 0
-  const grouped: FacturXTotals['byRate'] = []
-  for (const [bp, htCents] of byRate) {
-    const taxCents = vatCents(htCents, bp)
-    basisTotalCents += htCents
-    taxTotalCents += taxCents
-    grouped.push({ rate: bp / 100, basis: htCents / 100, tax: taxCents / 100 })
-  }
-  return { basisTotal: basisTotalCents / 100, taxTotal: taxTotalCents / 100, byRate: grouped }
-}
-
 // Type minimaliste pour les entrées utilisateur (on n'impose pas IBillingDocument
 // car certaines props (companyName, vatNumber sur client) ne sont pas dans les types Project/User).
 export interface FacturXDoc {
   payer?: IBillingPayer | null
   creditedInvoice?: Types.ObjectId | null
+  subtotal?: number
   taxTotal?: number
   number?: string
   type?: string
@@ -174,16 +149,13 @@ export function buildFacturXMinimum({
 
   const issueDate = toFormat102(doc.issuedAt || doc.createdAt)
   const currency = doc.currency || (settings && settings.currency) || 'EUR'
-  const grandTotal = Number(doc.total || 0)
+  const grouped = billingVatBreakdown(doc)
+  const basisTotal = grouped.reduce((sum, group) => sum + group.htCents, 0) / 100
+  const taxTotal = grouped.reduce((sum, group) => sum + group.taxCents, 0) / 100
+  const grandTotal = grouped.reduce((sum, group) => sum + group.htCents + group.taxCents, 0) / 100
   // 381 = avoir, 380 = facture commerciale
   const typeCode = grandTotal < 0 ? '381' : '380'
-
-  const totals = aggregateTotals(doc.lines)
-  if (doc.creditedInvoice && totals.byRate.length === 1) {
-    totals.taxTotal = doc.taxTotal!
-    totals.byRate[0]!.tax = doc.taxTotal!
-  }
-  const { basisTotal, taxTotal, byRate } = totals
+  const byRate = grouped.map((group) => ({ rate: group.rate, basis: group.htCents / 100, tax: group.taxCents / 100 }))
 
   // Si pas de TVA détectée (ex : franchise en base), on construit tout de même
   // une ligne CategoryTradeTax à 0 % pour rester conforme à l'EN 16931.

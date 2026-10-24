@@ -58,7 +58,16 @@ const generate = async () => {
 beforeAll(async () => {
   await setupMongoReplSet()
   resetTransactionSupportCache()
-  await Promise.all([ProjectFinance.init(), BillingDocument.init(), Sequence.init()])
+  await Promise.all([
+    ProjectFinance.init(),
+    BillingDocument.init(),
+    Sequence.init(),
+    AccountingEntry.init(),
+    (await import('../models/AccountingLine.js')).default.init(),
+    (await import('../models/FiscalYear.js')).default.init(),
+    Journal.init(),
+    ChartOfAccount.init(),
+  ])
 })
 afterAll(teardownMongo)
 beforeEach(async () => {
@@ -185,16 +194,17 @@ it('libère seulement la clé du brouillon annulé et permet sa régénération'
 })
 
 it('refuse l’annulation d’une facture d’échéance déjà émise', async () => {
+  await seedAccounting()
   const { invoices } = await generate()
   const doc = invoices[0]!
-  doc.status = 'ISSUED'
-  await doc.save()
+  await request(app).post(`/billing/${doc._id}/generate-pdf`).set('Cookie', cookie).expect(200)
   const loaded = (await BillingDocument.findById(doc._id))!
   loaded.status = 'CANCELLED'
   await expect(loaded.save()).rejects.toMatchObject({ status: 409 })
 })
 
 it('refuse une sauvegarde périmée quand l’annulation et l’émission se croisent', async () => {
+  await seedAccounting()
   const { invoices } = await generate()
   const cancelFirst = invoices[0]!
   vi.mocked(generateBillingPdf).mockImplementationOnce(async () => {
@@ -209,8 +219,7 @@ it('refuse une sauvegarde périmée quand l’annulation et l’émission se cro
   expect(await AccountingEntry.countDocuments()).toBe(0)
   const issueFirst = invoices[1]!
   const staleDraft = (await BillingDocument.findById(issueFirst._id))!
-  issueFirst.status = 'ISSUED'
-  await issueFirst.save()
+  await request(app).post(`/billing/${issueFirst._id}/generate-pdf`).set('Cookie', cookie).expect(200)
   staleDraft.status = 'CANCELLED'
   await expect(staleDraft.save()).rejects.toMatchObject({ status: 409 })
   expect((await BillingDocument.findById(issueFirst._id))!.financeKey).toBe(issueFirst.financeKey)
@@ -301,11 +310,11 @@ it('émet au TTC exact avec un auxiliaire par payeur et une échéance à trente
   )
 })
 
-it('refuse une écriture de vente dont le TTC diffère de la facture d’échéance', async () => {
+it('refuse une écriture de vente dont les lignes dépassent la tolérance de rapprochement', async () => {
   await seedAccounting()
   const { invoices } = await generate()
   const doc = invoices[0]!
-  doc.lines[0]!.total += 0.01
+  doc.lines[0]!.total += 0.02
   await expect(createSaleEntryFromBilling(doc)).rejects.toThrow()
   expect(await AccountingEntry.countDocuments()).toBe(0)
 })
@@ -347,11 +356,10 @@ it('reporte le payeur et les centimes de la facture dans le PDF et Factur-X', as
 })
 
 it('masque au client la facture tiers dans la liste et dans son PDF', async () => {
+  await seedAccounting()
   const { invoices } = await generate()
   for (const doc of invoices) {
-    doc.status = 'ISSUED'
-    doc.pdfStoragePath = 'uploads/unused.pdf'
-    await doc.save()
+    await request(app).post(`/billing/${doc._id}/generate-pdf`).set('Cookie', cookie).expect(200)
   }
   const result = await request(app).get(`/client/${projectId}/billing`).set('Cookie', clientCookie).expect(200)
   expect(result.body.documents.map((doc: { _id: string }) => doc._id)).toEqual([String(invoices[1]!._id)])
@@ -369,8 +377,10 @@ it('masque au client la facture tiers dans la liste et dans son PDF', async () =
 })
 
 it('envoie au payeur sans notifier le client et refuse un tiers sans e-mail avant mutation', async () => {
+  await seedAccounting()
   const { invoices } = await generate()
   const opco = invoices[0]!
+  await request(app).post(`/billing/${opco._id}/generate-pdf`).set('Cookie', cookie).expect(200)
   await request(app).post(`/billing/${opco._id}/send`).set('Cookie', cookie).expect(200)
   expect(vi.mocked(sendInvoiceEmail).mock.calls[0]![0].to).toBe('opco@example.test')
   expect(createNotification).not.toHaveBeenCalled()

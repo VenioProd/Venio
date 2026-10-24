@@ -6,6 +6,7 @@ import auth from '../../middleware/auth.js'
 import AuditLog from '../../models/AuditLog.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import { clientBillingVisibility } from '../../lib/clientBillingVisibility.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
@@ -292,7 +293,7 @@ router.get('/:projectId/billing', async (req: Request, res: Response, next: Next
     const documents = await BillingDocument.find({
       project: access.project._id,
       status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
-      'payer.kind': { $nin: ['SUBSIDIARY', 'THIRD_PARTY'] },
+      ...clientBillingVisibility(req.user!.id, [access.project]),
     })
       .sort({ issuedAt: -1, createdAt: -1 })
       .select('-pdfStoragePath -createdBy')
@@ -319,7 +320,7 @@ router.get(
         _id: req.params.documentId,
         project: access.project._id,
         status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
-        'payer.kind': { $nin: ['SUBSIDIARY', 'THIRD_PARTY'] },
+        ...clientBillingVisibility(req.user!.id, [access.project]),
       }).lean()
       if (!document?.pdfStoragePath) {
         return res.status(404).json({ error: 'Document non disponible' })

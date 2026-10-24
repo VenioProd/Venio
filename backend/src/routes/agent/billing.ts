@@ -325,6 +325,10 @@ function transition(
         respondError(res, 404, 'NOT_FOUND', 'Document introuvable')
         return
       }
+      if ((doc.financeLink || doc.creditedInvoice) && doc.status === 'DRAFT' && ['ISSUED', 'SENT'].includes(to)) {
+        respondError(res, 409, 'INVALID_TRANSITION', 'Émettez ce document par la génération du PDF')
+        return
+      }
       if (options.from && !options.from.includes(doc.status)) {
         respondError(
           res,
@@ -442,7 +446,10 @@ router.delete(
         )
       }
       const before = doc.toObject()
-      await BillingDocument.deleteOne({ _id: doc._id })
+      const deleted = await BillingDocument.deleteOne({ _id: doc._id, status: 'DRAFT' })
+      if (deleted.deletedCount === 0) {
+        return respondError(res, 409, 'INVALID_TRANSITION', 'Le statut du document a changé ; rechargez-le')
+      }
       res.locals.audit = {
         entityType: 'BillingDocument',
         entityId: String(doc._id),

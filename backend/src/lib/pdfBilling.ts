@@ -9,7 +9,7 @@ import Subsidiary from '../models/Subsidiary.js'
 import type { IBillingPayer } from '../types/models/billing.js'
 import { billingBuyer, buildFacturXMinimum } from './facturx.js'
 import logger from './logger.js'
-import { assertBp, toCents, vatCents } from './projectFinance/money.js'
+import { billingVatBreakdown } from './projectFinance/vatBreakdown.js'
 
 const PAGE_MARGIN = 40
 const COL_DESC_X = PAGE_MARGIN
@@ -66,13 +66,6 @@ export interface PdfProject {
   projectNumber?: string
 }
 
-interface VatGroup {
-  rate: number
-  ht: number
-  tax: number
-  ttc: number
-}
-
 function fmtAmount(n: number | null | undefined, currency = 'EUR'): string {
   const num = Number(n || 0)
   return new Intl.NumberFormat('fr-FR', {
@@ -86,21 +79,6 @@ function fmtDate(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = date instanceof Date ? date : new Date(date)
   return d.toLocaleDateString('fr-FR')
-}
-
-function aggregateVat(lines: BillingLine[] | undefined): VatGroup[] {
-  const byRate = new Map<number, number>()
-  for (const line of lines || []) {
-    const bp = Math.round((line.taxRate ?? 0) * 100)
-    assertBp(bp, 'Taux de TVA')
-    byRate.set(bp, (byRate.get(bp) ?? 0) + toCents(line.total ?? 0))
-  }
-  return [...byRate]
-    .map(([bp, htCents]) => {
-      const taxCents = vatCents(htCents, bp)
-      return { rate: bp / 100, ht: htCents / 100, tax: taxCents / 100, ttc: (htCents + taxCents) / 100 }
-    })
-    .sort((a, b) => b.rate - a.rate)
 }
 
 function drawHorizontalLine(pdf: PDFKit.PDFDocument, y: number, color = '#cccccc'): void {
@@ -288,13 +266,11 @@ function renderLinesTable(
 }
 
 function renderTotalsAndVat(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, currency: string, yStart: number): number {
-  const grouped = aggregateVat(doc.lines)
-  if (doc.creditedInvoice && grouped.length === 1) {
-    grouped[0]!.tax = doc.taxTotal!
-  }
-  const totalHt = grouped.reduce((s, g) => s + g.ht, 0)
-  const totalTax = grouped.reduce((s, g) => s + g.tax, 0)
-  const totalTtc = totalHt + totalTax
+  const groups = billingVatBreakdown(doc)
+  const grouped = groups.map((group) => ({ rate: group.rate, ht: group.htCents / 100, tax: group.taxCents / 100 }))
+  const totalHt = groups.reduce((sum, group) => sum + group.htCents, 0) / 100
+  const totalTax = groups.reduce((sum, group) => sum + group.taxCents, 0) / 100
+  const totalTtc = groups.reduce((sum, group) => sum + group.htCents + group.taxCents, 0) / 100
 
   let y = yStart + 8
 

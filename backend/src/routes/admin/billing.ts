@@ -16,10 +16,9 @@ import { sendInvoiceEmail } from '../../lib/email.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../lib/accounting/billingToEntry.js'
-import { runInTransaction } from '../../lib/transaction.js'
-import { invoiceAmountsCents } from '../../lib/projectFinance/invoicing.js'
-import { moneyError } from '../../lib/projectFinance/money.js'
-import { markInvoicePaid, assertInvoiceHasNoReceipts } from '../../lib/projectFinance/payments.js'
+import ProjectPayment from '../../models/ProjectPayment.js'
+import { issueProjectInvoice } from '../../lib/projectFinance/issueInvoice.js'
+import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 
 const router = express.Router()
@@ -224,6 +223,10 @@ router.get(
 router.patch(
   '/:id',
   requirePermission(PERMISSIONS.MANAGE_BILLING),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.body?.status === 'PAID') return requirePermission(PERMISSIONS.MANAGE_ACCOUNTING)(req, res, next)
+    next()
+  },
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const body = req.body || {}
@@ -300,9 +303,11 @@ router.post(
       }
       const client = doc.type === 'INVOICE' ? await User.findById(doc.client) : null
       const recipientEmail = payerEmail || client?.email
-      doc.status = 'SENT'
-      doc.sentAt = new Date()
-      await doc.save()
+      if (!['PARTIALLY_PAID', 'PAID'].includes(doc.status)) {
+        doc.status = 'SENT'
+        doc.sentAt = new Date()
+        await doc.save()
+      }
 
       // Auto-email client when invoice is sent
       if (doc.type === 'INVOICE') {
@@ -385,40 +390,8 @@ router.post(
 
       let saleEntry: unknown = null
       let accountingWarning: string | null = null
-      if (doc.creditedInvoice) {
-        const emitted = await runInTransaction(async (session) => {
-          await BillingDocument.updateOne(
-            { _id: doc.creditedInvoice },
-            { $currentDate: { updatedAt: true } },
-            { session },
-          )
-          const original = await BillingDocument.findById(doc.creditedInvoice).session(session)
-          if (!original) throw moneyError('Facture d’origine introuvable')
-          await assertInvoiceHasNoReceipts(original, session)
-          const current = await BillingDocument.findById(doc._id).session(session)
-          if (!current || current.status !== doc.$locals.loadedStatus) {
-            const err = moneyError('Le statut de l’avoir a changé ; rechargez-le')
-            err.status = 409
-            throw err
-          }
-          current.pdfStoragePath = storagePath
-          current.issuedAt = doc.issuedAt
-          if (wasDraft) current.status = 'ISSUED'
-          await current.save({ session })
-          const sale = await createSaleEntryFromBilling(current, { userId: req.user!.id, session })
-          if (original.financeLink?.kind === 'INSTALLMENT') {
-            const credits = await BillingDocument.find({
-              creditedInvoice: original._id,
-              status: { $in: ['ISSUED', 'SENT', 'PAID'] },
-            }).session(session)
-            const creditedHt = credits.reduce((sum, credit) => sum - invoiceAmountsCents(credit).htCents, 0)
-            if (creditedHt === invoiceAmountsCents(original).htCents) {
-              await BillingDocument.updateOne({ _id: original._id }, { $set: { financeKey: null } }, { session })
-            }
-          }
-          return sale.entry
-        })
-        saleEntry = emitted
+      if (doc.financeLink || doc.creditedInvoice) {
+        saleEntry = await issueProjectInvoice(doc, storagePath, req.user!.id)
       } else {
         doc.pdfStoragePath = storagePath
         if (wasDraft) doc.status = 'ISSUED'
@@ -427,7 +400,13 @@ router.post(
       const updated = await BillingDocument.findById(doc._id).lean()
 
       // Hook comptable : générer l'écriture de vente si c'est une facture émise
-      if (!doc.creditedInvoice && updated && updated.type === 'INVOICE' && (wasDraft || updated.status !== 'DRAFT')) {
+      if (
+        !doc.financeLink &&
+        !doc.creditedInvoice &&
+        updated &&
+        updated.type === 'INVOICE' &&
+        (wasDraft || updated.status !== 'DRAFT')
+      ) {
         try {
           const r = await createSaleEntryFromBilling(updated as any, { userId: req.user!.id })
           saleEntry = r.entry
@@ -482,6 +461,7 @@ router.get(
 router.post(
   '/:id/generate-accounting',
   requirePermission(PERMISSIONS.MANAGE_BILLING),
+  requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const doc = await BillingDocument.findById(req.params.id).lean()
@@ -490,6 +470,9 @@ router.post(
       }
       if (doc.type !== 'INVOICE') {
         return res.status(400).json({ error: 'Only invoices can generate accounting entries' })
+      }
+      if (['DRAFT', 'CANCELLED'].includes(doc.status)) {
+        return res.status(409).json({ error: 'Émettez la facture avant de générer ses écritures' })
       }
       const result: {
         sale: { entry: unknown; alreadyExisted: boolean } | null
@@ -503,7 +486,7 @@ router.post(
         const status = (err as { status?: number }).status
         return res.status(status || 500).json({ error: (err as Error).message })
       }
-      if (doc.status === 'PAID') {
+      if (doc.status === 'PAID' && !(await ProjectPayment.exists({ invoice: doc._id }))) {
         try {
           const r = await createPaymentEntryFromBilling(doc as any, { userId: req.user!.id })
           result.payment = { entry: r.entry, alreadyExisted: r.alreadyExisted || false }

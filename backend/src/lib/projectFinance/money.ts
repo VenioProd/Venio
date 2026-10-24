@@ -46,6 +46,7 @@ function toSafeNumber(value: bigint): number {
  */
 export function toCents(euros: number): number {
   if (!Number.isFinite(euros)) throw moneyError(`Montant en euros invalide : ${euros}`)
+  if (Math.abs(euros) >= 1e12) throw moneyError(`Montant hors limites : ${euros}`)
   const scaled = Number((Math.abs(euros) * 100).toPrecision(15))
   const cents = Math.sign(euros) * Math.round(scaled)
   if (!Number.isSafeInteger(cents)) throw moneyError(`Montant hors limites : ${euros}`)

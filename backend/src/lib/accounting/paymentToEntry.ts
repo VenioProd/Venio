@@ -1,5 +1,6 @@
 import type { ClientSession, Types } from 'mongoose'
 import BillingDocument from '../../models/BillingDocument.js'
+import ProjectPayment from '../../models/ProjectPayment.js'
 import ChartOfAccount from '../../models/ChartOfAccount.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import AccountingLine from '../../models/AccountingLine.js'
@@ -70,6 +71,12 @@ export async function createPaymentEntryFromBilling(
     throw err
   }
 
+  if (await ProjectPayment.exists({ invoice: doc._id })) {
+    const err = new Error('Cette facture possède déjà des encaissements détaillés') as Error & { status?: number }
+    err.status = 409
+    throw err
+  }
+
   const idempotencyKey = buildBillingIdempotencyKey(doc._id as Types.ObjectId, 'payment')
   const existing = await AccountingEntry.findOne({ idempotencyKey })
   if (existing) {
@@ -97,7 +104,7 @@ export async function createPaymentEntryFromBilling(
   // Lettrage commun avec la vente si elle existe
   const saleIdempotencyKey = buildBillingIdempotencyKey(doc._id as Types.ObjectId, 'sale')
   const saleEntry = await AccountingEntry.findOne({ idempotencyKey: saleIdempotencyKey })
-  let lettrageCode = ''
+  let lettrageCode: string
   if (saleEntry) {
     const customerLine = await AccountingLine.findOne({
       entry: saleEntry._id,

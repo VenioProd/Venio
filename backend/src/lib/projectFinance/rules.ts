@@ -207,7 +207,11 @@ export function beneficiaryStatement(allocationCents: number[], settlementHtCent
   }
   const dueCents = allocationCents.reduce((s, c) => s + c, 0)
   const paidCents = settlementHtCents.reduce((s, c) => s + c, 0)
-  return { dueCents, paidCents, remainingCents: dueCents - paidCents }
+  const remainingCents = dueCents - paidCents
+  assertCents(dueCents, 'dû')
+  assertCents(paidCents, 'versé')
+  assertCents(remainingCents, 'restant')
+  return { dueCents, paidCents, remainingCents }
 }
 
 export function subscriptionPeriodStart(

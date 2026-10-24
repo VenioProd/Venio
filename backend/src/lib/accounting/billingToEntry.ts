@@ -1,4 +1,5 @@
-import { assertBp, assertCents, moneyError, toCents, vatCents } from '../projectFinance/money.js'
+import { assertCents, moneyError } from '../projectFinance/money.js'
+import { billingVatBreakdown } from '../projectFinance/vatBreakdown.js'
 import { invoiceAmountsCents } from '../projectFinance/invoicing.js'
 import type { ClientSession, Types } from 'mongoose'
 import BillingDocument from '../../models/BillingDocument.js'
@@ -6,7 +7,7 @@ import ChartOfAccount from '../../models/ChartOfAccount.js'
 import VatRate from '../../models/VatRate.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import { createEntry, type CreateEntryResult, type CreateEntryLineInput } from './doubleEntry.js'
-import type { IBillingDocument, IBillingLine, IChartOfAccount, IVatRate } from '../../types/models/index.js'
+import type { IBillingDocument, IChartOfAccount, IVatRate } from '../../types/models/index.js'
 
 const DEFAULT_CUSTOMER_ACCOUNT = '411000'
 const DEFAULT_REVENUE_ACCOUNT = '706000'
@@ -20,30 +21,6 @@ export function buildBillingIdempotencyKey(
   kind: 'sale' | 'payment' = 'sale',
 ): string {
   return `billing:${kind}:${String(billingDocId)}`
-}
-
-interface VatGroup {
-  rate: number
-  htCents: number
-  taxCents: number
-}
-
-function aggregateLinesByVatRate(lines: IBillingLine[] | undefined): VatGroup[] {
-  const byRate = new Map<number, number>()
-  for (const line of lines || []) {
-    const bp = Math.round(line.taxRate * 100)
-    assertBp(bp, 'Taux de TVA')
-    const htCents = (byRate.get(bp) ?? 0) + toCents(line.total)
-    assertCents(htCents, 'Base HT par taux')
-    byRate.set(bp, htCents)
-  }
-  return [...byRate]
-    .map(([bp, htCents]) => ({
-      rate: bp / 100,
-      htCents,
-      taxCents: vatCents(htCents, bp),
-    }))
-    .sort((a, b) => b.rate - a.rate)
 }
 
 /**
@@ -148,16 +125,12 @@ export async function createSaleEntryFromBilling(
   }
 
   // Agrégation par taux de TVA
-  const grouped = aggregateLinesByVatRate(doc.lines)
-  if (doc.creditedInvoice && grouped.length === 1) {
-    // La TVA cumulative est portée par l’avoir, elle ne se recalcule pas au taux.
-    grouped[0]!.taxCents = invoiceAmountsCents(doc).vatCents
-  }
+  const grouped = billingVatBreakdown(doc)
   const totalHtCents = grouped.reduce((sum, group) => sum + group.htCents, 0)
   const totalTaxCents = grouped.reduce((sum, group) => sum + group.taxCents, 0)
   const totalTtcCents = totalHtCents + totalTaxCents
   assertCents(totalTtcCents, 'TTC de l’écriture')
-  if ((doc.financeLink || doc.creditedInvoice) && totalTtcCents !== invoiceAmountsCents(doc).ttcCents) {
+  if (totalTtcCents !== invoiceAmountsCents(doc).ttcCents) {
     throw moneyError('Le TTC de l’écriture ne correspond pas à la facture du projet')
   }
   const totalTtc = totalTtcCents / 100
@@ -240,5 +213,3 @@ export async function createSaleEntryFromBilling(
 
   return result
 }
-
-export { aggregateLinesByVatRate }
