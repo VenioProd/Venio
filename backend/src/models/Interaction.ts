@@ -1,3 +1,4 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IInteraction } from '../types/models/index.js'
 
@@ -32,6 +33,7 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     // Distinct de createdAt : un appel se consigne souvent après coup, et la
     // timeline doit le classer à sa date réelle.
     occurredAt: { type: Date, required: true, default: () => new Date() },
+    endsAt: { type: Date },
     subject: { type: String, default: '', trim: true, maxlength: INTERACTION_SUBJECT_MAX_LENGTH },
     body: { type: String, default: '', maxlength: INTERACTION_BODY_MAX_LENGTH },
     pinned: { type: Boolean, default: false },
@@ -45,6 +47,23 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     // Pas de valeur par défaut : le champ doit rester ABSENT hors migration,
     // sinon l'index unique ci-dessous voit autant de `null` que de documents.
     migratedFrom: { type: String },
+    // Langue du texte détectée sur l'appareil. Le serveur garde l'original et
+    // ne traduit jamais : la traduction se fait sur l'appareil qui l'affiche.
+    lang: { type: String, enum: ['fr', 'en', null], default: null },
+    clientRequestId: { type: String, select: false },
+    clientRequestHash: { type: String, select: false },
+    audio: {
+      type: new mongoose.Schema(
+        {
+          filename: { type: String, required: true },
+          originalName: { type: String, required: true },
+          mimeType: { type: String, required: true },
+          size: { type: Number, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { timestamps: true },
 )
@@ -57,5 +76,15 @@ interactionSchema.index(
   { migratedFrom: 1 },
   { unique: true, partialFilterExpression: { migratedFrom: { $type: 'string' } } },
 )
+
+interactionSchema.index(
+  { author: 1, clientRequestId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { clientRequestId: { $type: 'string' } },
+  },
+)
+
+syncTombstones(interactionSchema, 'interactions')
 
 export default mongoose.model<IInteraction>('Interaction', interactionSchema)

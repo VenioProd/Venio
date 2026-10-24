@@ -21,6 +21,7 @@ describe('permissions module', () => {
         'MANAGE_PHASES',
         'VIEW_BILLING',
         'MANAGE_BILLING',
+        'MANAGE_QUOTES',
         'MANAGE_TASKS',
         'VIEW_QUALIOPI',
         'MANAGE_QUALIOPI',

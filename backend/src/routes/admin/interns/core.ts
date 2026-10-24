@@ -13,6 +13,7 @@ import { createNotification } from '../../../lib/notifications.js'
 import { notifySuperAdmins } from '../../../lib/notifyHelpers.js'
 import { provisionNextcloudIntern, deleteNextcloudUser, syncUploadToNextcloud } from '../../../lib/nextcloud.js'
 import { sendAdminCredentials } from '../../../lib/email.js'
+import { revokeUserSessions } from '../../../lib/session.js'
 import { countWorkingDaysSince } from '../../../lib/workingDays.js'
 import logger from '../../../lib/logger.js'
 
@@ -632,7 +633,9 @@ router.post('/:id/resend-credentials', requireAdmin, async (req: Request, res: R
     const tempPassword = crypto.randomBytes(6).toString('hex')
     user.passwordHash = await bcrypt.hash(tempPassword, 10)
     ;(user as any).passwordChangedAt = new Date()
+    user.sessionVersion = (user.sessionVersion ?? 0) + 1
     await user.save()
+    await revokeUserSessions(user._id.toString())
 
     const result = await sendAdminCredentials({
       to: user.email,

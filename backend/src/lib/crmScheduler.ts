@@ -162,6 +162,44 @@ export async function processColdLeads(): Promise<SchedulerResult> {
   }
 }
 
+export async function processLeadFollowUps(): Promise<{ notified: number }> {
+  const now = new Date()
+  const leads = await Lead.find({
+    nextActionAt: { $lte: now, $ne: null },
+    status: { $nin: ['WON', 'LOST'] },
+    assignedTo: { $ne: null },
+    // Ne relit pas, à chaque minute, les échéances déjà notifiées.
+    $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
+  }).select('assignedTo nextActionAt followUpNotifiedFor company')
+  let notified = 0
+  for (const lead of leads) {
+    const due = lead.nextActionAt!
+    // Au premier passage, les anciennes échéances sont consommées sans rafale de notifications.
+    const stale = !lead.followUpNotifiedFor && due.getTime() < now.getTime() - 7 * 86400000
+    const result = await Lead.updateOne(
+      {
+        _id: lead._id,
+        nextActionAt: due,
+        assignedTo: lead.assignedTo,
+        status: { $nin: ['WON', 'LOST'] },
+        followUpNotifiedFor: { $ne: due },
+      },
+      { $set: { followUpNotifiedFor: due } },
+    )
+    if (!result.modifiedCount || stale) continue
+    await createNotification({
+      recipient: lead.assignedTo!,
+      type: 'LEAD_FOLLOW_UP_DUE',
+      title: 'Relance à effectuer',
+      message: lead.company,
+      link: `/admin/crm/leads/${lead._id}`,
+      metadata: { leadId: String(lead._id) },
+    })
+    notified++
+  }
+  return { notified }
+}
+
 /**
  * Process overdue actions and send reminder emails
  */
@@ -725,6 +763,7 @@ export async function runScheduledJobs(): Promise<void> {
   const currentDay = now.getDay() // 0 = Sunday
 
   try {
+    await processLeadFollowUps()
     const settings = await CrmSettings.getSettings()
 
     // Daily jobs at 08:00 (CRM + task/brief/project reminders)

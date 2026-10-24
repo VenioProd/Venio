@@ -1,15 +1,6 @@
 // ─── User ───
 export type UserRole =
-  | 'CLIENT'
-  | 'SUPER_ADMIN'
-  | 'ADMIN'
-  | 'MANAGER'
-  | 'RH'
-  | 'COMMERCIAL'
-  | 'COMPTABLE'
-  | 'VIEWER'
-  | 'STAGIAIRE'
-  | 'AGENT'
+  'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE' | 'AGENT'
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
@@ -117,6 +108,9 @@ export type NotificationType =
   | 'BILLING_DOCUMENT_SENT'
   | 'BILLING_DOCUMENT_PAID'
   // CRM
+  | 'LEAD_FOLLOW_UP_DUE'
+  | 'QUOTE_PROPOSAL_VIEWED'
+  | 'QUOTE_PROPOSAL_SIGNED'
   | 'CRM_LEAD_CREATED'
   | 'CRM_LEAD_ASSIGNED'
   | 'CRM_LEAD_STATUS_CHANGED'
@@ -188,6 +182,9 @@ export type AuditAction =
   | 'MFA_DISABLED'
   | 'MFA_STEP_UP'
   | 'MFA_RECOVERY_CODE_USED'
+  // ── App native ──
+  | 'MOBILE_DEVICE_REVOKED'
+  | 'MOBILE_REFRESH_REUSE'
   // ── Comptabilité ──
   | 'ACCOUNTING_ENTRY_CREATE'
   | 'ACCOUNTING_ENTRY_UPDATE'
@@ -260,6 +257,7 @@ export type Permission =
   | 'manage_phases'
   | 'view_billing'
   | 'manage_billing'
+  | 'manage_quotes'
   | 'manage_tasks'
   | 'view_qualiopi'
   | 'manage_qualiopi'
@@ -302,12 +300,7 @@ export type VatDeclarationType = 'CA3' | 'CA12'
 export type VatDeclarationStatus = 'DRAFT' | 'SUBMITTED'
 export type ExternalSourceStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED'
 export type ExternalTransactionStatus =
-  | 'RECEIVED'
-  | 'CLASSIFIED'
-  | 'POSTED'
-  | 'REJECTED'
-  | 'DUPLICATE'
-  | 'AWAITING_REVIEW'
+  'RECEIVED' | 'CLASSIFIED' | 'POSTED' | 'REJECTED' | 'DUPLICATE' | 'AWAITING_REVIEW'
 
 // ─── CRM Settings ───
 export type EscalationAction = 'NOTIFY_MANAGER' | 'REASSIGN' | 'BOTH'

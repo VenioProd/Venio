@@ -87,6 +87,12 @@ router.get(
   },
 )
 
+// Choisir le mot de passe ou l'email d'un compte client, c'est pouvoir s'y
+// connecter : réservé au navigateur, comme les identifiants des comptes internes.
+function refuseFromDevice(res: Response) {
+  return error(res, 403, 'Cette action se fait depuis le navigateur.', 'BROWSER_SESSION_REQUIRED')
+}
+
 router.post(
   '/',
   requirePermission(PERMISSIONS.MANAGE_CLIENTS),
@@ -100,6 +106,8 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
       }
+
+      if (req.user!.deviceId) return refuseFromDevice(res)
 
       const { email, password, name } = req.body || {}
 
@@ -243,6 +251,10 @@ router.patch(
       if (!client) {
         return error(res, 404, 'Client not found', 'CLIENT_NOT_FOUND')
       }
+
+      // L'email est l'identifiant : le changer, c'est pouvoir recevoir le lien
+      // de réinitialisation du mot de passe à la place du client.
+      if (req.user!.deviceId && (req.body?.password || req.body?.email !== undefined)) return refuseFromDevice(res)
 
       const payload: Record<string, any> = normalizeClientPayload(req.body || {})
 
@@ -388,12 +400,15 @@ router.post(
   requirePermission(PERMISSIONS.MANAGE_CLIENTS),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Un courriel officiel avec un mot de passe choisi par l'expéditeur
+      // ferait un hameçonnage parfait depuis un appareil volé.
+      if (req.user!.deviceId) return refuseFromDevice(res)
       const { password } = req.body || {}
       if (!password) {
         return res.status(400).json({ error: 'Le mot de passe est requis.' })
       }
-      const client = await User.findById(req.params.id)
-      if (!client || client.role !== 'CLIENT') {
+      const client = await ensureClient(req.params.id as string, req)
+      if (!client) {
         return res.status(404).json({ error: 'Client not found' })
       }
       const result = await sendAdminCredentials({

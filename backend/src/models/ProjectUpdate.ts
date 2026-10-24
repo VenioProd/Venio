@@ -1,3 +1,4 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IProjectUpdate } from '../types/models/index.js'
 
@@ -9,7 +10,9 @@ const projectUpdateSchema = new mongoose.Schema<IProjectUpdate>(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: false }
+  { timestamps: true },
 )
+
+syncTombstones(projectUpdateSchema, 'projectUpdates')
 
 export default mongoose.model<IProjectUpdate>('ProjectUpdate', projectUpdateSchema)

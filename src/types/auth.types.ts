@@ -16,6 +16,7 @@ export type Permission =
   | 'edit_content'
   | 'view_billing'
   | 'manage_billing'
+  | 'manage_quotes'
   | 'manage_tasks'
   | 'view_qualiopi'
   | 'manage_qualiopi'

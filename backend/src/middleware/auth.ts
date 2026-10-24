@@ -9,7 +9,63 @@ const MFA_ENROLLMENT_ALLOWED_PATHS = new Set([
   '/api/admin/2fa/verify',
 ])
 
+/**
+ * Surfaces ouvertes à l'app native. Liste blanche plutôt que liste noire : une
+ * route qui crée des comptes, change des identifiants ou expose des secrets
+ * (stagiaires, administrateurs, MFA, jetons agent, coffre d'outils…) reste
+ * réservée au navigateur sans qu'on ait à la penser, y compris quand elle est
+ * ajoutée plus tard. Un appareil perdu ne doit pas permettre de s'approprier
+ * le compte ni d'en ouvrir d'autres.
+ */
+const BEARER_ALLOWED_PREFIXES = [
+  '/api/auth/me',
+  '/api/auth/mobile',
+  '/api/mobile',
+  '/api/notification-preferences',
+  '/api/admin/crm',
+  '/api/admin/interactions',
+  '/api/admin/clients',
+  '/api/admin/projects',
+  '/api/admin/quote-proposals',
+  '/api/admin/quote-templates',
+  '/api/admin/sales-targets',
+  '/api/admin/billing',
+  '/api/admin/notifications',
+  '/api/admin/dashboard',
+  '/api/admin/analytics',
+  '/api/admin/calendar',
+  '/api/admin/tickets',
+  '/api/admin/change-requests',
+  '/api/admin/messaging',
+  '/api/admin/activity-center',
+  '/api/admin/inbox',
+  '/api/admin/search',
+]
+
+function isBearerAllowed(path: string): boolean {
+  // Le routage Express ignore la casse : la comparaison aussi.
+  const normalized = path.toLowerCase()
+  return BEARER_ALLOWED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+}
+
+/**
+ * `undefined` : pas d'en-tête Authorization, on retombe sur le cookie.
+ * `null` : en-tête présent mais inexploitable.
+ */
+function readBearerToken(header: string | undefined): string | null | undefined {
+  if (header === undefined) return undefined
+  const match = /^Bearer ([A-Za-z0-9_-]+)$/.exec(header.trim())
+  return match ? match[1]! : null
+}
+
 export default async function auth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const path = (req.originalUrl || req.url).split('?')[0]!
+  const bearer = readBearerToken(req.headers.authorization)
+  if (bearer !== undefined) {
+    await authenticateBearer(bearer, path, req, res, next)
+    return
+  }
+
   const token = readSessionCookie(req.headers.cookie)
 
   if (!token) {
@@ -24,12 +80,47 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
       return
     }
     req.user = payload
-    if (payload.mfaEnrollmentOnly && !MFA_ENROLLMENT_ALLOWED_PATHS.has((req.originalUrl || req.url).split('?')[0])) {
+    if (payload.mfaEnrollmentOnly && !MFA_ENROLLMENT_ALLOWED_PATHS.has(path)) {
       res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'Configurez la MFA avant de continuer.' })
       return
     }
     next()
   } catch {
     res.status(401).json({ error: 'Invalid token' })
+  }
+}
+
+// Un en-tête Authorization présent l'emporte sur le cookie : la requête est
+// celle d'un client natif et n'est jamais rattrapée par la session navigateur.
+async function authenticateBearer(
+  token: string | null,
+  path: string,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const invalid = () =>
+    res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.', code: 'INVALID_ACCESS_TOKEN' })
+  if (!token) {
+    invalid()
+    return
+  }
+  try {
+    const payload = await authenticateSession(token, 'bearer')
+    if (!payload) {
+      invalid()
+      return
+    }
+    if (!isBearerAllowed(path)) {
+      res.status(403).json({
+        error: 'Cette action se fait depuis le navigateur.',
+        code: 'BROWSER_SESSION_REQUIRED',
+      })
+      return
+    }
+    req.user = payload
+    next()
+  } catch {
+    invalid()
   }
 }

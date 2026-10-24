@@ -49,6 +49,12 @@ describe('RBAC matrix / API enforcement', () => {
     }
   })
 
+  it('réserve la gestion commerciale des devis sans ouvrir la facturation', () => {
+    const permissions = getPermissionsForRole('COMMERCIAL')
+    expect(permissions).toContain('manage_quotes')
+    expect(permissions).not.toContain('manage_billing')
+  })
+
   it('keeps API agents out of human RBAC, even if an ad-hoc grant exists', () => {
     expect(resolvePermissions('AGENT', ['manage_admins'], [])).toEqual([])
     expect(hasPermissionResolved('AGENT', PERMISSIONS.MANAGE_ADMINS, ['manage_admins'], [])).toBe(false)

@@ -199,7 +199,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response, 
       title: `Nouvelle demande : ${created.title}`,
       message: `${actor.name} a soumis une demande de changement`,
       link: `/admin/demandes-clients/${created._id}`,
-      metadata: { changeRequestId: String(created._id) },
+      metadata: { changeRequestId: String(created._id), requestTitle: created.title, actorName: actor.name },
     }).catch(() => {})
 
     return res.status(201).json({ changeRequest: created.toObject() })

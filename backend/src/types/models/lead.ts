@@ -12,6 +12,7 @@ export interface ILead extends Document {
   priority: ProjectPriority
   budget: number | null
   nextActionAt: Date | null
+  followUpNotifiedFor: Date | null
   lastContactAt: Date | null
   notes: string
   serviceType: string

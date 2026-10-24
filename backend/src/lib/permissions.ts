@@ -27,6 +27,7 @@ export const PERMISSIONS: Record<string, Permission> = {
   MANAGE_PHASES: 'manage_phases',
   VIEW_BILLING: 'view_billing',
   MANAGE_BILLING: 'manage_billing',
+  MANAGE_QUOTES: 'manage_quotes',
   MANAGE_TASKS: 'manage_tasks',
   VIEW_QUALIOPI: 'view_qualiopi',
   MANAGE_QUALIOPI: 'manage_qualiopi',
@@ -160,6 +161,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_BETA,
   ]),
   COMMERCIAL: new Set([
+    PERMISSIONS.MANAGE_QUOTES,
     PERMISSIONS.VIEW_CRM,
     PERMISSIONS.MANAGE_CRM,
     PERMISSIONS.MANAGE_CLIENTS,
