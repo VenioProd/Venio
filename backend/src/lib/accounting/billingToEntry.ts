@@ -1,6 +1,6 @@
 import { assertBp, assertCents, moneyError, toCents, vatCents } from '../projectFinance/money.js'
 import { invoiceAmountsCents } from '../projectFinance/invoicing.js'
-import type { Types } from 'mongoose'
+import type { ClientSession, Types } from 'mongoose'
 import BillingDocument from '../../models/BillingDocument.js'
 import ChartOfAccount from '../../models/ChartOfAccount.js'
 import VatRate from '../../models/VatRate.js'
@@ -51,6 +51,7 @@ function aggregateLinesByVatRate(lines: IBillingLine[] | undefined): VatGroup[] 
  */
 async function resolveRevenueAccount(
   project: { serviceTypes?: string[] } | null | undefined,
+  session?: ClientSession,
 ): Promise<IChartOfAccount | null> {
   // Heuristique : si le projet a un serviceType, on peut mapper vers 706100/706200/706300
   // Sinon, 706000 par défaut.
@@ -60,23 +61,24 @@ async function resolveRevenueAccount(
   else if (types.includes('DEVELOPPEMENT') || types.includes('WEB')) code = '706200'
   else if (types.includes('CONSEIL') || types.includes('STRATEGIE')) code = '706300'
 
-  const found = await ChartOfAccount.findOne({ code, isActive: true })
+  const found = await ChartOfAccount.findOne({ code, isActive: true }).session(session ?? null)
   if (found) return found
   // Fallback strict 706000
-  return ChartOfAccount.findOne({ code: DEFAULT_REVENUE_ACCOUNT, isActive: true })
+  return ChartOfAccount.findOne({ code: DEFAULT_REVENUE_ACCOUNT, isActive: true }).session(session ?? null)
 }
 
-async function resolveCustomerAccount(): Promise<IChartOfAccount | null> {
-  return ChartOfAccount.findOne({ code: DEFAULT_CUSTOMER_ACCOUNT, isActive: true })
+async function resolveCustomerAccount(session?: ClientSession): Promise<IChartOfAccount | null> {
+  return ChartOfAccount.findOne({ code: DEFAULT_CUSTOMER_ACCOUNT, isActive: true }).session(session ?? null)
 }
 
 async function resolveVatCollectedAccountFor(
   rate: number,
+  session?: ClientSession,
 ): Promise<{ account: IChartOfAccount | null; vatRate: IVatRate | null }> {
   // Cherche d'abord dans VatRate, sinon fallback 445710
-  const vatRate = await VatRate.findOne({ rate: Number(rate), isActive: true })
+  const vatRate = await VatRate.findOne({ rate: Number(rate), isActive: true }).session(session ?? null)
   const code = vatRate?.collectedAccount || DEFAULT_COLLECTED_VAT_ACCOUNT
-  const account = await ChartOfAccount.findOne({ code, isActive: true })
+  const account = await ChartOfAccount.findOne({ code, isActive: true }).session(session ?? null)
   return { account, vatRate }
 }
 
@@ -84,6 +86,7 @@ export interface CreateSaleEntryOptions {
   userId?: string | Types.ObjectId | null
   date?: Date | string
   status?: 'DRAFT' | 'VALIDATED'
+  session?: ClientSession
 }
 
 /**
@@ -99,10 +102,13 @@ export async function createSaleEntryFromBilling(
   billingDocOrId: IBillingDocument | string | Types.ObjectId,
   options: CreateSaleEntryOptions = {},
 ): Promise<CreateEntryResult> {
+  const { session } = options
   const doc: IBillingDocument | null =
     typeof billingDocOrId === 'object' && (billingDocOrId as IBillingDocument)._id
       ? (billingDocOrId as IBillingDocument)
-      : ((await BillingDocument.findById(billingDocOrId as string).lean()) as unknown as IBillingDocument | null)
+      : ((await BillingDocument.findById(billingDocOrId as string)
+          .session(session ?? null)
+          .lean()) as unknown as IBillingDocument | null)
 
   if (!doc) {
     const err = new Error('Facture introuvable') as Error & { status?: number }
@@ -119,7 +125,7 @@ export async function createSaleEntryFromBilling(
 
   // Idempotency
   const idempotencyKey = buildBillingIdempotencyKey(doc._id as Types.ObjectId, 'sale')
-  const existing = await AccountingEntry.findOne({ idempotencyKey })
+  const existing = await AccountingEntry.findOne({ idempotencyKey }).session(session ?? null)
   if (existing) {
     return { entry: existing, lines: [], alreadyExisted: true }
   }
@@ -127,12 +133,14 @@ export async function createSaleEntryFromBilling(
   // Import dynamique du modèle Project (pour éviter une dépendance circulaire au démarrage)
   const Project = (await import('../../models/Project.js')).default
   const project = doc.project
-    ? ((await Project.findById(doc.project).lean()) as { name?: string; serviceTypes?: string[] } | null)
+    ? ((await Project.findById(doc.project)
+        .session(session ?? null)
+        .lean()) as { name?: string; serviceTypes?: string[] } | null)
     : null
 
   // Résolution des comptes
-  const customerAccount = await resolveCustomerAccount()
-  const revenueAccount = await resolveRevenueAccount(project)
+  const customerAccount = await resolveCustomerAccount(session)
+  const revenueAccount = await resolveRevenueAccount(project, session)
   if (!customerAccount || !revenueAccount) {
     const err = new Error('Comptes 411 ou 706 manquants — initialisez le plan comptable') as Error & { status?: number }
     err.status = 500
@@ -141,16 +149,20 @@ export async function createSaleEntryFromBilling(
 
   // Agrégation par taux de TVA
   const grouped = aggregateLinesByVatRate(doc.lines)
+  if (doc.creditedInvoice && grouped.length === 1) {
+    // La TVA cumulative est portée par l’avoir, elle ne se recalcule pas au taux.
+    grouped[0]!.taxCents = invoiceAmountsCents(doc).vatCents
+  }
   const totalHtCents = grouped.reduce((sum, group) => sum + group.htCents, 0)
   const totalTaxCents = grouped.reduce((sum, group) => sum + group.taxCents, 0)
   const totalTtcCents = totalHtCents + totalTaxCents
   assertCents(totalTtcCents, 'TTC de l’écriture')
-  if (doc.financeLink && totalTtcCents !== invoiceAmountsCents(doc).ttcCents) {
+  if ((doc.financeLink || doc.creditedInvoice) && totalTtcCents !== invoiceAmountsCents(doc).ttcCents) {
     throw moneyError('Le TTC de l’écriture ne correspond pas à la facture du projet')
   }
   const totalTtc = totalTtcCents / 100
 
-  if (totalTtc <= 0) {
+  if (totalTtc === 0) {
     const err = new Error("Facture sans montant — pas d'écriture générée") as Error & { status?: number }
     err.status = 400
     throw err
@@ -163,8 +175,13 @@ export async function createSaleEntryFromBilling(
   let auxiliaryRef: CreateEntryLineInput['auxiliaryRef']
   if (doc.payer?.kind === 'CLIENT') auxiliaryRef = { kind: 'CLIENT', id: doc.payer.user }
   else if (doc.payer) auxiliaryRef = { kind: 'OTHER', id: doc.payer.subsidiary }
-  const lettrageCode = doc.number
-    ? doc.number
+  const original = doc.creditedInvoice
+    ? await BillingDocument.findById(doc.creditedInvoice).session(session ?? null)
+    : null
+  if (doc.creditedInvoice && !original) throw moneyError('Facture d’origine introuvable')
+  const lettrageNumber = original?.number ?? doc.number
+  const lettrageCode = lettrageNumber
+    ? lettrageNumber
         .replace(/[^A-Z0-9]/gi, '')
         .slice(-8)
         .toUpperCase()
@@ -173,33 +190,33 @@ export async function createSaleEntryFromBilling(
     account: customerAccount.code,
     label: `Facture ${doc.number}${project?.name ? ' — ' + project.name : ''}`,
     auxiliaryRef,
-    debit: totalTtc,
-    credit: 0,
+    debit: Math.max(totalTtc, 0),
+    credit: Math.max(-totalTtc, 0),
     lettrage: lettrageCode || undefined,
   })
 
   // 2) Prestations crédit HT (une ligne par taux si multi-TVA pour pouvoir afficher la base)
   for (const grp of grouped) {
-    if (grp.htCents <= 0) continue
+    if (grp.htCents === 0) continue
     lines.push({
       account: revenueAccount.code,
       label: `Prestations — base HT ${grp.rate}%`,
-      debit: 0,
-      credit: grp.htCents / 100,
+      debit: Math.max(-grp.htCents, 0) / 100,
+      credit: Math.max(grp.htCents, 0) / 100,
       vatRateValue: grp.rate,
     })
   }
 
   // 3) TVA collectée crédit par taux (uniquement si taux > 0)
   for (const grp of grouped) {
-    if (grp.taxCents <= 0) continue
-    const { account: vatAccount, vatRate } = await resolveVatCollectedAccountFor(grp.rate)
+    if (grp.taxCents === 0) continue
+    const { account: vatAccount, vatRate } = await resolveVatCollectedAccountFor(grp.rate, session)
     if (!vatAccount) continue
     lines.push({
       account: vatAccount.code,
       label: `TVA collectée ${grp.rate}%`,
-      debit: 0,
-      credit: grp.taxCents / 100,
+      debit: Math.max(-grp.taxCents, 0) / 100,
+      credit: Math.max(grp.taxCents, 0) / 100,
       vatRate: vatRate?._id as Types.ObjectId | undefined,
       vatRateValue: grp.rate,
     })
@@ -218,6 +235,7 @@ export async function createSaleEntryFromBilling(
     status: options.status || 'VALIDATED',
     createdBy: options.userId || (doc.createdBy as Types.ObjectId | null),
     currency: doc.currency || 'EUR',
+    session,
   })
 
   return result

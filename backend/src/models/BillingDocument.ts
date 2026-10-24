@@ -57,6 +57,7 @@ const billingDocumentSchema = new mongoose.Schema<IBillingDocument>(
     payer: { type: payerSchema, default: null },
     financeLink: { type: financeLinkSchema, default: null },
     financeKey: { type: String, default: null },
+    creditedInvoice: { type: mongoose.Schema.Types.ObjectId, ref: 'BillingDocument', default: null },
     status: {
       type: String,
       enum: ['DRAFT', 'ISSUED', 'SENT', 'ACCEPTED', 'PAID', 'CANCELLED'],
@@ -94,7 +95,7 @@ billingDocumentSchema.pre('save', function () {
   if (this.type !== 'INVOICE' || this.isNew) return
   const amountsChanged = ['lines', 'subtotal', 'taxTotal', 'total'].some((field) => this.isModified(field))
   let message: string | null = null
-  if (amountsChanged && this.financeLink) {
+  if (amountsChanged && (this.financeLink || this.creditedInvoice)) {
     message = "Montants fixés par l'échéancier du projet"
   } else if (amountsChanged && this.$locals.loadedStatus !== 'DRAFT') {
     message = "Les montants d'une facture émise ne se modifient pas ; passez par un avoir"
@@ -102,10 +103,14 @@ billingDocumentSchema.pre('save', function () {
   if (this.isModified('status') && this.status === 'DRAFT' && this.$locals.loadedStatus !== 'DRAFT') {
     message = 'Une facture sortie du brouillon ne peut pas redevenir un brouillon'
   }
-  if (this.financeLink && this.$locals.loadedStatus === 'CANCELLED' && this.status !== 'CANCELLED') {
+  if (
+    (this.financeLink || this.creditedInvoice) &&
+    this.$locals.loadedStatus === 'CANCELLED' &&
+    this.status !== 'CANCELLED'
+  ) {
     message = 'Une facture d’échéance annulée ne peut pas être réactivée'
   }
-  if (this.financeLink && this.isModified('status') && this.status === 'CANCELLED') {
+  if ((this.financeLink || this.creditedInvoice) && this.isModified('status') && this.status === 'CANCELLED') {
     if (this.$locals.loadedStatus !== 'DRAFT') {
       message = "Seul un brouillon de facture d'échéance peut être annulé"
     }

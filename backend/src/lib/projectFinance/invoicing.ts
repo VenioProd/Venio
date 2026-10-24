@@ -1,5 +1,5 @@
-import type { Types } from 'mongoose'
-import type { IBillingDocument, IProjectFinance } from '../../types/models/index.js'
+import type { ClientSession, Types } from 'mongoose'
+import type { IBillingDocument, IProjectFinance, IFinanceSubscription } from '../../types/models/index.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import ProjectFinance from '../../models/ProjectFinance.js'
 import Project from '../../models/Project.js'
@@ -7,7 +7,7 @@ import ProjectPhase from '../../models/ProjectPhase.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { runInTransaction } from '../transaction.js'
 import { assertCents, moneyError, toCents, vatCents } from './money.js'
-import { splitPayers, splitSchedule } from './rules.js'
+import { splitPayers, splitSchedule, subscriptionPeriodStart, subscriptionPeriodEnd } from './rules.js'
 
 export function invoiceAmountsCents(doc: Pick<IBillingDocument, 'subtotal' | 'taxTotal' | 'total'>) {
   const htCents = toCents(doc.subtotal)
@@ -197,6 +197,22 @@ export function assertFinanceChangesAllowed(
   invoices: IBillingDocument[],
 ) {
   if (!invoices.length) return
+  const subscriptionInvoices = invoices.filter((invoice) => invoice.financeLink?.kind === 'SUBSCRIPTION')
+  if (subscriptionInvoices.length) {
+    const currentSubscription = current.subscription!
+    const next = replacement.subscription
+    const lastStart = Math.max(...subscriptionInvoices.map((invoice) => invoice.financeLink!.periodStart!.getTime()))
+    if (
+      current.mode !== replacement.mode ||
+      !next ||
+      currentSubscription.period !== next.period ||
+      currentSubscription.startDate.getTime() !== next.startDate.getTime() ||
+      (next.endDate && next.endDate.getTime() < lastStart)
+    ) {
+      throw conflict('Le calendrier de l’abonnement est figé après génération')
+    }
+    return
+  }
   const sameSchedule =
     current.installments.length === replacement.installments.length &&
     current.installments.every((item, index) => {
@@ -223,5 +239,196 @@ export function assertFinanceChangesAllowed(
     ) {
       throw conflict('Le libellé et le déclencheur d’une échéance facturée sont figés')
     }
+  }
+}
+
+function subscriptionIndex(subscription: IFinanceSubscription, date: Date) {
+  const months =
+    (date.getUTCFullYear() - subscription.startDate.getUTCFullYear()) * 12 +
+    date.getUTCMonth() -
+    subscription.startDate.getUTCMonth()
+  return months / { MONTHLY: 1, QUARTERLY: 3, YEARLY: 12 }[subscription.period]
+}
+
+const subscriptionFilter = (projectId: string | Types.ObjectId) => ({
+  project: projectId,
+  'financeLink.kind': 'SUBSCRIPTION',
+})
+
+async function subscriptionContext(projectId: string, session: ClientSession) {
+  const finance = await ProjectFinance.findOne({ project: projectId }).session(session)
+  const project = await Project.findById(projectId).session(session)
+  if (!finance || !project) {
+    const err = moneyError('Projet ou configuration financière introuvable')
+    err.status = 404
+    throw err
+  }
+  if (finance.mode !== 'ABONNEMENT' || !finance.subscription) throw moneyError('Le projet exige un abonnement')
+  // Le PUT et les générations doivent partager le même point de sérialisation.
+  await ProjectFinance.updateOne({ _id: finance._id }, { $currentDate: { updatedAt: true } }, { session })
+  return { finance, project, subscription: finance.subscription }
+}
+
+async function createSubscriptionPeriod(
+  context: Awaited<ReturnType<typeof subscriptionContext>>,
+  index: number,
+  userId: string,
+  session: ClientSession,
+) {
+  const { finance, project, subscription } = context
+  const periodStart = subscriptionPeriodStart(subscription.startDate, subscription.period, index)
+  const periodEnd = subscriptionPeriodEnd(subscription.startDate, subscription.period, index)
+  const amounts = payerAmounts(finance, subscription.amountHtCents)
+  const invoices: IBillingDocument[] = []
+  const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', { timeZone: 'UTC' })
+  for (const [payerIndex, payer] of finance.payers.entries()) {
+    const amount = amounts[payerIndex]!
+    const { formatted: number } = await getNextSequence('invoiceNumber', { prefix: 'FAC-', padding: 4, session })
+    let description = `${project.name} — abonnement du ${formatDate(periodStart)} au ${formatDate(periodEnd)}`
+    if (finance.payers.length > 1) description += ` — quote-part ${(payer.shareBp / 100).toLocaleString('fr-FR')} %`
+    const invoice = new BillingDocument({
+      type: 'INVOICE',
+      number,
+      project: project._id,
+      client: project.client,
+      status: 'DRAFT',
+      payer: {
+        payerId: payer._id,
+        kind: payer.kind,
+        user: payer.user,
+        subsidiary: payer.subsidiary,
+        billingContact: payer.billingContact,
+      },
+      lines: [
+        {
+          description,
+          quantity: 1,
+          unitPrice: amount.htCents / 100,
+          taxRate: finance.vatRateBp / 100,
+          total: amount.htCents / 100,
+        },
+      ],
+      subtotal: amount.htCents / 100,
+      taxTotal: amount.vatCents / 100,
+      total: amount.ttcCents / 100,
+      financeLink: { kind: 'SUBSCRIPTION', periodStart, periodEnd },
+      financeKey: `subscription:${finance._id}:${periodStart.toISOString().slice(0, 10)}:payer:${payer._id}`,
+      createdBy: userId,
+    })
+    await invoice.save({ session })
+    invoices.push(invoice)
+  }
+  return invoices
+}
+
+async function subscriptionTransaction<T>(operation: (session: ClientSession) => Promise<T>) {
+  try {
+    return await runInTransaction(operation)
+  } catch (err) {
+    if ((err as { code?: number }).code !== 11000) throw err
+    // Un premier numéro créé par un autre projet peut gagner l’upsert de la séquence.
+    return runInTransaction(operation)
+  }
+}
+
+export async function generateSubscriptionInvoices({
+  projectId,
+  now,
+  userId,
+}: {
+  projectId: string
+  now: Date
+  userId: string
+}) {
+  if (!Number.isFinite(now.getTime())) throw moneyError('Date de génération invalide')
+  const invoices: IBillingDocument[] = []
+  let warning: string | null = null
+  for (let count = 0; count < 12; count++) {
+    try {
+      const created = await subscriptionTransaction(async (session) => {
+        const context = await subscriptionContext(projectId, session)
+        const { subscription } = context
+        const last = await BillingDocument.findOne(subscriptionFilter(projectId))
+          .sort({ 'financeLink.periodStart': -1 })
+          .session(session)
+        let index = 0
+        if (last) index = subscriptionIndex(subscription, last.financeLink!.periodStart!) + 1
+        const start = subscriptionPeriodStart(subscription.startDate, subscription.period, index)
+        if (start > now || (subscription.endDate && start > subscription.endDate)) return []
+        return createSubscriptionPeriod(context, index, userId, session)
+      })
+      invoices.push(...created)
+      if (!created.length) break
+    } catch (err) {
+      if (!invoices.length) throw err
+      warning = `Génération interrompue après ${invoices.length} facture(s) : ${(err as Error).message}`
+      break
+    }
+  }
+  return { invoices, warning }
+}
+
+export async function generateSubscriptionPeriodInvoices({
+  projectId,
+  periodStart,
+  userId,
+}: {
+  projectId: string
+  periodStart: Date
+  userId: string
+}) {
+  return subscriptionTransaction(async (session) => {
+    const context = await subscriptionContext(projectId, session)
+    const { subscription } = context
+    const index = subscriptionIndex(subscription, periodStart)
+    if (
+      !Number.isSafeInteger(index) ||
+      index < 0 ||
+      !Number.isFinite(periodStart.getTime()) ||
+      subscriptionPeriodStart(subscription.startDate, subscription.period, index).getTime() !== periodStart.getTime() ||
+      periodStart > new Date() ||
+      (subscription.endDate && periodStart > subscription.endDate)
+    ) {
+      throw moneyError('Date de début de période invalide ou future')
+    }
+    const active = await BillingDocument.exists({
+      ...subscriptionFilter(projectId),
+      'financeLink.periodStart': periodStart,
+      status: { $ne: 'CANCELLED' },
+    }).session(session)
+    if (active) throw conflict('Cette période porte déjà des factures actives')
+    return { invoices: await createSubscriptionPeriod(context, index, userId, session) }
+  })
+}
+
+export async function subscriptionState(finance: Pick<IProjectFinance, 'project' | 'subscription'>) {
+  const subscription = finance.subscription!
+  const invoices = await BillingDocument.find(subscriptionFilter(finance.project))
+    .sort({ 'financeLink.periodStart': 1, number: 1 })
+    .lean()
+  const periods = new Map<string, { periodStart: Date; periodEnd: Date; invoices: typeof invoices }>()
+  for (const invoice of invoices) {
+    const link = invoice.financeLink!
+    const key = link.periodStart!.toISOString()
+    if (!periods.has(key))
+      periods.set(key, { periodStart: link.periodStart!, periodEnd: link.periodEnd!, invoices: [] })
+    periods.get(key)!.invoices.push(invoice)
+  }
+  let index = 0
+  if (invoices.length)
+    index = subscriptionIndex(subscription, invoices[invoices.length - 1]!.financeLink!.periodStart!) + 1
+  const next = subscriptionPeriodStart(subscription.startDate, subscription.period, index)
+  return {
+    periods: [...periods.values()].map((period) => ({
+      ...period,
+      invoices: period.invoices.map((invoice) => ({
+        _id: invoice._id,
+        number: invoice.number,
+        status: invoice.status,
+        payer: invoice.payer,
+        total: invoice.total,
+      })),
+    })),
+    nextPeriodStart: subscription.endDate && next > subscription.endDate ? null : next,
   }
 }

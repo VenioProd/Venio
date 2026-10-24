@@ -2,6 +2,8 @@ import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import fsp from 'fs/promises'
 import path from 'path'
+import type { Types } from 'mongoose'
+import BillingDocument from '../models/BillingDocument.js'
 import CompanySettings from '../models/CompanySettings.js'
 import Subsidiary from '../models/Subsidiary.js'
 import type { IBillingPayer } from '../types/models/billing.js'
@@ -29,6 +31,7 @@ interface BillingLine {
 
 export interface PdfBillingDoc {
   payer?: IBillingPayer | null
+  creditedInvoice?: Types.ObjectId | null
   type: string
   number: string
   lines?: BillingLine[]
@@ -140,9 +143,16 @@ interface PdfSettings {
   }>
 }
 
-function renderHeader(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, settings: PdfSettings | null): void {
+function renderHeader(
+  pdf: PDFKit.PDFDocument,
+  doc: PdfBillingDoc,
+  settings: PdfSettings | null,
+  creditedNumber: string | null,
+): void {
   const isQuote = doc.type === 'QUOTE'
-  const title = isQuote ? 'DEVIS' : 'FACTURE'
+  let title = 'FACTURE'
+  if (isQuote) title = 'DEVIS'
+  else if ((doc.total ?? 0) < 0) title = 'AVOIR'
 
   // Bloc gauche : société émettrice
   pdf.fillColor('#111').font('Helvetica-Bold').fontSize(14)
@@ -170,6 +180,9 @@ function renderHeader(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, settings: Pdf
     width: 175,
     align: 'right',
   })
+  if (creditedNumber) {
+    pdf.text(`Avoir sur facture N° ${creditedNumber}`, PAGE_MARGIN, 140, { width: TABLE_RIGHT - PAGE_MARGIN })
+  }
   if (!isQuote && doc.dueAt) {
     pdf.text(`Échéance ${fmtDate(doc.dueAt)}`, 380, PAGE_MARGIN + 68, {
       width: 175,
@@ -276,6 +289,9 @@ function renderLinesTable(
 
 function renderTotalsAndVat(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, currency: string, yStart: number): number {
   const grouped = aggregateVat(doc.lines)
+  if (doc.creditedInvoice && grouped.length === 1) {
+    grouped[0]!.tax = doc.taxTotal!
+  }
   const totalHt = grouped.reduce((s, g) => s + g.ht, 0)
   const totalTax = grouped.reduce((s, g) => s + g.tax, 0)
   const totalTtc = totalHt + totalTax
@@ -463,6 +479,10 @@ export async function generateBillingPdf(
   }
   const buyer = billingBuyer(doc.payer, client, subsidiary)
 
+  const credited = doc.creditedInvoice
+    ? await BillingDocument.findById(doc.creditedInvoice).select('number').lean()
+    : null
+
   return new Promise<string>((resolve, reject) => {
     const pdf = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN })
     const stream = fs.createWriteStream(absolutePath)
@@ -470,7 +490,7 @@ export async function generateBillingPdf(
 
     const currency = doc.currency || 'EUR'
 
-    renderHeader(pdf, doc, settings)
+    renderHeader(pdf, doc, settings, credited?.number ?? null)
     renderClientBlock(pdf, buyer, project, 160)
     const linesEndY = renderLinesTable(pdf, doc.lines, currency, 280)
     const totalsEndY = renderTotalsAndVat(pdf, doc, currency, linesEndY + 10)

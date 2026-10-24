@@ -93,6 +93,7 @@ import bcrypt from 'bcryptjs'
 import User from './models/User.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
+import { startSubscriptionInvoiceScheduler } from './lib/projectFinance/subscriptionScheduler.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
 import { startRepoQualityScheduler } from './lib/dev/repoQualityScheduler.js'
 import { initSentry, Sentry } from './lib/sentry.js'
@@ -507,6 +508,7 @@ mongoose
       initAutomationEngine()
       // Verrouillage automatique des écritures comptables VALIDATED expirées
       startAutoLockScheduler()
+      startSubscriptionInvoiceScheduler()
       // Snapshots repo/cockpit : jamais de scan lourd depuis une route HTTP.
       startRepoQualityScheduler()
     })

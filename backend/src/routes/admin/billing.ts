@@ -16,6 +16,9 @@ import { sendInvoiceEmail } from '../../lib/email.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../lib/accounting/billingToEntry.js'
+import { runInTransaction } from '../../lib/transaction.js'
+import { invoiceAmountsCents } from '../../lib/projectFinance/invoicing.js'
+import { moneyError } from '../../lib/projectFinance/money.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 
 const router = express.Router()
@@ -377,7 +380,7 @@ router.post(
       if (!doc) {
         return res.status(404).json({ error: 'Billing document not found' })
       }
-      if (doc.financeLink && doc.status === 'CANCELLED') {
+      if ((doc.financeLink || doc.creditedInvoice) && doc.status === 'CANCELLED') {
         return res.status(409).json({ error: 'Une facture d’échéance annulée ne peut pas être émise' })
       }
       const project = await Project.findById(doc.project).lean()
@@ -398,16 +401,49 @@ router.post(
       const storagePath = path.join('uploads', 'billing', doc.project.toString(), filename)
       await generateBillingPdf(doc, client, project, storagePath)
 
-      doc.pdfStoragePath = storagePath
-      if (wasDraft) doc.status = 'ISSUED'
-      await doc.save()
-
+      let saleEntry: unknown = null
+      let accountingWarning: string | null = null
+      if (doc.creditedInvoice) {
+        const emitted = await runInTransaction(async (session) => {
+          await BillingDocument.updateOne(
+            { _id: doc.creditedInvoice },
+            { $currentDate: { updatedAt: true } },
+            { session },
+          )
+          const current = await BillingDocument.findById(doc._id).session(session)
+          if (!current || current.status !== doc.$locals.loadedStatus) {
+            const err = moneyError('Le statut de l’avoir a changé ; rechargez-le')
+            err.status = 409
+            throw err
+          }
+          current.pdfStoragePath = storagePath
+          current.issuedAt = doc.issuedAt
+          if (wasDraft) current.status = 'ISSUED'
+          await current.save({ session })
+          const sale = await createSaleEntryFromBilling(current, { userId: req.user!.id, session })
+          const original = await BillingDocument.findById(current.creditedInvoice).session(session)
+          if (original?.financeLink?.kind === 'INSTALLMENT') {
+            const credits = await BillingDocument.find({
+              creditedInvoice: original._id,
+              status: { $in: ['ISSUED', 'SENT', 'PAID'] },
+            }).session(session)
+            const creditedHt = credits.reduce((sum, credit) => sum - invoiceAmountsCents(credit).htCents, 0)
+            if (creditedHt === invoiceAmountsCents(original).htCents) {
+              await BillingDocument.updateOne({ _id: original._id }, { $set: { financeKey: null } }, { session })
+            }
+          }
+          return sale.entry
+        })
+        saleEntry = emitted
+      } else {
+        doc.pdfStoragePath = storagePath
+        if (wasDraft) doc.status = 'ISSUED'
+        await doc.save()
+      }
       const updated = await BillingDocument.findById(doc._id).lean()
 
       // Hook comptable : générer l'écriture de vente si c'est une facture émise
-      let saleEntry: unknown = null
-      let accountingWarning: string | null = null
-      if (updated && updated.type === 'INVOICE' && (wasDraft || updated.status !== 'DRAFT')) {
+      if (!doc.creditedInvoice && updated && updated.type === 'INVOICE' && (wasDraft || updated.status !== 'DRAFT')) {
         try {
           const r = await createSaleEntryFromBilling(updated as any, { userId: req.user!.id })
           saleEntry = r.entry

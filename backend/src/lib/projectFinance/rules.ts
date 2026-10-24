@@ -209,3 +209,29 @@ export function beneficiaryStatement(allocationCents: number[], settlementHtCent
   const paidCents = settlementHtCents.reduce((s, c) => s + c, 0)
   return { dueCents, paidCents, remainingCents: dueCents - paidCents }
 }
+
+export function subscriptionPeriodStart(
+  startDate: Date,
+  period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY',
+  index: number,
+): Date {
+  if (!Number.isSafeInteger(index) || index < 0 || !Number.isFinite(startDate.getTime())) {
+    throw moneyError('Période d’abonnement invalide')
+  }
+  const months = { MONTHLY: 1, QUARTERLY: 3, YEARLY: 12 }[period]
+  const first = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + months * index, 1))
+  const lastDay = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
+  first.setUTCDate(Math.min(startDate.getUTCDate(), lastDay))
+  if (!Number.isFinite(first.getTime())) throw moneyError('Date de période hors limites')
+  return first
+}
+
+export function subscriptionPeriodEnd(
+  startDate: Date,
+  period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY',
+  index: number,
+): Date {
+  const end = subscriptionPeriodStart(startDate, period, index + 1)
+  end.setUTCDate(end.getUTCDate() - 1)
+  return end
+}

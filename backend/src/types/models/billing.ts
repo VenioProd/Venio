@@ -35,6 +35,7 @@ export interface IBillingDocument extends Document {
   payer: IBillingPayer | null
   financeLink: IBillingFinanceLink | null
   financeKey: string | null
+  creditedInvoice: Types.ObjectId | null
   status: BillingDocumentStatus
   issuedAt: Date | null
   dueAt: Date | null

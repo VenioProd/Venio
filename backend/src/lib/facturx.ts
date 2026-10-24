@@ -18,6 +18,7 @@
  */
 
 import { assertBp, toCents, vatCents } from './projectFinance/money.js'
+import type { Types } from 'mongoose'
 import type { IBillingPayer } from '../types/models/billing.js'
 
 const FACTURX_GUIDELINE_MINIMUM = 'urn:factur-x.eu:1p0:minimum'
@@ -85,6 +86,8 @@ function aggregateTotals(lines: FacturXLine[] | undefined): FacturXTotals {
 // car certaines props (companyName, vatNumber sur client) ne sont pas dans les types Project/User).
 export interface FacturXDoc {
   payer?: IBillingPayer | null
+  creditedInvoice?: Types.ObjectId | null
+  taxTotal?: number
   number?: string
   type?: string
   total?: number
@@ -175,7 +178,12 @@ export function buildFacturXMinimum({
   // 381 = avoir, 380 = facture commerciale
   const typeCode = grandTotal < 0 ? '381' : '380'
 
-  const { basisTotal, taxTotal, byRate } = aggregateTotals(doc.lines)
+  const totals = aggregateTotals(doc.lines)
+  if (doc.creditedInvoice && totals.byRate.length === 1) {
+    totals.taxTotal = doc.taxTotal!
+    totals.byRate[0]!.tax = doc.taxTotal!
+  }
+  const { basisTotal, taxTotal, byRate } = totals
 
   // Si pas de TVA détectée (ex : franchise en base), on construit tout de même
   // une ligne CategoryTradeTax à 0 % pour rester conforme à l'EN 16931.

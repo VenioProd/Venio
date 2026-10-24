@@ -14,6 +14,9 @@ import {
   assertFinanceChangesAllowed,
   generateInstallmentInvoices,
   installmentSchedule,
+  generateSubscriptionInvoices,
+  generateSubscriptionPeriodInvoices,
+  subscriptionState,
 } from '../../../lib/projectFinance/invoicing.js'
 import BillingDocument from '../../../models/BillingDocument.js'
 import Project from '../../../models/Project.js'
@@ -58,7 +61,12 @@ router.get<ProjectParams>(
         )
         ruleVersion = versions.find((version) => version.version === selected.version)!
       }
-      res.json({ finance, ruleVersion, schedule: finance ? await installmentSchedule(finance) : [] })
+      res.json({
+        finance,
+        ruleVersion,
+        schedule: finance ? await installmentSchedule(finance) : [],
+        ...(finance?.mode === 'ABONNEMENT' ? { subscriptionState: await subscriptionState(finance) } : {}),
+      })
     } catch (err) {
       next(err)
     }
@@ -87,8 +95,10 @@ router.put<ProjectParams>(
         if (finance) {
           const invoices = await BillingDocument.find({
             project: req.params.projectId,
-            'financeLink.kind': 'INSTALLMENT',
-            financeKey: { $type: 'string' },
+            $or: [
+              { 'financeLink.kind': 'INSTALLMENT', financeKey: { $type: 'string' } },
+              { 'financeLink.kind': 'SUBSCRIPTION' },
+            ],
           }).session(session)
           assertFinanceChangesAllowed(finance, replacement, invoices)
         }
@@ -138,6 +148,64 @@ router.post<ProjectParams & { installmentId: string }>(
         },
       })
       res.status(result.alreadyExisted ? 200 : 201).json(result)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+router.post<ProjectParams>(
+  '/subscription/invoices',
+  requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
+  async (req, res, next) => {
+    try {
+      const result = await generateSubscriptionInvoices({
+        projectId: req.params.projectId,
+        now: new Date(),
+        userId: req.user!.id,
+      })
+      await recordAudit({
+        action: 'PROJECT_SUBSCRIPTION_INVOICES_GENERATE',
+        actor: buildActorFromReq(req),
+        entityType: 'ProjectFinance',
+        entityId: req.params.projectId,
+        extra: { invoiceIds: result.invoices.map((invoice) => String(invoice._id)), warning: result.warning },
+      })
+      res.status(201).json(result)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+router.post<ProjectParams & { periodStart: string }>(
+  '/subscription/periods/:periodStart/invoices',
+  requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
+  async (req, res, next) => {
+    try {
+      const date = new Date(req.params.periodStart)
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(req.params.periodStart) ||
+        !Number.isFinite(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== req.params.periodStart
+      ) {
+        res.status(400).json({ error: 'Date de période invalide' })
+        return
+      }
+      const result = await generateSubscriptionPeriodInvoices({
+        projectId: req.params.projectId,
+        periodStart: date,
+        userId: req.user!.id,
+      })
+      await recordAudit({
+        action: 'PROJECT_SUBSCRIPTION_PERIOD_GENERATE',
+        actor: buildActorFromReq(req),
+        entityType: 'ProjectFinance',
+        entityId: req.params.projectId,
+        extra: {
+          periodStart: req.params.periodStart,
+          invoiceIds: result.invoices.map((invoice) => String(invoice._id)),
+        },
+      })
+      res.status(201).json(result)
     } catch (err) {
       next(err)
     }

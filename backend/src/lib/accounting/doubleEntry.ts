@@ -1,4 +1,4 @@
-import mongoose, { type Types } from 'mongoose'
+import mongoose, { type ClientSession, type Types } from 'mongoose'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import AccountingLine from '../../models/AccountingLine.js'
 import Journal from '../../models/Journal.js'
@@ -12,10 +12,7 @@ import type {
   IFiscalYear,
   IJournal,
 } from '../../types/models/index.js'
-import type {
-  AccountingEntryStatus,
-  AccountingEntrySource,
-} from '../../types/enums.js'
+import type { AccountingEntryStatus, AccountingEntrySource } from '../../types/enums.js'
 
 const EPSILON = 0.005
 
@@ -27,9 +24,11 @@ function roundCents(n: number | null | undefined): number {
  * Récupère ou crée l'exercice qui contient une date donnée.
  * Si aucun exercice ouvert ne couvre la date, en crée un par année calendaire.
  */
-export async function ensureFiscalYearFor(date: Date | string): Promise<IFiscalYear> {
+export async function ensureFiscalYearFor(date: Date | string, session?: ClientSession): Promise<IFiscalYear> {
   const target = date instanceof Date ? date : new Date(date)
-  const existing = await FiscalYear.findContaining(target)
+  const existing = await FiscalYear.findOne({ startDate: { $lte: target }, endDate: { $gte: target } }).session(
+    session ?? null,
+  )
   if (existing) return existing
   const year = target.getUTCFullYear()
   const start = new Date(Date.UTC(year, 0, 1))
@@ -38,7 +37,7 @@ export async function ensureFiscalYearFor(date: Date | string): Promise<IFiscalY
   const fiscal = await FiscalYear.findOneAndUpdate(
     { code },
     { code, label: `Exercice ${year}`, startDate: start, endDate: end, status: 'OUVERT' },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true, session },
   )
   // findOneAndUpdate avec upsert+new=true renvoie toujours le doc
   return fiscal as IFiscalYear
@@ -46,17 +45,20 @@ export async function ensureFiscalYearFor(date: Date | string): Promise<IFiscalY
 
 type JournalRef = string | Types.ObjectId | IJournal
 
-async function getJournalByCodeOrId(journalRef: JournalRef | null | undefined): Promise<IJournal | null> {
+async function getJournalByCodeOrId(
+  journalRef: JournalRef | null | undefined,
+  session?: ClientSession,
+): Promise<IJournal | null> {
   if (!journalRef) throw new Error('Journal requis')
   if (typeof journalRef === 'string' && mongoose.isValidObjectId(journalRef)) {
-    return Journal.findById(journalRef)
+    return Journal.findById(journalRef).session(session ?? null)
   }
   if (typeof journalRef === 'string') {
-    return Journal.findByCode(journalRef)
+    return Journal.findOne({ code: journalRef.toUpperCase() }).session(session ?? null)
   }
   // Objet : ObjectId ou IJournal doc
   if (journalRef instanceof mongoose.Types.ObjectId) {
-    return Journal.findById(journalRef)
+    return Journal.findById(journalRef).session(session ?? null)
   }
   if ((journalRef as IJournal)._id) return journalRef as IJournal
   return null
@@ -64,16 +66,19 @@ async function getJournalByCodeOrId(journalRef: JournalRef | null | undefined): 
 
 type AccountRef = string | Types.ObjectId | IChartOfAccount
 
-async function resolveAccount(accountRef: AccountRef | null | undefined): Promise<IChartOfAccount | null> {
+async function resolveAccount(
+  accountRef: AccountRef | null | undefined,
+  session?: ClientSession,
+): Promise<IChartOfAccount | null> {
   if (!accountRef) throw new Error('Compte requis sur une ligne')
   if (typeof accountRef === 'string' && mongoose.isValidObjectId(accountRef)) {
-    return ChartOfAccount.findById(accountRef)
+    return ChartOfAccount.findById(accountRef).session(session ?? null)
   }
   if (typeof accountRef === 'string') {
-    return ChartOfAccount.findOne({ code: accountRef })
+    return ChartOfAccount.findOne({ code: accountRef }).session(session ?? null)
   }
   if (accountRef instanceof mongoose.Types.ObjectId) {
-    return ChartOfAccount.findById(accountRef)
+    return ChartOfAccount.findById(accountRef).session(session ?? null)
   }
   if ((accountRef as IChartOfAccount)._id) return accountRef as IChartOfAccount
   return null
@@ -104,6 +109,7 @@ export interface CreateEntryInput {
   notes?: string
   currency?: string
   externalSource?: Types.ObjectId | null
+  session?: ClientSession
 }
 
 export interface CreateEntryResult {
@@ -136,6 +142,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     notes = '',
     currency = 'EUR',
     externalSource = null,
+    session,
   } = input || ({} as CreateEntryInput)
 
   if (!Array.isArray(lines) || lines.length < 2) {
@@ -144,7 +151,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     throw err
   }
 
-  const journal = await getJournalByCodeOrId(journalRef)
+  const journal = await getJournalByCodeOrId(journalRef, session)
   if (!journal) {
     const err = new Error('Journal introuvable') as Error & { status?: number }
     err.status = 400
@@ -158,7 +165,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     throw err
   }
 
-  const fiscalYear = await ensureFiscalYearFor(entryDate)
+  const fiscalYear = await ensureFiscalYearFor(entryDate, session)
   if (fiscalYear.status === 'CLOTURE') {
     const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
     err.status = 423
@@ -167,9 +174,11 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
 
   // Idempotency : si une écriture existe déjà avec cette clé, la retourner
   if (idempotencyKey) {
-    const existing = await AccountingEntry.findOne({ idempotencyKey })
+    const existing = await AccountingEntry.findOne({ idempotencyKey }).session(session ?? null)
     if (existing) {
-      const existingLines = await AccountingLine.find({ entry: existing._id }).sort({ sortIndex: 1 })
+      const existingLines = await AccountingLine.find({ entry: existing._id })
+        .sort({ sortIndex: 1 })
+        .session(session ?? null)
       return { entry: existing, lines: existingLines, alreadyExisted: true }
     }
   }
@@ -186,9 +195,11 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
   let totalCredit = 0
   for (let i = 0; i < lines.length; i += 1) {
     const raw = lines[i]!
-    const account = await resolveAccount(raw.account)
+    const account = await resolveAccount(raw.account, session)
     if (!account) {
-      const err = new Error(`Ligne ${i + 1} : compte introuvable (${String(raw.account)})`) as Error & { status?: number }
+      const err = new Error(`Ligne ${i + 1} : compte introuvable (${String(raw.account)})`) as Error & {
+        status?: number
+      }
       err.status = 400
       throw err
     }
@@ -200,7 +211,9 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
       throw err
     }
     if (debit > 0 && credit > 0) {
-      const err = new Error(`Ligne ${i + 1} : une ligne ne peut pas être à la fois débit ET crédit`) as Error & { status?: number }
+      const err = new Error(`Ligne ${i + 1} : une ligne ne peut pas être à la fois débit ET crédit`) as Error & {
+        status?: number
+      }
       err.status = 400
       throw err
     }
@@ -216,7 +229,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
 
   if (Math.abs(totalDebit - totalCredit) > EPSILON) {
     const err = new Error(
-      `Écriture déséquilibrée : total débit ${totalDebit} ≠ total crédit ${totalCredit}`
+      `Écriture déséquilibrée : total débit ${totalDebit} ≠ total crédit ${totalCredit}`,
     ) as Error & { status?: number }
     err.status = 400
     throw err
@@ -225,15 +238,13 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
   // Numérotation séquentielle par journal+année
   const yearForNumbering = entryDate.getUTCFullYear()
   const seqName = `accounting:${journal.code}:${yearForNumbering}`
-  const { value } = await getNextSequence(seqName, { padding: 0 })
+  const { value } = await getNextSequence(seqName, { padding: 0, session })
   const entryNumber = `${journal.code}-${yearForNumbering}-${String(value).padStart(5, '0')}`
 
-  // Persistance : on tente l'insertion best-effort, avec cleanup manuel en
-  // cas d'échec sur l'insertion des lignes (pas de transaction MongoDB pour
-  // ne pas exiger un replica set).
+  // Sans session, on conserve le nettoyage manuel pour les appels hors transaction.
   let entry: IAccountingEntry | null = null
   try {
-    const entryDoc = await AccountingEntry.create({
+    const entryDoc = new AccountingEntry({
       journal: journal._id,
       journalCode: journal.code,
       fiscalYear: fiscalYear._id,
@@ -254,6 +265,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
       validatedAt: status === 'VALIDATED' ? new Date() : undefined,
       notes,
     })
+    await entryDoc.save({ session })
     entry = entryDoc
 
     const lineDocs = []
@@ -280,12 +292,12 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
       })
     }
 
-    const insertedLines = (await AccountingLine.insertMany(lineDocs)) as unknown as IAccountingLine[]
+    const insertedLines = (await AccountingLine.insertMany(lineDocs, { session })) as unknown as IAccountingLine[]
 
     return { entry, lines: insertedLines }
   } catch (err) {
     // Cleanup best-effort : si on a créé l'entry mais raté les lines, on supprime l'entry
-    if (entry?._id) {
+    if (entry?._id && !session) {
       try {
         await AccountingLine.deleteMany({ entry: entry._id })
         await AccountingEntry.deleteOne({ _id: entry._id })
@@ -303,7 +315,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
  */
 export async function validateEntry(
   entryId: string | Types.ObjectId,
-  { userId }: { userId?: string | Types.ObjectId | null } = {}
+  { userId }: { userId?: string | Types.ObjectId | null } = {},
 ): Promise<IAccountingEntry> {
   const entry = await AccountingEntry.findById(entryId)
   if (!entry) {

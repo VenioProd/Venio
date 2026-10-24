@@ -24,12 +24,18 @@ const installmentSchema = new mongoose.Schema<IFinanceInstallment>({
     phase: { type: mongoose.Schema.Types.ObjectId, ref: 'ProjectPhase', default: null },
   },
 })
+const midnightUtc = (value: Date | null) => {
+  if (!value) return value
+  const date = new Date(value)
+  date.setUTCHours(0, 0, 0, 0)
+  return date
+}
 const subscriptionSchema = new mongoose.Schema<IFinanceSubscription>(
   {
     amountHtCents: { type: Number, required: true, min: 1, validate: centsValidator },
     period: { type: String, enum: ['MONTHLY', 'QUARTERLY', 'YEARLY'], required: true },
-    startDate: { type: Date, required: true },
-    endDate: { type: Date, default: null },
+    startDate: { type: Date, required: true, set: midnightUtc },
+    endDate: { type: Date, default: null, set: midnightUtc },
   },
   { _id: false },
 )
