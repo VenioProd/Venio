@@ -56,6 +56,8 @@ export async function paymentLinkUrl(invoice: IBillingDocument): Promise<string 
 }
 
 export async function renewPaymentLink(invoiceId: string, userId: string) {
+  // Sans clé dédiée, secretBox retombe sur une valeur connue : le jeton serait lisible dans une copie de la base.
+  if (!process.env.CREDENTIALS_KEY) throw linkError('Liens de paiement indisponibles : configurez CREDENTIALS_KEY', 503)
   await payableInvoice(invoiceId)
   const previous = await InvoicePaymentLink.findOne({ invoice: invoiceId })
   if (previous?.currentCheckoutSessionId) await expireCheckoutSession(previous.currentCheckoutSessionId)

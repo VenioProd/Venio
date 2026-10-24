@@ -68,8 +68,12 @@ async function paymentOperation(event: Stripe.Event): Promise<Operation> {
     balance.amount === pi.amount_received && balance.net === pi.amount_received - balance.fee,
     'Transaction de solde et montant encaissé incohérents',
   )
+  requireBusiness(
+    Number.isSafeInteger(balance.created) && balance.created > 0,
+    'Date de la transaction de solde absente',
+  )
   const stripeInput = { paymentIntentId: pi.id, chargeId: charge.id, feeCents: balance.fee }
-  const expiredCheckoutSessionId = await expireInvoiceCheckout(invoiceId)
+  const expiredCheckoutSessionId = await expireInvoiceCheckout(invoiceId, pi.id)
   return async (session) => {
     const link = await InvoicePaymentLink.findById(linkId).session(session)
     requireBusiness(link && String(link.invoice) === invoiceId, 'Lien Stripe sans facture correspondante')
@@ -80,7 +84,8 @@ async function paymentOperation(event: Stripe.Event): Promise<Operation> {
       {
         invoiceId,
         amountTtcCents: pi.amount_received,
-        receivedAt: new Date(pi.created * 1000),
+        // Date où Stripe a constaté les fonds (stable au rejeu), pas celle de création du PaymentIntent.
+        receivedAt: new Date(balance.created * 1000),
         method: 'STRIPE',
         reference: pi.id,
         stripe: stripeInput,

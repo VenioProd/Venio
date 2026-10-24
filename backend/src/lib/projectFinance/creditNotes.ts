@@ -1,4 +1,6 @@
 import BillingDocument from '../../models/BillingDocument.js'
+import InvoicePaymentLink from '../../models/InvoicePaymentLink.js'
+import { expireInvoiceCheckout } from '../stripe/checkoutSession.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { runInTransaction } from '../transaction.js'
 import { invoiceAmountsCents } from './invoicing.js'
@@ -17,7 +19,21 @@ export async function createCreditNote({
   userId: string
 }) {
   if (typeof reason !== 'string' || !reason.trim()) throw moneyError('Le motif de l’avoir est requis')
+  // Une session Checkout ouverte resterait payable à l'ancien montant malgré l'avoir.
+  const expiredCheckoutSessionId = await expireInvoiceCheckout(invoiceId)
   return runInTransaction(async (session) => {
+    if (expiredCheckoutSessionId !== undefined) {
+      const link = await InvoicePaymentLink.findOneAndUpdate(
+        { invoice: invoiceId },
+        { $currentDate: { updatedAt: true } },
+        { session, new: true },
+      )
+      if ((link?.currentCheckoutSessionId ?? null) !== expiredCheckoutSessionId) {
+        const err = moneyError('Une session de paiement vient d’être ouverte : actualisez avant de créer l’avoir')
+        err.status = 409
+        throw err
+      }
+    }
     const invoice = await BillingDocument.findById(invoiceId).session(session)
     if (!invoice) {
       const err = moneyError('Facture introuvable')

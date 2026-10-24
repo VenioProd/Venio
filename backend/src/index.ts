@@ -221,6 +221,14 @@ import type { IncomingMessage, ServerResponse } from 'http'
 app.use(
   pinoHttp({
     logger,
+    serializers: {
+      // Les liens de paiement portent un jeton secret dans l'URL : il ne doit jamais atteindre les journaux.
+      req: (req: { url?: string; headers?: Record<string, unknown> }) => ({
+        ...req,
+        url: req.url?.replace(/\/(payer|api\/public\/pay)\/[^/?#]+/, '/$1/[REDACTED]'),
+        headers: { ...req.headers, referer: undefined },
+      }),
+    },
     customLogLevel: function (_req: IncomingMessage, res: ServerResponse, err?: Error) {
       if (err || res.statusCode >= 500) return 'error'
       if (res.statusCode >= 400) return 'warn'

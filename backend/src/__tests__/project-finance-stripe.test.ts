@@ -190,7 +190,7 @@ beforeEach(async () => {
       payment_intent: 'pi_test',
       currency: 'eur',
       amount: 119988,
-      balance_transaction: { id: 'txn_test', currency: 'eur', amount: 119988, fee: 1825, net: 118163 },
+      balance_transaction: { id: 'txn_test', currency: 'eur', amount: 119988, fee: 1825, net: 118163, created },
     },
   }
   sdk.paymentIntents.retrieve.mockImplementation(async () => pi)
@@ -589,4 +589,55 @@ it('désactive les routes Stripe si une configuration manque sans arrêter l’a
     await request(app).get('/health').expect(200)
     vi.stubEnv(key, previous)
   }
+})
+
+it('bloque une seconde session et un encaissement manuel tant qu’un paiement Stripe terminé n’est pas rapproché', async () => {
+  await request(app).post(`/api/public/pay/${token}/checkout`).expect(200)
+  sdk.checkout.sessions.retrieve.mockResolvedValue({ id: 'cs_new', status: 'complete', payment_intent: 'pi_test' })
+  await request(app).post(`/api/public/pay/${token}/checkout`).expect(409)
+  await request(app)
+    .post(`/accounting/invoices/${invoiceId}/payments`)
+    .set('Cookie', cookie)
+    .send({
+      amountTtcCents: 119988,
+      method: 'VIREMENT',
+      receivedAt: '2026-01-12',
+      idempotencyKey: 'manual-during-stripe',
+    })
+    .expect(409)
+  expect(await ProjectPayment.countDocuments()).toBe(0)
+  const paid = event('checkout.session.completed', 'evt_reconcile', {
+    id: 'cs_new',
+    payment_status: 'paid',
+    payment_intent: 'pi_test',
+    metadata: { invoiceId, linkId },
+  })
+  await deliver(paid).expect(200)
+  expect(await ProjectPayment.countDocuments({ stripePaymentIntentId: 'pi_test' })).toBe(1)
+  expect((await BillingDocument.findById(invoiceId))!.status).toBe('PAID')
+})
+
+it('expire la session Checkout ouverte avant de créer un avoir', async () => {
+  await request(app).post(`/api/public/pay/${token}/checkout`).expect(200)
+  sdk.checkout.sessions.retrieve.mockResolvedValue({ id: 'cs_new', status: 'open' })
+  sdk.checkout.sessions.expire.mockClear()
+  await request(app)
+    .post(`/accounting/invoices/${invoiceId}/credit-notes`)
+    .set('Cookie', cookie)
+    .send({ reason: 'Geste commercial' })
+    .expect(201)
+  expect(sdk.checkout.sessions.expire).toHaveBeenCalledWith('cs_new')
+})
+
+it('date l’encaissement Stripe au jour de la transaction de solde, pas à la création du PaymentIntent', async () => {
+  const settled = created + 2 * 24 * 3600
+  ;(pi.latest_charge as { balance_transaction: { created: number } }).balance_transaction.created = settled
+  await deliver().expect(200)
+  const payment = (await ProjectPayment.findOne({ stripePaymentIntentId: 'pi_test' }))!
+  expect(payment.receivedAt.getTime()).toBe(settled * 1000)
+})
+
+it('refuse de créer un lien de paiement sans clé de chiffrement dédiée', async () => {
+  vi.stubEnv('CREDENTIALS_KEY', '')
+  await request(app).post(`/accounting/invoices/${invoiceId}/payment-link`).set('Cookie', cookie).expect(503)
 })

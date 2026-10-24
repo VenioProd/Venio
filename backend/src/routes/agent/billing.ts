@@ -9,6 +9,7 @@ import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
 import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
+import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
 
 /**
@@ -326,6 +327,8 @@ function transition(
         respondError(res, 409, 'INVALID_TRANSITION', 'Émettez ce document par la génération du PDF')
         return
       }
+      // Une session Checkout ouverte resterait payable après l'annulation.
+      if (to === 'CANCELLED' && doc.type === 'INVOICE') await expireInvoiceCheckout(String(doc._id))
       if (options.from && !options.from.includes(doc.status)) {
         respondError(
           res,

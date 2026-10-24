@@ -20,6 +20,7 @@ import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../li
 import ProjectPayment from '../../models/ProjectPayment.js'
 import { issueProjectInvoice } from '../../lib/projectFinance/issueInvoice.js'
 import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
+import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
 
@@ -231,6 +232,8 @@ router.patch(
       }
       const markPaid = doc.type === 'INVOICE' && body.status === 'PAID'
 
+      // Une session Checkout ouverte resterait payable après l'annulation.
+      if (body.status === 'CANCELLED' && doc.type === 'INVOICE') await expireInvoiceCheckout(String(doc._id))
       if (body.status !== undefined && !markPaid) {
         doc.status = body.status
       }
