@@ -1,5 +1,9 @@
 import express, { type Request, type Response } from 'express'
 import multer from 'multer'
+import mongoose from 'mongoose'
+import Project from '../../models/Project.js'
+import Task from '../../models/Task.js'
+import MissionBrief from '../../models/MissionBrief.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
@@ -53,8 +57,14 @@ router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), asyn
 router.get('/', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
-    const { status, category, priority } = req.query
+    const { status, category, priority, project } = req.query
     const filter: Record<string, unknown> = { isArchived: { $ne: true } }
+    if (project !== undefined) {
+      if (typeof project !== 'string' || !mongoose.isObjectIdOrHexString(project)) {
+        return res.status(400).json({ error: 'Projet invalide' })
+      }
+      filter.project = project
+    }
     if (status) filter.status = status
     if (category) filter.category = category
     if (priority) filter.priority = priority
@@ -244,8 +254,22 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const user = (req as any).user
-      const { title, message, category, priority } = req.body
+      const { title, message, category, priority, project } = req.body
       if (!message) return res.status(400).json({ error: 'Message requis' })
+      if (project !== undefined) {
+        if (typeof project !== 'string' || !mongoose.isObjectIdOrHexString(project)) {
+          return res.status(400).json({ error: 'Projet invalide' })
+        }
+        const linked = await Project.findById(project).select('assignedTo').lean()
+        if (!linked) return res.status(404).json({ error: 'Projet introuvable' })
+        if (user.role !== 'SUPER_ADMIN' && String(linked.assignedTo) !== user.id) {
+          const [task, brief] = await Promise.all([
+            Task.exists({ project, assignee: user.id }),
+            MissionBrief.exists({ project, destinataire: user.id }),
+          ])
+          if (!task && !brief) return res.status(403).json({ error: 'Accès refusé' })
+        }
+      }
 
       // Auto-générer le titre si non fourni
       const CATEGORY_LABELS_GEN: Record<string, string> = {
@@ -267,6 +291,7 @@ router.post(
       }))
 
       const ticket = await InternalTicket.create({
+        project,
         title: autoTitle,
         message,
         category: cat,

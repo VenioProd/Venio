@@ -50,6 +50,7 @@ export interface IQuoteSpecification {
 }
 
 export interface IQuoteProposal extends Document {
+  reference?: string
   _id: Types.ObjectId
   project: Types.ObjectId
   client: Types.ObjectId

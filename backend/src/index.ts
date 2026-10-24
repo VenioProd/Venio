@@ -26,6 +26,8 @@ import adminQuoteTemplateRoutes from './routes/admin/quoteTemplates.js'
 import mobileTodayRoutes from './routes/mobile/today.js'
 import mobileSyncRoutes from './routes/mobile/sync.js'
 import mobileInteractionRoutes from './routes/mobile/interactions.js'
+import mobileSalesTargetRoutes from './routes/mobile/salesTargets.js'
+import adminSalesTargetRoutes from './routes/admin/salesTargets.js'
 import projectRoutes from './routes/projects.js'
 import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
@@ -322,6 +324,8 @@ app.use('/api/admin/quote-templates', adminQuoteTemplateRoutes)
 app.use('/api/mobile/today', mobileTodayRoutes)
 app.use('/api/mobile/sync', mobileSyncRoutes)
 app.use('/api/mobile/interactions', mobileInteractionRoutes)
+app.use('/api/mobile/sales-targets', mobileSalesTargetRoutes)
+app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)

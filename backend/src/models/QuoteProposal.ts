@@ -1,5 +1,6 @@
 import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
+import QuoteCounter from './QuoteCounter.js'
 import type { IQuoteProposal } from '../types/models/index.js'
 
 export const questionSchema = new mongoose.Schema(
@@ -61,6 +62,7 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
     client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    reference: { type: String },
     title: { type: String, required: true, trim: true },
     intro: { type: String, default: '' },
     status: {
@@ -85,6 +87,26 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
   { timestamps: true },
 )
 
+export async function allocateQuoteReference(createdAt: Date): Promise<string> {
+  const year = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric' }).format(createdAt)
+  const counter = await QuoteCounter.findOneAndUpdate(
+    { _id: `quote:${year}` },
+    { $inc: { seq: 1 } },
+    { upsert: true, new: true },
+  )
+  return `DV-${year}-${String(counter.seq).padStart(3, '0')}`
+}
+
+quoteProposalSchema.pre('validate', async function () {
+  if (this.isNew && !this.reference) {
+    this.createdAt ??= new Date()
+    this.reference = await allocateQuoteReference(this.createdAt)
+  }
+})
+quoteProposalSchema.index(
+  { reference: 1 },
+  { unique: true, partialFilterExpression: { reference: { $type: 'string' } } },
+)
 quoteProposalSchema.index({ project: 1, status: 1 })
 quoteProposalSchema.index({ client: 1, status: 1 })
 

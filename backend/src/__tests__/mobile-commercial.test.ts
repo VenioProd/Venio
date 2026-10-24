@@ -282,7 +282,7 @@ it('lit le calendrier local et repère un devis consulté, même si le calendrie
   const first = await request(app).get('/api/mobile/today').set('Authorization', bearer).expect(200)
   expect(first.body.meetings.total).toBe(1)
   expect(first.body.quotesViewedNotSigned.items.map((x: any) => x._id)).toEqual([String(proposal._id)])
-  const failure = vi.spyOn(Task, 'find').mockImplementation(() => {
+  const failure = vi.spyOn(Task, 'aggregate').mockImplementation(() => {
     throw new Error('Calendrier indisponible')
   })
   try {

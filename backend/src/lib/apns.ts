@@ -7,6 +7,18 @@ import User from '../models/User.js'
 import type { NotificationType } from '../types/enums.js'
 import { pushLanguageFor, pushTextFor, type PushLanguage } from './pushText.js'
 
+const categories: Partial<Record<NotificationType, string>> = {
+  CRM_LEAD_CREATED: 'VENIO_LEAD',
+  CRM_LEAD_ASSIGNED: 'VENIO_LEAD',
+  LEAD_FOLLOW_UP_DUE: 'VENIO_FOLLOW_UP',
+  QUOTE_PROPOSAL_VIEWED: 'VENIO_QUOTE',
+  QUOTE_PROPOSAL_SIGNED: 'VENIO_QUOTE',
+  PHASE_VALIDATED: 'VENIO_PROJECT',
+  PHASE_REVISION_REQUESTED: 'VENIO_PROJECT',
+  CHANGE_REQUEST_CREATED: 'VENIO_PROJECT',
+  TICKET_CREATED: 'VENIO_PROJECT',
+}
+
 const sessions = new Map<string, ClientHttp2Session>()
 let cachedToken: { value: string; issuedAt: number } | undefined
 let disabledLogged = false
@@ -129,6 +141,7 @@ export async function sendApnsToUser(
         sound: 'default',
         ...(typeof payload.unreadCount === 'number' ? { badge: payload.unreadCount } : {}),
         'thread-id': payload.tag,
+        category: categories[payload.tag as NotificationType],
       },
       type: payload.tag,
       link: payload.link || '/',

@@ -73,6 +73,7 @@ router.post(
   body('kind').isIn(['CALL', 'NOTE', 'MEETING']),
   body('direction').optional().isIn(['IN', 'OUT', 'NONE']),
   body('occurredAt').optional().isISO8601(),
+  body('endsAt').optional().isISO8601(),
   body('subject').optional().isString().trim().isLength({ max: INTERACTION_SUBJECT_MAX_LENGTH }),
   body('body').isString().isLength({ min: 1, max: INTERACTION_BODY_MAX_LENGTH }),
   body('lang').optional({ values: 'null' }).isIn(['fr', 'en']),
@@ -81,6 +82,8 @@ router.post(
     try {
       if (!validationResult(req).isEmpty() || !req.body.body.trim())
         return res.status(400).json({ error: 'Interaction invalide' })
+      const occurredAt = req.body.occurredAt ? new Date(req.body.occurredAt) : new Date()
+      const endsAt = req.body.endsAt === undefined ? undefined : new Date(req.body.endsAt)
       const subject = await resolveSubject(
         {
           user: req.user,
@@ -95,7 +98,8 @@ router.post(
         subjectId: String(subject.id),
         kind: req.body.kind as 'CALL' | 'NOTE' | 'MEETING',
         direction: (req.body.direction ?? 'NONE') as 'IN' | 'OUT' | 'NONE',
-        occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt).toISOString() : null,
+        occurredAt: req.body.occurredAt ? occurredAt.toISOString() : null,
+        ...(endsAt ? { endsAt: endsAt.toISOString() } : {}),
         subject: req.body.subject ?? '',
         body: req.body.body,
         lang: (req.body.lang ?? null) as 'fr' | 'en' | null,
@@ -106,6 +110,9 @@ router.post(
         Interaction.findOne({ author: req.user!.id, clientRequestId }).select('+clientRequestId +clientRequestHash')
       const existing = await findReplay()
       if (existing) return replay(res, existing, clientRequestHash)
+      if (endsAt && (req.body.kind !== 'MEETING' || endsAt <= occurredAt)) {
+        return res.status(400).json({ error: 'La fin doit suivre le début du rendez-vous', code: 'INVALID_ENDS_AT' })
+      }
       let audio
       if (req.file) {
         const filename = `${randomUUID()}.${extensions[req.file.mimetype]}`
@@ -117,7 +124,8 @@ router.post(
       try {
         const interaction = await logInteraction({
           ...normalized,
-          occurredAt: normalized.occurredAt ? new Date(normalized.occurredAt) : undefined,
+          occurredAt,
+          endsAt,
           author: req.user!.id,
           clientRequestId,
           clientRequestHash,

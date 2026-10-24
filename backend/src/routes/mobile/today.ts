@@ -3,6 +3,8 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import Lead from '../../models/Lead.js'
+import Interaction from '../../models/Interaction.js'
+import mongoose from 'mongoose'
 import Task from '../../models/Task.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import logger from '../../lib/logger.js'
@@ -57,35 +59,95 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const { start, end } = bounds
     const mine = { assignedTo: req.user!.id, status: { $nin: ['WON', 'LOST'] } }
     const meetingFilter = { assignee: req.user!.id, dueDate: { $gte: start, $lt: end } }
-    const meetings = (async () => {
+    const taskMeetings = (async () => {
       const [tasks, total] = await Promise.all([
-        Task.find(meetingFilter)
-          .select('_id title dueDate project status priority')
-          .populate('project', 'name')
-          .sort({ dueDate: 1, _id: 1 })
-          .limit(50)
-          .lean(),
+        Task.aggregate<{
+          _id: mongoose.Types.ObjectId
+          title: string
+          project: mongoose.Types.ObjectId
+          startsAt: Date
+          projects: { name: string }[]
+        }>([
+          { $match: { ...meetingFilter, assignee: new mongoose.Types.ObjectId(req.user!.id) } },
+          {
+            $addFields: {
+              startsAt: {
+                $cond: [
+                  { $and: [{ $gte: ['$startDate', start] }, { $lt: ['$startDate', end] }] },
+                  '$startDate',
+                  '$dueDate',
+                ],
+              },
+            },
+          },
+          { $sort: { startsAt: 1, _id: 1 } },
+          { $limit: 50 },
+          {
+            $lookup: {
+              from: 'projects',
+              localField: 'project',
+              foreignField: '_id',
+              as: 'projects',
+              pipeline: [{ $project: { name: 1 } }],
+            },
+          },
+        ]),
         Task.countDocuments(meetingFilter),
       ])
       return {
-        items: tasks.map((task) => {
-          const project = task.project as unknown as { _id: unknown; name?: string } | null
-          return {
-            id: `task_${task._id}`,
-            type: 'task',
-            title: task.title,
-            date: task.dueDate!.toISOString().slice(0, 10),
-            projectId: project?._id ?? task.project,
-            projectName: project?.name ?? '',
-            metadata: { status: task.status, priority: task.priority },
-          }
-        }),
+        items: tasks.map((task) => ({
+          id: `task_${task._id}`,
+          source: 'task',
+          title: task.title,
+          startsAt: task.startsAt.toISOString(),
+          endsAt: null,
+          lead: null,
+          projectId: String(task.project),
+          projectName: task.projects[0]?.name ?? null,
+        })),
         total,
       }
     })().catch((err: unknown) => {
       logger.warn({ err }, 'Lecture du calendrier indisponible')
       return { items: [], total: 0 }
     })
+    const interactionMeetings = (async () => {
+      const filter = { author: req.user!.id, kind: 'MEETING', occurredAt: { $gte: start, $lt: end } }
+      const [items, total] = await Promise.all([
+        Interaction.find(filter).sort({ occurredAt: 1, _id: 1 }).limit(50).lean(),
+        Interaction.countDocuments(filter),
+      ])
+      const linkedLeads = await Lead.find({
+        _id: { $in: items.filter((item) => item.subjectType === 'LEAD').map((item) => item.subjectId) },
+      })
+        .select('company')
+        .lean()
+      const leadById = new Map(
+        linkedLeads.map((lead) => [String(lead._id), { id: String(lead._id), company: lead.company }]),
+      )
+      return {
+        items: items.map((item) => ({
+          id: String(item._id),
+          source: 'interaction',
+          title: item.subject || 'Rendez-vous',
+          startsAt: item.occurredAt.toISOString(),
+          endsAt: item.endsAt?.toISOString() ?? null,
+          lead: item.subjectType === 'LEAD' ? (leadById.get(String(item.subjectId)) ?? null) : null,
+          projectId: null,
+          projectName: null,
+        })),
+        total,
+      }
+    })().catch((err: unknown) => {
+      logger.warn({ err }, 'Lecture des rendez-vous indisponible')
+      return { items: [], total: 0 }
+    })
+    const meetings = Promise.all([taskMeetings, interactionMeetings]).then(([tasks, interactions]) => ({
+      items: [...tasks.items, ...interactions.items]
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id))
+        .slice(0, 50),
+      total: tasks.total + interactions.total,
+    }))
     const quoteFilter = {
       createdBy: req.user!.id,
       status: 'SENT',
@@ -110,7 +172,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ),
         meetings,
         QuoteProposal.find(quoteFilter)
-          .select('_id project client title status expiresAt firstViewedAt createdBy createdAt updatedAt')
+          .select('_id reference project client title status expiresAt firstViewedAt createdBy createdAt updatedAt')
           .sort({ updatedAt: -1, _id: 1 })
           .limit(50)
           .lean(),

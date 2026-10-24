@@ -33,6 +33,7 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     // Distinct de createdAt : un appel se consigne souvent après coup, et la
     // timeline doit le classer à sa date réelle.
     occurredAt: { type: Date, required: true, default: () => new Date() },
+    endsAt: { type: Date },
     subject: { type: String, default: '', trim: true, maxlength: INTERACTION_SUBJECT_MAX_LENGTH },
     body: { type: String, default: '', maxlength: INTERACTION_BODY_MAX_LENGTH },
     pinned: { type: Boolean, default: false },
