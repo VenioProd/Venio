@@ -68,7 +68,7 @@ struct VoiceNoteView: View {
                         occurredAt: occurredAt, audioFileURL: capture.audioURL)
                     Task { @MainActor in
                         defer { busy = false }
-                        do { try await store.createInteraction(draft); saved = true; dismiss() }
+                        do { let entry = try await store.createInteraction(draft); saved = entry.deliveryState == nil; dismiss() }
                         catch { failed = true }
                     }
                 } label: { if busy { ProgressView() } else { VText("Enregistrer") } }

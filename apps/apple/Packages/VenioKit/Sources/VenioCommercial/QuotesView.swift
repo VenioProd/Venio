@@ -16,14 +16,14 @@ extension QuoteStatus {
 }
 
 private func quoteErrorKey(_ error: any Error) -> String {
-    guard let error = error as? VenioAPIError else { return "Écriture impossible. Réessayez." }
-    switch error.code {
+    guard let apiError = error as? VenioAPIError else { return mobileErrorKey(error) }
+    switch apiError.code {
     case "PROJECT_OUT_OF_SCOPE": return "Ce projet ne fait pas partie de votre portefeuille."
     case "NOT_PROPOSAL_OWNER": return "Seul l’auteur peut envoyer ce devis."
     case "PROPOSAL_NOT_DRAFT": return "Ce devis n’est plus un brouillon."
     case "PROPOSAL_ALREADY_SIGNED": return "Ce devis est déjà signé."
     case "FORBIDDEN": return "Vous n’avez pas la permission de gérer les devis."
-    default: return "Écriture impossible. Réessayez."
+    default: return mobileErrorKey(error)
     }
 }
 
@@ -107,8 +107,8 @@ struct QuoteDetailView: View {
                     if let date = quote.firstViewedAt { dateRow("Vu le", date: date) }
                     if let date = quote.signature.signedAt { dateRow("Signé le", date: date) }
                 }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
-                if let errorKey { VText(errorKey).accessibilityAddTraits(.updatesFrequently) }
-                if quote.status == .draft && quote.createdBy == store.currentUser?.id && store.canManageQuotes {
+                if let errorKey { MobileErrorView(key: errorKey).accessibilityAddTraits(.updatesFrequently) }
+                if quote.status == .draft && store.canManageQuotes && (quote.createdBy == store.currentUser?.id || store.currentUser?.permissions.contains("manage_billing") == true) {
                     Button {
                         sending = true
                         errorKey = nil
@@ -186,7 +186,7 @@ struct NewQuoteView: View {
                     }
                     QuoteLinesView(lines: template.lines)
                 }
-                if let errorKey { VText(errorKey).foregroundStyle(palette.urgent.color) }
+                if let errorKey { MobileErrorView(key: errorKey) }
                 if savedDraft != nil { VText("Brouillon créé. Vous pouvez reprendre l’envoi depuis Devis.").font(.subheadline) }
                 if busy { ProgressView { VText("Enregistrement") } }
                 VStack(spacing: 12) {

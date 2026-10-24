@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import WatchKit
+import WatchConnectivity
 import UserNotifications
 import VenioCore
 import VenioCommercial
@@ -24,6 +25,9 @@ final class QuoteNotificationController: WKUserNotificationHostingController<Quo
         content.message = payload.body
         content.phoneURL = nil
         let link = DeepLink.parse(type: payload.userInfo["type"] as? String ?? "", link: payload.userInfo["link"] as? String)
+        let live = (WCSession.default.receivedApplicationContext["backend"] as? String).map { $0 == "live" }
+            ?? ((try? BackendConfiguration().backend) != .mock)
+        guard !live else { return }
         Task { @MainActor in
             do {
                 let quotes = try await api.quotes()

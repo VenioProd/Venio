@@ -21,10 +21,12 @@ import AppKit
     private var pendingLink: String?
     private var pendingType = ""
     private var attemptedRegistration = false
+    private var connectionID = UUID()
     private(set) var failed = false
     private(set) var needsAuthorization = false
 
     func connected(api: any VenioAPI, store: CommercialStore, language: String) async {
+        let expected = connectionID
         self.api = api
         self.store = store
         self.language = language
@@ -41,6 +43,7 @@ import AppKit
         }
         attemptedRegistration = true
         let settings = await center.notificationSettings()
+        guard connectionID == expected, self.api != nil else { return }
         switch settings.authorizationStatus {
         case .notDetermined:
             needsAuthorization = true
@@ -57,10 +60,12 @@ import AppKit
     }
 
     func enableNotifications() async {
-        guard needsAuthorization else { return }
+        guard needsAuthorization, api != nil else { return }
+        let expected = connectionID
         needsAuthorization = false
         do {
             let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+            guard connectionID == expected, api != nil else { return }
             needsAuthorization = false
             if granted { registerWithSystem() }
         } catch { failed = true }
@@ -85,6 +90,12 @@ import AppKit
             try await api.registerPushToken(token, environment: environment, language: language)
             failed = false
         } catch { failed = true }
+    }
+    func disconnected() {
+        connectionID = UUID()
+        api = nil; store = nil; pendingLink = nil; pendingType = ""
+        needsAuthorization = false; attemptedRegistration = false; failed = false
+        Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
     }
     func registrationFailed() { failed = true }
 

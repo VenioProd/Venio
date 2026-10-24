@@ -26,7 +26,10 @@ targets:
   Venio:
     type: application
     supportedDestinations: [iOS, macOS]
-    sources: [App, Shared]
+    sources:
+      - path: App
+        excludes: [Info-Debug.plist]
+      - Shared
     info:
       path: .build/Venio-Info.plist
       properties:
@@ -44,6 +47,9 @@ targets:
         TARGETED_DEVICE_FAMILY: '1,2'
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+      configs:
+        Debug:
+          INFOPLIST_FILE: App/Info-Debug.plist
     dependencies:
       - package: VenioKit
         product: VenioCore

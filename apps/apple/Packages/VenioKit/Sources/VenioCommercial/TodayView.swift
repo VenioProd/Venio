@@ -20,6 +20,7 @@ public struct TodayView: View {
     }
     private let onLead: (String) -> Void
     public init(onLead: @escaping (String) -> Void = { _ in }) { self.onLead = onLead }
+    private var meetings: [Appointment] { store.appointments.filter { $0.assignedTo == store.currentUser?.id } }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     public var body: some View {
         CommercialPage {
@@ -45,13 +46,18 @@ public struct TodayView: View {
                         CommercialStrings.text("Relance", locale: locale) + " · " + lead.contactName
                     } badge: { lead in lead.nextActionAt.map(formats.time) ?? "" }
                     VStack(alignment: .leading, spacing: 10) {
-                        SectionHeading(title: "RDV du jour", count: store.agenda.appointments.count)
+                        SectionHeading(title: "RDV du jour", count: meetings.count)
                         VStack(spacing: 0) {
-                            ForEach(store.agenda.appointments) { appointment in
+                            ForEach(meetings) { appointment in
                                 if let lead = store.leads.first(where: { $0.id == appointment.leadId }) {
                                     leadButton(lead, subtitle: CommercialStrings.text("Démo en visio", locale: locale) + " · " + lead.contactName,
                                                badge: formats.time(appointment.startsAt), icon: "video")
-                                    if appointment.id != store.agenda.appointments.last?.id { Divider() }
+                                    if appointment.id != meetings.last?.id { Divider() }
+                                } else {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(verbatim: appointment.title).font(.headline)
+                                        Text(verbatim: appointment.location).font(.caption)
+                                    }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
                                 }
                             }
                         }.venioCard()

@@ -19,7 +19,7 @@ struct NewLeadView: View {
     @State private var website = ""
     @State private var capture = VoiceCapture()
     @State private var busy = false
-    @State private var failed = false
+    @State private var errorKey: String?
     @State private var fromCard = false
     let onCreated: (String) -> Void
     var body: some View {
@@ -54,7 +54,7 @@ struct NewLeadView: View {
                 VText("Notes").font(.headline)
                 TextEditor(text: $draft.notes).frame(minHeight: 100).accessibilityLabel(CommercialStrings.text("Notes", locale: locale))
                 if fromCard { VText("Source : carte de visite").font(.caption) }
-                if failed { VText("Écriture impossible. Réessayez.") }
+                if let errorKey { MobileErrorView(key: errorKey) }
                 Button { save() } label: {
                     if busy { ProgressView() } else { VText("Créer le lead") }
                 }.venioPrimaryButton()
@@ -78,14 +78,14 @@ struct NewLeadView: View {
             .map { CommercialStrings.text($0.0, locale: locale) + " : " + $0.1 }
         value.notes = ([draft.notes, capture.text] + details).filter { !$0.isEmpty }.joined(separator: "\n")
         busy = true
-        failed = false
+        errorKey = nil
         Task { @MainActor in
             defer { busy = false }
             do {
                 let lead = try await store.createLead(value)
                 dismiss()
                 onCreated(lead.id)
-            } catch { failed = true }
+            } catch { errorKey = mobileErrorKey(error) }
         }
     }
 }

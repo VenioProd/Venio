@@ -15,6 +15,7 @@ import VenioCore
     public private(set) var isLoading = false
     public private(set) var failed = false
     public private(set) var hasLoaded = false
+    public private(set) var errorKey: String?
     public var allLeads = false
     public let clock: DemoClock
     public var destination: DeepLink?
@@ -45,10 +46,11 @@ import VenioCore
                     calendar: clock.calendar, userId: currentUser?.id ?? "")
     }
 
-    public func load() async {
-        guard !isLoading, !hasLoaded else { return }
+    public func load(force: Bool = false) async {
+        guard !isLoading, force || !hasLoaded else { return }
         isLoading = true
         failed = false
+        errorKey = nil
         defer { isLoading = false }
         do {
             let user = try await api.currentUser()
@@ -83,7 +85,7 @@ import VenioCore
             hasLoaded = true
         } catch is CancellationError {
             return
-        } catch { failed = true }
+        } catch { failed = true; errorKey = mobileErrorKey(error) }
     }
 
     public var canManageQuotes: Bool {
@@ -107,20 +109,23 @@ import VenioCore
     }
     func createQuote(templateId: String, projectId: String) async throws -> QuoteProposal {
         let quote = try await api.createQuote(templateId: templateId, projectId: projectId, title: nil)
-        quotes = try await api.quotes()
+        quotes.removeAll { $0.id == quote.id }
+        quotes.insert(quote, at: 0)
         return quote
     }
     func sendQuote(id: String) async throws {
-        _ = try await api.sendQuote(id: id)
-        quotes = try await api.quotes()
+        let quote = try await api.sendQuote(id: id)
+        quotes.removeAll { $0.id == quote.id }
+        quotes.insert(quote, at: 0)
     }
 
-    public func createInteraction(_ draft: InteractionDraft) async throws {
+    @discardableResult public func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry {
         let entry = try await api.createInteraction(draft)
         var entries = timeline[draft.subjectId, default: []]
         entries.removeAll { $0.id == entry.id }
         entries.append(entry)
         timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
+        return entry
     }
     func createLead(_ draft: LeadDraft) async throws -> Lead {
         let lead = try await api.createLead(draft)

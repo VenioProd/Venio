@@ -69,6 +69,12 @@ public struct TimelineEntry: Sendable, Identifiable {
     public let date: Date
     public let title: String
     public let body: String
+    public enum DeliveryState: Sendable { case pending, failed }
+    public let deliveryState: DeliveryState?
+
+    public init(id: String, date: Date, title: String, body: String, deliveryState: DeliveryState? = nil) {
+        self.id = id; self.date = date; self.title = title; self.body = body; self.deliveryState = deliveryState
+    }
 
     public static func merged(activities: [LeadActivity], interactions: [Interaction]) -> [Self] {
         let activityEntries = activities.map {

@@ -7,19 +7,31 @@ import VenioCore
 import VenioCommercial
 #endif
 
+struct WatchFollowUp: Codable, Identifiable {
+    var id: String
+    var company: String
+    var contact: String
+    var phone: String
+    var date: Date
+}
+
 @Observable @MainActor final class WatchBridge: NSObject, WCSessionDelegate {
+    private(set) var liveBackend: Bool?
+    private(set) var followUps: [WatchFollowUp] = []
     private(set) var leadID: String?
     private(set) var company = ""
     private(set) var contact = ""
     private(set) var failed = false
     #if os(iOS)
     var store: CommercialStore?
+    var usesLiveBackend = false
     private var lastLead: Lead?
     private(set) var pendingNotes: [InteractionDraft] = []
     private(set) var retrying = false
     private let pendingNotesKey = "VenioWatchPendingNotes"
     #endif
     private var session: WCSession?
+    private var ownerID: String?
 
     override init() {
         super.init()
@@ -38,13 +50,39 @@ import VenioCommercial
         session?.activate()
     }
     #if os(iOS)
+    func disconnected() {
+        store?.onLeadOpened = nil
+        store = nil; lastLead = nil
+        pendingNotes = []
+        UserDefaults.standard.removeObject(forKey: pendingNotesKey)
+        if let session, session.activationState == .activated {
+            do { try session.updateApplicationContext(["backend": usesLiveBackend ? "live" : "mock"]) } catch { failed = true }
+        }
+    }
     func publish(_ lead: Lead) {
         lastLead = lead
+        publishSnapshot()
+    }
+    func publishSnapshot() {
         guard let session, session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
-        do {
-            try session.updateApplicationContext(["leadID": lead.id, "company": lead.company, "contact": lead.contactName])
-            failed = false
-        } catch { failed = true }
+        var context: [String: Any] = ["backend": usesLiveBackend ? "live" : "mock"]
+        if let lastLead, let user = store?.currentUser {
+            context["leadID"] = lastLead.id
+            context["company"] = lastLead.company
+            context["contact"] = lastLead.contactName
+            context["ownerID"] = user.id
+        }
+        if let store, let user = store.currentUser {
+            let leads = (store.agenda.overdue + store.agenda.followUps).prefix(50)
+            let followUps = leads.compactMap { lead -> WatchFollowUp? in
+                guard let date = lead.nextActionAt else { return nil }
+                return WatchFollowUp(id: lead.id, company: lead.company, contact: lead.contactName, phone: lead.contactPhone, date: date)
+            }
+            if let data = try? JSONEncoder().encode(followUps) { context["followUps"] = data }
+            context["ownerID"] = user.id
+        }
+        do { try session.updateApplicationContext(context); failed = false }
+        catch { failed = true }
     }
     func retryPendingNotes() async {
         guard !retrying else { return }
@@ -67,8 +105,8 @@ import VenioCommercial
     }
     #else
     func sendNote(_ text: String, leadID: String) -> Bool {
-        guard let session, session.activationState == .activated, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        session.transferUserInfo(["leadID": leadID, "text": text, "idempotencyKey": UUID().uuidString, "occurredAt": Date.now.timeIntervalSince1970])
+        guard let session, let ownerID, session.activationState == .activated, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        session.transferUserInfo(["ownerID": ownerID, "leadID": leadID, "text": text, "idempotencyKey": UUID().uuidString, "occurredAt": Date.now.timeIntervalSince1970])
         return true
     }
     #endif
@@ -77,18 +115,19 @@ import VenioCommercial
         let failed = error != nil
         #if os(watchOS)
         let context = session.receivedApplicationContext
+        let data = context["followUps"] as? Data
         let id = context["leadID"] as? String
         let company = context["company"] as? String ?? ""
         let contact = context["contact"] as? String ?? ""
+        let owner = context["ownerID"] as? String
+        let backend = context["backend"] as? String
         #endif
         Task { @MainActor in
             self.failed = failed
             #if os(iOS)
-            if let lead = self.lastLead { self.publish(lead) }
+            self.publishSnapshot()
             #else
-            self.leadID = id
-            self.company = company
-            self.contact = contact
+            self.apply(id: id, company: company, contact: contact, owner: owner, backend: backend, data: data)
             #endif
         }
     }
@@ -97,10 +136,18 @@ import VenioCommercial
         Task { @MainActor in self.failed = failed }
     }
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        let data = applicationContext["followUps"] as? Data
         let id = applicationContext["leadID"] as? String
         let company = applicationContext["company"] as? String ?? ""
         let contact = applicationContext["contact"] as? String ?? ""
-        Task { @MainActor in self.leadID = id; self.company = company; self.contact = contact }
+        let owner = applicationContext["ownerID"] as? String
+        let backend = applicationContext["backend"] as? String
+        Task { @MainActor in self.apply(id: id, company: company, contact: contact, owner: owner, backend: backend, data: data) }
+    }
+    private func apply(id: String?, company: String, contact: String, owner: String?, backend: String?, data: Data?) {
+        leadID = id; self.company = company; self.contact = contact; ownerID = owner
+        liveBackend = backend.map { $0 == "live" }
+        followUps = data.flatMap { try? JSONDecoder().decode([WatchFollowUp].self, from: $0) } ?? []
     }
     #if os(iOS)
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
@@ -108,8 +155,9 @@ import VenioCommercial
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
         guard let id = userInfo["leadID"] as? String, let text = userInfo["text"] as? String,
               let key = (userInfo["idempotencyKey"] as? String).flatMap(UUID.init(uuidString:)),
-              let timestamp = userInfo["occurredAt"] as? Double else { return }
+              let timestamp = userInfo["occurredAt"] as? Double, let owner = userInfo["ownerID"] as? String else { return }
         Task { @MainActor in
+            guard self.store?.currentUser?.id == owner else { return }
             guard !self.pendingNotes.contains(where: { $0.idempotencyKey == key }) else { return }
             let draft = InteractionDraft(idempotencyKey: key, subjectType: .lead, subjectId: id,
                 kind: .note, body: text, lang: ContentLanguage.detect(text), direction: .none,

@@ -85,6 +85,23 @@
           }
         }
       }
+    },
+    "Stockage ou configuration indisponible": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stockage ou configuration indisponible"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage or configuration unavailable"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

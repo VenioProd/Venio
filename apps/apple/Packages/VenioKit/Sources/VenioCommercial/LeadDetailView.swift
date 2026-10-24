@@ -101,6 +101,7 @@ public struct LeadDetailView: View {
             SectionHeading(title: "Timeline", count: store.timeline[id, default: []].count)
             ForEach(store.timeline[id, default: []]) { entry in
                 VStack(alignment: .leading, spacing: 8) {
+                    if let state = entry.deliveryState { VText(state == .pending ? "En attente" : "Échec de l’envoi").font(.caption) }
                     Text(verbatim: formats.timestamp(entry.date)).font(.caption).foregroundStyle(palette.textSecondary.color)
                     TranslatableText(entry.title, preserving: store.contentIdentifiers)
                     if !entry.body.isEmpty { TranslatableText(entry.body, preserving: store.contentIdentifiers).font(.subheadline) }

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>paris.venio.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>venio</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>127.0.0.1</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Venio utilise la caméra pour lire les cartes de visite.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Venio utilise le micro pour enregistrer vos notes vocales.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.</string>
+</dict>
+</plist>

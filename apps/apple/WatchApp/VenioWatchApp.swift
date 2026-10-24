@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import UserNotifications
 import VenioCore
 import VenioTheme
@@ -8,7 +7,8 @@ import VenioCommercial
 @main struct VenioWatchApp: App {
     @State private var bridge = WatchBridge()
     @State private var themes: ThemeManager
-    private let api: (any VenioAPI)?
+    private let demo = MockVenioAPI()
+    private let defaultLive: Bool
     private let clock = DemoClock()
 
     init() {
@@ -26,22 +26,42 @@ import VenioCommercial
         UNUserNotificationCenter.current().setNotificationCategories([
             UNNotificationCategory(identifier: "QUOTE_PROPOSAL_VIEWED", actions: [], intentIdentifiers: [])
         ])
-        do {
-            let container = try ModelContainer(for: CachedLead.self, CachedProject.self)
-            api = CachedVenioAPI(upstream: MockVenioAPI(clock: clock), container: container)
-        } catch { api = nil }
+        defaultLive = (try? BackendConfiguration().backend) != .mock
+
     }
     var body: some Scene {
         WindowGroup {
             ThemeHost(manager: themes) {
-                if let api {
-                    FollowUpsView(api: api, clock: clock)
-                        .safeAreaInset(edge: .bottom) { WatchFieldTools(bridge: bridge) }
-                        .task { bridge.activate() }
+                Group {
+                    if bridge.liveBackend ?? defaultLive { WatchLiveFollowUps(bridge: bridge) }
+                    else { FollowUpsView(api: demo, clock: clock) }
                 }
-                else { Text("Stockage indisponible", bundle: .main) }
+                .safeAreaInset(edge: .bottom) { WatchFieldTools(bridge: bridge) }
+                .task { bridge.activate() }
             }
         }
         WKNotificationScene(controller: QuoteNotificationController.self, category: "QUOTE_PROPOSAL_VIEWED")
+    }
+}
+
+private struct WatchLiveFollowUps: View {
+    let bridge: WatchBridge
+    var body: some View {
+        NavigationStack {
+            List {
+                if bridge.followUps.isEmpty { Text("Aucune relance aujourd’hui", bundle: .main) }
+                ForEach(bridge.followUps) { lead in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(verbatim: lead.company).font(.headline)
+                        Text(verbatim: lead.contact).font(.caption)
+                        Text(lead.date, style: .date).font(.caption)
+                        if let phone = URL(string: "tel:" + lead.phone.filter { $0.isNumber || $0 == "+" }), !lead.phone.isEmpty {
+                            Link(destination: phone) { Text("Appeler", bundle: .main) }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(Text("Relances", bundle: .main))
+        }
     }
 }

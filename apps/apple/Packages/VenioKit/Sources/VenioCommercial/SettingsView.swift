@@ -4,6 +4,8 @@ import VenioTheme
 
 public struct SettingsView: View {
     @Environment(\.locale) private var locale
+    @Environment(\.venioSession) private var session
+    @State private var showingLogout = false
     public init() {}
     public var body: some View {
         List {
@@ -13,6 +15,24 @@ public struct SettingsView: View {
             NavigationLink { LanguageView() } label: {
                 Label { VText("Langue") } icon: { Image(systemName: "globe").accessibilityHidden(true) }
             }
+            if let session {
+                NavigationLink { DevicesView(session: session) } label: {
+                    Label { VText("Appareils connectés") } icon: { Image(systemName: "desktopcomputer.and.iphone") }
+                }
+                NavigationLink { OutboxView(session: session) } label: { VText("Modifications en attente") }
+                Button(role: .destructive) {
+                    Task {
+                        guard await session.reloadPending() else { return }
+                        if session.pending.isEmpty { await session.logout() }
+                        else { showingLogout = true }
+                    }
+                } label: { VText("Se déconnecter") }
+            }
+        }
+        .confirmationDialog(CommercialStrings.text("Confirmer la déconnexion", locale: locale), isPresented: $showingLogout, titleVisibility: .visible) {
+            Button(role: .destructive) { Task { await session?.logout() } } label: { VText("Se déconnecter") }
+        } message: {
+            Text(verbatim: CommercialStrings.format("%lld modifications non envoyées seront perdues", locale: locale, session?.pending.count ?? 0))
         }
         .scrollContentBackground(.hidden)
         .background { ThemedBackground() }
