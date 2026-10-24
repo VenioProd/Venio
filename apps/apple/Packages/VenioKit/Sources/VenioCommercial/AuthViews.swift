@@ -142,13 +142,18 @@ struct OutboxView: View {
         List {
             ForEach(session.pending) { write in
                 VStack(alignment: .leading, spacing: 10) {
-                    VText(write.type == "interaction" ? "Interaction" : "Modification du lead").font(.headline)
+                    VText(writeTitle(write)).font(.headline)
                     Text(verbatim: CommercialFormats(locale: locale).timestamp(write.createdAt)).font(.caption)
                     VText(write.state == "failed" ? "Échec de l’envoi" : "En attente")
                     if write.state == "failed" {
                         if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
+                        else if write.lastError == "LEAD_ASSIGNMENT_FORBIDDEN" { VText("Vous ne pouvez pas réassigner le lead d’un collègue").font(.caption) }
                         else if write.lastError == "UNCERTAIN_WRITE" { VText("Résultat incertain : vérifiez la fiche avant de réessayer").font(.caption) }
+                        else if write.lastError == "LEAD_NOT_CREATED" { VText("Le lead n’a pas pu être créé : réessayez d’abord sa création").font(.caption) }
                         else { VText("Le serveur a refusé cette modification.").font(.caption) }
+                        if (write.lastStatus ?? 0) >= 500 || write.lastError == "UNCERTAIN_WRITE" {
+                            VText("Vérifiez la fiche avant de réessayer. Réessayer utilisera une nouvelle clé d’idempotence.").font(.caption)
+                        }
                         HStack {
                             Button { perform { await session.retry(write.id) } } label: { VText("Réessayer") }
                             Button(role: .destructive) { perform { await session.delete(write.id) } } label: { VText("Supprimer") }
@@ -162,6 +167,13 @@ struct OutboxView: View {
         .disabled(busy)
         .navigationTitle(CommercialStrings.text("Modifications en attente", locale: locale))
         .task { await session.reloadPending() }
+    }
+    private func writeTitle(_ write: QueuedWrite) -> String {
+        switch write.type {
+        case "interaction": "Interaction"
+        case "leadCreate": "Création du lead"
+        default: "Modification du lead"
+        }
     }
     private func perform(_ action: @escaping @MainActor () async -> Void) {
         busy = true

@@ -36,15 +36,13 @@ public enum ServerCoding {
 struct ServerReference: Decodable, Sendable {
     let id: String
     let name: String?
-    let ownerAdminId: String?
     init(from decoder: any Decoder) throws {
-        if let text = try? decoder.singleValueContainer().decode(String.self) { id = text; name = nil; ownerAdminId = nil; return }
+        if let text = try? decoder.singleValueContainer().decode(String.self) { id = text; name = nil; return }
         let values = try decoder.container(keyedBy: Keys.self)
         id = try values.decodeIfPresent(String.self, forKey: ._id) ?? values.decode(String.self, forKey: .id)
         name = try values.decodeIfPresent(String.self, forKey: .name)
-        ownerAdminId = try values.decodeIfPresent(ServerReference.self, forKey: .ownerAdminId)?.id
     }
-    enum Keys: String, CodingKey { case _id, id, name, ownerAdminId }
+    enum Keys: String, CodingKey { case _id, id, name }
 }
 
 struct LeadDTO: Decodable, Sendable {
@@ -68,13 +66,14 @@ struct LeadDTO: Decodable, Sendable {
     var statusChangedAt: Date?
     var lostReason: String?
     var clientAccountId: ServerReference?
+    var canQuote: Bool?
 
     var model: Lead {
         Lead(id: _id, company: company ?? "", contactName: contactName ?? "", contactEmail: contactEmail ?? "",
              contactPhone: contactPhone ?? "", source: source ?? "", status: status ?? .lead, priority: priority ?? .normal,
              budget: budget, nextActionAt: nextActionAt, serviceType: serviceType ?? "", leadTemperature: leadTemperature ?? .warm,
              assignedTo: assignedTo?.id, score: score, notes: notes ?? "", createdAt: createdAt ?? .distantPast,
-             updatedAt: updatedAt, statusChangedAt: statusChangedAt, lostReason: lostReason ?? "", clientAccountId: clientAccountId?.id)
+             updatedAt: updatedAt, statusChangedAt: statusChangedAt, lostReason: lostReason ?? "", clientAccountId: clientAccountId?.id, canQuote: canQuote ?? false)
     }
 }
 
@@ -103,6 +102,7 @@ struct ProjectDTO: Decodable, Sendable {
     var name: String
     var client: ServerReference
     var assignedTo: ServerReference?
+    var canQuote: Bool?
     var status: ProjectStatus?
     var budget: Budget?
     var billing: Billing?
@@ -113,7 +113,7 @@ struct ProjectDTO: Decodable, Sendable {
         Project(id: _id, projectNumber: projectNumber ?? "", name: name, client: client.id, status: status ?? .active,
                 budget: ProjectBudget(amount: budget?.amount, currency: budget?.currency ?? "EUR"),
                 billing: ProjectBilling(amountInvoiced: billing?.amountInvoiced, billingStatus: billing?.billingStatus ?? .notInvoiced),
-                endDate: endDate, progress: 0, assignedTo: assignedTo?.id, ownerAdminId: client.ownerAdminId)
+                endDate: endDate, progress: 0, assignedTo: assignedTo?.id, canQuote: canQuote ?? false)
     }
 }
 struct PhaseDTO: Decodable, Sendable {
@@ -144,8 +144,10 @@ struct QuoteLineDTO: Decodable, Sendable {
 }
 struct QuoteDTO: Decodable, Sendable {
     var _id: String
-    var project: ServerReference
-    var client: ServerReference
+    var project: ServerReference?
+    var client: ServerReference?
+    var leadId: ServerReference?
+    var reference: String?
     var createdBy: ServerReference
     var title: String
     var status: QuoteStatus
@@ -156,9 +158,9 @@ struct QuoteDTO: Decodable, Sendable {
     var createdAt: Date
     var updatedAt: Date
     var model: QuoteProposal {
-        QuoteProposal(id: _id, project: project.id, client: client.id, createdBy: createdBy.id, title: title, status: status,
+        QuoteProposal(id: _id, project: project?.id, client: client?.id, createdBy: createdBy.id, title: title, status: status,
                       lines: lines?.map(\.model) ?? [], signature: signature ?? QuoteSignature(signedAt: nil), firstViewedAt: firstViewedAt,
-                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt)
+                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt, reference: reference, leadId: leadId?.id)
     }
 }
 struct TemplateDTO: Decodable, Sendable {
@@ -188,22 +190,35 @@ struct MeDTO: Decodable, Sendable {
         var model: MobileUser { MobileUser(id: _id, name: name, email: email, role: role, permissions: permissions ?? []) }
     }
 }
+struct TicketDTO: Decodable, Sendable {
+    var _id: String
+    var project: ServerReference?
+    var title: String
+    var status: TicketStatus
+    var model: ProjectTicket? {
+        guard let project else { return nil }
+        return ProjectTicket(id: _id, project: project.id, title: title, status: status)
+    }
+}
 struct TodayDTO: Decodable, Sendable {
     var meetings: Meetings
-    struct Meetings: Decodable, Sendable { var items: [Event] }
-    struct Event: Decodable, Sendable {
+    var quotesViewedNotSigned: Quotes?
+    struct Quotes: Decodable, Sendable { var items: [QuoteDTO] }
+    struct Meetings: Decodable, Sendable { var items: [Meeting] }
+    struct Meeting: Decodable, Sendable {
         var id: String
+        var source: String
         var title: String
-        var date: String
-        var projectId: ServerReference?
+        var startsAt: Date
+        var endsAt: Date?
+        var lead: LinkedLead?
+        var projectId: String?
         var projectName: String?
-        func model(userID: String) throws -> Appointment {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.timeZone = TimeZone(identifier: "Europe/Paris")
-            formatter.dateFormat = "yyyy-MM-dd"
-            guard let start = formatter.date(from: date) else { throw VenioAPIError(code: "INVALID_RESPONSE") }
-            return Appointment(id: id, leadId: "", title: title, startsAt: start, assignedTo: userID, location: projectName ?? "")
+        struct LinkedLead: Decodable, Sendable { var id: String; var company: String }
+        func model(userID: String) -> Appointment {
+            Appointment(id: id, leadId: lead?.id, title: title, startsAt: startsAt, assignedTo: userID,
+                        location: projectName ?? "", endsAt: endsAt, source: source, leadCompany: lead?.company,
+                        projectId: projectId, projectName: projectName)
         }
     }
 }

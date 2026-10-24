@@ -64,6 +64,9 @@ struct LeadRow: View {
             VStack(alignment: .trailing, spacing: 6) {
                 Text(verbatim: CommercialFormats(locale: locale).money(lead.budget))
                     .font(.subheadline.weight(.semibold).monospacedDigit())
+                if let state = lead.deliveryState {
+                    CommercialBadge(text: CommercialStrings.text(state == "failed" ? "Échec de l’envoi" : "En attente", locale: locale))
+                }
                 if let badge { CommercialBadge(text: badge, tone: urgent ? .urgent : .accent) }
                 else if showsAssignee {
                     CommercialBadge(text: store.initials(lead.assignedTo))

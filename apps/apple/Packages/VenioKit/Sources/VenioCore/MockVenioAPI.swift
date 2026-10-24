@@ -11,7 +11,7 @@ public actor MockVenioAPI: VenioAPI {
     private var storedQuotes: [QuoteProposal]?
     private var interactions: [UUID: (InteractionDraft, TimelineEntry)] = [:]
 
-    public nonisolated func monthlyTarget() -> Decimal { 40000 }
+    public nonisolated func monthlyTarget() -> Decimal? { 40000 }
 
     public init(clock: DemoClock = DemoClock(), user: UserSummary = MockVenioAPI.lea) {
         self.clock = clock
@@ -24,7 +24,7 @@ public actor MockVenioAPI: VenioAPI {
         let lead = Lead(id: UUID().uuidString, company: draft.company, contactName: draft.contactName,
             contactEmail: draft.contactEmail, contactPhone: draft.contactPhone, source: draft.source, status: .lead,
             budget: draft.budget, nextActionAt: nil, serviceType: draft.serviceType, leadTemperature: .warm,
-            assignedTo: draft.assignedTo ?? user.id, score: nil, notes: draft.notes, createdAt: .now)
+            assignedTo: draft.assignedTo ?? user.id, score: nil, notes: draft.notes, createdAt: .now, canQuote: !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"]))
         var records = try leads()
         records.insert(lead, at: 0)
         storedLeads = records
@@ -63,7 +63,11 @@ public actor MockVenioAPI: VenioAPI {
                 createdAt: clock.calendar.date(byAdding: .day, value: -34, to: date)!, updatedAt: date, statusChangedAt: date,
                 lostReason: index < 16 ? "" : reasons[index - 16])
         }
-        let result = open + closed
+        let result = (open + closed).map { value in
+            var lead = value
+            lead.canQuote = !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"]) && (user.permissions.contains("manage_billing") || lead.assignedTo == user.id)
+            return lead
+        }
         storedLeads = result
         return result
     }
@@ -114,7 +118,7 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     private func quote(_ number: String, client: String, project: String, template: String, amount: Decimal, status: QuoteStatus, firstViewedAt: Date? = nil, signedAt: Date? = nil, author: String = MockVenioAPI.lea.id) -> QuoteProposal {
-        QuoteProposal(id: "quote-\(number)", project: project, client: client, createdBy: author, title: template, status: status, lines: [QuoteLine(description: template, quantity: 1, unitPrice: amount, taxRate: 20)], signature: QuoteSignature(signedAt: signedAt), firstViewedAt: firstViewedAt, expiresAt: clock.calendar.date(byAdding: .day, value: 30, to: signedAt ?? DemoClock.date(1)), createdAt: signedAt ?? DemoClock.date(1), updatedAt: signedAt ?? DemoClock.date(1), reference: "DV-2026-\(number)")
+        QuoteProposal(id: "quote-\(number)", project: project, client: client, createdBy: author, title: template, status: status, lines: [QuoteLine(description: template, quantity: 1, unitPrice: amount, taxRate: 20)], signature: QuoteSignature(signedAt: signedAt), firstViewedAt: firstViewedAt, expiresAt: clock.calendar.date(byAdding: .day, value: 30, to: signedAt ?? DemoClock.date(1)), createdAt: signedAt ?? DemoClock.date(1), updatedAt: signedAt ?? DemoClock.date(1), reference: "DV-2026-\(number)", leadId: number == "041" ? "lead-calder" : nil)
     }
 
     public func quoteTemplates() throws -> [QuoteTemplate] {
@@ -148,23 +152,38 @@ public actor MockVenioAPI: VenioAPI {
         }
     }
 
-    public func createQuote(templateId: String, projectId: String, title: String?) throws -> QuoteProposal {
+    public func createQuote(templateId: String, projectId: String? = nil, leadId: String? = nil, title: String?) throws -> QuoteProposal {
         try requireQuotesPermission()
-        guard let project = try projects().first(where: { $0.id == projectId }) else {
-            throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE")
-        }
-        guard project.allowsQuote(for: user) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        guard (projectId != nil) != (leadId != nil) else { throw VenioAPIError(code: "INVALID_INPUT") }
+        let project = try projects().first { $0.id == projectId }
+        if projectId != nil && project?.canQuote != true { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        if let leadId, try !lead(id: leadId).canQuote { throw VenioAPIError(code: "LEAD_OUT_OF_SCOPE") }
         guard let template = try quoteTemplates().first(where: { $0.id == templateId }) else {
             throw VenioAPIError(code: "NOT_FOUND")
         }
-        let quote = QuoteProposal(id: UUID().uuidString, project: project.id, client: project.client, createdBy: user.id,
+        let quote = QuoteProposal(id: UUID().uuidString, project: project?.id, client: project?.client, createdBy: user.id,
             title: title ?? template.title, status: .draft, lines: template.lines, signature: QuoteSignature(signedAt: nil),
             firstViewedAt: nil, expiresAt: clock.calendar.date(byAdding: .day, value: template.validityDays, to: clock.now),
-            createdAt: clock.now, updatedAt: clock.now)
+            createdAt: clock.now, updatedAt: clock.now, reference: "DV-2026-" + String(100 + (try quotes().count)), leadId: leadId)
         var records = try quotes()
         records.insert(quote, at: 0)
         storedQuotes = records
         return quote
+    }
+
+    public func attachQuote(id: String, projectId: String) throws -> QuoteProposal {
+        try requireQuotesPermission()
+        var records = try quotes()
+        guard let index = records.firstIndex(where: { $0.id == id }) else { throw VenioAPIError(code: "NOT_FOUND") }
+        guard records[index].createdBy == user.id || user.permissions.contains("manage_billing") else { throw VenioAPIError(code: "NOT_PROPOSAL_OWNER") }
+        guard records[index].project == nil else { throw VenioAPIError(code: "PROPOSAL_ALREADY_ATTACHED") }
+        guard records[index].status == .draft else { throw VenioAPIError(code: "PROPOSAL_NOT_DRAFT") }
+        guard let project = try projects().first(where: { $0.id == projectId }), project.canQuote else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        records[index].project = project.id
+        records[index].client = project.client
+        records[index].updatedAt = clock.now
+        storedQuotes = records
+        return records[index]
     }
 
     public func sendQuote(id: String) throws -> QuoteProposal {
@@ -176,6 +195,7 @@ public actor MockVenioAPI: VenioAPI {
         }
         guard records[index].status != .signed else { throw VenioAPIError(code: "PROPOSAL_ALREADY_SIGNED") }
         guard records[index].status == .draft else { throw VenioAPIError(code: "PROPOSAL_NOT_DRAFT") }
+        guard records[index].project != nil else { throw VenioAPIError(code: "PROPOSAL_NOT_ATTACHED") }
         records[index].status = .sent
         records[index].updatedAt = clock.now
         storedQuotes = records
@@ -224,16 +244,20 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     public func appointments() throws -> [Appointment] {
-        [Appointment(id: "appointment-nova", leadId: "lead-nova", title: "Démo d’Atelier Nova", startsAt: DemoClock.date(23, hour: 14), assignedTo: Self.lea.id, location: "Visio")]
+        [Appointment(id: "appointment-nova", leadId: "lead-nova", title: "Démo d’Atelier Nova", startsAt: DemoClock.date(23, hour: 14), assignedTo: Self.lea.id, location: "Visio", endsAt: DemoClock.date(23, hour: 15), leadCompany: "Atelier Nova")]
     }
 
     public func projects() throws -> [Project] {
         return [
-            Project(id: "project-pilote", projectNumber: "P-2026-018", name: "Plateforme de réservation", client: "Agence Pilote", status: .active, budget: ProjectBudget(amount: 18400), billing: ProjectBilling(amountInvoiced: 9200, billingStatus: .partial), endDate: DemoClock.date(28, month: 11), progress: 62, assignedTo: Self.lea.id, ownerAdminId: Self.hugo.id),
-            Project(id: "project-riviere", projectNumber: "P-2026-015", name: "Site + click & collect", client: "Boulangerie Rivière", status: .active, budget: ProjectBudget(amount: 8900), billing: ProjectBilling(amountInvoiced: 4450, billingStatus: .partial), endDate: DemoClock.date(6, month: 11), progress: 85, assignedTo: Self.hugo.id, ownerAdminId: Self.lea.id),
-            Project(id: "project-morel", projectNumber: "P-2026-011", name: "Espace client", client: "Cabinet Morel", status: .active, budget: ProjectBudget(amount: 24000), billing: ProjectBilling(amountInvoiced: 7200, billingStatus: .partial), endDate: DemoClock.date(15, month: 12), progress: 30, assignedTo: Self.hugo.id, ownerAdminId: Self.hugo.id),
-            Project(id: "project-lumen", projectNumber: "P-2026-009", name: "Plateforme e-learning", client: "Lumen Formation", status: .active, budget: ProjectBudget(amount: 32000), billing: ProjectBilling(amountInvoiced: 25600, billingStatus: .partial), endDate: DemoClock.date(30), progress: 96, assignedTo: Self.lea.id, ownerAdminId: Self.lea.id)
-        ]
+            Project(id: "project-pilote", projectNumber: "P-2026-018", name: "Plateforme de réservation", client: "Agence Pilote", status: .active, budget: ProjectBudget(amount: 18400), billing: ProjectBilling(amountInvoiced: 9200, billingStatus: .partial), endDate: DemoClock.date(28, month: 11), progress: 62, assignedTo: Self.lea.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id),
+            Project(id: "project-riviere", projectNumber: "P-2026-015", name: "Site + click & collect", client: "Boulangerie Rivière", status: .active, budget: ProjectBudget(amount: 8900), billing: ProjectBilling(amountInvoiced: 4450, billingStatus: .partial), endDate: DemoClock.date(6, month: 11), progress: 85, assignedTo: Self.hugo.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id || user.id == Self.hugo.id),
+            Project(id: "project-morel", projectNumber: "P-2026-011", name: "Espace client", client: "Cabinet Morel", status: .active, budget: ProjectBudget(amount: 24000), billing: ProjectBilling(amountInvoiced: 7200, billingStatus: .partial), endDate: DemoClock.date(15, month: 12), progress: 30, assignedTo: Self.hugo.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.hugo.id),
+            Project(id: "project-lumen", projectNumber: "P-2026-009", name: "Plateforme e-learning", client: "Lumen Formation", status: .active, budget: ProjectBudget(amount: 32000), billing: ProjectBilling(amountInvoiced: 25600, billingStatus: .partial), endDate: DemoClock.date(30), progress: 96, assignedTo: Self.lea.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id)
+        ].map { value in
+            var project = value
+            project.canQuote = project.canQuote && !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"])
+            return project
+        }
     }
 
     public func project(id: String) throws -> ProjectDetail {

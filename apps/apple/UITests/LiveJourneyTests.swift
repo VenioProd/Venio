@@ -51,6 +51,33 @@ import XCTest
         waitForExpectations(timeout: 60)
     }
 
+    func test4_offlineLeadIsQueued() {
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Maison Calder"].waitForExistence(timeout: 30))
+        app.buttons["quickEntry.open"].firstMatch.tap()
+        let manual = app.buttons["newLead.manualTab"].firstMatch
+        if manual.waitForExistence(timeout: 5) { manual.tap() }
+        let company = app.textFields["newLead.company"]
+        XCTAssertTrue(company.waitForExistence(timeout: 10))
+        company.tap(); company.typeText("Lead E2E hors ligne")
+        let contact = app.textFields["newLead.contact"]
+        contact.tap(); contact.typeText("Camille Test")
+        app.buttons["newLead.create"].tap()
+        app.tabBars.buttons["Pipeline"].firstMatch.tap()
+        XCTAssertTrue(reveal(app.staticTexts["Lead E2E hors ligne"]).waitForExistence(timeout: 15), "lead local visible avant la synchro")
+    }
+
+    func test5_offlineLeadIsCreatedWhenBackOnline() {
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Maison Calder"].waitForExistence(timeout: 30))
+        // L'indicateur de file (accessoire de la barre d'onglets) disparaît quand la file est vide.
+        let pending = app.descendants(matching: .any).containing(NSPredicate(format: "label CONTAINS[c] 'en attente'")).firstMatch
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: pending)
+        waitForExpectations(timeout: 60)
+        app.tabBars.buttons["Pipeline"].firstMatch.tap()
+        XCTAssertTrue(reveal(app.staticTexts["Lead E2E hors ligne"]).waitForExistence(timeout: 15))
+    }
+
     private func openCalder() {
         app.tabBars.buttons["Aujourd’hui"].firstMatch.tap()
         let row = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Maison Calder'")).firstMatch

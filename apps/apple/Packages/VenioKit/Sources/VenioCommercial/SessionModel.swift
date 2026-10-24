@@ -179,6 +179,8 @@ public func mobileErrorKey(_ error: any Error) -> String {
         case .validation: return "Vérifiez les champs saisis"
         }
     }
+    let code = (error as? HTTPFailure)?.code ?? (error as? VenioAPIError)?.code
+    if code == "LEAD_ASSIGNMENT_FORBIDDEN" { return "Vous ne pouvez pas réassigner le lead d’un collègue" }
     if let error = error as? HTTPFailure {
         if error.code == "BROWSER_SESSION_REQUIRED" || error.code == "MFA_STEP_UP_REQUIRED" { return "Disponible sur le web" }
         if error.status == 429 { return "Trop de tentatives. Réessayez plus tard." }

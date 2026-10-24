@@ -5199,6 +5199,151 @@
           }
         }
       }
+    },
+    "Ce lead ne fait pas partie de votre portefeuille.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce lead ne fait pas partie de votre portefeuille."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This lead is outside your portfolio."
+          }
+        }
+      }
+    },
+    "Ce devis est déjà rattaché à un projet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce devis est déjà rattaché à un projet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This quote is already attached to a project."
+          }
+        }
+      }
+    },
+    "Rattachez ce devis à un projet avant de l’envoyer.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rattachez ce devis à un projet avant de l’envoyer."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attach this quote to a project before sending it."
+          }
+        }
+      }
+    },
+    "Rattacher à un projet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rattacher à un projet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attach to a project"
+          }
+        }
+      }
+    },
+    "Destinataire · lead": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinataire · lead"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient · lead"
+          }
+        }
+      }
+    },
+    "Vous ne pouvez pas réassigner le lead d’un collègue": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas réassigner le lead d’un collègue"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You cannot reassign a colleague’s lead"
+          }
+        }
+      }
+    },
+    "Vérifiez la fiche avant de réessayer. Réessayer utilisera une nouvelle clé d’idempotence.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifiez la fiche avant de réessayer. Réessayer utilisera une nouvelle clé d’idempotence."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the record before retrying. Retry will use a new idempotency key."
+          }
+        }
+      }
+    },
+    "Création du lead": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Création du lead"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lead creation"
+          }
+        }
+      }
+    },
+    "Le lead n’a pas pu être créé : réessayez d’abord sa création": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le lead n’a pas pu être créé : réessayez d’abord sa création"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The lead could not be created: retry its creation first"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

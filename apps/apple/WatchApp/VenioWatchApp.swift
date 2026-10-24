@@ -23,9 +23,7 @@ import VenioCommercial
                 locale: defaults.string(forKey: "VenioLocale") ?? saved.locale, autoTranslate: saved.autoTranslate))
         }
         _themes = State(initialValue: manager)
-        UNUserNotificationCenter.current().setNotificationCategories([
-            UNNotificationCategory(identifier: "QUOTE_PROPOSAL_VIEWED", actions: [], intentIdentifiers: [])
-        ])
+        UNUserNotificationCenter.current().setNotificationCategories(Set(["VENIO_LEAD", "VENIO_FOLLOW_UP", "VENIO_QUOTE", "VENIO_PROJECT"].map { UNNotificationCategory(identifier: $0, actions: [], intentIdentifiers: []) }))
         defaultLive = (try? BackendConfiguration().backend) != .mock
 
     }
@@ -42,7 +40,7 @@ import VenioCommercial
                 .task { bridge.activate() }
             }
         }
-        WKNotificationScene(controller: QuoteNotificationController.self, category: "QUOTE_PROPOSAL_VIEWED")
+        WKNotificationScene(controller: QuoteNotificationController.self, category: "VENIO_QUOTE")
     }
 }
 

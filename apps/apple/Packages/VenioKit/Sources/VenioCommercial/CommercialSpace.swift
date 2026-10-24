@@ -73,7 +73,7 @@ public struct CommercialSpace: View {
                 OutboxStatusView()
                 Button { showingNewLead = true } label: {
                     Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
-                }.frame(maxWidth: .infinity)
+                }.frame(maxWidth: .infinity).accessibilityIdentifier("quickEntry.open")
             }
         }
         .sheet(isPresented: $showingNewLead) {

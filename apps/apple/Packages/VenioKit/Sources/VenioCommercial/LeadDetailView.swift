@@ -25,7 +25,7 @@ public struct LeadDetailView: View {
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     public var body: some View {
         Group {
-            if let lead = store.leads.first(where: { $0.id == id }) {
+            if let lead = store.lead(for: id) {
                 CommercialPage {
                     header(lead)
                     if regular {
@@ -49,11 +49,11 @@ public struct LeadDetailView: View {
         .task(id: id) { await store.openLead(id: id) }
         .background { ThemedBackground() }
         .sheet(isPresented: $showingVoice) {
-            if let lead = store.leads.first(where: { $0.id == id }) { VoiceNoteView(lead: lead) }
+            if let lead = store.lead(for: id) { VoiceNoteView(lead: lead) }
         }
         .sheet(isPresented: $showingQuote) {
-            if let lead = store.leads.first(where: { $0.id == id }), let project = store.linkedProject(for: lead) {
-                NewQuoteView(projectId: project.id)
+            if let lead = store.lead(for: id) {
+                NewQuoteView(leadId: lead.id)
             }
         }
     }
@@ -77,10 +77,10 @@ public struct LeadDetailView: View {
                             VText("Devis").font(.caption)
                         }.frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(palette.accent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                    }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(store.linkedProject(for: lead) == nil)
+                    }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(!lead.canQuote)
                 }
             }
-            if store.canManageQuotes && store.linkedProject(for: lead) == nil {
+            if store.canManageQuotes && !lead.canQuote {
                 VText("Aucun projet lié dans votre portefeuille. Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption).foregroundStyle(palette.textSecondary.color)
             }
             VStack(alignment: .leading, spacing: 12) {
@@ -99,8 +99,8 @@ public struct LeadDetailView: View {
     }
     private var timeline: some View {
         VStack(alignment: .leading, spacing: 18) {
-            SectionHeading(title: "Timeline", count: store.timeline[id, default: []].count)
-            ForEach(store.timeline[id, default: []]) { entry in
+            SectionHeading(title: "Timeline", count: store.timeline[store.lead(for: id)?.id ?? id, default: []].count)
+            ForEach(store.timeline[store.lead(for: id)?.id ?? id, default: []]) { entry in
                 VStack(alignment: .leading, spacing: 8) {
                     if let state = entry.deliveryState { VText(state == .pending ? "En attente" : "Échec de l’envoi").font(.caption) }
                     Text(verbatim: formats.timestamp(entry.date)).font(.caption).foregroundStyle(palette.textSecondary.color)
@@ -127,6 +127,7 @@ public struct LeadDetailView: View {
         }
     }
     @ViewBuilder private func badges(_ lead: Lead) -> some View {
+        if let state = lead.deliveryState { CommercialBadge(text: CommercialStrings.text(state == "failed" ? "Échec de l’envoi" : "En attente", locale: locale)) }
         CommercialBadge(text: CommercialStrings.text(lead.status.label, locale: locale))
         CommercialBadge(text: CommercialStrings.text(lead.leadTemperature.label, locale: locale), tone: .warning)
         if let score = lead.score { CommercialBadge(text: CommercialStrings.format("Score %lld", locale: locale, score)) }
@@ -154,7 +155,7 @@ public struct LeadDetailView: View {
         Button {
             if let url {
                 #if os(iOS)
-                if title == "Appeler", let lead = store.leads.first(where: { $0.id == id }) {
+                if title == "Appeler", let lead = store.lead(for: id) {
                     store.beginCall(lead)
                     openURL(url) { accepted in if !accepted { store.cancelCall() } }
                 } else { openURL(url) }

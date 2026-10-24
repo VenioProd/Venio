@@ -20,7 +20,7 @@ public struct TodayView: View {
     }
     private let onLead: (String) -> Void
     public init(onLead: @escaping (String) -> Void = { _ in }) { self.onLead = onLead }
-    private var meetings: [Appointment] { store.appointments.filter { $0.assignedTo == store.currentUser?.id } }
+    private var meetings: [Appointment] { store.agenda.appointments }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     public var body: some View {
         CommercialPage {
@@ -49,16 +49,21 @@ public struct TodayView: View {
                         SectionHeading(title: "RDV du jour", count: meetings.count)
                         VStack(spacing: 0) {
                             ForEach(meetings) { appointment in
-                                if let lead = store.leads.first(where: { $0.id == appointment.leadId }) {
-                                    leadButton(lead, subtitle: CommercialStrings.text("Démo en visio", locale: locale) + " · " + lead.contactName,
-                                               badge: formats.time(appointment.startsAt), icon: "video")
-                                    if appointment.id != meetings.last?.id { Divider() }
-                                } else {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(verbatim: appointment.title).font(.headline)
-                                        Text(verbatim: appointment.location).font(.caption)
+                                Button {
+                                    if let leadId = appointment.leadId { onLead(leadId) }
+                                    else if let projectId = appointment.projectId { Task { await store.open(.project(projectId)) } }
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text(verbatim: appointment.title).font(.headline)
+                                            Text(verbatim: appointment.leadCompany ?? appointment.projectName ?? appointment.location).font(.caption)
+                                        }
+                                        Spacer()
+                                        Text(verbatim: formats.time(appointment.startsAt) + (appointment.endsAt.map { " – " + formats.time($0) } ?? ""))
+                                            .font(.subheadline.monospacedDigit())
                                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
-                                }
+                                }.buttonStyle(.plain).disabled(appointment.leadId == nil && appointment.projectId == nil)
+                                if appointment.id != meetings.last?.id { Divider() }
                             }
                         }.venioCard()
                     } }
@@ -66,13 +71,12 @@ public struct TodayView: View {
                         SectionHeading(title: "Devis vu, pas signé", count: store.agenda.viewedQuotes.count)
                         VStack(spacing: 0) {
                             ForEach(store.agenda.viewedQuotes) { quote in
-                                if let lead = store.leads.first(where: { $0.company == quote.client }) {
+                                if let leadId = quote.leadId, let lead = store.leads.first(where: { $0.id == leadId }) {
                                     leadButton(lead, subtitle: (quote.reference ?? quote.title) + " · " + (quote.firstViewedAt.map(formats.timestamp) ?? ""),
                                                badge: CommercialStrings.text("Vu", locale: locale), icon: "eye")
                                 } else {
-                                    // En live, un devis ne porte que le compte client : pas de lead à ouvrir.
                                     VStack(alignment: .leading, spacing: 6) {
-                                        Text(verbatim: quote.title).font(.headline)
+                                        Text(verbatim: quote.reference ?? quote.title).font(.headline)
                                         Text(verbatim: quote.firstViewedAt.map(formats.timestamp) ?? "").font(.caption)
                                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
                                 }

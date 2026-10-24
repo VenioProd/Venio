@@ -6,6 +6,7 @@ public actor Outbox {
     private var flight: (id: UUID, scope: UUID, task: Task<Void, any Error>)?
     private var backoffSession: UUID?
     private var retryAfter = Date.distantPast
+    var nextRetryAt: Date? { retryAfter > .now ? retryAfter : nil }
     public init(session: AuthSession, store: SyncStore) { self.session = session; self.store = store }
 
     public func drain() async throws {
@@ -33,9 +34,18 @@ public actor Outbox {
         try await store.deleteWrite(id: id, scope: session.identity())
     }
     private func run(scope: SessionIdentity) async throws {
-        try await store.abandonInterruptedPatches(scope: scope)
         while let write = try await store.writes(scope: scope).first(where: { $0.state == "pending" }) {
             try Task.checkCancellation()
+            if let first = write.firstAttemptAt, Date.now.timeIntervalSince(first) > 23 * 60 * 60 {
+                try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
+                continue
+            }
+            // Le lead visé n'a pas pu être créé (sa création, plus haut dans la file, a échoué) :
+            // cette écriture ne peut pas partir, mais elle ne doit pas bloquer les suivantes.
+            if try hasLocalLead(write) {
+                try await store.fail(id: write.id, code: "LEAD_NOT_CREATED", scope: scope)
+                continue
+            }
             try await store.attempted(id: write.id, scope: scope)
             do {
                 let request = try makeRequest(write)
@@ -44,61 +54,62 @@ public actor Outbox {
                 let object = try ServerCoding.object(data)
                 let field = write.type == "interaction" ? "interaction" : "lead"
                 guard let record = object[field] as? [String: Any] else { throw VenioAPIError(code: "INVALID_RESPONSE") }
-                let recordData = try JSONSerialization.data(withJSONObject: record)
-                try await store.complete(id: write.id, type: write.type == "interaction" ? "interactions" : "leads", json: recordData, scope: scope)
+                try await store.complete(id: write.id, type: write.type == "interaction" ? "interactions" : "leads",
+                                         json: JSONSerialization.data(withJSONObject: record), scope: scope)
             } catch let error as HTTPFailure {
-                if write.type == "leadPatch", error.status >= 500 {
-                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
-                    continue
-                }
-                if error.status >= 500 || error.status == 429 {
-                    try await store.fail(id: write.id, code: error.code, permanent: false, scope: scope)
+                let retryable = error.status == 429 || (error.status == 409 && error.code == "IDEMPOTENCY_IN_PROGRESS")
+                try await store.fail(id: write.id, code: error.code, permanent: !retryable, status: error.status, scope: scope)
+                if retryable {
                     retryAfter = .now.addingTimeInterval(max(2, error.retryAfter ?? backoff(write.attempts)))
                     return
                 }
-                if error.status == 401 { try await store.release(id: write.id, scope: scope); return }
-                try await store.fail(id: write.id, code: error.code, scope: scope)
             } catch let error as URLError {
-                if write.type == "leadPatch", !requestCertainlyNotSent(error) {
-                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
-                    continue
-                }
-                if error.code == .cancelled { throw error }
                 try await store.fail(id: write.id, code: "NETWORK_UNAVAILABLE", permanent: false, scope: scope)
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
+                if error.code == .cancelled { throw error }
                 return
             } catch let error as VenioAPIError where error.code == "SIGNED_OUT" {
                 return
             } catch let error as VenioAPIError where error.code == "RATE_LIMITED" {
-                // Refresh refusé localement pendant un 429 : la requête n'a eu aucun effet authentifié.
                 try await store.release(id: write.id, scope: scope)
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 return
             } catch {
-                if write.type == "leadPatch" {
-                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
-                    continue
-                }
-                // Une réponse illisible ne prouve pas que l'écriture a échoué.
-                retryAfter = .now.addingTimeInterval(backoff(write.attempts))
+                try await store.fail(id: write.id, code: "INVALID_RESPONSE", scope: scope)
                 throw error
             }
         }
+    }
+    private func hasLocalLead(_ write: QueuedWrite) throws -> Bool {
+        if write.type == "leadPatch" { return try JSONDecoder().decode(LeadPatchWrite.self, from: write.payload).leadId.hasPrefix("local-") }
+        if write.type == "interaction" {
+            let draft = try JSONDecoder().decode(InteractionDraft.self, from: write.payload)
+            return draft.subjectType == .lead && draft.subjectId.hasPrefix("local-")
+        }
+        return false
     }
     private func backoff(_ attempts: Int) -> TimeInterval { min(60, pow(2, Double(min(attempts + 1, 6)))) }
 
     private func makeRequest(_ write: QueuedWrite) throws -> URLRequest {
         if write.type == "leadPatch" {
             let value = try JSONDecoder().decode(LeadPatchWrite.self, from: write.payload)
-            return try session.request(path: "/api/admin/crm/leads/" + value.leadId, method: "PATCH", body: ServerCoding.encoder().encode(value.patch))
+            var request = try session.request(path: "/api/admin/crm/leads/" + value.leadId, method: "PATCH", body: ServerCoding.encoder().encode(value.patch))
+            request.setValue(write.id.uuidString, forHTTPHeaderField: "Idempotency-Key")
+            return request
+        }
+        if write.type == "leadCreate" {
+            let value = try JSONDecoder().decode(LeadCreateWrite.self, from: write.payload)
+            var request = try session.request(path: "/api/admin/crm/leads", method: "POST", body: ServerCoding.encoder().encode(value.draft))
+            request.setValue(write.id.uuidString, forHTTPHeaderField: "Idempotency-Key")
+            return request
         }
         let draft = try JSONDecoder().decode(InteractionDraft.self, from: write.payload)
         struct Payload: Encodable {
             var subjectType: InteractionSubject; var subjectId: String; var kind: InteractionDraft.Kind; var body: String
-            var lang: String?; var direction: InteractionDirection; var occurredAt: Date; var subject: String?
+            var lang: String?; var direction: InteractionDirection; var occurredAt: Date; var subject: String?; var endsAt: Date?
         }
         let data = try ServerCoding.encoder().encode(Payload(subjectType: draft.subjectType, subjectId: draft.subjectId,
-            kind: draft.kind, body: draft.body, lang: draft.lang, direction: draft.direction, occurredAt: draft.occurredAt, subject: draft.subject))
+            kind: draft.kind, body: draft.body, lang: draft.lang, direction: draft.direction, occurredAt: draft.occurredAt, subject: draft.subject, endsAt: draft.kind == .meeting ? draft.endsAt : nil))
         var request = try session.request(path: "/api/mobile/interactions", method: "POST", body: data)
         request.setValue(draft.idempotencyKey.uuidString, forHTTPHeaderField: "Idempotency-Key")
         if let url = draft.audioFileURL, FileManager.default.fileExists(atPath: url.path) {

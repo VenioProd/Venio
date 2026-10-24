@@ -32,7 +32,7 @@ import AppKit
         self.language = language
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        center.setNotificationCategories([UNNotificationCategory(identifier: "QUOTE_PROPOSAL_VIEWED", actions: [], intentIdentifiers: [])])
+        center.setNotificationCategories(Set(["VENIO_LEAD", "VENIO_FOLLOW_UP", "VENIO_QUOTE", "VENIO_PROJECT"].map { UNNotificationCategory(identifier: $0, actions: [], intentIdentifiers: []) }))
         if let pendingLink {
             self.pendingLink = nil
             await open(type: pendingType, link: pendingLink)

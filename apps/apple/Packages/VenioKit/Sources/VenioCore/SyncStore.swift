@@ -22,6 +22,8 @@ import SwiftData
     public var payload: Data
     public var createdAt: Date
     public var attempts: Int
+    public var firstAttemptAt: Date?
+    public var lastStatus: Int?
     public var state: String
     public var lastError: String?
     public init(id: UUID, type: String, payload: Data, createdAt: Date) {
@@ -35,8 +37,24 @@ public struct QueuedWrite: Sendable, Identifiable {
     public let payload: Data
     public let createdAt: Date
     public let attempts: Int
+    public let firstAttemptAt: Date?
+    public let lastStatus: Int?
     public let state: String
     public let lastError: String?
+}
+struct LeadCreateWrite: Codable, Sendable {
+    var localId: String
+    var draft: LeadDraft
+    var createdAt: Date
+    func model(state: String, userId: String) -> Lead {
+        var lead = Lead(id: localId, company: draft.company, contactName: draft.contactName,
+                        contactEmail: draft.contactEmail, contactPhone: draft.contactPhone, source: draft.source,
+                        status: .lead, budget: draft.budget, nextActionAt: nil, serviceType: draft.serviceType,
+                        leadTemperature: .warm, assignedTo: draft.assignedTo ?? userId, score: nil,
+                        notes: draft.notes, createdAt: createdAt)
+        lead.deliveryState = state
+        return lead
+    }
 }
 struct LeadPatchWrite: Codable, Sendable { var leadId: String; var patch: LeadPatch }
 struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore: Bool }
@@ -151,18 +169,19 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     }
     private func snapshot(_ write: PendingWrite) -> QueuedWrite {
         QueuedWrite(id: write.id, type: write.type, payload: write.payload, createdAt: write.createdAt,
-                    attempts: write.attempts, state: write.state, lastError: write.lastError)
+                    attempts: write.attempts, firstAttemptAt: write.firstAttemptAt, lastStatus: write.lastStatus, state: write.state, lastError: write.lastError)
     }
     public func enqueue(_ draft: InteractionDraft, scope: SessionIdentity) throws -> QueuedWrite {
         try check(scope)
+        var normalized = draft
+        if normalized.subjectType == .lead { normalized.subjectId = try resolvedLeadId(normalized.subjectId, scope: scope) }
         if let previous = try write(draft.idempotencyKey) {
-            var normalized = draft
             let saved = try JSONDecoder().decode(InteractionDraft.self, from: previous.payload)
             normalized.audioFileURL = saved.audioFileURL
             guard normalized == saved else { throw VenioAPIError(code: "IDEMPOTENCY_CONFLICT") }
             return snapshot(previous)
         }
-        var saved = draft
+        var saved = normalized
         var copied: URL?
         if let source = draft.audioFileURL, FileManager.default.fileExists(atPath: source.path) {
             let directory = Self.audioDirectory
@@ -186,9 +205,23 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     func enqueue(leadId: String, patch: LeadPatch, scope: SessionIdentity) throws {
         try check(scope)
         do {
-            modelContext.insert(PendingWrite(id: UUID(), type: "leadPatch", payload: try JSONEncoder().encode(LeadPatchWrite(leadId: leadId, patch: patch)), createdAt: .now))
+            modelContext.insert(PendingWrite(id: UUID(), type: "leadPatch", payload: try JSONEncoder().encode(LeadPatchWrite(leadId: resolvedLeadId(leadId, scope: scope), patch: patch)), createdAt: .now))
             try modelContext.save()
         } catch { modelContext.rollback(); throw error }
+    }
+    func enqueue(_ draft: LeadDraft, scope: SessionIdentity) throws -> Lead {
+        try check(scope)
+        let key = UUID()
+        let value = LeadCreateWrite(localId: "local-" + UUID().uuidString.lowercased(), draft: draft, createdAt: .now)
+        do {
+            modelContext.insert(PendingWrite(id: key, type: "leadCreate", payload: try JSONEncoder().encode(value), createdAt: value.createdAt))
+            try modelContext.save()
+            return value.model(state: "pending", userId: scope.user.id)
+        } catch { modelContext.rollback(); throw error }
+    }
+    func resolvedLeadId(_ id: String, scope: SessionIdentity) throws -> String {
+        try check(scope)
+        return try cursorRecord("leadId:" + id)?.cursor ?? id
     }
     private func write(_ id: UUID) throws -> PendingWrite? {
         try modelContext.fetch(FetchDescriptor<PendingWrite>(predicate: #Predicate { $0.id == id })).first
@@ -198,8 +231,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
         do {
             if let write = try write(id) {
                 write.attempts += 1
-                // Un PATCH de lead n'est pas idempotent : s'il est interrompu en vol, on ne le rejouera pas.
-                if write.type == "leadPatch" { write.state = "sending" }
+                if write.firstAttemptAt == nil { write.firstAttemptAt = .now }
             }
             try modelContext.save()
         } catch { modelContext.rollback(); throw error }
@@ -209,19 +241,10 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
         do { if let write = try write(id) { write.state = "pending" }; try modelContext.save() }
         catch { modelContext.rollback(); throw error }
     }
-    func abandonInterruptedPatches(scope: SessionIdentity) throws {
+    func fail(id: UUID, code: String, permanent: Bool = true, status: Int? = nil, scope: SessionIdentity) throws {
         try check(scope)
         do {
-            for write in try modelContext.fetch(FetchDescriptor<PendingWrite>(predicate: #Predicate { $0.state == "sending" })) {
-                write.state = "failed"; write.lastError = "UNCERTAIN_WRITE"
-            }
-            try modelContext.save()
-        } catch { modelContext.rollback(); throw error }
-    }
-    func fail(id: UUID, code: String, permanent: Bool = true, scope: SessionIdentity) throws {
-        try check(scope)
-        do {
-            if let write = try write(id) { write.state = permanent ? "failed" : "pending"; write.lastError = code }
+            if let write = try write(id) { write.state = permanent ? "failed" : "pending"; write.lastError = code; write.lastStatus = status }
             try modelContext.save()
         } catch { modelContext.rollback(); throw error }
     }
@@ -230,6 +253,26 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
         guard let write = try write(id) else { return }
         do {
             try upsert(type: type, object: ServerCoding.object(json))
+            if write.type == "leadCreate" {
+                let value = try JSONDecoder().decode(LeadCreateWrite.self, from: write.payload)
+                guard let realId = ServerCoding.reference(try ServerCoding.object(json)) else { throw VenioAPIError(code: "INVALID_RESPONSE") }
+                modelContext.insert(SyncCursor(type: "leadId:" + value.localId, cursor: realId))
+                for queued in try modelContext.fetch(FetchDescriptor<PendingWrite>()) {
+                    if queued.type == "interaction" {
+                        var draft = try JSONDecoder().decode(InteractionDraft.self, from: queued.payload)
+                        if draft.subjectType == .lead && draft.subjectId == value.localId {
+                            draft.subjectId = realId
+                            queued.payload = try JSONEncoder().encode(draft)
+                        }
+                    } else if queued.type == "leadPatch" {
+                        var patch = try JSONDecoder().decode(LeadPatchWrite.self, from: queued.payload)
+                        if patch.leadId == value.localId {
+                            patch.leadId = realId
+                            queued.payload = try JSONEncoder().encode(patch)
+                        }
+                    }
+                }
+            }
             let audio = audioURL(write)
             modelContext.delete(write)
             try modelContext.save()
@@ -239,7 +282,20 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     public func retry(id: UUID, scope: SessionIdentity) throws {
         try check(scope)
         do {
-            if let write = try write(id) { write.state = "pending"; write.lastError = nil }
+            if let write = try write(id), write.state == "failed" {
+                let key = UUID()
+                if write.type == "interaction" {
+                    var draft = try JSONDecoder().decode(InteractionDraft.self, from: write.payload)
+                    draft.idempotencyKey = key
+                    write.payload = try JSONEncoder().encode(draft)
+                }
+                write.id = key
+                write.state = "pending"
+                write.lastError = nil
+                write.lastStatus = nil
+                write.firstAttemptAt = nil
+                write.attempts = 0
+            }
             try modelContext.save()
         } catch { modelContext.rollback(); throw error }
     }

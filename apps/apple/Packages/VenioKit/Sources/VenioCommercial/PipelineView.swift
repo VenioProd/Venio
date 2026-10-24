@@ -135,6 +135,7 @@ public struct PipelineView: View {
                 Text(verbatim: store.initials(lead.assignedTo)).font(.caption.bold())
                     .accessibilityLabel(Text(verbatim: store.userName(lead.assignedTo) ?? CommercialStrings.text("Non assigné", locale: locale)))
             }
+            if let state = lead.deliveryState { VText(state == "failed" ? "Échec de l’envoi" : "En attente").font(.caption) }
             Text(verbatim: lead.company).font(.headline)
             Text(verbatim: lead.contactName + " · " + CommercialStrings.text(lead.serviceType, locale: locale))
                 .font(.caption).foregroundStyle(palette.textSecondary.color)

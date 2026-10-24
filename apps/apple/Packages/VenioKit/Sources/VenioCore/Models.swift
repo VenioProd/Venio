@@ -128,8 +128,10 @@ public struct Lead: Codable, Sendable, Identifiable {
     public var statusChangedAt: Date?
     public var lostReason: String
     public var clientAccountId: String?
+    public var canQuote: Bool
+    public var deliveryState: String?
 
-    public init(id: String, company: String, contactName: String, contactEmail: String = "", contactPhone: String = "", source: String = "", status: LeadStage, priority: Priority = .normal, budget: Decimal?, nextActionAt: Date?, serviceType: String, leadTemperature: LeadTemperature, assignedTo: String?, score: Int?, notes: String = "", createdAt: Date, updatedAt: Date? = nil, statusChangedAt: Date? = nil, lostReason: String = "", clientAccountId: String? = nil) {
+    public init(id: String, company: String, contactName: String, contactEmail: String = "", contactPhone: String = "", source: String = "", status: LeadStage, priority: Priority = .normal, budget: Decimal?, nextActionAt: Date?, serviceType: String, leadTemperature: LeadTemperature, assignedTo: String?, score: Int?, notes: String = "", createdAt: Date, updatedAt: Date? = nil, statusChangedAt: Date? = nil, lostReason: String = "", clientAccountId: String? = nil, canQuote: Bool = false) {
         self.id = id
         self.company = company
         self.contactName = contactName
@@ -150,6 +152,7 @@ public struct Lead: Codable, Sendable, Identifiable {
         self.statusChangedAt = statusChangedAt
         self.lostReason = lostReason
         self.clientAccountId = clientAccountId
+        self.canQuote = canQuote
     }
 }
 
@@ -197,8 +200,9 @@ public struct Interaction: Codable, Sendable, Identifiable {
 
 public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var id: String
-    public var project: String
-    public var client: String
+    public var project: String?
+    public var client: String?
+    public var leadId: String?
     public var createdBy: String
     public var title: String
     public var status: QuoteStatus
@@ -210,7 +214,7 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var updatedAt: Date
     public var reference: String?
 
-    public init(id: String, project: String, client: String, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil) {
+    public init(id: String, project: String?, client: String?, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil, leadId: String? = nil) {
         self.id = id
         self.project = project
         self.client = client
@@ -224,6 +228,7 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.reference = reference
+        self.leadId = leadId
     }
 }
 
@@ -238,9 +243,9 @@ public struct Project: Codable, Sendable, Identifiable {
     public var endDate: Date?
     public var progress: Int
     public var assignedTo: String?
-    public var ownerAdminId: String?
+    public var canQuote: Bool
 
-    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, ownerAdminId: String? = nil) {
+    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, canQuote: Bool = false) {
         self.id = id
         self.projectNumber = projectNumber
         self.name = name
@@ -251,10 +256,7 @@ public struct Project: Codable, Sendable, Identifiable {
         self.endDate = endDate
         self.progress = progress
         self.assignedTo = assignedTo
-        self.ownerAdminId = ownerAdminId
-    }
-    public func allowsQuote(for user: UserSummary) -> Bool {
-        user.permissions.contains("manage_billing") || assignedTo == user.id || ownerAdminId == user.id
+        self.canQuote = canQuote
     }
 }
 
@@ -324,17 +326,27 @@ public struct ProjectUpdate: Codable, Sendable, Identifiable {
 
 public struct Appointment: Codable, Sendable, Identifiable {
     public var id: String
-    public var leadId: String
+    public var leadId: String?
+    public var leadCompany: String?
+    public var source: String
+    public var projectId: String?
+    public var projectName: String?
     public var title: String
     public var startsAt: Date
+    public var endsAt: Date?
     public var assignedTo: String
     public var location: String
 
-    public init(id: String, leadId: String, title: String, startsAt: Date, assignedTo: String, location: String) {
+    public init(id: String, leadId: String?, title: String, startsAt: Date, assignedTo: String, location: String, endsAt: Date? = nil, source: String = "interaction", leadCompany: String? = nil, projectId: String? = nil, projectName: String? = nil) {
         self.id = id
         self.leadId = leadId
         self.title = title
         self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.source = source
+        self.leadCompany = leadCompany
+        self.projectId = projectId
+        self.projectName = projectName
         self.assignedTo = assignedTo
         self.location = location
     }

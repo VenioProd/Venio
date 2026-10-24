@@ -16,6 +16,7 @@ public actor LiveVenioAPI: VenioAPI {
     public nonisolated let syncEngine: SyncEngine
     public nonisolated let outbox: Outbox
     private var connected = true
+    private var retryTask: Task<Void, Never>?
     private var observers: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     public init(session: AuthSession, store: SyncStore) {
@@ -37,7 +38,21 @@ public actor LiveVenioAPI: VenioAPI {
         defer { changed() }
         guard connected else { return }
         try await outbox.drain()
+        if let next = await outbox.nextRetryAt {
+            let scope = try await session.identity()
+            retryTask?.cancel()
+            retryTask = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(max(0, next.timeIntervalSinceNow))) }
+                catch { return }
+                await self?.retryReady(scope: scope)
+            }
+        }
         try await syncEngine.sync()
+    }
+    private func retryReady(scope: SessionIdentity) async {
+        retryTask = nil
+        guard let current = try? await session.identity(), current.id == scope.id else { return }
+        try? await refresh()
     }
     private func online(_ request: URLRequest, scope: SessionIdentity) async throws -> Data {
         guard connected else { throw VenioAPIError(code: "CONNECTION_REQUIRED") }
@@ -64,19 +79,26 @@ public actor LiveVenioAPI: VenioAPI {
         let scope = try await session.identity()
         guard scope.user.permissions.contains("view_crm") else { return [] }
         var values = try await store.records(type: "leads", scope: scope).map { try ServerCoding.decoder().decode(LeadDTO.self, from: $0).model }
-        for write in try await store.writes(scope: scope) where write.type == "leadPatch" {
+        let writes = try await store.writes(scope: scope)
+        for write in writes where write.type == "leadCreate" {
+            let value = try JSONDecoder().decode(LeadCreateWrite.self, from: write.payload)
+            values.append(value.model(state: write.state, userId: scope.user.id))
+        }
+        for write in writes where write.type == "leadPatch" {
             let value = try JSONDecoder().decode(LeadPatchWrite.self, from: write.payload)
             if let index = values.firstIndex(where: { $0.id == value.leadId }) { values[index].apply(value.patch) }
         }
         return values.sorted { $0.updatedAt > $1.updatedAt }
     }
     public func lead(id: String) async throws -> Lead {
-        guard let lead = try await leads().first(where: { $0.id == id }) else { throw VenioAPIError(code: "NOT_FOUND") }
+        let resolved = try await store.resolvedLeadId(id, scope: session.identity())
+        guard let lead = try await leads().first(where: { $0.id == resolved }) else { throw VenioAPIError(code: "NOT_FOUND") }
         return lead
     }
     public func timeline(leadId: String) async throws -> [TimelineEntry] {
         let scope = try await session.identity()
         guard scope.user.permissions.contains("view_crm") else { return [] }
+        let leadId = try await store.resolvedLeadId(leadId, scope: scope)
         let interactions = try await store.records(type: "interactions", scope: scope)
             .map { try ServerCoding.decoder().decode(InteractionDTO.self, from: $0).model }
             .filter { $0.subjectType == .lead && $0.subjectId == leadId }
@@ -109,15 +131,34 @@ public actor LiveVenioAPI: VenioAPI {
         let updates = try await store.records(type: "projectUpdates", scope: scope)
             .map { try ServerCoding.decoder().decode(UpdateDTO.self, from: $0).model }.filter { $0.project == id }
         var requests: [ChangeRequest] = []
-        if connected && scope.user.permissions.contains("view_change_requests") {
-            do {
-                let data = try await online(session.request(path: "/api/admin/change-requests", query: [URLQueryItem(name: "project", value: id)]), scope: scope)
-                struct Response: Decodable { var changeRequests: [ChangeRequestDTO] }
+        var tickets: [ProjectTicket] = []
+        if scope.user.permissions.contains("view_change_requests") {
+            struct Response: Decodable { var changeRequests: [ChangeRequestDTO] }
+            if let data = try await projectSnapshot(path: "/api/admin/change-requests", type: "projectRequests", projectId: id, scope: scope) {
                 requests = try ServerCoding.decoder().decode(Response.self, from: data).changeRequests.map(\.model).filter { $0.project == id }
-            } catch let error as VenioAPIError where error.code == "CONNECTION_REQUIRED" { requests = [] }
+            }
         }
-        return ProjectDetail(project: project, phases: phases, requests: requests, tickets: [], updates: updates)
+        if scope.user.permissions.contains("view_tickets") {
+            if let data = try await projectSnapshot(path: "/api/admin/tickets", type: "projectTickets", projectId: id, scope: scope) {
+                tickets = try ServerCoding.decoder().decode([TicketDTO].self, from: data).compactMap(\.model).filter { $0.project == id }
+            }
+        }
+        return ProjectDetail(project: project, phases: phases, requests: requests, tickets: tickets, updates: updates)
     }
+    private func projectSnapshot(path: String, type: String, projectId: String, scope: SessionIdentity) async throws -> Data? {
+        let cacheType = type + ":" + projectId
+        do {
+            let data = try await online(session.request(path: path, query: [URLQueryItem(name: "project", value: projectId)]), scope: scope)
+            let wrapper = try JSONSerialization.data(withJSONObject: ["_id": "snapshot", "data": data.base64EncodedString()])
+            try await store.put(type: cacheType, json: wrapper, scope: scope)
+            return data
+        } catch let error as VenioAPIError where error.code == "CONNECTION_REQUIRED" {
+            guard let cached = try await snapshot(type: cacheType, scope: scope),
+                  let encoded = try ServerCoding.object(cached)["data"] as? String else { return nil }
+            return Data(base64Encoded: encoded)
+        }
+    }
+
     public func quotes() async throws -> [QuoteProposal] {
         let scope = try await session.identity()
         guard !scope.user.permissions.isDisjoint(with: ["manage_quotes", "view_billing", "manage_billing"]) else { return [] }
@@ -152,7 +193,7 @@ public actor LiveVenioAPI: VenioAPI {
             guard calendar.isDateInToday(date) else { return [] }
             data = cached
         }
-        return try ServerCoding.decoder().decode(TodayDTO.self, from: data).meetings.items.map { try $0.model(userID: scope.user.id) }
+        return try ServerCoding.decoder().decode(TodayDTO.self, from: data).meetings.items.map { $0.model(userID: scope.user.id) }
     }
     private func saveSnapshot(type: String, data: Data, scope: SessionIdentity) async throws {
         var object = try ServerCoding.object(data)
@@ -184,18 +225,41 @@ public actor LiveVenioAPI: VenioAPI {
     }
     public func createLead(_ draft: LeadDraft) async throws -> Lead {
         let scope = try await session.identity()
-        let data = try await online(session.request(path: "/api/admin/crm/leads", method: "POST", body: ServerCoding.encoder().encode(draft)), scope: scope)
-        struct Response: Decodable { var lead: LeadDTO }
-        let lead = try ServerCoding.decoder().decode(Response.self, from: data).lead.model
-        if let raw = try ServerCoding.object(data)["lead"] { try? await store.put(type: "leads", json: JSONSerialization.data(withJSONObject: raw), scope: scope) }
+        guard scope.user.permissions.contains("manage_crm") else { throw VenioAPIError(code: "FORBIDDEN") }
+        let lead = try await store.enqueue(draft, scope: scope)
+        changed()
+        Task { try? await self.refresh() }
         return lead
     }
-    public func createQuote(templateId: String, projectId: String, title: String?) async throws -> QuoteProposal {
-        guard connected else { throw VenioAPIError(code: "CONNECTION_REQUIRED") }
+    public func monthlyTarget() async throws -> Decimal? {
         let scope = try await session.identity()
-        guard let project = try await projects().first(where: { $0.id == projectId }), project.allowsQuote(for: scope.user.summary) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
-        struct Body: Encodable { var templateId: String; var project: String; var title: String? }
-        return try await writeQuote(path: "/api/admin/quote-proposals/from-template", body: ServerCoding.encoder().encode(Body(templateId: templateId, project: projectId, title: title)), scope: scope)
+        struct Response: Decodable {
+            struct Target: Decodable { var month: String; var amount: Decimal }
+            var targets: [Target]
+        }
+        do {
+            let data = try await online(session.request(path: "/api/mobile/sales-targets"), scope: scope)
+            return try ServerCoding.decoder().decode(Response.self, from: data).targets.first?.amount
+        } catch let error as VenioAPIError where error.code == "CONNECTION_REQUIRED" { return nil }
+    }
+    public func createQuote(templateId: String, projectId: String? = nil, leadId: String? = nil, title: String?) async throws -> QuoteProposal {
+        guard (projectId != nil) != (leadId != nil) else { throw VenioAPIError(code: "INVALID_INPUT") }
+        let scope = try await session.identity()
+        if let projectId {
+            guard try await projects().contains(where: { $0.id == projectId && $0.canQuote }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        }
+        if let leadId {
+            guard try await leads().contains(where: { $0.id == leadId && $0.canQuote }) else { throw VenioAPIError(code: "LEAD_OUT_OF_SCOPE") }
+        }
+        struct Body: Encodable { var templateId: String; var project: String?; var leadId: String?; var title: String? }
+        return try await writeQuote(path: "/api/admin/quote-proposals/from-template",
+            body: ServerCoding.encoder().encode(Body(templateId: templateId, project: projectId, leadId: leadId, title: title)), scope: scope)
+    }
+    public func attachQuote(id: String, projectId: String) async throws -> QuoteProposal {
+        let scope = try await session.identity()
+        guard try await projects().contains(where: { $0.id == projectId && $0.canQuote }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        return try await writeQuote(path: "/api/admin/quote-proposals/" + id + "/attach-project",
+                                    body: JSONEncoder().encode(["project": projectId]), scope: scope)
     }
     public func sendQuote(id: String) async throws -> QuoteProposal {
         let scope = try await session.identity()

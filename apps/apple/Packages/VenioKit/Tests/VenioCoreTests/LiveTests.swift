@@ -107,35 +107,161 @@ private func rotated() throws -> Data { try ServerCoding.encoder().encode(tokens
 }
 
 @Test(arguments: [URLError.Code.timedOut, .cannotConnectToHost])
-func leadPatchRetriesOnlyWhenCertainlyNotSent(_ code: URLError.Code) async throws {
+func leadPatchRetriesWithSameKey(_ code: URLError.Code) async throws {
     let store = try database()
-    let transport = FakeTransport { _ in throw URLError(code) }
+    let keys = Mutex<[String?]>([])
+    let transport = FakeTransport { request in
+        keys.withLock { $0.append(request.value(forHTTPHeaderField: "Idempotency-Key")) }
+        throw URLError(code)
+    }
     let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
     let scope = try await auth.identity()
     try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    let original = try #require(try await store.writes(scope: scope).first)
     let outbox = Outbox(session: auth, store: store)
     try await outbox.drain()
-    let write = try #require(try await store.writes(scope: scope).first)
-    #expect(write.state == (code == .timedOut ? "failed" : "pending"))
-    if code == .timedOut { #expect(write.lastError == "UNCERTAIN_WRITE") }
+    #expect(try await store.writes(scope: scope).first?.state == "pending")
     try await outbox.drain()
     #expect(await transport.paths.count == 1)
+    try await Outbox(session: auth, store: store).drain()
+    #expect(keys.withLock { $0 } == [original.id.uuidString, original.id.uuidString])
 }
 
-@Test func interruptedLeadPatchIsNeverReplayed() async throws {
+@Test(arguments: [false, true]) @MainActor func interruptedLeadPatchReplaysWithSameKey(expired: Bool) async throws {
     let store = try database()
-    let transport = FakeTransport { _ in (200, json(#"{"lead":{"_id":"lead"}}"#)) }
+    let key = Mutex<String?>(nil)
+    let transport = FakeTransport { request in
+        key.withLock { $0 = request.value(forHTTPHeaderField: "Idempotency-Key") }
+        return (200, json(#"{"lead":{"_id":"lead"}}"#))
+    }
     let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
     let scope = try await auth.identity()
     try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
-    // L'app est tuée pendant l'envoi : l'écriture est restée « en vol ».
     let interrupted = try #require(try await store.writes(scope: scope).first)
     try await store.attempted(id: interrupted.id, scope: scope)
+    if expired {
+        let context = ModelContext(store.modelContainer)
+        let record = try #require(context.fetch(FetchDescriptor<PendingWrite>()).first)
+        record.firstAttemptAt = Date.now.addingTimeInterval(-23 * 60 * 60 - 1)
+        try context.save()
+    }
     try await Outbox(session: auth, store: store).drain()
-    let write = try #require(try await store.writes(scope: scope).first)
-    #expect(write.state == "failed")
-    #expect(write.lastError == "UNCERTAIN_WRITE")
-    #expect(await transport.paths.isEmpty)
+    if expired {
+        let write = try #require(try await store.writes(scope: scope).first)
+        #expect(write.state == "failed")
+        #expect(write.lastError == "UNCERTAIN_WRITE")
+        #expect(await transport.paths.isEmpty)
+    } else {
+        #expect(try await store.writes(scope: scope).isEmpty)
+        #expect(key.withLock { $0 } == interrupted.id.uuidString)
+        #expect(await transport.paths == ["/api/admin/crm/leads/lead"])
+    }
+}
+
+@Test func offlineLeadCreationRemapsQueuedReferences() async throws {
+    let store = try database()
+    let requests = Mutex<[URLRequest]>([])
+    let transport = FakeTransport { request in
+        requests.withLock { $0.append(request) }
+        switch request.url!.path {
+        case "/api/admin/crm/leads":
+            return (201, json(#"{"lead":{"_id":"confirmed-lead","company":"Atelier","assignedTo":"user"}}"#))
+        case "/api/mobile/interactions":
+            let body = try ServerCoding.object(request.httpBody!)
+            #expect(body["subjectId"] as? String == "confirmed-lead")
+            return (201, json(#"{"interaction":{"_id":"note","subjectType":"LEAD","subjectId":"confirmed-lead","kind":"NOTE","occurredAt":"2026-10-23T12:00:00.000Z"}}"#))
+        default:
+            #expect(request.url!.path == "/api/admin/crm/leads/confirmed-lead")
+            return (200, json(#"{"lead":{"_id":"confirmed-lead","company":"Atelier","assignedTo":"user","status":"CONTACTED"}}"#))
+        }
+    }
+    var writer = user
+    writer.permissions.insert("manage_crm")
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: writer, device: device)))
+    let api = LiveVenioAPI(session: auth, store: store)
+    await api.setConnected(false)
+    let lead = try await api.createLead(LeadDraft(company: "Atelier", contactName: "Camille", assignedTo: writer.id))
+    #expect(lead.id.hasPrefix("local-"))
+    #expect(lead.deliveryState == "pending")
+    let scope = try await auth.identity()
+    let creation = try #require(try await store.writes(scope: scope).first)
+    #expect(creation.type == "leadCreate")
+    let draft = InteractionDraft(idempotencyKey: UUID(), subjectType: .lead, subjectId: lead.id,
+                                 kind: .note, body: "Note hors ligne", direction: .none, occurredAt: .now)
+    _ = try await api.createInteraction(draft)
+    _ = try await api.updateLead(id: lead.id, patch: LeadPatch(status: .contacted))
+    #expect(try await api.leads().contains { $0.id == lead.id })
+    #expect(requests.withLock { $0.isEmpty })
+    let queued = try await store.writes(scope: scope)
+    try await api.outbox.drain()
+    #expect(requests.withLock { $0.map { $0.url!.path } } == ["/api/admin/crm/leads", "/api/mobile/interactions", "/api/admin/crm/leads/confirmed-lead"])
+    #expect(requests.withLock { $0.map { $0.value(forHTTPHeaderField: "Idempotency-Key") } } == queued.map { $0.id.uuidString })
+    #expect(try await store.writes(scope: scope).isEmpty)
+    #expect(try await api.leads().map(\.id) == ["confirmed-lead"])
+    #expect(try await api.lead(id: lead.id).id == "confirmed-lead")
+    #expect(try await api.timeline(leadId: lead.id).count == 1)
+    var later = draft
+    later.idempotencyKey = UUID()
+    _ = try await store.enqueue(later, scope: scope)
+    try await store.enqueue(leadId: lead.id, patch: LeadPatch(), scope: scope)
+    let dependent = try await store.writes(scope: scope)
+    #expect(try JSONDecoder().decode(InteractionDraft.self, from: dependent[0].payload).subjectId == "confirmed-lead")
+    #expect(try JSONDecoder().decode(LeadPatchWrite.self, from: dependent[1].payload).leadId == "confirmed-lead")
+}
+
+@Test(arguments: ["interaction", "leadCreate", "leadPatch"], [500, 409, 429])
+func keyedHTTPFailures(_ type: String, _ status: Int) async throws {
+    let store = try database()
+    let keys = Mutex<[String?]>([])
+    let code = status == 409 ? "IDEMPOTENCY_IN_PROGRESS" : "HTTP_\(status)"
+    let transport = FakeTransport { request in
+        keys.withLock { $0.append(request.value(forHTTPHeaderField: "Idempotency-Key")) }
+        return (status, try JSONEncoder().encode(["code": code]))
+    }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    switch type {
+    case "leadCreate": _ = try await store.enqueue(LeadDraft(company: "Atelier"), scope: scope)
+    case "leadPatch": try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    default:
+        _ = try await store.enqueue(InteractionDraft(idempotencyKey: UUID(), subjectType: .lead, subjectId: "lead", kind: .note,
+                                                   body: "Note", direction: .none, occurredAt: .now), scope: scope)
+    }
+    let original = try #require(try await store.writes(scope: scope).first)
+    try await Outbox(session: auth, store: store).drain()
+    let result = try #require(try await store.writes(scope: scope).first)
+    #expect(result.state == (status == 500 ? "failed" : "pending"))
+    #expect(result.lastError == code)
+    try await Outbox(session: auth, store: store).drain()
+    if status == 500 {
+        #expect(keys.withLock { $0.count } == 1)
+        try await store.retry(id: original.id, scope: scope)
+        let retried = try #require(try await store.writes(scope: scope).first)
+        #expect(retried.id != original.id)
+        try await Outbox(session: auth, store: store).drain()
+        #expect(keys.withLock { $0.last! } == retried.id.uuidString)
+    } else {
+        #expect(keys.withLock { $0 } == [original.id.uuidString, original.id.uuidString])
+    }
+}
+
+@Test func mobileMeetingAndLeadQuoteFixtures() throws {
+    let today = json(#"""
+    {"meetings":{"items":[{"id":"6718d8000000000000000001","source":"interaction","title":"Atelier Nova","startsAt":"2026-10-23T12:00:00.000Z","endsAt":"2026-10-23T13:00:00.000Z","lead":{"id":"6718d8000000000000000002","company":"Atelier Nova"},"projectId":null,"projectName":null},{"id":"task_6718d8000000000000000003","source":"task","title":"Livraison","startsAt":"2026-10-23T14:00:00.000Z","endsAt":null,"lead":null,"projectId":"6718d8000000000000000004","projectName":"Nova"}],"total":2}}
+    """#)
+    let meetings = try ServerCoding.decoder().decode(TodayDTO.self, from: today).meetings.items.map { $0.model(userID: "user") }
+    #expect(meetings[0].leadId == "6718d8000000000000000002")
+    #expect(meetings[0].startsAt == ServerCoding.date("2026-10-23T12:00:00.000Z"))
+    #expect(meetings[0].endsAt == ServerCoding.date("2026-10-23T13:00:00.000Z"))
+    #expect(meetings[1].leadId == nil)
+    #expect(meetings[1].projectId == "6718d8000000000000000004")
+    let quote = try ServerCoding.decoder().decode(QuoteDTO.self, from: json(#"""
+    {"_id":"6718d8000000000000000005","reference":"DV-2026-042","project":null,"client":null,"leadId":"6718d8000000000000000002","createdBy":"6718d8000000000000000006","title":"Site vitrine","status":"DRAFT","lines":[],"signature":{"signedAt":null},"firstViewedAt":null,"expiresAt":"2026-11-22T12:00:00.000Z","createdAt":"2026-10-23T12:00:00.000Z","updatedAt":"2026-10-23T12:00:00.000Z"}
+    """#)).model
+    #expect(quote.project == nil)
+    #expect(quote.client == nil)
+    #expect(quote.leadId == meetings[0].leadId)
+    #expect(quote.reference == "DV-2026-042")
 }
 
 @Test func leadPatchWaitsDuringRefreshRateLimit() async throws {

@@ -67,7 +67,8 @@ struct PendingWatchNote: Codable {
     func disconnected() {
         store?.onLeadOpened = nil
         store = nil; liveAPI = nil; lastLead = nil
-        if let session, session.activationState == .activated {
+        // Sans Watch appairée (cas le plus courant), il n'y a rien à effacer : pas d'erreur à afficher.
+        if let session, session.activationState == .activated, session.isPaired, session.isWatchAppInstalled {
             do { try session.updateApplicationContext(["backend": usesLiveBackend ? "live" : "mock"]) } catch { failed = true }
         }
     }

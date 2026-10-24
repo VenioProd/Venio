@@ -7,7 +7,8 @@
     },
     "sound": "default",
     "badge": 3,
-    "thread-id": "PHASE_VALIDATED"
+    "thread-id": "PHASE_VALIDATED",
+    "category": "VENIO_PROJECT"
   },
   "type": "PHASE_VALIDATED",
   "link": "/admin/projets/project-riviere?tab=phases",

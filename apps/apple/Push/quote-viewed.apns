@@ -8,7 +8,7 @@
     "sound": "default",
     "badge": 3,
     "thread-id": "QUOTE_PROPOSAL_VIEWED",
-    "category": "QUOTE_PROPOSAL_VIEWED"
+    "category": "VENIO_QUOTE"
   },
   "type": "QUOTE_PROPOSAL_VIEWED",
   "link": "/admin/projets/project-calder",

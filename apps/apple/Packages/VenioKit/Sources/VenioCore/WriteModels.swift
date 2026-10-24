@@ -33,11 +33,12 @@ public struct InteractionDraft: Codable, Sendable, Equatable {
     public var lang: String?
     public var direction: InteractionDirection
     public var occurredAt: Date
+    public var endsAt: Date?
     public var subject: String?
     public var audioFileURL: URL?
 
     public init(idempotencyKey: UUID, subjectType: InteractionSubject, subjectId: String, kind: Kind, body: String,
-                lang: String? = nil, direction: InteractionDirection, occurredAt: Date, subject: String? = nil, audioFileURL: URL? = nil) {
+                lang: String? = nil, direction: InteractionDirection, occurredAt: Date, subject: String? = nil, endsAt: Date? = nil, audioFileURL: URL? = nil) {
         self.idempotencyKey = idempotencyKey
         self.subjectType = subjectType
         self.subjectId = subjectId
@@ -46,6 +47,7 @@ public struct InteractionDraft: Codable, Sendable, Equatable {
         self.lang = lang
         self.direction = direction
         self.occurredAt = occurredAt
+        self.endsAt = endsAt
         self.subject = subject
         self.audioFileURL = audioFileURL
     }

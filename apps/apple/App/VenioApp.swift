@@ -42,7 +42,7 @@ import AppKit
             if configuration.backend == .mock {
                 let mock = MockVenioAPI()
                 mockAPI = mock
-                _mockStore = State(initialValue: CommercialStore(api: mock, monthlyTarget: mock.monthlyTarget()))
+                _mockStore = State(initialValue: CommercialStore(api: mock))
                 _session = State(initialValue: nil)
             } else {
                 let container = try ModelContainer(for: SyncedRecord.self, SyncCursor.self, PendingWrite.self,

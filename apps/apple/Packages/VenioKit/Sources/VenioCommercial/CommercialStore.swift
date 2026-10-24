@@ -7,7 +7,7 @@ import VenioCore
     public private(set) var timeline: [String: [TimelineEntry]] = [:]
     public private(set) var quotes: [QuoteProposal] = []
     public private(set) var templates: [QuoteTemplate] = []
-    public let monthlyTarget: Decimal?
+    public private(set) var monthlyTarget: Decimal?
     public private(set) var appointments: [Appointment] = []
     public private(set) var projects: [Project] = []
     public private(set) var projectDetails: [String: ProjectDetail] = [:]
@@ -26,11 +26,11 @@ import VenioCore
     private var pendingCall: CallAttempt?
     #endif
     private let api: any VenioAPI
+    private var leadAliases: [String: String] = [:]
 
-    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), monthlyTarget: Decimal? = nil) {
+    public init(api: any VenioAPI, clock: DemoClock = DemoClock()) {
         self.api = api
         self.clock = clock
-        self.monthlyTarget = monthlyTarget
     }
 
     public var visibleLeads: [Lead] {
@@ -75,10 +75,14 @@ import VenioCore
             for project in newProjects { details[project.id] = try await api.project(id: project.id) }
             try Task.checkCancellation()
             currentUser = user
+            for local in leads where local.id.hasPrefix("local-") && !newLeads.contains(where: { $0.id == local.id }) {
+                if let confirmed = try? await api.lead(id: local.id) { leadAliases[local.id] = confirmed.id }
+            }
             leads = newLeads
             quotes = newQuotes
             appointments = newAppointments
             projects = newProjects
+            monthlyTarget = try await api.monthlyTarget()
             templates = canQuote ? try await api.quoteTemplates() : []
             timeline = newTimeline
             projectDetails = details
@@ -98,20 +102,18 @@ import VenioCore
         SalesFigures(leads: leads, quotes: quotes, userId: currentUser?.id ?? "", now: clock.now,
                      calendar: clock.calendar, monthlyTarget: monthlyTarget)
     }
-    func canQuote(_ project: Project) -> Bool {
-        guard let currentUser else { return false }
-        return canManageQuotes && project.allowsQuote(for: currentUser)
-    }
-    func linkedProject(for lead: Lead) -> Project? {
-        guard let client = lead.clientAccountId else { return nil }
-        let matches = projects.filter { $0.client == client && canQuote($0) }
-        return matches.count == 1 ? matches.first : nil
-    }
-    func createQuote(templateId: String, projectId: String) async throws -> QuoteProposal {
-        let quote = try await api.createQuote(templateId: templateId, projectId: projectId, title: nil)
+    func canQuote(_ project: Project) -> Bool { project.canQuote }
+    func lead(for id: String) -> Lead? { leads.first { $0.id == (leadAliases[id] ?? id) } }
+    func createQuote(templateId: String, projectId: String? = nil, leadId: String? = nil) async throws -> QuoteProposal {
+        let quote = try await api.createQuote(templateId: templateId, projectId: projectId, leadId: leadId, title: nil)
         quotes.removeAll { $0.id == quote.id }
         quotes.insert(quote, at: 0)
         return quote
+    }
+    func attachQuote(id: String, projectId: String) async throws {
+        let quote = try await api.attachQuote(id: id, projectId: projectId)
+        quotes.removeAll { $0.id == quote.id }
+        quotes.insert(quote, at: 0)
     }
     func sendQuote(id: String) async throws {
         let quote = try await api.sendQuote(id: id)
@@ -135,8 +137,9 @@ import VenioCore
     func openLead(id: String) async {
         do {
             let lead = try await api.lead(id: id)
+            if lead.id != id { leadAliases[id] = lead.id }
             replaceLead(lead)
-            timeline[id] = try await api.timeline(leadId: id)
+            timeline[lead.id] = try await api.timeline(leadId: id)
             onLeadOpened?(lead)
         } catch { routeFailed = true }
     }

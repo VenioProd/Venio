@@ -37,7 +37,7 @@ final class QuoteNotificationController: WKUserNotificationHostingController<Quo
                 case .projectQuotes(let id): matching = quotes.filter { $0.project == id }
                 default: matching = []
                 }
-                let clients = Set(matching.map(\.client))
+                let clients = Set(matching.compactMap(\.client))
                 let leads = try await api.leads().filter { clients.contains($0.clientAccountId ?? "") || clients.contains($0.company) }
                 if leads.count == 1 { content.phoneURL = leads.first?.phoneURL }
             } catch { content.phoneURL = nil }

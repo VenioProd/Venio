@@ -26,7 +26,10 @@ struct NewLeadView: View {
         NavigationStack {
             CommercialPage {
                 Picker(CommercialStrings.text("Saisie rapide", locale: locale), selection: $tab) {
-                    ForEach(tabs, id: \.self) { item in VText(item).tag(item) }
+                    ForEach(tabs, id: \.self) { item in
+                        if item == "Saisie" { VText(item).tag(item).accessibilityIdentifier("newLead.manualTab") }
+                        else { VText(item).tag(item) }
+                    }
                 }.pickerStyle(.segmented)
                 #if os(iOS)
                 if tab == "Carte" {
@@ -42,8 +45,8 @@ struct NewLeadView: View {
                 }
                 #endif
                 if tab == "Voix" { VoiceCaptureView(capture: capture) }
-                field("Entreprise", text: $draft.company)
-                field("Contact", text: $draft.contactName)
+                field("Entreprise", text: $draft.company).accessibilityIdentifier("newLead.company")
+                field("Contact", text: $draft.contactName).accessibilityIdentifier("newLead.contact")
                 field("E-mail", text: $draft.contactEmail)
                 field("Téléphone", text: $draft.contactPhone)
                 field("Fonction", text: $jobTitle)
@@ -57,7 +60,7 @@ struct NewLeadView: View {
                 if let errorKey { MobileErrorView(key: errorKey) }
                 Button { save() } label: {
                     if busy { ProgressView() } else { VText("Créer le lead") }
-                }.venioPrimaryButton()
+                }.venioPrimaryButton().accessibilityIdentifier("newLead.create")
                     .disabled(busy || capture.preparing || capture.transcribing || capture.startedAt != nil || draft.company.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .disabled(busy)
