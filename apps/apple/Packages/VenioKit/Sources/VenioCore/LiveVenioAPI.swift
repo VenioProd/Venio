@@ -163,7 +163,9 @@ public actor LiveVenioAPI: VenioAPI {
     private func snapshot(type: String, scope: SessionIdentity) async throws -> Data? { try await store.records(type: type, scope: scope).first }
 
     public func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry {
-        let scope = try await session.identity()
+        try await createInteraction(draft, scope: session.identity())
+    }
+    public func createInteraction(_ draft: InteractionDraft, scope: SessionIdentity) async throws -> TimelineEntry {
         guard scope.user.permissions.contains("manage_crm") else { throw VenioAPIError(code: "FORBIDDEN") }
         _ = try await store.enqueue(draft, scope: scope)
         changed()

@@ -106,6 +106,8 @@ import AppKit
                         #endif
                     }
                     #if os(iOS)
+                    session?.additionalPendingCount = { watch.pendingNotes.count }
+                    session?.discardAdditionalPending = { watch.discardPendingNotes() }
                     watch.usesLiveBackend = session != nil
                     watch.activate()
                     #endif
@@ -114,10 +116,14 @@ import AppKit
                 .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
                     watch.usesLiveBackend = session != nil
                     watch.store = currentStore
+                    watch.liveAPI = session?.api
                     currentStore?.onLeadOpened = { lead in watch.publish(lead) }
                     watch.publishSnapshot()
                 }
                 .onChange(of: currentStore?.leads.map { $0.id + String($0.updatedAt.timeIntervalSince1970) }) { _, _ in watch.publishSnapshot() }
+                .onChange(of: currentStore?.currentUser?.id, initial: true) { _, _ in
+                    Task { await watch.retryPendingNotes() }
+                }
                 .overlay(alignment: .top) {
                     VStack {
                         if watch.failed { Text("Transmission Watch impossible", bundle: .main).padding().venioCard() }

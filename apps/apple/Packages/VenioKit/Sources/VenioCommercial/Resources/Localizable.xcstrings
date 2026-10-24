@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    "Résultat incertain : vérifiez la fiche avant de réessayer": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résultat incertain : vérifiez la fiche avant de réessayer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncertain result: check the record before trying again"
+          }
+        }
+      }
+    },
     "pond. %@": {
       "extractionState": "manual",
       "localizations": {
@@ -4816,15 +4833,39 @@
       "extractionState": "manual",
       "localizations": {
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hors ligne · %lld modifications en attente"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Hors ligne · %lld modification en attente"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Hors ligne · %lld modifications en attente"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Offline · %lld changes pending"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Offline · %lld change pending"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Offline · %lld changes pending"
+                }
+              }
+            }
           }
         }
       }
@@ -4833,15 +4874,39 @@
       "extractionState": "manual",
       "localizations": {
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld modifications en attente"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld modification en attente"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld modifications en attente"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld changes pending"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld change pending"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld changes pending"
+                }
+              }
+            }
           }
         }
       }

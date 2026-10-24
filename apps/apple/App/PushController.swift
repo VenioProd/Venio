@@ -95,7 +95,10 @@ import AppKit
         connectionID = UUID()
         api = nil; store = nil; pendingLink = nil; pendingType = ""
         needsAuthorization = false; attemptedRegistration = false; failed = false
-        Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
+        let center = UNUserNotificationCenter.current()
+        center.removeAllDeliveredNotifications()
+        center.removeAllPendingNotificationRequests()
+        Task { try? await center.setBadgeCount(0) }
     }
     func registrationFailed() { failed = true }
 
@@ -107,15 +110,27 @@ import AppKit
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
         willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        if let badge = notification.request.content.badge?.intValue { await updateBadge(badge) }
-        return [.banner, .sound, .badge]
+        await presentationOptions(badge: notification.request.content.badge?.intValue)
     }
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse) async {
         let content = response.notification.request.content
         let type = content.userInfo["type"] as? String ?? ""
         let link = content.userInfo["link"] as? String
-        if let badge = content.badge?.intValue { await updateBadge(badge) }
+        await receive(type: type, link: link, badge: content.badge?.intValue)
+    }
+    private func presentationOptions(badge: Int?) async -> UNNotificationPresentationOptions {
+        guard api != nil else { return [] }
+        let expected = connectionID
+        if let badge { await updateBadge(badge) }
+        guard api != nil, connectionID == expected else { return [] }
+        return [.banner, .sound, .badge]
+    }
+    private func receive(type: String, link: String?, badge: Int?) async {
+        guard api != nil else { return }
+        let expected = connectionID
+        if let badge { await updateBadge(badge) }
+        guard api != nil, connectionID == expected else { return }
         await open(type: type, link: link)
     }
     private func updateBadge(_ badge: Int) async {

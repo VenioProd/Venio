@@ -86,7 +86,8 @@ public struct LeadDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Button { showingVoice = true } label: {
                     Label { VText("Note vocale") } icon: { Image(systemName: "mic.fill") }
-                }.disabled(store.currentUser?.permissions.contains("manage_crm") != true || lead.assignedTo != store.currentUser?.id)
+                        .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                }.accessibilityIdentifier("lead.voiceNote").disabled(store.currentUser?.permissions.contains("manage_crm") != true || lead.assignedTo != store.currentUser?.id)
             }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
             if !lead.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {

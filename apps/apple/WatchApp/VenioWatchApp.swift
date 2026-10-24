@@ -36,7 +36,9 @@ import VenioCommercial
                     if bridge.liveBackend ?? defaultLive { WatchLiveFollowUps(bridge: bridge) }
                     else { FollowUpsView(api: demo, clock: clock) }
                 }
-                .safeAreaInset(edge: .bottom) { WatchFieldTools(bridge: bridge) }
+                .safeAreaInset(edge: .bottom) {
+                    if bridge.leadID != nil || bridge.failed { WatchFieldTools(bridge: bridge) }
+                }
                 .task { bridge.activate() }
             }
         }

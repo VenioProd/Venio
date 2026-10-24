@@ -12,6 +12,7 @@ public actor AuthSession {
     private var loggingOut = false
     private var authenticating = false
     private var refreshTask: (id: UUID, task: Task<Void, any Error>)?
+    private var refreshAllowedAt = Date.distantPast
     private var observers: [UUID: AsyncStream<SessionState>.Continuation] = [:]
     public private(set) var state: SessionState = .signedOut
 
@@ -26,6 +27,10 @@ public actor AuthSession {
         info.installationId = try tokenStore.installationID()
         self.deviceInfo = info
         stored = try tokenStore.load()
+        if stored?.rotationPending == true {
+            stored = nil
+            try tokenStore.clear()
+        }
     }
 
     public func states() -> AsyncStream<SessionState> {
@@ -143,6 +148,7 @@ public actor AuthSession {
     }
     private func refresh() async throws {
         if let refreshTask { return try await refreshTask.task.value }
+        guard Date.now >= refreshAllowedAt else { throw VenioAPIError(code: "RATE_LIMITED") }
         let scope = try identity()
         guard let token = stored?.tokens.refreshToken else { throw VenioAPIError(code: "SIGNED_OUT") }
         let id = UUID()
@@ -153,23 +159,45 @@ public actor AuthSession {
     }
     private func rotate(_ token: String, scope: SessionIdentity) async throws {
         let request = try request(path: "/api/auth/mobile/refresh", method: "POST", body: JSONEncoder().encode(["refreshToken": token]))
-        let (data, response) = try await transport.send(request)
+        try await setRotationPending(true)
+        let data: Data
+        let response: HTTPURLResponse
+        do { (data, response) = try await transport.send(request) }
+        catch {
+            try check(scope)
+            if requestCertainlyNotSent(error) { try await setRotationPending(false) }
+            else { try await disconnect(discardWrites: false) }
+            throw error
+        }
         try check(scope)
         if response.statusCode == 401 {
             try await disconnect(discardWrites: false)
             throw VenioAPIError(code: "SIGNED_OUT")
         }
-        try HTTPFailure.check(data, response)
+        if response.statusCode == 400 || response.statusCode == 429 {
+            let failure = HTTPFailure(data: data, response: response)
+            if response.statusCode == 429 { refreshAllowedAt = .now.addingTimeInterval(max(0, failure.retryAfter ?? 60)) }
+            try await setRotationPending(false)
+            throw failure
+        }
         do {
+            guard response.statusCode == 200 else { throw HTTPFailure(data: data, response: response) }
             let pair = try ServerCoding.decoder().decode(TokenPair.self, from: data)
             guard var updated = stored else { throw VenioAPIError(code: "SIGNED_OUT") }
             updated.tokens = pair
+            updated.rotationPending = false
             try tokenStore.save(updated)
             stored = updated
         } catch {
             try await disconnect(discardWrites: false)
             throw error
         }
+    }
+    private func setRotationPending(_ value: Bool) async throws {
+        guard var updated = stored else { throw VenioAPIError(code: "SIGNED_OUT") }
+        updated.rotationPending = value
+        do { try tokenStore.save(updated); stored = updated }
+        catch { try await disconnect(discardWrites: false); throw error }
     }
 
     public func devices() async throws -> [Device] {
@@ -204,6 +232,7 @@ public actor AuthSession {
         generation = UUID()
         stored = nil
         ready = false
+        refreshAllowedAt = .distantPast
         loggingOut = false
         refreshTask?.task.cancel()
         refreshTask = nil

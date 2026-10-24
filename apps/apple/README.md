@@ -14,17 +14,29 @@ cd Packages/VenioKit
 swift test --disable-sandbox --cache-path .build/swiftpm-cache
 ```
 
-Depuis `apps/apple/`, `xcodegen generate` prépare les schémas `Venio` et `VenioWatch`. La compilation/signature iOS, macOS et Watch ainsi que la recette contre un backend local restent à effectuer dans Xcode.
+Depuis `apps/apple/`, `xcodegen generate` prépare les schémas `Venio`, `VenioWatch` et `VenioE2E`. Pour le push simulé, builder le simulateur avec `CODE_SIGN_IDENTITY=-` (signature locale, qui embarque l'entitlement `aps-environment`).
+
+### Parcours de bout en bout (`VenioE2E`)
+
+Contre un backend local (jamais la prod) sur `http://127.0.0.1:5099`, avec un compte commercial de test. Trois étapes lancées séparément, le serveur étant coupé entre la 1 et la 2 puis relancé avant la 3 :
+
+```sh
+xcodebuild -scheme VenioE2E -destination 'id=<UUID-iPhone>' CODE_SIGN_IDENTITY=- build-for-testing
+TEST_RUNNER_VENIO_E2E_PASSWORD=… xcodebuild -scheme VenioE2E -destination 'id=<UUID-iPhone>' test-without-building -only-testing:VenioUITests/LiveJourneyTests/test1_loginSyncAndOnlineNote
+# couper le backend, puis test2_offlineNoteIsQueued ; le relancer, puis test3_queueDrainsWhenBackOnline
+```
+
+`TEST_RUNNER_VENIO_E2E_EMAIL` (défaut `lea@venio.test`) et `TEST_RUNNER_VENIO_E2E_BASE_URL` sont facultatifs.
 
 ## Session et données
 
 `VenioCore` contient le transport injectable, la session et le magasin SwiftData. Le couple access/refresh et les informations de session occupent une seule entrée Keychain, après premier déverrouillage, liée à cet appareil et sans iCloud. L’identifiant d’installation est séparé et survit à la déconnexion. Le Keychain et le magasin sont séparés par origine ; le magasin efface les données de l’ancien compte avant d’activer un autre utilisateur, et refuse ce changement tant que l’ancien compte a des écritures non envoyées.
 
-Un 401 rejoint une rotation unique, puis un rejeu unique. Le couple est sauvegardé avant sa publication ; un refus de rotation ou un second 401 déconnecte. Une panne réseau de rotation conserve les jetons et remonte l’erreur. L’identité de session accompagne les opérations pour refuser les réponses tardives après déconnexion. Pas de refresh proactif.
+Un 401 rejoint une rotation unique, puis un rejeu unique. Le couple est sauvegardé avant sa publication ; un refus de rotation ou un second 401 déconnecte. Le serveur consomme le refresh avant de répondre : la session est marquée « rotation en cours » dans le Keychain avant l'envoi, et une issue ambiguë (5xx, délai dépassé, connexion perdue, app tuée) impose une reconnexion au lieu de représenter ce refresh, ce qui révoquerait l'appareil. Seule une erreur où la requête n'est certainement pas partie (hors ligne, hôte injoignable) conserve la session. L’identité de session accompagne les opérations pour refuser les réponses tardives après déconnexion. Pas de refresh proactif.
 
 La synchro pagine selon les permissions ; chaque page et son curseur sont sauvegardés ensemble. Les suppressions de projets emportent étapes et mises à jour. Un curseur périmé remet données et curseurs à zéro, en conservant les écritures non envoyées. Déclenchement à la connexion/reprise, au premier plan, au rafraîchissement et après vidage de la file.
 
-Interactions et patchs de leads entrent d’abord dans une file persistante. Les lectures superposent les brouillons aux données confirmées. Rejeu FIFO, clé d’idempotence stable, copie durable des audios, arrêt et délai croissant sur réseau/5xx/429. Les refus définitifs restent visibles avec Réessayer/Supprimer. Création de lead, devis, envoi de devis et APNs restent en ligne, sans rejeu automatique sur erreur réseau. La déconnexion explicite avertit du nombre d’écritures perdues puis vide données, curseurs et file ; une expiration de session conserve la file pour une reconnexion au même compte.
+Interactions et patchs de leads entrent d’abord dans une file persistante. Les lectures superposent les brouillons aux données confirmées. Rejeu FIFO, clé d’idempotence stable, copie durable des audios, arrêt et délai croissant sur réseau/5xx/429. Le PATCH de lead n'étant pas idempotent côté serveur, une issue ambiguë le passe en « Résultat incertain » sans rejeu automatique. Les refus définitifs restent visibles avec Réessayer/Supprimer. Création de lead, devis, envoi de devis et APNs restent en ligne, sans rejeu automatique sur erreur réseau. La déconnexion explicite avertit du nombre d’écritures perdues puis vide données, curseurs et file ; une expiration de session conserve la file pour une reconnexion au même compte.
 
 `VenioCommercial` expose la session par observation, la connexion en deux étapes, les appareils, la déconnexion et les états de file. Rôle pour l’espace, permissions pour les actions ; aucun objectif commercial en live. FR/EN dans les catalogues, couleurs issues de `VenioTheme`. Les préférences serveur sont appliquées au démarrage ; un changement local non envoyé est conservé par compte pour le prochain lancement, transmis avant la relecture serveur. `autoTranslate` reste local.
 

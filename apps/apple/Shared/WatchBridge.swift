@@ -15,6 +15,13 @@ struct WatchFollowUp: Codable, Identifiable {
     var date: Date
 }
 
+#if os(iOS)
+struct PendingWatchNote: Codable {
+    var ownerID: String
+    var draft: InteractionDraft
+}
+#endif
+
 @Observable @MainActor final class WatchBridge: NSObject, WCSessionDelegate {
     private(set) var liveBackend: Bool?
     private(set) var followUps: [WatchFollowUp] = []
@@ -24,9 +31,10 @@ struct WatchFollowUp: Codable, Identifiable {
     private(set) var failed = false
     #if os(iOS)
     var store: CommercialStore?
+    var liveAPI: LiveVenioAPI?
     var usesLiveBackend = false
     private var lastLead: Lead?
-    private(set) var pendingNotes: [InteractionDraft] = []
+    private(set) var pendingNotes: [PendingWatchNote] = []
     private(set) var retrying = false
     private let pendingNotesKey = "VenioWatchPendingNotes"
     #endif
@@ -37,7 +45,13 @@ struct WatchFollowUp: Codable, Identifiable {
         super.init()
         #if os(iOS)
         if let data = UserDefaults.standard.data(forKey: pendingNotesKey) {
-            do { pendingNotes = try JSONDecoder().decode([InteractionDraft].self, from: data) }
+            do {
+                if let saved = try? JSONDecoder().decode([PendingWatchNote].self, from: data) { pendingNotes = saved }
+                else {
+                    // Sans propriétaire fiable, ces notes ne peuvent pas être envoyées.
+                    pendingNotes = try JSONDecoder().decode([InteractionDraft].self, from: data).map { PendingWatchNote(ownerID: "", draft: $0) }
+                }
+            }
             catch { failed = true }
         }
         #endif
@@ -52,12 +66,14 @@ struct WatchFollowUp: Codable, Identifiable {
     #if os(iOS)
     func disconnected() {
         store?.onLeadOpened = nil
-        store = nil; lastLead = nil
-        pendingNotes = []
-        UserDefaults.standard.removeObject(forKey: pendingNotesKey)
+        store = nil; liveAPI = nil; lastLead = nil
         if let session, session.activationState == .activated {
             do { try session.updateApplicationContext(["backend": usesLiveBackend ? "live" : "mock"]) } catch { failed = true }
         }
+    }
+    func discardPendingNotes() {
+        pendingNotes = []
+        UserDefaults.standard.removeObject(forKey: pendingNotesKey)
     }
     func publish(_ lead: Lead) {
         lastLead = lead
@@ -88,17 +104,22 @@ struct WatchFollowUp: Codable, Identifiable {
         guard !retrying else { return }
         retrying = true
         defer { retrying = false }
-        for draft in pendingNotes { await deliver(draft) }
+        for note in pendingNotes { await deliver(note) }
     }
     private func savePendingNotes() {
         do { UserDefaults.standard.set(try JSONEncoder().encode(pendingNotes), forKey: pendingNotesKey) }
         catch { failed = true }
     }
-    private func deliver(_ draft: InteractionDraft) async {
-        guard let store else { failed = true; return }
+    private func deliver(_ note: PendingWatchNote) async {
+        guard let store, store.currentUser?.id == note.ownerID else { return }
         do {
-            try await store.createInteraction(draft)
-            pendingNotes.removeAll { $0.idempotencyKey == draft.idempotencyKey }
+            if usesLiveBackend {
+                guard let liveAPI else { return }
+                let scope = try await liveAPI.session.identity()
+                guard scope.user.id == note.ownerID else { return }
+                _ = try await liveAPI.createInteraction(note.draft, scope: scope)
+            } else { try await store.createInteraction(note.draft) }
+            pendingNotes.removeAll { $0.draft.idempotencyKey == note.draft.idempotencyKey }
             savePendingNotes()
             failed = !pendingNotes.isEmpty
         } catch { failed = true }
@@ -157,14 +178,14 @@ struct WatchFollowUp: Codable, Identifiable {
               let key = (userInfo["idempotencyKey"] as? String).flatMap(UUID.init(uuidString:)),
               let timestamp = userInfo["occurredAt"] as? Double, let owner = userInfo["ownerID"] as? String else { return }
         Task { @MainActor in
-            guard self.store?.currentUser?.id == owner else { return }
-            guard !self.pendingNotes.contains(where: { $0.idempotencyKey == key }) else { return }
+            guard !self.pendingNotes.contains(where: { $0.draft.idempotencyKey == key }) else { return }
             let draft = InteractionDraft(idempotencyKey: key, subjectType: .lead, subjectId: id,
                 kind: .note, body: text, lang: ContentLanguage.detect(text), direction: .none,
                 occurredAt: Date(timeIntervalSince1970: timestamp))
-            self.pendingNotes.append(draft)
+            let note = PendingWatchNote(ownerID: owner, draft: draft)
+            self.pendingNotes.append(note)
             self.savePendingNotes()
-            await self.deliver(draft)
+            await self.deliver(note)
         }
     }
     #endif

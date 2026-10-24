@@ -64,9 +64,16 @@ public struct CommercialSpace: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        #if os(iOS)
+        // La maquette iPad garde la barre d'onglets en haut, même en paysage, pour laisser toute la largeur au kanban.
+        .defaultAdaptableTabBarPlacement(.tabBar)
+        #endif
         .quickEntry(isEnabled: store.currentUser?.permissions.contains("manage_crm") == true) {
-            Button { showingNewLead = true } label: {
-                Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
+            HStack {
+                OutboxStatusView()
+                Button { showingNewLead = true } label: {
+                    Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
+                }.frame(maxWidth: .infinity)
             }
         }
         .sheet(isPresented: $showingNewLead) {

@@ -77,7 +77,24 @@ targets:
         product: VenioTheme
       - package: VenioKit
         product: VenioCommercial
+  VenioUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: Venio
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.uitests
+        TEST_TARGET_NAME: Venio
 schemes:
+  VenioE2E:
+    build:
+      targets:
+        Venio: all
+        VenioUITests: [test]
+    test:
+      targets: [VenioUITests]
   Venio:
     build:
       targets:

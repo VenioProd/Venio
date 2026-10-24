@@ -15,6 +15,9 @@ import VenioTheme
     public private(set) var refreshing = false
     public var errorKey: String?
     public var onDisconnect: (@MainActor () -> Void)?
+    public var additionalPendingCount: (@MainActor () -> Int)?
+    public var discardAdditionalPending: (@MainActor () -> Void)?
+    public var pendingModificationCount: Int { pending.count + (additionalPendingCount?() ?? 0) }
     private let themes: ThemeManager
     private let monitor = NWPathMonitor()
     private var observation: Task<Void, Never>?
@@ -118,6 +121,7 @@ import VenioTheme
         await reloadPending()
     }
     public func logout() async {
+        discardAdditionalPending?()
         do { try await api.session.logout() }
         catch { errorKey = mobileErrorKey(error) }
     }
@@ -178,6 +182,7 @@ public func mobileErrorKey(_ error: any Error) -> String {
         if error.status == 429 { return "Trop de tentatives. Réessayez plus tard." }
     }
     if let error = error as? VenioAPIError {
+        if error.code == "RATE_LIMITED" { return "Trop de tentatives. Réessayez plus tard." }
         if error.code == "PENDING_WRITES_OTHER_ACCOUNT" { return "Reconnectez-vous au compte précédent pour envoyer ou supprimer ses modifications en attente." }
         if error.code == "CONNECTION_REQUIRED" { return "Connexion requise" }
         if error.code == "SIGNED_OUT" { return "Veuillez vous reconnecter" }

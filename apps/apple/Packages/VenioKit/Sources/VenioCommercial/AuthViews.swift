@@ -26,7 +26,6 @@ public struct SessionRootView: View {
             if session.starting { ProgressView { VText("Chargement") } }
             else if let store = session.commercial {
                 RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID)
-                    .safeAreaInset(edge: .bottom) { OutboxStatusView() }
                     .refreshable { await session.refresh() }
             } else { LoginView(session: session) }
         }
@@ -112,7 +111,7 @@ private struct LoginView: View {
     }
 }
 
-private struct OutboxStatusView: View {
+struct OutboxStatusView: View {
     @Environment(\.venioSession) private var session
     @Environment(\.locale) private var locale
     @State private var showing = false
@@ -148,6 +147,7 @@ struct OutboxView: View {
                     VText(write.state == "failed" ? "Échec de l’envoi" : "En attente")
                     if write.state == "failed" {
                         if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
+                        else if write.lastError == "UNCERTAIN_WRITE" { VText("Résultat incertain : vérifiez la fiche avant de réessayer").font(.caption) }
                         else { VText("Le serveur a refusé cette modification.").font(.caption) }
                         HStack {
                             Button { perform { await session.retry(write.id) } } label: { VText("Réessayer") }
@@ -200,11 +200,15 @@ struct DevicesView: View {
         .confirmationDialog(CommercialStrings.text("Révoquer cet appareil ?", locale: locale), isPresented: Binding(get: { currentToRevoke != nil }, set: { if !$0 { currentToRevoke = nil } }), titleVisibility: .visible) {
             Button(role: .destructive) { if let device = currentToRevoke { revoke(device); currentToRevoke = nil } } label: { VText("Se déconnecter") }
         } message: {
-            Text(verbatim: CommercialStrings.format("%lld modifications non envoyées seront perdues", locale: locale, session.pending.count))
+            Text(verbatim: CommercialStrings.format("%lld modifications non envoyées seront perdues", locale: locale, session.pendingModificationCount))
         }
     }
     private func revoke(_ device: Device) {
-        perform { try await session.api.session.revokeDevice(id: device.id); if !device.current { devices = try await session.api.session.devices() } }
+        perform {
+            try await session.api.session.revokeDevice(id: device.id)
+            if device.current { session.discardAdditionalPending?() }
+            else { devices = try await session.api.session.devices() }
+        }
     }
     private func perform(_ action: @escaping @MainActor () async throws -> Void) {
         busy = true; errorKey = nil

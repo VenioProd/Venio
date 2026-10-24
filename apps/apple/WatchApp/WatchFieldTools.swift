@@ -4,6 +4,7 @@ import VenioTheme
 
 struct WatchFieldTools: View {
     @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
     @Bindable var bridge: WatchBridge
     @State private var showingNote = false
     @State private var text = ""
@@ -25,9 +26,12 @@ struct WatchFieldTools: View {
                 } label: { Text(verbatim: localized("Note pour %@", bridge.company)) }
                 .venioPrimaryButton()
                 if queued { Text(verbatim: localized("Note en attente de transmission à l’iPhone")) }
-            } else { Text(verbatim: localized("Ouvrez un lead sur l’iPhone pour dicter une note.")) }
+            }
             if failed || bridge.failed { Text(verbatim: localized("Transmission Watch impossible")) }
-        }.font(.caption).padding(6)
+        }.font(.caption)
+        .padding(6)
+        .frame(maxWidth: .infinity)
+        .background(palette.base.color)
         .sheet(isPresented: $showingNote) {
             VStack {
                 Text(verbatim: noteCompany).font(.headline)

@@ -55,6 +55,19 @@ public struct StoredSession: Codable, Sendable {
     public var tokens: TokenPair
     public var user: MobileUser
     public var device: Device
+    public var rotationPending: Bool
+
+    public init(tokens: TokenPair, user: MobileUser, device: Device, rotationPending: Bool = false) {
+        self.tokens = tokens; self.user = user; self.device = device; self.rotationPending = rotationPending
+    }
+    private enum CodingKeys: String, CodingKey { case tokens, user, device, rotationPending }
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        tokens = try values.decode(TokenPair.self, forKey: .tokens)
+        user = try values.decode(MobileUser.self, forKey: .user)
+        device = try values.decode(Device.self, forKey: .device)
+        rotationPending = try values.decodeIfPresent(Bool.self, forKey: .rotationPending) ?? false
+    }
 }
 
 public enum LoginOutcome: Sendable { case requiresSecondFactor, signedIn(MobileUser, Device) }
@@ -81,6 +94,7 @@ public struct HTTPFailure: Error, Sendable {
         status = response.statusCode
         code = (try? JSONDecoder().decode(ErrorBody.self, from: data).code) ?? "HTTP_\(status)"
         retryAfter = response.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init)
+            ?? response.value(forHTTPHeaderField: "RateLimit-Reset").flatMap(Double.init)
     }
     private struct ErrorBody: Decodable { var code: String? }
 }

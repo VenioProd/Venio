@@ -45,7 +45,7 @@ public struct TodayView: View {
                     agendaSection("Relances du jour", leads: store.agenda.followUps, icon: "clock") { lead in
                         CommercialStrings.text("Relance", locale: locale) + " · " + lead.contactName
                     } badge: { lead in lead.nextActionAt.map(formats.time) ?? "" }
-                    VStack(alignment: .leading, spacing: 10) {
+                    if !meetings.isEmpty { VStack(alignment: .leading, spacing: 10) {
                         SectionHeading(title: "RDV du jour", count: meetings.count)
                         VStack(spacing: 0) {
                             ForEach(meetings) { appointment in
@@ -61,19 +61,25 @@ public struct TodayView: View {
                                 }
                             }
                         }.venioCard()
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
+                    } }
+                    if !store.agenda.viewedQuotes.isEmpty { VStack(alignment: .leading, spacing: 10) {
                         SectionHeading(title: "Devis vu, pas signé", count: store.agenda.viewedQuotes.count)
                         VStack(spacing: 0) {
                             ForEach(store.agenda.viewedQuotes) { quote in
                                 if let lead = store.leads.first(where: { $0.company == quote.client }) {
                                     leadButton(lead, subtitle: (quote.reference ?? quote.title) + " · " + (quote.firstViewedAt.map(formats.timestamp) ?? ""),
                                                badge: CommercialStrings.text("Vu", locale: locale), icon: "eye")
-                                    if quote.id != store.agenda.viewedQuotes.last?.id { Divider() }
+                                } else {
+                                    // En live, un devis ne porte que le compte client : pas de lead à ouvrir.
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(verbatim: quote.title).font(.headline)
+                                        Text(verbatim: quote.firstViewedAt.map(formats.timestamp) ?? "").font(.caption)
+                                    }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
                                 }
+                                if quote.id != store.agenda.viewedQuotes.last?.id { Divider() }
                             }
                         }.venioCard()
-                    }
+                    } }
                     agendaSection("Lead chaud sans action", leads: store.agenda.hotWithoutAction, icon: "flame") { lead in
                         CommercialStrings.text(lead.leadTemperature.label, locale: locale) + " · " + CommercialStrings.format("Score %lld", locale: locale, lead.score ?? 0)
                     } badge: { _ in CommercialStrings.text("Planifier", locale: locale) }
@@ -98,9 +104,9 @@ public struct TodayView: View {
         #endif
     }
 
-    private func agendaSection(_ title: String, leads: [Lead], icon: String, urgent: Bool = false,
+    @ViewBuilder private func agendaSection(_ title: String, leads: [Lead], icon: String, urgent: Bool = false,
                                subtitle: @escaping (Lead) -> String, badge: @escaping (Lead) -> String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        if !leads.isEmpty { VStack(alignment: .leading, spacing: 10) {
             SectionHeading(title: title, count: leads.count)
             VStack(spacing: 0) {
                 ForEach(leads) { lead in
@@ -108,7 +114,7 @@ public struct TodayView: View {
                     if lead.id != leads.last?.id { Divider() }
                 }
             }.venioCard()
-        }
+        } }
     }
 
     private func leadButton(_ lead: Lead, subtitle: String, badge: String, icon: String, urgent: Bool = false) -> some View {

@@ -30,6 +30,7 @@ struct VoiceCaptureView: View {
             VText("Transcription modifiable").font(.headline)
             TextEditor(text: $capture.text).frame(minHeight: 120)
                 .accessibilityLabel(CommercialStrings.text("Transcription modifiable", locale: locale))
+                .accessibilityIdentifier("voiceNote.text")
                 .disabled(capture.startedAt != nil || capture.transcribing)
         }
     }
@@ -73,6 +74,7 @@ struct VoiceNoteView: View {
                     }
                 } label: { if busy { ProgressView() } else { VText("Enregistrer") } }
                     .venioPrimaryButton()
+                    .accessibilityIdentifier("voiceNote.save")
                     .disabled(busy || capture.preparing || capture.transcribing || capture.startedAt != nil || capture.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .navigationTitle(CommercialStrings.text("Note vocale", locale: locale))

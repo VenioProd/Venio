@@ -23,7 +23,7 @@ public struct SettingsView: View {
                 Button(role: .destructive) {
                     Task {
                         guard await session.reloadPending() else { return }
-                        if session.pending.isEmpty { await session.logout() }
+                        if session.pendingModificationCount == 0 { await session.logout() }
                         else { showingLogout = true }
                     }
                 } label: { VText("Se déconnecter") }
@@ -32,7 +32,7 @@ public struct SettingsView: View {
         .confirmationDialog(CommercialStrings.text("Confirmer la déconnexion", locale: locale), isPresented: $showingLogout, titleVisibility: .visible) {
             Button(role: .destructive) { Task { await session?.logout() } } label: { VText("Se déconnecter") }
         } message: {
-            Text(verbatim: CommercialStrings.format("%lld modifications non envoyées seront perdues", locale: locale, session?.pending.count ?? 0))
+            Text(verbatim: CommercialStrings.format("%lld modifications non envoyées seront perdues", locale: locale, session?.pendingModificationCount ?? 0))
         }
         .scrollContentBackground(.hidden)
         .background { ThemedBackground() }

@@ -46,6 +46,10 @@ public actor Outbox {
                 let recordData = try JSONSerialization.data(withJSONObject: record)
                 try await store.complete(id: write.id, type: write.type == "interaction" ? "interactions" : "leads", json: recordData, scope: scope)
             } catch let error as HTTPFailure {
+                if write.type == "leadPatch", error.status >= 500 {
+                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
+                    continue
+                }
                 if error.status >= 500 || error.status == 429 {
                     try await store.fail(id: write.id, code: error.code, permanent: false, scope: scope)
                     retryAfter = .now.addingTimeInterval(max(2, error.retryAfter ?? backoff(write.attempts)))
@@ -54,6 +58,10 @@ public actor Outbox {
                 if error.status == 401 { return }
                 try await store.fail(id: write.id, code: error.code, scope: scope)
             } catch let error as URLError {
+                if write.type == "leadPatch", !requestCertainlyNotSent(error) {
+                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
+                    continue
+                }
                 if error.code == .cancelled { throw error }
                 try await store.fail(id: write.id, code: "NETWORK_UNAVAILABLE", permanent: false, scope: scope)
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
@@ -61,6 +69,10 @@ public actor Outbox {
             } catch let error as VenioAPIError where error.code == "SIGNED_OUT" {
                 return
             } catch {
+                if write.type == "leadPatch" {
+                    try await store.fail(id: write.id, code: "UNCERTAIN_WRITE", scope: scope)
+                    continue
+                }
                 // Une réponse illisible ne prouve pas que l'écriture a échoué.
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 throw error

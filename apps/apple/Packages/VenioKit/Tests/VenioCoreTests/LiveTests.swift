@@ -43,6 +43,85 @@ private func session(_ transport: FakeTransport, _ store: SyncStore, _ memory: M
 }
 private func json(_ value: String) -> Data { Data(value.utf8) }
 private func rotated() throws -> Data { try ServerCoding.encoder().encode(tokens("new")) }
+
+@Test func timedOutRefreshDisconnectsAndPreservesWrites() async throws {
+    let store = try database()
+    let memory = MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device))
+    let transport = FakeTransport { request in
+        if request.url!.path.hasSuffix("/refresh") {
+            #expect(try memory.load()?.rotationPending == true)
+            throw URLError(.timedOut)
+        }
+        return (401, Data())
+    }
+    let auth = try await session(transport, store, memory)
+    let scope = try await auth.identity()
+    try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    let request = URLRequest(url: base.appendingPathComponent("protected"))
+    await #expect(throws: (any Error).self) { _ = try await auth.send(request) }
+    #expect(await auth.state == .signedOut)
+    #expect(try memory.load() == nil)
+    await #expect(throws: (any Error).self) { _ = try await auth.send(request) }
+    #expect(await transport.paths.filter { $0.hasSuffix("/refresh") }.count == 1)
+    let reconnected = SessionIdentity(id: UUID(), user: user)
+    try await store.activate(reconnected)
+    #expect(try await store.writes(scope: reconnected).count == 1)
+}
+
+@Test func offlineRefreshCanSucceedLater() async throws {
+    let memory = MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device))
+    let calls = Mutex(0)
+    let transport = FakeTransport { request in
+        guard request.url!.path.hasSuffix("/refresh") else {
+            return (request.value(forHTTPHeaderField: "Authorization") == "Bearer fixture-access-new" ? 200 : 401, Data())
+        }
+        let attempt = calls.withLock { $0 += 1; return $0 }
+        #expect(try memory.load()?.rotationPending == true)
+        if attempt == 1 { throw URLError(.notConnectedToInternet) }
+        return (200, try rotated())
+    }
+    let auth = try await session(transport, database(), memory)
+    let request = URLRequest(url: base.appendingPathComponent("protected"))
+    await #expect(throws: URLError(.notConnectedToInternet)) { _ = try await auth.send(request) }
+    #expect(await auth.state == .signedIn(user, device))
+    let saved = try #require(try memory.load())
+    #expect(!saved.rotationPending)
+    _ = try await auth.send(request)
+    #expect(await transport.paths.filter { $0.hasSuffix("/refresh") }.count == 2)
+}
+
+@Test func pendingRotationIsDiscardedOnStartup() async throws {
+    let initial = StoredSession(tokens: tokens("old"), user: user, device: device)
+    var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(initial)) as! [String: Any]
+    object["rotationPending"] = true
+    let saved = try JSONDecoder().decode(StoredSession.self, from: JSONSerialization.data(withJSONObject: object))
+    let memory = MemoryTokens(saved)
+    let transport = FakeTransport { _ in (401, Data()) }
+    let auth = try await session(transport, database(), memory)
+    #expect(await auth.state == .signedOut)
+    #expect(try memory.load() == nil)
+    await #expect(throws: (any Error).self) {
+        _ = try await auth.send(URLRequest(url: base.appendingPathComponent("protected")))
+    }
+    #expect(await transport.paths.isEmpty)
+}
+
+@Test(arguments: [URLError.Code.timedOut, .cannotConnectToHost])
+func leadPatchRetriesOnlyWhenCertainlyNotSent(_ code: URLError.Code) async throws {
+    let store = try database()
+    let transport = FakeTransport { _ in throw URLError(code) }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    let outbox = Outbox(session: auth, store: store)
+    try await outbox.drain()
+    let write = try #require(try await store.writes(scope: scope).first)
+    #expect(write.state == (code == .timedOut ? "failed" : "pending"))
+    if code == .timedOut { #expect(write.lastError == "UNCERTAIN_WRITE") }
+    try await outbox.drain()
+    #expect(await transport.paths.count == 1)
+}
+
 private actor FiveRequests {
     var arrived = 0
     var waiting: [CheckedContinuation<Void, Never>] = []
