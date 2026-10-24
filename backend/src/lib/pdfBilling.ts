@@ -339,6 +339,7 @@ function renderPaymentBlock(
   doc: PdfBillingDoc,
   settings: PdfSettings | null,
   yStart: number,
+  paymentUrl?: string,
 ): number {
   const isQuote = doc.type === 'QUOTE'
   let y = yStart + 20
@@ -348,6 +349,13 @@ function renderPaymentBlock(
   pdf.font('Helvetica').fontSize(8.5).fillColor('#222')
 
   if (!isQuote) {
+    if (paymentUrl) {
+      pdf.text(`Payer par carte : ${paymentUrl}`, PAGE_MARGIN, y, {
+        width: TABLE_RIGHT - PAGE_MARGIN,
+        link: paymentUrl,
+      })
+      y = pdf.y + 4
+    }
     const term = settings?.paymentTermsDays ?? 30
     pdf.text(`Paiement à ${term} jours à compter de la date d'émission.`, PAGE_MARGIN, y, {
       width: TABLE_RIGHT - PAGE_MARGIN,
@@ -437,7 +445,7 @@ export async function generateBillingPdf(
   client: PdfClient | null,
   project: PdfProject | null,
   storagePath: string,
-  opts: { settings?: PdfSettings | null } = {},
+  opts: { settings?: PdfSettings | null; paymentUrl?: string } = {},
 ): Promise<string> {
   const absolutePath = path.resolve(process.cwd(), storagePath)
   await fsp.mkdir(path.dirname(absolutePath), { recursive: true })
@@ -470,7 +478,7 @@ export async function generateBillingPdf(
     renderClientBlock(pdf, buyer, project, 160)
     const linesEndY = renderLinesTable(pdf, doc.lines, currency, 280)
     const totalsEndY = renderTotalsAndVat(pdf, doc, currency, linesEndY + 10)
-    renderPaymentBlock(pdf, doc, settings, totalsEndY)
+    renderPaymentBlock(pdf, doc, settings, totalsEndY, opts.paymentUrl)
     renderFooter(pdf, settings)
 
     // Embed Factur-X (profil MINIMUM) si activé et facture (type INVOICE).

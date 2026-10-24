@@ -14,6 +14,7 @@ import {
   write,
 } from './shared'
 import type { Invoice, Payment } from './types'
+import InvoicePaymentLink from './InvoicePaymentLink'
 
 function ReceiptForm({ invoice, onSaved }: { invoice: Invoice; onSaved: () => Promise<void> }) {
   return (
@@ -263,6 +264,11 @@ export default function FinanceInvoices({
                 </button>
               )}
             </div>
+            {canManage &&
+              issued &&
+              !invoice.creditedInvoice &&
+              !invoice.historical &&
+              invoice.remainingTtcCents > 0 && <InvoicePaymentLink invoiceId={invoice._id} />}
             {canManage && issued && !invoice.creditedInvoice && received > 0 && (
               <p className="pf-status">Remboursez les encaissements avant de créer un avoir.</p>
             )}
@@ -289,7 +295,12 @@ export default function FinanceInvoices({
                     {payment.reference}
                     {payment.reason && ` · ${payment.reason}`}
                   </p>
-                  {canManage && payment.kind === 'PAYMENT' && refundable > 0 && (
+                  {canManage && payment.kind === 'PAYMENT' && refundable > 0 && payment.source === 'STRIPE' && (
+                    <p>
+                      Effectuez le remboursement dans le tableau de bord Stripe. Il sera enregistré automatiquement ici.
+                    </p>
+                  )}
+                  {canManage && payment.kind === 'PAYMENT' && refundable > 0 && payment.source !== 'STRIPE' && (
                     <button
                       className="portal-button secondary"
                       onClick={() => setAction({ kind: 'refund', id: payment._id })}

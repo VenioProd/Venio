@@ -36,6 +36,8 @@ const projectPaymentSchema = new mongoose.Schema<IProjectPayment>(
     ruleVersion: { type: mongoose.Schema.Types.ObjectId, ref: 'ShareRuleVersion', default: null },
     entry: { type: mongoose.Schema.Types.ObjectId, ref: 'AccountingEntry', required: true },
     source: { type: String, enum: ['MANUAL', 'STRIPE'], required: true },
+    stripePaymentIntentId: { type: String, index: true },
+    stripeChargeId: { type: String, index: true },
     idempotencyKey: { type: String, required: true },
     requestHash: { type: String, required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

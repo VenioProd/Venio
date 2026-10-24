@@ -126,6 +126,8 @@ const ProjectFinanceDashboard = lazy(() => import('./pages/admin/accounting/proj
 const AccountingBeneficiaries = lazy(() => import('./pages/admin/accounting/projects/BeneficiariesPage'))
 const AccountingBeneficiaryDetail = lazy(() => import('./pages/admin/accounting/projects/BeneficiaryDetail'))
 const AccountingShareTemplates = lazy(() => import('./pages/admin/accounting/projects/ShareTemplatesPage'))
+const StripeEventsPage = lazy(() => import('./pages/admin/accounting/projects/StripeEventsPage'))
+const PaymentPage = lazy(() => import('./pages/PaymentPage'))
 const MyAccountingStatement = lazy(() => import('./pages/admin/accounting/projects/MyStatementPage'))
 const AccountingSettings = lazy(() => import('./pages/admin/accounting/Settings'))
 const ChartOfAccounts = lazy(() => import('./pages/admin/accounting/ChartOfAccounts'))
@@ -157,15 +159,15 @@ function AppShell() {
   const isPublicQuestionnaire = location.pathname.startsWith('/questionnaire/')
   // La surface des beta testeurs est une page de travail, pas une page du
   // site : ni en-tête ni pied de page vitrine, comme pour les questionnaires.
-  const isBetaTesterSpace = location.pathname.startsWith('/beta/')
+  const isPrivateLinkSpace = location.pathname.startsWith('/beta/') || location.pathname.startsWith('/payer/')
   const isAdminArea = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login'
   // L'espace testeur est une surface privée derrière un jeton : il relève de la
   // charte Portail au même titre que l'admin et l'espace client.
   const isPortal =
-    location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isBetaTesterSpace
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isPrivateLinkSpace
   // Seule source de vérité du « on est sur le site public » : thème Monolithe
   // et socle de conversion s'y accrochent tous les deux.
-  const isPublicSite = !isPortal && !isPublicQuestionnaire && !isBetaTesterSpace
+  const isPublicSite = !isPortal && !isPublicQuestionnaire && !isPrivateLinkSpace
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -197,9 +199,9 @@ function AppShell() {
           <ThemeSync />
           <ToastProvider>
             <Suspense fallback={null}>
-              {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicHeader />}
+              {!isPublicQuestionnaire && !isPrivateLinkSpace && !isPortal && <PublicHeader />}
             </Suspense>
-            {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicAnalytics />}
+            {!isPublicQuestionnaire && !isPrivateLinkSpace && !isPortal && <PublicAnalytics />}
             <Suspense
               fallback={
                 <div role="status" style={{ padding: 32 }}>
@@ -243,6 +245,9 @@ function AppShell() {
                   {/* Espace beta tests : le jeton du lien porte l'identité du
                     testeur, il n'y a donc ni compte ni session à créer. */}
                   <Route path="/beta/:token" element={<BetaTesterSpace />} />
+                  <Route path="/payer/:token" element={<PaymentPage />} />
+                  <Route path="/payer/succes" element={<PaymentPage result="success" />} />
+                  <Route path="/payer/:token/annulation" element={<PaymentPage result="cancel" />} />
 
                   {/* Espace client */}
                   <Route path="/espace-client/login" element={<ClientLogin />} />
@@ -635,6 +640,14 @@ function AppShell() {
 
                     {/* Comptabilité */}
                     <Route
+                      path="comptabilite/stripe"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
+                          <StripeEventsPage />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
                       path="comptabilite/projets"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_ACCOUNTING} redirectTo="/admin">
@@ -827,7 +840,7 @@ function AppShell() {
               {isAdminArea && <SearchModal />}
             </Suspense>
             <Suspense fallback={null}>
-              {!isPublicQuestionnaire && !isBetaTesterSpace && !isPortal && <PublicFooter />}
+              {!isPublicQuestionnaire && !isPrivateLinkSpace && !isPortal && <PublicFooter />}
             </Suspense>
           </ToastProvider>
         </ThemeProvider>

@@ -147,6 +147,7 @@ export interface Payment {
   reference: string
   reason?: string
   refundOf?: string | null
+  source?: 'MANUAL' | 'STRIPE'
 }
 export interface Statement extends ShareTotals {
   beneficiary: { _id: string; displayName: string }

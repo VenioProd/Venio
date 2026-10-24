@@ -13,6 +13,7 @@ import { getNextSequence } from '../../models/Sequence.js'
 import { generateBillingPdf } from '../../lib/pdfBilling.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import { sendInvoiceEmail } from '../../lib/email.js'
+import { paymentLinkUrl } from '../../lib/stripe/paymentLinks.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../lib/accounting/billingToEntry.js'
@@ -319,6 +320,7 @@ router.post(
             amount: amountStr,
             dueDate: dueDateStr,
             downloadUrl,
+            paymentUrl: await paymentLinkUrl(doc),
           }).catch(() => {})
         }
       }
@@ -380,7 +382,7 @@ router.post(
 
       const filename = `${doc.type}-${doc.number.replace(/\//g, '-')}.pdf`
       const storagePath = path.join('uploads', 'billing', doc.project.toString(), filename)
-      await generateBillingPdf(doc, client, project, storagePath)
+      await generateBillingPdf(doc, client, project, storagePath, { paymentUrl: await paymentLinkUrl(doc) })
 
       let saleEntry: unknown = null
       let accountingWarning: string | null = null

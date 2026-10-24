@@ -104,6 +104,8 @@ export interface IProjectPayment extends Document {
   ruleVersion: Types.ObjectId | null
   entry: Types.ObjectId
   source: 'MANUAL' | 'STRIPE'
+  stripePaymentIntentId?: string
+  stripeChargeId?: string
   idempotencyKey: string
   requestHash: string
   createdBy: Types.ObjectId

@@ -6,6 +6,7 @@ import ShareAllocation from '../../models/ShareAllocation.js'
 import ProjectFinance from '../../models/ProjectFinance.js'
 import ShareRuleVersion from '../../models/ShareRuleVersion.js'
 import ShareSettlement from '../../models/ShareSettlement.js'
+import InvoicePaymentLink from '../../models/InvoicePaymentLink.js'
 import type { IBillingDocument, IFinancePayer } from '../../types/models/index.js'
 import { createEntry, type CreateEntryLineInput } from '../accounting/doubleEntry.js'
 import { resolveBankAccount } from '../accounting/paymentToEntry.js'
@@ -15,6 +16,7 @@ import { invoiceAmountsCents } from './invoicing.js'
 import { assertCents, moneyError, toCents } from './money.js'
 import { allocatePayment, beneficiaryStatement, cumulativeHt, refundRegularisation, ruleVersionAt } from './rules.js'
 import { projectCostLines } from './settlements.js'
+import { expireInvoiceCheckout } from '../stripe/checkoutSession.js'
 
 function conflict(message: string) {
   const error = moneyError(message)
@@ -62,6 +64,7 @@ interface PaymentInput extends MovementInput {
   invoiceId: string
   method: IFinancePayer['paymentMethod']
   reference?: string
+  stripe?: { paymentIntentId: string; chargeId: string; feeCents: number }
 }
 interface RefundInput extends MovementInput {
   paymentId: string
@@ -69,7 +72,11 @@ interface RefundInput extends MovementInput {
 }
 type Movement = ({ kind: 'PAYMENT' } & PaymentInput) | ({ kind: 'REFUND' } & RefundInput)
 
-async function recordMovement(input: Movement) {
+async function recordMovement(
+  input: Movement,
+  transactionSession?: ClientSession,
+  expiredCheckoutSessionId?: string | null,
+) {
   if (!(input.receivedAt instanceof Date) && (typeof input.receivedAt !== 'string' || !input.receivedAt.trim())) {
     throw moneyError('La date d’encaissement est requise')
   }
@@ -83,7 +90,12 @@ async function recordMovement(input: Movement) {
     receivedAt: receivedAt.toISOString(),
     userId: input.userId,
     ...(input.kind === 'PAYMENT'
-      ? { invoiceId: input.invoiceId, method: input.method, reference: input.reference ?? '' }
+      ? {
+          invoiceId: input.invoiceId,
+          method: input.method,
+          reference: input.reference ?? '',
+          ...(input.stripe && { stripe: input.stripe }),
+        }
       : { paymentId: input.paymentId, reason: input.reason }),
   }
   const requestHash = createHash('sha256').update(JSON.stringify(request)).digest('hex')
@@ -96,6 +108,9 @@ async function recordMovement(input: Movement) {
     const original = input.kind === 'REFUND' ? await ProjectPayment.findById(input.paymentId).session(session) : null
     if (input.kind === 'REFUND' && (!original || original.kind !== 'PAYMENT'))
       throw conflict('Le remboursement doit imputer un encaissement positif existant')
+    if (original?.source === 'STRIPE' && !transactionSession) {
+      throw conflict('Effectuez le remboursement dans Stripe : seul son webhook peut l’enregistrer')
+    }
     const invoiceId = input.kind === 'PAYMENT' ? input.invoiceId : original!.invoice
     // L’écriture force les demandes concurrentes à relire le cumul après le commit.
     await BillingDocument.updateOne({ _id: invoiceId }, { $currentDate: { updatedAt: true } }, { session })
@@ -104,6 +119,16 @@ async function recordMovement(input: Movement) {
       const error = moneyError('Facture introuvable')
       error.status = 404
       throw error
+    }
+    if (expiredCheckoutSessionId !== undefined) {
+      const link = await InvoicePaymentLink.findOneAndUpdate(
+        { invoice: invoiceId },
+        { $currentDate: { updatedAt: true } },
+        { session, new: true },
+      )
+      if ((link?.currentCheckoutSessionId ?? null) !== expiredCheckoutSessionId) {
+        throw conflict('Une nouvelle session de paiement a été ouverte : actualisez avant d’encaisser')
+      }
     }
     if (
       invoice.type !== 'INVOICE' ||
@@ -204,7 +229,12 @@ async function recordMovement(input: Movement) {
       reason: input.kind === 'REFUND' ? input.reason.trim() : '',
       refundOf: original?._id ?? null,
       ruleVersion: selectedVersion?._id ?? null,
-      source: 'MANUAL',
+      source: original?.source ?? (input.kind === 'PAYMENT' && input.stripe ? 'STRIPE' : 'MANUAL'),
+      ...(input.kind === 'PAYMENT' &&
+        input.stripe && {
+          stripePaymentIntentId: input.stripe.paymentIntentId,
+          stripeChargeId: input.stripe.chargeId,
+        }),
       idempotencyKey: input.idempotencyKey,
       requestHash,
       createdBy: input.userId,
@@ -216,27 +246,36 @@ async function recordMovement(input: Movement) {
       .replace(/[^A-Z0-9]/gi, '')
       .slice(-8)
       .toUpperCase()
-    const bankAccount = await resolveBankAccount({ session })
-    if (!bankAccount) throw moneyError('Compte bancaire introuvable : initialisez le plan comptable')
+    const stripePayment = input.kind === 'PAYMENT' ? input.stripe : undefined
+    const useStripe = Boolean(stripePayment || original?.source === 'STRIPE')
+    let bankCode = '512800'
+    if (!useStripe) {
+      const bankAccount = await resolveBankAccount({ session })
+      if (!bankAccount) throw moneyError('Compte bancaire introuvable : initialisez le plan comptable')
+      bankCode = bankAccount.code
+    }
+    const feeCents = stripePayment?.feeCents ?? 0
+    assertCents(feeCents, 'Commission Stripe')
+    if (feeCents < 0 || feeCents > input.amountTtcCents) throw moneyError('Commission Stripe incohérente')
+    if (stripePayment && input.kind === 'PAYMENT' && input.method !== 'STRIPE') throw moneyError('Moyen Stripe requis')
+    const bankCents = amountTtcCents - feeCents
+    const lines: CreateEntryLineInput[] = []
+    if (bankCents !== 0)
+      lines.push({ account: bankCode, debit: Math.max(bankCents, 0) / 100, credit: Math.max(-bankCents, 0) / 100 })
+    if (feeCents > 0) lines.push({ account: '627800', debit: feeCents / 100 })
+    lines.push({
+      account: '411000',
+      debit: Math.max(-amountTtcCents, 0) / 100,
+      credit: Math.max(amountTtcCents, 0) / 100,
+      auxiliaryRef,
+      lettrage,
+    })
     const entry = await createEntry({
       journal: 'BQ',
       date: receivedAt,
       label: `Règlement facture ${invoice.number}`,
       pieceRef: invoice.number,
-      lines: [
-        {
-          account: bankAccount.code,
-          debit: Math.max(amountTtcCents, 0) / 100,
-          credit: Math.max(-amountTtcCents, 0) / 100,
-        },
-        {
-          account: '411000',
-          debit: Math.max(-amountTtcCents, 0) / 100,
-          credit: Math.max(amountTtcCents, 0) / 100,
-          auxiliaryRef,
-          lettrage,
-        },
-      ],
+      lines,
       source: 'PAYMENT',
       sourceRef: { kind: 'PROJECT_PAYMENT', id: payment._id as Types.ObjectId },
       idempotencyKey: `payment:${payment._id}`,
@@ -278,11 +317,14 @@ async function recordMovement(input: Movement) {
   }
   // Une collision d'index (même clé envoyée deux fois en même temps, première numérotation
   // d'un journal) se résout en relisant : le second passage trouve ce que le premier a validé.
-  const result = await runInTransaction(operation).catch((error: unknown) => {
-    if ((error as { code?: number }).code !== 11000) throw error
-    return runInTransaction(operation)
-  })
-  if (result.paidInvoice) {
+  const result = await (transactionSession ? operation(transactionSession) : runInTransaction(operation)).catch(
+    (error: unknown) => {
+      if (transactionSession) throw error
+      if ((error as { code?: number }).code !== 11000) throw error
+      return runInTransaction(operation)
+    },
+  )
+  if (result.paidInvoice && !transactionSession) {
     const invoice = result.paidInvoice
     await notifySuperAdmins({
       type: 'BILLING_DOCUMENT_PAID',
@@ -296,12 +338,17 @@ async function recordMovement(input: Movement) {
   return { payment: result.payment, alreadyExisted: result.alreadyExisted }
 }
 
-export function recordPayment(input: PaymentInput) {
-  return recordMovement({ ...input, kind: 'PAYMENT' })
+export async function recordPayment(
+  input: PaymentInput,
+  options: { session?: ClientSession; expiredCheckoutSessionId?: string | null } = {},
+) {
+  let expiredCheckoutSessionId = options.expiredCheckoutSessionId
+  if (!options.session) expiredCheckoutSessionId = await expireInvoiceCheckout(input.invoiceId)
+  return recordMovement({ ...input, kind: 'PAYMENT' }, options.session, expiredCheckoutSessionId)
 }
 
-export function recordRefund(input: RefundInput) {
-  return recordMovement({ ...input, kind: 'REFUND' })
+export function recordRefund(input: RefundInput, session?: ClientSession) {
+  return recordMovement({ ...input, kind: 'REFUND' }, session)
 }
 
 export async function markInvoicePaid({

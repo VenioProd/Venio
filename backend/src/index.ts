@@ -73,6 +73,8 @@ import betaTesterRoutes from './routes/beta/index.js'
 import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
+import stripeRoutes from './routes/stripe.js'
+import publicPayRoutes from './routes/public/pay.js'
 import agentRoutes from './routes/agent/index.js'
 import { requestIdMiddleware } from './routes/agent/_middleware/errors.js'
 import { agentJsonBodyParser } from './routes/agent/_middleware/jsonBody.js'
@@ -91,6 +93,8 @@ import clientFileRoutes from './routes/client/files.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
+import StripeEvent from './models/StripeEvent.js'
+import InvoicePaymentLink from './models/InvoicePaymentLink.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startSubscriptionInvoiceScheduler } from './lib/projectFinance/subscriptionScheduler.js'
@@ -196,6 +200,7 @@ app.use(
 // HMAC nécessite le raw body en bytes. Le router gère son propre body parsing
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
+app.use('/api/stripe', stripeRoutes)
 
 // API agent : limite body plus haute (8 MiB) pour permettre l'upload de
 // documents en base64 (jusqu'à ~5 MiB bruts ≈ 6,7 MiB encodés). Le wrapper
@@ -209,6 +214,7 @@ app.use('/api/v1/agent', requestIdMiddleware, agentJsonBodyParser, agentRoutes)
 app.use('/api/artosera', artoseraDevisRoutes)
 
 app.use(express.json({ limit: '2mb' }))
+app.use('/api/public/pay', publicPayRoutes)
 
 // Logging requêtes — pino-http (remplace morgan)
 import type { IncomingMessage, ServerResponse } from 'http'
@@ -474,6 +480,7 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 mongoose
   .connect(mongoUri)
   .then(async () => {
+    await Promise.all([StripeEvent.init(), InvoicePaymentLink.init()])
     // Bootstrap SUPER_ADMIN — idempotent, vérifié à chaque démarrage.
     // Note : les migrations one-shot historiques (unset plainPassword, fix slug:null)
     // ont été sorties vers backend/scripts/migrations/. Voir le README de ce dossier.

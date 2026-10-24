@@ -1,5 +1,6 @@
 import express from 'express'
 import exportsRouter from './exports.js'
+import stripeRouter from './stripe.js'
 import beneficiariesRouter from './beneficiaries.js'
 import shareTemplatesRouter from './shareTemplates.js'
 import creditNotesRouter from './creditNotes.js'
@@ -23,6 +24,7 @@ import externalTransactionsRouter from './externalTransactions.js'
 // Router racine pour /api/admin/accounting.
 // /audit-log reste à porter en Phase G avec le système d'audit étendu.
 const router = express.Router()
+router.use(stripeRouter)
 
 router.use('/exports', exportsRouter)
 router.use('/project-finance', projectFinanceDashboardRouter)
