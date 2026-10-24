@@ -63,6 +63,8 @@ import VenioTheme
         do { try await api.session.restore() }
         catch { errorKey = mobileErrorKey(error) }
         starting = false
+        // Session écartée au démarrage (rotation interrompue, jetons absents) : rien du compte précédent ne doit rester.
+        if case .signedOut = state { onDisconnect?() }
     }
     private func received(_ state: SessionState) {
         let previous = self.state

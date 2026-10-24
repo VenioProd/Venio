@@ -122,6 +122,38 @@ func leadPatchRetriesOnlyWhenCertainlyNotSent(_ code: URLError.Code) async throw
     #expect(await transport.paths.count == 1)
 }
 
+@Test func interruptedLeadPatchIsNeverReplayed() async throws {
+    let store = try database()
+    let transport = FakeTransport { _ in (200, json(#"{"lead":{"_id":"lead"}}"#)) }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    // L'app est tuée pendant l'envoi : l'écriture est restée « en vol ».
+    let interrupted = try #require(try await store.writes(scope: scope).first)
+    try await store.attempted(id: interrupted.id, scope: scope)
+    try await Outbox(session: auth, store: store).drain()
+    let write = try #require(try await store.writes(scope: scope).first)
+    #expect(write.state == "failed")
+    #expect(write.lastError == "UNCERTAIN_WRITE")
+    #expect(await transport.paths.isEmpty)
+}
+
+@Test func leadPatchWaitsDuringRefreshRateLimit() async throws {
+    let store = try database()
+    let transport = FakeTransport { request in
+        if request.url!.path.hasSuffix("/refresh") { return (429, json(#"{"error":"Trop de tentatives"}"#)) }
+        return (401, json(#"{"code":"INVALID_ACCESS_TOKEN"}"#))
+    }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    _ = try? await auth.send(auth.request(path: "/api/mobile/today"))
+    try await store.enqueue(leadId: "lead", patch: LeadPatch(), scope: scope)
+    try await Outbox(session: auth, store: store).drain()
+    let write = try #require(try await store.writes(scope: scope).first)
+    #expect(write.state == "pending")
+    #expect(await transport.paths.filter { $0.hasSuffix("/refresh") }.count == 1)
+}
+
 private actor FiveRequests {
     var arrived = 0
     var waiting: [CheckedContinuation<Void, Never>] = []

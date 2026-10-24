@@ -33,6 +33,7 @@ public actor Outbox {
         try await store.deleteWrite(id: id, scope: session.identity())
     }
     private func run(scope: SessionIdentity) async throws {
+        try await store.abandonInterruptedPatches(scope: scope)
         while let write = try await store.writes(scope: scope).first(where: { $0.state == "pending" }) {
             try Task.checkCancellation()
             try await store.attempted(id: write.id, scope: scope)
@@ -55,7 +56,7 @@ public actor Outbox {
                     retryAfter = .now.addingTimeInterval(max(2, error.retryAfter ?? backoff(write.attempts)))
                     return
                 }
-                if error.status == 401 { return }
+                if error.status == 401 { try await store.release(id: write.id, scope: scope); return }
                 try await store.fail(id: write.id, code: error.code, scope: scope)
             } catch let error as URLError {
                 if write.type == "leadPatch", !requestCertainlyNotSent(error) {
@@ -67,6 +68,11 @@ public actor Outbox {
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 return
             } catch let error as VenioAPIError where error.code == "SIGNED_OUT" {
+                return
+            } catch let error as VenioAPIError where error.code == "RATE_LIMITED" {
+                // Refresh refusé localement pendant un 429 : la requête n'a eu aucun effet authentifié.
+                try await store.release(id: write.id, scope: scope)
+                retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 return
             } catch {
                 if write.type == "leadPatch" {

@@ -195,13 +195,33 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     }
     func attempted(id: UUID, scope: SessionIdentity) throws {
         try check(scope)
-        do { if let write = try write(id) { write.attempts += 1 }; try modelContext.save() }
+        do {
+            if let write = try write(id) {
+                write.attempts += 1
+                // Un PATCH de lead n'est pas idempotent : s'il est interrompu en vol, on ne le rejouera pas.
+                if write.type == "leadPatch" { write.state = "sending" }
+            }
+            try modelContext.save()
+        } catch { modelContext.rollback(); throw error }
+    }
+    func release(id: UUID, scope: SessionIdentity) throws {
+        try check(scope)
+        do { if let write = try write(id) { write.state = "pending" }; try modelContext.save() }
         catch { modelContext.rollback(); throw error }
+    }
+    func abandonInterruptedPatches(scope: SessionIdentity) throws {
+        try check(scope)
+        do {
+            for write in try modelContext.fetch(FetchDescriptor<PendingWrite>(predicate: #Predicate { $0.state == "sending" })) {
+                write.state = "failed"; write.lastError = "UNCERTAIN_WRITE"
+            }
+            try modelContext.save()
+        } catch { modelContext.rollback(); throw error }
     }
     func fail(id: UUID, code: String, permanent: Bool = true, scope: SessionIdentity) throws {
         try check(scope)
         do {
-            if let write = try write(id) { if permanent { write.state = "failed" }; write.lastError = code }
+            if let write = try write(id) { write.state = permanent ? "failed" : "pending"; write.lastError = code }
             try modelContext.save()
         } catch { modelContext.rollback(); throw error }
     }

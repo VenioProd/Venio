@@ -127,7 +127,8 @@ import AppKit
         return [.banner, .sound, .badge]
     }
     private func receive(type: String, link: String?, badge: Int?) async {
-        guard api != nil else { return }
+        // Lancement à froid : la session n'est pas encore restaurée, on ouvrira la fiche à la connexion.
+        guard api != nil else { pendingType = type; pendingLink = link; return }
         let expected = connectionID
         if let badge { await updateBadge(badge) }
         guard api != nil, connectionID == expected else { return }

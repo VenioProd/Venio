@@ -105,6 +105,7 @@ import AppKit
                         watch.disconnected()
                         #endif
                     }
+                    if let session, !session.starting, case .signedOut = session.state { session.onDisconnect?() }
                     #if os(iOS)
                     session?.additionalPendingCount = { watch.pendingNotes.count }
                     session?.discardAdditionalPending = { watch.discardPendingNotes() }

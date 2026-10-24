@@ -158,6 +158,9 @@ public actor AuthSession {
         try await task.value
     }
     private func rotate(_ token: String, scope: SessionIdentity) async throws {
+        // La tâche peut démarrer après une déconnexion : ne jamais marquer la session d'un autre compte.
+        try check(scope)
+        try Task.checkCancellation()
         let request = try request(path: "/api/auth/mobile/refresh", method: "POST", body: JSONEncoder().encode(["refreshToken": token]))
         try await setRotationPending(true)
         let data: Data
