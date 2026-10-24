@@ -332,13 +332,24 @@ export async function markInvoicePaid({
   })
 }
 
-export async function projectFinanceSummary(projectId: string | Types.ObjectId) {
+export async function projectFinanceSummary(
+  projectId: string | Types.ObjectId,
+  period: { from?: Date; to?: Date } = {},
+) {
+  const range =
+    period.from || period.to
+      ? {
+          ...(period.from && { $gte: period.from }),
+          ...(period.to && { $lte: period.to }),
+        }
+      : null
   return runInTransaction(async (session) => {
     const invoices = await BillingDocument.find({
       project: projectId,
       type: 'INVOICE',
       creditedInvoice: null,
       status: { $nin: ['DRAFT', 'CANCELLED'] },
+      ...(range && { $or: [{ issuedAt: range }, { issuedAt: null, createdAt: range }] }),
     }).session(session)
     let invoicedHtCents = 0
     let invoicedTtcCents = 0
@@ -353,12 +364,21 @@ export async function projectFinanceSummary(projectId: string | Types.ObjectId) 
         overdueInvoices.push({ invoice: invoice._id as Types.ObjectId, remainingTtcCents: balance.remainingTtcCents })
       }
     }
-    const payments = await ProjectPayment.find({ project: projectId }).session(session)
+    const payments = await ProjectPayment.find({ project: projectId, ...(range && { receivedAt: range }) }).session(
+      session,
+    )
     const receivedTtcCents = payments.reduce((sum, payment) => sum + payment.amountTtcCents, 0)
     const receivedHtCents = payments.reduce((sum, payment) => sum + payment.htCents, 0)
-    const allocations = await ShareAllocation.find({ project: projectId }).session(session)
-    const settlements = await ShareSettlement.find({ project: projectId }).session(session)
-    const costLines = await projectCostLines(projectId, session)
+    const allocations = await ShareAllocation.find({
+      project: projectId,
+      ...(range && { payment: { $in: payments.map((row) => row._id) } }),
+    }).session(session)
+    const settlements = await ShareSettlement.find({ project: projectId, ...(range && { paidAt: range }) }).session(
+      session,
+    )
+    const costLines = (await projectCostLines(projectId, session)).filter(
+      (line) => (!period.from || line.entry.date >= period.from) && (!period.to || line.entry.date <= period.to),
+    )
     const directCostsCents = costLines.reduce((sum, line) => sum + toCents(line.debit) - toCents(line.credit), 0)
     assertCents(directCostsCents)
     const marginCents = receivedHtCents - directCostsCents

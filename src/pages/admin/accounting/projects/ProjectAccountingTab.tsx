@@ -1,3 +1,4 @@
+import FinanceExports from './FinanceExports'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../../../context/AuthContext'
@@ -91,6 +92,7 @@ export default function ProjectAccountingTab({ projectId, clientId }: { projectI
       {!data && !error && <p role="status">Chargement de la comptabilité du projet…</p>}
       {data && (
         <>
+          <FinanceExports projectId={projectId} />
           <Metrics summary={data.finance.summary} full />
           <FinanceConfiguration
             key={`configuration-${revision}-${clientId}`}

@@ -1,3 +1,4 @@
+import FinanceExports from './FinanceExports'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../../lib/api'
@@ -38,6 +39,7 @@ export default function ProjectsDashboard() {
         {!data && !error && <p role="status">Chargement de la comptabilité…</p>}
         {data && (
           <>
+            <FinanceExports />
             <Metrics summary={data.totals} />
             <section className="accounting-card pf-chart">
               <h2>Prévisionnel de trésorerie · 12 mois</h2>

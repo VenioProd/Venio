@@ -1,3 +1,4 @@
+import FinanceExports from './FinanceExports'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatMoney, formatPercent } from './money'
@@ -34,6 +35,9 @@ export default function StatementView({
   }
   return (
     <>
+      <FinanceExports
+        statementPath={personal ? 'me/statement.pdf' : `beneficiaries/${statement.beneficiary._id}/statement.pdf`}
+      />
       <ShareMetrics totals={statement} />
       <section className="accounting-card">
         <h2>Détail par projet</h2>
