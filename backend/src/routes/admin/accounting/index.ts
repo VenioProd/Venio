@@ -1,4 +1,7 @@
 import express from 'express'
+import beneficiariesRouter from './beneficiaries.js'
+import shareTemplatesRouter from './shareTemplates.js'
+import projectFinanceRouter from './projectFinance.js'
 import settingsRouter from './settings.js'
 import fiscalYearsRouter from './fiscalYears.js'
 import chartOfAccountsRouter from './chartOfAccounts.js'
@@ -16,6 +19,9 @@ import externalTransactionsRouter from './externalTransactions.js'
 // /audit-log reste à porter en Phase G avec le système d'audit étendu.
 const router = express.Router()
 
+router.use('/beneficiaries', beneficiariesRouter)
+router.use('/share-templates', shareTemplatesRouter)
+router.use('/projects/:projectId', projectFinanceRouter)
 router.use('/settings', settingsRouter)
 router.use('/fiscal-years', fiscalYearsRouter)
 router.use('/chart-of-accounts', chartOfAccountsRouter)
