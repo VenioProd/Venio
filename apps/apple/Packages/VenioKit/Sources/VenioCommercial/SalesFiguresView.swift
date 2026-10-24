@@ -58,7 +58,9 @@ struct FinancialTimeline: View {
         return months.min { abs($0.id.timeIntervalSince(selection)) < abs($1.id.timeIntervalSince(selection)) }
     }
     private var dateRange: ClosedRange<Date> {
-        (months.first?.id ?? .distantPast)...(months.last?.id ?? .distantFuture)
+        // Une demi-période de marge de chaque côté pour que le premier et le dernier mois gardent leur libellé.
+        let first = months.first?.id ?? .distantPast, last = months.last?.id ?? .distantFuture
+        return first.addingTimeInterval(-15 * 86_400)...last.addingTimeInterval(15 * 86_400)
     }
     private func value(_ month: SalesFigures.Month) -> Double { NSDecimalNumber(decimal: month.amount).doubleValue }
     var body: some View {
@@ -95,9 +97,9 @@ struct FinancialTimeline: View {
             .chartYAxis { AxisMarks(position: .leading) }
             .frame(height: 180)
             Chart(months) { month in
-                BarMark(x: .value(CommercialStrings.text("Mois", locale: locale), month.id),
+                BarMark(x: .value(CommercialStrings.text("Mois", locale: locale), month.id, unit: .month),
                         y: .value(CommercialStrings.text("Devis signés", locale: locale), month.volume), width: .ratio(0.45))
-                    .foregroundStyle(palette.accent.color.opacity(0.25))
+                    .foregroundStyle(palette.accent.color.opacity(0.4))
             }.chartXScale(domain: dateRange).chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 24)
             VText("Volume de devis signés").font(.caption).foregroundStyle(palette.textSecondary.color)
         }.frame(maxWidth: .infinity, alignment: .leading)

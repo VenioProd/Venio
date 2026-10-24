@@ -6,6 +6,7 @@ public actor MockVenioAPI: VenioAPI {
     public static let raphael = UserSummary(id: "user-raphael", name: "Raphaël B.", initials: "RB", role: .admin, permissions: ["view_crm", "manage_crm", "manage_billing", "view_projects", "view_phases"])
     public nonisolated let clock: DemoClock
     private let user: UserSummary
+    public private(set) var pushRegistration: PushRegistration?
     private var storedLeads: [Lead]?
     private var storedQuotes: [QuoteProposal]?
     private var interactions: [UUID: (InteractionDraft, TimelineEntry)] = [:]
@@ -16,6 +17,26 @@ public actor MockVenioAPI: VenioAPI {
         self.clock = clock
         self.user = user
     }
+
+    public func createLead(_ draft: LeadDraft) throws -> Lead {
+        guard user.permissions.contains("manage_crm") else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard !draft.company.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VenioAPIError(code: "INVALID_INPUT") }
+        let lead = Lead(id: UUID().uuidString, company: draft.company, contactName: draft.contactName,
+            contactEmail: draft.contactEmail, contactPhone: draft.contactPhone, source: draft.source, status: .lead,
+            budget: draft.budget, nextActionAt: nil, serviceType: draft.serviceType, leadTemperature: .warm,
+            assignedTo: draft.assignedTo ?? user.id, score: nil, notes: draft.notes, createdAt: .now)
+        var records = try leads()
+        records.insert(lead, at: 0)
+        storedLeads = records
+        return lead
+    }
+
+    public func registerPushToken(_ token: String, environment: PushEnvironment, language: String?) throws {
+        guard (64...200).contains(token.count), token.allSatisfy(\.isHexDigit),
+              language == nil || ["fr", "en"].contains(language!) else { throw VenioAPIError(code: "INVALID_APNS") }
+        pushRegistration = PushRegistration(token: token, environment: environment, language: language)
+    }
+    public func unregisterPushToken() { pushRegistration = nil }
 
     public func currentUser() throws -> UserSummary { user }
 
@@ -37,7 +58,7 @@ public actor MockVenioAPI: VenioAPI {
             + Array(repeating: "timing", count: 9) + Array(repeating: "sans réponse", count: 6)
         let closed = (0..<66).map { index in
             let date = DemoClock.date(10 + index % 10, month: 5 + index % 6)
-            return Lead(id: "closed-\(index)", company: "Archive \(index + 1)", contactName: "", status: index < 16 ? .won : .lost,
+            return Lead(id: "closed-\(index)", company: "Client clos \(index + 1)", contactName: "", status: index < 16 ? .won : .lost,
                 budget: nil, nextActionAt: nil, serviceType: "", leadTemperature: .cold, assignedTo: lea, score: nil,
                 createdAt: clock.calendar.date(byAdding: .day, value: -34, to: date)!, updatedAt: date, statusChangedAt: date,
                 lostReason: index < 16 ? "" : reasons[index - 16])
@@ -84,7 +105,7 @@ public actor MockVenioAPI: VenioAPI {
         ]
         let amounts: [Decimal] = [18200, 24600, 9800, 15400, 31200]
         let history = amounts.enumerated().map { index, amount in
-            quote(["010", "015", "018", "022", "030"][index], client: "Archive \(index + 1)", project: "project-history-\(index)", template: "Site vitrine",
+            quote(["010", "015", "018", "022", "030"][index], client: ["Studio Héron", "Pâtisserie Marlot", "Cabinet Valère", "Éditions Corail", "Hôtel des Arts"][index], project: "project-history-\(index)", template: "Site vitrine",
                   amount: amount, status: .signed, signedAt: DemoClock.date(12, month: 5 + index))
         }
         let result = current + history
@@ -132,6 +153,7 @@ public actor MockVenioAPI: VenioAPI {
         guard let project = try projects().first(where: { $0.id == projectId }) else {
             throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE")
         }
+        guard project.allowsQuote(for: user) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
         guard let template = try quoteTemplates().first(where: { $0.id == templateId }) else {
             throw VenioAPIError(code: "NOT_FOUND")
         }
@@ -206,12 +228,11 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     public func projects() throws -> [Project] {
-        guard user.id == Self.lea.id || user.permissions.contains("manage_billing") else { return [] }
         return [
-            Project(id: "project-pilote", projectNumber: "P-2026-018", name: "Plateforme de réservation", client: "Agence Pilote", status: .active, budget: ProjectBudget(amount: 18400), billing: ProjectBilling(amountInvoiced: 9200, billingStatus: .partial), endDate: DemoClock.date(28, month: 11), progress: 62),
-            Project(id: "project-riviere", projectNumber: "P-2026-015", name: "Site + click & collect", client: "Boulangerie Rivière", status: .active, budget: ProjectBudget(amount: 8900), billing: ProjectBilling(amountInvoiced: 4450, billingStatus: .partial), endDate: DemoClock.date(6, month: 11), progress: 85),
-            Project(id: "project-morel", projectNumber: "P-2026-011", name: "Espace client", client: "Cabinet Morel", status: .active, budget: ProjectBudget(amount: 24000), billing: ProjectBilling(amountInvoiced: 7200, billingStatus: .partial), endDate: DemoClock.date(15, month: 12), progress: 30),
-            Project(id: "project-lumen", projectNumber: "P-2026-009", name: "Plateforme e-learning", client: "Lumen Formation", status: .active, budget: ProjectBudget(amount: 32000), billing: ProjectBilling(amountInvoiced: 25600, billingStatus: .partial), endDate: DemoClock.date(30), progress: 96)
+            Project(id: "project-pilote", projectNumber: "P-2026-018", name: "Plateforme de réservation", client: "Agence Pilote", status: .active, budget: ProjectBudget(amount: 18400), billing: ProjectBilling(amountInvoiced: 9200, billingStatus: .partial), endDate: DemoClock.date(28, month: 11), progress: 62, assignedTo: Self.lea.id, ownerAdminId: Self.hugo.id),
+            Project(id: "project-riviere", projectNumber: "P-2026-015", name: "Site + click & collect", client: "Boulangerie Rivière", status: .active, budget: ProjectBudget(amount: 8900), billing: ProjectBilling(amountInvoiced: 4450, billingStatus: .partial), endDate: DemoClock.date(6, month: 11), progress: 85, assignedTo: Self.hugo.id, ownerAdminId: Self.lea.id),
+            Project(id: "project-morel", projectNumber: "P-2026-011", name: "Espace client", client: "Cabinet Morel", status: .active, budget: ProjectBudget(amount: 24000), billing: ProjectBilling(amountInvoiced: 7200, billingStatus: .partial), endDate: DemoClock.date(15, month: 12), progress: 30, assignedTo: Self.hugo.id, ownerAdminId: Self.hugo.id),
+            Project(id: "project-lumen", projectNumber: "P-2026-009", name: "Plateforme e-learning", client: "Lumen Formation", status: .active, budget: ProjectBudget(amount: 32000), billing: ProjectBilling(amountInvoiced: 25600, billingStatus: .partial), endDate: DemoClock.date(30), progress: 96, assignedTo: Self.lea.id, ownerAdminId: Self.lea.id)
         ]
     }
 

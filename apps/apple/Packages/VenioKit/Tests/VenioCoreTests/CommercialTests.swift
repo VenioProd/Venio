@@ -77,6 +77,11 @@ private actor FailingAPI: VenioAPI {
     func sendQuote(id: String) async throws -> QuoteProposal { try await mock.sendQuote(id: id) }
     func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry { try await mock.createInteraction(draft) }
     func updateLead(id: String, patch: LeadPatch) async throws -> Lead { try await mock.updateLead(id: id, patch: patch) }
+    func createLead(_ draft: LeadDraft) async throws -> Lead { try await mock.createLead(draft) }
+    func registerPushToken(_ token: String, environment: PushEnvironment, language: String?) async throws {
+        try await mock.registerPushToken(token, environment: environment, language: language)
+    }
+    func unregisterPushToken() async throws { await mock.unregisterPushToken() }
     enum Failure: Error { case offline }
 }
 
@@ -108,7 +113,14 @@ private actor FailingAPI: VenioAPI {
 @Test func quoteWriteRules() async throws {
     let api = MockVenioAPI()
     await #expect(throws: VenioAPIError(code: "PROJECT_OUT_OF_SCOPE")) {
-        try await api.createQuote(templateId: "template-site", projectId: "project-aubin", title: nil)
+        try await api.createQuote(templateId: "template-site", projectId: "project-morel", title: nil)
     }
+    let responsible = try await api.createQuote(templateId: "template-site", projectId: "project-pilote", title: nil)
+    #expect(responsible.project == "project-pilote")
+    let clientOwner = try await api.createQuote(templateId: "template-site", projectId: "project-riviere", title: nil)
+    #expect(clientOwner.project == "project-riviere")
+    let billing = MockVenioAPI(user: MockVenioAPI.raphael)
+    let outside = try await billing.createQuote(templateId: "template-site", projectId: "project-morel", title: nil)
+    #expect(outside.project == "project-morel")
     await #expect(throws: VenioAPIError(code: "PROPOSAL_NOT_DRAFT")) { try await api.sendQuote(id: "quote-041") }
 }

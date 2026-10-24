@@ -141,7 +141,7 @@ struct NewQuoteView: View {
     @State private var errorKey: String?
     init(projectId: String? = nil) { _projectId = State(initialValue: projectId ?? "") }
     private var template: QuoteTemplate? { store.templates.first { $0.id == templateId } }
-    private var canCreate: Bool { template != nil && store.projects.contains { $0.id == projectId } && store.canManageQuotes }
+    private var canCreate: Bool { template != nil && store.projects.contains { $0.id == projectId && store.canQuote($0) } && store.canManageQuotes }
     var body: some View {
         NavigationStack {
             CommercialPage {
@@ -160,12 +160,23 @@ struct NewQuoteView: View {
                                 .accessibilityAddTraits(item.id == templateId ? .isSelected : [])
                         }
                     }
-                    Picker(CommercialStrings.text("Destinataire · projet", locale: locale), selection: $projectId) {
-                        VText("Choisir un projet").tag("")
-                        ForEach(store.projects) { project in
-                            Text(verbatim: project.client + " · " + project.name).tag(project.id)
-                        }
-                    }.pickerStyle(.menu)
+                    VText("Destinataire · projet").font(.headline)
+                    ForEach(store.projects) { project in
+                        Button { projectId = project.id } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(verbatim: project.client + " · " + project.name)
+                                    if !store.canQuote(project) {
+                                        VText("Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption)
+                                    }
+                                }
+                                Spacer()
+                                if project.id == projectId { Image(systemName: "checkmark.circle.fill") }
+                            }
+                        }.buttonStyle(.plain).disabled(!store.canQuote(project))
+                            .foregroundStyle(store.canQuote(project) ? palette.textPrimary.color : palette.textSecondary.color)
+                            .opacity(store.canQuote(project) ? 1 : 0.55)
+                    }
                     if store.projects.isEmpty { VText("Aucun projet dans votre portefeuille") }
                 }.disabled(busy || savedDraft != nil)
                 if let template {

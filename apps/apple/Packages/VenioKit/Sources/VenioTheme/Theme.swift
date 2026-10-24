@@ -64,6 +64,12 @@ public struct ThemePalette: Sendable, Equatable {
     public let warning: RGBColor
     public let chartSecondary: RGBColor
 
+    public static func watch(_ selection: ThemeSelection) -> ThemePalette {
+        ThemePalette(ThemeSelection(theme: selection.theme,
+            background: selection.theme == .glass ? "night" : selection.background,
+            accent: selection.accent, locale: selection.locale, autoTranslate: selection.autoTranslate))
+    }
+
     public init(_ selection: ThemeSelection) {
         theme = selection.theme
         let background: (UInt32, UInt32, UInt32)

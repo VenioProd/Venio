@@ -1,6 +1,9 @@
 import Foundation
 
 public protocol VenioAPI: Sendable {
+    func createLead(_ draft: LeadDraft) async throws -> Lead
+    func registerPushToken(_ token: String, environment: PushEnvironment, language: String?) async throws
+    func unregisterPushToken() async throws
     func currentUser() async throws -> UserSummary
     func leads() async throws -> [Lead]
     func lead(id: String) async throws -> Lead

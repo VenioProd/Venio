@@ -1,0 +1,15 @@
+{
+  "Simulator Target Bundle": "paris.venio.app",
+  "aps": {
+    "alert": {
+      "title": "Étape validée",
+      "body": "Boulangerie Rivière · Recette"
+    },
+    "sound": "default",
+    "badge": 3,
+    "thread-id": "PHASE_VALIDATED"
+  },
+  "type": "PHASE_VALIDATED",
+  "link": "/admin/projets/project-riviere?tab=phases",
+  "notificationId": "mock-project"
+}

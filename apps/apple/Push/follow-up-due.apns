@@ -1,0 +1,15 @@
+{
+  "Simulator Target Bundle": "paris.venio.app",
+  "aps": {
+    "alert": {
+      "title": "Relance à effectuer",
+      "body": "Maison Calder"
+    },
+    "sound": "default",
+    "badge": 3,
+    "thread-id": "LEAD_FOLLOW_UP_DUE"
+  },
+  "type": "LEAD_FOLLOW_UP_DUE",
+  "link": "/admin/crm/leads/lead-calder",
+  "notificationId": "mock-follow-up-due"
+}

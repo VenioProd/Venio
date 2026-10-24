@@ -83,3 +83,36 @@ public struct LeadPatch: Codable, Sendable {
         }
     }
 }
+
+public struct LeadDraft: Codable, Sendable {
+    public var company: String
+    public var contactName: String
+    public var contactEmail: String
+    public var contactPhone: String
+    public var serviceType: String
+    public var budget: Decimal?
+    public var source: String
+    public var notes: String
+    public var assignedTo: String?
+
+    public init(company: String = "", contactName: String = "", contactEmail: String = "", contactPhone: String = "",
+                serviceType: String = "", budget: Decimal? = nil, source: String = "", notes: String = "", assignedTo: String? = nil) {
+        self.company = company
+        self.contactName = contactName
+        self.contactEmail = contactEmail
+        self.contactPhone = contactPhone
+        self.serviceType = serviceType
+        self.budget = budget
+        self.source = source
+        self.notes = notes
+        self.assignedTo = assignedTo
+    }
+}
+
+public enum PushEnvironment: String, Codable, Sendable { case sandbox, production }
+
+public struct PushRegistration: Sendable {
+    public var token: String
+    public var environment: PushEnvironment
+    public var language: String?
+}

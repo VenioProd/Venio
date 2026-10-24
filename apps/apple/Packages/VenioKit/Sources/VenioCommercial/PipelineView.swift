@@ -116,7 +116,7 @@ public struct PipelineView: View {
     private func stageHeader(_ stage: PipelineSummary.Stage) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                VText(stage.id.label).font(.headline)
+                VText(stage.id.label).font(.headline).lineLimit(1).minimumScaleFactor(0.75)
                 CommercialBadge(text: formats.number(stage.count))
                 Spacer(minLength: 4)
                 Text(verbatim: formats.money(stage.amount)).font(.subheadline.weight(.semibold).monospacedDigit())
@@ -146,7 +146,9 @@ public struct PipelineView: View {
                 }
             }
             if let date = lead.nextActionAt {
-                Text(verbatim: CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
+                Text(verbatim: store.clock.calendar.isDate(date, inSameDayAs: store.clock.now)
+                     ? CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, formats.time(date))
+                     : CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
                     .font(.caption).foregroundStyle(date < store.clock.now ? palette.urgent.color : palette.accentText.color)
             } else {
                 VText("Aucune action prévue").font(.caption).foregroundStyle(palette.textSecondary.color)

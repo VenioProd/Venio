@@ -237,8 +237,10 @@ public struct Project: Codable, Sendable, Identifiable {
     public var billing: ProjectBilling
     public var endDate: Date?
     public var progress: Int
+    public var assignedTo: String?
+    public var ownerAdminId: String?
 
-    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int) {
+    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, ownerAdminId: String? = nil) {
         self.id = id
         self.projectNumber = projectNumber
         self.name = name
@@ -248,6 +250,11 @@ public struct Project: Codable, Sendable, Identifiable {
         self.billing = billing
         self.endDate = endDate
         self.progress = progress
+        self.assignedTo = assignedTo
+        self.ownerAdminId = ownerAdminId
+    }
+    public func allowsQuote(for user: UserSummary) -> Bool {
+        user.permissions.contains("manage_billing") || assignedTo == user.id || ownerAdminId == user.id
     }
 }
 

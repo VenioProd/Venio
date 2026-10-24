@@ -18,6 +18,7 @@ public struct LeadDetailView: View {
         true
         #endif
     }
+    @State private var showingVoice = false
     @State private var showingQuote = false
     let id: String
     public init(id: String) { self.id = id }
@@ -45,7 +46,11 @@ public struct LeadDetailView: View {
                 ContentUnavailableView(CommercialStrings.text("Lead indisponible", locale: locale), systemImage: "person.crop.circle.badge.questionmark")
             }
         }
+        .task(id: id) { await store.openLead(id: id) }
         .background { ThemedBackground() }
+        .sheet(isPresented: $showingVoice) {
+            if let lead = store.leads.first(where: { $0.id == id }) { VoiceNoteView(lead: lead) }
+        }
         .sheet(isPresented: $showingQuote) {
             if let lead = store.leads.first(where: { $0.id == id }), let project = store.linkedProject(for: lead) {
                 NewQuoteView(projectId: project.id)
@@ -76,8 +81,13 @@ public struct LeadDetailView: View {
                 }
             }
             if store.canManageQuotes && store.linkedProject(for: lead) == nil {
-                VText("Le devis demande un projet lié").font(.caption).foregroundStyle(palette.textSecondary.color)
+                VText("Aucun projet lié dans votre portefeuille. Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption).foregroundStyle(palette.textSecondary.color)
             }
+            VStack(alignment: .leading, spacing: 12) {
+                Button { showingVoice = true } label: {
+                    Label { VText("Note vocale") } icon: { Image(systemName: "mic.fill") }
+                }.disabled(store.currentUser?.permissions.contains("manage_crm") != true || lead.assignedTo != store.currentUser?.id)
+            }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
             if !lead.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     VText("Note").font(.headline)
@@ -140,7 +150,16 @@ public struct LeadDetailView: View {
     }
     private func action(_ title: String, icon: String, url: URL?) -> some View {
         Button {
-            if let url { openURL(url) }
+            if let url {
+                #if os(iOS)
+                if title == "Appeler", let lead = store.leads.first(where: { $0.id == id }) {
+                    store.beginCall(lead)
+                    openURL(url) { accepted in if !accepted { store.cancelCall() } }
+                } else { openURL(url) }
+                #else
+                openURL(url)
+                #endif
+            }
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon).font(.title3).accessibilityHidden(true)

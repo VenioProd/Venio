@@ -17,6 +17,13 @@ import VenioCore
     public private(set) var hasLoaded = false
     public var allLeads = false
     public let clock: DemoClock
+    public var destination: DeepLink?
+    public var routeFailed = false
+    public var onLeadOpened: (@MainActor (Lead) -> Void)?
+    #if os(iOS)
+    var callPrompt: CallAttempt?
+    private var pendingCall: CallAttempt?
+    #endif
     private let api: any VenioAPI
 
     public init(api: any VenioAPI, clock: DemoClock = DemoClock(), monthlyTarget: Decimal? = nil) {
@@ -89,9 +96,13 @@ import VenioCore
         SalesFigures(leads: leads, quotes: quotes, userId: currentUser?.id ?? "", now: clock.now,
                      calendar: clock.calendar, monthlyTarget: monthlyTarget)
     }
+    func canQuote(_ project: Project) -> Bool {
+        guard let currentUser else { return false }
+        return canManageQuotes && project.allowsQuote(for: currentUser)
+    }
     func linkedProject(for lead: Lead) -> Project? {
         guard let client = lead.clientAccountId else { return nil }
-        let matches = projects.filter { $0.client == client }
+        let matches = projects.filter { $0.client == client && canQuote($0) }
         return matches.count == 1 ? matches.first : nil
     }
     func createQuote(templateId: String, projectId: String) async throws -> QuoteProposal {
@@ -103,6 +114,69 @@ import VenioCore
         _ = try await api.sendQuote(id: id)
         quotes = try await api.quotes()
     }
+
+    public func createInteraction(_ draft: InteractionDraft) async throws {
+        let entry = try await api.createInteraction(draft)
+        var entries = timeline[draft.subjectId, default: []]
+        entries.removeAll { $0.id == entry.id }
+        entries.append(entry)
+        timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
+    }
+    func createLead(_ draft: LeadDraft) async throws -> Lead {
+        let lead = try await api.createLead(draft)
+        leads.insert(lead, at: 0)
+        return lead
+    }
+    func openLead(id: String) async {
+        do {
+            let lead = try await api.lead(id: id)
+            replaceLead(lead)
+            timeline[id] = try await api.timeline(leadId: id)
+            onLeadOpened?(lead)
+        } catch { routeFailed = true }
+    }
+    private func replaceLead(_ lead: Lead) {
+        leads.removeAll { $0.id == lead.id }
+        leads.append(lead)
+    }
+    public func open(_ link: DeepLink) async {
+        routeFailed = false
+        do {
+            var resolved = link
+            switch link {
+            case .lead(let id):
+                replaceLead(try await api.lead(id: id))
+            case .quote(let id):
+                let refreshed = try await api.quotes()
+                guard refreshed.contains(where: { $0.id == id }) else { throw VenioAPIError(code: "NOT_FOUND") }
+                quotes = refreshed
+            case .project(let id):
+                projectDetails[id] = try await api.project(id: id)
+            case .projectQuotes(let id):
+                quotes = try await api.quotes()
+                let matches = quotes.filter { $0.project == id }
+                guard !matches.isEmpty else { throw VenioAPIError(code: "NOT_FOUND") }
+                if matches.count == 1, let quote = matches.first { resolved = .quote(quote.id) }
+            }
+            destination = resolved
+        } catch { routeFailed = true }
+    }
+    #if os(iOS)
+    func beginCall(_ lead: Lead) { pendingCall = CallAttempt(lead: lead) }
+    func cancelCall() { pendingCall = nil }
+    func leftApplication() {
+        if pendingCall?.leftAt == nil { pendingCall?.leftAt = .now }
+    }
+    func returnedToApplication() {
+        guard var call = pendingCall else { return }
+        pendingCall = nil
+        guard let leftAt = call.leftAt else { return }
+        let elapsed = Date.now.timeIntervalSince(call.startedAt)
+        guard elapsed >= 0, elapsed <= 2 * 60 * 60 else { return }
+        call.duration = max(0, Date.now.timeIntervalSince(leftAt))
+        callPrompt = call
+    }
+    #endif
 
     var contentIdentifiers: [String] {
         leads.flatMap { [$0.company, $0.contactName, $0.contactEmail, $0.contactPhone] }

@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 import VenioCore
 import VenioTheme
 import VenioCommercial
 
 @main struct VenioWatchApp: App {
+    @State private var bridge = WatchBridge()
     @State private var themes: ThemeManager
     private let api: (any VenioAPI)?
     private let clock = DemoClock()
@@ -21,6 +23,9 @@ import VenioCommercial
                 locale: defaults.string(forKey: "VenioLocale") ?? saved.locale, autoTranslate: saved.autoTranslate))
         }
         _themes = State(initialValue: manager)
+        UNUserNotificationCenter.current().setNotificationCategories([
+            UNNotificationCategory(identifier: "QUOTE_PROPOSAL_VIEWED", actions: [], intentIdentifiers: [])
+        ])
         do {
             let container = try ModelContainer(for: CachedLead.self, CachedProject.self)
             api = CachedVenioAPI(upstream: MockVenioAPI(clock: clock), container: container)
@@ -29,9 +34,14 @@ import VenioCommercial
     var body: some Scene {
         WindowGroup {
             ThemeHost(manager: themes) {
-                if let api { FollowUpsView(api: api, clock: clock) }
+                if let api {
+                    FollowUpsView(api: api, clock: clock)
+                        .safeAreaInset(edge: .bottom) { WatchFieldTools(bridge: bridge) }
+                        .task { bridge.activate() }
+                }
                 else { Text("Stockage indisponible", bundle: .main) }
             }
         }
+        WKNotificationScene(controller: QuoteNotificationController.self, category: "QUOTE_PROPOSAL_VIEWED")
     }
 }

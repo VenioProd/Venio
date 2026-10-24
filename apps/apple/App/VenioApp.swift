@@ -5,6 +5,13 @@ import VenioTheme
 import VenioCommercial
 
 @main struct VenioApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @State private var watch: WatchBridge
+    #else
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    #endif
+    @State private var store: CommercialStore?
     @State private var themes: ThemeManager
     private let clock = DemoClock()
     private let monthlyTarget: Decimal
@@ -29,18 +36,52 @@ import VenioCommercial
         initialLeadID = defaults.string(forKey: "VenioLead")
         let mock = MockVenioAPI(clock: clock)
         monthlyTarget = mock.monthlyTarget()
+        let commercialStore: CommercialStore?
         do {
             let container = try ModelContainer(for: CachedLead.self, CachedProject.self)
-            api = CachedVenioAPI(upstream: mock, container: container)
-        } catch { api = nil }
+            let cached = CachedVenioAPI(upstream: mock, container: container)
+            api = cached
+            commercialStore = CommercialStore(api: cached, clock: clock, monthlyTarget: monthlyTarget)
+        } catch { api = nil; commercialStore = nil }
+        _store = State(initialValue: commercialStore)
+        #if os(iOS)
+        let bridge = WatchBridge()
+        bridge.store = commercialStore
+        commercialStore?.onLeadOpened = { lead in bridge.publish(lead) }
+        bridge.activate()
+        _watch = State(initialValue: bridge)
+        #endif
     }
 
     var body: some Scene {
         WindowGroup {
             ThemeHost(manager: themes) {
-                if let api { RootView(api: api, clock: clock, initialTab: initialTab, initialLeadID: initialLeadID, monthlyTarget: monthlyTarget) }
+                if let store {
+                    RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID)
+                        .onChange(of: store.hasLoaded, initial: true) { _, loaded in
+                            guard loaded, let api else { return }
+                            Task { await delegate.push.connected(api: api, store: store, language: themes.locale.language.languageCode?.identifier ?? "fr") }
+                        }
+                        .onChange(of: themes.locale) { _, locale in
+                            guard store.hasLoaded, let api else { return }
+                            Task { await delegate.push.connected(api: api, store: store, language: locale.language.languageCode?.identifier ?? "fr") }
+                        }
+                        .overlay(alignment: .top) {
+                            VStack {
+                                #if os(iOS)
+                                if watch.failed { Text("Transmission Watch impossible", bundle: .main).padding().venioCard() }
+                                if !watch.pendingNotes.isEmpty {
+                                    Button { Task { await watch.retryPendingNotes() } } label: {
+                                        Text("Réessayer les notes Watch (\(watch.pendingNotes.count))", bundle: .main)
+                                    }.disabled(watch.retrying).padding().venioCard()
+                                }
+                                #endif
+                            }
+                        }
+                }
                 else { StorageUnavailableView() }
             }
+            .onOpenURL { url in Task { await delegate.push.open(type: "", link: url.absoluteString) } }
             .environment(\.calendar, clock.calendar)
             .environment(\.timeZone, clock.calendar.timeZone)
         }

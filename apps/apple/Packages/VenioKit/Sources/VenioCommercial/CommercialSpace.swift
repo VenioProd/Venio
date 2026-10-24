@@ -28,6 +28,9 @@ public enum CommercialTab: String, CaseIterable, Identifiable {
 
 public struct CommercialSpace: View {
     @Environment(CommercialStore.self) private var store
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.locale) private var locale
+    @State private var showingNewLead = false
     @State private var tab: CommercialTab
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
@@ -61,6 +64,27 @@ public struct CommercialSpace: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .quickEntry(isEnabled: store.currentUser?.permissions.contains("manage_crm") == true) {
+            Button { showingNewLead = true } label: {
+                Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
+            }
+        }
+        .sheet(isPresented: $showingNewLead) {
+            NewLeadView { id in tab = .pipeline; pipelinePath = [id] }
+        }
+        .sheet(isPresented: Binding(get: { store.destination != nil }, set: { if !$0 { store.destination = nil } })) {
+            if let destination = store.destination { NotificationDestinationView(destination: destination) }
+        }
+        .alert(CommercialStrings.text("Destination indisponible", locale: locale), isPresented: Binding(get: { store.routeFailed }, set: { store.routeFailed = $0 })) {
+            Button { store.routeFailed = false } label: { VText("Fermer") }
+        } message: { VText("La notification ne permet pas d’identifier cette fiche, ou vous n’y avez plus accès.") }
+        #if os(iOS)
+        .sheet(item: Binding(get: { store.callPrompt }, set: { store.callPrompt = $0 })) { CallLogView(call: $0) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { store.leftApplication() }
+            if phase == .active { store.returnedToApplication() }
+        }
+        #endif
         .onAppear {
             if tab == .quotes && !store.canManageQuotes { tab = .today }
             if tab == .figures && !store.canViewFigures { tab = .today }
@@ -80,6 +104,17 @@ public struct AdminPlaceholderView: View {
         VText("Espace administration").font(.title)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background { ThemedBackground() }
+    }
+}
+
+private extension View {
+    /// Accessoire de la barre d'onglets sur iOS, bouton de barre d'outils sur Mac.
+    @ViewBuilder func quickEntry(isEnabled: Bool, @ViewBuilder content: () -> some View) -> some View {
+        #if os(iOS)
+        tabViewBottomAccessory(isEnabled: isEnabled, content: content)
+        #else
+        toolbar { if isEnabled { ToolbarItem(placement: .primaryAction) { content() } } }
+        #endif
     }
 }
 #endif

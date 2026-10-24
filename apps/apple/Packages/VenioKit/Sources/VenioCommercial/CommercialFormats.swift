@@ -18,7 +18,7 @@ enum CommercialStrings {
 struct VText: View {
     @Environment(\.locale) private var locale
     let key: String
-    init(_ key: String) { self.key = key }
+    nonisolated init(_ key: String) { self.key = key }
     var body: some View { Text(verbatim: CommercialStrings.text(key, locale: locale)) }
 }
 
@@ -89,7 +89,7 @@ extension LeadTemperature {
 
 extension Lead {
     var initials: String { company.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined() }
-    var phoneURL: URL? {
+    public var phoneURL: URL? {
         let digits = contactPhone.filter(\.isNumber)
         guard !digits.isEmpty else { return nil }
         let normalized = contactPhone.trimmingCharacters(in: .whitespaces).hasPrefix("+") ? "+" + digits : digits

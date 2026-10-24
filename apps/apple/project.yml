@@ -26,10 +26,21 @@ targets:
   Venio:
     type: application
     supportedDestinations: [iOS, macOS]
-    sources: [App]
+    sources: [App, Shared]
+    info:
+      path: .build/Venio-Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: paris.venio.app
+            CFBundleURLSchemes: [venio]
+        NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
+        NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
+        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app
+        CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]: App/Venio-iOS.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]: App/Venio-iOS.entitlements
         TARGETED_DEVICE_FAMILY: '1,2'
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -46,7 +57,7 @@ targets:
   VenioWatch:
     type: application
     platform: watchOS
-    sources: [WatchApp]
+    sources: [WatchApp, Shared]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.watchkitapp

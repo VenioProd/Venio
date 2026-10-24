@@ -98,6 +98,11 @@ public struct CachedVenioAPI: VenioAPI {
         return result
     }
 
+    public func createLead(_ draft: LeadDraft) async throws -> Lead { try await upstream.createLead(draft) }
+    public func registerPushToken(_ token: String, environment: PushEnvironment, language: String?) async throws {
+        try await upstream.registerPushToken(token, environment: environment, language: language)
+    }
+    public func unregisterPushToken() async throws { try await upstream.unregisterPushToken() }
     public func quoteTemplates() async throws -> [QuoteTemplate] { try await upstream.quoteTemplates() }
     public func createQuote(templateId: String, projectId: String, title: String?) async throws -> QuoteProposal {
         try await upstream.createQuote(templateId: templateId, projectId: projectId, title: title)

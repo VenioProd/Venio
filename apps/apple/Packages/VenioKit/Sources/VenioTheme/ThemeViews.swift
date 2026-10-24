@@ -92,18 +92,29 @@ public struct ThemeHost<Content: View>: View {
         self.content = content()
     }
 
+    private var palette: ThemePalette {
+        #if os(watchOS)
+        ThemePalette.watch(manager.selection)
+        #else
+        manager.palette
+        #endif
+    }
     private var preferredScheme: ColorScheme? {
+        #if os(watchOS)
+        return .dark
+        #else
         guard let isDark = manager.preferredIsDark else { return nil }
         return isDark ? .dark : .light
+        #endif
     }
 
     public var body: some View {
         content
             .environment(manager)
             .environment(\.locale, manager.locale)
-            .environment(\.venioPalette, manager.palette)
-            .foregroundStyle(manager.palette.textPrimary.color)
-            .tint(manager.palette.accentText.color)
+            .environment(\.venioPalette, palette)
+            .foregroundStyle(palette.textPrimary.color)
+            .tint(palette.accentText.color)
             .preferredColorScheme(preferredScheme)
             .onChange(of: colorScheme, initial: true) { _, scheme in
                 manager.proposeDarkAppearance(scheme == .dark)
