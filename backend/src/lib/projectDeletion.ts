@@ -1,15 +1,24 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import AccountingLine from '../models/AccountingLine.js'
+import ActivityLog from '../models/ActivityLog.js'
 import BillingDocument from '../models/BillingDocument.js'
+import ChangeRequest from '../models/ChangeRequest.js'
+import ClientUpload from '../models/ClientUpload.js'
 import Document from '../models/Document.js'
+import InternalTicket from '../models/InternalTicket.js'
+import Message from '../models/Message.js'
+import MissionBrief from '../models/MissionBrief.js'
 import Project from '../models/Project.js'
+import ProjectChecklist from '../models/ProjectChecklist.js'
 import ProjectFinance from '../models/ProjectFinance.js'
+import ProjectInvitation from '../models/ProjectInvitation.js'
 import ProjectItem from '../models/ProjectItem.js'
 import ProjectMember from '../models/ProjectMember.js'
 import ProjectPhase from '../models/ProjectPhase.js'
 import ProjectSection from '../models/ProjectSection.js'
 import ProjectUpdate from '../models/ProjectUpdate.js'
+import QuoteProposal from '../models/QuoteProposal.js'
 import ShareRuleVersion from '../models/ShareRuleVersion.js'
 import Task from '../models/Task.js'
 import TaskComment from '../models/TaskComment.js'
@@ -22,20 +31,24 @@ import logger from './logger.js'
  * Les fichiers ne sont effacés qu'après la validation : un échec disque laisse
  * au pire un fichier orphelin, jamais un projet à moitié supprimé.
  *
- * Un projet qui porte une facture ou une écriture comptable est refusé (409) :
- * ces pièces doivent survivre, on archive le projet à la place.
+ * Un projet qui porte une facture, une écriture comptable ou un devis déjà
+ * envoyé est refusé (409) : ces pièces doivent survivre, on archive le projet.
+ * Ce qui appartient à quelqu'un d'autre que le projet (tickets internes,
+ * demandes et dépôts du client) est détaché plutôt que supprimé.
  */
 export async function deleteProject(projectId: string): Promise<IProject | null> {
   const removed = await runInTransaction(async (session) => {
     const project = await Project.findById(projectId).session(session)
     if (!project) return null
-    const money =
+    const committed =
       (await BillingDocument.exists({ project: project._id }).session(session)) ||
-      (await AccountingLine.exists({ project: project._id }).session(session))
-    if (money) {
-      throw Object.assign(new Error('Ce projet porte des factures ou des écritures comptables : archivez-le plutôt.'), {
-        status: 409,
-      })
+      (await AccountingLine.exists({ project: project._id }).session(session)) ||
+      (await QuoteProposal.exists({ project: project._id, status: { $ne: 'DRAFT' } }).session(session))
+    if (committed) {
+      throw Object.assign(
+        new Error('Ce projet porte des factures, des écritures comptables ou des devis envoyés : archivez-le plutôt.'),
+        { status: 409 },
+      )
     }
     const filter = { project: project._id }
     const items = await ProjectItem.find(filter).select('file.storagePath').session(session).lean()
@@ -58,6 +71,15 @@ export async function deleteProject(projectId: string): Promise<IProject | null>
     await ProjectMember.deleteMany(filter, { session })
     await ProjectFinance.deleteMany(filter, { session })
     await ShareRuleVersion.deleteMany(filter, { session })
+    await MissionBrief.deleteMany(filter, { session })
+    await Message.deleteMany(filter, { session })
+    await ProjectInvitation.deleteMany(filter, { session })
+    await ProjectChecklist.deleteMany(filter, { session })
+    await QuoteProposal.deleteMany(filter, { session })
+    await ActivityLog.deleteMany(filter, { session })
+    await InternalTicket.updateMany(filter, { $set: { project: null } }, { session })
+    await ChangeRequest.updateMany(filter, { $set: { project: null } }, { session })
+    await ClientUpload.updateMany(filter, { $set: { project: null } }, { session })
     await Project.deleteOne({ _id: project._id }, { session })
     return { project, files }
   })
