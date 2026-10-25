@@ -40,7 +40,7 @@ public struct TodayView: View {
             if store.currentUser?.permissions.contains("view_crm") == true {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 22) {
                     agendaSection("En retard", leads: store.agenda.overdue, icon: "exclamationmark.triangle", urgent: true) { lead in
-                        lead.nextActionAt.map { CommercialStrings.format("Relance du %@", locale: locale, formats.date($0)) } ?? ""
+                        lead.nextActionAt.map { formats.followUp($0, clock: store.clock) } ?? ""
                     } badge: { _ in CommercialStrings.text("En retard", locale: locale) }
                     agendaSection("Relances du jour", leads: store.agenda.followUps, icon: "clock") { lead in
                         CommercialStrings.text("Relance", locale: locale) + " · " + lead.contactName

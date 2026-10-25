@@ -414,3 +414,56 @@ private actor SyncResponses {
     #expect(interaction.id == "interaction" && interaction.subjectId == "lead")
     #expect(interaction.author == "user" && interaction.subject == "Rappel" && interaction.direction == .outgoing)
 }
+
+@Test func followUpAndStagePatchesTravelThroughOutbox() async throws {
+    let store = try database()
+    let requests = Mutex<[URLRequest]>([])
+    let transport = FakeTransport { request in
+        requests.withLock { $0.append(request) }
+        return (200, json(#"{"lead":{"_id":"lead","company":"Atelier","assignedTo":"user"}}"#))
+    }
+    var writer = user
+    writer.permissions.insert("manage_crm")
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: writer, device: device)))
+    let scope = try await auth.identity()
+    try await store.put(type: "leads", json: json(#"{"_id":"lead","company":"Atelier","assignedTo":"user"}"#), scope: scope)
+    let api = LiveVenioAPI(session: auth, store: store)
+    await api.setConnected(false)
+    let date = DemoClock.date(26, hour: 9)
+    _ = try await api.updateLead(id: "lead", patch: LeadPatch(nextActionAt: .set(date)))
+    _ = try await api.updateLead(id: "lead", patch: LeadPatch(nextActionAt: .clear))
+    _ = try await api.updateLead(id: "lead", patch: LeadPatch(status: .lost, lostReason: "Prix"))
+    _ = try await api.updateLead(id: "lead", patch: LeadPatch(status: .qualified, lostReason: "Prix"))
+    let queued = try await store.writes(scope: scope)
+    #expect(queued.count == 4)
+    #expect(requests.withLock { $0.isEmpty })
+    try await api.outbox.drain()
+    let sent = requests.withLock { $0 }
+    #expect(sent.map { $0.value(forHTTPHeaderField: "Idempotency-Key") } == queued.map { $0.id.uuidString })
+    let bodies = try sent.map { try ServerCoding.object($0.httpBody!) }
+    #expect((bodies[0]["nextActionAt"] as? String).flatMap(ServerCoding.date) == date)
+    #expect(bodies[1]["nextActionAt"] is NSNull)
+    #expect(bodies[2]["status"] as? String == "LOST")
+    #expect(bodies[2]["lostReason"] as? String == "Prix")
+    #expect(bodies[2]["nextActionAt"] == nil)
+    #expect(bodies[3]["status"] as? String == "QUALIFIED")
+    #expect(bodies[3]["lostReason"] == nil)
+    #expect(try await store.writes(scope: scope).isEmpty)
+}
+
+@Test func lostWithoutReasonIsRejectedBeforeQueueing() async throws {
+    let store = try database()
+    let transport = FakeTransport { _ in (200, Data()) }
+    var writer = user
+    writer.permissions.insert("manage_crm")
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: writer, device: device)))
+    let scope = try await auth.identity()
+    try await store.put(type: "leads", json: json(#"{"_id":"lead","company":"Atelier","assignedTo":"user"}"#), scope: scope)
+    let api = LiveVenioAPI(session: auth, store: store)
+    await api.setConnected(false)
+    await #expect(throws: VenioAPIError(code: "LOST_REASON_REQUIRED")) {
+        _ = try await api.updateLead(id: "lead", patch: LeadPatch(status: .lost))
+    }
+    #expect(try await store.writes(scope: scope).isEmpty)
+    #expect(await transport.paths.isEmpty)
+}

@@ -108,16 +108,23 @@ import AppKit
         await store.open(destination)
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        await presentationOptions(badge: notification.request.content.badge?.intValue)
+    // Le rappel de complétion doit partir du thread principal : sinon UIKit s'arrête en tâche de fond
+    // (assertion dans `_performBlockAfterCATransactionCommitSynchronizes:`).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        let badge = notification.request.content.badge?.intValue
+        Task { @MainActor in completionHandler(await presentationOptions(badge: badge)) }
     }
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let content = response.notification.request.content
         let type = content.userInfo["type"] as? String ?? ""
         let link = content.userInfo["link"] as? String
-        await receive(type: type, link: link, badge: content.badge?.intValue)
+        let badge = content.badge?.intValue
+        Task { @MainActor in
+            await receive(type: type, link: link, badge: badge)
+            completionHandler()
+        }
     }
     private func presentationOptions(badge: Int?) async -> UNNotificationPresentationOptions {
         guard api != nil else { return [] }

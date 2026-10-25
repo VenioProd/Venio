@@ -55,6 +55,13 @@ struct CommercialFormats {
         return formatter.string(from: value)
     }
 
+    func followUp(_ value: Date, clock: DemoClock) -> String {
+        if clock.calendar.isDate(value, inSameDayAs: clock.now) {
+            return CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, time(value))
+        }
+        return CommercialStrings.format("Relance du %@", locale: locale, date(value))
+    }
+
     func countdown(to date: Date, from now: Date) -> String {
         let minutes = Int(date.timeIntervalSince(now) / 60)
         if minutes < 0 { return CommercialStrings.text("En retard", locale: locale) }

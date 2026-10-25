@@ -204,6 +204,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     }
     func enqueue(leadId: String, patch: LeadPatch, scope: SessionIdentity) throws {
         try check(scope)
+        try patch.validate()
         do {
             modelContext.insert(PendingWrite(id: UUID(), type: "leadPatch", payload: try JSONEncoder().encode(LeadPatchWrite(leadId: resolvedLeadId(leadId, scope: scope), patch: patch)), createdAt: .now))
             try modelContext.save()

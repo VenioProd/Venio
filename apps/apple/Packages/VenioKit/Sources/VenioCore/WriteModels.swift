@@ -65,6 +65,12 @@ public struct LeadPatch: Codable, Sendable {
         self.lostReason = lostReason
     }
 
+    func validate() throws {
+        if status == .lost, lostReason?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+            throw VenioAPIError(code: "LOST_REASON_REQUIRED")
+        }
+    }
+
     private enum CodingKeys: String, CodingKey { case status, nextActionAt, lostReason }
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -77,7 +83,7 @@ public struct LeadPatch: Codable, Sendable {
     public func encode(to encoder: any Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encodeIfPresent(status, forKey: .status)
-        try values.encodeIfPresent(lostReason, forKey: .lostReason)
+        if status == .lost { try values.encodeIfPresent(lostReason, forKey: .lostReason) }
         switch nextActionAt {
         case .set(let date): try values.encode(date, forKey: .nextActionAt)
         case .clear: try values.encodeNil(forKey: .nextActionAt)

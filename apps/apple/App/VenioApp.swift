@@ -121,7 +121,8 @@ import AppKit
                     currentStore?.onLeadOpened = { lead in watch.publish(lead) }
                     watch.publishSnapshot()
                 }
-                .onChange(of: currentStore?.leads.map { $0.id + String($0.updatedAt.timeIntervalSince1970) }) { _, _ in watch.publishSnapshot() }
+                .onChange(of: currentStore?.leads.map { $0.id + String($0.updatedAt.timeIntervalSince1970) + String($0.nextActionAt?.timeIntervalSince1970 ?? 0) + $0.contactPhone }) { _, _ in watch.publishSnapshot() }
+                .onChange(of: currentStore?.quotes.map { $0.id + String($0.updatedAt.timeIntervalSince1970) }) { _, _ in watch.publishSnapshot() }
                 .onChange(of: currentStore?.currentUser?.id, initial: true) { _, _ in
                     Task { await watch.retryPendingNotes() }
                 }

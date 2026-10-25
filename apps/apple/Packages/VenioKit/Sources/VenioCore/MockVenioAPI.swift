@@ -109,7 +109,7 @@ public actor MockVenioAPI: VenioAPI {
         ]
         let amounts: [Decimal] = [18200, 24600, 9800, 15400, 31200]
         let history = amounts.enumerated().map { index, amount in
-            quote(["010", "015", "018", "022", "030"][index], client: ["Studio Héron", "Pâtisserie Marlot", "Cabinet Valère", "Éditions Corail", "Hôtel des Arts"][index], project: "project-history-\(index)", template: "Site vitrine",
+            quote(["010", "015", "018", "022", "030"][index], client: ["Studio Héron", "Pâtisserie Marlot", "Cabinet Valère", "Éditions Corail", "Hôtel des Arts"][index], project: "project-history-\(index)", template: ["Refonte du site", "Boutique en ligne", "Portail de prise de rendez-vous", "Catalogue des éditions", "Réservation de séjours"][index],
                   amount: amount, status: .signed, signedAt: DemoClock.date(12, month: 5 + index))
         }
         let result = current + history
@@ -120,6 +120,8 @@ public actor MockVenioAPI: VenioAPI {
     private func quote(_ number: String, client: String, project: String, template: String, amount: Decimal, status: QuoteStatus, firstViewedAt: Date? = nil, signedAt: Date? = nil, author: String = MockVenioAPI.lea.id) -> QuoteProposal {
         QuoteProposal(id: "quote-\(number)", project: project, client: client, createdBy: author, title: template, status: status, lines: [QuoteLine(description: template, quantity: 1, unitPrice: amount, taxRate: 20)], signature: QuoteSignature(signedAt: signedAt), firstViewedAt: firstViewedAt, expiresAt: clock.calendar.date(byAdding: .day, value: 30, to: signedAt ?? DemoClock.date(1)), createdAt: signedAt ?? DemoClock.date(1), updatedAt: signedAt ?? DemoClock.date(1), reference: "DV-2026-\(number)", leadId: number == "041" ? "lead-calder" : nil)
     }
+
+    public func lostReasons() -> [String] { ["Prix", "Délai", "Concurrent", "Pas de budget", "Abandon du projet"] }
 
     public func quoteTemplates() throws -> [QuoteTemplate] {
         [
@@ -223,6 +225,7 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     public func updateLead(id: String, patch: LeadPatch) throws -> Lead {
+        try patch.validate()
         guard user.permissions.contains("manage_crm") else { throw VenioAPIError(code: "FORBIDDEN") }
         var records = try leads()
         guard let index = records.firstIndex(where: { $0.id == id }), records[index].assignedTo == user.id else {
@@ -232,7 +235,7 @@ public actor MockVenioAPI: VenioAPI {
             records[index].status = status
             records[index].statusChangedAt = clock.now
         }
-        if let reason = patch.lostReason { records[index].lostReason = reason }
+        if patch.status == .lost, let reason = patch.lostReason { records[index].lostReason = reason }
         switch patch.nextActionAt {
         case .set(let date): records[index].nextActionAt = date
         case .clear: records[index].nextActionAt = nil
@@ -248,12 +251,19 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     public func projects() throws -> [Project] {
-        return [
+        let history = try quotes().filter { $0.project?.hasPrefix("project-history-") == true }.enumerated().map { index, quote in
+            Project(id: quote.project!, projectNumber: "P-2026-" + String(format: "%03d", index + 1),
+                    name: quote.title, client: quote.client ?? "", status: .completed,
+                    budget: ProjectBudget(amount: quote.amountHT), billing: ProjectBilling(amountInvoiced: quote.amountHT, billingStatus: .invoiced),
+                    endDate: quote.signature.signedAt.flatMap { clock.calendar.date(byAdding: .day, value: 30, to: $0) },
+                    progress: 100, assignedTo: Self.lea.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id)
+        }
+        return ([
             Project(id: "project-pilote", projectNumber: "P-2026-018", name: "Plateforme de réservation", client: "Agence Pilote", status: .active, budget: ProjectBudget(amount: 18400), billing: ProjectBilling(amountInvoiced: 9200, billingStatus: .partial), endDate: DemoClock.date(28, month: 11), progress: 62, assignedTo: Self.lea.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id),
             Project(id: "project-riviere", projectNumber: "P-2026-015", name: "Site + click & collect", client: "Boulangerie Rivière", status: .active, budget: ProjectBudget(amount: 8900), billing: ProjectBilling(amountInvoiced: 4450, billingStatus: .partial), endDate: DemoClock.date(6, month: 11), progress: 85, assignedTo: Self.hugo.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id || user.id == Self.hugo.id),
             Project(id: "project-morel", projectNumber: "P-2026-011", name: "Espace client", client: "Cabinet Morel", status: .active, budget: ProjectBudget(amount: 24000), billing: ProjectBilling(amountInvoiced: 7200, billingStatus: .partial), endDate: DemoClock.date(15, month: 12), progress: 30, assignedTo: Self.hugo.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.hugo.id),
             Project(id: "project-lumen", projectNumber: "P-2026-009", name: "Plateforme e-learning", client: "Lumen Formation", status: .active, budget: ProjectBudget(amount: 32000), billing: ProjectBilling(amountInvoiced: 25600, billingStatus: .partial), endDate: DemoClock.date(30), progress: 96, assignedTo: Self.lea.id, canQuote: user.permissions.contains("manage_billing") || user.id == Self.lea.id)
-        ].map { value in
+        ] + history).map { value in
             var project = value
             project.canQuote = project.canQuote && !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"])
             return project
@@ -278,7 +288,12 @@ public actor MockVenioAPI: VenioAPI {
             current = 2; day = 16; update = "Arborescence validée"
             requests = (1...2).map { ChangeRequest(id: "request-morel-\($0)", project: id, title: "Demande de modification \($0)", status: .submitted) }
         default:
-            current = 5; day = 22; update = "Migration des contenus terminée"
+            day = 22
+            if project.status == .completed {
+                current = 6; update = "Projet livré"
+            } else {
+                current = 5; update = "Migration des contenus terminée"
+            }
         }
         let phases = ["Cadrage", "Conception", "Développement", "Recette", "Mise en ligne"].enumerated().map { index, title in
             let order = index + 1
@@ -290,7 +305,7 @@ public actor MockVenioAPI: VenioAPI {
         }
         var updates = [ProjectUpdate(id: "\(id)-update", project: id, title: update,
             description: id == "project-riviere" ? "The review version is now available. Please share your feedback." : "",
-            author: Self.raphael.name, createdAt: DemoClock.date(day))]
+            author: Self.raphael.name, createdAt: project.status == .completed ? project.endDate ?? DemoClock.date(day) : DemoClock.date(day))]
         if id == "project-pilote" {
             updates.append(ProjectUpdate(id: "pilote-signed", project: id, title: "Devis DV-2026-038 signé, projet ouvert", author: "automatique", createdAt: DemoClock.date(9)))
         }

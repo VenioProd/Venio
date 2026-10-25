@@ -120,7 +120,7 @@ public struct PipelineView: View {
                 CommercialBadge(text: formats.number(stage.count))
                 Spacer(minLength: 4)
                 Text(verbatim: formats.money(stage.amount)).font(.subheadline.weight(.semibold).monospacedDigit())
-            }
+            }.lineLimit(1).minimumScaleFactor(0.7)
             Text(verbatim: formats.percent(stage.id.probability) + " · " +
                  CommercialStrings.format("pond. %@", locale: locale, formats.money(stage.weighted)))
                 .font(.caption).foregroundStyle(palette.textSecondary.color)
@@ -147,9 +147,7 @@ public struct PipelineView: View {
                 }
             }
             if let date = lead.nextActionAt {
-                Text(verbatim: store.clock.calendar.isDate(date, inSameDayAs: store.clock.now)
-                     ? CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, formats.time(date))
-                     : CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
+                Text(verbatim: formats.followUp(date, clock: store.clock))
                     .font(.caption).foregroundStyle(date < store.clock.now ? palette.urgent.color : palette.accentText.color)
             } else {
                 VText("Aucune action prévue").font(.caption).foregroundStyle(palette.textSecondary.color)

@@ -18,15 +18,16 @@ Depuis `apps/apple/`, `xcodegen generate` prépare les schémas `Venio`, `VenioW
 
 ### Parcours de bout en bout (`VenioE2E`)
 
-Contre un backend local (jamais la prod) sur `http://127.0.0.1:5099`, avec un compte commercial de test. Trois étapes lancées séparément, le serveur étant coupé entre la 1 et la 2 puis relancé avant la 3 :
+Contre un backend local (jamais la prod) sur `http://127.0.0.1:5099`, avec un compte commercial de test, un Mongo local jetable et au moins un modèle de devis, un projet confié au compte et des leads qui lui sont assignés. Les tests se lancent séparément ; le serveur est coupé entre `test1` et `test2`, puis relancé avant `test3` :
 
 ```sh
 xcodebuild -scheme VenioE2E -destination 'id=<UUID-iPhone>' CODE_SIGN_IDENTITY=- build-for-testing
-TEST_RUNNER_VENIO_E2E_PASSWORD=… xcodebuild -scheme VenioE2E -destination 'id=<UUID-iPhone>' test-without-building -only-testing:VenioUITests/LiveJourneyTests/test1_loginSyncAndOnlineNote
-# couper le backend, puis test2_offlineNoteIsQueued ; le relancer, puis test3_queueDrainsWhenBackOnline
+TEST_RUNNER_VENIO_E2E_PASSWORD=… xcodebuild -scheme VenioE2E -destination 'id=<UUID-iPhone>' test-without-building -only-testing:VenioUITests/LiveJourneyTests/<test>
 ```
 
-`TEST_RUNNER_VENIO_E2E_EMAIL` (défaut `lea@venio.test`) et `TEST_RUNNER_VENIO_E2E_BASE_URL` sont facultatifs.
+Ordre : `test1` (connexion, synchro, note en ligne), serveur coupé, `test2` (note hors ligne) et `test4` (lead hors ligne), serveur relancé, `test3` et `test5` (vidage de la file), puis en ligne `test6` (relance, étape, « Perdu » avec motif), `test7` (devis sur un lead, rattachement à un projet, envoi) et `test8` (push `VENIO_QUOTE`). Pour `test8`, envoyer `Push/quote-viewed.apns`, dont le lien pointe vers l'id du projet rattaché, avec `xcrun simctl push` une vingtaine de secondes après le lancement du test, qui attend la bannière.
+
+`TEST_RUNNER_VENIO_E2E_EMAIL` (défaut `lea@venio.test`), `TEST_RUNNER_VENIO_E2E_BASE_URL` et `TEST_RUNNER_VENIO_E2E_SHOTS` (dossier de captures) sont facultatifs.
 
 ## Session et données
 
@@ -40,7 +41,7 @@ Créations de leads, interactions et patchs entrent d’abord dans une file pers
 
 `VenioCommercial` expose la session par observation, la connexion en deux étapes, les appareils, la déconnexion et les états de file. Rôle pour l’espace, permissions pour les actions ; l’objectif du mois courant vient du protocole API (40 000 € en mock), et la jauge reste masquée sans objectif. FR/EN dans les catalogues, couleurs issues de `VenioTheme`. Les préférences serveur sont appliquées au démarrage ; un changement local non envoyé est conservé par compte pour le prochain lancement, transmis avant la relecture serveur. `autoTranslate` reste local.
 
-Push proposé après connexion chargée. À la déconnexion : badge nul et contexte Watch effacé. La Watch live reçoit les relances de l’iPhone (50 au maximum), et ses notes rejoignent la file de l’iPhone avec leur clé stable ; aucune session Bearer n’est transmise à la Watch. La démo Watch reste disponible en mock. La notification longue affiche son texte serveur ; son bouton d’appel n’est résolu qu’en démo.
+Push proposé après connexion chargée. À la déconnexion : badge nul et contexte Watch effacé. La Watch live reçoit les relances de l’iPhone (50 au maximum), et ses notes rejoignent la file de l’iPhone avec leur clé stable ; aucune session Bearer n’est transmise à la Watch. La démo Watch reste disponible en mock. La notification longue affiche son texte serveur ; son bouton d’appel est résolu en live depuis les correspondances devis-téléphone synchronisées par l’iPhone, et reste disponible en démo.
 
 ## Contrat mobile
 
@@ -50,4 +51,6 @@ Limites restantes :
 
 - Le code serveur `today.ts` ne sélectionne pas `leadId` dans `quotesViewedNotSigned` ; Aujourd’hui utilise le `leadId` des devis synchronisés pour ouvrir un lead connu.
 - `canQuote` peut rester périmé après un changement de droits ou de propriétaire sans modification de l’objet ; le serveur revérifie chaque création et rattachement.
-- L’avancement est calculé depuis les étapes synchronisées. Les événements système du CRM ne font pas partie de la synchro d’interactions. Relance et Étape restent désactivées dans la fiche lead. Pas de route d’envoi d’identifiants dans l’app.
+- L’avancement est calculé depuis les étapes synchronisées. Les événements système du CRM ne font pas partie de la synchro d’interactions. Pas de route d’envoi d’identifiants dans l’app.
+- « Perdu » exige la liste de motifs du serveur (`GET /api/admin/crm/worklist`), lue en ligne puis conservée ; sans liste disponible, cette étape est indisponible.
+- Le bouton d’appel de la notification longue Watch dépend du dernier contexte reçu de l’iPhone (devis envoyés non signés, 50 au maximum) et reste masqué sans téléphone unique correspondant. Non vérifié sur une Watch réelle.

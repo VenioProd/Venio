@@ -129,6 +129,22 @@ import VenioCore
         timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
         return entry
     }
+    func lostReasons() async throws -> [String] { try await api.lostReasons() }
+
+    public func updateLead(id: String, patch: LeadPatch) async throws {
+        guard let current = lead(for: id), currentUser?.permissions.contains("manage_crm") == true,
+              current.assignedTo == currentUser?.id else { throw VenioAPIError(code: "FORBIDDEN") }
+        let lead = try await api.updateLead(id: current.id, patch: patch)
+        if current.id != lead.id {
+            leadAliases[current.id] = lead.id
+            leads.removeAll { $0.id == current.id }
+            timeline[lead.id] = timeline.removeValue(forKey: current.id)
+        }
+        replaceLead(lead)
+        if let entries = try? await api.timeline(leadId: lead.id) {
+            timeline[lead.id] = entries.sorted { $0.date > $1.date }
+        }
+    }
     func createLead(_ draft: LeadDraft) async throws -> Lead {
         let lead = try await api.createLead(draft)
         leads.insert(lead, at: 0)

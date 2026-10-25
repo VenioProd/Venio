@@ -93,14 +93,26 @@ struct FinancialTimeline: View {
             }
             .chartXScale(domain: dateRange)
             .chartXSelection(value: $selection)
-            .chartXAxis { AxisMarks(values: months.map(\.id)) { AxisValueLabel(format: .dateTime.month(.abbreviated)) } }
+            .chartXAxis {
+                AxisMarks(values: months.map(\.id)) { value in
+                    AxisValueLabel(collisionResolution: .disabled) {
+                        if let date = value.as(Date.self) {
+                            Text(verbatim: CommercialFormats(locale: locale).date(date, template: "MMM"))
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                    }
+                }
+            }
             .chartYAxis { AxisMarks(position: .leading) }
             .frame(height: 180)
             Chart(months) { month in
-                BarMark(x: .value(CommercialStrings.text("Mois", locale: locale), month.id, unit: .month),
-                        y: .value(CommercialStrings.text("Devis signés", locale: locale), month.volume), width: .ratio(0.45))
+                BarMark(x: .value(CommercialStrings.text("Mois", locale: locale), month.id),
+                        y: .value(CommercialStrings.text("Devis signés", locale: locale), month.volume), width: 14)
                     .foregroundStyle(palette.accent.color.opacity(0.4))
-            }.chartXScale(domain: dateRange).chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 24)
+            }
+            .chartXScale(domain: dateRange)
+            .chartYScale(domain: 0...max(1, months.map(\.volume).max() ?? 0))
+            .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 48)
             VText("Volume de devis signés").font(.caption).foregroundStyle(palette.textSecondary.color)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }

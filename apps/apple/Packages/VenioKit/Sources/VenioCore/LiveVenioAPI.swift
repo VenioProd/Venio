@@ -164,6 +164,20 @@ public actor LiveVenioAPI: VenioAPI {
         guard !scope.user.permissions.isDisjoint(with: ["manage_quotes", "view_billing", "manage_billing"]) else { return [] }
         return try await store.records(type: "quotes", scope: scope).map { try ServerCoding.decoder().decode(QuoteDTO.self, from: $0).model }.sorted { $0.createdAt > $1.createdAt }
     }
+    public func lostReasons() async throws -> [String] {
+        let scope = try await session.identity()
+        guard scope.user.permissions.contains("view_crm") else { return [] }
+        struct Response: Codable { var lostReasons: [String] }
+        do {
+            let data = try await online(session.request(path: "/api/admin/crm/worklist"), scope: scope)
+            let result = try ServerCoding.decoder().decode(Response.self, from: data)
+            try await saveSnapshot(type: "lostReasons", data: ServerCoding.encoder().encode(result), scope: scope)
+            return result.lostReasons
+        } catch let error as VenioAPIError where error.code == "CONNECTION_REQUIRED" {
+            guard let data = try await snapshot(type: "lostReasons", scope: scope) else { return [] }
+            return try ServerCoding.decoder().decode(Response.self, from: data).lostReasons
+        }
+    }
     public func quoteTemplates() async throws -> [QuoteTemplate] {
         let scope = try await session.identity()
         struct Response: Decodable { var templates: [TemplateDTO] }
@@ -295,7 +309,7 @@ private extension InteractionDraft {
 private extension Lead {
     mutating func apply(_ patch: LeadPatch) {
         if let status = patch.status { self.status = status }
-        if let lostReason = patch.lostReason { self.lostReason = lostReason }
+        if patch.status == .lost, let lostReason = patch.lostReason { self.lostReason = lostReason }
         switch patch.nextActionAt {
         case .set(let date): nextActionAt = date
         case .clear: nextActionAt = nil
