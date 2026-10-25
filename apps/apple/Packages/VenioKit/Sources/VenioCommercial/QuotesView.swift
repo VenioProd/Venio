@@ -44,6 +44,7 @@ public struct QuotesView: View {
                 Button { showingNew = true } label: {
                     Label { VText("Nouveau devis") } icon: { Image(systemName: "plus") }
                 }
+                CompactQuickEntryButton()
             }
             if store.quotes.isEmpty { VText("Aucun devis") }
             ForEach(QuoteStatus.allCases, id: \.self) { status in

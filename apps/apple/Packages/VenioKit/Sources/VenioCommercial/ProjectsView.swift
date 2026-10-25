@@ -59,7 +59,11 @@ public struct ProjectsView: View {
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     public var body: some View {
         CommercialPage {
-            VText("Projets").font(.largeTitle.bold())
+            HStack {
+                VText("Projets").font(.largeTitle.bold())
+                Spacer()
+                CompactQuickEntryButton()
+            }
             ForEach(store.projects) { project in
                 Button { onProject(project.id) } label: {
                     VStack(alignment: .leading, spacing: 12) {

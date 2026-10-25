@@ -3,20 +3,15 @@ import SwiftUI
 import VenioCore
 import VenioTheme
 
-extension EnvironmentValues {
-    @Entry var hasFloatingQuickEntry = false
-}
-
 struct QuickEntryButton: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
     @Environment(\.venioPalette) private var palette
-    var floating = false
     var body: some View {
         if store.canQuickEntry {
             Button { store.showingQuickEntry = true } label: {
                 Image(systemName: "plus").font(.title3.weight(.semibold))
-                    .frame(width: floating ? 56 : 40, height: floating ? 56 : 40)
+                    .frame(width: 40, height: 40)
                     .foregroundStyle(palette.accentText.color)
                     .background {
                         if palette.theme == .neon { Circle().fill(palette.surfaces[0].color) }
@@ -47,15 +42,23 @@ private struct QuickEntryPlacement: ViewModifier {
     }
     func body(content: Content) -> some View {
         content
-            .environment(\.hasFloatingQuickEntry, compact && store.canQuickEntry)
-            .overlay(alignment: .bottomTrailing) {
-                if compact { QuickEntryButton(floating: true).padding(16) }
-            }
             .toolbar {
                 if !compact && !inHeader {
                     ToolbarItem(placement: .primaryAction) { QuickEntryButton() }
                 }
             }
+    }
+}
+
+/// Sur iPhone, le « + » vit dans l'en-tête de chaque page : rien ne flotte au-dessus du contenu.
+struct CompactQuickEntryButton: View {
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+    var body: some View {
+        #if os(iOS)
+        if sizeClass != .regular { QuickEntryButton() }
+        #endif
     }
 }
 
