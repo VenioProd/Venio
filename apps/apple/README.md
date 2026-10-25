@@ -6,7 +6,7 @@ Apps iPhone, iPad, Mac et Apple Watch. Xcode 27.1, Swift 6.4 et XcodeGen ≥ 2.4
 
 - `-VenioBackend mock|live` : mock en Debug, live en Release par défaut.
 - `-VenioAPIBaseURL <url>` : origine HTTP injectée ; HTTPS par défaut. HTTP est accepté uniquement en Debug sur `localhost` et `127.0.0.1`, avec un plist ATS Debug distinct. La base Release par défaut est `https://venio.paris`.
-- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`.
+- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`, `-VenioMockRole admin`, `-VenioAdminSection business|projects|messaging|activity|tickets|dev`, `-VenioAdminItem <id>`.
 - Les previews et tests utilisent le mock ou un faux transport, jamais le réseau.
 
 ```sh

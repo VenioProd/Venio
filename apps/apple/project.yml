@@ -57,6 +57,8 @@ targets:
         product: VenioTheme
       - package: VenioKit
         product: VenioCommercial
+      - package: VenioKit
+        product: VenioAdmin
       - target: VenioWatch
         platformFilter: iOS
         embed: true
