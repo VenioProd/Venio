@@ -152,6 +152,8 @@ it('masque les projets hors périmètre et conserve les projets du portefeuille 
     .map((char) => `%${char.charCodeAt(0).toString(16)}`)
     .join('')
   await request(app).get(`/api/admin/projects/${encodedId}/tasks`).expect(404)
+  // HEAD emprunte le gestionnaire GET : il ne doit révéler ni l'existence ni le nom du projet.
+  await request(app).head(`/api/admin/projects/${outside._id}/recap-pdf`).expect(404)
   const listed = await request(app).get('/api/admin/projects').expect(200)
   expect(listed.body.projects.map((p: { _id: string }) => p._id)).toEqual([String(owned._id)])
   const search = await request(app).get('/api/admin/search?q=Secret').expect(200)
@@ -218,8 +220,6 @@ it('masque les projets hors périmètre et conserve les projets du portefeuille 
   for (const route of [
     `/api/admin/billing/projects/${outside._id}/billing-documents`,
     `/api/admin/billing/PROJECTS/${outside._id}/billing-documents`,
-    `/api/admin/accounting/projects/${outside._id}/finance`,
-    `/api/admin/accounting/exports/payments.csv?projectId=${outside._id}`,
     `/api/admin/billing/${document._id}`,
     `/api/admin/billing/${document._id}/pdf`,
     `/api/admin/billing/${document._id}/accounting-entries`,

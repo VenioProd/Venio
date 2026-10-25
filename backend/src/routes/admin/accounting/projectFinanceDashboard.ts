@@ -1,4 +1,3 @@
-import { readableProjectIds } from '../../../lib/adminProjectAccess.js'
 import express from 'express'
 import auth from '../../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
@@ -20,7 +19,7 @@ import projectFinanceErrors from './projectFinanceErrors.js'
 const router = express.Router()
 router.use(auth, requireAdmin)
 
-router.get('/dashboard', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (req, res, next) => {
+router.get('/dashboard', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (_req, res, next) => {
   try {
     const now = new Date()
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
@@ -40,8 +39,7 @@ router.get('/dashboard', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (
         row.volume++
       }
     }
-    const ids = await readableProjectIds(req.user!)
-    const finances = await ProjectFinance.find(ids === null ? {} : { project: { $in: ids } }).lean()
+    const finances = await ProjectFinance.find().lean()
     const projectDocs = await Project.find({ _id: { $in: finances.map((finance) => finance.project) } })
       .select('name client')
       .lean()
@@ -200,11 +198,7 @@ router.get('/cash-in', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (re
       refundedTtcCents: 0,
       netTtcCents: 0,
     }))
-    const ids = await readableProjectIds(req.user!)
-    const payments = await ProjectPayment.find({
-      ...(ids === null ? {} : { project: { $in: ids } }),
-      receivedAt: { $gte: start, $lt: end },
-    })
+    const payments = await ProjectPayment.find({ receivedAt: { $gte: start, $lt: end } })
       .select('kind amountTtcCents receivedAt')
       .lean()
     for (const payment of payments) {

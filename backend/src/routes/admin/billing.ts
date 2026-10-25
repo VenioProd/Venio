@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../middleware/auth.js'
+import requireBrowserSession from '../../middleware/browserSession.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
 import requireMfa from '../../middleware/mfa.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
@@ -36,7 +37,7 @@ router.use(requireAdmin)
 // Un commercial non associé ne lit que les factures de son périmètre de projets.
 router.use(async (req, res, next) => {
   try {
-    if (req.method !== 'GET' || req.user!.role !== 'COMMERCIAL') return next()
+    if ((req.method !== 'GET' && req.method !== 'HEAD') || req.user!.role !== 'COMMERCIAL') return next()
     const [first, second] = req.path.split('/').slice(1).map(decodeURIComponent)
     const byProject = first?.toLowerCase() === 'projects'
     if (!byProject && !mongoose.isObjectIdOrHexString(first)) return next()
@@ -534,6 +535,7 @@ router.get(
 // Idempotent grâce à billing:sale:<id> / billing:payment:<id>.
 router.post(
   '/:id/generate-accounting',
+  requireBrowserSession,
   requirePermission(PERMISSIONS.MANAGE_BILLING),
   requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
   requireMfa,

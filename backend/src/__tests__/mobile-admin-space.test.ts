@@ -146,6 +146,11 @@ it('exige la MFA de l’appareil pour les seules lectures comptables autorisées
     ['get', '/api/admin/accounting/reports/dashboard/other'],
     ['get', '/api/admin/dev/issues/not-an-objectid'],
     ['post', `/api/admin/billing/${invoiceId}/generate-accounting`],
+    // Premier caractère encodé : Express le décode, la route reste fermée.
+    [
+      'post',
+      `/api/admin/billing/%${String(invoiceId).charCodeAt(0).toString(16)}${String(invoiceId).slice(1)}/generate-accounting`,
+    ],
   ] as const) {
     const denied = await request(app)[method](path).set('Authorization', verified).expect(403)
     expect(denied.body.code).toBe('BROWSER_SESSION_REQUIRED')

@@ -82,7 +82,12 @@ const validQuotePayload = [
 
 async function loadOr404(req: Request, res: Response): Promise<IChangeRequest | null> {
   const found = await ChangeRequest.findById(req.params.id)
-  if (!found || (req.method === 'GET' && found.project && !(await canReadProject(req.user!, String(found.project))))) {
+  if (
+    !found ||
+    ((req.method === 'GET' || req.method === 'HEAD') &&
+      found.project &&
+      !(await canReadProject(req.user!, String(found.project))))
+  ) {
     res.status(404).json({ error: 'Demande non trouvée' })
     return null
   }

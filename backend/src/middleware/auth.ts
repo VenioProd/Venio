@@ -52,13 +52,7 @@ const BEARER_ALLOWED_ROUTES = [
   { method: 'PATCH', pattern: /^\/api\/admin\/dev\/issues\/[a-f\d]{24}\/?$/i },
 ]
 
-// Écritures comptables sous un préfixe ouvert, que l'app n'utilise pas : elles restent au navigateur, avec sa MFA récente.
-const BEARER_DENIED_ROUTES = [
-  { method: 'POST', pattern: /^\/api\/admin\/billing\/[a-f\d]{24}\/generate-accounting\/?$/i },
-]
-
 function isBearerAllowed(path: string, method: string): boolean {
-  if (BEARER_DENIED_ROUTES.some((route) => route.method === method && route.pattern.test(path))) return false
   // Le routage Express ignore la casse : la comparaison aussi.
   const normalized = path.toLowerCase()
   return (

@@ -26,7 +26,7 @@ router.use(async (req, res, next) => {
   try {
     const projectId = decodeURIComponent(req.path.split('/')[1] ?? '')
     if (
-      req.method === 'GET' &&
+      (req.method === 'GET' || req.method === 'HEAD') &&
       mongoose.isObjectIdOrHexString(projectId) &&
       !(await canReadProject(req.user!, projectId))
     ) {
