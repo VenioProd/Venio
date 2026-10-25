@@ -25,6 +25,7 @@ import {
   sendTaskReminderEmail,
   sendBriefReminderEmail,
 } from './email.js'
+import { invoicePaymentBalance } from './projectFinance/payments.js'
 import logger from './logger.js'
 
 interface SchedulerResult {
@@ -491,6 +492,9 @@ export async function processInvoiceReminders(): Promise<InvoiceReminderResult> 
     // Find sent invoices that are past due and haven't had a reminder sent
     const overdueInvoices = await BillingDocument.find({
       type: 'INVOICE',
+      // Un avoir est une facture de montant négatif : rien à réclamer.
+      creditedInvoice: null,
+      total: { $gt: 0 },
       status: { $in: ['SENT', 'ISSUED'] },
       dueAt: { $lt: new Date(), $ne: null },
       reminderSentAt: null,
@@ -507,7 +511,9 @@ export async function processInvoiceReminders(): Promise<InvoiceReminderResult> 
       // Only send if past the configured reminder threshold
       if (daysPastDue < settings.invoiceReminderDays) continue
 
-      const amountStr = `${invoice.total.toLocaleString('fr-FR')} ${invoice.currency}`
+      const { remainingTtcCents } = await invoicePaymentBalance(invoice, null)
+      if (remainingTtcCents <= 0) continue
+      const amountStr = `${(remainingTtcCents / 100).toLocaleString('fr-FR')} ${invoice.currency}`
       const result = await sendInvoiceReminderEmail({
         to: client.email,
         name: client.name || client.email,

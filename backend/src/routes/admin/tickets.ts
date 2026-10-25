@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import Project from '../../models/Project.js'
 import { hasProjectAccess } from '../../lib/adminProjectAccess.js'
 import path from 'path'
+import crypto from 'node:crypto'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
@@ -26,7 +27,8 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safeName}`)
+    // Deux envois simultanés du même fichier ne doivent pas partager un chemin : le rejeu écarte le doublon.
+    cb(null, `${Date.now()}-${crypto.randomUUID()}-${safeName}`)
   },
 })
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })

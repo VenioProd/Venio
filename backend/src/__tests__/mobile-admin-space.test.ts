@@ -25,6 +25,7 @@ import InternalConversation from '../models/InternalConversation.js'
 import InternalMessage from '../models/InternalMessage.js'
 import Notification from '../models/Notification.js'
 import { sendInvoiceReminderEmail } from '../lib/email.js'
+import { processInvoiceReminders } from '../lib/crmScheduler.js'
 import { sendPushToUser } from '../lib/webPush.js'
 import type { UserRole } from '../types/enums.js'
 
@@ -275,8 +276,8 @@ it('rejoue un message sans créer de second message ni de seconde notification',
   expect(sendPushToUser).toHaveBeenCalledTimes(1)
 })
 
-it('ne relance ni un avoir ni une facture soldée', async () => {
-  const overdue = new Date(Date.now() - 2 * 86400000)
+it('ne relance ni un avoir ni une facture soldée, à la main comme par le cron', async () => {
+  const overdue = new Date(Date.now() - 10 * 86400000)
   const invoice = await BillingDocument.create({
     type: 'INVOICE',
     number: 'FAC-TEST-2',
@@ -312,6 +313,7 @@ it('ne relance ni un avoir ni une facture soldée', async () => {
     .set('Authorization', bearer)
     .expect(409)
   expect(settled.body.code).toBe('NOTHING_DUE')
+  await processInvoiceReminders()
   expect(sendInvoiceReminderEmail).not.toHaveBeenCalled()
 })
 
