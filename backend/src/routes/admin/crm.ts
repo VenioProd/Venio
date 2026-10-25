@@ -1,4 +1,4 @@
-import { readableProjectIds } from '../../lib/adminProjectAccess.js'
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
@@ -636,6 +636,9 @@ router.post(
       if (!mongoose.isValidObjectId(req.params.projectId)) {
         return res.status(400).json({ error: 'Identifiant de projet invalide' })
       }
+      if (!(await canReadProject(req.user!, String(req.params.projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
       const project = await Project.findById(req.params.projectId).select('name sourceLead')
       if (!project) return res.status(404).json({ error: 'Project not found' })
 
@@ -674,6 +677,9 @@ router.delete(
 
       if (!mongoose.isValidObjectId(req.params.projectId)) {
         return res.status(400).json({ error: 'Identifiant de projet invalide' })
+      }
+      if (!(await canReadProject(req.user!, String(req.params.projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
       }
       const project = await Project.findOne({ _id: req.params.projectId, sourceLead: lead._id }).select('name')
       if (!project) return res.status(404).json({ error: 'Project not found' })

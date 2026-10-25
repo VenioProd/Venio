@@ -6,6 +6,7 @@ import Project from '../../models/Project.js'
 import ProjectPhase from '../../models/ProjectPhase.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { runInTransaction } from '../transaction.js'
+import { lockProject } from '../projectWriteLock.js'
 import { assertCents, moneyError, toCents, vatCents } from './money.js'
 import { splitPayers, splitSchedule, subscriptionPeriodStart, subscriptionPeriodEnd } from './rules.js'
 
@@ -69,6 +70,7 @@ export async function generateInstallmentInvoices({
 }) {
   try {
     return await runInTransaction(async (session) => {
+      await lockProject(projectId, session)
       const project = await Project.findById(projectId).session(session)
       const finance = await ProjectFinance.findOne({ project: projectId }).session(session)
       if (!project || !finance) {
@@ -259,6 +261,7 @@ const subscriptionFilter = (projectId: string | Types.ObjectId) => ({
 })
 
 async function subscriptionContext(projectId: string, session: ClientSession) {
+  await lockProject(projectId, session)
   const finance = await ProjectFinance.findOne({ project: projectId }).session(session)
   const project = await Project.findById(projectId).session(session)
   if (!finance || !project) {

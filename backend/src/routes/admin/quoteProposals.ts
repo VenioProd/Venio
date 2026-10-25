@@ -15,11 +15,33 @@ import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import ChangeRequest from '../../models/ChangeRequest.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
+import mongoose, { type ClientSession } from 'mongoose'
+import { runInTransaction } from '../../lib/transaction.js'
+import { lockProject } from '../../lib/projectWriteLock.js'
 
 const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
+
+router.use(async (req, res, next) => {
+  try {
+    if (req.method === 'GET' || req.method === 'HEAD') return next()
+    const id = decodeURIComponent(req.path.split('/')[1] ?? '')
+    const proposal = mongoose.isObjectIdOrHexString(id)
+      ? await QuoteProposal.findById(id).select('project').lean()
+      : null
+    const projectIds = [proposal?.project, req.body?.project].filter(Boolean)
+    for (const projectId of projectIds) {
+      if (!(await canReadProject(req.user!, String(projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
+    }
+    return next()
+  } catch (err) {
+    return next(err)
+  }
+})
 
 router.post(
   '/:id/rebuild-document',
@@ -59,7 +81,7 @@ async function loadEditable(res: Response, id: string) {
   return proposal
 }
 
-async function initializeProposal(proposal: IQuoteProposal) {
+async function initializeProposal(proposal: IQuoteProposal, session: ClientSession) {
   proposal.selectedOptionalLineIds = proposal.lines
     .filter((line) => line.isOptional && line.isSelectedByDefault)
     .map((line) => line._id)
@@ -70,7 +92,7 @@ async function initializeProposal(proposal: IQuoteProposal) {
     lines: proposal.lines.toObject(),
     selectedOptionalLineIds: proposal.selectedOptionalLineIds,
   })
-  await proposal.save()
+  await proposal.save({ session })
 }
 
 /**
@@ -156,17 +178,21 @@ router.post(
       if (!template) return res.status(404).json({ error: 'Modèle actif non trouvé' })
       const target = await quoteTarget(req, res, { project: req.body.project, leadId: req.body.leadId })
       if (!target) return
-      const proposal = new QuoteProposal({
-        ...target,
-        createdBy: req.user!.id,
-        title: req.body.title ?? template.title,
-        intro: template.intro,
-        questions: template.questions,
-        lines: template.lines,
-        status: 'DRAFT',
-        expiresAt: new Date(Date.now() + template.validityDays * 86400000),
+      const proposal = await runInTransaction(async (session) => {
+        if (target.project) await lockProject(target.project, session)
+        const proposal = new QuoteProposal({
+          ...target,
+          createdBy: req.user!.id,
+          title: req.body.title ?? template.title,
+          intro: template.intro,
+          questions: template.questions,
+          lines: template.lines,
+          status: 'DRAFT',
+          expiresAt: new Date(Date.now() + template.validityDays * 86400000),
+        })
+        await initializeProposal(proposal, session)
+        return proposal
       })
-      await initializeProposal(proposal)
       return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
       return next(err)
@@ -188,18 +214,22 @@ router.post(
       const project = await Project.findById(req.body.project).lean()
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
 
-      const proposal = await QuoteProposal.create({
-        project: project._id,
-        client: project.client,
-        createdBy: req.user!.id,
-        title: String(req.body.title).trim(),
-        intro: req.body.intro ?? '',
-        expiresAt: req.body.expiresAt ?? null,
-        questions: req.body.questions ?? [],
-        lines: req.body.lines ?? [],
-      })
+      const proposal = await runInTransaction(async (session) => {
+        await lockProject(project._id, session)
+        const proposal = new QuoteProposal({
+          project: project._id,
+          client: project.client,
+          createdBy: req.user!.id,
+          title: String(req.body.title).trim(),
+          intro: req.body.intro ?? '',
+          expiresAt: req.body.expiresAt ?? null,
+          questions: req.body.questions ?? [],
+          lines: req.body.lines ?? [],
+        })
 
-      await initializeProposal(proposal)
+        await initializeProposal(proposal, session)
+        return proposal
+      })
 
       return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
@@ -259,11 +289,14 @@ router.post(
       const target = await quoteTarget(req, res, { project: req.body.project })
       if (!target) return
       // Conditionnel : deux rattachements simultanés ne peuvent pas s'écraser.
-      const attached = await QuoteProposal.findOneAndUpdate(
-        { _id: proposal._id, project: null, status: 'DRAFT' },
-        { $set: { project: target.project, client: target.client } },
-        { new: true },
-      ).lean()
+      const attached = await runInTransaction(async (session) => {
+        await lockProject(target.project!, session)
+        return QuoteProposal.findOneAndUpdate(
+          { _id: proposal._id, project: null, status: 'DRAFT' },
+          { $set: { project: target.project, client: target.client } },
+          { new: true, session },
+        ).lean()
+      })
       if (!attached) {
         return res
           .status(409)

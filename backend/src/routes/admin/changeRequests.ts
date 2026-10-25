@@ -14,6 +14,8 @@ import User from '../../models/User.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { findAttachmentMeta, serveAttachment } from '../../lib/attachmentResponse.js'
+import { runInTransaction } from '../../lib/transaction.js'
+import { lockProject } from '../../lib/projectWriteLock.js'
 import {
   actorFromRequest,
   auditChangeRequest,
@@ -82,13 +84,8 @@ const validQuotePayload = [
 
 async function loadOr404(req: Request, res: Response): Promise<IChangeRequest | null> {
   const found = await ChangeRequest.findById(req.params.id)
-  if (
-    !found ||
-    ((req.method === 'GET' || req.method === 'HEAD') &&
-      found.project &&
-      !(await canReadProject(req.user!, String(found.project))))
-  ) {
-    res.status(404).json({ error: 'Demande non trouvée' })
+  if (!found || (found.project && !(await canReadProject(req.user!, String(found.project))))) {
+    res.status(404).json({ error: found ? 'Projet non trouvé' : 'Demande non trouvée' })
     return null
   }
   return found
@@ -233,14 +230,23 @@ router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
   ...validId,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const changeRequest = await loadOr404(req, res)
+      if (!changeRequest) return
+      res.locals.changeRequest = changeRequest
+      return next()
+    } catch (err) {
+      return next(err)
+    }
+  },
   upload.array('files', 10),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const message = String(req.body.message ?? '').trim()
       if (!message) return res.status(400).json({ error: 'Message requis' })
 
-      const changeRequest = await loadOr404(req, res)
-      if (!changeRequest) return
+      const changeRequest = res.locals.changeRequest as IChangeRequest
 
       const actor = actorFromRequest(req.user!)
       const files = (req.files as Express.Multer.File[]) || []
@@ -340,6 +346,9 @@ router.post(
           .status(400)
           .json({ error: 'Un projet est requis pour créer un devis', code: 'PROJECT_REQUIRED_FOR_QUOTE' })
       }
+      if (!(await canReadProject(req.user!, targetProjectId))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
       const project = await Project.findById(targetProjectId).select('client').lean()
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
       if (String(project.client) !== String(changeRequest.client)) {
@@ -349,14 +358,19 @@ router.post(
       }
 
       const actor = actorFromRequest(req.user!)
-      const proposal = await QuoteProposal.create({
-        project: targetProjectId,
-        client: changeRequest.client,
-        createdBy: actor.id,
-        title: changeRequest.title,
-        intro: changeRequest.description,
-        status: 'DRAFT',
-        expiresAt: req.body.expiresAt ? new Date(String(req.body.expiresAt)) : null,
+      const proposal = await runInTransaction(async (session) => {
+        await lockProject(targetProjectId, session)
+        const proposal = new QuoteProposal({
+          project: targetProjectId,
+          client: changeRequest.client,
+          createdBy: actor.id,
+          title: changeRequest.title,
+          intro: changeRequest.description,
+          status: 'DRAFT',
+          expiresAt: req.body.expiresAt ? new Date(String(req.body.expiresAt)) : null,
+        })
+        await proposal.save({ session })
+        return proposal
       })
 
       const updated = await transitionChangeRequest({

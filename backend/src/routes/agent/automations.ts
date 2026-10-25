@@ -1,14 +1,15 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
+import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import AutomationLog from '../../automation/models/AutomationLog.js'
-import AutomationSettings, {
-  getAutomationSettings,
-} from '../../automation/models/AutomationSettings.js'
+import AutomationSettings, { getAutomationSettings } from '../../automation/models/AutomationSettings.js'
 import { getAutomation, getAllAutomations } from '../../automation/registry.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import User from '../../models/User.js'
+import { canReadProject } from '../../lib/adminProjectAccess.js'
 
 /**
  * Routes agent pour l'Automation engine (48 jobs).
@@ -70,7 +71,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ router.patch(
       if (typeof req.body.enabled === 'boolean') settings.enabled = req.body.enabled
       if (Array.isArray(req.body.channels)) {
         settings.channels = req.body.channels.filter((c: string) =>
-          ['in_app', 'email', 'system_log'].includes(c)
+          ['in_app', 'email', 'system_log'].includes(c),
         ) as typeof settings.channels
       }
       if (typeof req.body.throttleWindowMinutes === 'number') {
@@ -136,7 +137,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -153,10 +154,21 @@ router.post(
     try {
       const a = getAutomation(String(req.params.key))
       if (!a) return respondError(res, 404, 'NOT_FOUND', `Automation ${req.params.key} introuvable`)
+      const meta = (req.body?.meta as Record<string, unknown>) || {}
+      if (a.key === 'project.auto_create_full_workspace' && meta.actorId && meta.projectId) {
+        if (!mongoose.isObjectIdOrHexString(meta.actorId) || !mongoose.isObjectIdOrHexString(meta.projectId)) {
+          return respondError(res, 422, 'VALIDATION_ERROR', 'Auteur ou projet invalide')
+        }
+        const actor = await User.findById(meta.actorId).select('role').lean()
+        if (!actor) return respondError(res, 422, 'INVALID_USER', 'Auteur introuvable')
+        if (!(await canReadProject({ id: String(actor._id), role: actor.role }, String(meta.projectId)))) {
+          return respondError(res, 403, 'PROJECT_OUT_OF_SCOPE', 'Cet utilisateur ne peut pas lire le projet')
+        }
+      }
       // Fire-and-forget : on retourne immédiatement, le log apparaîtra dans
       // /automations/logs après exécution. L'idempotency au niveau API agent
       // (via Idempotency-Key) garantit qu'un retry HTTP ne re-trigger pas.
-      triggerAutomations([a.key], (req.body?.meta as Record<string, unknown>) || {})
+      triggerAutomations([a.key], meta)
       res.locals.audit = {
         entityType: 'Automation',
         entityRef: a.key,
@@ -167,7 +179,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { buildActorFromReq, recordAudit } from '../../../lib/audit/auditHelpers.js'
 import { runInTransaction } from '../../../lib/transaction.js'
+import { lockProject } from '../../../lib/projectWriteLock.js'
 import { moneyError } from '../../../lib/projectFinance/money.js'
 import {
   recordSettlement,
@@ -14,7 +15,6 @@ import {
   projectCostLines,
 } from '../../../lib/projectFinance/settlements.js'
 import Beneficiary from '../../../models/Beneficiary.js'
-import Project from '../../../models/Project.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import AccountingEntry from '../../../models/AccountingEntry.js'
 import projectFinanceErrors from './projectFinanceErrors.js'
@@ -168,11 +168,7 @@ router.patch<{ lineId: string }>(
         }
         if (!line.accountCode.startsWith('6'))
           throw moneyError('Seule une ligne de classe 6 peut être rattachée à un projet')
-        if (projectId && !(await Project.exists({ _id: projectId }).session(session))) {
-          const error = moneyError('Projet introuvable')
-          error.status = 404
-          throw error
-        }
+        if (projectId) await lockProject(projectId, session)
         const before = line.toObject()
         line.project = projectId === null ? null : new Types.ObjectId(projectId)
         await line.save({ session })

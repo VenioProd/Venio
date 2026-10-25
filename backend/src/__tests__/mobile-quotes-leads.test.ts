@@ -3,12 +3,14 @@ import express from 'express'
 import request from 'supertest'
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import User from '../models/User.js'
 import MobileDevice from '../models/MobileDevice.js'
 import Lead from '../models/Lead.js'
 import Project from '../models/Project.js'
+import Task from '../models/Task.js'
 import QuoteTemplate from '../models/QuoteTemplate.js'
 import UserIdempotencyKey from '../models/UserIdempotencyKey.js'
 import quoteRoutes from '../routes/admin/quoteProposals.js'
@@ -32,8 +34,10 @@ let templateId: string
 const colleague = new mongoose.Types.ObjectId()
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
   await UserIdempotencyKey.init()
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 afterAll(teardownMongo)
 beforeEach(async () => {
@@ -82,6 +86,7 @@ it('chiffre un lead sans projet, puis le rattache à un projet de son portefeuil
       .set('Authorization', bearer)
       .send({ project })
   const foreign = await Project.create({ name: 'Collègue', client: (await clientOwnedBy(colleague))._id })
+  await Task.create({ project: foreign._id, title: 'Suivi', assignee: me, createdBy: me })
   expect((await attach(foreign._id).expect(403)).body.code).toBe('PROJECT_OUT_OF_SCOPE')
   const client = await clientOwnedBy(me)
   const own = await Project.create({ name: 'Le mien', client: client._id })

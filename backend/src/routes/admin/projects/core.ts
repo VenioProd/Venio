@@ -9,6 +9,7 @@ import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
 import { accessibleProjectIds, readableProjectIds } from '../../../lib/adminProjectAccess.js'
 import { deleteProject } from '../../../lib/projectDeletion.js'
+import { runInTransaction } from '../../../lib/transaction.js'
 import ProjectUpdate from '../../../models/ProjectUpdate.js'
 import User from '../../../models/User.js'
 import Document from '../../../models/Document.js'
@@ -249,23 +250,34 @@ router.post(
       }
 
       const options = normalizeOptions(req.body || {})
+      if (
+        (await readableProjectIds(req.user!)) !== null &&
+        String(client.ownerAdminId) !== req.user!.id &&
+        String(options.assignedTo) !== req.user!.id
+      ) {
+        return res.status(403).json({
+          error: "Ce client n'est pas dans votre portefeuille",
+          code: 'CLIENT_OUT_OF_SCOPE',
+        })
+      }
 
       if (!options.projectNumber || String(options.projectNumber).trim() === '') {
         const { formatted } = await getNextSequence('projectNumber', { prefix: 'PROJ-', padding: 4 })
         options.projectNumber = formatted
       }
 
-      const project = await Project.create({
-        client: clientId,
-        name,
-        description: description || '',
-        status: status || 'EN_COURS',
-        ...options,
-      })
+      const project = await runInTransaction(async (session) => {
+        const project = new Project({
+          client: clientId,
+          name,
+          description: description || '',
+          status: status || 'EN_COURS',
+          ...options,
+        })
+        await project.save({ session })
 
-      if (template) {
-        const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
-        try {
+        if (template) {
+          const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
           await ProjectPhase.insertMany(
             defaultPhases.map((phase, index) => ({
               project: project._id,
@@ -278,16 +290,11 @@ router.post(
               linkedItems: [],
               createdBy: req.user!.id,
             })),
+            { session },
           )
-        } catch (err) {
-          // Faute de transaction, on compense : un projet sans son pipeline
-          // serait un demi-état que l'appelant ne peut pas rattraper, sa
-          // relance créant un second projet.
-          await ProjectPhase.deleteMany({ project: project._id }).catch(() => null)
-          await Project.deleteOne({ _id: project._id }).catch(() => null)
-          throw err
         }
-      }
+        return project
+      })
 
       await logActivity({
         project: project._id,

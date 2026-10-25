@@ -6,6 +6,7 @@ import path from 'node:path'
 import mongoose from 'mongoose'
 import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
 import { resetTransactionSupportCache } from '../lib/transaction.js'
+import { createBillingDocument } from '../lib/billingDocument.js'
 import { deleteProject } from '../lib/projectDeletion.js'
 import BillingDocument from '../models/BillingDocument.js'
 import ChangeRequest from '../models/ChangeRequest.js'
@@ -178,4 +179,73 @@ it('refuse un projet qui porte une facture ou un devis envoyé, sans rien suppri
   expect(await Project.exists({ _id: project._id })).not.toBeNull()
   expect(await ProjectItem.countDocuments({ project: project._id })).toBe(1)
   expect(fs.existsSync(itemFile)).toBe(true)
+})
+
+it('rejoue la suppression après une création de facture concurrente non validée', async () => {
+  const project = await Project.create({ name: 'Course facture', client: owner })
+  const session = await mongoose.startSession()
+  session.startTransaction()
+  const conflicted = Promise.withResolvers<void>()
+  const updateOne = Project.collection.updateOne.bind(Project.collection)
+  const spy = vi.spyOn(Project.collection, 'updateOne').mockImplementation(async (...args) => {
+    try {
+      return await updateOne(...args)
+    } catch (err) {
+      if (err instanceof mongoose.mongo.MongoServerError && err.hasErrorLabel('TransientTransactionError')) {
+        conflicted.resolve()
+      }
+      throw err
+    }
+  })
+  let deletion: Promise<unknown> | undefined
+  try {
+    const invoice = await createBillingDocument(
+      {
+        type: 'INVOICE',
+        number: 'FAC-CONCURRENT',
+        project: project._id,
+        client: owner,
+        createdBy: owner,
+      },
+      session,
+    )
+    deletion = deleteProject(String(project._id)).then(
+      (removed) => ({ removed }),
+      (error: unknown) => ({ error }),
+    )
+    // La vraie commande Mongo doit échouer sur le verrou avant de libérer la création.
+    // Sans verrou, la suppression termine : la course laisse alors une facture orpheline.
+    await Promise.race([conflicted.promise, deletion])
+    await session.commitTransaction()
+    expect(await deletion).toMatchObject({ error: { status: 409 } })
+    expect(await Project.exists({ _id: project._id })).not.toBeNull()
+    expect(await BillingDocument.exists({ _id: invoice._id })).not.toBeNull()
+    expect((await Project.findById(project._id))!.updatedAt).toEqual(project.updatedAt)
+  } finally {
+    if (session.inTransaction()) await session.abortTransaction()
+    await deletion
+    spy.mockRestore()
+    await session.endSession()
+  }
+})
+
+it('refuse la création de facture après la suppression du projet', async () => {
+  const project = await Project.create({ name: 'Déjà supprimé', client: owner })
+  await deleteProject(String(project._id))
+  const { runInTransaction } = await import('../lib/transaction.js')
+  await expect(
+    runInTransaction((session) =>
+      createBillingDocument(
+        {
+          type: 'INVOICE',
+          number: 'FAC-AFTER-DELETE',
+          project: project._id,
+          client: owner,
+          createdBy: owner,
+        },
+        session,
+      ),
+    ),
+  ).rejects.toMatchObject({ status: 404 })
+  expect(await BillingDocument.countDocuments({ project: project._id })).toBe(0)
 })

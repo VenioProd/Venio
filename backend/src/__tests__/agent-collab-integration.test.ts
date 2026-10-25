@@ -3,14 +3,10 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
+import Message from '../models/Message.js'
 import Task from '../models/Task.js'
 import TaskComment from '../models/TaskComment.js'
 import InternalTicket from '../models/InternalTicket.js'
@@ -328,9 +324,36 @@ describe('Agent Calendar', () => {
 
   it('returns 400 when start/end missing', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:calendar'])
-    const res = await request(app)
-      .get('/api/v1/agent/calendar/events')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/calendar/events').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(400)
   })
+})
+
+it('refuse un sender hors périmètre et accepte son rôle réel dans le périmètre', async () => {
+  const commercial = await User.create({
+    email: 'commercial@v.test',
+    passwordHash: 'x',
+    name: 'Commercial',
+    role: 'COMMERCIAL',
+  })
+  const { plainSecret } = await createAgentTokenInDb(['write:messages', 'trigger:automations'])
+  const post = () =>
+    request(app)
+      .post(`/api/v1/agent/projects/${projectId}/messages`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ content: 'Message délégué', sender: String(commercial._id) })
+  const denied = await post().expect(403)
+  expect(denied.body.code).toBe('PROJECT_OUT_OF_SCOPE')
+  expect(await Message.countDocuments()).toBe(0)
+  const { register } = await import('../automation/jobs/projectAutoWorkspace.js')
+  register()
+  const automation = await request(app)
+    .post('/api/v1/agent/automations/project.auto_create_full_workspace/trigger')
+    .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    .send({ meta: { projectId, actorId: String(commercial._id) } })
+    .expect(403)
+  expect(automation.body.code).toBe('PROJECT_OUT_OF_SCOPE')
+  await Project.updateOne({ _id: projectId }, { assignedTo: commercial._id })
+  await post().expect(201)
+  expect(String((await Message.findOne())!.sender)).toBe(String(commercial._id))
 })

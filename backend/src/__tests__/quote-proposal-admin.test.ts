@@ -1,8 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
+import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import adminQuoteRoutes from '../routes/admin/quoteProposals.js'
 import User from '../models/User.js'
@@ -21,10 +23,12 @@ async function cookieFor(userId: string): Promise<string> {
 }
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
   app = express()
   app.use(express.json())
   app.use('/api/admin/quote-proposals', adminQuoteRoutes)
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 
 afterAll(teardownMongo)
