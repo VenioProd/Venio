@@ -8,6 +8,7 @@ import auth from '../../../middleware/auth.js'
 import { requireAdmin, requirePermission, userHasPermission } from '../../../middleware/role.js'
 import ProjectItem from '../../../models/ProjectItem.js'
 import Project from '../../../models/Project.js'
+import ProjectSection from '../../../models/ProjectSection.js'
 import { hasProjectAccess } from '../../../lib/adminProjectAccess.js'
 import type { IProjectItem } from '../../../types/models/index.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
@@ -81,6 +82,26 @@ function removeFile(filePath?: string) {
   if (filePath) fs.rmSync(filePath, { force: true })
 }
 
+const EDITOR_ONLY_TYPES = ['LIVRABLE', 'LIEN', 'NOTE']
+
+function isOwnInternalDocument(item: IProjectItem, userId: string): boolean {
+  return (
+    String(item.createdBy) === userId &&
+    !item.isVisible &&
+    Boolean(item.file?.storagePath) &&
+    !EDITOR_ONLY_TYPES.includes(item.type)
+  )
+}
+
+// Filtre de la sauvegarde ou de la suppression : un éditeur peut publier le document pendant l'upload.
+const ownInternalDocument = (userId: string) => ({ createdBy: userId, isVisible: false })
+
+async function sectionOutsideProject(section: unknown, projectId: string): Promise<boolean> {
+  if (!section) return false
+  if (typeof section !== 'string' || !mongoose.isValidObjectId(section)) return true
+  return !(await ProjectSection.exists({ _id: section, project: projectId }))
+}
+
 async function requireItemWrite(req: Request, res: Response, next: NextFunction) {
   try {
     const canEdit = await userHasPermission(req, PERMISSIONS.EDIT_CONTENT)
@@ -90,7 +111,11 @@ async function requireItemWrite(req: Request, res: Response, next: NextFunction)
     res.locals.canEditContent = canEdit
     const projectId = req.params.projectId as string
     const itemId = req.params.itemId as string | undefined
-    if (!mongoose.isValidObjectId(projectId) || !(await Project.exists({ _id: projectId }))) {
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(404).json({ error: 'Projet non trouvé', code: 'PROJECT_NOT_FOUND' })
+    }
+    // Un item peut survivre à son projet : l'éditeur doit pouvoir le retirer.
+    if (!itemId && !(await Project.exists({ _id: projectId }))) {
       return res.status(404).json({ error: 'Projet non trouvé', code: 'PROJECT_NOT_FOUND' })
     }
     if (!canEdit && !(await hasProjectAccess(req.user!, projectId))) {
@@ -101,7 +126,7 @@ async function requireItemWrite(req: Request, res: Response, next: NextFunction)
         ? await ProjectItem.findOne({ _id: itemId, project: projectId })
         : null
       if (!item) return res.status(404).json({ error: 'Item non trouvé', code: 'ITEM_NOT_FOUND' })
-      if (!canEdit && (String(item.createdBy) !== req.user!.id || item.isVisible)) {
+      if (!canEdit && !isOwnInternalDocument(item, req.user!.id)) {
         return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
       }
       res.locals.item = item
@@ -143,7 +168,7 @@ function validateDocument(req: Request, res: Response): boolean {
     res.status(403).json({ error: 'Visibilité réservée aux éditeurs', code: 'VISIBILITY_FORBIDDEN' })
     return false
   }
-  if (req.body.type !== undefined && ['LIVRABLE', 'LIEN', 'NOTE'].includes(req.body.type)) {
+  if (req.body.type !== undefined && EDITOR_ONLY_TYPES.includes(req.body.type)) {
     res.status(400).json({ error: 'Type de document invalide', code: 'INVALID_DOCUMENT_TYPE' })
     return false
   }
@@ -205,6 +230,9 @@ router.post('/:projectId/items', requireItemWrite, uploadFile, async (req: Reque
     const { projectId } = req.params
     const canEdit = res.locals.canEditContent as boolean
     const { section, type, title, description, url, content, order, isVisible, isDownloadable, status } = req.body
+    if (await sectionOutsideProject(section, projectId as string)) {
+      return res.status(400).json({ error: 'Section introuvable dans ce projet', code: 'INVALID_SECTION' })
+    }
     const file = req.file
     const requestedOrder = canEdit && order ? parseInt(order) : null
     const item = new ProjectItem({
@@ -326,6 +354,9 @@ router.patch('/:projectId/items/:itemId', requireItemWrite, uploadFile, async (r
     const item = res.locals.item as IProjectItem
     const canEdit = res.locals.canEditContent as boolean
     const oldFilePath = item.file?.storagePath
+    if (await sectionOutsideProject(section, projectId as string)) {
+      return res.status(400).json({ error: 'Section introuvable dans ce projet', code: 'INVALID_SECTION' })
+    }
 
     const oldStatus = item.status
 
@@ -353,7 +384,15 @@ router.patch('/:projectId/items/:itemId', requireItemWrite, uploadFile, async (r
       }
     }
 
-    await item.save()
+    if (!canEdit) item.$where = ownInternalDocument(req.user!.id)
+    try {
+      await item.save()
+    } catch (err) {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
+      }
+      throw err
+    }
     stored = true
     if (file) removeFile(oldFilePath)
     await item.populate('section', 'title')
@@ -387,10 +426,16 @@ router.patch('/:projectId/items/:itemId', requireItemWrite, uploadFile, async (r
 })
 
 // DELETE /api/admin/projects/:projectId/items/:itemId - Supprimer un item
-router.delete('/:projectId/items/:itemId', requireItemWrite, async (_req: Request, res: Response) => {
+router.delete('/:projectId/items/:itemId', requireItemWrite, async (req: Request, res: Response) => {
   try {
     const item = res.locals.item as IProjectItem
-    await ProjectItem.deleteOne({ _id: item._id })
+    const filter = res.locals.canEditContent
+      ? { _id: item._id }
+      : { _id: item._id, ...ownInternalDocument(req.user!.id) }
+    const { deletedCount } = await ProjectItem.deleteOne(filter)
+    if (!deletedCount) {
+      return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
+    }
     removeFile(item.file?.storagePath)
 
     res.json({ message: 'Item supprimé' })

@@ -8,7 +8,7 @@ import mongoose from 'mongoose'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import Project from '../models/Project.js'
 import ProjectItem from '../models/ProjectItem.js'
-import '../models/ProjectSection.js'
+import ProjectSection from '../models/ProjectSection.js'
 import User from '../models/User.js'
 import SyncTombstone from '../models/SyncTombstone.js'
 import { createNotification } from '../lib/notifications.js'
@@ -175,5 +175,48 @@ describe('documents de projet des commerciaux', () => {
     expect(deletions.body.items).toEqual([
       expect.objectContaining({ entityType: 'projectDocuments', entityId: itemId }),
     ])
+  })
+
+  it('refuse un remplacement si le document est publié pendant l’envoi, et une section d’un autre projet', async () => {
+    const created = await post()
+    const itemId = created.body.item._id
+    const other = await Project.create({ name: 'Autre', client: new mongoose.Types.ObjectId() })
+    const foreign = await ProjectSection.create({ project: other._id, title: 'Section étrangère', createdBy: userId })
+    const own = await ProjectSection.create({ project: projectId, title: 'Pièces', createdBy: userId })
+    const patch = (section: unknown) =>
+      request(app)
+        .patch(`/api/admin/projects/${projectId}/items/${itemId}`)
+        .field('section', String(section))
+        .attach('file', Buffer.from('nouvelle version'), { filename: 'v2.pdf', contentType: 'application/pdf' })
+    expect((await patch(foreign._id)).body.code).toBe('INVALID_SECTION')
+    const exists = ProjectSection.exists.bind(ProjectSection)
+    // Un éditeur publie le document entre le contrôle d'accès et l'enregistrement.
+    vi.spyOn(ProjectSection, 'exists').mockImplementationOnce(((filter: Parameters<typeof exists>[0]) =>
+      ProjectItem.updateOne({ _id: itemId }, { isVisible: true }).then(() => exists(filter))) as never)
+    const raced = await patch(own._id)
+    expect(raced.status).toBe(403)
+    expect(raced.body.code).toBe('DOCUMENT_WRITE_FORBIDDEN')
+    const item = await ProjectItem.findById(itemId)
+    expect(item!.file!.originalName).toBe('scan.pdf')
+    expect(item!.section).toBeNull()
+    expect(newFiles()).toHaveLength(1)
+  })
+
+  it('réserve aux éditeurs les éléments sans fichier et leur laisse nettoyer un projet supprimé', async () => {
+    const note = await ProjectItem.create({
+      project: projectId,
+      type: 'AUTRE',
+      title: 'Spécification',
+      content: 'texte',
+      isVisible: false,
+      createdBy: userId,
+    })
+    const denied = await request(app).delete(`/api/admin/projects/${projectId}/items/${note._id}`)
+    expect(denied.body.code).toBe('DOCUMENT_WRITE_FORBIDDEN')
+    await Project.deleteOne({ _id: projectId })
+    await User.updateOne({ _id: userId }, { role: 'ADMIN' })
+    authState.user = { ...authState.user!, role: 'ADMIN' }
+    await request(app).delete(`/api/admin/projects/${projectId}/items/${note._id}`).expect(200)
+    expect(await ProjectItem.countDocuments()).toBe(0)
   })
 })
