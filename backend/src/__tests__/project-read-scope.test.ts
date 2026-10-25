@@ -4,6 +4,12 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import mongoose from 'mongoose'
+import Message from '../models/Message.js'
+import BillingDocument from '../models/BillingDocument.js'
+import QuoteProposal from '../models/QuoteProposal.js'
+import ChangeRequest from '../models/ChangeRequest.js'
+import Lead from '../models/Lead.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import Task from '../models/Task.js'
@@ -11,7 +17,17 @@ import ProjectItem from '../models/ProjectItem.js'
 import ProjectPhase from '../models/ProjectPhase.js'
 import ProjectUpdate from '../models/ProjectUpdate.js'
 import AuditLog from '../models/AuditLog.js'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
+
+vi.mock('../lib/email.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return Object.fromEntries(
+    Object.entries(actual).map(([key, value]) => [
+      key,
+      typeof value === 'function' ? vi.fn(async () => undefined) : value,
+    ]),
+  )
+})
 
 const authState = vi.hoisted(() => ({ user: null as Request['user'] | null }))
 vi.mock('../middleware/auth.js', () => ({
@@ -35,7 +51,7 @@ function actAs(user: typeof commercial) {
 }
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
   directory = fs.mkdtempSync(path.join(os.tmpdir(), 'project-read-scope-'))
   fs.writeFileSync(path.join(directory, 'document.txt'), 'Document confidentiel')
   app = express()
@@ -65,6 +81,10 @@ beforeAll(async () => {
     ['/api/mobile/today', '../routes/mobile/today.js'],
   ]
   for (const [prefix, module] of routes) app.use(prefix!, (await import(module!)).default)
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
+  app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+    res.status(err.status ?? 500).json({ error: err.message })
+  })
 })
 
 afterAll(async () => {
@@ -312,4 +332,76 @@ it('réserve isAssociate à manage_admins et journalise son auteur ainsi que les
     .send({ email: commercial.email, password: 'test-password', device: { name: 'Test', platform: 'ios' } })
     .expect(200)
   expect(login.body.user.isAssociate).toBe(true)
+})
+
+it('réserve les messages et mises à jour aux projets lisibles', async () => {
+  await User.updateOne({ _id: commercial._id }, { grantedPermissions: ['edit_projects'] })
+  for (const project of [outside, owned]) {
+    const status = project === outside ? 404 : 201
+    await request(app).post(`/api/admin/projects/${project._id}/messages`).send({ content: 'Message' }).expect(status)
+    await request(app).post(`/api/admin/projects/${project._id}/updates`).send({ title: 'Actualité' }).expect(status)
+  }
+  expect(await Message.countDocuments({ project: outside._id })).toBe(0)
+  expect(await ProjectUpdate.countDocuments({ project: outside._id })).toBe(0)
+  expect(await Message.countDocuments({ project: owned._id })).toBe(1)
+  expect(await ProjectUpdate.countDocuments({ project: owned._id })).toBe(1)
+})
+
+it('contrôle le projet des écritures de facturation par projet et par document', async () => {
+  await User.updateOne({ _id: commercial._id }, { grantedPermissions: ['manage_billing'] })
+  const invoice = await BillingDocument.create({
+    project: outside._id,
+    client: outside.client,
+    type: 'INVOICE',
+    number: 'OUT',
+    createdBy: superAdmin._id,
+  })
+  await request(app).post(`/api/admin/billing/projects/${outside._id}/invoices`).send({}).expect(404)
+  await request(app).patch(`/api/admin/billing/${invoice._id}`).send({ note: 'Intrusion' }).expect(404)
+  await request(app).post(`/api/admin/billing/projects/${owned._id}/invoices`).send({}).expect(201)
+  expect((await BillingDocument.findById(invoice._id))!.note).toBe('')
+  expect(await BillingDocument.countDocuments()).toBe(2)
+})
+
+it('contrôle le projet parent des propositions, même pour leur auteur', async () => {
+  const quote = await QuoteProposal.create({
+    project: outside._id,
+    client: outside.client,
+    title: 'Devis',
+    createdBy: commercial._id,
+  })
+  await request(app).post(`/api/admin/quote-proposals/${quote._id}/send`).send({}).expect(404)
+  expect((await QuoteProposal.findById(quote._id))!.status).toBe('DRAFT')
+  await QuoteProposal.updateOne({ _id: quote._id }, { project: owned._id, client: owned.client })
+  await request(app).post(`/api/admin/quote-proposals/${quote._id}/send`).send({}).expect(200)
+})
+
+it('contrôle les demandes de changement et le projet cible de leur chiffrage', async () => {
+  await User.updateOne({ _id: commercial._id }, { grantedPermissions: ['manage_change_requests', 'manage_billing'] })
+  const change = await ChangeRequest.create({
+    project: outside._id,
+    client: outside.client,
+    title: 'Demande',
+    description: 'Évolution',
+    createdBy: superAdmin._id,
+    createdByName: 'Super',
+  })
+  await request(app).post(`/api/admin/change-requests/${change._id}/reply`).send({ message: 'Intrusion' }).expect(404)
+  await ChangeRequest.updateOne({ _id: change._id }, { project: null })
+  await request(app)
+    .post(`/api/admin/change-requests/${change._id}/qualify-quote`)
+    .send({ projectId: outside._id })
+    .expect(404)
+  expect(await QuoteProposal.countDocuments()).toBe(0)
+  await ChangeRequest.updateOne({ _id: change._id }, { project: owned._id, client: owned.client })
+  await request(app).post(`/api/admin/change-requests/${change._id}/reply`).send({ message: 'Réponse' }).expect(200)
+  expect((await ChangeRequest.findById(change._id))!.replies).toHaveLength(1)
+})
+
+it('contrôle le projet lors du rattachement CRM à une affaire lisible', async () => {
+  const lead = await Lead.create({ company: 'Affaire', assignedTo: commercial._id, createdBy: commercial._id })
+  await request(app).post(`/api/admin/crm/leads/${lead._id}/projects/${outside._id}`).send({}).expect(404)
+  expect((await Project.findById(outside._id))!.sourceLead).toBeNull()
+  await request(app).post(`/api/admin/crm/leads/${lead._id}/projects/${owned._id}`).send({}).expect(200)
+  expect(String((await Project.findById(owned._id))!.sourceLead)).toBe(String(lead._id))
 })

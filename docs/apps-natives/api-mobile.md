@@ -496,3 +496,4 @@ Ce que l'app doit prendre en compte par rapport à la première version du contr
 10. **Espace admin** : lectures comptables et liste/modification des tickets dev en Bearer, MFA d’appareil pour la comptabilité, relance de facture, encaissements mensuels et `Idempotency-Key` facultatif sur les publications projet, messages et réponses aux tickets.
 
 11. **Associé** : lire `user.isAssociate` dans le profil et le login. Un commercial associé reçoit tous les projets dans la synchro et la vue « tous les projets », en lecture seulement ; un non-associé reçoit son périmètre et son portefeuille client. Au changement du statut, purger le cache des projets et resynchroniser sans curseur. Les lectures hors périmètre répondent `404`.
+Toute écriture rattachée à un projet hors du périmètre de lecture de l’utilisateur renvoie 404 « Projet non trouvé ».

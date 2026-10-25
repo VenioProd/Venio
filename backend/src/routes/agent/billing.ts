@@ -11,6 +11,8 @@ import { respondError } from './_middleware/errors.js'
 import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
 import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
+import { runInTransaction } from '../../lib/transaction.js'
+import { createBillingDocument } from '../../lib/billingDocument.js'
 
 /**
  * Routes agent pour la facturation (BillingDocument).
@@ -204,21 +206,26 @@ router.post(
 
       const number = req.body.number ? String(req.body.number).trim() : await nextBillingNumber(req.body.type)
 
-      const doc = await BillingDocument.create({
-        type: req.body.type,
-        number,
-        project: project._id,
-        client: project.client,
-        status: 'DRAFT',
-        lines: totals.lines,
-        subtotal: totals.subtotal,
-        taxTotal: totals.taxTotal,
-        total: totals.total,
-        currency: typeof req.body.currency === 'string' ? req.body.currency : project.budget?.currency || 'EUR',
-        dueAt: req.body.dueAt ? new Date(req.body.dueAt) : null,
-        note: typeof req.body.note === 'string' ? req.body.note : '',
-        createdBy: admin._id,
-      })
+      const doc = await runInTransaction((session) =>
+        createBillingDocument(
+          {
+            type: req.body.type,
+            number,
+            project: project._id,
+            client: project.client,
+            status: 'DRAFT',
+            lines: totals.lines,
+            subtotal: totals.subtotal,
+            taxTotal: totals.taxTotal,
+            total: totals.total,
+            currency: typeof req.body.currency === 'string' ? req.body.currency : project.budget?.currency || 'EUR',
+            dueAt: req.body.dueAt ? new Date(req.body.dueAt) : null,
+            note: typeof req.body.note === 'string' ? req.body.note : '',
+            createdBy: admin._id,
+          },
+          session,
+        ),
+      )
 
       res.locals.audit = {
         entityType: 'BillingDocument',

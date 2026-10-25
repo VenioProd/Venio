@@ -9,6 +9,8 @@ import User from '../models/User.js'
 import { getNextSequence } from '../models/Sequence.js'
 import { generateBillingPdf } from './pdfBilling.js'
 import { computeQuoteTotals } from './quoteTotals.js'
+import { runInTransaction } from './transaction.js'
+import { createBillingDocument } from './billingDocument.js'
 import type { IQuoteProposal } from '../types/models/index.js'
 
 export interface SignatureInput {
@@ -58,29 +60,37 @@ export async function buildBillingDocumentForProposal(proposal: IQuoteProposal) 
     if (existing) return existing
   }
 
+  const projectId = proposal.project
+  if (!projectId) throw Object.assign(new Error('Projet non trouvé'), { status: 404 })
+
   const totals = computeQuoteTotals(proposal.lines.toObject(), proposal.selectedOptionalLineIds)
   const { formatted } = await getNextSequence('quoteNumber', { prefix: 'DEV-', padding: 3 })
 
-  const document = await BillingDocument.create({
-    type: 'QUOTE',
-    number: formatted,
-    project: proposal.project,
-    client: proposal.client,
-    status: 'ACCEPTED',
-    issuedAt: new Date(),
-    lines: totals.lines.map((line) => ({
-      description: line.description,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-      taxRate: line.taxRate,
-      total: Math.round(line.quantity * line.unitPrice * 100) / 100,
-    })),
-    subtotal: totals.subtotal,
-    taxTotal: totals.taxTotal,
-    total: totals.total,
-    note: proposal.intro,
-    createdBy: proposal.createdBy,
-  })
+  const document = await runInTransaction((session) =>
+    createBillingDocument(
+      {
+        type: 'QUOTE',
+        number: formatted,
+        project: projectId,
+        client: proposal.client,
+        status: 'ACCEPTED',
+        issuedAt: new Date(),
+        lines: totals.lines.map((line) => ({
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          taxRate: line.taxRate,
+          total: Math.round(line.quantity * line.unitPrice * 100) / 100,
+        })),
+        subtotal: totals.subtotal,
+        taxTotal: totals.taxTotal,
+        total: totals.total,
+        note: proposal.intro,
+        createdBy: proposal.createdBy,
+      },
+      session,
+    ),
+  )
 
   const [project, client] = await Promise.all([
     Project.findById(proposal.project).lean(),

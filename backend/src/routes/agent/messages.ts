@@ -7,6 +7,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { canReadProject } from '../../lib/adminProjectAccess.js'
 
 /**
  * Routes agent pour les Messages (fils de discussion par projet entre admin
@@ -55,7 +56,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -75,8 +76,11 @@ router.post(
       // précise et qu'il existe (utile pour Kuro qui agit "pour" un admin).
       let sender = admin._id as unknown as mongoose.Types.ObjectId
       if (typeof req.body.sender === 'string' && isValidObjectId(req.body.sender)) {
-        const exists = await User.exists({ _id: req.body.sender })
-        if (!exists) return respondError(res, 422, 'INVALID_SENDER', 'Sender introuvable')
+        const user = await User.findById(req.body.sender).select('role').lean()
+        if (!user) return respondError(res, 422, 'INVALID_SENDER', 'Sender introuvable')
+        if (!(await canReadProject({ id: String(user._id), role: user.role }, String(req.params.id)))) {
+          return respondError(res, 403, 'PROJECT_OUT_OF_SCOPE', 'Cet utilisateur ne peut pas lire le projet')
+        }
         sender = new mongoose.Types.ObjectId(req.body.sender)
       }
 
@@ -96,7 +100,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -104,7 +108,9 @@ router.post(
   requireScope('write:messages'),
   param('id').isMongoId(),
   param('messageId').isMongoId(),
-  body('userId').custom((v) => isValidObjectId(v)).withMessage('userId requis'),
+  body('userId')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('userId requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -114,8 +120,11 @@ router.post(
       })
       if (!message) return respondError(res, 404, 'NOT_FOUND', 'Message introuvable')
       const userId = req.body.userId as string
-      const exists = await User.exists({ _id: userId })
-      if (!exists) return respondError(res, 422, 'INVALID_USER', 'User introuvable')
+      const user = await User.findById(userId).select('role').lean()
+      if (!user) return respondError(res, 422, 'INVALID_USER', 'User introuvable')
+      if (!(await canReadProject({ id: userId, role: user.role }, String(message.project)))) {
+        return respondError(res, 403, 'PROJECT_OUT_OF_SCOPE', 'Cet utilisateur ne peut pas lire le projet')
+      }
       const userObjId = new mongoose.Types.ObjectId(userId)
       const already = message.readBy.some((u) => String(u) === userId)
       if (!already) {
@@ -132,7 +141,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -159,7 +168,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

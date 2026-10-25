@@ -3,6 +3,7 @@ import InvoicePaymentLink from '../../models/InvoicePaymentLink.js'
 import { expireInvoiceCheckout } from '../stripe/checkoutSession.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { runInTransaction } from '../transaction.js'
+import { lockProject } from '../projectWriteLock.js'
 import { invoiceAmountsCents } from './invoicing.js'
 import { assertCents, divHalfUp, moneyError } from './money.js'
 import { assertInvoiceHasNoReceipts } from './payments.js'
@@ -50,6 +51,7 @@ export async function createCreditNote({
       err.status = 409
       throw err
     }
+    await lockProject(invoice.project, session)
     const amounts = invoiceAmountsCents(invoice)
     if (amounts.htCents <= 0) throw moneyError('La facture doit porter un HT positif')
     let htCents = amounts.htCents
