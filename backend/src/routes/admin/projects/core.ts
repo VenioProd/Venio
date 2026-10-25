@@ -8,6 +8,7 @@ import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
 import { accessibleProjectIds } from '../../../lib/adminProjectAccess.js'
+import { deleteProject } from '../../../lib/projectDeletion.js'
 import ProjectUpdate from '../../../models/ProjectUpdate.js'
 import User from '../../../models/User.js'
 import Document from '../../../models/Document.js'
@@ -456,7 +457,7 @@ router.delete(
   sensitiveAction('PROJECT_DELETE'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const project = await Project.findByIdAndDelete(req.params.id)
+      const project = await deleteProject(req.params.id as string)
       if (!project) {
         return res.status(404).json({ error: 'Project not found' })
       }
