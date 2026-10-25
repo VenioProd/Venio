@@ -79,7 +79,7 @@ public struct TodayView: View {
                         .frame(width: 40, height: 40)
                 }
             }.buttonStyle(.plain).accessibilityLabel(CommercialStrings.text("Réglages", locale: locale))
-            if !compact { QuickEntryButton() }
+            QuickEntryButton()
         }
     }
     @ViewBuilder private var syncStatus: some View {

@@ -22,7 +22,11 @@ public struct SalesFiguresView: View {
     public var body: some View {
         let figures = store.figures
         CommercialPage {
-            VText("Mes chiffres").font(.largeTitle.bold())
+            HStack {
+                VText("Mes chiffres").font(.largeTitle.bold())
+                Spacer()
+                CompactQuickEntryButton()
+            }
             LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 16) {
                     VText("CA signé du mois").font(.headline)

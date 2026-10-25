@@ -84,18 +84,12 @@ struct LeadRow: View {
 }
 
 struct CommercialPage<Content: View>: View {
-    #if os(iOS)
-    @Environment(\.hasFloatingQuickEntry) private var hasFloatingQuickEntry
-    #endif
     @ViewBuilder let content: Content
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) { content }
                 .padding().frame(maxWidth: 1000).frame(maxWidth: .infinity)
         }
-        #if os(iOS)
-        .contentMargins(.bottom, hasFloatingQuickEntry ? 72 : 0, for: .scrollContent)
-        #endif
         .background { ThemedBackground() }
     }
 }

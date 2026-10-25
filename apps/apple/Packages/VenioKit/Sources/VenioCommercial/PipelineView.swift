@@ -29,7 +29,11 @@ public struct PipelineView: View {
         Group {
             if compact {
                 CommercialPage {
-                    VText("Pipeline").font(.largeTitle.bold())
+                    HStack {
+                        VText("Pipeline").font(.largeTitle.bold())
+                        Spacer()
+                        CompactQuickEntryButton()
+                    }
                     scopePicker
                     HStack(alignment: .top, spacing: 16) {
                         total("Valeur totale", amount: store.summary.amount)
