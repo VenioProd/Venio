@@ -11,6 +11,8 @@ import User from '../models/User.js'
 import ProjectFinance from '../models/ProjectFinance.js'
 import ShareRuleVersion from '../models/ShareRuleVersion.js'
 import Project from '../models/Project.js'
+import ProjectPhase from '../models/ProjectPhase.js'
+import Subsidiary from '../models/Subsidiary.js'
 import ChartOfAccount from '../models/ChartOfAccount.js'
 import AuditLog from '../models/AuditLog.js'
 
@@ -69,6 +71,58 @@ beforeEach(async () => {
   await ChartOfAccount.create({ code: '604', label: 'Sous-traitance', accountClass: 6, type: 'CHARGE' })
 })
 
+it('expose au COMPTABLE les seules options financières autorisées et refuse la lecture sans permission', async () => {
+  const accountant = await User.create({
+    name: 'Comptable',
+    email: 'comptable@example.test',
+    passwordHash: 'unused',
+    role: 'COMPTABLE',
+    twoFactorEnabled: true,
+  })
+  const client = await User.create({
+    name: 'Autre client',
+    email: 'autre@example.test',
+    companyName: 'Société',
+    passwordHash: 'secret',
+    role: 'CLIENT',
+    isActive: false,
+    status: 'ARCHIVE',
+    phone: '0102030405',
+  })
+  const [secondSubsidiary, firstSubsidiary] = await Subsidiary.create([
+    { name: 'Zéphyr', slug: 'zephyr', createdBy: adminId, archived: true, infos: [{ label: 'IBAN', value: 'secret' }] },
+    { name: 'Alpha', slug: 'alpha', createdBy: adminId },
+  ])
+  const otherProject = await Project.create({ name: 'Autre projet', client: clientId })
+  const [secondPhase, firstPhase] = await ProjectPhase.create([
+    { project: projectId, title: 'Livraison', order: 2, createdBy: adminId, description: 'Interne' },
+    { project: projectId, title: 'Cadrage', order: 1, createdBy: adminId },
+    { project: otherProject._id, title: 'Autre jalon', order: 0, createdBy: adminId },
+  ])
+  const result = await request(app)
+    .get(`${financeUrl()}/options`)
+    .set('Cookie', await cookieFor(String(accountant._id)))
+    .expect(200)
+  expect(result.body).toEqual({
+    clients: [
+      { _id: String(client._id), name: 'Autre client', email: 'autre@example.test', companyName: 'Société' },
+      { _id: clientId, name: 'Client', email: 'client@example.test', companyName: '' },
+    ],
+    subsidiaries: [
+      { _id: String(firstSubsidiary._id), name: 'Alpha' },
+      { _id: String(secondSubsidiary._id), name: 'Zéphyr' },
+    ],
+    phases: [
+      { _id: String(firstPhase._id), title: 'Cadrage', order: 1 },
+      { _id: String(secondPhase._id), title: 'Livraison', order: 2 },
+    ],
+  })
+  await User.updateOne({ _id: accountant._id }, { deniedPermissions: ['view_accounting'] })
+  await request(app)
+    .get(`${financeUrl()}/options`)
+    .set('Cookie', await cookieFor(String(accountant._id)))
+    .expect(403)
+})
 it('refuse un échéancier à 99,99 %', async () => {
   const body = schedule()
   body.installments[1].percentBp = 6999

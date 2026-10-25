@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { apiFetch } from '../../../../lib/api'
 import { parseMoney } from './money'
-import { ACCOUNTING, ActionForm, dateInput, Field, labels, methodOptions, today, write } from './shared'
+import { ACCOUNTING, ActionForm, dateInput, errorText, Field, labels, methodOptions, today, write } from './shared'
+import SearchSelect from './SearchSelect'
 import type { BillingContact, Finance, Installment, Payer } from './types'
 
 interface PayerDraft extends Omit<Payer, 'shareBp'> {
@@ -8,6 +10,11 @@ interface PayerDraft extends Omit<Payer, 'shareBp'> {
 }
 interface InstallmentDraft extends Omit<Installment, 'percentBp'> {
   percent: string
+}
+interface FinanceOptions {
+  clients: { _id: string; name: string; email: string; companyName?: string }[]
+  subsidiaries: { _id: string; name: string }[]
+  phases: { _id: string; title: string; order: number }[]
 }
 const contactFields: [keyof BillingContact, string][] = [
   ['name', 'Nom de facturation'],
@@ -53,6 +60,46 @@ export default function FinanceConfiguration({
   canManage: boolean
   onSaved: () => Promise<void>
 }) {
+  const [options, setOptions] = useState<FinanceOptions | null>(null)
+  const [optionsError, setOptionsError] = useState('')
+  useEffect(() => {
+    let cancelled = false
+    void apiFetch<FinanceOptions>(`${ACCOUNTING}/projects/${projectId}/finance/options`)
+      .then((result) => {
+        if (!cancelled) {
+          setOptions(result)
+          setOptionsError('')
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setOptionsError(errorText(error))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
+  const optionsStatus = optionsError
+    ? `Chargement des options impossible : ${optionsError}`
+    : !options
+      ? 'Chargement des options…'
+      : undefined
+  const clientOptions =
+    options?.clients.map((client) => ({
+      value: client._id,
+      label: client.name,
+      hint: client.companyName || client.email,
+    })) || []
+  const subsidiaryOptions =
+    options?.subsidiaries.map((subsidiary) => ({
+      value: subsidiary._id,
+      label: subsidiary.name,
+    })) || []
+  const phaseOptions =
+    options?.phases.map((phase) => ({
+      value: phase._id,
+      label: phase.title,
+      hint: `Rang ${phase.order + 1}`,
+    })) || []
   const [mode, setMode] = useState(finance?.mode || 'FORFAIT')
   const [contract, setContract] = useState(
     finance?.contractHtCents == null ? '' : String(finance.contractHtCents / 100),
@@ -172,16 +219,15 @@ export default function FinanceConfiguration({
                   </Field>
                 )}
                 {item.trigger.kind === 'MILESTONE' && (
-                  <Field label="Identifiant du jalon du projet">
-                    <input
-                      required
-                      pattern="[a-fA-F0-9]{24}"
-                      value={item.trigger.phase || ''}
-                      onChange={(event) =>
-                        updateInstallment(index, { trigger: { ...item.trigger, phase: event.target.value } })
-                      }
-                    />
-                  </Field>
+                  <SearchSelect
+                    label="Jalon du projet"
+                    required
+                    disabled={!canManage}
+                    status={optionsStatus}
+                    options={phaseOptions}
+                    value={item.trigger.phase || ''}
+                    onChange={(phase) => updateInstallment(index, { trigger: { ...item.trigger, phase } })}
+                  />
                 )}
               </div>
               {canManage && mode === 'ECHEANCIER' && (
@@ -265,24 +311,26 @@ export default function FinanceConfiguration({
                 </select>
               </Field>
               {payer.kind === 'CLIENT' && (
-                <Field label="Référence de l’utilisateur client">
-                  <input
-                    required
-                    pattern="[a-fA-F0-9]{24}"
-                    value={payer.user || ''}
-                    onChange={(event) => updatePayer(index, { user: event.target.value })}
-                  />
-                </Field>
+                <SearchSelect
+                  label="Client payeur"
+                  required
+                  disabled={!canManage}
+                  status={optionsStatus}
+                  options={clientOptions}
+                  value={payer.user || ''}
+                  onChange={(user) => updatePayer(index, { user })}
+                />
               )}
               {payer.kind === 'SUBSIDIARY' && (
-                <Field label="Référence de la filiale">
-                  <input
-                    required
-                    pattern="[a-fA-F0-9]{24}"
-                    value={payer.subsidiary || ''}
-                    onChange={(event) => updatePayer(index, { subsidiary: event.target.value })}
-                  />
-                </Field>
+                <SearchSelect
+                  label="Filiale payeuse"
+                  required
+                  disabled={!canManage}
+                  status={optionsStatus}
+                  options={subsidiaryOptions}
+                  value={payer.subsidiary || ''}
+                  onChange={(subsidiary) => updatePayer(index, { subsidiary })}
+                />
               )}
               <Field label="Quote-part (%)">
                 <input
