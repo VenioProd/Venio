@@ -123,7 +123,7 @@ public actor MockVenioAPI: VenioAPI {
     }
 
     private func quote(_ number: String, client: String, project: String, template: String, amount: Decimal, status: QuoteStatus, firstViewedAt: Date? = nil, signedAt: Date? = nil, author: String = MockVenioAPI.lea.id) -> QuoteProposal {
-        QuoteProposal(id: "quote-\(number)", project: project, client: client, createdBy: author, title: template, status: status, lines: [QuoteLine(description: template, quantity: 1, unitPrice: amount, taxRate: 20)], signature: QuoteSignature(signedAt: signedAt), firstViewedAt: firstViewedAt, expiresAt: clock.calendar.date(byAdding: .day, value: 30, to: signedAt ?? DemoClock.date(1)), createdAt: signedAt ?? DemoClock.date(1), updatedAt: signedAt ?? DemoClock.date(1), reference: "DV-2026-\(number)", leadId: number == "041" ? "lead-calder" : nil)
+        QuoteProposal(id: "quote-\(number)", project: project, client: client, createdBy: author, title: template, status: status, lines: [QuoteLine(description: template, quantity: 1, unitPrice: amount, taxRate: 20)], signature: QuoteSignature(signedAt: signedAt), firstViewedAt: firstViewedAt, expiresAt: clock.calendar.date(byAdding: .day, value: 30, to: signedAt ?? DemoClock.date(1)), createdAt: signedAt ?? DemoClock.date(1), updatedAt: signedAt ?? DemoClock.date(1), reference: "DV-2026-\(number)", leadId: number == "041" ? "lead-calder" : nil, clientName: client)
     }
 
     public func lostReasons() -> [String] { ["Prix", "Délai", "Concurrent", "Pas de budget", "Abandon du projet"] }
@@ -171,7 +171,7 @@ public actor MockVenioAPI: VenioAPI {
         let quote = QuoteProposal(id: UUID().uuidString, project: project?.id, client: project?.client, createdBy: user.id,
             title: title ?? template.title, status: .draft, lines: template.lines, signature: QuoteSignature(signedAt: nil),
             firstViewedAt: nil, expiresAt: clock.calendar.date(byAdding: .day, value: template.validityDays, to: clock.now),
-            createdAt: clock.now, updatedAt: clock.now, reference: "DV-2026-" + String(100 + (try quotes().count)), leadId: leadId)
+            createdAt: clock.now, updatedAt: clock.now, reference: "DV-2026-" + String(100 + (try quotes().count)), leadId: leadId, clientName: project?.clientName)
         var records = try quotes()
         records.insert(quote, at: 0)
         storedQuotes = records
@@ -188,6 +188,7 @@ public actor MockVenioAPI: VenioAPI {
         guard let project = try projects().first(where: { $0.id == projectId }), project.canQuote else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
         records[index].project = project.id
         records[index].client = project.client
+        records[index].clientName = project.clientName
         records[index].updatedAt = clock.now
         storedQuotes = records
         return records[index]

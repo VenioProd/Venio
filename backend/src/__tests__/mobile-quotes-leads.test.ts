@@ -11,6 +11,7 @@ import MobileDevice from '../models/MobileDevice.js'
 import Lead from '../models/Lead.js'
 import Project from '../models/Project.js'
 import Task from '../models/Task.js'
+import QuoteProposal from '../models/QuoteProposal.js'
 import QuoteTemplate from '../models/QuoteTemplate.js'
 import UserIdempotencyKey from '../models/UserIdempotencyKey.js'
 import quoteRoutes from '../routes/admin/quoteProposals.js'
@@ -131,6 +132,17 @@ it('dit dans la synchro si l’on peut chiffrer chaque projet et chaque lead', a
   }
   // Un commercial non associé synchronise ses projets et ceux de ses clients, pas ceux des collègues.
   expect(await canQuote('projects', 'name')).toEqual({ Responsable: true, 'Client à moi': true })
+  // Le nom du client voyage à part ; `client` reste l'identifiant.
+  const projects = await request(app).get('/api/mobile/sync/projects').set('Authorization', bearer).expect(200)
+  const own = projects.body.items.find((item: { name: string }) => item.name === 'Client à moi')
+  expect(own.clientName).toBe(ownClient.companyName || ownClient.name)
+  expect(own.client).toBe(String(ownClient._id))
+  // Même chose pour les devis.
+  await QuoteProposal.create({ project: own._id, client: ownClient._id, createdBy: me, title: 'Devis' })
+  await QuoteProposal.updateMany({}, past, { timestamps: false })
+  const quotes = await request(app).get('/api/mobile/sync/quotes').set('Authorization', bearer).expect(200)
+  expect(quotes.body.items[0].clientName).toBe(ownClient.companyName || ownClient.name)
+  expect(quotes.body.items[0].client).toBe(String(ownClient._id))
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: true, Autre: false })
   await User.updateOne({ _id: me }, { deniedPermissions: ['manage_quotes'] })
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: false, Autre: false })

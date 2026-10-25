@@ -166,7 +166,7 @@ private struct QuickEntryProjectPicker: View {
     @State private var query = ""
     private var projects: [Project] {
         store.projects.filter {
-            store.canManageDocuments && (query.isEmpty || $0.client.localizedStandardContains(query)
+            store.canManageDocuments && (query.isEmpty || $0.clientName.localizedStandardContains(query)
                 || $0.name.localizedStandardContains(query) || $0.projectNumber.localizedStandardContains(query))
         }.sorted {
             let first = latestActivity($0), second = latestActivity($1)
@@ -183,7 +183,7 @@ private struct QuickEntryProjectPicker: View {
             List(projects) { project in
                 NavigationLink(value: project.id) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(verbatim: project.client).font(.headline)
+                        Text(verbatim: project.clientName).font(.headline)
                         Text(verbatim: project.name + " · " + project.projectNumber).font(.caption)
                     }.padding(.vertical, 8)
                 }
@@ -208,7 +208,7 @@ private struct QuickEntryDocumentSources: View {
                 Section {
                     DocumentSourceActions(acquisition: acquisition, projectId: projectId)
                         .disabled(!store.canManageDocuments)
-                } header: { Text(verbatim: project.client + " · " + project.name) }
+                } header: { Text(verbatim: project.clientName + " · " + project.name) }
             }
         }
         .navigationTitle(CommercialStrings.text("Ajouter un document", locale: locale))

@@ -10,6 +10,7 @@ import Task from '../../models/Task.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import logger from '../../lib/logger.js'
 import { leadScopeFilter } from '../../lib/crmScope.js'
+import { withClientNames } from '../../lib/mobileClientNames.js'
 
 const router = express.Router()
 router.use(auth, requireAdmin, requirePermission(PERMISSIONS.VIEW_CRM))
@@ -180,7 +181,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           )
           .sort({ updatedAt: -1, _id: 1 })
           .limit(50)
-          .lean(),
+          .lean()
+          .then(withClientNames),
         QuoteProposal.countDocuments(quoteFilter),
       ])
     return res.json({

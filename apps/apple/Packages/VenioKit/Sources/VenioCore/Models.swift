@@ -201,7 +201,10 @@ public struct Interaction: Codable, Sendable, Identifiable {
 public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var id: String
     public var project: String?
+    /// Identifiant du compte client : sert à rapprocher, jamais à afficher.
     public var client: String?
+    /// Nom à afficher pour le client, quand le serveur le donne.
+    public var clientName: String?
     public var leadId: String?
     public var createdBy: String
     public var title: String
@@ -214,10 +217,11 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var updatedAt: Date
     public var reference: String?
 
-    public init(id: String, project: String?, client: String?, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil, leadId: String? = nil) {
+    public init(id: String, project: String?, client: String?, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil, leadId: String? = nil, clientName: String? = nil) {
         self.id = id
         self.project = project
         self.client = client
+        self.clientName = clientName
         self.createdBy = createdBy
         self.title = title
         self.status = status
@@ -236,7 +240,10 @@ public struct Project: Codable, Sendable, Identifiable {
     public var id: String
     public var projectNumber: String
     public var name: String
+    /// Identifiant du compte client : sert à rapprocher, jamais à afficher.
     public var client: String
+    /// Nom à afficher pour le client.
+    public var clientName: String
     public var status: ProjectStatus
     public var budget: ProjectBudget
     public var billing: ProjectBilling
@@ -245,11 +252,13 @@ public struct Project: Codable, Sendable, Identifiable {
     public var assignedTo: String?
     public var canQuote: Bool
 
-    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, canQuote: Bool = false) {
+    public init(id: String, projectNumber: String, name: String, client: String, clientName: String? = nil, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, canQuote: Bool = false) {
         self.id = id
         self.projectNumber = projectNumber
         self.name = name
         self.client = client
+        // Sans nom explicite (démo, tests), `client` est déjà un nom ; le live passe toujours le sien.
+        self.clientName = clientName ?? client
         self.status = status
         self.budget = budget
         self.billing = billing

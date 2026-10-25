@@ -13,7 +13,7 @@ struct GlobalSearchView: View {
     let onOpen: (DeepLink) -> Void
     private var term: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var leads: [Lead] { store.leads.filter { matches([$0.company, $0.contactName]) } }
-    private var projects: [Project] { store.projects.filter { matches([$0.client, $0.name, $0.projectNumber]) } }
+    private var projects: [Project] { store.projects.filter { matches([$0.clientName, $0.name, $0.projectNumber]) } }
     private var documents: [ProjectDocument] {
         store.projectDocuments.values.flatMap { $0 }.filter { matches([$0.title, CommercialStrings.text($0.title, locale: locale)]) }.sorted { $0.uploadedAt > $1.uploadedAt }
     }
@@ -41,7 +41,7 @@ struct GlobalSearchView: View {
                                 Button { onOpen(.project(project.id)) } label: {
                                     Label {
                                         VStack(alignment: .leading) {
-                                            Text(verbatim: project.client + " · " + project.name)
+                                            Text(verbatim: project.clientName + " · " + project.name)
                                             Text(verbatim: project.projectNumber).font(.caption)
                                         }
                                     } icon: { Image(systemName: "folder") }
@@ -62,7 +62,7 @@ struct GlobalSearchView: View {
                                         VStack(alignment: .leading) {
                                             Text(verbatim: CommercialStrings.text(document.title, locale: locale))
                                             if let project = store.projects.first(where: { $0.id == document.project }) {
-                                                Text(verbatim: project.client + " · " + project.projectNumber).font(.caption)
+                                                Text(verbatim: project.clientName + " · " + project.projectNumber).font(.caption)
                                             }
                                         }
                                     } icon: { Image(systemName: "doc.text") }

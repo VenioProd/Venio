@@ -101,6 +101,7 @@ struct ProjectDTO: Decodable, Sendable {
     var projectNumber: String?
     var name: String
     var client: ServerReference
+    var clientName: String?
     var assignedTo: ServerReference?
     var canQuote: Bool?
     var status: ProjectStatus?
@@ -110,7 +111,7 @@ struct ProjectDTO: Decodable, Sendable {
     struct Budget: Decodable, Sendable { var amount: Decimal?; var currency: String? }
     struct Billing: Decodable, Sendable { var amountInvoiced: Decimal?; var billingStatus: BillingStatus? }
     var model: Project {
-        Project(id: _id, projectNumber: projectNumber ?? "", name: name, client: client.id, status: status ?? .active,
+        Project(id: _id, projectNumber: projectNumber ?? "", name: name, client: client.id, clientName: clientName ?? client.name ?? "", status: status ?? .active,
                 budget: ProjectBudget(amount: budget?.amount, currency: budget?.currency ?? "EUR"),
                 billing: ProjectBilling(amountInvoiced: billing?.amountInvoiced, billingStatus: billing?.billingStatus ?? .notInvoiced),
                 endDate: endDate, progress: 0, assignedTo: assignedTo?.id, canQuote: canQuote ?? false)
@@ -146,6 +147,7 @@ struct QuoteDTO: Decodable, Sendable {
     var _id: String
     var project: ServerReference?
     var client: ServerReference?
+    var clientName: String?
     var leadId: ServerReference?
     var reference: String?
     var createdBy: ServerReference
@@ -160,7 +162,7 @@ struct QuoteDTO: Decodable, Sendable {
     var model: QuoteProposal {
         QuoteProposal(id: _id, project: project?.id, client: client?.id, createdBy: createdBy.id, title: title, status: status,
                       lines: lines?.map(\.model) ?? [], signature: signature ?? QuoteSignature(signedAt: nil), firstViewedAt: firstViewedAt,
-                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt, reference: reference, leadId: leadId?.id)
+                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt, reference: reference, leadId: leadId?.id, clientName: clientName ?? client?.name)
     }
 }
 struct TemplateDTO: Decodable, Sendable {

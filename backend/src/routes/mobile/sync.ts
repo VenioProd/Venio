@@ -17,6 +17,7 @@ import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityTyp
 import { leadScopeFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
 import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
+import { withClientNames } from '../../lib/mobileClientNames.js'
 
 const router = express.Router()
 router.use(auth, requireAdmin)
@@ -131,7 +132,9 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         items = await Interaction.find(filter, null, options).populate('author', 'name email').lean()
         break
       case 'projects':
-        items = await Project.find(filter, null, options).populate('assignedTo', 'name email').lean()
+        items = await withClientNames(
+          await Project.find(filter, null, options).populate('assignedTo', 'name email').lean(),
+        )
         break
       case 'projectPhases':
         items = await ProjectPhase.find(filter, null, options)
@@ -157,7 +160,7 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         }))
         break
       case 'quotes':
-        items = await QuoteProposal.find(filter, null, options).lean()
+        items = await withClientNames(await QuoteProposal.find(filter, null, options).lean())
         break
       case 'deletions':
         items = await SyncTombstone.find(filter, null, options).lean()

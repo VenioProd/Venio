@@ -55,7 +55,7 @@ public struct QuotesView: View {
                         ForEach(quotes) { quote in
                             NavigationLink { QuoteDetailView(id: quote.id) } label: {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text(verbatim: [quote.reference, quote.client].compactMap { $0 }.joined(separator: " · ")).font(.headline)
+                                    Text(verbatim: [quote.reference, store.clientLabel(for: quote)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")).font(.headline)
                                     Text(verbatim: CommercialStrings.text(quote.title, locale: locale))
                                         .font(.subheadline).foregroundStyle(palette.textSecondary.color)
                                     HStack {
@@ -101,7 +101,7 @@ struct QuoteDetailView: View {
             CommercialPage {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(verbatim: quote.reference ?? CommercialStrings.text("Devis", locale: locale)).font(.title.bold())
-                    Text(verbatim: quote.client ?? store.leads.first(where: { $0.id == quote.leadId })?.company ?? "").font(.headline)
+                    Text(verbatim: store.clientLabel(for: quote)).font(.headline)
                     Text(verbatim: CommercialStrings.text(quote.title, locale: locale))
                     QuoteStatusBadge(quote: quote)
                 }
@@ -158,7 +158,7 @@ private struct AttachQuoteView: View {
                             do { try await store.attachQuote(id: quoteId, projectId: project.id); dismiss() }
                             catch { errorKey = quoteErrorKey(error) }
                         }
-                    } label: { Text(verbatim: project.client + " · " + project.name) }
+                    } label: { Text(verbatim: project.clientName + " · " + project.name) }
                 }
                 if !store.projects.contains(where: \.canQuote) { VText("Aucun projet dans votre portefeuille") }
                 if let errorKey { MobileErrorView(key: errorKey) }
@@ -215,7 +215,7 @@ struct NewQuoteView: View {
                         Button { projectId = project.id; leadId = "" } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text(verbatim: project.client + " · " + project.name)
+                                    Text(verbatim: project.clientName + " · " + project.name)
                                     if !store.canQuote(project) {
                                         VText("Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption)
                                     }

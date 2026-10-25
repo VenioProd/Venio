@@ -38,7 +38,7 @@ import VenioCommercial
             do {
                 try inbox.writeContext(ShareContext(origin: origin, userId: user.id,
                     projects: store.canManageDocuments ? store.projects.map {
-                        ShareProject(id: $0.id, name: $0.name, client: $0.client, projectNumber: $0.projectNumber)
+                        ShareProject(id: $0.id, name: $0.name, client: $0.clientName, projectNumber: $0.projectNumber)
                     } : [], requiresUnlock: AppLock.shared.enabled))
                 for item in try inbox.items() {
                     guard session.commercial === store, case .signedIn(let current, _) = session.state,
@@ -68,7 +68,7 @@ struct ShareInboxIntegration: ViewModifier {
               let store = session.commercial, store.hasLoaded, store.currentUser?.id == user.id else { return nil }
         return ShareContext(origin: session.api.session.baseURL.absoluteString, userId: user.id,
             projects: store.canManageDocuments ? store.projects.map {
-                ShareProject(id: $0.id, name: $0.name, client: $0.client, projectNumber: $0.projectNumber)
+                ShareProject(id: $0.id, name: $0.name, client: $0.clientName, projectNumber: $0.projectNumber)
             } : [], requiresUnlock: AppLock.shared.enabled, updatedAt: .distantPast)
     }
     func body(content: Content) -> some View {

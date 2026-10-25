@@ -19,7 +19,7 @@ public struct SpotlightAttributes: Sendable, Equatable {
         identifier = "project:" + project.id
         domain = "paris.venio.project"
         title = project.name
-        summary = [project.client, project.projectNumber].filter { !$0.isEmpty }.joined(separator: " · ")
-        keywords = [project.client, project.name, project.projectNumber].filter { !$0.isEmpty }
+        summary = [project.clientName, project.projectNumber].filter { !$0.isEmpty }.joined(separator: " · ")
+        keywords = [project.clientName, project.name, project.projectNumber].filter { !$0.isEmpty }
     }
 }
