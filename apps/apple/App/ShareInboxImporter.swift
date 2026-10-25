@@ -21,7 +21,7 @@ import VenioCommercial
                                            CFNotificationName(ShareInboxStore.notificationName as CFString), nil)
     }
     func update(session: SessionModel?) async {
-        guard let session else { return }
+        guard let session else { try? inbox.clearContext(); return }
         requested = true
         guard !importing else { return }
         importing = true

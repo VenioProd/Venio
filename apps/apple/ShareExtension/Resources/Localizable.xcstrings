@@ -254,6 +254,16 @@
           }
         }
       }
+    },
+    "Une partie des fichiers n’a pas pu être ajoutée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some files could not be added."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

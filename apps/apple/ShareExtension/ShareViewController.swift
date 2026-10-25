@@ -101,18 +101,33 @@ final class ShareViewController: UIViewController {
     }
     func send() {
         guard !locked, let projectId, !loading, errorKey == nil, !items.isEmpty else { return }
+        // L'app a pu se déconnecter ou activer son verrou depuis l'ouverture de la feuille.
+        let current = inbox.readContext()
+        guard let current, current.origin == context?.origin, current.userId == context?.userId,
+              current.projects.contains(where: { $0.id == projectId }), !current.requiresUnlock || unlocked else {
+            discard(); errorKey = "Ouvrez Venio pour vous connecter"; return
+        }
+        var committed: Set<UUID> = []
         do {
             for index in items.indices {
                 items[index].projectId = projectId
                 try DocumentTransport.validateFile(items[index].draft(fileURL: inbox.fileURL(for: items[index])))
             }
-            for item in items { try inbox.commit(item: item) }
+            for item in items {
+                try inbox.commit(item: item)
+                committed.insert(item.idempotencyKey)
+            }
             recent = Array(([projectId] + recent.filter { $0 != projectId }).prefix(5))
             UserDefaults.standard.set(recent, forKey: "recentProjects")
             sent = true
             CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
                 CFNotificationName(ShareInboxStore.notificationName as CFString), nil, nil, true)
-        } catch { discard(); errorKey = Self.message(error) }
+        } catch {
+            // Les fichiers déjà publiés partent ; seuls les autres sont retirés.
+            items.removeAll { committed.contains($0.idempotencyKey) }
+            discard()
+            errorKey = committed.isEmpty ? Self.message(error) : "Une partie des fichiers n’a pas pu être ajoutée."
+        }
     }
     func discard() {
         guard !sent else { return }

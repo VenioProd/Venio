@@ -71,7 +71,7 @@ import Testing
         try await store.deactivate(sessionID: scope.id, discardWrites: true)
     }
 
-    @Test func otherUserIsRemovedWithoutEnqueue() async throws {
+    @Test func otherAccountIsKeptWithoutEnqueue() async throws {
         let directory = try directory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let inbox = ShareInboxStore(directory: directory)
@@ -86,7 +86,7 @@ import Testing
             Issue.record("Un autre utilisateur ne doit pas être importé")
             _ = try await store.enqueue(draft, scope: scope)
         }
-        #expect(try inbox.items().isEmpty)
+        #expect(try inbox.items().count == 1)
         #expect(try await store.writes(scope: scope).isEmpty)
     }
 

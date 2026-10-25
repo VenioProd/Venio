@@ -128,8 +128,11 @@ public struct ShareInboxStore: Sendable {
                    date < Date.now.addingTimeInterval(-3600) { try FileManager.default.removeItem(at: folder) }
                 continue
             }
-            let item = try JSONDecoder().decode(ShareInboxItem.self, from: Data(contentsOf: metadata))
-            guard item.idempotencyKey.uuidString == folder.lastPathComponent else { continue }
+            guard let item = try? JSONDecoder().decode(ShareInboxItem.self, from: Data(contentsOf: metadata)),
+                  item.idempotencyKey.uuidString == folder.lastPathComponent else {
+                try? FileManager.default.removeItem(at: folder)
+                continue
+            }
             result.append(item)
         }
         return result.sorted { $0.createdAt < $1.createdAt }
@@ -144,8 +147,8 @@ public struct ShareInboxStore: Sendable {
     }
     @discardableResult public func importItem(_ item: ShareInboxItem, origin: String, userId: String,
         enqueue: @Sendable (DocumentDraft) async throws -> Void) async throws -> Bool {
-        guard item.origin == origin else { return false }
-        guard item.userId == userId else { try remove(item.idempotencyKey); return false }
+        // Un dépôt d'un autre compte ou d'une autre origine attend son compte ; la déconnexion explicite vide la boîte.
+        guard item.origin == origin, item.userId == userId else { return false }
         do { try await enqueue(item.draft(fileURL: fileURL(for: item))) }
         catch {
             if let code = (error as? VenioAPIError)?.code,

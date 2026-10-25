@@ -134,7 +134,11 @@ import AppKit
                     }
                     if let session, !session.starting, case .signedOut = session.state { session.onDisconnect?() }
                     #if os(iOS)
-                    session?.additionalPendingCount = { watch.pendingNotes.count }
+                    session?.additionalPendingCount = { [session] in
+                        let origin = session?.api.session.baseURL.absoluteString
+                        let shared = (try? ShareInboxStore().items().filter { $0.origin == origin }.count) ?? 0
+                        return watch.pendingNotes.count + shared
+                    }
                     session?.discardAdditionalPending = { watch.discardPendingNotes() }
                     watch.usesLiveBackend = session != nil
                     watch.activate()
