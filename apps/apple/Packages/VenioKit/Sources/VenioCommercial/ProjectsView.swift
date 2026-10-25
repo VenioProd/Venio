@@ -9,7 +9,11 @@ struct ProjectsTab: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
     @State private var selectedProjectID: String?
-    @State private var path: [String] = []
+    @State private var path: [String]
+    init(initialProjectID: String? = nil) {
+        _selectedProjectID = State(initialValue: initialProjectID)
+        _path = State(initialValue: initialProjectID.map { [$0] } ?? [])
+    }
     private var regular: Bool {
         #if os(iOS)
         sizeClass == .regular
@@ -45,6 +49,7 @@ public struct ProjectsView: View {
     @Environment(\.locale) private var locale
     @Environment(\.venioPalette) private var palette
     @State private var quoteProject: Project?
+    @State private var acquisition = DocumentAcquisition()
     private let selectedID: String?
     private let onProject: (String) -> Void
     public init(selectedID: String? = nil, onProject: @escaping (String) -> Void = { _ in }) {
@@ -55,7 +60,6 @@ public struct ProjectsView: View {
     public var body: some View {
         CommercialPage {
             VText("Projets").font(.largeTitle.bold())
-            CommercialBadge(text: CommercialStrings.text("Lecture seule", locale: locale))
             ForEach(store.projects) { project in
                 Button { onProject(project.id) } label: {
                     VStack(alignment: .leading, spacing: 12) {
@@ -81,6 +85,9 @@ public struct ProjectsView: View {
                 }.buttonStyle(.plain).accessibilityAddTraits(project.id == selectedID ? .isSelected : [])
                     .contextMenu {
                         Button { onProject(project.id) } label: { Label { VText("Ouvrir") } icon: { Image(systemName: "folder") } }
+                        Menu { DocumentSourceActions(acquisition: acquisition, projectId: project.id) } label: {
+                            Label { VText("Ajouter un document") } icon: { Image(systemName: "doc.badge.plus") }
+                        }.disabled(!store.canManageDocuments)
                         if store.canManageQuotes && project.canQuote {
                             Button { quoteProject = project } label: { Label { VText("Nouveau devis") } icon: { Image(systemName: "doc.badge.plus") } }
                         }
@@ -88,6 +95,7 @@ public struct ProjectsView: View {
             }
         }
         .commercialRefreshable()
+        .documentAcquisition(acquisition)
         .sheet(item: $quoteProject) { NewQuoteView(projectId: $0.id) }
         .navigationTitle("")
         #if os(iOS)
@@ -100,6 +108,7 @@ public struct ProjectDetailView: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
     @Environment(\.venioPalette) private var palette
+    @State private var acquisition = DocumentAcquisition()
     let id: String
     public init(id: String) { self.id = id }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
@@ -109,6 +118,7 @@ public struct ProjectDetailView: View {
                 CommercialPage {
                     header(detail)
                     if store.currentUser?.permissions.contains("view_phases") == true { phases(detail) }
+                    ProjectDocumentsView(projectId: id)
                     finances(detail.project)
                     requests(detail)
                     VStack(alignment: .leading, spacing: 18) {
@@ -132,10 +142,22 @@ public struct ProjectDetailView: View {
                 ContentUnavailableView(CommercialStrings.text("Projet indisponible", locale: locale), systemImage: "folder.badge.questionmark")
             }
         }.background { ThemedBackground() }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu { DocumentSourceActions(acquisition: acquisition, projectId: id) } label: {
+                    Label { VText("Ajouter un document") } icon: { Image(systemName: "plus") }
+                }.disabled(!store.canManageDocuments)
+            }
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard store.canManageDocuments, !urls.isEmpty else { return false }
+            acquisition.files(urls, projectId: id)
+            return true
+        }
+        .documentAcquisition(acquisition)
     }
     private func header(_ detail: ProjectDetail) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            CommercialBadge(text: CommercialStrings.text("Lecture seule", locale: locale))
             Text(verbatim: detail.project.client).font(.largeTitle.bold())
             Text(verbatim: detail.project.projectNumber + " · " + CommercialStrings.text(detail.project.name, locale: locale)).font(.subheadline)
             ProgressView(value: Double(detail.project.progress), total: 100) {

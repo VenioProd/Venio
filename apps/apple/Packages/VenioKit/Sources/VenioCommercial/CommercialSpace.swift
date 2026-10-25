@@ -31,13 +31,16 @@ public struct CommercialSpace: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.locale) private var locale
     @State private var showingNewLead = false
+    @State private var searchDestination: DeepLink?
+    private let initialProjectID: String?
     @State private var tab: CommercialTab
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
     @Namespace private var pipelineTransition
 
-    public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
-        _tab = State(initialValue: initialLeadID == nil ? initialTab : .pipeline)
+    public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil) {
+        self.initialProjectID = initialProjectID
+        _tab = State(initialValue: initialProjectID != nil ? .projects : initialLeadID == nil ? initialTab : .pipeline)
         _todayPath = State(initialValue: [])
         _pipelinePath = State(initialValue: initialLeadID.map { [$0] } ?? [])
     }
@@ -60,7 +63,7 @@ public struct CommercialSpace: View {
                 }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
             }
             if store.currentUser?.permissions.contains("view_projects") == true {
-                ProjectsTab().tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
+                ProjectsTab(initialProjectID: initialProjectID).tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
             }
             if store.canManageQuotes {
                 NavigationStack { QuotesView() }.tabItem { tabLabel(.quotes) }.tag(CommercialTab.quotes)
@@ -85,6 +88,19 @@ public struct CommercialSpace: View {
                     Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
                 }.frame(maxWidth: .infinity).accessibilityIdentifier("quickEntry.open")
             }
+        }
+        .background {
+            Button { store.showingSearch = true } label: { VText("Rechercher") }
+                .keyboardShortcut("k", modifiers: .command)
+                .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
+        }
+        .sheet(isPresented: Binding(get: { store.showingSearch }, set: { store.showingSearch = $0 }), onDismiss: {
+            if let destination = searchDestination {
+                searchDestination = nil
+                Task { await store.open(destination) }
+            }
+        }) {
+            GlobalSearchView { link in searchDestination = link; store.showingSearch = false }
         }
         .sheet(isPresented: $showingNewLead) {
             NewLeadView { id in tab = .pipeline; pipelinePath = [id] }

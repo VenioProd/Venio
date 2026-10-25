@@ -41,13 +41,13 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio utilise la caméra pour lire les cartes de visite."
+            "value": "Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio uses the camera to read business cards."
+            "value": "Venio uses the camera to read business cards and scan your project documents."
           }
         }
       }

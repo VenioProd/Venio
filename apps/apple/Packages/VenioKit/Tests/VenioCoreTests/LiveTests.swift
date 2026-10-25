@@ -467,3 +467,128 @@ private actor SyncResponses {
     #expect(try await store.writes(scope: scope).isEmpty)
     #expect(await transport.paths.isEmpty)
 }
+
+private func documentDraft() throws -> DocumentDraft {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let url = directory.appendingPathComponent("cahier.txt")
+    try Data("Cahier des charges du projet".utf8).write(to: url)
+    return DocumentDraft(projectId: "project", title: "Cahier des charges", fileName: "cahier.txt", mimeType: "text/plain", fileURL: url)
+}
+private let documentRequest: @Sendable (DocumentDraft, AuthSession) throws -> URLRequest = { draft, session in
+    var request = try session.request(path: "/fixture-upload", method: "POST", body: Data(contentsOf: draft.fileURL))
+    request.setValue(draft.idempotencyKey.uuidString, forHTTPHeaderField: "Idempotency-Key")
+    return request
+}
+
+@Test func offlineDocumentKeepsDurableFileAndKeyAcrossTransportFailure() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let schema = Schema([SyncedRecord.self, SyncCursor.self, PendingWrite.self])
+    let configuration = ModelConfiguration(url: directory.appendingPathComponent("documents.store"))
+    let store = SyncStore(modelContainer: try ModelContainer(for: schema, configurations: configuration))
+    var writer = user
+    writer.role = "ADMIN"
+    let keys = Mutex<[String?]>([])
+    let transport = FakeTransport { request in
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer fixture-access-old")
+        let count = keys.withLock { $0.append(request.value(forHTTPHeaderField: "Idempotency-Key")); return $0.count }
+        if count == 1 { throw URLError(.timedOut) }
+        #expect(request.httpBody == Data("Cahier des charges du projet".utf8))
+        return (201, Data())
+    }
+    let memory = MemoryTokens(StoredSession(tokens: tokens("old"), user: writer, device: device))
+    let auth = try await session(transport, store, memory)
+    let scope = try await auth.identity()
+    try await store.put(type: "projects", json: json(#"{"_id":"project","name":"Projet","client":"client"}"#), scope: scope)
+    let api = LiveVenioAPI(session: auth, store: store)
+    await api.setConnected(false)
+    let draft = try documentDraft()
+    defer { try? FileManager.default.removeItem(at: draft.fileURL.deletingLastPathComponent()) }
+    let document = try await api.uploadDocument(draft)
+    #expect(document.deliveryState == "pending")
+    #expect(try await api.documents(projectId: draft.projectId).map(\.id) == [document.id])
+    let queued = try #require(try await store.writes(scope: scope).first)
+    let saved = try JSONDecoder().decode(DocumentDraft.self, from: queued.payload)
+    defer { try? FileManager.default.removeItem(at: saved.fileURL) }
+    #expect(queued.type == "document")
+    #expect(queued.id == draft.idempotencyKey)
+    #expect(saved.idempotencyKey == draft.idempotencyKey)
+    #expect(saved.fileURL != draft.fileURL)
+    try FileManager.default.removeItem(at: draft.fileURL)
+    #expect(try await Data(contentsOf: api.documentFile(id: document.id)) == Data("Cahier des charges du projet".utf8))
+    #expect(keys.withLock { $0.isEmpty })
+    await api.setConnected(true)
+    let outbox = Outbox(session: auth, store: store, makeDocumentRequest: documentRequest)
+    try await outbox.drain()
+    #expect(try await store.writes(scope: scope).first?.state == "pending")
+    #expect(FileManager.default.fileExists(atPath: saved.fileURL.path))
+    try await outbox.drain()
+    #expect(keys.withLock { $0.count } == 1)
+    let restored = SyncStore(modelContainer: try ModelContainer(for: schema, configurations: configuration))
+    let reconnected = try await session(transport, restored, memory)
+    try await Outbox(session: reconnected, store: restored, makeDocumentRequest: documentRequest).drain()
+    #expect(keys.withLock { $0 } == [draft.idempotencyKey.uuidString, draft.idempotencyKey.uuidString])
+    #expect(try await restored.writes(scope: reconnected.identity()).isEmpty)
+    #expect(!FileManager.default.fileExists(atPath: saved.fileURL.path))
+}
+
+@Test func documentIdempotencyPreventsDuplicateQueueAndCompletedReplay() async throws {
+    let store = try database()
+    let keys = Mutex<[String?]>([])
+    let transport = FakeTransport { request in
+        keys.withLock { $0.append(request.value(forHTTPHeaderField: "Idempotency-Key")) }
+        await Task.yield()
+        return (201, Data())
+    }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    let draft = try documentDraft()
+    defer { try? FileManager.default.removeItem(at: draft.fileURL.deletingLastPathComponent()) }
+    _ = try await store.enqueue(draft, scope: scope)
+    _ = try await store.enqueue(draft, scope: scope)
+    #expect(try await store.writes(scope: scope).count == 1)
+    let outbox = Outbox(session: auth, store: store, makeDocumentRequest: documentRequest)
+    async let first: Void = outbox.drain()
+    async let second: Void = outbox.drain()
+    _ = try await (first, second)
+    try await store.reset(scope: scope)
+    _ = try await store.enqueue(draft, scope: scope)
+    try await outbox.drain()
+    #expect(try await store.writes(scope: scope).isEmpty)
+    #expect(keys.withLock { $0 } == [draft.idempotencyKey.uuidString])
+}
+
+@Test func documentDeletionAbandonsPendingFileButRequiresPermissionForConfirmed() async throws {
+    let store = try database()
+    let transport = FakeTransport { _ in Issue.record("Suppression sans permission : aucun transport attendu"); return (200, Data()) }
+    let auth = try await session(transport, store, MemoryTokens(StoredSession(tokens: tokens("old"), user: user, device: device)))
+    let scope = try await auth.identity()
+    let api = LiveVenioAPI(session: auth, store: store)
+    await api.setConnected(false)
+    let draft = try documentDraft()
+    defer { try? FileManager.default.removeItem(at: draft.fileURL.deletingLastPathComponent()) }
+    let pending = try await store.enqueue(draft, scope: scope)
+    let saved = try await api.documentFile(id: pending.id)
+    try await api.deleteDocument(id: pending.id)
+    #expect(try await store.writes(scope: scope).isEmpty)
+    #expect(!FileManager.default.fileExists(atPath: saved.path))
+    await #expect(throws: VenioAPIError(code: "FORBIDDEN")) { try await api.deleteDocument(id: "confirmed") }
+    #expect(await transport.paths.isEmpty)
+    let reader = MockVenioAPI(user: user.summary)
+    let owner = MockVenioAPI()
+    let readerDocuments = try await reader.documents(projectId: "project-pilote")
+    let ownerDocuments = try await owner.documents(projectId: "project-pilote")
+    var files: [URL] = []
+    for document in readerDocuments { files.append(try await reader.documentFile(id: document.id)) }
+    for document in ownerDocuments { files.append(try await owner.documentFile(id: document.id)) }
+    defer { for file in files { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) } }
+    let confirmed = try #require(readerDocuments.first)
+    await #expect(throws: VenioAPIError(code: "FORBIDDEN")) { try await reader.deleteDocument(id: confirmed.id) }
+    let colleagueDocument = try #require(ownerDocuments.first { $0.uploadedBy != MockVenioAPI.lea.id })
+    await #expect(throws: VenioAPIError(code: "FORBIDDEN")) { try await owner.deleteDocument(id: colleagueDocument.id) }
+    let ownDocument = try #require(ownerDocuments.first { $0.uploadedBy == MockVenioAPI.lea.id })
+    try await owner.deleteDocument(id: ownDocument.id)
+    #expect(try await !owner.documents(projectId: "project-pilote").contains { $0.id == ownDocument.id })
+}

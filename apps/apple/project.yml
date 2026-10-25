@@ -38,7 +38,7 @@ targets:
             CFBundleURLSchemes: [venio]
         NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
         NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
-        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite.
+        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app

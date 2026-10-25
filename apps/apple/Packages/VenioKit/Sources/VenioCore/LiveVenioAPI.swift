@@ -159,6 +159,67 @@ public actor LiveVenioAPI: VenioAPI {
         }
     }
 
+    public func documents(projectId: String) async throws -> [ProjectDocument] {
+        let scope = try await session.identity()
+        guard scope.user.permissions.contains("view_projects") else { return [] }
+        var documents: [ProjectDocument] = []
+        if let type = DocumentTransport.syncType {
+            documents = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument)
+                .filter { $0.project == projectId }
+        }
+        for write in try await store.writes(scope: scope) where write.type == "document" {
+            let draft = try JSONDecoder().decode(DocumentDraft.self, from: write.payload)
+            if draft.projectId == projectId {
+                documents.append(draft.model(state: write.state, userId: scope.user.id, date: write.createdAt))
+            }
+        }
+        return documents.sorted { $0.uploadedAt > $1.uploadedAt }
+    }
+    public func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument {
+        let scope = try await session.identity()
+        guard DocumentTransport.canManage(scope.user.summary),
+              !draft.clientVisible || scope.user.summary.role == .admin else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VenioAPIError(code: "INVALID_INPUT") }
+        guard try await projects().contains(where: { $0.id == draft.projectId }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        let document = try await store.enqueue(draft, scope: scope)
+        changed()
+        Task { try? await self.refresh() }
+        return document
+    }
+    public func deleteDocument(id: String) async throws {
+        let scope = try await session.identity()
+        if id.hasPrefix("pending-"), let key = UUID(uuidString: String(id.dropFirst("pending-".count))) {
+            guard try await store.writes(scope: scope).contains(where: { $0.id == key && $0.type == "document" }) else { throw VenioAPIError(code: "NOT_FOUND") }
+            try await outbox.delete(id: key)
+        } else {
+            guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
+            guard let type = DocumentTransport.syncType else { throw VenioAPIError(code: "DOCUMENTS_CONTRACT_PENDING") }
+            let documents = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument)
+            guard documents.contains(where: { $0.id == id && $0.uploadedBy == scope.user.id }) else { throw VenioAPIError(code: "FORBIDDEN") }
+            _ = try await online(DocumentTransport.deletionRequest(id: id, session: session), scope: scope)
+            try await store.removeDocument(id: id, scope: scope)
+        }
+        changed()
+    }
+    public func documentFile(id: String) async throws -> URL {
+        let scope = try await session.identity()
+        if id.hasPrefix("pending-"), let key = UUID(uuidString: String(id.dropFirst("pending-".count))),
+           let write = try await store.writes(scope: scope).first(where: { $0.id == key && $0.type == "document" }) {
+            return try JSONDecoder().decode(DocumentDraft.self, from: write.payload).fileURL
+        }
+        guard scope.user.permissions.contains("view_projects") else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard let type = DocumentTransport.syncType else { throw VenioAPIError(code: "DOCUMENTS_CONTRACT_PENDING") }
+        guard let document = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument).first(where: { $0.id == id }) else {
+            throw VenioAPIError(code: "NOT_FOUND")
+        }
+        let data = try await online(DocumentTransport.fileRequest(id: id, session: session), scope: scope)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VenioPreviews/" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent(URL(fileURLWithPath: document.fileName).lastPathComponent)
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
     public func quotes() async throws -> [QuoteProposal] {
         let scope = try await session.identity()
         guard !scope.user.permissions.isDisjoint(with: ["manage_quotes", "view_billing", "manage_billing"]) else { return [] }

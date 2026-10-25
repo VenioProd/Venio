@@ -12,6 +12,7 @@ import VenioTheme
     public private(set) var starting = true
     public private(set) var offline = false
     public private(set) var pending: [QueuedWrite] = []
+    public private(set) var sendingWriteID: UUID?
     public private(set) var refreshing = false
     public private(set) var lastSyncedAt: Date?
     public var errorKey: String?
@@ -23,6 +24,7 @@ import VenioTheme
     private let monitor = NWPathMonitor()
     private var observation: Task<Void, Never>?
     private var updates: Task<Void, Never>?
+    private var outboxActivity: Task<Void, Never>?
     private var preferenceWrite: Task<Void, Never>?
     private var started = false
     private var refreshID: UUID?
@@ -30,7 +32,7 @@ import VenioTheme
     private var connectionTask: Task<Void, Never>?
 
     public init(api: LiveVenioAPI, themes: ThemeManager) { self.api = api; self.themes = themes }
-    isolated deinit { observation?.cancel(); updates?.cancel(); preferenceWrite?.cancel(); connectionTask?.cancel(); monitor.cancel() }
+    isolated deinit { observation?.cancel(); updates?.cancel(); outboxActivity?.cancel(); preferenceWrite?.cancel(); connectionTask?.cancel(); monitor.cancel() }
 
     public func start() async {
         guard !started else { return }
@@ -40,6 +42,13 @@ import VenioTheme
             for await state in states {
                 guard let self, !Task.isCancelled else { return }
                 self.received(state)
+            }
+        }
+        let activity = await api.outbox.activity()
+        outboxActivity = Task { [weak self] in
+            for await id in activity {
+                guard let self, !Task.isCancelled else { return }
+                self.sendingWriteID = id
             }
         }
         let events = await api.updates()
@@ -79,6 +88,7 @@ import VenioTheme
             lastPreferences = nil
             commercial = nil
             pending = []
+            sendingWriteID = nil
             preferenceWrite?.cancel()
             if case .signedIn = previous { onDisconnect?() }
         case .signedIn(let user, _):
@@ -184,6 +194,8 @@ public func mobileErrorKey(_ error: any Error) -> String {
         }
     }
     let code = (error as? HTTPFailure)?.code ?? (error as? VenioAPIError)?.code
+    if code == "DOCUMENTS_CONTRACT_PENDING" { return "Les documents seront disponibles après activation du service." }
+    if code == "WRITE_IN_PROGRESS" { return "Envoi en cours. Réessayez après son traitement." }
     if code == "LEAD_ASSIGNMENT_FORBIDDEN" { return "Vous ne pouvez pas réassigner le lead d’un collègue" }
     if let error = error as? HTTPFailure {
         if error.code == "BROWSER_SESSION_REQUIRED" || error.code == "MFA_STEP_UP_REQUIRED" { return "Disponible sur le web" }

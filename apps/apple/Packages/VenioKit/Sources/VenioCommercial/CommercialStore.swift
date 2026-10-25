@@ -10,6 +10,8 @@ import VenioCore
     public private(set) var monthlyTarget: Decimal?
     public private(set) var appointments: [Appointment] = []
     public private(set) var projects: [Project] = []
+    public private(set) var projectDocuments: [String: [ProjectDocument]] = [:]
+    public var showingSearch = false
     public private(set) var projectDetails: [String: ProjectDetail] = [:]
     public private(set) var currentUser: UserSummary?
     public private(set) var isLoading = false
@@ -74,7 +76,11 @@ import VenioCore
                 newTimeline[lead.id] = try await api.timeline(leadId: lead.id).sorted { $0.date > $1.date }
             }
             var details: [String: ProjectDetail] = [:]
-            for project in newProjects { details[project.id] = try await api.project(id: project.id) }
+            var documents: [String: [ProjectDocument]] = [:]
+            for project in newProjects {
+                details[project.id] = try await api.project(id: project.id)
+                documents[project.id] = try await api.documents(projectId: project.id)
+            }
             try Task.checkCancellation()
             currentUser = user
             for local in leads where local.id.hasPrefix("local-") && !newLeads.contains(where: { $0.id == local.id }) {
@@ -88,11 +94,40 @@ import VenioCore
             templates = canQuote ? try await api.quoteTemplates() : []
             timeline = newTimeline
             projectDetails = details
+            projectDocuments = documents
             hasLoaded = true
         } catch is CancellationError {
             return
         } catch { failed = true; errorKey = mobileErrorKey(error) }
     }
+
+    public var canManageDocuments: Bool {
+        currentUser.map(DocumentTransport.canManage) == true
+    }
+    var canPublishDocuments: Bool { currentUser?.role == .admin }
+    func canDelete(_ document: ProjectDocument) -> Bool {
+        document.uploadedBy == currentUser?.id && (document.pendingKey != nil || canManageDocuments)
+    }
+    func uploadDocuments(_ drafts: [DocumentDraft]) async throws {
+        guard canManageDocuments else { throw VenioAPIError(code: "FORBIDDEN") }
+        for draft in drafts {
+            let document = try await api.uploadDocument(draft)
+            var documents = projectDocuments[draft.projectId, default: []]
+            documents.removeAll { $0.id == document.id }
+            documents.insert(document, at: 0)
+            projectDocuments[draft.projectId] = documents
+        }
+        successFeedback += 1
+    }
+    func deleteDocument(_ document: ProjectDocument) async throws {
+        guard canDelete(document) else { throw VenioAPIError(code: "FORBIDDEN") }
+        try await api.deleteDocument(id: document.id)
+        projectDocuments[document.project]?.removeAll { $0.id == document.id }
+    }
+    func reloadDocuments(projectId: String) async throws {
+        projectDocuments[projectId] = try await api.documents(projectId: projectId)
+    }
+    func documentFile(_ document: ProjectDocument) async throws -> URL { try await api.documentFile(id: document.id) }
 
     public var canManageQuotes: Bool {
         !(currentUser?.permissions ?? []).isDisjoint(with: ["manage_quotes", "manage_billing"])
@@ -201,6 +236,7 @@ import VenioCore
                 quotes = refreshed
             case .project(let id):
                 projectDetails[id] = try await api.project(id: id)
+                projectDocuments[id] = try await api.documents(projectId: id)
             case .projectQuotes(let id):
                 quotes = try await api.quotes()
                 let matches = quotes.filter { $0.project == id }

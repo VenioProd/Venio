@@ -20,6 +20,10 @@ public protocol VenioAPI: Sendable {
     func appointments() async throws -> [Appointment]
     func projects() async throws -> [Project]
     func project(id: String) async throws -> ProjectDetail
+    func documents(projectId: String) async throws -> [ProjectDocument]
+    func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument
+    func deleteDocument(id: String) async throws
+    func documentFile(id: String) async throws -> URL
 }
 
 public struct DemoClock: Sendable {

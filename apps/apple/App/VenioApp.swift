@@ -22,6 +22,7 @@ import AppKit
     private let mockAPI: MockVenioAPI?
     private let initialTab: CommercialTab
     private let initialLeadID: String?
+    private let initialProjectID: String?
 
     init() {
         let defaults = UserDefaults.standard
@@ -37,6 +38,7 @@ import AppKit
         _themes = State(initialValue: manager)
         initialTab = defaults.string(forKey: "VenioTab").flatMap(CommercialTab.init(rawValue:)) ?? .today
         initialLeadID = defaults.string(forKey: "VenioLead")
+        initialProjectID = defaults.string(forKey: "VenioProject")
         do {
             let configuration = try BackendConfiguration()
             if configuration.backend == .mock {
@@ -83,8 +85,8 @@ import AppKit
         WindowGroup {
             ThemeHost(manager: themes) {
                 Group {
-                    if let session { SessionRootView(session: session, initialTab: initialTab, initialLeadID: initialLeadID) }
-                    else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID) }
+                    if let session { SessionRootView(session: session, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID) }
+                    else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID) }
                     else { StorageUnavailableView() }
                 }
                 .onChange(of: currentStore?.hasLoaded, initial: true) { _, loaded in

@@ -32,7 +32,7 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Venio utilise la caméra pour lire les cartes de visite.</string>
+	<string>Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Venio utilise le micro pour enregistrer vos notes vocales.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

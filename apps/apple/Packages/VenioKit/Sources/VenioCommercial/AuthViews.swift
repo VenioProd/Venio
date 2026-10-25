@@ -17,15 +17,17 @@ public struct SessionRootView: View {
     @State private var session: SessionModel
     private let initialTab: CommercialTab
     private let initialLeadID: String?
-    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
+    private let initialProjectID: String?
+    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil) {
         _session = State(initialValue: session)
         self.initialTab = initialTab; self.initialLeadID = initialLeadID
+        self.initialProjectID = initialProjectID
     }
     public var body: some View {
         Group {
             if session.starting { ProgressView { VText("Chargement") } }
             else if let store = session.commercial {
-                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID)
+                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID)
             } else { LoginView(session: session) }
         }
         .overlay(alignment: .top) {
@@ -167,7 +169,8 @@ struct OutboxView: View {
                     Text(verbatim: CommercialFormats(locale: locale).timestamp(write.createdAt)).font(.caption)
                     VText(write.state == "failed" ? "Échec de l’envoi" : "En attente")
                     if write.state == "failed" {
-                        if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
+                        if write.lastError == "DOCUMENTS_CONTRACT_PENDING" { MobileErrorView(key: "Les documents seront disponibles après activation du service.") }
+                        else if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
                         else if write.lastError == "LEAD_ASSIGNMENT_FORBIDDEN" { VText("Vous ne pouvez pas réassigner le lead d’un collègue").font(.caption) }
                         else if write.lastError == "UNCERTAIN_WRITE" { VText("Résultat incertain : vérifiez la fiche avant de réessayer").font(.caption) }
                         else if write.lastError == "LEAD_NOT_CREATED" { VText("Le lead n’a pas pu être créé : réessayez d’abord sa création").font(.caption) }
@@ -191,6 +194,7 @@ struct OutboxView: View {
     }
     private func writeTitle(_ write: QueuedWrite) -> String {
         switch write.type {
+        case "document": "Document"
         case "interaction": "Interaction"
         case "leadCreate": "Création du lead"
         default: "Modification du lead"

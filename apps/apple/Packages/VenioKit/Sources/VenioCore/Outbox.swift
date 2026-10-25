@@ -7,7 +7,23 @@ public actor Outbox {
     private var backoffSession: UUID?
     private var retryAfter = Date.distantPast
     var nextRetryAt: Date? { retryAfter > .now ? retryAfter : nil }
-    public init(session: AuthSession, store: SyncStore) { self.session = session; self.store = store }
+    private let makeDocumentRequest: @Sendable (DocumentDraft, AuthSession) throws -> URLRequest
+    private var sending: UUID?
+    private var observers: [UUID: AsyncStream<UUID?>.Continuation] = [:]
+    public init(session: AuthSession, store: SyncStore,
+                makeDocumentRequest: @escaping @Sendable (DocumentDraft, AuthSession) throws -> URLRequest = DocumentTransport.makeDocumentRequest) {
+        self.session = session; self.store = store; self.makeDocumentRequest = makeDocumentRequest
+    }
+    public func activity() -> AsyncStream<UUID?> {
+        let id = UUID()
+        let (stream, continuation) = AsyncStream<UUID?>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        observers[id] = continuation
+        continuation.yield(sending)
+        continuation.onTermination = { [weak self] _ in Task { await self?.removeObserver(id) } }
+        return stream
+    }
+    private func removeObserver(_ id: UUID) { observers[id] = nil }
+    private func setSending(_ id: UUID?) { sending = id; observers.values.forEach { $0.yield(id) } }
 
     public func drain() async throws {
         let scope = try await session.identity()
@@ -31,7 +47,9 @@ public actor Outbox {
         try await drain()
     }
     public func delete(id: UUID) async throws {
-        try await store.deleteWrite(id: id, scope: session.identity())
+        let scope = try await session.identity()
+        guard sending != id else { throw VenioAPIError(code: "WRITE_IN_PROGRESS") }
+        try await store.deleteWrite(id: id, scope: scope)
     }
     private func run(scope: SessionIdentity) async throws {
         while let write = try await store.writes(scope: scope).first(where: { $0.state == "pending" }) {
@@ -46,11 +64,17 @@ public actor Outbox {
                 try await store.fail(id: write.id, code: "LEAD_NOT_CREATED", scope: scope)
                 continue
             }
-            try await store.attempted(id: write.id, scope: scope)
             do {
                 let request = try makeRequest(write)
+                setSending(write.id)
+                defer { setSending(nil) }
+                guard try await store.attempted(id: write.id, scope: scope) else { continue }
                 let (data, response) = try await session.send(request, scope: scope)
                 try HTTPFailure.check(data, response)
+                if write.type == "document" {
+                    try await store.completeDocument(id: write.id, record: DocumentTransport.uploadRecord(data), scope: scope)
+                    continue
+                }
                 let object = try ServerCoding.object(data)
                 let field = write.type == "interaction" ? "interaction" : "lead"
                 guard let record = object[field] as? [String: Any] else { throw VenioAPIError(code: "INVALID_RESPONSE") }
@@ -68,6 +92,8 @@ public actor Outbox {
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 if error.code == .cancelled { throw error }
                 return
+            } catch let error as VenioAPIError where error.code == "DOCUMENTS_CONTRACT_PENDING" {
+                try await store.fail(id: write.id, code: error.code, scope: scope)
             } catch let error as VenioAPIError where error.code == "SIGNED_OUT" {
                 return
             } catch let error as VenioAPIError where error.code == "RATE_LIMITED" {
@@ -91,6 +117,9 @@ public actor Outbox {
     private func backoff(_ attempts: Int) -> TimeInterval { min(60, pow(2, Double(min(attempts + 1, 6)))) }
 
     private func makeRequest(_ write: QueuedWrite) throws -> URLRequest {
+        if write.type == "document" {
+            return try makeDocumentRequest(JSONDecoder().decode(DocumentDraft.self, from: write.payload), session)
+        }
         if write.type == "leadPatch" {
             let value = try JSONDecoder().decode(LeadPatchWrite.self, from: write.payload)
             var request = try session.request(path: "/api/admin/crm/leads/" + value.leadId, method: "PATCH", body: ServerCoding.encoder().encode(value.patch))

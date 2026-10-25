@@ -1,14 +1,17 @@
 import Foundation
 
 public actor MockVenioAPI: VenioAPI {
-    public static let lea = UserSummary(id: "user-lea", name: "Léa Martin", initials: "LM", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases"])
-    public static let hugo = UserSummary(id: "user-hugo", name: "Hugo Bernard", initials: "HB", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases"])
+    public static let lea = UserSummary(id: "user-lea", name: "Léa Martin", initials: "LM", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases", DocumentTransport.managePermission])
+    public static let hugo = UserSummary(id: "user-hugo", name: "Hugo Bernard", initials: "HB", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases", DocumentTransport.managePermission])
     public static let raphael = UserSummary(id: "user-raphael", name: "Raphaël B.", initials: "RB", role: .admin, permissions: ["view_crm", "manage_crm", "manage_billing", "view_projects", "view_phases"])
     public nonisolated let clock: DemoClock
     private let user: UserSummary
     public private(set) var pushRegistration: PushRegistration?
     private var storedLeads: [Lead]?
     private var storedQuotes: [QuoteProposal]?
+    private var storedDocuments: [String: [ProjectDocument]] = [:]
+    private var documentFiles: [String: URL] = [:]
+    private var documentUploads: [UUID: (DocumentDraft, ProjectDocument)] = [:]
     private var interactions: [UUID: (InteractionDraft, TimelineEntry)] = [:]
 
     public nonisolated func monthlyTarget() -> Decimal? { 40000 }
@@ -270,6 +273,58 @@ public actor MockVenioAPI: VenioAPI {
             project.canQuote = project.canQuote && !user.permissions.isDisjoint(with: ["manage_quotes", "manage_billing"])
             return project
         }
+    }
+
+    public func documents(projectId: String) throws -> [ProjectDocument] {
+        if let documents = storedDocuments[projectId] { return documents }
+        guard let project = try projects().first(where: { $0.id == projectId }) else { throw VenioAPIError(code: "NOT_FOUND") }
+        let documents = try ["Devis signé", "Cahier des charges", "Plan de chantier"].enumerated().map { index, title in
+            let url = try MockDocumentFiles.make(title: title, project: project, image: index == 2)
+            let document = ProjectDocument(id: projectId + "-document-" + String(index), project: projectId,
+                title: title, fileName: url.lastPathComponent, mimeType: index == 2 ? "image/png" : "application/pdf",
+                size: try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                uploadedBy: index == 1 ? Self.hugo.id : user.id, uploadedAt: clock.now.addingTimeInterval(Double(-index * 86400)),
+                clientVisible: index == 0)
+            documentFiles[document.id] = url
+            return document
+        }
+        storedDocuments[projectId] = documents
+        return documents
+    }
+    public func uploadDocument(_ draft: DocumentDraft) throws -> ProjectDocument {
+        guard DocumentTransport.canManage(user), !draft.clientVisible || user.role == .admin else { throw VenioAPIError(code: "FORBIDDEN") }
+        if let (saved, document) = documentUploads[draft.idempotencyKey] {
+            var normalized = draft
+            normalized.fileURL = saved.fileURL
+            guard normalized == saved else { throw VenioAPIError(code: "IDEMPOTENCY_CONFLICT") }
+            return document
+        }
+        var documents = try documents(projectId: draft.projectId)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VenioDocuments/" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent(URL(fileURLWithPath: draft.fileName).lastPathComponent)
+        let access = draft.fileURL.startAccessingSecurityScopedResource()
+        defer { if access { draft.fileURL.stopAccessingSecurityScopedResource() } }
+        try FileManager.default.copyItem(at: draft.fileURL, to: url)
+        var document = draft.model(state: nil, userId: user.id, date: clock.now)
+        document.id = UUID().uuidString
+        documentFiles[document.id] = url
+        documentUploads[draft.idempotencyKey] = (draft, document)
+        documents.insert(document, at: 0)
+        storedDocuments[draft.projectId] = documents
+        return document
+    }
+    public func deleteDocument(id: String) throws {
+        guard DocumentTransport.canManage(user) else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard let projectId = storedDocuments.first(where: { $0.value.contains(where: { $0.id == id && $0.uploadedBy == user.id }) })?.key else {
+            throw VenioAPIError(code: "FORBIDDEN")
+        }
+        storedDocuments[projectId]?.removeAll { $0.id == id }
+        if let url = documentFiles.removeValue(forKey: id) { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+    }
+    public func documentFile(id: String) throws -> URL {
+        guard let url = documentFiles[id] else { throw VenioAPIError(code: "NOT_FOUND") }
+        return url
     }
 
     public func project(id: String) throws -> ProjectDetail {

@@ -6,7 +6,7 @@ Apps iPhone, iPad, Mac et Apple Watch. Xcode 27.1, Swift 6.4 et XcodeGen ≥ 2.4
 
 - `-VenioBackend mock|live` : mock en Debug, live en Release par défaut.
 - `-VenioAPIBaseURL <url>` : origine HTTP injectée ; HTTPS par défaut. HTTP est accepté uniquement en Debug sur `localhost` et `127.0.0.1`, avec un plist ATS Debug distinct. La base Release par défaut est `https://venio.paris`.
-- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`.
+- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`, `-VenioProject <id>`.
 - Les previews et tests utilisent le mock ou un faux transport, jamais le réseau.
 
 ```sh
@@ -44,6 +44,8 @@ Créations de leads, interactions et patchs entrent d’abord dans une file pers
 Push proposé après connexion chargée. À la déconnexion : badge nul et contexte Watch effacé. La Watch live reçoit les relances de l’iPhone (50 au maximum), et ses notes rejoignent la file de l’iPhone avec leur clé stable ; aucune session Bearer n’est transmise à la Watch. La démo Watch reste disponible en mock. La notification longue affiche son texte serveur ; son bouton d’appel est résolu en live depuis les correspondances devis-téléphone synchronisées par l’iPhone, et reste disponible en démo.
 
 ## Contrat mobile
+
+Les documents de projet utilisent la même file, avec copie durable et superposition des brouillons. Le contrat documents reste à brancher exclusivement dans `DocumentTransport.swift` : permission (vide), type de synchro (absent), multipart d’upload, décodage des réponses et routes de suppression/téléchargement. Les requêtes lèvent `DOCUMENTS_CONTRACT_PENDING`. Le mock attribue la constante de permission à ses commerciaux et génère les fichiers d’aperçu localement. La recherche locale couvre leads, projets et documents (⌘K, ou loupe dans Aujourd’hui).
 
 La référence des devis vient du serveur. Un devis peut naître sur un lead ou un projet ; l’envoi reste désactivé tant qu’un devis sur lead n’est pas rattaché à un projet autorisé. Les actions de devis utilisent uniquement le `canQuote` fourni par la synchro, sans reconstruire le portefeuille. Les demandes de modification et les tickets d’un projet sont lus en ligne selon les permissions, avec cache par projet. Les rendez-vous affichent début et fin éventuelle, et ouvrent le lead lié ou le projet. Les quatre catégories APNs `VENIO_LEAD`, `VENIO_FOLLOW_UP`, `VENIO_QUOTE`, `VENIO_PROJECT` sont enregistrées sur iOS, macOS et watchOS ; la notification longue Watch utilise `VENIO_QUOTE`.
 

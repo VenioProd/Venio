@@ -31,6 +31,10 @@ public struct TodayView: View {
                     SyncStatusView()
                 }
                 Spacer()
+                Button { store.showingSearch = true } label: {
+                    Label { VText("Rechercher") } icon: { Image(systemName: "magnifyingglass") }
+                        .labelStyle(.iconOnly).padding(12)
+                }.buttonStyle(.plain).accessibilityIdentifier("today.search")
                 Button { showingSettings = true } label: {
                     VStack(spacing: 4) {
                         Text(verbatim: store.currentUser?.initials ?? "?").font(.headline)
