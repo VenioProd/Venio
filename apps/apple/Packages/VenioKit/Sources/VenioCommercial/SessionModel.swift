@@ -144,7 +144,7 @@ import VenioTheme
     }
     public func logout() async {
         try? ShareInboxStore().clearContext()
-        try? ShareInboxStore().removeAll()
+        try? ShareInboxStore().removeAll(origin: api.session.baseURL.absoluteString)
         discardAdditionalPending?()
         do { try await api.session.logout() }
         catch { errorKey = mobileErrorKey(error) }

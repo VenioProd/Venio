@@ -114,7 +114,8 @@ public struct ShareInboxStore: Sendable {
         try DocumentTransport.validateFile(item.draft(fileURL: fileURL(for: item)))
         let metadata = try folder(item.idempotencyKey).appendingPathComponent("item.json")
         try JSONEncoder().encode(item).write(to: metadata, options: .atomic)
-        try protect(metadata)
+        // Le dépôt est publié dès l'écriture : un échec de protection ne doit pas le faire passer pour non déposé.
+        try? protect(metadata)
     }
     public func items() throws -> [ShareInboxItem] {
         let inbox = try inbox()
@@ -128,7 +129,8 @@ public struct ShareInboxStore: Sendable {
                    date < Date.now.addingTimeInterval(-3600) { try FileManager.default.removeItem(at: folder) }
                 continue
             }
-            guard let item = try? JSONDecoder().decode(ShareInboxItem.self, from: Data(contentsOf: metadata)),
+            guard let data = try? Data(contentsOf: metadata) else { continue }
+            guard let item = try? JSONDecoder().decode(ShareInboxItem.self, from: data),
                   item.idempotencyKey.uuidString == folder.lastPathComponent else {
                 try? FileManager.default.removeItem(at: folder)
                 continue
@@ -141,9 +143,8 @@ public struct ShareInboxStore: Sendable {
         let folder = try folder(key)
         if FileManager.default.fileExists(atPath: folder.path) { try FileManager.default.removeItem(at: folder) }
     }
-    public func removeAll() throws {
-        let inbox = try inbox()
-        if FileManager.default.fileExists(atPath: inbox.path) { try FileManager.default.removeItem(at: inbox) }
+    public func removeAll(origin: String) throws {
+        for item in try items() where item.origin == origin { try remove(item.idempotencyKey) }
     }
     @discardableResult public func importItem(_ item: ShareInboxItem, origin: String, userId: String,
         enqueue: @Sendable (DocumentDraft) async throws -> Void) async throws -> Bool {
