@@ -260,3 +260,12 @@ it('réserve le pilotage d’une automatisation aux rôles qu’elle déclare', 
   await request(app).post('/api/admin/automations/task.auto_archive/trigger').send({}).expect(403)
   expect(await AutomationSettings.countDocuments()).toBe(0)
 })
+
+it('ne règle pas une automatisation éteinte par défaut en la consultant', async () => {
+  const { default: AutomationSettings } = await import('../automation/models/AutomationSettings.js')
+  const { register } = await import('../automation/jobs/nextcloudRepair.js')
+  register()
+  await actAs(superAdminId, 'SUPER_ADMIN')
+  await request(app).get('/api/admin/automations/nextcloud.repair_missing_structures').expect(200)
+  expect((await AutomationSettings.findOne({ key: 'nextcloud.repair_missing_structures' }))!.enabled).toBe(false)
+})
