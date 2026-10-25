@@ -108,6 +108,10 @@ private struct DocumentRow: View {
                     }
                 }
             }
+            if document.deliveryState == "failed", let key = document.pendingKey,
+               let code = session?.pending.first(where: { $0.id == key })?.lastError {
+                MobileErrorView(key: mobileErrorKey(VenioAPIError(code: code)))
+            }
         }
         .contextMenu {
             Button { preview() } label: { Label { VText("Aperçu") } icon: { Image(systemName: "eye") } }

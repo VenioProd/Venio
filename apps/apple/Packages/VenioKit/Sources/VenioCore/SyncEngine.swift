@@ -33,10 +33,9 @@ public actor SyncEngine {
     private func synchronize(scope: SessionIdentity) async throws {
         let rights: [(String, Set<String>)] = [
             ("leads", ["view_crm"]), ("interactions", ["view_crm"]), ("projects", ["view_projects"]),
-            ("projectPhases", ["view_phases"]), ("projectUpdates", ["view_projects"]), ("quotes", ["manage_quotes", "view_billing"])
+            (DocumentTransport.syncType, ["view_content"]), ("projectPhases", ["view_phases"]), ("projectUpdates", ["view_projects"]), ("quotes", ["manage_quotes", "view_billing"])
         ]
-        let documentTypes = scope.user.permissions.contains("view_projects") ? DocumentTransport.syncType.map { [$0] } ?? [] : []
-        let types = rights.filter { !scope.user.permissions.isDisjoint(with: $0.1) }.map(\.0) + documentTypes + ["deletions"]
+        let types = rights.filter { !scope.user.permissions.isDisjoint(with: $0.1) }.map(\.0) + ["deletions"]
         for type in types {
             var cursor = try await store.cursor(type: type, scope: scope)
             while true {

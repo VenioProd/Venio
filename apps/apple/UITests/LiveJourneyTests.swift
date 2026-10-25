@@ -160,6 +160,51 @@ import XCTest
         snap("4-push-ouvre-devis")
     }
 
+    func test9_offlineDocumentIsQueued() {
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["Projets"].firstMatch.waitForExistence(timeout: 30), "session restaurée")
+        openProject()
+        XCTAssertTrue(app.staticTexts["Documents"].firstMatch.waitForExistence(timeout: 15))
+        app.buttons["Ajouter un document"].firstMatch.tap()
+        app.buttons["Photos"].firstMatch.tap()
+        // Sélecteur système hors processus : on touche la première photo, puis la coche de validation.
+        XCTAssertTrue(app.buttons["Sélectionner des photos"].waitForExistence(timeout: 20) || app.scrollViews.firstMatch.waitForExistence(timeout: 20), "sélecteur de photos")
+        sleep(2)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.16, dy: 0.42)).tap()
+        sleep(1)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.905, dy: 0.115)).tap()
+        let add = app.buttons["Ajouter"].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 10), "feuille d’ajout")
+        let title = app.textFields["Titre"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 15))
+        title.tap(); title.typeText(" E2E")
+        add.tap()
+        XCTAssertTrue(app.buttons["Ajouter"].firstMatch.waitForNonExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'attente'")).firstMatch.waitForExistence(timeout: 15),
+                      "le document est en attente")
+        snap("5-document-en-attente")
+    }
+
+    func test10_documentIsUploadedOnceWhenBackOnline() {
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["Projets"].firstMatch.waitForExistence(timeout: 30))
+        openProject()
+        let pending = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'attente'")).firstMatch
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: pending)
+        waitForExpectations(timeout: 60)
+        let sent = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'E2E'")).firstMatch
+        let found = sent.waitForExistence(timeout: 45)
+        snap("6-document-envoye")
+        XCTAssertTrue(found, "le document confirmé apparaît dans la liste")
+    }
+
+    private func openProject() {
+        app.tabBars.buttons["Projets"].firstMatch.tap()
+        let row = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Plateforme de réservation'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        row.tap()
+    }
+
     /// Captures facultatives : `TEST_RUNNER_VENIO_E2E_SHOTS=<dossier>` les écrit en PNG.
     private func snap(_ name: String) {
         guard let dir = ProcessInfo.processInfo.environment["VENIO_E2E_SHOTS"] else { return }

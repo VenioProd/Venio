@@ -1,8 +1,8 @@
 import Foundation
 
 public actor MockVenioAPI: VenioAPI {
-    public static let lea = UserSummary(id: "user-lea", name: "Léa Martin", initials: "LM", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases", DocumentTransport.managePermission])
-    public static let hugo = UserSummary(id: "user-hugo", name: "Hugo Bernard", initials: "HB", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_phases", DocumentTransport.managePermission])
+    public static let lea = UserSummary(id: "user-lea", name: "Léa Martin", initials: "LM", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_content", "view_phases", DocumentTransport.managePermission])
+    public static let hugo = UserSummary(id: "user-hugo", name: "Hugo Bernard", initials: "HB", role: .commercial, permissions: ["view_crm", "manage_crm", "manage_quotes", "view_projects", "view_content", "view_phases", DocumentTransport.managePermission])
     public static let raphael = UserSummary(id: "user-raphael", name: "Raphaël B.", initials: "RB", role: .admin, permissions: ["view_crm", "manage_crm", "manage_billing", "view_projects", "view_phases"])
     public nonisolated let clock: DemoClock
     private let user: UserSummary
@@ -292,7 +292,10 @@ public actor MockVenioAPI: VenioAPI {
         return documents
     }
     public func uploadDocument(_ draft: DocumentDraft) throws -> ProjectDocument {
-        guard DocumentTransport.canManage(user), !draft.clientVisible || user.role == .admin else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard DocumentTransport.canManage(user) else { throw VenioAPIError(code: "FORBIDDEN") }
+        var draft = draft
+        if !user.permissions.contains("edit_content") { draft.clientVisible = false }
+        try DocumentTransport.validateFile(draft)
         if let (saved, document) = documentUploads[draft.idempotencyKey] {
             var normalized = draft
             normalized.fileURL = saved.fileURL
@@ -316,7 +319,7 @@ public actor MockVenioAPI: VenioAPI {
     }
     public func deleteDocument(id: String) throws {
         guard DocumentTransport.canManage(user) else { throw VenioAPIError(code: "FORBIDDEN") }
-        guard let projectId = storedDocuments.first(where: { $0.value.contains(where: { $0.id == id && $0.uploadedBy == user.id }) })?.key else {
+        guard let projectId = storedDocuments.first(where: { $0.value.contains(where: { $0.id == id && $0.uploadedBy == user.id && !$0.clientVisible }) })?.key else {
             throw VenioAPIError(code: "FORBIDDEN")
         }
         storedDocuments[projectId]?.removeAll { $0.id == id }

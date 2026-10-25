@@ -222,3 +222,24 @@ struct TodayDTO: Decodable, Sendable {
         }
     }
 }
+
+struct ProjectDocumentDTO: Decodable, Sendable {
+    var _id: String
+    var project: ServerReference
+    var section: ServerReference?
+    var type: String
+    var title: String
+    var description: String?
+    var file: File
+    var isVisible: Bool
+    var createdBy: ServerReference
+    var createdAt: Date
+    var updatedAt: Date
+    var downloadUrl: String
+    struct File: Decodable, Sendable { var originalName: String; var mimeType: String; var size: Int }
+    var model: ProjectDocument {
+        ProjectDocument(id: _id, project: project.id, title: title, fileName: file.originalName,
+                        mimeType: file.mimeType, size: file.size, uploadedBy: createdBy.id,
+                        uploadedAt: createdAt, clientVisible: isVisible)
+    }
+}

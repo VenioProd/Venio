@@ -174,6 +174,8 @@ private struct AddDocumentsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
     @State var drafts: [DocumentDraft]
+    // Les brouillons ne sont jamais retirés pendant l'envoi : un champ de titre encore en édition écrirait sur un index disparu.
+    @State private var uploaded: Set<UUID> = []
     @State private var busy = false
     @State private var errorKey: String?
     var body: some View {
@@ -182,6 +184,7 @@ private struct AddDocumentsView: View {
                 ForEach($drafts) { $draft in
                     Section {
                         TextField(CommercialStrings.text("Titre", locale: locale), text: $draft.title)
+                            .disabled(uploaded.contains(draft.id))
                         Text(verbatim: draft.fileName).font(.caption)
                         if store.canPublishDocuments {
                             Toggle(isOn: $draft.clientVisible) { VText("Visible par le client") }
@@ -208,9 +211,9 @@ private struct AddDocumentsView: View {
         errorKey = nil
         Task {
             do {
-                for draft in drafts {
+                for draft in drafts where !uploaded.contains(draft.id) {
                     try await store.uploadDocuments([draft])
-                    drafts.removeAll { $0.id == draft.id }
+                    uploaded.insert(draft.id)
                 }
                 dismiss()
             } catch { errorKey = mobileErrorKey(error) }

@@ -169,7 +169,7 @@ struct OutboxView: View {
                     Text(verbatim: CommercialFormats(locale: locale).timestamp(write.createdAt)).font(.caption)
                     VText(write.state == "failed" ? "Échec de l’envoi" : "En attente")
                     if write.state == "failed" {
-                        if write.lastError == "DOCUMENTS_CONTRACT_PENDING" { MobileErrorView(key: "Les documents seront disponibles après activation du service.") }
+                        if write.type == "document", let code = write.lastError { MobileErrorView(key: mobileErrorKey(VenioAPIError(code: code))) }
                         else if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
                         else if write.lastError == "LEAD_ASSIGNMENT_FORBIDDEN" { VText("Vous ne pouvez pas réassigner le lead d’un collègue").font(.caption) }
                         else if write.lastError == "UNCERTAIN_WRITE" { VText("Résultat incertain : vérifiez la fiche avant de réessayer").font(.caption) }

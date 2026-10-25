@@ -104,9 +104,9 @@ import VenioCore
     public var canManageDocuments: Bool {
         currentUser.map(DocumentTransport.canManage) == true
     }
-    var canPublishDocuments: Bool { currentUser?.role == .admin }
+    var canPublishDocuments: Bool { currentUser?.permissions.contains("edit_content") == true }
     func canDelete(_ document: ProjectDocument) -> Bool {
-        document.uploadedBy == currentUser?.id && (document.pendingKey != nil || canManageDocuments)
+        document.uploadedBy == currentUser?.id && (document.pendingKey != nil || (canManageDocuments && !document.clientVisible))
     }
     func uploadDocuments(_ drafts: [DocumentDraft]) async throws {
         guard canManageDocuments else { throw VenioAPIError(code: "FORBIDDEN") }

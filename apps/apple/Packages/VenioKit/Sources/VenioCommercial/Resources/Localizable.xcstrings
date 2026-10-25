@@ -6280,23 +6280,6 @@
         }
       }
     },
-    "Les documents seront disponibles après activation du service.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les documents seront disponibles après activation du service."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Documents will be available once the service is enabled."
-          }
-        }
-      }
-    },
     "Envoi en cours. Réessayez après son traitement.": {
       "extractionState": "manual",
       "localizations": {
@@ -6327,6 +6310,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Le fichier dépasse la limite de 20 Mo.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier dépasse la limite de 20 Mo."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file exceeds the 20 MB limit."
+          }
+        }
+      }
+    },
+    "Ce type de fichier n’est pas accepté.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce type de fichier n’est pas accepté."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file type is not supported."
+          }
+        }
+      }
+    },
+    "Vous ne pouvez pas rendre ce document visible par le client.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas rendre ce document visible par le client."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You cannot make this document visible to the client."
+          }
+        }
+      }
+    },
+    "Vous pouvez supprimer uniquement vos propres documents internes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez supprimer uniquement vos propres documents internes."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can only delete your own internal documents."
+          }
+        }
+      }
+    },
+    "Vous n’avez pas accès à ce projet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous n’avez pas accès à ce projet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You do not have access to this project."
+          }
+        }
+      }
+    },
+    "Ce projet est introuvable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce projet est introuvable."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This project could not be found."
+          }
+        }
+      }
+    },
+    "Cette clé d’envoi est déjà utilisée pour un autre contenu. Réessayez avec une nouvelle clé.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette clé d’envoi est déjà utilisée pour un autre contenu. Réessayez avec une nouvelle clé."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This upload key is already used for different content. Retry with a new key."
           }
         }
       }

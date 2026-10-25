@@ -65,7 +65,7 @@ public actor Outbox {
                 continue
             }
             do {
-                let request = try makeRequest(write)
+                let request = try await makeRequest(write, scope: scope)
                 setSending(write.id)
                 defer { setSending(nil) }
                 guard try await store.attempted(id: write.id, scope: scope) else { continue }
@@ -81,7 +81,7 @@ public actor Outbox {
                 try await store.complete(id: write.id, type: write.type == "interaction" ? "interactions" : "leads",
                                          json: JSONSerialization.data(withJSONObject: record), scope: scope)
             } catch let error as HTTPFailure {
-                let retryable = error.status == 429 || (error.status == 409 && error.code == "IDEMPOTENCY_IN_PROGRESS")
+                let retryable = write.type != "document" && (error.status == 429 || (error.status == 409 && error.code == "IDEMPOTENCY_IN_PROGRESS"))
                 try await store.fail(id: write.id, code: error.code, permanent: !retryable, status: error.status, scope: scope)
                 if retryable {
                     retryAfter = .now.addingTimeInterval(max(2, error.retryAfter ?? backoff(write.attempts)))
@@ -92,7 +92,7 @@ public actor Outbox {
                 retryAfter = .now.addingTimeInterval(backoff(write.attempts))
                 if error.code == .cancelled { throw error }
                 return
-            } catch let error as VenioAPIError where error.code == "DOCUMENTS_CONTRACT_PENDING" {
+            } catch let error as VenioAPIError where error.code == "FILE_TOO_LARGE" || error.code == "UNSUPPORTED_MEDIA_TYPE" {
                 try await store.fail(id: write.id, code: error.code, scope: scope)
             } catch let error as VenioAPIError where error.code == "SIGNED_OUT" {
                 return
@@ -116,9 +116,9 @@ public actor Outbox {
     }
     private func backoff(_ attempts: Int) -> TimeInterval { min(60, pow(2, Double(min(attempts + 1, 6)))) }
 
-    private func makeRequest(_ write: QueuedWrite) throws -> URLRequest {
+    private func makeRequest(_ write: QueuedWrite, scope: SessionIdentity) async throws -> URLRequest {
         if write.type == "document" {
-            return try makeDocumentRequest(JSONDecoder().decode(DocumentDraft.self, from: write.payload), session)
+            return try await makeDocumentRequest(store.documentDraft(write.payload, scope: scope), session)
         }
         if write.type == "leadPatch" {
             let value = try JSONDecoder().decode(LeadPatchWrite.self, from: write.payload)

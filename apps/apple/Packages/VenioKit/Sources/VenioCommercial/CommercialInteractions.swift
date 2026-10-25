@@ -31,10 +31,11 @@ private struct CommercialRefreshModifier: ViewModifier {
 }
 
 private struct CommercialScrollClearance: ViewModifier {
-    @Environment(CommercialStore.self) private var store
+    // Les écrans de connexion utilisent aussi `CommercialPage`, hors de l'environnement du store.
+    @Environment(CommercialStore.self) private var store: CommercialStore?
     func body(content: Content) -> some View {
         #if os(iOS)
-        content.safeAreaPadding(.bottom, store.currentUser?.permissions.contains("manage_crm") == true ? 88 : 0)
+        content.safeAreaPadding(.bottom, store?.currentUser?.permissions.contains("manage_crm") == true ? 88 : 0)
         #else
         content
         #endif

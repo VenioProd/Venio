@@ -194,7 +194,13 @@ public func mobileErrorKey(_ error: any Error) -> String {
         }
     }
     let code = (error as? HTTPFailure)?.code ?? (error as? VenioAPIError)?.code
-    if code == "DOCUMENTS_CONTRACT_PENDING" { return "Les documents seront disponibles après activation du service." }
+    if code == "FILE_TOO_LARGE" { return "Le fichier dépasse la limite de 20 Mo." }
+    if code == "UNSUPPORTED_MEDIA_TYPE" { return "Ce type de fichier n’est pas accepté." }
+    if code == "VISIBILITY_FORBIDDEN" { return "Vous ne pouvez pas rendre ce document visible par le client." }
+    if code == "DOCUMENT_WRITE_FORBIDDEN" { return "Vous pouvez supprimer uniquement vos propres documents internes." }
+    if code == "PROJECT_OUT_OF_SCOPE" { return "Vous n’avez pas accès à ce projet." }
+    if code == "PROJECT_NOT_FOUND" { return "Ce projet est introuvable." }
+    if code == "IDEMPOTENCY_CONFLICT" { return "Cette clé d’envoi est déjà utilisée pour un autre contenu. Réessayez avec une nouvelle clé." }
     if code == "WRITE_IN_PROGRESS" { return "Envoi en cours. Réessayez après son traitement." }
     if code == "LEAD_ASSIGNMENT_FORBIDDEN" { return "Vous ne pouvez pas réassigner le lead d’un collègue" }
     if let error = error as? HTTPFailure {

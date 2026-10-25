@@ -161,14 +161,13 @@ public actor LiveVenioAPI: VenioAPI {
 
     public func documents(projectId: String) async throws -> [ProjectDocument] {
         let scope = try await session.identity()
-        guard scope.user.permissions.contains("view_projects") else { return [] }
         var documents: [ProjectDocument] = []
-        if let type = DocumentTransport.syncType {
-            documents = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument)
-                .filter { $0.project == projectId }
+        if scope.user.permissions.contains("view_content") {
+            documents = try await store.records(type: DocumentTransport.syncType, scope: scope)
+                .map(DocumentTransport.decodeDocument).filter { $0.project == projectId }
         }
         for write in try await store.writes(scope: scope) where write.type == "document" {
-            let draft = try JSONDecoder().decode(DocumentDraft.self, from: write.payload)
+            let draft = try await store.documentDraft(write.payload, scope: scope)
             if draft.projectId == projectId {
                 documents.append(draft.model(state: write.state, userId: scope.user.id, date: write.createdAt))
             }
@@ -177,8 +176,9 @@ public actor LiveVenioAPI: VenioAPI {
     }
     public func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument {
         let scope = try await session.identity()
-        guard DocumentTransport.canManage(scope.user.summary),
-              !draft.clientVisible || scope.user.summary.role == .admin else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
+        var draft = draft
+        if !scope.user.permissions.contains("edit_content") { draft.clientVisible = false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VenioAPIError(code: "INVALID_INPUT") }
         guard try await projects().contains(where: { $0.id == draft.projectId }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
         let document = try await store.enqueue(draft, scope: scope)
@@ -193,10 +193,11 @@ public actor LiveVenioAPI: VenioAPI {
             try await outbox.delete(id: key)
         } else {
             guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
-            guard let type = DocumentTransport.syncType else { throw VenioAPIError(code: "DOCUMENTS_CONTRACT_PENDING") }
-            let documents = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument)
-            guard documents.contains(where: { $0.id == id && $0.uploadedBy == scope.user.id }) else { throw VenioAPIError(code: "FORBIDDEN") }
-            _ = try await online(DocumentTransport.deletionRequest(id: id, session: session), scope: scope)
+            let documents = try await store.records(type: DocumentTransport.syncType, scope: scope).map(DocumentTransport.decodeDocument)
+            guard let document = documents.first(where: { $0.id == id && $0.uploadedBy == scope.user.id && !$0.clientVisible }) else {
+                throw VenioAPIError(code: "DOCUMENT_WRITE_FORBIDDEN")
+            }
+            _ = try await online(DocumentTransport.deletionRequest(id: id, projectId: document.project, session: session), scope: scope)
             try await store.removeDocument(id: id, scope: scope)
         }
         changed()
@@ -205,17 +206,15 @@ public actor LiveVenioAPI: VenioAPI {
         let scope = try await session.identity()
         if id.hasPrefix("pending-"), let key = UUID(uuidString: String(id.dropFirst("pending-".count))),
            let write = try await store.writes(scope: scope).first(where: { $0.id == key && $0.type == "document" }) {
-            return try JSONDecoder().decode(DocumentDraft.self, from: write.payload).fileURL
+            return try await store.documentDraft(write.payload, scope: scope).fileURL
         }
-        guard scope.user.permissions.contains("view_projects") else { throw VenioAPIError(code: "FORBIDDEN") }
-        guard let type = DocumentTransport.syncType else { throw VenioAPIError(code: "DOCUMENTS_CONTRACT_PENDING") }
-        guard let document = try await store.records(type: type, scope: scope).map(DocumentTransport.decodeDocument).first(where: { $0.id == id }) else {
+        guard scope.user.permissions.contains("view_content") else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard let document = try await store.records(type: DocumentTransport.syncType, scope: scope).map(DocumentTransport.decodeDocument).first(where: { $0.id == id }) else {
             throw VenioAPIError(code: "NOT_FOUND")
         }
-        let data = try await online(DocumentTransport.fileRequest(id: id, session: session), scope: scope)
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VenioPreviews/" + UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let url = directory.appendingPathComponent(URL(fileURLWithPath: document.fileName).lastPathComponent)
+        let data = try await online(DocumentTransport.fileRequest(id: id, projectId: document.project, session: session), scope: scope)
+        let url = try await store.documentCacheURL(document, scope: scope)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: url, options: .atomic)
         return url
     }
