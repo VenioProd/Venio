@@ -30,6 +30,7 @@ public struct CommercialSpace: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.locale) private var locale
+    @State private var tabRouteRevision = 0
     @State private var showingNewLead = false
     @State private var searchDestination: DeepLink?
     private let initialProjectID: String?
@@ -72,6 +73,7 @@ public struct CommercialSpace: View {
                 NavigationStack { SalesFiguresView() }.tabItem { tabLabel(.figures) }.tag(CommercialTab.figures)
             }
         }
+        .id(tabRouteRevision)
         #if os(iOS)
         .sensoryFeedback(.success, trigger: store.successFeedback)
         .sensoryFeedback(.error, trigger: store.errorFeedback)
@@ -118,6 +120,21 @@ public struct CommercialSpace: View {
             if phase == .active { store.returnedToApplication() }
         }
         #endif
+        .onChange(of: store.requestedTab, initial: true) { _, link in
+            guard let link else { return }
+            store.requestedTab = nil
+            showingNewLead = false
+            #if os(iOS)
+            store.callPrompt = nil
+            #endif
+            tabRouteRevision += 1
+            switch link {
+            case .today: todayPath = []; tab = .today
+            case .pipeline: pipelinePath = []; tab = .pipeline
+            case .figures: tab = .figures
+            default: break
+            }
+        }
         .onAppear {
             if tab == .quotes && !store.canManageQuotes { tab = .today }
             if tab == .figures && !store.canViewFigures { tab = .today }

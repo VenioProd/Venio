@@ -6432,6 +6432,652 @@
           }
         }
       }
+    },
+    "Verrouiller Venio": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouiller Venio"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock Venio"
+          }
+        }
+      }
+    },
+    "Face ID": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Face ID"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Face ID"
+          }
+        }
+      }
+    },
+    "Touch ID": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID"
+          }
+        }
+      }
+    },
+    "code de l’appareil": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "code de l’appareil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "device passcode"
+          }
+        }
+      }
+    },
+    "Configurez la biométrie ou un code de l’appareil pour activer le verrouillage.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurez la biométrie ou un code de l’appareil pour activer le verrouillage."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up biometrics or a device passcode to enable locking."
+          }
+        }
+      }
+    },
+    "Authentification annulée ou impossible. Réessayez.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authentification annulée ou impossible. Réessayez."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authentication was cancelled or failed. Try again."
+          }
+        }
+      }
+    },
+    "Déverrouiller": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouiller"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock"
+          }
+        }
+      }
+    },
+    "Déverrouiller Venio pour accéder à vos données": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouiller Venio pour accéder à vos données"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Venio to access your data"
+          }
+        }
+      }
+    },
+    "Modèles de messages": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modèles de messages"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message templates"
+          }
+        }
+      }
+    },
+    "Suite à un échange": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suite à un échange"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After a conversation"
+          }
+        }
+      }
+    },
+    "Relance de devis": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relance de devis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quote follow-up"
+          }
+        }
+      }
+    },
+    "Proposition de rendez-vous": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proposition de rendez-vous"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting proposal"
+          }
+        }
+      }
+    },
+    "Suite à notre échange — {{company}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suite à notre échange — {{company}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following our conversation — {{company}}"
+          }
+        }
+      }
+    },
+    "Bonjour {{firstName}},\n\nMerci pour notre échange au sujet de {{company}}. Je reste à votre disposition pour la suite.\n\nBien cordialement,\n{{sender}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour {{firstName}},\n\nMerci pour notre échange au sujet de {{company}}. Je reste à votre disposition pour la suite.\n\nBien cordialement,\n{{sender}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello {{firstName}},\n\nThank you for our conversation about {{company}}. I am here to help with the next steps.\n\nBest regards,\n{{sender}}"
+          }
+        }
+      }
+    },
+    "Votre devis — {{company}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre devis — {{company}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your quote — {{company}}"
+          }
+        }
+      }
+    },
+    "Bonjour {{firstName}},\n\nAvez-vous pu consulter notre devis pour {{company}} ? Je suis disponible pour en discuter et répondre à vos questions.\n\nBien cordialement,\n{{sender}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour {{firstName}},\n\nAvez-vous pu consulter notre devis pour {{company}} ? Je suis disponible pour en discuter et répondre à vos questions.\n\nBien cordialement,\n{{sender}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello {{firstName}},\n\nHave you had a chance to review our quote for {{company}}? I would be happy to discuss it and answer your questions.\n\nBest regards,\n{{sender}}"
+          }
+        }
+      }
+    },
+    "Un rendez-vous pour {{company}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un rendez-vous pour {{company}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A meeting for {{company}}"
+          }
+        }
+      }
+    },
+    "Bonjour {{firstName}},\n\nJe vous propose un rendez-vous pour faire le point sur les besoins de {{company}}. Quelles seraient vos disponibilités ?\n\nBien cordialement,\n{{sender}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour {{firstName}},\n\nJe vous propose un rendez-vous pour faire le point sur les besoins de {{company}}. Quelles seraient vos disponibilités ?\n\nBien cordialement,\n{{sender}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello {{firstName}},\n\nI would like to arrange a meeting to discuss the needs of {{company}}. When would you be available?\n\nBest regards,\n{{sender}}"
+          }
+        }
+      }
+    },
+    "Objet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject"
+          }
+        }
+      }
+    },
+    "Message": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message"
+          }
+        }
+      }
+    },
+    "Remettre à zéro": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remettre à zéro"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset to default"
+          }
+        }
+      }
+    },
+    "Variables : {{firstName}}, {{company}}, {{sender}}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variables : {{firstName}}, {{company}}, {{sender}}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variables: {{firstName}}, {{company}}, {{sender}}"
+          }
+        }
+      }
+    },
+    "Relancer par e-mail": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relancer par e-mail"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow up by email"
+          }
+        }
+      }
+    },
+    "Relancer par SMS": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relancer par SMS"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow up by text"
+          }
+        }
+      }
+    },
+    "Continuer vers le compositeur": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer vers le compositeur"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue to composer"
+          }
+        }
+      }
+    },
+    "Enregistrer l’interaction ?": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer l’interaction ?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record this interaction?"
+          }
+        }
+      }
+    },
+    "à vous": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "à vous"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "there"
+          }
+        }
+      }
+    },
+    "SMS": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SMS"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text message"
+          }
+        }
+      }
+    },
+    "Connectez-vous à Venio avant d’utiliser ce raccourci.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectez-vous à Venio avant d’utiliser ce raccourci."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Venio before using this shortcut."
+          }
+        }
+      }
+    },
+    "Déverrouillez Venio avant d’utiliser ce raccourci.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouillez Venio avant d’utiliser ce raccourci."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Venio before using this shortcut."
+          }
+        }
+      }
+    },
+    "Vous n’avez pas les droits nécessaires pour cette action.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous n’avez pas les droits nécessaires pour cette action."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You do not have permission to perform this action."
+          }
+        }
+      }
+    },
+    "Indiquez le nom de la société.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indiquez le nom de la société."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the company name."
+          }
+        }
+      }
+    },
+    "Planifier une relance": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier une relance"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedule a follow-up"
+          }
+        }
+      }
+    },
+    "Ajouter un document à un projet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un document à un projet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a document to a project"
+          }
+        }
+      }
+    },
+    "Ouvrir Aujourd’hui": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Aujourd’hui"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Today"
+          }
+        }
+      }
+    },
+    "Société": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Société"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Company"
+          }
+        }
+      }
+    },
+    "Projet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project"
+          }
+        }
+      }
+    },
+    "Fichier": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichier"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

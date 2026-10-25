@@ -51,6 +51,23 @@
           }
         }
       }
+    },
+    "NSFaceIDUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio utilise Face ID pour déverrouiller vos données sur cet appareil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio uses Face ID to unlock your data on this device."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -36,6 +36,7 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: paris.venio.app
             CFBundleURLSchemes: [venio]
+        NSFaceIDUsageDescription: Venio utilise Face ID pour déverrouiller vos données sur cet appareil.
         NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
         NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
         NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.

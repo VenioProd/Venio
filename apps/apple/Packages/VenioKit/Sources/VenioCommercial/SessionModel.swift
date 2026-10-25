@@ -86,14 +86,19 @@ import VenioTheme
             lastSyncedAt = nil
             connectionTask?.cancel()
             lastPreferences = nil
+            commercial?.deactivate()
+            IntentBridge.connect(store: nil, session: nil)
+            SpotlightIndex.shared.purge()
             commercial = nil
             pending = []
             sendingWriteID = nil
             preferenceWrite?.cancel()
             if case .signedIn = previous { onDisconnect?() }
         case .signedIn(let user, _):
+            commercial?.deactivate()
             let store = CommercialStore(api: api, clock: DemoClock(now: .now))
             commercial = store
+            IntentBridge.connect(store: store, session: self)
             connectionTask = Task {
                 await loadPreferences(userID: user.id)
                 guard !Task.isCancelled else { return }

@@ -93,7 +93,8 @@ import AppKit
     }
     func disconnected() {
         connectionID = UUID()
-        api = nil; store = nil; pendingLink = nil; pendingType = ""
+        if api != nil { pendingLink = nil; pendingType = "" }
+        api = nil; store = nil
         needsAuthorization = false; attemptedRegistration = false; failed = false
         let center = UNUserNotificationCenter.current()
         center.removeAllDeliveredNotifications()

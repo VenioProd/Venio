@@ -2,12 +2,21 @@ import Foundation
 
 public enum DeepLink: Sendable, Equatable, Hashable {
     case lead(String), quote(String), project(String), projectQuotes(String)
+    case today, pipeline, figures
 
     // Serveur : /admin/crm, /admin/crm/leads/:id, /admin/projets/:id[?tab=phases], /admin/demandes-clients/:id, /admin/tickets.
     public static func parse(type: String, link: String?) -> DeepLink? {
         guard let link, let url = URLComponents(string: link) else { return nil }
         if url.scheme == "venio" {
             let parts = url.path.split(separator: "/").map(String.init)
+            if parts.isEmpty {
+                switch url.host {
+                case "today": return .today
+                case "pipeline": return .pipeline
+                case "figures": return .figures
+                default: return nil
+                }
+            }
             guard parts.count == 1, let id = parts.first, valid(id) else { return nil }
             switch url.host {
             case "lead": return .lead(id)

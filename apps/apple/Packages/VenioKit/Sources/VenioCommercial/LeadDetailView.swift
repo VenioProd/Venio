@@ -18,6 +18,7 @@ public struct LeadDetailView: View {
         true
         #endif
     }
+    @State private var messageChannel: FollowUpChannel?
     @State private var showingVoice = false
     @State private var showingQuote = false
     @State private var showingFollowUp = false
@@ -50,6 +51,9 @@ public struct LeadDetailView: View {
         }
         .task(id: id) { await store.openLead(id: id) }
         .background { ThemedBackground() }
+        .sheet(item: $messageChannel) { channel in
+            MessageFollowUpView(leadID: id, channel: channel)
+        }
         .sheet(isPresented: $showingVoice) {
             if let lead = store.lead(for: id) { VoiceNoteView(lead: lead) }
         }
@@ -77,8 +81,8 @@ public struct LeadDetailView: View {
             }.venioCard()
             nextAction(lead)
             HStack(spacing: 6) {
-                action("Appeler", icon: "phone", url: lead.phoneURL)
-                action("E-mail", icon: "envelope", url: lead.emailURL)
+                action("Appeler", icon: "phone", url: lead.phoneURL).disabled(!canEdit(lead))
+                action("E-mail", icon: "envelope", url: lead.emailURL).disabled(!canEdit(lead))
                 editAction("Relance", icon: "clock") { showingFollowUp = true }
                     .disabled(!canEdit(lead)).accessibilityIdentifier("lead.followUp")
                 editAction("Étape", icon: "arrow.right.circle") { showingStage = true }
@@ -93,6 +97,12 @@ public struct LeadDetailView: View {
                     }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(!lead.canQuote)
                 }
             }
+            HStack(spacing: 16) {
+                Button { messageChannel = .email } label: { VText("Relancer par e-mail") }
+                    .disabled(!canEdit(lead) || lead.emailURL == nil)
+                Button { messageChannel = .sms } label: { VText("Relancer par SMS") }
+                    .disabled(!canEdit(lead) || lead.phoneURL == nil)
+            }.font(.caption).foregroundStyle(palette.accentText.color)
             if store.canManageQuotes && !lead.canQuote {
                 VText("Aucun projet lié dans votre portefeuille. Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption).foregroundStyle(palette.textSecondary.color)
             }

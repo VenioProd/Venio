@@ -3,6 +3,7 @@ import SwiftData
 import VenioCore
 import VenioTheme
 import VenioCommercial
+import CoreSpotlight
 #if os(iOS)
 import UIKit
 #else
@@ -18,6 +19,7 @@ import AppKit
     #endif
     @State private var mockStore: CommercialStore?
     @State private var session: SessionModel?
+    @State private var lock = AppLock.shared
     @State private var themes: ThemeManager
     private let mockAPI: MockVenioAPI?
     private let initialTab: CommercialTab
@@ -63,6 +65,8 @@ import AppKit
             _mockStore = State(initialValue: nil)
             _session = State(initialValue: nil)
         }
+        IntentBridge.connect(store: currentStore, session: session)
+        IntentBridge.locale = manager.locale
     }
     private static func deviceInfo() -> DeviceInfo {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1"
@@ -89,6 +93,13 @@ import AppKit
                     else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID) }
                     else { StorageUnavailableView() }
                 }
+                .venioAppLock(lock)
+                .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
+                    if let store = currentStore { IntentBridge.connect(store: store, session: session) }
+                }
+                .onChange(of: lock.blocksAccess) { _, blocked in
+                    if !blocked { Task { await currentStore?.resumeNavigation() } }
+                }
                 .onChange(of: currentStore?.hasLoaded, initial: true) { _, loaded in
                     guard loaded == true, let store = currentStore, let api = currentAPI else { return }
                     Task { await delegate.push.connected(api: api, store: store, language: themes.locale.language.languageCode?.identifier ?? "fr") }
@@ -97,12 +108,14 @@ import AppKit
                     #endif
                 }
                 .onChange(of: themes.locale) { _, locale in
+                    IntentBridge.locale = locale
                     guard let store = currentStore, store.hasLoaded, let api = currentAPI else { return }
                     Task { await delegate.push.connected(api: api, store: store, language: locale.language.languageCode?.identifier ?? "fr") }
                 }
                 .task {
                     session?.onDisconnect = {
                         delegate.push.disconnected()
+                        IntentBridge.connect(store: nil, session: nil)
                         #if os(iOS)
                         watch.disconnected()
                         #endif
@@ -141,6 +154,12 @@ import AppKit
                 #endif
             }
             .onOpenURL { url in Task { await delegate.push.open(type: "", link: url.absoluteString) } }
+            .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+                let parts = identifier.split(separator: ":", maxSplits: 1).map(String.init)
+                guard parts.count == 2, ["lead", "project"].contains(parts[0]) else { return }
+                Task { await delegate.push.open(type: "", link: "venio://" + parts[0] + "/" + parts[1]) }
+            }
         }
     }
 }

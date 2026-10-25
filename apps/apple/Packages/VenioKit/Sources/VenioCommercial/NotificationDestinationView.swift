@@ -11,6 +11,7 @@ struct NotificationDestinationView: View {
         NavigationStack {
             Group {
                 switch destination {
+                case .today, .pipeline, .figures: EmptyView()
                 case .lead(let id): LeadDetailView(id: id)
                 case .quote(let id): QuoteDetailView(id: id)
                 case .project(let id): ProjectDetailView(id: id)

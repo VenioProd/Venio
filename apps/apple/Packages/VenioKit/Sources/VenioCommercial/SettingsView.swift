@@ -9,6 +9,10 @@ public struct SettingsView: View {
     public init() {}
     public var body: some View {
         List {
+            AppLockSetting()
+            NavigationLink { MessageTemplatesSettings() } label: {
+                Label { VText("Modèles de messages") } icon: { Image(systemName: "text.bubble") }
+            }
             NavigationLink { AppearanceView() } label: {
                 Label { VText("Apparence") } icon: { Image(systemName: "paintpalette").accessibilityHidden(true) }
             }
