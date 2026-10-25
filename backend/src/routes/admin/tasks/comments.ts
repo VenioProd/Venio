@@ -6,32 +6,37 @@ import TaskComment from '../../../models/TaskComment.js'
 import Project from '../../../models/Project.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { createNotification } from '../../../lib/notifications.js'
-import { requirePermissionOrAssignee } from './middleware.js'
+import { requireProjectAccess, requirePermissionOrAssignee } from './middleware.js'
 
 const router = express.Router({ mergeParams: true })
 
 // GET /api/admin/projets/:projectId/tasks/:taskId/comments
-router.get('/:projectId/tasks/:taskId/comments', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const projectId = req.params.projectId as string
-    const taskId = req.params.taskId as string
-    const task = await Task.findOne({ _id: taskId, project: projectId })
-    if (!task) {
-      return res.status(404).json({ error: 'Tâche non trouvée' })
+router.get(
+  '/:projectId/tasks/:taskId/comments',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const projectId = req.params.projectId as string
+      const taskId = req.params.taskId as string
+      const task = await Task.findOne({ _id: taskId, project: projectId })
+      if (!task) {
+        return res.status(404).json({ error: 'Tâche non trouvée' })
+      }
+      const comments = await TaskComment.find({ task: taskId })
+        .sort({ createdAt: 1 })
+        .populate('author', 'name email')
+        .populate('mentions', 'name email')
+      return res.json({ comments })
+    } catch (err) {
+      return next(err)
     }
-    const comments = await TaskComment.find({ task: taskId })
-      .sort({ createdAt: 1 })
-      .populate('author', 'name email')
-      .populate('mentions', 'name email')
-    return res.json({ comments })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // POST /api/admin/projets/:projectId/tasks/:taskId/comments
 router.post(
   '/:projectId/tasks/:taskId/comments',
+  requireProjectAccess,
   requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
   body('content').trim().notEmpty().withMessage('Le commentaire ne peut pas être vide'),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -93,27 +98,35 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // DELETE /api/admin/projets/:projectId/tasks/:taskId/comments/:commentId
-router.delete('/:projectId/tasks/:taskId/comments/:commentId', requirePermission(PERMISSIONS.MANAGE_TASKS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const taskId = req.params.taskId as string
-    const commentId = req.params.commentId as string
-    const comment = await TaskComment.findOne({ _id: commentId, task: taskId })
-    if (!comment) {
-      return res.status(404).json({ error: 'Commentaire non trouvé' })
+router.delete(
+  '/:projectId/tasks/:taskId/comments/:commentId',
+  requireProjectAccess,
+  requirePermission(PERMISSIONS.MANAGE_TASKS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const taskId = req.params.taskId as string
+      const commentId = req.params.commentId as string
+      if (!(await Task.exists({ _id: taskId, project: req.params.projectId }))) {
+        return res.status(404).json({ error: 'Tâche non trouvée' })
+      }
+      const comment = await TaskComment.findOne({ _id: commentId, task: taskId })
+      if (!comment) {
+        return res.status(404).json({ error: 'Commentaire non trouvé' })
+      }
+      // Only author or super admin can delete
+      if (String(comment.author) !== String(req.user!.id) && req.user!.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Non autorisé' })
+      }
+      await comment.deleteOne()
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
     }
-    // Only author or super admin can delete
-    if (String(comment.author) !== String(req.user!.id) && req.user!.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Non autorisé' })
-    }
-    await comment.deleteOne()
-    return res.json({ success: true })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 export default router

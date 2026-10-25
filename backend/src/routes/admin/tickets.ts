@@ -2,8 +2,7 @@ import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import mongoose from 'mongoose'
 import Project from '../../models/Project.js'
-import Task from '../../models/Task.js'
-import MissionBrief from '../../models/MissionBrief.js'
+import { hasProjectAccess } from '../../lib/adminProjectAccess.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
@@ -260,15 +259,8 @@ router.post(
         if (typeof project !== 'string' || !mongoose.isObjectIdOrHexString(project)) {
           return res.status(400).json({ error: 'Projet invalide' })
         }
-        const linked = await Project.findById(project).select('assignedTo').lean()
-        if (!linked) return res.status(404).json({ error: 'Projet introuvable' })
-        if (user.role !== 'SUPER_ADMIN' && String(linked.assignedTo) !== user.id) {
-          const [task, brief] = await Promise.all([
-            Task.exists({ project, assignee: user.id }),
-            MissionBrief.exists({ project, destinataire: user.id }),
-          ])
-          if (!task && !brief) return res.status(403).json({ error: 'Accès refusé' })
-        }
+        if (!(await Project.exists({ _id: project }))) return res.status(404).json({ error: 'Projet introuvable' })
+        if (!(await hasProjectAccess(user, project))) return res.status(403).json({ error: 'Accès refusé' })
       }
 
       // Auto-générer le titre si non fourni

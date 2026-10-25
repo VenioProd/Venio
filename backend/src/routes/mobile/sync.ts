@@ -11,8 +11,7 @@ import ProjectPhase from '../../models/ProjectPhase.js'
 import ProjectUpdate from '../../models/ProjectUpdate.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import User from '../../models/User.js'
-import Task from '../../models/Task.js'
-import MissionBrief from '../../models/MissionBrief.js'
+import { accessibleProjectIds } from '../../lib/adminProjectAccess.js'
 import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityType } from '../../models/SyncTombstone.js'
 import { leadScopeFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
@@ -109,13 +108,9 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         },
       ]
     }
-    if (['projects', 'projectPhases', 'projectUpdates'].includes(type) && req.user!.role !== 'SUPER_ADMIN') {
-      const [tasks, briefs, assigned] = await Promise.all([
-        Task.distinct('project', { assignee: req.user!.id }),
-        MissionBrief.distinct('project', { destinataire: req.user!.id }),
-        Project.distinct('_id', { assignedTo: req.user!.id }),
-      ])
-      filter.$and = [{ [type === 'projects' ? '_id' : 'project']: { $in: [...tasks, ...briefs, ...assigned] } }]
+    if (['projects', 'projectPhases', 'projectUpdates'].includes(type)) {
+      const projectIds = await accessibleProjectIds(req.user!)
+      if (projectIds !== null) filter.$and = [{ [type === 'projects' ? '_id' : 'project']: { $in: projectIds } }]
     }
     const options = { sort: { [stamp]: 1, _id: 1 } as Record<string, 1>, limit: limit + 1 }
     let items
