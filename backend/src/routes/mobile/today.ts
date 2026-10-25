@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
@@ -148,7 +149,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         .slice(0, 50),
       total: tasks.total + interactions.total,
     }))
+    const ids = await readableProjectIds(req.user!)
     const quoteFilter = {
+      ...(ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }),
       createdBy: req.user!.id,
       status: 'SENT',
       firstViewedAt: { $ne: null },
@@ -172,7 +175,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ),
         meetings,
         QuoteProposal.find(quoteFilter)
-          .select('_id reference project client title status expiresAt firstViewedAt createdBy createdAt updatedAt')
+          .select(
+            '_id reference project client leadId title status expiresAt firstViewedAt createdBy createdAt updatedAt',
+          )
           .sort({ updatedAt: -1, _id: 1 })
           .limit(50)
           .lean(),

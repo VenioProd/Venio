@@ -271,6 +271,7 @@ export type Permission =
   | 'edit_projects'
   | 'view_content'
   | 'edit_content'
+  | 'upload_project_documents'
   | 'view_phases'
   | 'manage_phases'
   | 'view_billing'

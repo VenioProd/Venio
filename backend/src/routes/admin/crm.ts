@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
@@ -556,7 +557,10 @@ router.get(
       const lead = await Lead.findOne({ _id: req.params.id, ...leadScopeFilter(req) }).select('company budget')
       if (!lead) return res.status(404).json({ error: 'Lead not found' })
 
-      const projects = await Project.find({ sourceLead: lead._id }).select('name status createdAt').lean()
+      const ids = await readableProjectIds(req.user!)
+      const projects = await Project.find({ sourceLead: lead._id, ...(ids === null ? {} : { _id: { $in: ids } }) })
+        .select('name status createdAt')
+        .lean()
       const projectIds = projects.map((project) => project._id)
 
       const [documents, proposals] = await Promise.all([
@@ -604,7 +608,9 @@ router.get(
         return res.json({ candidates: [], reason: 'NO_CLIENT_ACCOUNT' })
       }
 
+      const ids = await readableProjectIds(req.user!)
       const candidates = await Project.find({
+        ...(ids === null ? {} : { _id: { $in: ids } }),
         client: lead.clientAccountId,
         $or: [{ sourceLead: null }, { sourceLead: { $exists: false } }],
       })
@@ -752,7 +758,11 @@ router.get(
       // Chiffre d'affaires réellement produit par la cohorte, via les projets
       // qui lui sont rattachés. Le budget déclaré est renvoyé en regard :
       // l'écart entre annoncé et signé est ce que le CRM n'a jamais su dire.
-      const cohortProjects = await Project.find({ sourceLead: { $in: leadDocs.map((lead) => lead._id) } })
+      const ids = await readableProjectIds(req.user!)
+      const cohortProjects = await Project.find({
+        ...(ids === null ? {} : { _id: { $in: ids } }),
+        sourceLead: { $in: leadDocs.map((lead) => lead._id) },
+      })
         .select('_id sourceLead')
         .lean()
       const cohortDocuments =

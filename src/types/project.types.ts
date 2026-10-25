@@ -100,6 +100,7 @@ export interface ProjectSection {
 }
 
 export interface ProjectItem {
+  createdBy?: { _id: string; name: string } | string
   _id: string
   type: string
   title: string

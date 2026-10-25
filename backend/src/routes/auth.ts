@@ -142,6 +142,7 @@ router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) 
 router.patch(
   '/profile',
   auth,
+  body('isAssociate').not().exists().withMessage('Le statut associé se modifie depuis la gestion des administrateurs'),
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Le nom ne peut pas être vide'),
   body('email').optional().isEmail().withMessage('Email invalide'),
   body('phone').optional().trim(),

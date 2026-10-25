@@ -133,6 +133,8 @@ export interface IProjectItemFile {
 }
 
 export interface IProjectItem extends Document {
+  clientRequestId?: string
+  clientRequestHash?: string
   project: Types.ObjectId
   section: Types.ObjectId | null
   type: ItemType

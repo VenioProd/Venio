@@ -1,3 +1,5 @@
+import mongoose from 'mongoose'
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission, userHasPermission } from '../../middleware/role.js'
@@ -80,25 +82,33 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_PROJECTS),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const ids = await readableProjectIds(req.user!)
+      const objectIds = ids?.map((id) => new mongoose.Types.ObjectId(id))
+      const scope = objectIds ? [{ $match: { _id: { $in: objectIds } } }] : []
+      const taskScope = objectIds ? [{ $match: { project: { $in: objectIds } } }] : []
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
       // Projects by status
-      const projectsByStatus = await Project.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+      const projectsByStatus = await Project.aggregate([...scope, { $group: { _id: '$status', count: { $sum: 1 } } }])
 
       // Projects by priority
-      const projectsByPriority = await Project.aggregate([{ $group: { _id: '$priority', count: { $sum: 1 } } }])
+      const projectsByPriority = await Project.aggregate([
+        ...scope,
+        { $group: { _id: '$priority', count: { $sum: 1 } } },
+      ])
 
       // Tasks by status
-      const tasksByStatus = await Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+      const tasksByStatus = await Task.aggregate([...taskScope, { $group: { _id: '$status', count: { $sum: 1 } } }])
 
       // Tasks by priority
-      const tasksByPriority = await Task.aggregate([{ $group: { _id: '$priority', count: { $sum: 1 } } }])
+      const tasksByPriority = await Task.aggregate([...taskScope, { $group: { _id: '$priority', count: { $sum: 1 } } }])
 
       // Revenue: total invoiced
       const revenueAgg = await Project.aggregate([
+        ...scope,
         { $match: { 'billing.amountInvoiced': { $gt: 0 } } },
         { $group: { _id: null, total: { $sum: '$billing.amountInvoiced' } } },
       ])
@@ -106,6 +116,7 @@ router.get(
 
       // Revenue this month
       const monthlyRevenueAgg = await Project.aggregate([
+        ...scope,
         {
           $match: {
             'billing.amountInvoiced': { $gt: 0 },
@@ -119,6 +130,7 @@ router.get(
 
       // Revenue last month
       const lastMonthRevenueAgg = await Project.aggregate([
+        ...scope,
         {
           $match: {
             'billing.amountInvoiced': { $gt: 0 },
@@ -132,6 +144,7 @@ router.get(
 
       // Budget total (all projects)
       const budgetAgg = await Project.aggregate([
+        ...scope,
         { $match: { 'budget.amount': { $gt: 0 } } },
         { $group: { _id: null, total: { $sum: '$budget.amount' } } },
       ])
@@ -144,6 +157,7 @@ router.get(
       // Projects created per month (last 6 months)
       const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
       const projectsPerMonth = await Project.aggregate([
+        ...scope,
         { $match: { createdAt: { $gte: sixMonthsAgo } } },
         {
           $group: {
@@ -156,6 +170,7 @@ router.get(
 
       // Overdue tasks count
       const overdueTaskCount = await Task.countDocuments({
+        ...(ids === null ? {} : { project: { $in: ids } }),
         status: { $ne: 'TERMINE' },
         dueDate: { $lt: now, $ne: null },
       })

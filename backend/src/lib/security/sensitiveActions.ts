@@ -182,7 +182,7 @@ async function satisfiesStepUp(policy: SensitiveActionPolicy, req: Request, res:
     res.status(403).json({ error: 'MFA_STEP_UP_REQUIRED', message: 'Un code MFA récent est requis.' })
     return false
   }
-  const user = await User.findById(req.user!.id).select('email twoFactorEnabled twoFactorSecret').lean()
+  const user = await User.findById(req.user!.id).select('email twoFactorEnabled +twoFactorSecret').lean()
   if (!user?.twoFactorEnabled || !user.twoFactorSecret) {
     res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'Configurez la MFA avant cette action sensible.' })
     return false

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import request from 'supertest'
 import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
-import { createEntry, ensureFiscalYearFor } from '../lib/accounting/doubleEntry.js'
+import { createEntry, ensureFiscalYearFor, validateEntry } from '../lib/accounting/doubleEntry.js'
 import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import fiscalYearRoutes from '../routes/admin/accounting/fiscalYears.js'
@@ -191,4 +191,63 @@ it('refuse une clôture dont l’exercice suivant serait l’exercice clôturé 
   expect((await FiscalYear.findById(fiscal._id))!.status).toBe('OUVERT')
   expect(await AccountingEntry.countDocuments({ source: 'AN' })).toBe(0)
   expect(await AccountingEntry.countDocuments({ status: 'LOCKED' })).toBe(0)
+})
+
+it('sérialise la clôture et une écriture manuelle suspendue avant ses lignes', async () => {
+  const initial = await createEntry(entryInput())
+  let resume!: () => void
+  let reached!: () => void
+  const suspended = new Promise<void>((resolve) => {
+    reached = resolve
+  })
+  const released = new Promise<void>((resolve) => {
+    resume = resolve
+  })
+  const insertMany = AccountingLine.insertMany
+  vi.spyOn(AccountingLine, 'insertMany').mockImplementationOnce(async function (...args) {
+    reached()
+    await released
+    return Reflect.apply(insertMany, AccountingLine, args)
+  })
+  const manual = createEntry(entryInput()).then(
+    (result) => ({ result, status: 201 }),
+    (error: Error & { status?: number }) => ({ result: null, status: error.status }),
+  )
+  await suspended
+
+  // La clôture libère l'écriture dès son premier conflit, ou une fois terminée.
+  const updateOne = FiscalYear.updateOne
+  vi.spyOn(FiscalYear, 'updateOne').mockImplementation(function (...args) {
+    const query = updateOne.apply(FiscalYear, args)
+    const exec = query.exec
+    vi.spyOn(query, 'exec').mockImplementation(async function (...execArgs) {
+      try {
+        return await exec.apply(query, execArgs)
+      } catch (err) {
+        resume()
+        throw err
+      }
+    })
+    return query
+  })
+  const closing = close(initial.entry.fiscalYear)
+    .then((response) => response)
+    .finally(resume)
+  const [written, response] = await Promise.all([manual, closing])
+  expect(response.status).toBe(200)
+  expect((await FiscalYear.findById(initial.entry.fiscalYear))!.status).toBe('CLOTURE')
+  const entries = await AccountingEntry.find({ fiscalYear: initial.entry.fiscalYear })
+  expect(entries.every((entry) => entry.status === 'LOCKED')).toBe(true)
+  expect([201, 423]).toContain(written.status)
+  expect(entries).toHaveLength(written.result ? 2 : 1)
+  const bank = await AccountingLine.findOne({ entry: response.body.openingEntry._id, accountCode: '512000' })
+  expect(bank!.debit).toBe(written.result ? 240 : 120)
+  expect(await AccountingLine.countDocuments({ fiscalYear: initial.entry.fiscalYear })).toBe(written.result ? 4 : 2)
+})
+
+it('refuse de valider un brouillon dans un exercice clôturé', async () => {
+  const { entry } = await createEntry({ ...entryInput(), status: 'DRAFT' })
+  await FiscalYear.updateOne({ _id: entry.fiscalYear }, { status: 'CLOTURE' })
+  await expect(validateEntry(entry._id)).rejects.toMatchObject({ status: 423 })
+  expect((await AccountingEntry.findById(entry._id))!.status).toBe('DRAFT')
 })

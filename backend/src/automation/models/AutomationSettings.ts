@@ -1,5 +1,6 @@
 import mongoose, { Schema, type Document } from 'mongoose'
 import type { AutomationSettingsDoc, Channel } from '../types.js'
+import { getAutomation } from '../registry.js'
 
 export interface IAutomationSettings extends AutomationSettingsDoc, Document {}
 
@@ -12,27 +13,26 @@ const AutomationSettingsSchema = new Schema<IAutomationSettings>(
     escalationEnabled: { type: Boolean, default: false },
     config: { type: Schema.Types.Mixed, default: {} },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
-const AutomationSettings = mongoose.model<IAutomationSettings>(
-  'AutomationSettings',
-  AutomationSettingsSchema
-)
+const AutomationSettings = mongoose.model<IAutomationSettings>('AutomationSettings', AutomationSettingsSchema)
 
 export default AutomationSettings
 
 // ── Helper: get or create settings for an automation key ──
 export async function getAutomationSettings(
   key: string,
-  defaults?: Partial<AutomationSettingsDoc>
+  defaults?: Partial<AutomationSettingsDoc>,
 ): Promise<IAutomationSettings> {
   let doc = await AutomationSettings.findOne({ key })
   if (!doc) {
+    // Une simple lecture crée les réglages : elle ne doit pas activer une automatisation prévue éteinte.
+    const definition = getAutomation(key)
     doc = await AutomationSettings.create({
       key,
-      enabled: defaults?.enabled ?? true,
-      channels: defaults?.channels ?? ['in_app', 'system_log'],
+      enabled: defaults?.enabled ?? definition?.defaultEnabled ?? true,
+      channels: defaults?.channels ?? definition?.channels ?? ['in_app', 'system_log'],
       throttleWindowMinutes: defaults?.throttleWindowMinutes ?? 0,
       escalationEnabled: defaults?.escalationEnabled ?? false,
       config: defaults?.config ?? {},
@@ -43,13 +43,9 @@ export async function getAutomationSettings(
 
 export async function updateAutomationSettings(
   key: string,
-  updates: Partial<AutomationSettingsDoc>
+  updates: Partial<AutomationSettingsDoc>,
 ): Promise<IAutomationSettings | null> {
-  return AutomationSettings.findOneAndUpdate(
-    { key },
-    { $set: updates },
-    { new: true, upsert: true }
-  )
+  return AutomationSettings.findOneAndUpdate({ key }, { $set: updates }, { new: true, upsert: true })
 }
 
 export async function listAutomationSettings(): Promise<IAutomationSettings[]> {

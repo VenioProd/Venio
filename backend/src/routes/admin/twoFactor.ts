@@ -42,7 +42,7 @@ function requireMfaFeature(_req: Request, res: Response, next: NextFunction): vo
 // POST /api/admin/2fa/setup — Generate TOTP secret and QR code
 router.post('/setup', requireMfaFeature, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id)
+    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
 
     if (user.twoFactorEnabled) {
@@ -80,7 +80,7 @@ router.post('/verify', requireMfaFeature, async (req: Request, res: Response, ne
     const { code } = req.body
     if (!code) return res.status(400).json({ error: 'Code requis' })
 
-    const user = await User.findById(req.user!.id)
+    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
     if (!user.twoFactorSecret) return res.status(400).json({ error: 'Aucune configuration 2FA en cours' })
 
@@ -137,7 +137,7 @@ router.post('/verify', requireMfaFeature, async (req: Request, res: Response, ne
 // POST /api/admin/2fa/disable — Disable 2FA
 router.post('/disable', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id)
+    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
 
     const { code } = req.body || {}
@@ -184,7 +184,7 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
 // POST /api/admin/2fa/step-up — exchange a TOTP/recovery code for a 15 minute MFA claim.
 router.post('/step-up', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id)
+    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
     if (!user?.twoFactorEnabled || !user.twoFactorSecret) return res.status(400).json({ error: 'MFA non configurée' })
     const { code, recoveryCode } = req.body || {}
     const validTotp = code && verifyTotp(user.twoFactorSecret, user.email, code)
@@ -224,7 +224,7 @@ router.post('/step-up', async (req: Request, res: Response, next: NextFunction) 
 // GET /api/admin/2fa/status — Check if 2FA is enabled
 router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id)
+    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
     return res.json({ enabled: user.twoFactorEnabled, enforced: isMfaEnabled() })
   } catch (err) {

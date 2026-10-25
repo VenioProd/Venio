@@ -84,6 +84,47 @@
   gap: 12px;
   min-width: 0;
 }
+.pf-search-select {
+  position: relative;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pf-search-select input {
+  min-height: 40px;
+}
+.pf-select-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  z-index: 10;
+  border: 1px solid var(--border-color, #383838);
+  border-radius: 4px;
+  background: var(--bg-input, #161616);
+}
+.pf-select-list li {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 40px;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+/* App.css isole chaque élément au même niveau : sans cela, les champs suivants recouvrent la liste ouverte. */
+.accounting-card:has(.pf-select-list),
+.accounting-card :has(.pf-select-list) {
+  z-index: 20;
+}
+.pf-select-list li:hover,
+.pf-select-list .pf-select-active {
+  background: var(--bg-hover, #303030);
+}
 .pf-action-form > fieldset {
   width: 100%;
   min-width: 0;

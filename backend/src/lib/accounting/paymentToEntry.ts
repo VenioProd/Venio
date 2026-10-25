@@ -7,6 +7,7 @@ import AccountingLine from '../../models/AccountingLine.js'
 import CompanySettings from '../../models/CompanySettings.js'
 import Journal from '../../models/Journal.js'
 import { createEntry, type CreateEntryResult } from './doubleEntry.js'
+import { runInTransaction } from '../transaction.js'
 import { buildBillingIdempotencyKey } from './billingToEntry.js'
 import type { IBillingDocument, IChartOfAccount } from '../../types/models/index.js'
 
@@ -38,6 +39,7 @@ export async function resolveBankAccount({
 }
 
 export interface CreatePaymentEntryOptions {
+  session?: ClientSession
   userId?: string | Types.ObjectId | null
   date?: Date | string
   bankAccountCode?: string
@@ -55,10 +57,15 @@ export async function createPaymentEntryFromBilling(
   billingDocOrId: IBillingDocument | string | Types.ObjectId,
   options: CreatePaymentEntryOptions = {},
 ): Promise<CreateEntryResult> {
+  const { session } = options
+  if (!session)
+    return runInTransaction((session) => createPaymentEntryFromBilling(billingDocOrId, { ...options, session }))
   const doc: IBillingDocument | null =
     typeof billingDocOrId === 'object' && (billingDocOrId as IBillingDocument)._id
       ? (billingDocOrId as IBillingDocument)
-      : ((await BillingDocument.findById(billingDocOrId as string).lean()) as unknown as IBillingDocument | null)
+      : ((await BillingDocument.findById(billingDocOrId as string)
+          .session(session)
+          .lean()) as unknown as IBillingDocument | null)
 
   if (!doc) {
     const err = new Error('Facture introuvable') as Error & { status?: number }
@@ -71,23 +78,23 @@ export async function createPaymentEntryFromBilling(
     throw err
   }
 
-  if (await ProjectPayment.exists({ invoice: doc._id })) {
+  if (await ProjectPayment.exists({ invoice: doc._id }).session(session)) {
     const err = new Error('Cette facture possède déjà des encaissements détaillés') as Error & { status?: number }
     err.status = 409
     throw err
   }
 
   const idempotencyKey = buildBillingIdempotencyKey(doc._id as Types.ObjectId, 'payment')
-  const existing = await AccountingEntry.findOne({ idempotencyKey })
+  const existing = await AccountingEntry.findOne({ idempotencyKey }).session(session)
   if (existing) {
     return { entry: existing, lines: [], alreadyExisted: true }
   }
 
-  const bankAccount = await resolveBankAccount({ accountCode: options.bankAccountCode })
+  const bankAccount = await resolveBankAccount({ accountCode: options.bankAccountCode, session })
   const customerAccount = await ChartOfAccount.findOne({
     code: DEFAULT_CUSTOMER_ACCOUNT,
     isActive: true,
-  })
+  }).session(session)
   if (!bankAccount || !customerAccount) {
     const err = new Error('Comptes 512 ou 411 manquants — initialisez le plan comptable') as Error & { status?: number }
     err.status = 500
@@ -103,13 +110,13 @@ export async function createPaymentEntryFromBilling(
 
   // Lettrage commun avec la vente si elle existe
   const saleIdempotencyKey = buildBillingIdempotencyKey(doc._id as Types.ObjectId, 'sale')
-  const saleEntry = await AccountingEntry.findOne({ idempotencyKey: saleIdempotencyKey })
+  const saleEntry = await AccountingEntry.findOne({ idempotencyKey: saleIdempotencyKey }).session(session)
   let lettrageCode: string
   if (saleEntry) {
     const customerLine = await AccountingLine.findOne({
       entry: saleEntry._id,
       accountCode: DEFAULT_CUSTOMER_ACCOUNT,
-    })
+    }).session(session)
     lettrageCode =
       customerLine?.lettrage ||
       doc.number
@@ -121,7 +128,7 @@ export async function createPaymentEntryFromBilling(
     if (customerLine && !customerLine.lettrage && lettrageCode) {
       customerLine.lettrage = lettrageCode
       customerLine.lettrageDate = new Date()
-      await customerLine.save()
+      await customerLine.save({ session })
     }
   } else {
     lettrageCode =
@@ -159,6 +166,7 @@ export async function createPaymentEntryFromBilling(
     status: 'VALIDATED',
     createdBy: options.userId || (doc.createdBy as Types.ObjectId | null),
     currency: doc.currency || 'EUR',
+    session,
   })
 
   return result

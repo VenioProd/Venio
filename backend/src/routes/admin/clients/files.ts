@@ -1,3 +1,4 @@
+import { readableProjectIds, canReadProject } from '../../../lib/adminProjectAccess.js'
 import express, { type Request, type Response, type NextFunction } from 'express'
 import path from 'path'
 import { requirePermission } from '../../../middleware/role.js'
@@ -15,7 +16,11 @@ router.get(
       const client = await ensureClient(req.params.id as string, req)
       if (!client) return res.status(404).json({ error: 'Client non trouvé' })
 
-      const files = await ClientUpload.find({ client: client._id })
+      const ids = await readableProjectIds(req.user!)
+      const files = await ClientUpload.find({
+        client: client._id,
+        ...(ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }),
+      })
         .populate('project', 'name')
         .sort({ createdAt: -1 })
         .lean()
@@ -53,7 +58,8 @@ router.get(
       if (!client) return res.status(404).json({ error: 'Client non trouvé' })
 
       const file = await ClientUpload.findOne({ _id: req.params.fileId, client: client._id })
-      if (!file) return res.status(404).json({ error: 'Fichier non trouvé' })
+      if (!file || (file.project && !(await canReadProject(req.user!, String(file.project)))))
+        return res.status(404).json({ error: 'Fichier non trouvé' })
 
       const uploadsDir = path.resolve(process.cwd(), 'uploads')
       const filePath = path.resolve(process.cwd(), file.storagePath)

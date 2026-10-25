@@ -258,7 +258,7 @@ describe('Agent Users / 2FA', () => {
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('MFA_STEP_UP_REQUIRED')
 
-    const after = await User.findById(u!._id).lean()
+    const after = await User.findById(u!._id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes').lean()
     expect(after?.twoFactorEnabled).toBe(true)
     expect(after?.twoFactorSecret).toBe('TOTPSECRET')
     expect(after?.twoFactorRecoveryCodeHashes).toEqual(['hash'])

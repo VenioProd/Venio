@@ -3,7 +3,24 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import Task from '../../../models/Task.js'
+import Project from '../../../models/Project.js'
+import { hasProjectAccess } from '../../../lib/adminProjectAccess.js'
 import User from '../../../models/User.js'
+
+export async function requireProjectAccess(req: Request, res: Response, next: NextFunction) {
+  try {
+    const projectId = req.params.projectId as string
+    if (!(await Project.exists({ _id: projectId }))) {
+      return res.status(404).json({ error: 'Projet non trouvé' })
+    }
+    if (!(await hasProjectAccess(req.user!, projectId))) {
+      return res.status(403).json({ error: 'Accès refusé' })
+    }
+    return next()
+  } catch (err) {
+    return next(err)
+  }
+}
 
 // Middleware: permission OR assignee of the task
 export function requirePermissionOrAssignee(permission: string) {
@@ -14,7 +31,9 @@ export function requirePermissionOrAssignee(permission: string) {
     // Check permission via DB lookup
     const u = await User.findById(req.user!.id).select('grantedPermissions deniedPermissions')
     const { hasPermissionResolved } = await import('../../../lib/permissions.js')
-    if (hasPermissionResolved(req.user!.role, permission as any, u?.grantedPermissions ?? [], u?.deniedPermissions ?? [])) {
+    if (
+      hasPermissionResolved(req.user!.role, permission as any, u?.grantedPermissions ?? [], u?.deniedPermissions ?? [])
+    ) {
       return next()
     }
 
@@ -33,15 +52,28 @@ export const TASK_PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
 
 // ─── Multer config for task attachments ───
 const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
   'application/pdf',
-  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain', 'text/csv',
-  'application/zip', 'application/x-zip-compressed',
-  'video/mp4', 'video/quicktime', 'video/webm',
-  'audio/mpeg', 'audio/wav', 'audio/ogg',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'application/x-zip-compressed',
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
   'application/json',
 ])
 

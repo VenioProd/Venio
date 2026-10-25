@@ -4,9 +4,10 @@ import { scoreUrgency } from '../scoreUrgency.js'
 
 const TAG: InboxTag = { label: 'P1', color: '#f59e0b' }
 
-export async function getBriefP1Items(userId: string): Promise<InboxItem[]> {
+export async function getBriefP1Items(userId: string, projectIds?: string[] | null): Promise<InboxItem[]> {
   const briefs = await MissionBrief.find({
     briefPriority: 'P1',
+    ...(projectIds == null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: projectIds } }] }] }),
     statut: { $nin: ['VALIDE', 'LIVRE'] },
     deadline: { $lt: new Date() },
     $or: [{ destinataire: userId }, { destinataire: { $exists: false } }, { destinataire: null }],

@@ -20,6 +20,9 @@ import {
 } from '../../../lib/projectFinance/invoicing.js'
 import BillingDocument from '../../../models/BillingDocument.js'
 import Project from '../../../models/Project.js'
+import User from '../../../models/User.js'
+import Subsidiary from '../../../models/Subsidiary.js'
+import ProjectPhase from '../../../models/ProjectPhase.js'
 import ProjectFinance from '../../../models/ProjectFinance.js'
 import ShareRuleVersion from '../../../models/ShareRuleVersion.js'
 import projectFinanceErrors from './projectFinanceErrors.js'
@@ -69,6 +72,23 @@ router.get<ProjectParams>(
         schedule: finance ? await installmentSchedule(finance) : [],
         ...(finance?.mode === 'ABONNEMENT' ? { subscriptionState: await subscriptionState(finance) } : {}),
       })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+router.get<ProjectParams>(
+  '/finance/options',
+  requirePermission(PERMISSIONS.VIEW_ACCOUNTING),
+  requireProject,
+  async (req, res, next) => {
+    try {
+      const [clients, subsidiaries, phases] = await Promise.all([
+        User.find({ role: 'CLIENT' }).select('_id name email companyName').sort({ name: 1 }).lean(),
+        Subsidiary.find().select('_id name').sort({ name: 1 }).lean(),
+        ProjectPhase.find({ project: req.params.projectId }).select('_id title order').sort({ order: 1 }).lean(),
+      ])
+      res.json({ clients, subsidiaries, phases })
     } catch (err) {
       next(err)
     }

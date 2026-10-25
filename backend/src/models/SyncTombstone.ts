@@ -6,6 +6,7 @@ export const SYNC_ENTITY_TYPES = [
   'projects',
   'projectPhases',
   'projectUpdates',
+  'projectDocuments',
   'quotes',
 ] as const
 export type SyncEntityType = (typeof SYNC_ENTITY_TYPES)[number]

@@ -44,6 +44,14 @@ beforeAll(async () => {
 
   app = express()
   app.use(express.json())
+  const { default: projectRoutes } = await import('../routes/admin/projects/core.js')
+  const { default: taskRoutes } = await import('../routes/admin/tasks/index.js')
+  app.use('/api/admin/projects', projectRoutes)
+  app.use('/api/admin/projects', taskRoutes)
+  const { default: automationRoutes } = await import('../routes/admin/automations.js')
+  const { default: adminRoutes } = await import('../routes/admin/admins.js')
+  app.use('/api/admin/admins', adminRoutes)
+  app.use('/api/admin/automations', automationRoutes)
   app.use('/api/admin/tickets', ticketRoutes)
   app.use('/api/admin/resources', resourceRoutes)
   app.use('/api/admin/internal-projects', internalProjectRoutes)
@@ -198,4 +206,78 @@ describe('permissions on the remaining VENIO-7 admin modules', () => {
     await actAs(superAdminId, 'SUPER_ADMIN')
     await request(app).get('/api/admin/tool-access').expect(200)
   })
+})
+
+describe('accès au projet lors des écritures de tâches', () => {
+  async function commercialProject(assigned = false) {
+    const { default: User } = await import('../models/User.js')
+    const { default: Project } = await import('../models/Project.js')
+    await User.updateOne({ _id: ownUserId }, { role: 'COMMERCIAL' })
+    await actAs(ownUserId, 'COMMERCIAL')
+    return Project.create({ name: 'Projet privé', client: otherUserId, assignedTo: assigned ? ownUserId : null })
+  }
+
+  it('refuse la création qui ouvrirait le projet et conserve le refus des tickets', async () => {
+    const project = await commercialProject()
+    const { default: Task } = await import('../models/Task.js')
+    await request(app)
+      .post(`/api/admin/projects/${project._id}/tasks`)
+      .send({ title: 'Intrusion', assignee: ownUserId })
+      .expect(403)
+    expect(await Task.countDocuments({ project: project._id })).toBe(0)
+    const listed = await request(app).get('/api/admin/projects').expect(200)
+    expect(listed.body.projects).toEqual([])
+    await request(app)
+      .post('/api/admin/tickets')
+      .send({ message: 'Intrusion', project: String(project._id) })
+      .expect(403)
+  })
+
+  it('refuse de s’assigner une tâche d’un projet inaccessible', async () => {
+    const project = await commercialProject()
+    const { default: Task } = await import('../models/Task.js')
+    const task = await Task.create({ project: project._id, title: 'Privée', createdBy: superAdminId })
+    await request(app)
+      .patch(`/api/admin/projects/${project._id}/tasks/${task._id}`)
+      .send({ assignee: ownUserId })
+      .expect(403)
+    expect((await Task.findById(task._id))!.toObject()).toEqual(task.toObject())
+  })
+
+  it('permet de créer une tâche sur un projet déjà assigné', async () => {
+    const project = await commercialProject(true)
+    await request(app)
+      .post(`/api/admin/projects/${project._id}/tasks`)
+      .send({ title: 'Travail', assignee: ownUserId })
+      .expect(201)
+  })
+})
+
+it('réserve le pilotage d’une automatisation aux rôles qu’elle déclare', async () => {
+  const { default: AutomationSettings } = await import('../automation/models/AutomationSettings.js')
+  const { register } = await import('../automation/jobs/taskAutoArchive.js')
+  register()
+  await actAs(ownUserId, 'STAGIAIRE')
+  await request(app).patch('/api/admin/automations/task.auto_archive/settings').send({ enabled: true }).expect(403)
+  await request(app).post('/api/admin/automations/task.auto_archive/trigger').send({}).expect(403)
+  expect(await AutomationSettings.countDocuments()).toBe(0)
+})
+
+it('ne règle pas une automatisation éteinte par défaut en la consultant', async () => {
+  const { default: AutomationSettings } = await import('../automation/models/AutomationSettings.js')
+  const { register } = await import('../automation/jobs/nextcloudRepair.js')
+  register()
+  await actAs(superAdminId, 'SUPER_ADMIN')
+  await request(app).get('/api/admin/automations/nextcloud.repair_missing_structures').expect(200)
+  expect((await AutomationSettings.findOne({ key: 'nextcloud.repair_missing_structures' }))!.enabled).toBe(false)
+})
+
+it('ne livre jamais le second facteur dans la liste des administrateurs', async () => {
+  const { default: User } = await import('../models/User.js')
+  await User.updateOne({ _id: superAdminId }, { twoFactorSecret: 'TOTPSECRET', twoFactorRecoveryCodeHashes: ['hash'] })
+  await User.updateOne({ _id: ownUserId }, { role: 'COMMERCIAL' })
+  await actAs(ownUserId, 'COMMERCIAL')
+  const listed = await request(app).get('/api/admin/admins').expect(200)
+  expect(listed.body.users.length).toBeGreaterThan(0)
+  expect(JSON.stringify(listed.body)).not.toMatch(/TOTPSECRET|twoFactorSecret|twoFactorRecoveryCodeHashes/)
 })

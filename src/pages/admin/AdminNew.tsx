@@ -66,6 +66,7 @@ const permissionLabels: Record<string, string> = {
   [PERMISSIONS.EDIT_PROJECTS]: 'Modification des projets',
   [PERMISSIONS.VIEW_CONTENT]: 'Lecture du contenu',
   [PERMISSIONS.EDIT_CONTENT]: 'Modification du contenu',
+  [PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS]: 'Ajout de documents aux projets',
   [PERMISSIONS.VIEW_BILLING]: 'Lecture de la facturation',
   [PERMISSIONS.MANAGE_BILLING]: 'Gestion de la facturation',
   [PERMISSIONS.MANAGE_TASKS]: 'Gestion des tâches',
@@ -83,12 +84,19 @@ const AdminNew = () => {
   const { user } = useAuth()
   const { showToast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState<{ name: string; email: string; password: string; role: string }>({ name: '', email: '', password: '', role: 'ADMIN' })
+  const [form, setForm] = useState<{ name: string; email: string; password: string; role: string }>({
+    name: '',
+    email: '',
+    password: '',
+    role: 'ADMIN',
+  })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-  const [createdUser, setCreatedUser] = useState<{ id: string; name: string; email: string; password: string } | null>(null)
+  const [createdUser, setCreatedUser] = useState<{ id: string; name: string; email: string; password: string } | null>(
+    null,
+  )
   const [copied, setCopied] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -112,9 +120,7 @@ const AdminNew = () => {
   }
 
   const handlePermToggle = (perm: string) => {
-    setCustomPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    )
+    setCustomPermissions((prev) => (prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]))
   }
 
   const selectedPermissions = useMemo(() => {
@@ -204,17 +210,30 @@ const AdminNew = () => {
         <div className="portal-card" style={{ marginTop: 24 }}>
           <div style={{ padding: '8px 0' }}>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>
-              Le compte de <strong style={{ color: 'var(--text-primary)' }}>{createdUser.name}</strong> a ete cree. Voici ses identifiants de connexion :
+              Le compte de <strong style={{ color: 'var(--text-primary)' }}>{createdUser.name}</strong> a ete cree.
+              Voici ses identifiants de connexion :
             </p>
 
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: 10, padding: 20, border: '1px solid var(--border-color)', marginBottom: 20 }}>
+            <div
+              style={{
+                background: 'var(--bg-tertiary)',
+                borderRadius: 10,
+                padding: 20,
+                border: '1px solid var(--border-color)',
+                marginBottom: 20,
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdUser.email}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {createdUser.email}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>{createdUser.password}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                  {createdUser.password}
+                </span>
               </div>
             </div>
 
@@ -240,14 +259,24 @@ const AdminNew = () => {
             </div>
 
             {emailError && (
-              <div className="admin-error" style={{ marginTop: 12 }}>{emailError}</div>
+              <div className="admin-error" style={{ marginTop: 12 }}>
+                {emailError}
+              </div>
             )}
 
             <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-              <Link className="portal-button" to={`/admin/comptes-admin/${createdUser.id}`} style={{ textAlign: 'center', flex: 1 }}>
+              <Link
+                className="portal-button"
+                to={`/admin/comptes-admin/${createdUser.id}`}
+                style={{ textAlign: 'center', flex: 1 }}
+              >
                 Voir le profil
               </Link>
-              <Link className="portal-button secondary" to="/admin/comptes-admin" style={{ textAlign: 'center', flex: 1 }}>
+              <Link
+                className="portal-button secondary"
+                to="/admin/comptes-admin"
+                style={{ textAlign: 'center', flex: 1 }}
+              >
                 Retour a la liste
               </Link>
             </div>
@@ -298,14 +327,26 @@ const AdminNew = () => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Mot de passe sécurisé"
                 value={form.password}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setForm({ ...form, password: event.target.value })
+                }
                 onBlur={() => handleBlur('password')}
                 style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 18 }}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  fontSize: 18,
+                }}
               >
                 {showPassword ? '🙈' : '👁'}
               </button>
@@ -326,7 +367,16 @@ const AdminNew = () => {
             </p>
             {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
               <div style={{ marginTop: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                  }}
+                >
                   <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
                   Personnaliser les droits
                 </label>
@@ -339,7 +389,17 @@ const AdminNew = () => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
                   {allPermissions.map((perm) => (
-                    <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                    <label
+                      key={perm}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--text-primary)',
+                      }}
+                    >
                       <input
                         type="checkbox"
                         checked={customPermissions.includes(perm)}

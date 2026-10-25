@@ -2,10 +2,15 @@ import express, { Request, Response, NextFunction } from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { createHash } from 'node:crypto'
+import mongoose from 'mongoose'
 import auth from '../../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../../middleware/role.js'
+import { requireAdmin, requirePermission, userHasPermission } from '../../../middleware/role.js'
 import ProjectItem from '../../../models/ProjectItem.js'
 import Project from '../../../models/Project.js'
+import ProjectSection from '../../../models/ProjectSection.js'
+import { hasProjectAccess } from '../../../lib/adminProjectAccess.js'
+import type { IProjectItem } from '../../../types/models/index.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
 import { triggerAutomations } from '../../../automation/trigger.js'
 import { createNotification } from '../../../lib/notifications.js'
@@ -18,15 +23,30 @@ router.use(requireAdmin)
 
 // MIME types autorises pour l'upload
 const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'image/heic',
+  'image/heif',
   'application/pdf',
-  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain', 'text/csv',
-  'application/zip', 'application/x-zip-compressed',
-  'video/mp4', 'video/quicktime', 'video/webm',
-  'audio/mpeg', 'audio/wav', 'audio/ogg',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'application/x-zip-compressed',
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
   'application/json',
 ])
 
@@ -53,10 +73,127 @@ const upload = multer({
     if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(null, true)
     } else {
-      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`))
+      cb(new Error('UNSUPPORTED_MEDIA_TYPE'))
     }
   },
 })
+
+function removeFile(filePath?: string) {
+  if (filePath) fs.rmSync(filePath, { force: true })
+}
+
+const EDITOR_ONLY_TYPES = ['LIVRABLE', 'LIEN', 'NOTE']
+
+function isOwnInternalDocument(item: IProjectItem, userId: string): boolean {
+  return (
+    String(item.createdBy) === userId &&
+    !item.isVisible &&
+    Boolean(item.file?.storagePath) &&
+    !EDITOR_ONLY_TYPES.includes(item.type)
+  )
+}
+
+// Filtre de la sauvegarde ou de la suppression : un éditeur peut publier le document pendant l'upload.
+const ownInternalDocument = (userId: string) => ({ createdBy: userId, isVisible: false })
+
+async function sectionOutsideProject(section: unknown, projectId: string): Promise<boolean> {
+  if (!section) return false
+  if (typeof section !== 'string' || !mongoose.isValidObjectId(section)) return true
+  return !(await ProjectSection.exists({ _id: section, project: projectId }))
+}
+
+async function requireItemWrite(req: Request, res: Response, next: NextFunction) {
+  try {
+    const canEdit = await userHasPermission(req, PERMISSIONS.EDIT_CONTENT)
+    if (!canEdit && !(await userHasPermission(req, PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS))) {
+      return res.status(403).json({ error: 'Accès refusé', code: 'PERMISSION_DENIED' })
+    }
+    res.locals.canEditContent = canEdit
+    const projectId = req.params.projectId as string
+    const itemId = req.params.itemId as string | undefined
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(404).json({ error: 'Projet non trouvé', code: 'PROJECT_NOT_FOUND' })
+    }
+    // Un item peut survivre à son projet : l'éditeur doit pouvoir le retirer.
+    if (!itemId && !(await Project.exists({ _id: projectId }))) {
+      return res.status(404).json({ error: 'Projet non trouvé', code: 'PROJECT_NOT_FOUND' })
+    }
+    if (!canEdit && !(await hasProjectAccess(req.user!, projectId))) {
+      return res.status(403).json({ error: 'Accès refusé', code: 'PROJECT_OUT_OF_SCOPE' })
+    }
+    if (itemId) {
+      const item = mongoose.isValidObjectId(itemId)
+        ? await ProjectItem.findOne({ _id: itemId, project: projectId })
+        : null
+      if (!item) return res.status(404).json({ error: 'Item non trouvé', code: 'ITEM_NOT_FOUND' })
+      if (!canEdit && !isOwnInternalDocument(item, req.user!.id)) {
+        return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
+      }
+      res.locals.item = item
+    }
+    return next()
+  } catch (err) {
+    return next(err)
+  }
+}
+
+function uploadFile(req: Request, res: Response, next: NextFunction) {
+  const key = req.get('Idempotency-Key')
+  if (
+    req.method === 'POST' &&
+    key !== undefined &&
+    !/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(key)
+  ) {
+    return res.status(400).json({ error: 'Clé UUID invalide', code: 'INVALID_IDEMPOTENCY_KEY' })
+  }
+  upload.single('file')(req, res, (err: unknown) => {
+    if (!err) {
+      req.body ??= {}
+      return next()
+    }
+    removeFile(req.file?.path)
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'Fichier trop volumineux', code: 'FILE_TOO_LARGE' })
+    }
+    if (err instanceof Error && err.message === 'UNSUPPORTED_MEDIA_TYPE') {
+      return res.status(415).json({ error: 'Type de fichier non autorisé', code: 'UNSUPPORTED_MEDIA_TYPE' })
+    }
+    return res.status(400).json({ error: 'Upload invalide', code: 'INVALID_UPLOAD' })
+  })
+}
+
+function validateDocument(req: Request, res: Response): boolean {
+  if (res.locals.canEditContent) return true
+  if (req.body.isVisible === 'true' || req.body.isVisible === true) {
+    res.status(403).json({ error: 'Visibilité réservée aux éditeurs', code: 'VISIBILITY_FORBIDDEN' })
+    return false
+  }
+  if (req.body.type !== undefined && EDITOR_ONLY_TYPES.includes(req.body.type)) {
+    res.status(400).json({ error: 'Type de document invalide', code: 'INVALID_DOCUMENT_TYPE' })
+    return false
+  }
+  if (req.method === 'POST' && !req.file) {
+    res.status(400).json({ error: 'Fichier requis', code: 'FILE_REQUIRED' })
+    return false
+  }
+  return true
+}
+
+function responseOf(item: IProjectItem) {
+  const result = item.toObject()
+  delete result.clientRequestId
+  delete result.clientRequestHash
+  return { item: result }
+}
+
+async function replay(res: Response, existing: IProjectItem, hash: string) {
+  if (existing.clientRequestHash !== hash) {
+    return res.status(409).json({ error: 'Cette clé a déjà servi pour un autre contenu', code: 'IDEMPOTENCY_CONFLICT' })
+  }
+  await existing.populate('section', 'title')
+  await existing.populate('createdBy', 'name email')
+  return res.status(200).json(responseOf(existing))
+}
 
 // GET /api/admin/projects/:projectId/items - Lister les items d'un projet
 router.get('/:projectId/items', requirePermission(PERMISSIONS.VIEW_CONTENT), async (req: Request, res: Response) => {
@@ -86,126 +223,159 @@ router.get('/:projectId/items', requirePermission(PERMISSIONS.VIEW_CONTENT), asy
 })
 
 // POST /api/admin/projects/:projectId/items - Créer un item
-router.post('/:projectId/items', requirePermission(PERMISSIONS.EDIT_CONTENT), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/:projectId/items', requireItemWrite, uploadFile, async (req: Request, res: Response) => {
+  let stored = false
   try {
+    if (!validateDocument(req, res)) return
     const { projectId } = req.params
+    const canEdit = res.locals.canEditContent as boolean
     const { section, type, title, description, url, content, order, isVisible, isDownloadable, status } = req.body
-
-    const project = await Project.findById(projectId)
-    if (!project) {
-      return res.status(404).json({ error: 'Projet non trouvé' })
+    if (await sectionOutsideProject(section, projectId as string)) {
+      return res.status(400).json({ error: 'Section introuvable dans ce projet', code: 'INVALID_SECTION' })
     }
-
-    // Déterminer l'ordre automatiquement si non fourni
-    let itemOrder = order ? parseInt(order) : undefined
-    if (itemOrder === undefined) {
-      const query: Record<string, unknown> = { project: projectId }
-      if (section) query.section = section
-      const lastItem = await ProjectItem.findOne(query).sort({ order: -1 })
-      itemOrder = lastItem ? lastItem.order + 1 : 0
-    }
-
-    const itemData: Record<string, unknown> = {
+    const file = req.file
+    const requestedOrder = canEdit && order ? parseInt(order) : null
+    const item = new ProjectItem({
       project: projectId,
       section: section || null,
       type,
       title,
       description: description || '',
-      order: itemOrder,
-      isVisible: isVisible !== undefined ? isVisible === 'true' : true,
-      isDownloadable: isDownloadable !== undefined ? isDownloadable === 'true' : true,
-      status: status || 'EN_ATTENTE',
+      order: requestedOrder ?? 0,
+      isVisible: canEdit ? (isVisible !== undefined ? isVisible === 'true' || isVisible === true : true) : false,
+      isDownloadable:
+        canEdit && isDownloadable !== undefined ? isDownloadable === 'true' || isDownloadable === true : true,
+      status: canEdit ? status || 'EN_ATTENTE' : 'EN_ATTENTE',
+      url: canEdit ? url || undefined : undefined,
+      content: canEdit ? content || undefined : undefined,
       createdBy: req.user!.id,
+      file: file
+        ? {
+            originalName: file.originalname,
+            storagePath: file.path,
+            mimeType: file.mimetype,
+            size: file.size,
+          }
+        : undefined,
+    })
+    await item.validate()
+    const key = req.get('Idempotency-Key')?.toLowerCase()
+    let hash = ''
+    if (key) {
+      const digest = file
+        ? createHash('sha256')
+            .update(await fs.promises.readFile(file.path))
+            .digest('hex')
+        : null
+      hash = createHash('sha256')
+        .update(
+          JSON.stringify({
+            project: String(item.project),
+            section: item.section ? String(item.section) : null,
+            type: item.type,
+            title: item.title,
+            description: item.description,
+            order: requestedOrder,
+            isVisible: item.isVisible,
+            isDownloadable: item.isDownloadable,
+            status: item.status,
+            url: item.url || null,
+            content: item.content || null,
+            file: file ? { originalName: file.originalname, mimeType: file.mimetype, size: file.size, digest } : null,
+          }),
+        )
+        .digest('hex')
+      const existing = await ProjectItem.findOne({ createdBy: req.user!.id, clientRequestId: key }).select(
+        '+clientRequestHash',
+      )
+      if (existing) return await replay(res, existing, hash)
+      item.clientRequestId = key
+      item.clientRequestHash = hash
     }
-
-    // Ajouter le fichier si présent
-    const file = req.file as Express.Multer.File | undefined
-    if (file) {
-      itemData.file = {
-        originalName: file.originalname,
-        storagePath: file.path,
-        mimeType: file.mimetype,
-        size: file.size,
+    if (requestedOrder === null) {
+      const query: Record<string, unknown> = { project: projectId }
+      if (section) query.section = section
+      const lastItem = await ProjectItem.findOne(query).sort({ order: -1 })
+      item.order = lastItem ? lastItem.order + 1 : 0
+    }
+    try {
+      await item.save()
+      stored = true
+    } catch (err) {
+      if (key && (err as { code?: number }).code === 11000) {
+        const existing = await ProjectItem.findOne({ createdBy: req.user!.id, clientRequestId: key }).select(
+          '+clientRequestHash',
+        )
+        if (existing) return await replay(res, existing, hash)
       }
+      throw err
     }
-
-    // Ajouter l'URL si présente
-    if (url) {
-      itemData.url = url
-    }
-
-    // Ajouter le contenu si présent
-    if (content) {
-      itemData.content = content
-    }
-
-    const item = new ProjectItem(itemData)
-    await item.save()
     await item.populate('section', 'title')
     await item.populate('createdBy', 'name email')
 
-    // Trigger deliverable notification if type is LIVRABLE
-    if (type === 'LIVRABLE') {
-      triggerAutomations(
-        ['project.new_deliverable_client_notification'],
-        { itemId: item._id.toString(), projectId, actorId: req.user!.id }
-      )
+    if (item.isVisible && item.type === 'LIVRABLE') {
+      triggerAutomations(['project.new_deliverable_client_notification'], {
+        itemId: item._id.toString(),
+        projectId,
+        actorId: req.user!.id,
+      })
     }
 
-    // Notif au client du projet (sauf si c'est lui qui ajoute)
-    if (project.client && String(project.client) !== req.user!.id) {
+    const project = await Project.findById(projectId)
+    if (item.isVisible && project?.client && String(project.client) !== req.user!.id) {
       createNotification({
         recipient: project.client,
         type: 'PROJECT_ITEM_CREATED',
-        title: `Nouveau ${type?.toLowerCase() || 'élément'} sur ${project.name}`,
-        message: title || '',
+        title: `Nouveau ${item.type.toLowerCase()} sur ${project.name}`,
+        message: item.title,
         link: `/client/projects/${project._id}`,
-        metadata: { projectId, itemId: String(item._id), type },
+        metadata: { projectId, itemId: String(item._id), type: item.type },
       }).catch(() => {})
     }
-
-    res.status(201).json({ item })
+    return res.status(201).json(responseOf(item))
   } catch (err) {
     logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
+    return res
+      .status(err instanceof mongoose.Error.ValidationError ? 400 : 500)
+      .json({ error: 'Erreur création document' })
+  } finally {
+    if (!stored) removeFile(req.file?.path)
   }
 })
 
 // PATCH /api/admin/projects/:projectId/items/:itemId - Modifier un item
-router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CONTENT), upload.single('file'), async (req: Request, res: Response) => {
+router.patch('/:projectId/items/:itemId', requireItemWrite, uploadFile, async (req: Request, res: Response) => {
+  let stored = false
   try {
-    const { projectId, itemId } = req.params
-    const { title, description, url, content, order, isVisible, isDownloadable, status, section } = req.body
+    if (!validateDocument(req, res)) return
+    const { projectId } = req.params
+    const { title, description, url, content, order, isVisible, isDownloadable, status, section, type } = req.body
 
-    const item = await ProjectItem.findOne({
-      _id: itemId,
-      project: projectId,
-    })
-
-    if (!item) {
-      return res.status(404).json({ error: 'Item non trouvé' })
+    const item = res.locals.item as IProjectItem
+    const canEdit = res.locals.canEditContent as boolean
+    const oldFilePath = item.file?.storagePath
+    if (await sectionOutsideProject(section, projectId as string)) {
+      return res.status(400).json({ error: 'Section introuvable dans ce projet', code: 'INVALID_SECTION' })
     }
 
     const oldStatus = item.status
 
     if (title !== undefined) item.title = title
     if (description !== undefined) item.description = description
-    if (url !== undefined) item.url = url
-    if (content !== undefined) item.content = content
-    if (order !== undefined) item.order = parseInt(order)
-    if (isVisible !== undefined) item.isVisible = isVisible === 'true' || isVisible === true
-    if (isDownloadable !== undefined) item.isDownloadable = isDownloadable === 'true' || isDownloadable === true
-    if (status !== undefined) item.status = status
+    if (canEdit && url !== undefined) item.url = url
+    if (canEdit && content !== undefined) item.content = content
+    if (canEdit && order !== undefined) item.order = parseInt(order)
+    if (canEdit && isVisible !== undefined) item.isVisible = isVisible === 'true' || isVisible === true
+    if (canEdit && isDownloadable !== undefined)
+      item.isDownloadable = isDownloadable === 'true' || isDownloadable === true
+    if (canEdit && status !== undefined) item.status = status
     if (section !== undefined) item.section = section || null
+
+    if (!canEdit && type !== undefined) item.type = type
 
     // Remplacer le fichier si un nouveau est fourni
     const file = req.file as Express.Multer.File | undefined
     if (file) {
-      // Supprimer l'ancien fichier si existant
-      if (item.file?.storagePath && fs.existsSync(item.file.storagePath)) {
-        fs.unlinkSync(item.file.storagePath)
-      }
-
       item.file = {
         originalName: file.originalname,
         storagePath: file.path,
@@ -214,7 +384,17 @@ router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CON
       }
     }
 
-    await item.save()
+    if (!canEdit) item.$where = ownInternalDocument(req.user!.id)
+    try {
+      await item.save()
+    } catch (err) {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
+      }
+      throw err
+    }
+    stored = true
+    if (file) removeFile(oldFilePath)
     await item.populate('section', 'title')
     await item.populate('createdBy', 'name email')
 
@@ -237,30 +417,26 @@ router.patch('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CON
     res.json({ item })
   } catch (err) {
     logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
+    res
+      .status(err instanceof mongoose.Error.ValidationError ? 400 : 500)
+      .json({ error: 'Erreur modification document' })
+  } finally {
+    if (!stored) removeFile(req.file?.path)
   }
 })
 
 // DELETE /api/admin/projects/:projectId/items/:itemId - Supprimer un item
-router.delete('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response) => {
+router.delete('/:projectId/items/:itemId', requireItemWrite, async (req: Request, res: Response) => {
   try {
-    const { projectId, itemId } = req.params
-
-    const item = await ProjectItem.findOne({
-      _id: itemId,
-      project: projectId,
-    })
-
-    if (!item) {
-      return res.status(404).json({ error: 'Item non trouvé' })
+    const item = res.locals.item as IProjectItem
+    const filter = res.locals.canEditContent
+      ? { _id: item._id }
+      : { _id: item._id, ...ownInternalDocument(req.user!.id) }
+    const { deletedCount } = await ProjectItem.deleteOne(filter)
+    if (!deletedCount) {
+      return res.status(403).json({ error: 'Document non modifiable', code: 'DOCUMENT_WRITE_FORBIDDEN' })
     }
-
-    // Supprimer le fichier si existant
-    if (item.file?.storagePath && fs.existsSync(item.file.storagePath)) {
-      fs.unlinkSync(item.file.storagePath)
-    }
-
-    await item.deleteOne()
+    removeFile(item.file?.storagePath)
 
     res.json({ message: 'Item supprimé' })
   } catch (err) {
@@ -270,53 +446,65 @@ router.delete('/:projectId/items/:itemId', requirePermission(PERMISSIONS.EDIT_CO
 })
 
 // GET /api/admin/projects/:projectId/items/:itemId/download - Télécharger un fichier
-router.get('/:projectId/items/:itemId/download', requirePermission(PERMISSIONS.VIEW_CONTENT), async (req: Request, res: Response) => {
-  try {
-    const { projectId, itemId } = req.params
+router.get(
+  '/:projectId/items/:itemId/download',
+  requirePermission(PERMISSIONS.VIEW_CONTENT),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId, itemId } = req.params
 
-    const item = await ProjectItem.findOne({
-      _id: itemId,
-      project: projectId,
-    })
+      const item = await ProjectItem.findOne({
+        _id: itemId,
+        project: projectId,
+      })
 
-    if (!item) {
-      return res.status(404).json({ error: 'Item non trouvé' })
+      if (!item) {
+        return res.status(404).json({ error: 'Item non trouvé' })
+      }
+
+      if (!item.file?.storagePath) {
+        return res.status(404).json({ error: 'Aucun fichier associé' })
+      }
+
+      if (!fs.existsSync(item.file.storagePath)) {
+        return res.status(404).json({ error: 'Fichier introuvable' })
+      }
+
+      res.download(item.file.storagePath, item.file.originalName)
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
     }
-
-    if (!item.file?.storagePath) {
-      return res.status(404).json({ error: 'Aucun fichier associé' })
-    }
-
-    if (!fs.existsSync(item.file.storagePath)) {
-      return res.status(404).json({ error: 'Fichier introuvable' })
-    }
-
-    res.download(item.file.storagePath, item.file.originalName)
-  } catch (err) {
-    logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+  },
+)
 
 // GET /api/admin/projects/:projectId/items/:itemId/preview — inline preview for images/PDFs
-router.get('/:projectId/items/:itemId/preview', requirePermission(PERMISSIONS.VIEW_CONTENT), async (req: Request, res: Response) => {
-  try {
-    const { projectId, itemId } = req.params
-    const item = await ProjectItem.findOne({ _id: itemId, project: projectId })
-    if (!item || !item.file?.storagePath) {
-      return res.status(404).json({ error: 'Fichier non trouvé' })
+router.get(
+  '/:projectId/items/:itemId/preview',
+  requirePermission(PERMISSIONS.VIEW_CONTENT),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId, itemId } = req.params
+      const item = await ProjectItem.findOne({ _id: itemId, project: projectId })
+      if (!item || !item.file?.storagePath) {
+        return res.status(404).json({ error: 'Fichier non trouvé' })
+      }
+      if (!fs.existsSync(item.file.storagePath)) {
+        return res.status(404).json({ error: 'Fichier introuvable' })
+      }
+      res.setHeader('Content-Type', item.file.mimeType || 'application/octet-stream')
+      res.setHeader('Content-Disposition', 'inline')
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      // Le type vient de l'uploadeur, commercial compris : un SVG ouvert directement ne doit rien exécuter sur l'origine Venio.
+      if (item.file.mimeType !== 'application/pdf')
+        res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+      const stream = fs.createReadStream(item.file.storagePath)
+      stream.pipe(res)
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
     }
-    if (!fs.existsSync(item.file.storagePath)) {
-      return res.status(404).json({ error: 'Fichier introuvable' })
-    }
-    res.setHeader('Content-Type', item.file.mimeType || 'application/octet-stream')
-    res.setHeader('Content-Disposition', 'inline')
-    const stream = fs.createReadStream(item.file.storagePath)
-    stream.pipe(res)
-  } catch (err) {
-    logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+  },
+)
 
 export default router

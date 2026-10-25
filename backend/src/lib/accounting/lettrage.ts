@@ -1,7 +1,8 @@
-import mongoose, { type Types } from 'mongoose'
+import mongoose, { type Types, type ClientSession } from 'mongoose'
 import AccountingLine from '../../models/AccountingLine.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import ChartOfAccount from '../../models/ChartOfAccount.js'
+import { runInTransaction } from '../transaction.js'
 import type { AccountingEntryStatus } from '../../types/enums.js'
 
 // Helpers de lettrage : génération de codes A, B, ..., Z, AA, AB, ..., AZ, ...,
@@ -51,7 +52,7 @@ function intToAlpha(n: number): string {
 /**
  * Génère le prochain code de lettrage disponible pour un compte.
  */
-export async function getNextLettrageCode(accountCode: string): Promise<string> {
+export async function getNextLettrageCode(accountCode: string, session?: ClientSession): Promise<string> {
   if (!accountCode) {
     const err = new Error('accountCode requis') as Error & { status?: number }
     err.status = 400
@@ -61,7 +62,7 @@ export async function getNextLettrageCode(accountCode: string): Promise<string> 
   const existing = (await AccountingLine.distinct('lettrage', {
     accountCode: String(accountCode),
     lettrage: { $ne: '' },
-  })) as unknown as string[]
+  }).session(session ?? null)) as unknown as string[]
   let maxInt = 0
   for (const code of existing) {
     if (!code || code === 'AN') continue // AN est réservé pour le report à nouveau
@@ -93,6 +94,10 @@ export interface LetterLinesResult {
  * Lettre un ensemble de lignes ensemble.
  */
 export async function letterLines(params: LetterLinesParams): Promise<LetterLinesResult> {
+  return runInTransaction((session) => letterLinesInSession(params, session))
+}
+
+async function letterLinesInSession(params: LetterLinesParams, session: ClientSession): Promise<LetterLinesResult> {
   const { lineIds, code, override = false } = params || ({} as LetterLinesParams)
   if (!Array.isArray(lineIds) || lineIds.length < 2) {
     const err = new Error('Au moins 2 lignes sont requises pour un lettrage') as Error & {
@@ -111,7 +116,7 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
     }
   }
 
-  const lines = await AccountingLine.find({ _id: { $in: lineIds } })
+  const lines = await AccountingLine.find({ _id: { $in: lineIds } }).session(session)
   if (lines.length !== lineIds.length) {
     const err = new Error('Certaines lignes sont introuvables') as Error & { status?: number }
     err.status = 404
@@ -130,7 +135,7 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
   const accountCode = lines[0]!.accountCode
 
   // Le compte doit être lettrable.
-  const account = await ChartOfAccount.findOne({ code: accountCode })
+  const account = await ChartOfAccount.findOne({ code: accountCode }).session(session)
   if (!account) {
     const err = new Error(`Compte ${accountCode} introuvable au plan comptable`) as Error & {
       status?: number
@@ -146,11 +151,11 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
 
   // Les écritures parentes doivent être VALIDATED ou LOCKED (pas DRAFT).
   const entryIds = Array.from(new Set(lines.map((l) => String(l.entry))))
-  const entries = await AccountingEntry.find({ _id: { $in: entryIds } })
+  const entries = await AccountingEntry.find({ _id: { $in: entryIds } }).session(session)
   for (const entry of entries) {
     if (!VALID_STATUSES.includes(entry.status)) {
       const err = new Error(
-        `Écriture ${entry.entryNumber} en statut ${entry.status} : impossible à lettrer`
+        `Écriture ${entry.entryNumber} en statut ${entry.status} : impossible à lettrer`,
       ) as Error & { status?: number }
       err.status = 400
       throw err
@@ -162,13 +167,15 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
     const alreadyLettered = lines.filter((l) => l.lettrage && l.lettrage.length > 0)
     if (alreadyLettered.length > 0) {
       const codes = Array.from(new Set(alreadyLettered.map((l) => l.lettrage))).join(', ')
-      const err = new Error(
-        `Lignes déjà lettrées (${codes}) — utiliser override=true pour forcer`
-      ) as Error & { status?: number }
+      const err = new Error(`Lignes déjà lettrées (${codes}) — utiliser override=true pour forcer`) as Error & {
+        status?: number
+      }
       err.status = 400
       throw err
     }
   }
+
+  await ChartOfAccount.updateOne({ _id: account._id }, { $currentDate: { updatedAt: true } }, { session })
 
   // Code à utiliser
   let finalCode: string | null = code ? String(code).trim().toUpperCase() : null
@@ -180,7 +187,7 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
     throw err
   }
   if (!finalCode) {
-    finalCode = await getNextLettrageCode(accountCode)
+    finalCode = await getNextLettrageCode(accountCode, session)
   }
 
   // Calcul équilibre
@@ -193,7 +200,8 @@ export async function letterLines(params: LetterLinesParams): Promise<LetterLine
   const now = new Date()
   await AccountingLine.updateMany(
     { _id: { $in: lineIds } },
-    { $set: { lettrage: finalCode, lettrageDate: now } }
+    { $set: { lettrage: finalCode, lettrageDate: now } },
+    { session },
   )
 
   return {
@@ -214,10 +222,7 @@ export interface UnletterCodeResult {
 /**
  * Supprime un code de lettrage sur toutes les lignes d'un compte.
  */
-export async function unletterCode(
-  accountCode: string,
-  code: string
-): Promise<UnletterCodeResult> {
+export async function unletterCode(accountCode: string, code: string): Promise<UnletterCodeResult> {
   if (!accountCode) {
     const err = new Error('accountCode requis') as Error & { status?: number }
     err.status = 400
@@ -228,9 +233,12 @@ export async function unletterCode(
     err.status = 400
     throw err
   }
-  const result = await AccountingLine.updateMany(
-    { accountCode: String(accountCode), lettrage: String(code).toUpperCase() },
-    { $set: { lettrage: '', lettrageDate: null } }
+  const result = await runInTransaction((session) =>
+    AccountingLine.updateMany(
+      { accountCode: String(accountCode), lettrage: String(code).toUpperCase() },
+      { $set: { lettrage: '', lettrageDate: null } },
+      { session },
+    ),
   )
   return { unlinked: result.modifiedCount || 0 }
 }

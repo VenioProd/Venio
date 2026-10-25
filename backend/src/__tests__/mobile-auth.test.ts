@@ -142,7 +142,9 @@ describe('auth native', () => {
     const attempts = await Promise.all([1, 2].map(() => login(DEVICE, { recoveryCode: codes[0] })))
     expect(attempts.map((r) => r.status).sort()).toEqual([200, 401])
     const { accessToken } = attempts.find((r) => r.status === 200)!.body
-    expect((await User.findOne().lean())?.twoFactorRecoveryCodeHashes).toHaveLength(1)
+    expect(
+      (await User.findOne().select('+twoFactorRecoveryCodeHashes').lean())?.twoFactorRecoveryCodeHashes,
+    ).toHaveLength(1)
 
     const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${accessToken}`).expect(200)
     expect(me.body.user).not.toHaveProperty('twoFactorSecret')

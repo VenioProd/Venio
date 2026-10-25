@@ -124,8 +124,8 @@ it('dit dans la synchro si l’on peut chiffrer chaque projet et chaque lead', a
     const res = await request(app).get(`/api/mobile/sync/${type}`).set('Authorization', bearer).expect(200)
     return Object.fromEntries(res.body.items.map((item: Record<string, unknown>) => [item[label], item.canQuote]))
   }
-  // Le commercial ne synchronise que les projets dont il est responsable.
-  expect(await canQuote('projects', 'name')).toEqual({ Responsable: true })
+  // Un commercial non associé synchronise ses projets et ceux de ses clients, pas ceux des collègues.
+  expect(await canQuote('projects', 'name')).toEqual({ Responsable: true, 'Client à moi': true })
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: true, Autre: false })
   await User.updateOne({ _id: me }, { deniedPermissions: ['manage_quotes'] })
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: false, Autre: false })

@@ -3,10 +3,12 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../../middleware/auth.js'
+import idempotentRequest from '../../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
-import MissionBrief from '../../../models/MissionBrief.js'
+import { accessibleProjectIds, readableProjectIds } from '../../../lib/adminProjectAccess.js'
+import { deleteProject } from '../../../lib/projectDeletion.js'
 import ProjectUpdate from '../../../models/ProjectUpdate.js'
 import User from '../../../models/User.js'
 import Document from '../../../models/Document.js'
@@ -85,22 +87,8 @@ router.get(
         filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
       }
 
-      // Non-SUPER_ADMIN : projets assignés directement, ou via tâches/briefs
-      if (user.role !== 'SUPER_ADMIN') {
-        const [taskProjectIds, briefProjectIds, assignedProjectIds] = await Promise.all([
-          Task.distinct('project', { assignee: user.id }),
-          MissionBrief.distinct('project', { destinataire: user.id }),
-          Project.distinct('_id', { assignedTo: user.id }),
-        ])
-        const allProjectIds = [
-          ...new Set([
-            ...taskProjectIds.map(String),
-            ...briefProjectIds.map(String),
-            ...assignedProjectIds.map(String),
-          ]),
-        ]
-        filter._id = { $in: allProjectIds }
-      }
+      const projectIds = await (user.role === 'COMMERCIAL' ? readableProjectIds(user) : accessibleProjectIds(user))
+      if (projectIds !== null) filter._id = { $in: projectIds }
 
       const query = Project.find(filter).sort({ updatedAt: -1 }).populate('assignedTo', 'name email')
       if (req.query.includeClient === 'true') {
@@ -469,7 +457,7 @@ router.delete(
   sensitiveAction('PROJECT_DELETE'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const project = await Project.findByIdAndDelete(req.params.id)
+      const project = await deleteProject(req.params.id as string)
       if (!project) {
         return res.status(404).json({ error: 'Project not found' })
       }
@@ -483,6 +471,7 @@ router.delete(
 router.post(
   '/:id/updates',
   requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  idempotentRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { title, description } = req.body || {}

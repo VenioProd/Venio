@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
@@ -26,6 +27,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
       return res.status(400).json({ error: 'Format de date invalide.' })
     }
 
+    const ids = await readableProjectIds(req.user!)
     const events: Array<{
       id: string
       type: string
@@ -38,6 +40,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
 
     // 1. Tasks with dueDate in range
     const tasks = await Task.find({
+      ...(ids === null ? {} : { project: { $in: ids } }),
       dueDate: { $gte: startDate, $lte: endDate },
     }).populate('project', 'name')
 
@@ -58,6 +61,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
 
     // 2. Projects with deadlines in range
     const projectsWithDeadlines = await Project.find({
+      ...(ids === null ? {} : { _id: { $in: ids } }),
       'deadlines.dueAt': { $gte: startDate, $lte: endDate },
     })
 
@@ -78,6 +82,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
 
     // 3. Project start dates in range
     const projectsStarting = await Project.find({
+      ...(ids === null ? {} : { _id: { $in: ids } }),
       startDate: { $gte: startDate, $lte: endDate },
     })
 
@@ -94,6 +99,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
 
     // 4. Project end dates in range
     const projectsEnding = await Project.find({
+      ...(ids === null ? {} : { _id: { $in: ids } }),
       endDate: { $gte: startDate, $lte: endDate },
     })
 

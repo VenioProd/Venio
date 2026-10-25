@@ -42,6 +42,9 @@ const definition: AutomationDefinition = {
         recipientsNotified: [],
       }
     }
+    if (!item.isVisible) {
+      return { actionsExecuted: ['skipped:internal'], recipientsNotified: [] }
+    }
 
     const project = await Project.findById(projectId).populate('client', '_id email name')
     if (!project) {

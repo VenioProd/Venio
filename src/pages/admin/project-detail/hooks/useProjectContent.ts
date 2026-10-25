@@ -8,6 +8,9 @@ type ItemForm = Record<string, string | boolean>
 interface UseProjectContentOptions {
   projectId?: string
   canEditContent: boolean
+  canUploadDocuments: boolean
+  userId?: string
+  items: ProjectItem[]
   canViewContent: boolean
   confirm: (options: { message: string; title?: string }) => Promise<boolean>
   ensurePermission: (allowed: boolean, message: string) => boolean
@@ -16,6 +19,8 @@ interface UseProjectContentOptions {
 }
 
 const initialSectionForm: SectionForm = { title: '', description: '', isVisible: true }
+
+const initialDocumentForm: ItemForm = { section: '', type: 'AUTRE', title: '', description: '' }
 
 const initialItemForm: ItemForm = {
   section: '',
@@ -32,6 +37,9 @@ const initialItemForm: ItemForm = {
 export function useProjectContent({
   projectId,
   canEditContent,
+  canUploadDocuments,
+  userId,
+  items,
   canViewContent,
   confirm,
   ensurePermission,
@@ -39,8 +47,34 @@ export function useProjectContent({
   setError,
 }: UseProjectContentOptions) {
   const [sectionForm, setSectionForm] = useState<SectionForm>(initialSectionForm)
-  const [itemForm, setItemForm] = useState<ItemForm>(initialItemForm)
+  const [itemForm, setItemForm] = useState<ItemForm>(canEditContent ? initialItemForm : initialDocumentForm)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  const canModifyItem = (item: ProjectItem) =>
+    canEditContent ||
+    (canUploadDocuments &&
+      !item.isVisible &&
+      !!userId &&
+      (typeof item.createdBy === 'object' ? item.createdBy?._id : item.createdBy) === userId)
+
+  const resetItemForm = () => {
+    setItemForm(canEditContent ? initialItemForm : initialDocumentForm)
+    setEditingItemId(null)
+    setSelectedFile(null)
+  }
+
+  const handleEditItem = (item: ProjectItem) => {
+    if (!ensurePermission(canModifyItem(item), 'Document non modifiable.')) return
+    setEditingItemId(item._id)
+    setItemForm({
+      section: typeof item.section === 'object' ? item.section?._id || '' : item.section || '',
+      type: item.type,
+      title: item.title,
+      description: item.description || '',
+    })
+    setSelectedFile(null)
+  }
 
   const handleAddSection = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -87,19 +121,28 @@ export function useProjectContent({
   const handleAddItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditContent || canUploadDocuments, 'Accès en lecture seule.')) return
+    if (!canEditContent && !editingItemId && !selectedFile) {
+      setError('Choisissez un fichier.')
+      return
+    }
     try {
       const formData = new FormData()
       Object.keys(itemForm).forEach((key) => {
-        if (itemForm[key] !== '' && itemForm[key] !== null) {
+        if (
+          (canEditContent || ['section', 'type', 'title', 'description'].includes(key)) &&
+          (editingItemId || itemForm[key] !== '') &&
+          itemForm[key] !== null
+        ) {
           formData.append(key, String(itemForm[key]))
         }
       })
       if (selectedFile) formData.append('file', selectedFile)
 
-      await apiUpload(`/api/admin/projects/${projectId}/items`, formData)
-      setItemForm(initialItemForm)
-      setSelectedFile(null)
+      await apiUpload(`/api/admin/projects/${projectId}/items${editingItemId ? `/${editingItemId}` : ''}`, formData, {
+        method: editingItemId ? 'PATCH' : 'POST',
+      })
+      resetItemForm()
       await load()
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur ajout item')
@@ -107,11 +150,13 @@ export function useProjectContent({
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
+    const item = items.find((entry) => entry._id === itemId)
+    if (!ensurePermission(!!item && canModifyItem(item), 'Document non modifiable.')) return
     if (!(await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' }))) return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${projectId}/items/${itemId}`, { method: 'DELETE' })
+      if (editingItemId === itemId) resetItemForm()
       await load()
     } catch (err: unknown) {
       setError((err as Error).message || 'Erreur suppression item')
@@ -150,6 +195,10 @@ export function useProjectContent({
   }
 
   return {
+    editingItemId,
+    handleEditItem,
+    resetItemForm,
+    canModifyItem,
     sectionForm,
     setSectionForm,
     itemForm,

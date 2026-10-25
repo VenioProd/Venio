@@ -111,6 +111,7 @@ router.post(
           name: user.name,
           email: user.email,
           role: user.role,
+          isAssociate: user.isAssociate ?? false,
           permissions: resolvePermissions(user.role, user.grantedPermissions ?? [], user.deniedPermissions ?? []),
         },
       })

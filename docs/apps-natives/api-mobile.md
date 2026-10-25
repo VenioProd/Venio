@@ -87,6 +87,7 @@ Réponses :
     "name": "Camille",
     "email": "camille@venio.paris",
     "role": "COMMERCIAL",
+    "isAssociate": false,
     "permissions": ["view_crm", "manage_crm", "manage_quotes", "…"]
   }
 }
@@ -136,6 +137,12 @@ Autres limites :
 - Les actions qui exigent une vérification MFA récente (`MFA_STEP_UP_REQUIRED`) ne sont pas faisables depuis l'app.
 - La messagerie temps réel (Socket.IO) reste authentifiée par cookie : l'app interroge les routes REST de la messagerie.
 - `/api/auth/me` ne renvoie jamais le secret TOTP ni les empreintes des codes de secours.
+
+### Profil : `GET /api/auth/me`
+
+`GET /api/auth/me` et le login natif exposent `user.isAssociate` (booléen, `false` par défaut). Seule la gestion des administrateurs (`manage_admins`) peut le modifier. Pour un `COMMERCIAL`, `true` ouvre la lecture de tous les projets, sans droit d’écriture supplémentaire. Sinon, les projets lisibles sont ceux assignés au commercial (directement, via une tâche ou un brief) et ceux des clients dont il est propriétaire (`ownerAdminId`). Le serveur relit ce statut à chaque requête.
+
+La vue « tous les projets » et les synchros `projects`, `projectPhases`, `projectUpdates`, `projectDocuments` suivent ce périmètre. `canQuote` conserve sa règle de portefeuille : lire un projet ne suffit pas à pouvoir y créer un devis. À un changement de `isAssociate`, vider les données de projets et leurs données liées en cache puis relancer une synchronisation complète : un changement de périmètre n’est pas une suppression et n’apparaît pas dans `deletions`.
 
 ### Erreurs d'authentification communes
 
@@ -291,7 +298,7 @@ Un `QuoteProposal` porte notamment `reference` (numéro lisible et unique `DV-AA
   - `lead` : `{ id, company }` pour un rendez-vous rattaché à un lead, sinon `null`.
   - `projectId`, `projectName` : pour une tâche, sinon `null`.
   - Si une des deux sources est indisponible, l'autre arrive quand même.
-- `Quote` : `{ _id, reference, project, client, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`.
+- `Quote` : `{ _id, reference, project, client, leadId, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`. `leadId` vaut `null` pour un devis créé directement sur un projet.
 
 ## 6. Synchronisation hors ligne
 
@@ -390,6 +397,75 @@ Un montant hors taxes par commercial et par mois, en euros, pour l'écran Mes ch
 - `POST /api/admin/tickets` accepte `project` (facultatif) : le projet doit exister (`404`) et on doit y avoir accès, comme responsable, avec une tâche ou un brief, ou en super-admin (`403`).
 - Les tickets créés avant ce lot n'ont pas de projet.
 
+
+### Documents de projet
+
+Permission `upload_project_documents`, donnée au rôle `COMMERCIAL`. Sans `edit_content`, on ajoute un fichier à un projet accessible : responsable du projet, assigné d'une tâche ou destinataire d'un brief. Le document est **interne** (`isVisible: false`) ; seul un détenteur d'`edit_content` peut le rendre visible au client. La création d'un élément invisible ne notifie pas le client, même pour un éditeur et même pour un livrable.
+
+`POST /api/admin/projects/:projectId/items`, en `multipart/form-data` :
+
+| Champ | Requis | Valeurs |
+| --- | --- | --- |
+| `file` | oui | fichier, 20 Mo au plus |
+| `title` | oui | titre du document |
+| `type` | oui | `DEVIS`, `FACTURE`, `CONTRAT`, `CAHIER_DES_CHARGES`, `MAQUETTE`, `DOCUMENTATION` ou `AUTRE` |
+| `description` | non | texte, vide par défaut |
+| `section` | non | id d'une section, sinon sans section |
+
+Avec `upload_project_documents` seul, `isVisible: true` est refusé (`403 VISIBILITY_FORBIDDEN`). `status`, `order`, `url`, `content` et `isDownloadable` sont ignorés. Les éditeurs (`edit_content`) conservent les champs et types habituels, le fichier facultatif et la visibilité client par défaut.
+
+MIME acceptés : `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`, `image/heic`, `image/heif` ; `application/pdf` (scans multipages compris) ; `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.presentationml.presentation` ; `text/plain`, `text/csv` ; `application/zip`, `application/x-zip-compressed` ; `video/mp4`, `video/quicktime`, `video/webm` ; `audio/mpeg`, `audio/wav`, `audio/ogg` ; `application/json`.
+
+En-tête facultatif `Idempotency-Key: <UUID>`, généré une fois par document et conservé jusqu'à confirmation. Sans lui, chaque requête crée un document. Avec lui : `201 { item }` à la création, `200 { item }` pour un rejeu identique ; un seul fichier est conservé. Le serveur compare les champs normalisés (projet compris), les métadonnées et l'empreinte SHA-256 du fichier. Même clé pour un autre contenu : `409 IDEMPOTENCY_CONFLICT`. Une clé appartient à l'auteur et reste attachée au document jusqu'à sa suppression.
+
+Erreurs : `400 INVALID_IDEMPOTENCY_KEY` (clé non UUID), `400 FILE_REQUIRED`, `400 INVALID_DOCUMENT_TYPE` (`LIVRABLE`, `LIEN` ou `NOTE` sans `edit_content`), `400` (champ invalide), `403 PERMISSION_DENIED`, `403 PROJECT_OUT_OF_SCOPE`, `403 VISIBILITY_FORBIDDEN`, `404 PROJECT_NOT_FOUND`, `409 IDEMPOTENCY_CONFLICT`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`.
+
+- `PATCH /api/admin/projects/:projectId/items/:itemId`, JSON ou multipart : sans `edit_content`, seulement ses propres documents encore internes, dans un projet accessible. Champs : `title`, `description`, `type`, `section` (vide pour enlever la section), et `file` facultatif pour remplacer le fichier. Même restriction de visibilité et mêmes champs ignorés qu'à la création. `200 { item }`.
+- `DELETE /api/admin/projects/:projectId/items/:itemId` : même règle de propriété et de visibilité ; supprime aussi le fichier. `200 { message }`. Ces deux routes renvoient `403 DOCUMENT_WRITE_FORBIDDEN` pour un document d'un autre auteur ou déjà visible, `404 ITEM_NOT_FOUND` si absent, plus les erreurs de permission et de périmètre ci-dessus. Elles ne prennent pas de clé d'idempotence.
+- `GET /api/admin/projects/:projectId/items/:itemId/download` (droit `view_content`, Bearer accepté) : télécharge le fichier avec son nom d'origine ; `404` si l'item ou son fichier n'existe plus.
+- `GET /api/mobile/sync/projectDocuments` (droit `view_content`) : uniquement les items avec fichier, sur les mêmes projets accessibles que la synchro `projects`. Un élément : `{ _id, project, section, type, title, description, file: { originalName, mimeType, size }, isVisible, createdBy: { _id, name }, createdAt, updatedAt, downloadUrl }`. `downloadUrl` pointe vers la route ci-dessus ; ni chemin de stockage ni clé ni hash d'idempotence ne sont transmis. Même curseur, pagination et délai de 2 secondes que les autres types (section 6).
+- `GET /api/mobile/sync/deletions` : les suppressions portent `entityType: "projectDocuments"` et `entityId` ; l'app enlève le document et son fichier local. Même curseur et rétention de 90 jours que les autres suppressions.
+
+### Espace admin
+
+Ces routes complètent la liste blanche de la section 1. Elles acceptent `Authorization: Bearer <access>` avec les droits habituels ; les ouvertures comptables et dev ci-dessous sont limitées à la méthode et au chemin indiqués (`:id` = ObjectId de 24 caractères hexadécimaux, casse ignorée, barre finale acceptée).
+
+| Méthode | Chemin | Droit |
+| --- | --- | --- |
+| `GET` | `/api/admin/accounting/reports/dashboard` | `view_accounting` |
+| `GET` | `/api/admin/accounting/project-finance/dashboard` | `view_accounting` |
+| `GET` | `/api/admin/accounting/project-finance/cash-in` | `view_accounting` |
+| `GET` | `/api/admin/accounting/projects/:id/finance` | `view_accounting` |
+| `GET` | `/api/admin/accounting/beneficiaries` | `view_accounting` |
+| `GET` | `/api/admin/dev/issues` | `view_dev` |
+| `PATCH` | `/api/admin/dev/issues/:id` | `manage_dev` |
+| `POST` | `/api/admin/billing/:id/remind` | `manage_billing` |
+| `POST` | `/api/admin/projects/:id/updates` | `edit_projects` |
+| `POST` | `/api/admin/messaging/conversations/:conversationId/messages` | `send_messages` et `view_messaging` |
+| `POST` | `/api/admin/tickets/:id/reply` | `manage_tickets`, rôle `SUPER_ADMIN` requis |
+
+**MFA comptable** : la MFA passée au login de l'appareil vaut pour ces lectures, même après quinze minutes. Sans elle, `403 { "error": "MFA_STEP_UP_REQUIRED", "message": "Une vérification MFA récente est requise." }` quand la MFA est active et requise pour le rôle (ou `MFA_SETUP_REQUIRED` si elle n'est pas configurée). Les sessions navigateur et les actions sensibles gardent leur exigence de MFA récente. Les autres routes comptables, notamment `GET /entries` et `POST /beneficiaries`, restent fermées en Bearer (`403 BROWSER_SESSION_REQUIRED`), de même que `POST /api/admin/billing/:id/generate-accounting`, réservée au navigateur avec une MFA récente.
+
+**Relance de facture** : `POST /api/admin/billing/:id/remind`, sans corps, accepte un en-tête facultatif `Idempotency-Key: <UUID>`. La facture doit être de type `INVOICE` (pas un avoir), au statut `ISSUED`, `SENT` ou `PARTIALLY_PAID`, avec `dueAt` strictement passée. L'e-mail utilise le contact de facturation du payeur, sinon le client ; un payeur tiers sans e-mail est refusé. Le montant est le reste dû TTC, après encaissements, remboursements et avoirs, calculé par la comptabilité projet.
+
+- `200 { "document": <BillingDocument> }` : document complet, avec `reminderSentAt` en ISO 8601, statut inchangé ;
+- `409 { "error": "Cette facture n’est pas en retard", "code": "INVOICE_NOT_OVERDUE" }` : type, statut ou échéance incompatible ;
+- `409 { "error": "Cette facture n’a plus rien à régler", "code": "NOTHING_DUE" }` : reste dû nul ou négatif ;
+- `503 { "error": "Relance non envoyée : e-mail indisponible", "code": "EMAIL_UNAVAILABLE" }` : e-mail non envoyé (SMTP indisponible), facture inchangée ;
+- `400 { "error": "Renseignez l’e-mail de facturation du payeur avant l’envoi" }` : payeur tiers sans e-mail ;
+- `400 { "error": "Aucun e-mail de facturation" }` : aucun destinataire ;
+- `404 { "error": "Billing document not found" }` : facture absente.
+
+**Encaissements mensuels** : `GET /api/admin/accounting/project-finance/cash-in?months=6|12`. Sans `months`, douze mois. Mois UTC, du plus ancien au plus récent, mois courant inclus, mois vides à zéro. Les remboursements sont positifs dans `refundedTtcCents` ; `netTtcCents = receivedTtcCents - refundedTtcCents`. Tous les montants sont des centimes entiers.
+
+```json
+{ "months": [{ "month": "2026-10", "receivedTtcCents": 24002, "refundedTtcCents": 3001, "netTtcCents": 21001 }] }
+```
+
+Réponse `200` avec six ou douze éléments ; autre valeur de `months` : `400 { "error": "months doit valoir 6 ou 12" }`.
+
+**Rejeu des publications** : les trois routes `POST /api/admin/projects/:id/updates`, `POST /api/admin/messaging/conversations/:conversationId/messages` et `POST /api/admin/tickets/:id/reply` acceptent aussi `Idempotency-Key: <UUID>` facultatif (réponse de ticket en multipart, champ `message`, fichiers `files`). Même fonctionnement que les leads hors ligne : même clé, méthode, chemin et corps → même statut et même réponse, sans nouvel e-mail, notification ou message. Pour les tickets, la comparaison porte sur les champs du corps multipart et sur les fichiers joints (nom, type, taille) ; au rejeu, les fichiers renvoyés sont écartés. La réponse à un ticket reste réservée au rôle `SUPER_ADMIN`, vérifié avant le rejeu. Sans clé, chaque appel s'exécute. Erreurs : `400 INVALID_IDEMPOTENCY_KEY`, `409 IDEMPOTENCY_CONFLICT`, `409 IDEMPOTENCY_IN_PROGRESS` ; les `5xx` sont également rejoués, clés conservées 24 heures. Cette règle vaut aussi pour la relance de facture.
+
 ## 8. Langues
 
 - **Interface** : `locale` dans les préférences (section 2).
@@ -414,3 +490,9 @@ Ce que l'app doit prendre en compte par rapport à la première version du contr
 6. **Aujourd'hui** : `meetings` change de forme (`Meeting` au lieu de `Event` : `source`, `startsAt`, `endsAt`, `lead`, `projectId`, `projectName` ; plus de `type`, `date` ni `metadata`). Les interactions acceptent `endsAt` pour un `MEETING`.
 7. **Leads hors ligne** : `Idempotency-Key` facultatif sur `POST /api/admin/crm/leads` et `PATCH /api/admin/crm/leads/:id` ; les `5xx` sont rejoués comme les autres réponses. Réassigner le lead d'un collègue renvoie `403 LEAD_ASSIGNMENT_FORBIDDEN`.
 8. **Push** : `aps.category` (`VENIO_LEAD`, `VENIO_FOLLOW_UP`, `VENIO_QUOTE`, `VENIO_PROJECT`).
+
+9. **Documents de projet** : ajout multipart avec `upload_project_documents`, documents internes modifiables par leur auteur, `Idempotency-Key` facultatif, HEIC/HEIF et synchro `projectDocuments` avec suppressions.
+
+10. **Espace admin** : lectures comptables et liste/modification des tickets dev en Bearer, MFA d’appareil pour la comptabilité, relance de facture, encaissements mensuels et `Idempotency-Key` facultatif sur les publications projet, messages et réponses aux tickets.
+
+11. **Associé** : lire `user.isAssociate` dans le profil et le login. Un commercial associé reçoit tous les projets dans la synchro et la vue « tous les projets », en lecture seulement ; un non-associé reçoit son périmètre et son portefeuille client. Au changement du statut, purger le cache des projets et resynchroniser sans curseur. Les lectures hors périmètre répondent `404`.

@@ -29,6 +29,9 @@ describe('useProjectContent', () => {
       useProjectContent({
         projectId: 'project-1',
         canEditContent,
+        canUploadDocuments: false,
+        userId: 'user-1',
+        items: [{ _id: 'item-1', type: 'AUTRE', title: 'Document', isVisible: true, isDownloadable: true }],
         canViewContent: true,
         confirm,
         ensurePermission,
@@ -51,7 +54,9 @@ describe('useProjectContent', () => {
       await result.current.handleAddItem({ preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>)
     })
 
-    expect(apiUpload).toHaveBeenCalledWith('/api/admin/projects/project-1/items', expect.any(FormData))
+    expect(apiUpload).toHaveBeenCalledWith('/api/admin/projects/project-1/items', expect.any(FormData), {
+      method: 'POST',
+    })
     const formData = vi.mocked(apiUpload).mock.calls[0][1] as FormData
     expect(formData.get('section')).toBe('section-1')
     expect(formData.get('title')).toBe('Brief client')

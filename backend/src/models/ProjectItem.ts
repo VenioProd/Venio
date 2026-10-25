@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { syncTombstones } from '../lib/syncTombstones.js'
 import type { IProjectItem } from '../types/models/index.js'
 
 const projectItemSchema = new mongoose.Schema<IProjectItem>(
@@ -50,16 +51,25 @@ const projectItemSchema = new mongoose.Schema<IProjectItem>(
       default: 'EN_ATTENTE',
     },
 
+    clientRequestId: { type: String, select: false },
+    clientRequestHash: { type: String, select: false },
+
     // Tracking
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     viewedAt: { type: Date, default: null },
     downloadedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Index pour trier les items
 projectItemSchema.index({ project: 1, section: 1, order: 1 })
 projectItemSchema.index({ project: 1, type: 1 })
+
+projectItemSchema.index(
+  { createdBy: 1, clientRequestId: 1 },
+  { unique: true, partialFilterExpression: { clientRequestId: { $exists: true } } },
+)
+syncTombstones(projectItemSchema, 'projectDocuments')
 
 export default mongoose.model<IProjectItem>('ProjectItem', projectItemSchema)
