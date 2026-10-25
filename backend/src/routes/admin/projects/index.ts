@@ -25,11 +25,7 @@ router.use(auth, requireAdmin)
 router.use(async (req, res, next) => {
   try {
     const projectId = decodeURIComponent(req.path.split('/')[1] ?? '')
-    if (
-      (req.method === 'GET' || req.method === 'HEAD') &&
-      mongoose.isObjectIdOrHexString(projectId) &&
-      !(await canReadProject(req.user!, projectId))
-    ) {
+    if (mongoose.isObjectIdOrHexString(projectId) && !(await canReadProject(req.user!, projectId))) {
       return res.status(404).json({ error: 'Projet non trouvé' })
     }
     next()

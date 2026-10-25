@@ -15,6 +15,7 @@ import type {
 import type { AccountingEntryStatus, AccountingEntrySource } from '../../types/enums.js'
 
 import { runInTransaction } from '../transaction.js'
+import { lockProject } from '../projectWriteLock.js'
 
 const EPSILON = 0.005
 
@@ -331,6 +332,11 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
       sortIndex: i,
     })
   }
+
+  const projectIds = [
+    ...new Set(lineDocs.flatMap((line) => (line.project ? [String(line.project).toLowerCase()] : []))),
+  ].sort()
+  for (const projectId of projectIds) await lockProject(projectId, session)
 
   const insertedLines = (await AccountingLine.insertMany(lineDocs, { session })) as unknown as IAccountingLine[]
 

@@ -24,6 +24,7 @@ import Task from '../models/Task.js'
 import TaskComment from '../models/TaskComment.js'
 import type { IProject } from '../types/models/index.js'
 import { runInTransaction } from './transaction.js'
+import { lockProject } from './projectWriteLock.js'
 import logger from './logger.js'
 
 /**
@@ -41,6 +42,9 @@ export async function deleteProject(projectId: string): Promise<IProject | null>
   const removed = await runInTransaction(async (session) => {
     const project = await Project.findById(projectId).session(session)
     if (!project) return null
+    // Écrire le projet avant de chercher ses factures : une création concurrente,
+    // qui verrouille le même document, entre alors en conflit avec la suppression.
+    await lockProject(project._id, session)
     const committed =
       (await BillingDocument.exists({ project: project._id }).session(session)) ||
       (await AccountingLine.exists({ project: project._id }).session(session)) ||

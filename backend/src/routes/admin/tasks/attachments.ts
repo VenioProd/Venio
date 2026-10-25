@@ -13,13 +13,23 @@ router.post(
   '/:projectId/tasks/:taskId/attachments',
   requireProjectAccess,
   requirePermissionOrAssignee(PERMISSIONS.MANAGE_TASKS),
-  upload.single('file'),
+  // La tâche est vérifiée avant multer : un refus ne doit laisser aucun fichier sur le disque.
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const task = await Task.findOne({ _id: req.params.taskId, project: req.params.projectId })
       if (!task) {
         return res.status(404).json({ error: 'Tâche non trouvée' })
       }
+      res.locals.task = task
+      return next()
+    } catch (err) {
+      return next(err)
+    }
+  },
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const task = res.locals.task as InstanceType<typeof Task>
 
       const file = req.file as Express.Multer.File | undefined
       if (!file) {

@@ -4,6 +4,7 @@ import type { IProject } from '../types/models/index.js'
 
 const projectSchema = new mongoose.Schema<IProject>(
   {
+    writeVersion: { type: Number, default: 0 },
     name: { type: String, required: true },
     description: { type: String, default: '' },
     status: {

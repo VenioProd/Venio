@@ -28,6 +28,7 @@ export interface IProjectBilling {
 }
 
 export interface IProject extends Document {
+  writeVersion: number
   name: string
   description: string
   status: ProjectStatus

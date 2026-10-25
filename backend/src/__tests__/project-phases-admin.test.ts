@@ -77,6 +77,7 @@ describe('lecture des étapes', () => {
   })
 
   it('refuse 403 la création à un rôle sans manage_phases', async () => {
+    await Project.updateOne({ _id: projectId }, { assignedTo: commercialId })
     await request(app)
       .post(`/api/admin/projects/${projectId}/phases`)
       .set('Cookie', await cookieFor(commercialId))

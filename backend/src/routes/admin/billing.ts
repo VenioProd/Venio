@@ -28,16 +28,17 @@ import { invoicePaymentBalance, markInvoicePaid } from '../../lib/projectFinance
 import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
-import { assertTransactionsSupported } from '../../lib/transaction.js'
+import { assertTransactionsSupported, runInTransaction } from '../../lib/transaction.js'
+import { createBillingDocument } from '../../lib/billingDocument.js'
 
 const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
-// Un commercial non associé ne lit que les factures de son périmètre de projets.
+// Les factures suivent le périmètre de lecture du projet, en lecture comme en écriture.
 router.use(async (req, res, next) => {
   try {
-    if ((req.method !== 'GET' && req.method !== 'HEAD') || req.user!.role !== 'COMMERCIAL') return next()
+    if (req.user!.role !== 'COMMERCIAL') return next()
     const [first, second] = req.path.split('/').slice(1).map(decodeURIComponent)
     const byProject = first?.toLowerCase() === 'projects'
     if (!byProject && !mongoose.isObjectIdOrHexString(first)) return next()
@@ -112,20 +113,25 @@ router.post(
 
       const { lines, subtotal, taxTotal, total } = computeBillingTotals(rawLines)
 
-      const doc = await BillingDocument.create({
-        type: 'QUOTE',
-        number: formatted,
-        project: project._id,
-        client: project.client,
-        status: 'DRAFT',
-        lines,
-        subtotal,
-        taxTotal,
-        total,
-        currency,
-        note: req.body?.note || '',
-        createdBy: req.user!.id,
-      })
+      const doc = await runInTransaction((session) =>
+        createBillingDocument(
+          {
+            type: 'QUOTE',
+            number: formatted,
+            project: project._id,
+            client: project.client,
+            status: 'DRAFT',
+            lines,
+            subtotal,
+            taxTotal,
+            total,
+            currency,
+            note: req.body?.note || '',
+            createdBy: req.user!.id,
+          },
+          session,
+        ),
+      )
 
       const fullDoc = await BillingDocument.findById(doc._id).lean()
 
@@ -184,21 +190,26 @@ router.post(
 
       const { lines, subtotal, taxTotal, total } = computeBillingTotals(rawLines)
 
-      const doc = await BillingDocument.create({
-        type: 'INVOICE',
-        number: formatted,
-        project: project._id,
-        client: project.client,
-        status: 'DRAFT',
-        lines,
-        subtotal,
-        taxTotal,
-        total,
-        currency,
-        dueAt: req.body?.dueAt ? new Date(req.body.dueAt) : null,
-        note: req.body?.note || '',
-        createdBy: req.user!.id,
-      })
+      const doc = await runInTransaction((session) =>
+        createBillingDocument(
+          {
+            type: 'INVOICE',
+            number: formatted,
+            project: project._id,
+            client: project.client,
+            status: 'DRAFT',
+            lines,
+            subtotal,
+            taxTotal,
+            total,
+            currency,
+            dueAt: req.body?.dueAt ? new Date(req.body.dueAt) : null,
+            note: req.body?.note || '',
+            createdBy: req.user!.id,
+          },
+          session,
+        ),
+      )
 
       const fullDoc = await BillingDocument.findById(doc._id).lean()
 
