@@ -61,3 +61,20 @@ Limites restantes :
 - L’avancement est calculé depuis les étapes synchronisées. Les événements système du CRM ne font pas partie de la synchro d’interactions. Pas de route d’envoi d’identifiants dans l’app.
 - « Perdu » exige la liste de motifs du serveur (`GET /api/admin/crm/worklist`), lue en ligne puis conservée ; sans liste disponible, cette étape est indisponible.
 - Le bouton d’appel de la notification longue Watch dépend du dernier contexte reçu de l’iPhone (devis envoyés non signés, 50 au maximum) et reste masqué sans téléphone unique correspondant. Non vérifié sur une Watch réelle.
+
+## Publier sur TestFlight
+
+1. Adhérer à l’Apple Developer Program comme **organisation**. Enregistrer les identifiants `paris.venio.app`, `paris.venio.app.widgets`, `paris.venio.app.watchkitapp` et `paris.venio.app.share`. Enregistrer l’App Group `group.paris.venio.app`, l’associer à l’app, aux widgets et au partage ; activer Push pour l’app et les capacités nécessaires aux profils. Créer une clé APNs `.p8` pour le backend, avec son Key ID, le Team ID et le topic `paris.venio.app` ; conserver la clé hors du dépôt.
+2. Créer l’app dans App Store Connect avec le bundle principal, puis remplir les informations et [App Privacy / compte de revue](docs/app-store-confidentialite.md). Créer une clé d’API App Store Connect autorisée à envoyer les builds.
+3. `Config/Version.xcconfig` porte `MARKETING_VERSION=1.0.0` et le numéro de build partagé. `Config/Signing.xcconfig` inclut facultativement `Signing.local.xcconfig` (ignoré), où définir `DEVELOPMENT_TEAM = <Team ID>` pour Xcode. Le script utilise `VENIO_DEVELOPMENT_TEAM`. Ne versionner aucun Team ID ni secret. Régénérer les PNG avec `scripts/make-icons.sh` si le logo change.
+4. Vérifier localement, sans compte Apple ni envoi :
+   ```sh
+   cd apps/apple
+   scripts/testflight.sh --dry-run
+   ```
+   L’archive non signée reste sous `.build/` (ignoré), avec les DerivedData dans `.build/DD`. Le numéro de build reste inchangé. Option Mac : `--platform macos`.
+5. Pour l’envoi réel ultérieur, fournir dans l’environnement `VENIO_DEVELOPMENT_TEAM`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH` (chemin absolu de la clé `.p8`), puis lancer `scripts/testflight.sh` (ou `--platform macos`). Pour le compte de revue isolé, fournir aussi `VENIO_API_BASE_URL=https://<hôte-démo>` : cette origine HTTPS est embarquée dans le build ; sans cette variable, le défaut reste `https://venio.paris`. Le script incrémente le build, archive en Release, exporte en `app-store-connect` avec signature automatique et envoie via `altool`. Un échec peut consommer un numéro de build. Aucun `notarytool` : il concerne la distribution Mac hors App Store.
+6. Dans TestFlight, attendre le traitement, ajouter d’abord les testeurs internes, puis un groupe externe et soumettre à la **revue bêta** avec le compte de démo et les instructions de connexion. Vérifier sur appareils la connexion, le dépôt de documents, le push, les widgets et la Watch avant d’élargir le groupe.
+7. Pour la distribution privée finale, choisir **Custom App** dans App Store Connect et renseigner l’Organization ID du destinataire Apple Business Manager avant la soumission App Store ; l’organisation acquiert puis distribue l’app à ses utilisateurs via son MDM ou les moyens ABM prévus.
+
+L’entitlement source iOS `aps-environment=development` est conservé : Xcode choisit l’environnement d’après le profil de provisioning, et la signature de distribution App Store/TestFlight utilise `production` ([référence Apple](https://developer.apple.com/documentation/bundleresources/entitlements/aps-environment)). La présence effective de cet entitlement doit être contrôlée sur l’archive **signée** avant l’envoi ; un dry-run non signé ne peut pas la prouver. `ITSAppUsesNonExemptEncryption=NO` correspond au chiffrement système seul.
