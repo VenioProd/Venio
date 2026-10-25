@@ -48,6 +48,8 @@ beforeAll(async () => {
   const { default: taskRoutes } = await import('../routes/admin/tasks/index.js')
   app.use('/api/admin/projects', projectRoutes)
   app.use('/api/admin/projects', taskRoutes)
+  const { default: automationRoutes } = await import('../routes/admin/automations.js')
+  app.use('/api/admin/automations', automationRoutes)
   app.use('/api/admin/tickets', ticketRoutes)
   app.use('/api/admin/resources', resourceRoutes)
   app.use('/api/admin/internal-projects', internalProjectRoutes)
@@ -247,4 +249,14 @@ describe('accès au projet lors des écritures de tâches', () => {
       .send({ title: 'Travail', assignee: ownUserId })
       .expect(201)
   })
+})
+
+it('réserve le pilotage d’une automatisation aux rôles qu’elle déclare', async () => {
+  const { default: AutomationSettings } = await import('../automation/models/AutomationSettings.js')
+  const { register } = await import('../automation/jobs/taskAutoArchive.js')
+  register()
+  await actAs(ownUserId, 'STAGIAIRE')
+  await request(app).patch('/api/admin/automations/task.auto_archive/settings').send({ enabled: true }).expect(403)
+  await request(app).post('/api/admin/automations/task.auto_archive/trigger').send({}).expect(403)
+  expect(await AutomationSettings.countDocuments()).toBe(0)
 })

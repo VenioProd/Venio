@@ -23,6 +23,7 @@ import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
 import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
+import { assertTransactionsSupported } from '../../lib/transaction.js'
 
 const router = express.Router()
 
@@ -231,6 +232,8 @@ router.patch(
         return res.status(400).json({ error: 'Le statut partiellement payé est calculé depuis les encaissements' })
       }
       const markPaid = doc.type === 'INVOICE' && body.status === 'PAID'
+      // Sans transactions, le paiement échouerait après l'enregistrement des autres champs.
+      if (markPaid) await assertTransactionsSupported()
 
       // Une session Checkout ouverte resterait payable après l'annulation.
       if (body.status === 'CANCELLED' && doc.type === 'INVOICE') await expireInvoiceCheckout(String(doc._id))
@@ -369,6 +372,7 @@ router.post(
       if ((doc.financeLink || doc.creditedInvoice) && doc.status === 'CANCELLED') {
         return res.status(409).json({ error: 'Une facture d’échéance annulée ne peut pas être émise' })
       }
+      if (doc.type === 'INVOICE') await assertTransactionsSupported()
       const project = await Project.findById(doc.project).lean()
       const client = await User.findById(doc.client).lean()
       if (!project || !client) {
@@ -473,6 +477,7 @@ router.post(
       if (['DRAFT', 'CANCELLED'].includes(doc.status)) {
         return res.status(409).json({ error: 'Émettez la facture avant de générer ses écritures' })
       }
+      await assertTransactionsSupported()
       const result: {
         sale: { entry: unknown; alreadyExisted: boolean } | null
         payment: { entry: unknown; alreadyExisted: boolean } | null

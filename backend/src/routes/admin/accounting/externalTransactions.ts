@@ -9,7 +9,7 @@ import AccountingEntry from '../../../models/AccountingEntry.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import { normalizePayload } from '../../../lib/external/normalize.js'
 import { classifyTransaction } from '../../../lib/external/classifier.js'
-import { runInTransaction } from '../../../lib/transaction.js'
+import { assertTransactionsSupported, runInTransaction } from '../../../lib/transaction.js'
 import { createEntry, deleteDraftEntry } from '../../../lib/accounting/doubleEntry.js'
 
 /**
@@ -115,6 +115,8 @@ router.post(
         res.status(404).json({ error: 'Transaction introuvable' })
         return
       }
+      // Un rejet enregistré sans transactions ne serait plus rejoué.
+      await assertTransactionsSupported()
       const tx = await ExternalTransaction.findById(req.params.id)
       if (!tx) {
         res.status(404).json({ error: 'Transaction introuvable' })
