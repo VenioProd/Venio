@@ -172,7 +172,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ),
         meetings,
         QuoteProposal.find(quoteFilter)
-          .select('_id reference project client title status expiresAt firstViewedAt createdBy createdAt updatedAt')
+          .select(
+            '_id reference project client leadId title status expiresAt firstViewedAt createdBy createdAt updatedAt',
+          )
           .sort({ updatedAt: -1, _id: 1 })
           .limit(50)
           .lean(),

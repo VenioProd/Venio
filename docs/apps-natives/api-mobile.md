@@ -291,7 +291,7 @@ Un `QuoteProposal` porte notamment `reference` (numéro lisible et unique `DV-AA
   - `lead` : `{ id, company }` pour un rendez-vous rattaché à un lead, sinon `null`.
   - `projectId`, `projectName` : pour une tâche, sinon `null`.
   - Si une des deux sources est indisponible, l'autre arrive quand même.
-- `Quote` : `{ _id, reference, project, client, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`.
+- `Quote` : `{ _id, reference, project, client, leadId, title, status, expiresAt, firstViewedAt, createdBy, createdAt, updatedAt }`. `leadId` vaut `null` pour un devis créé directement sur un projet.
 
 ## 6. Synchronisation hors ligne
 
