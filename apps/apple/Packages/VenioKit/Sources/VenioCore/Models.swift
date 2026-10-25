@@ -201,7 +201,10 @@ public struct Interaction: Codable, Sendable, Identifiable {
 public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var id: String
     public var project: String?
+    /// Identifiant du compte client : sert à rapprocher, jamais à afficher.
     public var client: String?
+    /// Nom à afficher pour le client, quand le serveur le donne.
+    public var clientName: String?
     public var leadId: String?
     public var createdBy: String
     public var title: String
@@ -214,10 +217,11 @@ public struct QuoteProposal: Codable, Sendable, Identifiable {
     public var updatedAt: Date
     public var reference: String?
 
-    public init(id: String, project: String?, client: String?, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil, leadId: String? = nil) {
+    public init(id: String, project: String?, client: String?, createdBy: String, title: String, status: QuoteStatus, lines: [QuoteLine], signature: QuoteSignature, firstViewedAt: Date?, expiresAt: Date?, createdAt: Date, updatedAt: Date, reference: String? = nil, leadId: String? = nil, clientName: String? = nil) {
         self.id = id
         self.project = project
         self.client = client
+        self.clientName = clientName
         self.createdBy = createdBy
         self.title = title
         self.status = status

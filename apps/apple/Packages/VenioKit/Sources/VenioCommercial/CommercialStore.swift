@@ -340,6 +340,13 @@ import VenioCore
             + [currentUser?.name ?? "", "Léa", "Hugo Bernard", "Raphaël B.", "Vivatech Paris", "Apple Pay"]
     }
 
+    /// Nom du client d'un devis, jamais son identifiant : le nom du serveur, sinon celui de son projet ou de son lead.
+    func clientLabel(for quote: QuoteProposal) -> String {
+        if let name = quote.clientName, !name.isEmpty { return name }
+        if let project = projects.first(where: { $0.id == quote.project }), !project.clientName.isEmpty { return project.clientName }
+        return leads.first(where: { $0.id == quote.leadId })?.company ?? ""
+    }
+
     func userName(_ id: String?) -> String? {
         if id == currentUser?.id { return currentUser?.name }
         if id == MockVenioAPI.hugo.id { return MockVenioAPI.hugo.name }

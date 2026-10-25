@@ -17,6 +17,7 @@ import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityTyp
 import { leadScopeFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
 import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
+import { withClientNames } from '../../lib/mobileClientNames.js'
 
 const router = express.Router()
 router.use(auth, requireAdmin)
@@ -45,19 +46,6 @@ async function withCanQuote(req: Request, type: 'projects' | 'leads', items: Quo
     ...item,
     canQuote: type === 'projects' ? portfolio.canQuoteProject(refs[index]!) : portfolio.canQuoteLead(refs[index]!),
   }))
-}
-
-// `client` reste un identifiant : le portefeuille de devis le compare à des ids.
-// Le nom à afficher voyage à part, dans `clientName`.
-async function withClientNames<T extends { client?: unknown }>(projects: T[]) {
-  const ids = [...new Set(projects.map((project) => String(project.client ?? '')).filter(Boolean))]
-  const clients = ids.length
-    ? await User.find({ _id: { $in: ids } })
-        .select('name companyName')
-        .lean()
-    : []
-  const names = new Map(clients.map((client) => [String(client._id), client.companyName || client.name]))
-  return projects.map((project) => ({ ...project, clientName: names.get(String(project.client ?? '')) ?? '' }))
 }
 
 router.get('/:type', async (req: Request, res: Response, next: NextFunction) => {
@@ -172,7 +160,7 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         }))
         break
       case 'quotes':
-        items = await QuoteProposal.find(filter, null, options).lean()
+        items = await withClientNames(await QuoteProposal.find(filter, null, options).lean())
         break
       case 'deletions':
         items = await SyncTombstone.find(filter, null, options).lean()

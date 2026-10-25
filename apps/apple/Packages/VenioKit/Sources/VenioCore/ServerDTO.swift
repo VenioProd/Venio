@@ -147,6 +147,7 @@ struct QuoteDTO: Decodable, Sendable {
     var _id: String
     var project: ServerReference?
     var client: ServerReference?
+    var clientName: String?
     var leadId: ServerReference?
     var reference: String?
     var createdBy: ServerReference
@@ -161,7 +162,7 @@ struct QuoteDTO: Decodable, Sendable {
     var model: QuoteProposal {
         QuoteProposal(id: _id, project: project?.id, client: client?.id, createdBy: createdBy.id, title: title, status: status,
                       lines: lines?.map(\.model) ?? [], signature: signature ?? QuoteSignature(signedAt: nil), firstViewedAt: firstViewedAt,
-                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt, reference: reference, leadId: leadId?.id)
+                      expiresAt: expiresAt, createdAt: createdAt, updatedAt: updatedAt, reference: reference, leadId: leadId?.id, clientName: clientName ?? client?.name)
     }
 }
 struct TemplateDTO: Decodable, Sendable {

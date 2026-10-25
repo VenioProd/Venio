@@ -721,4 +721,8 @@ private let syncedDocument = json(#"{"_id":"document","project":"project","secti
     let withoutName = try ServerCoding.decoder().decode(ProjectDTO.self, from: json(#"{"_id":"p2","name":"Site","client":"402d97d76793db2d2085555a"}"#)).model
     #expect(withoutName.client == "402d97d76793db2d2085555a")
     #expect(withoutName.clientName.isEmpty)
+    // Même séparation pour les devis : l'id sert aux rapprochements, le nom à l'affichage.
+    let quote = try ServerCoding.decoder().decode(QuoteDTO.self, from: json(#"{"_id":"q1","client":"402d97d76793db2d2085555a","clientName":"Boulangerie Rivière","createdBy":"u","title":"Devis","status":"DRAFT","createdAt":"2026-10-23T10:30:00.000Z","updatedAt":"2026-10-23T10:30:00.000Z"}"#)).model
+    #expect(quote.client == "402d97d76793db2d2085555a")
+    #expect(quote.clientName == "Boulangerie Rivière")
 }
