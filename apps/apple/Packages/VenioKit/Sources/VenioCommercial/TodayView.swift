@@ -28,6 +28,7 @@ public struct TodayView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(verbatim: formats.dayHeading(store.clock.now)).font(.subheadline)
                     VText("Aujourd’hui").font(.largeTitle.bold())
+                    SyncStatusView()
                 }
                 Spacer()
                 Button { showingSettings = true } label: {
@@ -93,6 +94,10 @@ public struct TodayView: View {
                 }
             }
         }
+        .commercialRefreshable()
+        .animation(.smooth, value: store.agenda.overdue.map(\.id))
+        .animation(.smooth, value: store.agenda.followUps.map(\.id))
+        .animation(.smooth, value: store.agenda.hotWithoutAction.map(\.id))
         .sheet(isPresented: $showingSettings) {
             NavigationStack {
                 SettingsView().toolbar {
@@ -125,6 +130,7 @@ public struct TodayView: View {
         Button { onLead(lead.id) } label: {
             LeadRow(lead: lead, subtitle: subtitle, badge: badge, icon: icon, urgent: urgent)
         }.buttonStyle(.plain)
+            .leadInteractions(lead, swipe: true) { onLead(lead.id) }
     }
 }
 #endif

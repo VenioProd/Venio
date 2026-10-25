@@ -44,6 +44,7 @@ public struct ProjectsView: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
     @Environment(\.venioPalette) private var palette
+    @State private var quoteProject: Project?
     private let selectedID: String?
     private let onProject: (String) -> Void
     public init(selectedID: String? = nil, onProject: @escaping (String) -> Void = { _ in }) {
@@ -78,8 +79,16 @@ public struct ProjectsView: View {
                             }
                         }
                 }.buttonStyle(.plain).accessibilityAddTraits(project.id == selectedID ? .isSelected : [])
+                    .contextMenu {
+                        Button { onProject(project.id) } label: { Label { VText("Ouvrir") } icon: { Image(systemName: "folder") } }
+                        if store.canManageQuotes && project.canQuote {
+                            Button { quoteProject = project } label: { Label { VText("Nouveau devis") } icon: { Image(systemName: "doc.badge.plus") } }
+                        }
+                    }
             }
         }
+        .commercialRefreshable()
+        .sheet(item: $quoteProject) { NewQuoteView(projectId: $0.id) }
         .navigationTitle("")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

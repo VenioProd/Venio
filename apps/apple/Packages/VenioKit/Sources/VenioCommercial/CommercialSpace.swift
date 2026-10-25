@@ -34,6 +34,7 @@ public struct CommercialSpace: View {
     @State private var tab: CommercialTab
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
+    @Namespace private var pipelineTransition
 
     public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
         _tab = State(initialValue: initialLeadID == nil ? initialTab : .pipeline)
@@ -49,8 +50,13 @@ public struct CommercialSpace: View {
             }.tabItem { tabLabel(.today) }.tag(CommercialTab.today)
             if store.currentUser?.permissions.contains("view_crm") == true {
                 NavigationStack(path: $pipelinePath) {
-                    PipelineView { pipelinePath.append($0) }
-                        .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
+                    PipelineView(transitionNamespace: pipelineTransition) { pipelinePath.append($0) }
+                        .navigationDestination(for: String.self) { id in
+                            LeadDetailView(id: id)
+                                #if os(iOS)
+                                .navigationTransition(.zoom(sourceID: id, in: pipelineTransition))
+                                #endif
+                        }
                 }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
             }
             if store.currentUser?.permissions.contains("view_projects") == true {
@@ -63,6 +69,10 @@ public struct CommercialSpace: View {
                 NavigationStack { SalesFiguresView() }.tabItem { tabLabel(.figures) }.tag(CommercialTab.figures)
             }
         }
+        #if os(iOS)
+        .sensoryFeedback(.success, trigger: store.successFeedback)
+        .sensoryFeedback(.error, trigger: store.errorFeedback)
+        #endif
         .tabViewStyle(.sidebarAdaptable)
         #if os(iOS)
         // La maquette iPad garde la barre d'onglets en haut, même en paysage, pour laisser toute la largeur au kanban.

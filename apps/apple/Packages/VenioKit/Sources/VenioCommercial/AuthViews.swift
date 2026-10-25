@@ -26,7 +26,6 @@ public struct SessionRootView: View {
             if session.starting { ProgressView { VText("Chargement") } }
             else if let store = session.commercial {
                 RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID)
-                    .refreshable { await session.refresh() }
             } else { LoginView(session: session) }
         }
         .overlay(alignment: .top) {
@@ -107,6 +106,28 @@ private struct LoginView: View {
                 case .signedIn: password = ""; code = ""
                 }
             } catch { errorKey = mobileErrorKey(error) }
+        }
+    }
+}
+
+struct SyncStatusView: View {
+    @Environment(\.venioSession) private var session
+    @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
+    var body: some View {
+        if let session {
+            Group {
+                if session.refreshing {
+                    Label { VText("Synchro…") } icon: { Image(systemName: "arrow.triangle.2.circlepath") }
+                } else if session.offline {
+                    Label { VText("Hors ligne") } icon: { Image(systemName: "wifi.slash") }
+                } else if let date = session.lastSyncedAt {
+                    TimelineView(.periodic(from: .now, by: 60)) { _ in
+                        Text(verbatim: CommercialStrings.format("Synchronisé %@", locale: locale,
+                            date.formatted(.relative(presentation: .named, unitsStyle: .abbreviated).locale(locale))))
+                    }
+                }
+            }.font(.caption).foregroundStyle(palette.textSecondary.color)
         }
     }
 }

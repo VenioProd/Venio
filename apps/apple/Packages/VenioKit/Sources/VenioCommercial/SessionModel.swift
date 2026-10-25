@@ -13,6 +13,7 @@ import VenioTheme
     public private(set) var offline = false
     public private(set) var pending: [QueuedWrite] = []
     public private(set) var refreshing = false
+    public private(set) var lastSyncedAt: Date?
     public var errorKey: String?
     public var onDisconnect: (@MainActor () -> Void)?
     public var additionalPendingCount: (@MainActor () -> Int)?
@@ -73,6 +74,7 @@ import VenioTheme
         case .signedOut:
             refreshID = nil
             refreshing = false
+            lastSyncedAt = nil
             connectionTask?.cancel()
             lastPreferences = nil
             commercial = nil
@@ -97,7 +99,8 @@ import VenioTheme
         refreshing = true
         defer { if refreshID == id { refreshing = false; refreshID = nil } }
         errorKey = nil
-        do { try await api.refresh() }
+        var synchronized = false
+        do { try await api.refresh(); synchronized = true }
         catch {
             guard commercial === expected else { return }
             if let network = error as? URLError { if network.code != .cancelled { offline = true } }
@@ -106,6 +109,7 @@ import VenioTheme
         guard commercial === expected else { return }
         await reloadPending()
         await expected.load(force: true)
+        if commercial === expected && synchronized && !offline && !expected.failed { lastSyncedAt = .now }
     }
     @discardableResult public func reloadPending() async -> Bool {
         guard case .signedIn = state else { pending = []; return true }

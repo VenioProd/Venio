@@ -16,6 +16,8 @@ import VenioCore
     public private(set) var failed = false
     public private(set) var hasLoaded = false
     public private(set) var errorKey: String?
+    private(set) var successFeedback = 0
+    private(set) var errorFeedback = 0
     public var allLeads = false
     public let clock: DemoClock
     public var destination: DeepLink?
@@ -105,10 +107,15 @@ import VenioCore
     func canQuote(_ project: Project) -> Bool { project.canQuote }
     func lead(for id: String) -> Lead? { leads.first { $0.id == (leadAliases[id] ?? id) } }
     func createQuote(templateId: String, projectId: String? = nil, leadId: String? = nil) async throws -> QuoteProposal {
-        let quote = try await api.createQuote(templateId: templateId, projectId: projectId, leadId: leadId, title: nil)
-        quotes.removeAll { $0.id == quote.id }
-        quotes.insert(quote, at: 0)
-        return quote
+        do {
+            let quote = try await api.createQuote(templateId: templateId, projectId: projectId, leadId: leadId, title: nil)
+            quotes.removeAll { $0.id == quote.id }
+            quotes.insert(quote, at: 0)
+            return quote
+        } catch {
+            errorFeedback += 1
+            throw error
+        }
     }
     func attachQuote(id: String, projectId: String) async throws {
         let quote = try await api.attachQuote(id: id, projectId: projectId)
@@ -116,33 +123,51 @@ import VenioCore
         quotes.insert(quote, at: 0)
     }
     func sendQuote(id: String) async throws {
-        let quote = try await api.sendQuote(id: id)
-        quotes.removeAll { $0.id == quote.id }
-        quotes.insert(quote, at: 0)
+        do {
+            let quote = try await api.sendQuote(id: id)
+            quotes.removeAll { $0.id == quote.id }
+            quotes.insert(quote, at: 0)
+            successFeedback += 1
+        } catch {
+            errorFeedback += 1
+            throw error
+        }
     }
 
     @discardableResult public func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry {
-        let entry = try await api.createInteraction(draft)
-        var entries = timeline[draft.subjectId, default: []]
-        entries.removeAll { $0.id == entry.id }
-        entries.append(entry)
-        timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
-        return entry
+        do {
+            let entry = try await api.createInteraction(draft)
+            var entries = timeline[draft.subjectId, default: []]
+            entries.removeAll { $0.id == entry.id }
+            entries.append(entry)
+            timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
+            if draft.kind == .note { successFeedback += 1 }
+            return entry
+        } catch {
+            if draft.kind == .note { errorFeedback += 1 }
+            throw error
+        }
     }
     func lostReasons() async throws -> [String] { try await api.lostReasons() }
 
     public func updateLead(id: String, patch: LeadPatch) async throws {
-        guard let current = lead(for: id), currentUser?.permissions.contains("manage_crm") == true,
-              current.assignedTo == currentUser?.id else { throw VenioAPIError(code: "FORBIDDEN") }
-        let lead = try await api.updateLead(id: current.id, patch: patch)
-        if current.id != lead.id {
-            leadAliases[current.id] = lead.id
-            leads.removeAll { $0.id == current.id }
-            timeline[lead.id] = timeline.removeValue(forKey: current.id)
-        }
-        replaceLead(lead)
-        if let entries = try? await api.timeline(leadId: lead.id) {
-            timeline[lead.id] = entries.sorted { $0.date > $1.date }
+        do {
+            guard let current = lead(for: id), currentUser?.permissions.contains("manage_crm") == true,
+                  current.assignedTo == currentUser?.id else { throw VenioAPIError(code: "FORBIDDEN") }
+            let lead = try await api.updateLead(id: current.id, patch: patch)
+            if current.id != lead.id {
+                leadAliases[current.id] = lead.id
+                leads.removeAll { $0.id == current.id }
+                timeline[lead.id] = timeline.removeValue(forKey: current.id)
+            }
+            replaceLead(lead)
+            if let entries = try? await api.timeline(leadId: lead.id) {
+                timeline[lead.id] = entries.sorted { $0.date > $1.date }
+            }
+            successFeedback += 1
+        } catch {
+            errorFeedback += 1
+            throw error
         }
     }
     func createLead(_ draft: LeadDraft) async throws -> Lead {

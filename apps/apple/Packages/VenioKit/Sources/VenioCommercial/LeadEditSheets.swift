@@ -16,9 +16,7 @@ struct LeadFollowUpSheet: View {
     init(lead: Lead, clock: DemoClock) {
         self.lead = lead
         self.clock = clock
-        let tomorrow = clock.calendar.date(byAdding: .day, value: 1, to: clock.now)!
-        let defaultDate = clock.calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)!
-        _date = State(initialValue: lead.nextActionAt.flatMap { $0 > clock.now ? $0 : nil } ?? defaultDate)
+        _date = State(initialValue: lead.nextActionAt.flatMap { $0 > clock.now ? $0 : nil } ?? clock.tomorrowMorning)
     }
 
     var body: some View {
@@ -27,7 +25,7 @@ struct LeadFollowUpSheet: View {
                 DatePicker(CommercialStrings.text("Date et heure", locale: locale), selection: $date,
                            in: clock.now.addingTimeInterval(1)..., displayedComponents: [.date, .hourAndMinute])
                     .accessibilityIdentifier("followUp.date")
-                Button { date = morning(afterDays: 1) } label: { VText("Demain 9 h") }
+                Button { date = clock.tomorrowMorning } label: { VText("Demain 9 h") }
                 Button { date = clock.calendar.date(byAdding: .day, value: 3, to: clock.now)! } label: { VText("Dans 3 jours") }
                 Button {
                     let weekday = clock.calendar.component(.weekday, from: clock.now)

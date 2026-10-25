@@ -29,7 +29,7 @@ public struct LeadDetailView: View {
         Group {
             if let lead = store.lead(for: id) {
                 CommercialPage {
-                    header(lead)
+                    header(lead).leadInteractions(lead)
                     if regular {
                         HStack(alignment: .top, spacing: 22) {
                             information(lead).frame(maxWidth: .infinity)

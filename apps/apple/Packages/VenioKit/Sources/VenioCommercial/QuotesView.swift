@@ -70,6 +70,7 @@ public struct QuotesView: View {
                 }
             }
         }.navigationTitle("")
+        .commercialRefreshable()
         .sheet(isPresented: $showingNew) { NewQuoteView() }
     }
 }
@@ -282,7 +283,9 @@ struct NewQuoteView: View {
                 if savedDraft == nil { savedDraft = try await store.createQuote(templateId: templateId, projectId: projectId.isEmpty ? nil : projectId, leadId: leadId.isEmpty ? nil : leadId) }
                 if send, let savedDraft { try await store.sendQuote(id: savedDraft.id) }
                 dismiss()
-            } catch { errorKey = quoteErrorKey(error) }
+            } catch {
+                errorKey = quoteErrorKey(error)
+            }
         }
     }
 }
@@ -317,7 +320,8 @@ private struct QuoteLinesView: View {
         }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
     }
     private func totalRow(_ key: String, amount: Decimal) -> some View {
-        HStack { VText(key); Spacer(); Text(verbatim: formats.money(amount)).monospacedDigit() }.font(.headline)
+        HStack { VText(key); Spacer(); Text(verbatim: formats.money(amount)).monospacedDigit() }
+            .font(.headline).contentTransition(.numericText()).animation(.smooth, value: amount)
     }
 }
 #endif

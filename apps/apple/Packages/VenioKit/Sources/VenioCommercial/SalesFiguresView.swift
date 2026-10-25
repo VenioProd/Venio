@@ -28,6 +28,7 @@ public struct SalesFiguresView: View {
                     VText("CA signé du mois").font(.headline)
                     Text(verbatim: CommercialFormats(locale: locale).money(figures.signedThisMonth))
                         .font(.largeTitle.bold().monospacedDigit())
+                        .contentTransition(.numericText()).animation(.smooth, value: figures.signedThisMonth)
                     if figures.targetPercent != nil { MonthlyTargetCard(figures: figures, ring: false) }
                 }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
                 FinancialTimeline(months: figures.months).venioCard()
@@ -49,13 +50,18 @@ public struct SalesFiguresView: View {
 }
 
 struct FinancialTimeline: View {
+    @Environment(CommercialStore.self) private var store
     @Environment(\.venioPalette) private var palette
     @Environment(\.locale) private var locale
     @State private var selection: Date?
+    @GestureState private var selecting = false
+    @State private var plotMargins: CGSize = .zero
     let months: [SalesFigures.Month]
     private var selected: SalesFigures.Month? {
-        guard let selection else { return nil }
-        return months.min { abs($0.id.timeIntervalSince(selection)) < abs($1.id.timeIntervalSince(selection)) }
+        if let selection {
+            return months.min { abs($0.id.timeIntervalSince(selection)) < abs($1.id.timeIntervalSince(selection)) }
+        }
+        return months.first { store.clock.calendar.isDate($0.id, equalTo: store.clock.now, toGranularity: .month) } ?? months.last
     }
     private var dateRange: ClosedRange<Date> {
         // Une demi-période de marge de chaque côté pour que le premier et le dernier mois gardent leur libellé.
@@ -66,7 +72,7 @@ struct FinancialTimeline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             VText("CA signé par mois").font(.headline)
-            if let month = selected ?? months.last {
+            if let month = selected {
                 Text(verbatim: CommercialFormats(locale: locale).date(month.id, template: "MMMMyyyy") + " · " +
                      CommercialFormats(locale: locale).money(month.amount)).font(.subheadline.monospacedDigit())
             }
@@ -91,28 +97,41 @@ struct FinancialTimeline: View {
                         .foregroundStyle(palette.accentText.color)
                 }
             }
-            .chartXScale(domain: dateRange)
+            .chartXScale(domain: dateRange, range: .plotDimension(padding: 0))
             .chartXSelection(value: $selection)
-            .chartXAxis {
-                AxisMarks(values: months.map(\.id)) { value in
-                    AxisValueLabel(collisionResolution: .disabled) {
-                        if let date = value.as(Date.self) {
-                            Text(verbatim: CommercialFormats(locale: locale).date(date, template: "MMM"))
-                                .lineLimit(1).minimumScaleFactor(0.8)
-                        }
-                    }
-                }
+            .chartGesture { proxy in
+                DragGesture(minimumDistance: 0)
+                    .updating($selecting) { _, active, _ in active = true }
+                    .onChanged { proxy.selectXValue(at: $0.location.x) }
+                    .onEnded { _ in selection = nil }
             }
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    if let anchor = proxy.plotFrame {
+                        let frame = geometry[anchor]
+                        let margins = CGSize(width: frame.minX, height: geometry.size.width - frame.maxX)
+                        Color.clear.onChange(of: margins, initial: true) { _, value in plotMargins = value }
+                    }
+                }.allowsHitTesting(false)
+            }
+            .onChange(of: selecting) { _, active in if !active { selection = nil } }
+            .chartXAxis(.hidden)
             .chartYAxis { AxisMarks(position: .leading) }
             .frame(height: 180)
             Chart(months) { month in
                 BarMark(x: .value(CommercialStrings.text("Mois", locale: locale), month.id),
                         y: .value(CommercialStrings.text("Devis signés", locale: locale), month.volume), width: 14)
                     .foregroundStyle(palette.accent.color.opacity(0.4))
+                    .annotation(position: .bottom, spacing: 4) {
+                        Text(verbatim: CommercialFormats(locale: locale).date(month.id, template: "MMM"))
+                            .font(.caption).foregroundStyle(palette.textSecondary.color).lineLimit(1).fixedSize()
+                    }
             }
-            .chartXScale(domain: dateRange)
+            .chartXScale(domain: dateRange, range: .plotDimension(padding: 0))
             .chartYScale(domain: 0...max(1, months.map(\.volume).max() ?? 0))
-            .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 48)
+            .chartPlotStyle { $0.frame(height: 48) }
+            .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 72)
+            .padding(.leading, plotMargins.width).padding(.trailing, plotMargins.height)
             VText("Volume de devis signés").font(.caption).foregroundStyle(palette.textSecondary.color)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }

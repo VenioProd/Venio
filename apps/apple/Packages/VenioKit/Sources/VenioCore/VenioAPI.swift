@@ -38,4 +38,9 @@ public struct DemoClock: Sendable {
         calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
         return calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour, minute: minute))!
     }
+
+    public var tomorrowMorning: Date {
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now)!
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)!
+    }
 }

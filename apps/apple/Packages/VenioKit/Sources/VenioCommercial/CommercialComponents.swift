@@ -64,6 +64,8 @@ struct LeadRow: View {
             VStack(alignment: .trailing, spacing: 6) {
                 Text(verbatim: CommercialFormats(locale: locale).money(lead.budget))
                     .font(.subheadline.weight(.semibold).monospacedDigit())
+                    .contentTransition(.numericText())
+                    .animation(.smooth, value: lead.budget)
                 if let state = lead.deliveryState {
                     CommercialBadge(text: CommercialStrings.text(state == "failed" ? "Échec de l’envoi" : "En attente", locale: locale))
                 }
@@ -87,6 +89,9 @@ struct CommercialPage<Content: View>: View {
             VStack(alignment: .leading, spacing: 22) { content }
                 .padding().frame(maxWidth: 1000).frame(maxWidth: .infinity)
         }
+        #if !os(watchOS)
+        .commercialScrollClearance()
+        #endif
         .background { ThemedBackground() }
     }
 }

@@ -11,7 +11,11 @@ public struct PipelineView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
     private let onLead: (String) -> Void
-    public init(onLead: @escaping (String) -> Void = { _ in }) { self.onLead = onLead }
+    private let transitionNamespace: Namespace.ID?
+    public init(transitionNamespace: Namespace.ID? = nil, onLead: @escaping (String) -> Void = { _ in }) {
+        self.transitionNamespace = transitionNamespace
+        self.onLead = onLead
+    }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
     private var compact: Bool {
         #if os(iOS)
@@ -47,6 +51,8 @@ public struct PipelineView: View {
                                             Button { onLead(lead.id) } label: {
                                                 LeadRow(lead: lead, showsAssignee: true)
                                             }.buttonStyle(.plain)
+                                                .leadInteractions(lead, swipe: true) { onLead(lead.id) }
+                                                .leadTransitionSource(lead.id, namespace: transitionNamespace)
                                             if lead.id != leads.last?.id { Divider() }
                                         }
                                     }.venioCard()
@@ -70,7 +76,11 @@ public struct PipelineView: View {
                         }
                     }
                 }.padding()
+                    .animation(.smooth, value: store.allLeads)
+                    .animation(.smooth, value: store.summary.stages.map(\.count))
             }
+            .commercialScrollClearance()
+            .commercialRefreshable()
             .background { ThemedBackground() }
             .navigationTitle("")
             #if os(iOS)
@@ -85,6 +95,8 @@ public struct PipelineView: View {
                     stageHeader(stage)
                     ForEach(store.visibleLeads.filter { $0.status == stage.id }) { lead in
                         Button { onLead(lead.id) } label: { kanbanCard(lead) }.buttonStyle(.plain)
+                            .leadInteractions(lead) { onLead(lead.id) }
+                            .leadTransitionSource(lead.id, namespace: transitionNamespace)
                     }
                 }.frame(width: columnWidth).frame(maxWidth: .infinity)
             }
@@ -111,6 +123,7 @@ public struct PipelineView: View {
         VStack(alignment: .leading, spacing: 8) {
             VText(title).font(.subheadline)
             Text(verbatim: formats.money(amount)).font(.title2.bold().monospacedDigit())
+                .contentTransition(.numericText()).animation(.smooth, value: amount)
         }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
     }
     private func stageHeader(_ stage: PipelineSummary.Stage) -> some View {
