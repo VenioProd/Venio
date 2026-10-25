@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../middleware/auth.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
+import requireMfa from '../../middleware/mfa.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
@@ -515,6 +516,7 @@ router.post(
   '/:id/generate-accounting',
   requirePermission(PERMISSIONS.MANAGE_BILLING),
   requirePermission(PERMISSIONS.MANAGE_ACCOUNTING),
+  requireMfa,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const doc = await BillingDocument.findById(req.params.id).lean()

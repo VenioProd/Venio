@@ -132,6 +132,12 @@ it('exige la MFA de l’appareil pour les seules lectures comptables autorisées
     .set('Cookie', `venio_session=${browser.token}`)
     .expect(403)
   expect(stale.body.error).toBe('MFA_STEP_UP_REQUIRED')
+  const invoiceId = new mongoose.Types.ObjectId()
+  const generate = await request(app)
+    .post(`/api/admin/billing/${invoiceId}/generate-accounting`)
+    .set('Cookie', `venio_session=${browser.token}`)
+    .expect(403)
+  expect(generate.body.error).toBe('MFA_STEP_UP_REQUIRED')
 
   for (const [method, path] of [
     ['get', '/api/admin/accounting/entries'],
@@ -139,6 +145,7 @@ it('exige la MFA de l’appareil pour les seules lectures comptables autorisées
     ['post', '/api/admin/accounting/reports/dashboard'],
     ['get', '/api/admin/accounting/reports/dashboard/other'],
     ['get', '/api/admin/dev/issues/not-an-objectid'],
+    ['post', `/api/admin/billing/${invoiceId}/generate-accounting`],
   ] as const) {
     const denied = await request(app)[method](path).set('Authorization', verified).expect(403)
     expect(denied.body.code).toBe('BROWSER_SESSION_REQUIRED')
