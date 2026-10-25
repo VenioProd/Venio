@@ -40,7 +40,9 @@ export async function checkLoginCredentials(
     )
   }
 
-  const user = await User.findOne({ email: String(email).toLowerCase().trim() })
+  const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select(
+    '+twoFactorSecret +twoFactorRecoveryCodeHashes',
+  )
   if (!user) {
     audit('LOGIN_FAILED', undefined, { reason: 'user_not_found' })
     return { kind: 'rejected', status: 401, body: { error: 'Identifiants invalides' } }

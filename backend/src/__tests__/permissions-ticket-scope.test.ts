@@ -49,6 +49,8 @@ beforeAll(async () => {
   app.use('/api/admin/projects', projectRoutes)
   app.use('/api/admin/projects', taskRoutes)
   const { default: automationRoutes } = await import('../routes/admin/automations.js')
+  const { default: adminRoutes } = await import('../routes/admin/admins.js')
+  app.use('/api/admin/admins', adminRoutes)
   app.use('/api/admin/automations', automationRoutes)
   app.use('/api/admin/tickets', ticketRoutes)
   app.use('/api/admin/resources', resourceRoutes)
@@ -268,4 +270,14 @@ it('ne règle pas une automatisation éteinte par défaut en la consultant', asy
   await actAs(superAdminId, 'SUPER_ADMIN')
   await request(app).get('/api/admin/automations/nextcloud.repair_missing_structures').expect(200)
   expect((await AutomationSettings.findOne({ key: 'nextcloud.repair_missing_structures' }))!.enabled).toBe(false)
+})
+
+it('ne livre jamais le second facteur dans la liste des administrateurs', async () => {
+  const { default: User } = await import('../models/User.js')
+  await User.updateOne({ _id: superAdminId }, { twoFactorSecret: 'TOTPSECRET', twoFactorRecoveryCodeHashes: ['hash'] })
+  await User.updateOne({ _id: ownUserId }, { role: 'COMMERCIAL' })
+  await actAs(ownUserId, 'COMMERCIAL')
+  const listed = await request(app).get('/api/admin/admins').expect(200)
+  expect(listed.body.users.length).toBeGreaterThan(0)
+  expect(JSON.stringify(listed.body)).not.toMatch(/TOTPSECRET|twoFactorSecret|twoFactorRecoveryCodeHashes/)
 })

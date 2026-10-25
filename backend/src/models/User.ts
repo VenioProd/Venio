@@ -63,10 +63,10 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     lastContactAt: { type: Date, default: null },
     archivedAt: { type: Date, default: null },
-    // 2FA fields
-    twoFactorSecret: { type: String, default: null },
+    // 2FA fields : jamais lus par défaut, une liste d'administrateurs ne doit pas exposer le second facteur.
+    twoFactorSecret: { type: String, default: null, select: false },
     twoFactorEnabled: { type: Boolean, default: false },
-    twoFactorRecoveryCodeHashes: { type: [String], default: [] },
+    twoFactorRecoveryCodeHashes: { type: [String], default: [], select: false },
     // Set lazily at the first privileged login after rollout: existing admins
     // retain access long enough to enroll without a deployment lock-out.
     mfaGraceUntil: { type: Date, default: null },
