@@ -15,6 +15,8 @@ import Project from '../models/Project.js'
 import Task from '../models/Task.js'
 import ProjectItem from '../models/ProjectItem.js'
 import ProjectPhase from '../models/ProjectPhase.js'
+import ProjectTemplate from '../models/ProjectTemplate.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import ProjectUpdate from '../models/ProjectUpdate.js'
 import AuditLog from '../models/AuditLog.js'
 import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
@@ -52,6 +54,7 @@ function actAs(user: typeof commercial) {
 
 beforeAll(async () => {
   await setupMongoReplSet()
+  resetTransactionSupportCache()
   directory = fs.mkdtempSync(path.join(os.tmpdir(), 'project-read-scope-'))
   fs.writeFileSync(path.join(directory, 'document.txt'), 'Document confidentiel')
   app = express()
@@ -404,4 +407,78 @@ it('contrôle le projet lors du rattachement CRM à une affaire lisible', async 
   expect((await Project.findById(outside._id))!.sourceLead).toBeNull()
   await request(app).post(`/api/admin/crm/leads/${lead._id}/projects/${owned._id}`).send({}).expect(200)
   expect(String((await Project.findById(owned._id))!.sourceLead)).toBe(String(lead._id))
+})
+
+it('refuse la création hors portefeuille et accepte un projet pour son propre client', async () => {
+  await User.updateOne({ _id: commercial._id }, { grantedPermissions: ['edit_projects'] })
+  const before = await Project.countDocuments()
+  const refused = await request(app)
+    .post('/api/admin/projects')
+    .send({ clientId: outside.client, name: 'Hors portefeuille' })
+    .expect(403)
+  expect(refused.body).toEqual({
+    error: "Ce client n'est pas dans votre portefeuille",
+    code: 'CLIENT_OUT_OF_SCOPE',
+  })
+  expect(await Project.countDocuments()).toBe(before)
+  const created = await request(app)
+    .post('/api/admin/projects')
+    .send({ clientId: owned.client, name: 'Dans le portefeuille' })
+    .expect(201)
+  expect(await Project.countDocuments()).toBe(before + 1)
+  await request(app).get(`/api/admin/projects/${created.body.project._id}`).expect(200)
+})
+
+it('refuse une réponse hors périmètre avant toute écriture de pièce jointe', async () => {
+  await User.updateOne({ _id: commercial._id }, { grantedPermissions: ['manage_change_requests'] })
+  const change = await ChangeRequest.create({
+    project: outside._id,
+    client: outside.client,
+    title: 'Demande privée',
+    description: 'Évolution',
+    createdBy: superAdmin._id,
+    createdByName: 'Super',
+  })
+  const uploads = path.resolve('uploads/change-requests')
+  const before = fs.readdirSync(uploads).sort()
+  try {
+    await request(app)
+      .post(`/api/admin/change-requests/${change._id}/reply`)
+      .field('message', 'Intrusion')
+      .attach('files', Buffer.from('Confidentiel'), 'scope.txt')
+      .expect(404)
+    expect(fs.readdirSync(uploads).sort()).toEqual(before)
+    expect((await ChangeRequest.findById(change._id))!.replies).toHaveLength(0)
+  } finally {
+    for (const filename of fs.readdirSync(uploads)) {
+      if (!before.includes(filename)) fs.unlinkSync(path.join(uploads, filename))
+    }
+  }
+})
+
+it('garde le projet invisible puis annule sa création si les phases échouent', async () => {
+  actAs(superAdmin)
+  const template = await ProjectTemplate.create({
+    name: 'Modèle',
+    defaultPhases: [{ title: 'Cadrage' }],
+  })
+  const insertMany = ProjectPhase.insertMany.bind(ProjectPhase)
+  let visible = true
+  const spy = vi.spyOn(ProjectPhase, 'insertMany').mockImplementationOnce(async (...args) => {
+    await insertMany(...args)
+    visible = (await Project.countDocuments({ name: 'Création annulée' })) > 0
+    throw new Error('Insertion des phases interrompue')
+  })
+  try {
+    const response = await request(app)
+      .post('/api/admin/projects')
+      .send({ clientId: owned.client, name: 'Création annulée', templateId: template._id })
+      .expect(500)
+    expect(response.body.error).toBe('Insertion des phases interrompue')
+    expect(await Project.countDocuments({ name: 'Création annulée' })).toBe(0)
+    expect(await ProjectPhase.countDocuments()).toBe(0)
+    expect(visible).toBe(false)
+  } finally {
+    spy.mockRestore()
+  }
 })

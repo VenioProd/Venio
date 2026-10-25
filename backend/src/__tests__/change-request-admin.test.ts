@@ -1,11 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
+import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
 import * as changeRequestFlow from '../lib/changeRequestFlow.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import adminChangeRequestRoutes from '../routes/admin/changeRequests.js'
 import ChangeRequest from '../models/ChangeRequest.js'
@@ -40,10 +42,12 @@ async function seedRequest(overrides: Record<string, unknown> = {}) {
 }
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
   app = express()
   app.use(express.json())
   app.use('/api/admin/change-requests', adminChangeRequestRoutes)
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 
 afterAll(teardownMongo)

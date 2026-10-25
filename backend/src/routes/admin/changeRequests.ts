@@ -230,14 +230,23 @@ router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
   ...validId,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const changeRequest = await loadOr404(req, res)
+      if (!changeRequest) return
+      res.locals.changeRequest = changeRequest
+      return next()
+    } catch (err) {
+      return next(err)
+    }
+  },
   upload.array('files', 10),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const message = String(req.body.message ?? '').trim()
       if (!message) return res.status(400).json({ error: 'Message requis' })
 
-      const changeRequest = await loadOr404(req, res)
-      if (!changeRequest) return
+      const changeRequest = res.locals.changeRequest as IChangeRequest
 
       const actor = actorFromRequest(req.user!)
       const files = (req.files as Express.Multer.File[]) || []

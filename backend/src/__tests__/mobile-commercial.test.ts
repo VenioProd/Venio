@@ -3,12 +3,14 @@ import express from 'express'
 import request from 'supertest'
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import User from '../models/User.js'
 import MobileDevice from '../models/MobileDevice.js'
 import Lead from '../models/Lead.js'
 import Project from '../models/Project.js'
+import Task from '../models/Task.js'
 import Interaction from '../models/Interaction.js'
 import QuoteProposal from '../models/QuoteProposal.js'
 import quoteRoutes from '../routes/admin/quoteProposals.js'
@@ -21,7 +23,8 @@ let bearer: string
 let author: string
 let project: string
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
   app.use('/api/admin/quote-proposals', quoteRoutes)
   app.use('/api/admin/crm', crmRoutes)
   app.use('/api/admin/billing', billingRoutes)
@@ -31,6 +34,7 @@ beforeAll(async () => {
   app.use('/api/mobile/sync', (await import('../routes/mobile/sync.js')).default)
   app.use('/api/mobile/interactions', (await import('../routes/mobile/interactions.js')).default)
   await Interaction.init()
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 afterAll(teardownMongo)
 beforeEach(async () => {
@@ -103,6 +107,7 @@ it('crée au prix du modèle, initialise les options et envoie seulement son dev
 
   // Le projet d'un collègue n'est pas dans son portefeuille ; celui issu de son lead l'est.
   const foreign = await Project.create({ name: 'Autre', client: author, assignedTo: new mongoose.Types.ObjectId() })
+  await Task.create({ project: foreign._id, title: 'Suivi', assignee: author, createdBy: author })
   const outOfScope = await request(app)
     .post('/api/admin/quote-proposals/from-template')
     .set('Authorization', bearer)
