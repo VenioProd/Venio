@@ -64,9 +64,40 @@ targets:
       - target: VenioWatch
         platformFilter: iOS
         embed: true
+      - target: VenioShare
+        platformFilter: iOS
+        embed: true
       - target: VenioWidgets
         platformFilter: iOS
         embed: true
+  VenioShare:
+    type: app-extension
+    platform: iOS
+    sources: [ShareExtension]
+    info:
+      path: .build/VenioShare-Info.plist
+      properties:
+        CFBundleDisplayName: Envoyer vers Venio
+        NSFaceIDUsageDescription: Venio utilise Face ID pour déverrouiller vos projets avant un envoi.
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsFileWithMaxCount: 10
+              NSExtensionActivationSupportsImageWithMaxCount: 10
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.share
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/VenioShare.entitlements
+        TARGETED_DEVICE_FAMILY: '1,2'
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
   VenioWidgets:
     type: app-extension
     platform: iOS

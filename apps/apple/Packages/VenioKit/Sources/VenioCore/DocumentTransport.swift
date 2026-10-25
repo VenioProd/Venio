@@ -3,8 +3,8 @@ import Foundation
 public enum DocumentTransport {
     public static let managePermission = "upload_project_documents"
     static let syncType = "projectDocuments"
-    private static let maximumFileSize = 20 * 1024 * 1024
-    private static let allowedMIMETypes: Set<String> = [
+    public static let maximumFileSize = 20 * 1024 * 1024
+    public static let allowedMIMETypes: Set<String> = [
         "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/heic", "image/heif",
         "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -16,7 +16,7 @@ public enum DocumentTransport {
     public static func canManage(_ user: UserSummary) -> Bool {
         !user.permissions.isDisjoint(with: [managePermission, "edit_content"])
     }
-    static func validateFile(_ draft: DocumentDraft) throws {
+    public static func validateFile(_ draft: DocumentDraft) throws {
         guard allowedMIMETypes.contains(draft.mimeType) else { throw VenioAPIError(code: "UNSUPPORTED_MEDIA_TYPE") }
         let size = try draft.fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize
         guard let size, size <= maximumFileSize else { throw VenioAPIError(code: "FILE_TOO_LARGE") }

@@ -186,7 +186,11 @@ public actor LiveVenioAPI: VenioAPI {
         return documents.sorted { $0.uploadedAt > $1.uploadedAt }
     }
     public func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument {
+        try await uploadDocument(draft, expectedUserId: nil)
+    }
+    public func uploadDocument(_ draft: DocumentDraft, expectedUserId: String?) async throws -> ProjectDocument {
         let scope = try await session.identity()
+        if let expectedUserId, scope.user.id != expectedUserId { throw VenioAPIError(code: "SIGNED_OUT") }
         guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
         var draft = draft
         if !scope.user.permissions.contains("edit_content") { draft.clientVisible = false }

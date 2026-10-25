@@ -124,6 +124,7 @@ import AppKit
                 }
                 .task {
                     session?.onDisconnect = {
+                        try? ShareInboxStore().clearContext()
                         delegate.push.disconnected()
                         IntentBridge.connect(store: nil, session: nil)
                         #if os(iOS)
@@ -140,6 +141,7 @@ import AppKit
                     #endif
                 }
                 #if os(iOS)
+                .modifier(ShareInboxIntegration(session: session))
                 .modifier(WidgetIntegration(store: currentStore, themes: themes, mock: mockAPI != nil, controller: meetings))
                 .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
                     watch.usesLiveBackend = session != nil
