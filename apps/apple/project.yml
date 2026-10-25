@@ -11,6 +11,9 @@ options:
 packages:
   VenioKit:
     path: Packages/VenioKit
+configFiles:
+  Debug: Config/Version.xcconfig
+  Release: Config/Version.xcconfig
 settings:
   base:
     SWIFT_VERSION: '6.0'
@@ -18,8 +21,8 @@ settings:
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_STRICT_CONCURRENCY: complete
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: '0.1.0'
-    CURRENT_PROJECT_VERSION: '1'
+    CODE_SIGN_STYLE: Automatic
+    VENIO_API_BASE_URL: https://venio.paris
     INFOPLIST_KEY_CFBundleDisplayName: Venio
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 targets:
@@ -33,6 +36,8 @@ targets:
     info:
       path: .build/Venio-Info.plist
       properties:
+        VenioAPIBaseURL: $(VENIO_API_BASE_URL)
+        ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
         CFBundleURLTypes:
           - CFBundleURLName: paris.venio.app
@@ -43,6 +48,7 @@ targets:
         NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app
         CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]: App/Venio-iOS.entitlements
         CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]: App/Venio-iOS.entitlements
@@ -64,9 +70,40 @@ targets:
       - target: VenioWatch
         platformFilter: iOS
         embed: true
+      - target: VenioShare
+        platformFilter: iOS
+        embed: true
       - target: VenioWidgets
         platformFilter: iOS
         embed: true
+  VenioShare:
+    type: app-extension
+    platform: iOS
+    sources: [ShareExtension]
+    info:
+      path: .build/VenioShare-Info.plist
+      properties:
+        CFBundleDisplayName: Envoyer vers Venio
+        NSFaceIDUsageDescription: Venio utilise Face ID pour déverrouiller vos projets avant un envoi.
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsFileWithMaxCount: 10
+              NSExtensionActivationSupportsImageWithMaxCount: 10
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.share
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/VenioShare.entitlements
+        TARGETED_DEVICE_FAMILY: '1,2'
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
   VenioWidgets:
     type: app-extension
     platform: iOS
@@ -97,6 +134,8 @@ targets:
     sources: [WatchApp, Shared]
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.watchkitapp
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: paris.venio.app
         INFOPLIST_KEY_WKWatchKitApp: YES

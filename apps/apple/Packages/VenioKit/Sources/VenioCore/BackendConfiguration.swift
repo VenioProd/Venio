@@ -19,7 +19,8 @@ public struct BackendConfiguration: Sendable {
             guard let backend = Backend(rawValue: selected) else { throw VenioAPIError(code: "INVALID_BACKEND") }
             self.backend = backend
         } else { backend = fallback }
-        let raw = value("-VenioAPIBaseURL") ?? "https://venio.paris"
+        let configuredURL = Bundle.main.object(forInfoDictionaryKey: "VenioAPIBaseURL") as? String
+        let raw = value("-VenioAPIBaseURL") ?? configuredURL ?? "https://venio.paris"
         guard let url = URL(string: raw), let host = url.host, url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, url.path.isEmpty || url.path == "/" else { throw VenioAPIError(code: "INVALID_BASE_URL") }
         if url.scheme == "http" {

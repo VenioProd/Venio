@@ -126,11 +126,15 @@ import VenioCore
     func canDelete(_ document: ProjectDocument) -> Bool {
         document.uploadedBy == currentUser?.id && (document.pendingKey != nil || (canManageDocuments && !document.clientVisible))
     }
-    func uploadDocuments(_ drafts: [DocumentDraft]) async throws {
+    public func uploadDocuments(_ drafts: [DocumentDraft]) async throws {
         for draft in drafts {
+            guard active else { throw VenioAPIError(code: "SIGNED_OUT") }
             guard canManageDocuments else { throw VenioAPIError(code: "FORBIDDEN") }
             guard projects.contains(where: { $0.id == draft.projectId }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
-            let document = try await api.uploadDocument(draft)
+            let document: ProjectDocument
+            if let live = api as? LiveVenioAPI {
+                document = try await live.uploadDocument(draft, expectedUserId: currentUser?.id)
+            } else { document = try await api.uploadDocument(draft) }
             var documents = projectDocuments[draft.projectId, default: []]
             documents.removeAll { $0.id == document.id }
             documents.insert(document, at: 0)

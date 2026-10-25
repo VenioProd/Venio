@@ -124,6 +124,7 @@ import AppKit
                 }
                 .task {
                     session?.onDisconnect = {
+                        try? ShareInboxStore().clearContext()
                         delegate.push.disconnected()
                         IntentBridge.connect(store: nil, session: nil)
                         #if os(iOS)
@@ -133,13 +134,18 @@ import AppKit
                     }
                     if let session, !session.starting, case .signedOut = session.state { session.onDisconnect?() }
                     #if os(iOS)
-                    session?.additionalPendingCount = { watch.pendingNotes.count }
+                    session?.additionalPendingCount = { [session] in
+                        let origin = session?.api.session.baseURL.absoluteString
+                        let shared = (try? ShareInboxStore().items().filter { $0.origin == origin }.count) ?? 0
+                        return watch.pendingNotes.count + shared
+                    }
                     session?.discardAdditionalPending = { watch.discardPendingNotes() }
                     watch.usesLiveBackend = session != nil
                     watch.activate()
                     #endif
                 }
                 #if os(iOS)
+                .modifier(ShareInboxIntegration(session: session))
                 .modifier(WidgetIntegration(store: currentStore, themes: themes, mock: mockAPI != nil, controller: meetings))
                 .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
                     watch.usesLiveBackend = session != nil

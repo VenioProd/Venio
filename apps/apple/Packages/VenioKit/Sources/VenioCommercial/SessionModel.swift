@@ -81,6 +81,7 @@ import VenioTheme
         self.state = state
         switch state {
         case .signedOut:
+            try? ShareInboxStore().clearContext()
             refreshID = nil
             refreshing = false
             lastSyncedAt = nil
@@ -142,6 +143,8 @@ import VenioTheme
         await reloadPending()
     }
     public func logout() async {
+        try? ShareInboxStore().clearContext()
+        try? ShareInboxStore().removeAll(origin: api.session.baseURL.absoluteString)
         discardAdditionalPending?()
         do { try await api.session.logout() }
         catch { errorKey = mobileErrorKey(error) }
