@@ -482,3 +482,22 @@ it('garde le projet invisible puis annule sa création si les phases échouent',
     spy.mockRestore()
   }
 })
+
+it('refuse une pièce jointe de tâche étrangère au projet avant de l’écrire', async () => {
+  await Project.updateOne({ _id: owned._id }, { assignedTo: commercial._id })
+  const foreign = await Task.findOne({ project: outside._id })
+  const uploads = path.resolve('uploads/tasks')
+  fs.mkdirSync(uploads, { recursive: true })
+  const before = fs.readdirSync(uploads).sort()
+  try {
+    await request(app)
+      .post(`/api/admin/projects/${owned._id}/tasks/${foreign!._id}/attachments`)
+      .attach('file', Buffer.from('Confidentiel'), { filename: 'scope.txt', contentType: 'text/plain' })
+      .expect(404)
+    expect(fs.readdirSync(uploads).sort()).toEqual(before)
+  } finally {
+    for (const filename of fs.readdirSync(uploads)) {
+      if (!before.includes(filename)) fs.unlinkSync(path.join(uploads, filename))
+    }
+  }
+})
