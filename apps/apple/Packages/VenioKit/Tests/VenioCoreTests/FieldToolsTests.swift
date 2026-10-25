@@ -33,3 +33,27 @@ import Testing
 @Test func unknownDeepLink() {
     #expect(DeepLink.parse(type: "UNKNOWN", link: "/admin/projets/project-pilote") == nil)
 }
+
+@Test func watchQuotePhoneResolutionUsesLeadIdentity() async throws {
+    let api = MockVenioAPI()
+    var leads = try await api.leads().filter { $0.id == "lead-calder" }
+    var quote = try #require(try await api.quotes().first { $0.id == "quote-041" })
+    let direct = WatchQuotePhones.snapshot(quotes: [quote], leads: leads)
+    #expect(WatchQuotePhones.phoneURL(for: .quote(quote.id), in: direct)?.absoluteString == "tel:+33600000001")
+    quote.leadId = nil
+    let fallback = WatchQuotePhones.snapshot(quotes: [quote], leads: leads)
+    #expect(WatchQuotePhones.phoneURL(for: .projectQuotes("project-calder"), in: fallback) != nil)
+    var other = try #require(leads.first)
+    other.id = "other-lead"
+    leads.append(other)
+    #expect(WatchQuotePhones.phoneURL(for: .quote(quote.id), in: WatchQuotePhones.snapshot(quotes: [quote], leads: leads)) == nil)
+    quote.leadId = leads[0].id
+    var second = quote
+    second.id = "other-quote"
+    second.leadId = other.id
+    let ambiguous = WatchQuotePhones.snapshot(quotes: [quote, second], leads: leads)
+    #expect(WatchQuotePhones.phoneURL(for: .quote(quote.id), in: ambiguous) != nil)
+    #expect(WatchQuotePhones.phoneURL(for: .projectQuotes("project-calder"), in: ambiguous) == nil)
+    quote.status = .signed
+    #expect(WatchQuotePhones.snapshot(quotes: [quote], leads: leads).isEmpty)
+}

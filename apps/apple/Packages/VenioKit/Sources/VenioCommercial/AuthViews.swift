@@ -18,18 +18,20 @@ public struct SessionRootView: View {
     @State private var session: SessionModel
     private let initialTab: CommercialTab
     private let initialLeadID: String?
+    private let initialProjectID: String?
     private let initialAdminSection: AdminSection?
     private let initialAdminItemID: String?
-    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
+    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
         _session = State(initialValue: session)
         self.initialTab = initialTab; self.initialLeadID = initialLeadID
+        self.initialProjectID = initialProjectID
         self.initialAdminSection = initialAdminSection; self.initialAdminItemID = initialAdminItemID
     }
     public var body: some View {
         Group {
             if session.starting { ProgressView { VText("Chargement") } }
             else if let store = session.commercial {
-                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID)
+                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID)
                     .refreshable { await session.refresh() }
             } else { LoginView(session: session) }
         }
@@ -115,6 +117,28 @@ private struct LoginView: View {
     }
 }
 
+struct SyncStatusView: View {
+    @Environment(\.venioSession) private var session
+    @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
+    var body: some View {
+        if let session {
+            Group {
+                if session.refreshing {
+                    Label { VText("Synchro…") } icon: { Image(systemName: "arrow.triangle.2.circlepath") }
+                } else if session.offline {
+                    Label { VText("Hors ligne") } icon: { Image(systemName: "wifi.slash") }
+                } else if let date = session.lastSyncedAt {
+                    TimelineView(.periodic(from: .now, by: 60)) { _ in
+                        Text(verbatim: CommercialStrings.format("Synchronisé %@", locale: locale,
+                            date.formatted(.relative(presentation: .named, unitsStyle: .abbreviated).locale(locale))))
+                    }
+                }
+            }.font(.caption).foregroundStyle(palette.textSecondary.color)
+        }
+    }
+}
+
 struct OutboxStatusView: View {
     @Environment(\.venioSession) private var session
     @Environment(\.locale) private var locale
@@ -150,7 +174,8 @@ struct OutboxView: View {
                     Text(verbatim: CommercialFormats(locale: locale).timestamp(write.createdAt)).font(.caption)
                     VText(write.state == "failed" ? "Échec de l’envoi" : "En attente")
                     if write.state == "failed" {
-                        if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
+                        if write.type == "document", let code = write.lastError { MobileErrorView(key: mobileErrorKey(VenioAPIError(code: code))) }
+                        else if write.lastError == "BROWSER_SESSION_REQUIRED" { MobileErrorView(key: "Disponible sur le web") }
                         else if write.lastError == "LEAD_ASSIGNMENT_FORBIDDEN" { VText("Vous ne pouvez pas réassigner le lead d’un collègue").font(.caption) }
                         else if write.lastError == "UNCERTAIN_WRITE" { VText("Résultat incertain : vérifiez la fiche avant de réessayer").font(.caption) }
                         else if write.lastError == "LEAD_NOT_CREATED" { VText("Le lead n’a pas pu être créé : réessayez d’abord sa création").font(.caption) }
@@ -174,6 +199,7 @@ struct OutboxView: View {
     }
     private func writeTitle(_ write: QueuedWrite) -> String {
         switch write.type {
+        case "document": "Document"
         case "interaction": "Interaction"
         case "leadCreate": "Création du lead"
         default: "Modification du lead"

@@ -3,6 +3,18 @@ import Testing
 import SwiftData
 @testable import VenioCore
 
+@Test func tomorrowMorningUsesCalendarAcrossClockChanges() throws {
+    for (day, month) in [(28, 3), (24, 10), (31, 12)] {
+        let clock = DemoClock(now: DemoClock.date(day, month: month, hour: 23, minute: 45))
+        let nextDay = try #require(clock.calendar.date(byAdding: .day, value: 1, to: clock.now))
+        let result = clock.tomorrowMorning
+        #expect(clock.calendar.isDate(result, inSameDayAs: nextDay))
+        #expect(clock.calendar.component(.hour, from: result) == 9)
+        #expect(clock.calendar.component(.minute, from: result) == 0)
+        #expect(result > clock.now)
+    }
+}
+
 @Test func pipelineSummary() async throws {
     let leads = try await MockVenioAPI().leads()
     let all = PipelineSummary(leads: leads, scope: .all)

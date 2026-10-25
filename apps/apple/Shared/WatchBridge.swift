@@ -96,6 +96,8 @@ struct PendingWatchNote: Codable {
                 return WatchFollowUp(id: lead.id, company: lead.company, contact: lead.contactName, phone: lead.contactPhone, date: date)
             }
             if let data = try? JSONEncoder().encode(followUps) { context["followUps"] = data }
+            let quotePhones = WatchQuotePhones.snapshot(quotes: store.quotes, leads: store.leads)
+            if let data = try? JSONEncoder().encode(quotePhones) { context["quotePhones"] = data }
             context["ownerID"] = user.id
         }
         do { try session.updateApplicationContext(context); failed = false }

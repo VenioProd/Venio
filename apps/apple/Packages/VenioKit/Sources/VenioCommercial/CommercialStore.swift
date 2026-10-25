@@ -10,14 +10,24 @@ import VenioCore
     public private(set) var monthlyTarget: Decimal?
     public private(set) var appointments: [Appointment] = []
     public private(set) var projects: [Project] = []
+    public private(set) var projectDocuments: [String: [ProjectDocument]] = [:]
+    public var showingSearch = false
+    var showingQuickEntry = false
+    var canQuickEntry: Bool { currentUser?.permissions.contains("manage_crm") == true || canManageDocuments }
     public private(set) var projectDetails: [String: ProjectDetail] = [:]
     public private(set) var currentUser: UserSummary?
     public private(set) var isLoading = false
     public private(set) var failed = false
     public private(set) var hasLoaded = false
+    public private(set) var loadRevision = 0
     public private(set) var errorKey: String?
+    private(set) var successFeedback = 0
+    private(set) var errorFeedback = 0
     public var allLeads = false
     public let clock: DemoClock
+    public var requestedTab: DeepLink?
+    private var pendingRoutes: [DeepLink] = []
+    private var active = true
     public var destination: DeepLink?
     public var routeFailed = false
     public var onLeadOpened: (@MainActor (Lead) -> Void)?
@@ -47,16 +57,21 @@ import VenioCore
     }
 
     public func load(force: Bool = false) async {
-        guard !isLoading, force || !hasLoaded else { return }
+        guard active, !isLoading, force || !hasLoaded else { return }
         isLoading = true
         failed = false
         errorKey = nil
         defer { isLoading = false }
         do {
             let user = try await api.currentUser()
+            guard active else { return }
             if user.role == .admin {
                 currentUser = user
                 hasLoaded = true
+                loadRevision += 1
+                #if !os(watchOS)
+                SpotlightIndex.shared.purge()
+                #endif
                 return
             }
             let canReadCRM = user.permissions.contains("view_crm")
@@ -72,8 +87,13 @@ import VenioCore
                 newTimeline[lead.id] = try await api.timeline(leadId: lead.id).sorted { $0.date > $1.date }
             }
             var details: [String: ProjectDetail] = [:]
-            for project in newProjects { details[project.id] = try await api.project(id: project.id) }
+            var documents: [String: [ProjectDocument]] = [:]
+            for project in newProjects {
+                details[project.id] = try await api.project(id: project.id)
+                documents[project.id] = try await api.documents(projectId: project.id)
+            }
             try Task.checkCancellation()
+            guard active else { return }
             currentUser = user
             for local in leads where local.id.hasPrefix("local-") && !newLeads.contains(where: { $0.id == local.id }) {
                 if let confirmed = try? await api.lead(id: local.id) { leadAliases[local.id] = confirmed.id }
@@ -86,11 +106,47 @@ import VenioCore
             templates = canQuote ? try await api.quoteTemplates() : []
             timeline = newTimeline
             projectDetails = details
+            projectDocuments = documents
+            guard active else { return }
             hasLoaded = true
+            loadRevision += 1
+            #if !os(watchOS)
+            SpotlightIndex.shared.replace(leads: leads, projects: projects)
+            #endif
+            await resumeNavigation()
         } catch is CancellationError {
             return
         } catch { failed = true; errorKey = mobileErrorKey(error) }
     }
+
+    public var canManageDocuments: Bool {
+        active && currentUser.map(DocumentTransport.canManage) == true
+    }
+    var canPublishDocuments: Bool { currentUser?.permissions.contains("edit_content") == true }
+    func canDelete(_ document: ProjectDocument) -> Bool {
+        document.uploadedBy == currentUser?.id && (document.pendingKey != nil || (canManageDocuments && !document.clientVisible))
+    }
+    func uploadDocuments(_ drafts: [DocumentDraft]) async throws {
+        for draft in drafts {
+            guard canManageDocuments else { throw VenioAPIError(code: "FORBIDDEN") }
+            guard projects.contains(where: { $0.id == draft.projectId }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+            let document = try await api.uploadDocument(draft)
+            var documents = projectDocuments[draft.projectId, default: []]
+            documents.removeAll { $0.id == document.id }
+            documents.insert(document, at: 0)
+            projectDocuments[draft.projectId] = documents
+        }
+        successFeedback += 1
+    }
+    func deleteDocument(_ document: ProjectDocument) async throws {
+        guard canDelete(document) else { throw VenioAPIError(code: "FORBIDDEN") }
+        try await api.deleteDocument(id: document.id)
+        projectDocuments[document.project]?.removeAll { $0.id == document.id }
+    }
+    func reloadDocuments(projectId: String) async throws {
+        projectDocuments[projectId] = try await api.documents(projectId: projectId)
+    }
+    func documentFile(_ document: ProjectDocument) async throws -> URL { try await api.documentFile(id: document.id) }
 
     public var canManageQuotes: Bool {
         !(currentUser?.permissions ?? []).isDisjoint(with: ["manage_quotes", "manage_billing"])
@@ -105,10 +161,15 @@ import VenioCore
     func canQuote(_ project: Project) -> Bool { project.canQuote }
     func lead(for id: String) -> Lead? { leads.first { $0.id == (leadAliases[id] ?? id) } }
     func createQuote(templateId: String, projectId: String? = nil, leadId: String? = nil) async throws -> QuoteProposal {
-        let quote = try await api.createQuote(templateId: templateId, projectId: projectId, leadId: leadId, title: nil)
-        quotes.removeAll { $0.id == quote.id }
-        quotes.insert(quote, at: 0)
-        return quote
+        do {
+            let quote = try await api.createQuote(templateId: templateId, projectId: projectId, leadId: leadId, title: nil)
+            quotes.removeAll { $0.id == quote.id }
+            quotes.insert(quote, at: 0)
+            return quote
+        } catch {
+            errorFeedback += 1
+            throw error
+        }
     }
     func attachQuote(id: String, projectId: String) async throws {
         let quote = try await api.attachQuote(id: id, projectId: projectId)
@@ -116,20 +177,62 @@ import VenioCore
         quotes.insert(quote, at: 0)
     }
     func sendQuote(id: String) async throws {
-        let quote = try await api.sendQuote(id: id)
-        quotes.removeAll { $0.id == quote.id }
-        quotes.insert(quote, at: 0)
+        do {
+            let quote = try await api.sendQuote(id: id)
+            quotes.removeAll { $0.id == quote.id }
+            quotes.insert(quote, at: 0)
+            successFeedback += 1
+        } catch {
+            errorFeedback += 1
+            throw error
+        }
+    }
+
+    func canEditLead(_ lead: Lead) -> Bool {
+        active && currentUser?.permissions.contains("manage_crm") == true && lead.assignedTo == currentUser?.id
     }
 
     @discardableResult public func createInteraction(_ draft: InteractionDraft) async throws -> TimelineEntry {
-        let entry = try await api.createInteraction(draft)
-        var entries = timeline[draft.subjectId, default: []]
-        entries.removeAll { $0.id == entry.id }
-        entries.append(entry)
-        timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
-        return entry
+        do {
+            guard active else { throw VenioAPIError(code: "SIGNED_OUT") }
+            if draft.subjectType == .lead {
+                guard let lead = lead(for: draft.subjectId), canEditLead(lead) else { throw VenioAPIError(code: "FORBIDDEN") }
+            }
+            let entry = try await api.createInteraction(draft)
+            var entries = timeline[draft.subjectId, default: []]
+            entries.removeAll { $0.id == entry.id }
+            entries.append(entry)
+            timeline[draft.subjectId] = entries.sorted { $0.date > $1.date }
+            if draft.kind == .note { successFeedback += 1 }
+            return entry
+        } catch {
+            if draft.kind == .note { errorFeedback += 1 }
+            throw error
+        }
+    }
+    func lostReasons() async throws -> [String] { try await api.lostReasons() }
+
+    public func updateLead(id: String, patch: LeadPatch) async throws {
+        do {
+            guard let current = lead(for: id), canEditLead(current) else { throw VenioAPIError(code: "FORBIDDEN") }
+            let lead = try await api.updateLead(id: current.id, patch: patch)
+            if current.id != lead.id {
+                leadAliases[current.id] = lead.id
+                leads.removeAll { $0.id == current.id }
+                timeline[lead.id] = timeline.removeValue(forKey: current.id)
+            }
+            replaceLead(lead)
+            if let entries = try? await api.timeline(leadId: lead.id) {
+                timeline[lead.id] = entries.sorted { $0.date > $1.date }
+            }
+            successFeedback += 1
+        } catch {
+            errorFeedback += 1
+            throw error
+        }
     }
     func createLead(_ draft: LeadDraft) async throws -> Lead {
+        guard active, currentUser?.permissions.contains("manage_crm") == true else { throw VenioAPIError(code: "FORBIDDEN") }
         let lead = try await api.createLead(draft)
         leads.insert(lead, at: 0)
         return lead
@@ -147,25 +250,65 @@ import VenioCore
         leads.removeAll { $0.id == lead.id }
         leads.append(lead)
     }
+    public func deactivate() {
+        active = false
+        hasLoaded = false
+        pendingRoutes = []
+        destination = nil
+        requestedTab = nil
+        #if !os(watchOS)
+        IntentBridge.disconnect(store: self)
+        SpotlightIndex.shared.purge()
+        #endif
+    }
+    private var navigationBlocked: Bool {
+        #if !os(watchOS)
+        AppLock.shared.blocksAccess
+        #else
+        false
+        #endif
+    }
+    public func resumeNavigation() async {
+        guard active, hasLoaded, !navigationBlocked else { return }
+        let links = pendingRoutes
+        pendingRoutes = []
+        for link in links { await open(link) }
+    }
     public func open(_ link: DeepLink) async {
+        guard active else { return }
+        guard hasLoaded, !navigationBlocked else { pendingRoutes.append(link); return }
         routeFailed = false
         do {
             var resolved = link
             switch link {
+            case .today, .pipeline, .figures:
+                if link == .pipeline && currentUser?.permissions.contains("view_crm") != true { throw VenioAPIError(code: "FORBIDDEN") }
+                if link == .figures && !canViewFigures { throw VenioAPIError(code: "FORBIDDEN") }
+                destination = nil
+                showingSearch = false
+                requestedTab = link
+                return
             case .lead(let id):
+                guard currentUser?.permissions.contains("view_crm") == true else { throw VenioAPIError(code: "FORBIDDEN") }
                 replaceLead(try await api.lead(id: id))
             case .quote(let id):
+                guard canManageQuotes else { throw VenioAPIError(code: "FORBIDDEN") }
                 let refreshed = try await api.quotes()
                 guard refreshed.contains(where: { $0.id == id }) else { throw VenioAPIError(code: "NOT_FOUND") }
                 quotes = refreshed
             case .project(let id):
+                guard currentUser?.permissions.contains("view_projects") == true else { throw VenioAPIError(code: "FORBIDDEN") }
                 projectDetails[id] = try await api.project(id: id)
+                projectDocuments[id] = try await api.documents(projectId: id)
             case .projectQuotes(let id):
+                guard canManageQuotes else { throw VenioAPIError(code: "FORBIDDEN") }
                 quotes = try await api.quotes()
                 let matches = quotes.filter { $0.project == id }
                 guard !matches.isEmpty else { throw VenioAPIError(code: "NOT_FOUND") }
                 if matches.count == 1, let quote = matches.first { resolved = .quote(quote.id) }
             }
+            guard active else { return }
+            guard !navigationBlocked else { pendingRoutes.append(link); return }
             destination = resolved
         } catch { routeFailed = true }
     }

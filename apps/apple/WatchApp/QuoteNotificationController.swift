@@ -27,7 +27,12 @@ final class QuoteNotificationController: WKUserNotificationHostingController<Quo
         let link = DeepLink.parse(type: payload.userInfo["type"] as? String ?? "", link: payload.userInfo["link"] as? String)
         let live = (WCSession.default.receivedApplicationContext["backend"] as? String).map { $0 == "live" }
             ?? ((try? BackendConfiguration().backend) != .mock)
-        guard !live else { return }
+        if live {
+            let data = WCSession.default.receivedApplicationContext["quotePhones"] as? Data
+            let phones = data.flatMap { try? JSONDecoder().decode([WatchQuotePhone].self, from: $0) } ?? []
+            content.phoneURL = WatchQuotePhones.phoneURL(for: link, in: phones)
+            return
+        }
         Task { @MainActor in
             do {
                 let quotes = try await api.quotes()

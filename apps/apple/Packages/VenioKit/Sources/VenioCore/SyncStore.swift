@@ -61,6 +61,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
 
 @ModelActor public actor SyncStore {
     private var activeSession: UUID?
+    private let memoryCacheID = UUID().uuidString
 
     public func activate(_ scope: SessionIdentity) throws {
         modelContext.autosaveEnabled = false
@@ -71,6 +72,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
                     throw VenioAPIError(code: "PENDING_WRITES_OTHER_ACCOUNT")
                 }
                 try clearSynced()
+                try clearDocumentReceipts()
                 try clearWrites()
                 if let owner { owner.cursor = scope.user.id }
                 else { modelContext.insert(SyncCursor(type: "__owner", cursor: scope.user.id)) }
@@ -85,6 +87,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
         if discardWrites {
             do {
                 try clearSynced()
+                try clearDocumentReceipts()
                 try clearWrites()
                 if let owner = try cursorRecord("__owner") { modelContext.delete(owner) }
                 try modelContext.save()
@@ -141,10 +144,15 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     }
     private func remove(type: String, id: String) throws {
         for record in try modelContext.fetch(FetchDescriptor<SyncedRecord>(predicate: #Predicate { $0.type == type && $0.id == id })) { modelContext.delete(record) }
+        if type == DocumentTransport.syncType {
+            try? FileManager.default.removeItem(at: documentCacheDirectory.appendingPathComponent(id, isDirectory: true))
+        }
         if type == "projects" {
-            for childType in ["projectPhases", "projectUpdates"] {
+            for childType in ["projectPhases", "projectUpdates", DocumentTransport.syncType] {
                 let children = try modelContext.fetch(FetchDescriptor<SyncedRecord>(predicate: #Predicate { $0.type == childType }))
-                for child in children where try ServerCoding.reference(ServerCoding.object(child.json)["project"]) == id { modelContext.delete(child) }
+                for child in children where try ServerCoding.reference(ServerCoding.object(child.json)["project"]) == id {
+                    try remove(type: childType, id: child.id)
+                }
             }
         }
     }
@@ -154,12 +162,16 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
         catch { modelContext.rollback(); throw error }
     }
     private func clearSynced() throws {
+        try? FileManager.default.removeItem(at: documentCacheDirectory)
         try modelContext.delete(model: SyncedRecord.self)
-        for cursor in try modelContext.fetch(FetchDescriptor<SyncCursor>()) where cursor.type != "__owner" { modelContext.delete(cursor) }
+        for cursor in try modelContext.fetch(FetchDescriptor<SyncCursor>()) where cursor.type != "__owner" && !cursor.type.hasPrefix("__documentReceipt:") { modelContext.delete(cursor) }
+    }
+    private func clearDocumentReceipts() throws {
+        for cursor in try modelContext.fetch(FetchDescriptor<SyncCursor>()) where cursor.type.hasPrefix("__documentReceipt:") { modelContext.delete(cursor) }
     }
     private func clearWrites() throws {
         for write in try modelContext.fetch(FetchDescriptor<PendingWrite>()) {
-            removeAudio(write)
+            removeFile(write)
             modelContext.delete(write)
         }
     }
@@ -202,8 +214,97 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
             throw error
         }
     }
+    public func enqueue(_ draft: DocumentDraft, scope: SessionIdentity) throws -> ProjectDocument {
+        try check(scope)
+        if let receipt = try cursorRecord("__documentReceipt:" + draft.idempotencyKey.uuidString)?.cursor,
+           let data = Data(base64Encoded: receipt) {
+            let saved = try JSONDecoder().decode(DocumentReceipt.self, from: data)
+            var normalized = draft
+            normalized.fileURL = saved.draft.fileURL
+            guard normalized == saved.draft else { throw VenioAPIError(code: "IDEMPOTENCY_CONFLICT") }
+            return saved.document
+        }
+        if let previous = try write(draft.idempotencyKey) {
+            guard previous.type == "document" else { throw VenioAPIError(code: "IDEMPOTENCY_CONFLICT") }
+            let saved = try JSONDecoder().decode(DocumentDraft.self, from: previous.payload)
+            var normalized = draft
+            normalized.fileURL = saved.fileURL
+            guard normalized == saved else { throw VenioAPIError(code: "IDEMPOTENCY_CONFLICT") }
+            return resolvedDocument(saved).model(state: previous.state, userId: scope.user.id, date: previous.createdAt)
+        }
+        let access = draft.fileURL.startAccessingSecurityScopedResource()
+        defer { if access { draft.fileURL.stopAccessingSecurityScopedResource() } }
+        try DocumentTransport.validateFile(draft)
+        try FileManager.default.createDirectory(at: documentDirectory, withIntermediateDirectories: true)
+        let destination = documentDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension(draft.fileURL.pathExtension)
+        try FileManager.default.copyItem(at: draft.fileURL, to: destination)
+        var saved = draft
+        saved.fileURL = URL(string: destination.lastPathComponent.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._")))!)!
+        do {
+            let record = PendingWrite(id: draft.idempotencyKey, type: "document", payload: try JSONEncoder().encode(saved), createdAt: .now)
+            modelContext.insert(record)
+            try modelContext.save()
+            return resolvedDocument(saved).model(state: record.state, userId: scope.user.id, date: record.createdAt)
+        } catch {
+            modelContext.rollback()
+            try? FileManager.default.removeItem(at: destination)
+            throw error
+        }
+    }
+    func completeDocument(id: UUID, record: Data?, scope: SessionIdentity) throws {
+        try check(scope)
+        guard let write = try write(id), write.type == "document" else { return }
+        let draft = try JSONDecoder().decode(DocumentDraft.self, from: write.payload)
+        var document = resolvedDocument(draft).model(state: nil, userId: scope.user.id, date: write.createdAt)
+        do {
+            if let record {
+                document = try DocumentTransport.decodeDocument(record)
+                try upsert(type: DocumentTransport.syncType, object: ServerCoding.object(record))
+            }
+            let receipt = DocumentReceipt(draft: draft, document: document)
+            modelContext.insert(SyncCursor(type: "__documentReceipt:" + id.uuidString, cursor: try JSONEncoder().encode(receipt).base64EncodedString()))
+            modelContext.delete(write)
+            try modelContext.save()
+            try? FileManager.default.removeItem(at: resolvedDocument(draft).fileURL)
+        } catch { modelContext.rollback(); throw error }
+    }
+    func removeDocument(id: String, scope: SessionIdentity) throws {
+        try check(scope)
+        do { try remove(type: DocumentTransport.syncType, id: id); try modelContext.save() }
+        catch { modelContext.rollback(); throw error }
+    }
+    func documentDraft(_ payload: Data, scope: SessionIdentity) throws -> DocumentDraft {
+        try check(scope)
+        return try resolvedDocument(JSONDecoder().decode(DocumentDraft.self, from: payload))
+    }
+    private func resolvedDocument(_ draft: DocumentDraft) -> DocumentDraft {
+        var draft = draft
+        draft.fileURL = documentDirectory.appendingPathComponent(draft.fileURL.lastPathComponent)
+        return draft
+    }
+    func documentCacheURL(_ document: ProjectDocument, scope: SessionIdentity) throws -> URL {
+        try check(scope)
+        return try documentCacheDirectory.appendingPathComponent(document.id, isDirectory: true)
+            .appendingPathComponent(URL(fileURLWithPath: document.fileName).lastPathComponent)
+    }
+    private var documentCacheDirectory: URL {
+        get throws {
+            let configuration = modelContainer.configurations.first!
+            let namespace = configuration.isStoredInMemoryOnly ? memoryCacheID : configuration.name
+            return FileManager.default.temporaryDirectory.appendingPathComponent("VenioPreviews", isDirectory: true)
+                .appendingPathComponent(namespace, isDirectory: true)
+                .appendingPathComponent(try cursorRecord("__owner")?.cursor ?? "", isDirectory: true)
+        }
+    }
+    private struct DocumentReceipt: Codable { var draft: DocumentDraft; var document: ProjectDocument }
+    private var documentDirectory: URL {
+        let configuration = modelContainer.configurations.first!
+        let root = configuration.isStoredInMemoryOnly ? FileManager.default.temporaryDirectory.appendingPathComponent("Venio") : configuration.url.deletingLastPathComponent()
+        return root.appendingPathComponent("Outbox/Documents", isDirectory: true)
+    }
     func enqueue(leadId: String, patch: LeadPatch, scope: SessionIdentity) throws {
         try check(scope)
+        try patch.validate()
         do {
             modelContext.insert(PendingWrite(id: UUID(), type: "leadPatch", payload: try JSONEncoder().encode(LeadPatchWrite(leadId: resolvedLeadId(leadId, scope: scope), patch: patch)), createdAt: .now))
             try modelContext.save()
@@ -226,14 +327,14 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     private func write(_ id: UUID) throws -> PendingWrite? {
         try modelContext.fetch(FetchDescriptor<PendingWrite>(predicate: #Predicate { $0.id == id })).first
     }
-    func attempted(id: UUID, scope: SessionIdentity) throws {
+    @discardableResult func attempted(id: UUID, scope: SessionIdentity) throws -> Bool {
         try check(scope)
         do {
-            if let write = try write(id) {
-                write.attempts += 1
-                if write.firstAttemptAt == nil { write.firstAttemptAt = .now }
-            }
+            guard let write = try write(id) else { return false }
+            write.attempts += 1
+            if write.firstAttemptAt == nil { write.firstAttemptAt = .now }
             try modelContext.save()
+            return true
         } catch { modelContext.rollback(); throw error }
     }
     func release(id: UUID, scope: SessionIdentity) throws {
@@ -273,7 +374,7 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
                     }
                 }
             }
-            let audio = audioURL(write)
+            let audio = fileURL(write)
             modelContext.delete(write)
             try modelContext.save()
             if let audio { try? FileManager.default.removeItem(at: audio) }
@@ -286,6 +387,11 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
                 let key = UUID()
                 if write.type == "interaction" {
                     var draft = try JSONDecoder().decode(InteractionDraft.self, from: write.payload)
+                    draft.idempotencyKey = key
+                    write.payload = try JSONEncoder().encode(draft)
+                }
+                if write.type == "document" {
+                    var draft = try JSONDecoder().decode(DocumentDraft.self, from: write.payload)
                     draft.idempotencyKey = key
                     write.payload = try JSONEncoder().encode(draft)
                 }
@@ -302,17 +408,20 @@ struct SyncPageInfo: Decodable, Sendable { var nextCursor: String?; var hasMore:
     public func deleteWrite(id: UUID, scope: SessionIdentity) throws {
         try check(scope)
         guard let write = try write(id) else { return }
-        do { let audio = audioURL(write); modelContext.delete(write); try modelContext.save(); if let audio { try? FileManager.default.removeItem(at: audio) } }
+        do { let audio = fileURL(write); modelContext.delete(write); try modelContext.save(); if let audio { try? FileManager.default.removeItem(at: audio) } }
         catch { modelContext.rollback(); throw error }
     }
     private static var audioDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Venio/Outbox", isDirectory: true)
     }
-    private func removeAudio(_ write: PendingWrite) {
-        if let url = audioURL(write) { try? FileManager.default.removeItem(at: url) }
+    private func removeFile(_ write: PendingWrite) {
+        if let url = fileURL(write) { try? FileManager.default.removeItem(at: url) }
     }
-    private func audioURL(_ write: PendingWrite) -> URL? {
+    private func fileURL(_ write: PendingWrite) -> URL? {
+        if write.type == "document", let draft = try? JSONDecoder().decode(DocumentDraft.self, from: write.payload) {
+            return resolvedDocument(draft).fileURL
+        }
         guard write.type == "interaction", let draft = try? JSONDecoder().decode(InteractionDraft.self, from: write.payload),
               let url = draft.audioFileURL, url.deletingLastPathComponent().standardizedFileURL == Self.audioDirectory.standardizedFileURL else { return nil }
         return url

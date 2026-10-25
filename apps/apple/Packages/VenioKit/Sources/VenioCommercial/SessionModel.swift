@@ -12,7 +12,9 @@ import VenioTheme
     public private(set) var starting = true
     public private(set) var offline = false
     public private(set) var pending: [QueuedWrite] = []
+    public private(set) var sendingWriteID: UUID?
     public private(set) var refreshing = false
+    public private(set) var lastSyncedAt: Date?
     public var errorKey: String?
     public var onDisconnect: (@MainActor () -> Void)?
     public var additionalPendingCount: (@MainActor () -> Int)?
@@ -22,6 +24,7 @@ import VenioTheme
     private let monitor = NWPathMonitor()
     private var observation: Task<Void, Never>?
     private var updates: Task<Void, Never>?
+    private var outboxActivity: Task<Void, Never>?
     private var preferenceWrite: Task<Void, Never>?
     private var started = false
     private var refreshID: UUID?
@@ -29,7 +32,7 @@ import VenioTheme
     private var connectionTask: Task<Void, Never>?
 
     public init(api: LiveVenioAPI, themes: ThemeManager) { self.api = api; self.themes = themes }
-    isolated deinit { observation?.cancel(); updates?.cancel(); preferenceWrite?.cancel(); connectionTask?.cancel(); monitor.cancel() }
+    isolated deinit { observation?.cancel(); updates?.cancel(); outboxActivity?.cancel(); preferenceWrite?.cancel(); connectionTask?.cancel(); monitor.cancel() }
 
     public func start() async {
         guard !started else { return }
@@ -39,6 +42,13 @@ import VenioTheme
             for await state in states {
                 guard let self, !Task.isCancelled else { return }
                 self.received(state)
+            }
+        }
+        let activity = await api.outbox.activity()
+        outboxActivity = Task { [weak self] in
+            for await id in activity {
+                guard let self, !Task.isCancelled else { return }
+                self.sendingWriteID = id
             }
         }
         let events = await api.updates()
@@ -73,15 +83,22 @@ import VenioTheme
         case .signedOut:
             refreshID = nil
             refreshing = false
+            lastSyncedAt = nil
             connectionTask?.cancel()
             lastPreferences = nil
+            commercial?.deactivate()
+            IntentBridge.connect(store: nil, session: nil)
+            SpotlightIndex.shared.purge()
             commercial = nil
             pending = []
+            sendingWriteID = nil
             preferenceWrite?.cancel()
             if case .signedIn = previous { onDisconnect?() }
         case .signedIn(let user, _):
+            commercial?.deactivate()
             let store = CommercialStore(api: api, clock: DemoClock(now: .now))
             commercial = store
+            IntentBridge.connect(store: store, session: self)
             connectionTask = Task {
                 await loadPreferences(userID: user.id)
                 guard !Task.isCancelled else { return }
@@ -97,7 +114,8 @@ import VenioTheme
         refreshing = true
         defer { if refreshID == id { refreshing = false; refreshID = nil } }
         errorKey = nil
-        do { try await api.refresh() }
+        var synchronized = false
+        do { try await api.refresh(); synchronized = true }
         catch {
             guard commercial === expected else { return }
             if let network = error as? URLError { if network.code != .cancelled { offline = true } }
@@ -106,6 +124,7 @@ import VenioTheme
         guard commercial === expected else { return }
         await reloadPending()
         await expected.load(force: true)
+        if commercial === expected && synchronized && !offline && !expected.failed { lastSyncedAt = .now }
     }
     @discardableResult public func reloadPending() async -> Bool {
         guard case .signedIn = state else { pending = []; return true }
@@ -180,6 +199,14 @@ public func mobileErrorKey(_ error: any Error) -> String {
         }
     }
     let code = (error as? HTTPFailure)?.code ?? (error as? VenioAPIError)?.code
+    if code == "FILE_TOO_LARGE" { return "Le fichier dépasse la limite de 20 Mo." }
+    if code == "UNSUPPORTED_MEDIA_TYPE" { return "Ce type de fichier n’est pas accepté." }
+    if code == "VISIBILITY_FORBIDDEN" { return "Vous ne pouvez pas rendre ce document visible par le client." }
+    if code == "DOCUMENT_WRITE_FORBIDDEN" { return "Vous pouvez supprimer uniquement vos propres documents internes." }
+    if code == "PROJECT_OUT_OF_SCOPE" { return "Vous n’avez pas accès à ce projet." }
+    if code == "PROJECT_NOT_FOUND" { return "Ce projet est introuvable." }
+    if code == "IDEMPOTENCY_CONFLICT" { return "Cette clé d’envoi est déjà utilisée pour un autre contenu. Réessayez avec une nouvelle clé." }
+    if code == "WRITE_IN_PROGRESS" { return "Envoi en cours. Réessayez après son traitement." }
     if code == "LEAD_ASSIGNMENT_FORBIDDEN" { return "Vous ne pouvez pas réassigner le lead d’un collègue" }
     if let error = error as? HTTPFailure {
         if error.code == "BROWSER_SESSION_REQUIRED" || error.code == "MFA_STEP_UP_REQUIRED" { return "Disponible sur le web" }

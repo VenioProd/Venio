@@ -17,6 +17,7 @@ public actor LiveVenioAPI: VenioAPI {
     public nonisolated let outbox: Outbox
     private var connected = true
     private var retryTask: Task<Void, Never>?
+    private var followUpTask: Task<Void, Never>?
     private var observers: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     public init(session: AuthSession, store: SyncStore) {
@@ -37,6 +38,8 @@ public actor LiveVenioAPI: VenioAPI {
     public func refresh() async throws {
         defer { changed() }
         guard connected else { return }
+        let scope = try await session.identity()
+        let hadDocuments = try await store.writes(scope: scope).contains { $0.type == "document" && $0.state == "pending" }
         try await outbox.drain()
         if let next = await outbox.nextRetryAt {
             let scope = try await session.identity()
@@ -48,6 +51,14 @@ public actor LiveVenioAPI: VenioAPI {
             }
         }
         try await syncEngine.sync()
+        if hadDocuments {
+            // Le serveur ne publie un élément dans la synchro qu'après un court délai : un second passage le récupère.
+            followUpTask?.cancel()
+            followUpTask = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                try? await self?.refresh()
+            }
+        }
     }
     private func retryReady(scope: SessionIdentity) async {
         retryTask = nil
@@ -159,10 +170,84 @@ public actor LiveVenioAPI: VenioAPI {
         }
     }
 
+    public func documents(projectId: String) async throws -> [ProjectDocument] {
+        let scope = try await session.identity()
+        var documents: [ProjectDocument] = []
+        if scope.user.permissions.contains("view_content") {
+            documents = try await store.records(type: DocumentTransport.syncType, scope: scope)
+                .map(DocumentTransport.decodeDocument).filter { $0.project == projectId }
+        }
+        for write in try await store.writes(scope: scope) where write.type == "document" {
+            let draft = try await store.documentDraft(write.payload, scope: scope)
+            if draft.projectId == projectId {
+                documents.append(draft.model(state: write.state, userId: scope.user.id, date: write.createdAt))
+            }
+        }
+        return documents.sorted { $0.uploadedAt > $1.uploadedAt }
+    }
+    public func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument {
+        let scope = try await session.identity()
+        guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
+        var draft = draft
+        if !scope.user.permissions.contains("edit_content") { draft.clientVisible = false }
+        guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VenioAPIError(code: "INVALID_INPUT") }
+        guard try await projects().contains(where: { $0.id == draft.projectId }) else { throw VenioAPIError(code: "PROJECT_OUT_OF_SCOPE") }
+        let document = try await store.enqueue(draft, scope: scope)
+        changed()
+        Task { try? await self.refresh() }
+        return document
+    }
+    public func deleteDocument(id: String) async throws {
+        let scope = try await session.identity()
+        if id.hasPrefix("pending-"), let key = UUID(uuidString: String(id.dropFirst("pending-".count))) {
+            guard try await store.writes(scope: scope).contains(where: { $0.id == key && $0.type == "document" }) else { throw VenioAPIError(code: "NOT_FOUND") }
+            try await outbox.delete(id: key)
+        } else {
+            guard DocumentTransport.canManage(scope.user.summary) else { throw VenioAPIError(code: "FORBIDDEN") }
+            let documents = try await store.records(type: DocumentTransport.syncType, scope: scope).map(DocumentTransport.decodeDocument)
+            guard let document = documents.first(where: { $0.id == id && $0.uploadedBy == scope.user.id && !$0.clientVisible }) else {
+                throw VenioAPIError(code: "DOCUMENT_WRITE_FORBIDDEN")
+            }
+            _ = try await online(DocumentTransport.deletionRequest(id: id, projectId: document.project, session: session), scope: scope)
+            try await store.removeDocument(id: id, scope: scope)
+        }
+        changed()
+    }
+    public func documentFile(id: String) async throws -> URL {
+        let scope = try await session.identity()
+        if id.hasPrefix("pending-"), let key = UUID(uuidString: String(id.dropFirst("pending-".count))),
+           let write = try await store.writes(scope: scope).first(where: { $0.id == key && $0.type == "document" }) {
+            return try await store.documentDraft(write.payload, scope: scope).fileURL
+        }
+        guard scope.user.permissions.contains("view_content") else { throw VenioAPIError(code: "FORBIDDEN") }
+        guard let document = try await store.records(type: DocumentTransport.syncType, scope: scope).map(DocumentTransport.decodeDocument).first(where: { $0.id == id }) else {
+            throw VenioAPIError(code: "NOT_FOUND")
+        }
+        let data = try await online(DocumentTransport.fileRequest(id: id, projectId: document.project, session: session), scope: scope)
+        let url = try await store.documentCacheURL(document, scope: scope)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
     public func quotes() async throws -> [QuoteProposal] {
         let scope = try await session.identity()
         guard !scope.user.permissions.isDisjoint(with: ["manage_quotes", "view_billing", "manage_billing"]) else { return [] }
         return try await store.records(type: "quotes", scope: scope).map { try ServerCoding.decoder().decode(QuoteDTO.self, from: $0).model }.sorted { $0.createdAt > $1.createdAt }
+    }
+    public func lostReasons() async throws -> [String] {
+        let scope = try await session.identity()
+        guard scope.user.permissions.contains("view_crm") else { return [] }
+        struct Response: Codable { var lostReasons: [String] }
+        do {
+            let data = try await online(session.request(path: "/api/admin/crm/worklist"), scope: scope)
+            let result = try ServerCoding.decoder().decode(Response.self, from: data)
+            try await saveSnapshot(type: "lostReasons", data: ServerCoding.encoder().encode(result), scope: scope)
+            return result.lostReasons
+        } catch let error as VenioAPIError where error.code == "CONNECTION_REQUIRED" {
+            guard let data = try await snapshot(type: "lostReasons", scope: scope) else { return [] }
+            return try ServerCoding.decoder().decode(Response.self, from: data).lostReasons
+        }
     }
     public func quoteTemplates() async throws -> [QuoteTemplate] {
         let scope = try await session.identity()
@@ -295,7 +380,7 @@ private extension InteractionDraft {
 private extension Lead {
     mutating func apply(_ patch: LeadPatch) {
         if let status = patch.status { self.status = status }
-        if let lostReason = patch.lostReason { self.lostReason = lostReason }
+        if patch.status == .lost, let lostReason = patch.lostReason { self.lostReason = lostReason }
         switch patch.nextActionAt {
         case .set(let date): nextActionAt = date
         case .clear: nextActionAt = nil

@@ -33,12 +33,14 @@ targets:
     info:
       path: .build/Venio-Info.plist
       properties:
+        NSSupportsLiveActivities: true
         CFBundleURLTypes:
           - CFBundleURLName: paris.venio.app
             CFBundleURLSchemes: [venio]
+        NSFaceIDUsageDescription: Venio utilise Face ID pour déverrouiller vos données sur cet appareil.
         NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
         NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
-        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite.
+        NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app
@@ -62,6 +64,33 @@ targets:
       - target: VenioWatch
         platformFilter: iOS
         embed: true
+      - target: VenioWidgets
+        platformFilter: iOS
+        embed: true
+  VenioWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widgets
+      - Shared/MeetingActivityAttributes.swift
+    info:
+      path: .build/VenioWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Venio
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.widgets
+        CODE_SIGN_ENTITLEMENTS: Widgets/VenioWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: '1,2'
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
   VenioWatch:
     type: application
     platform: watchOS

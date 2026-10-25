@@ -7,13 +7,12 @@ struct NewLeadView: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
-    #if os(iOS)
-    @State private var tab = "Carte"
+    @State private var tab: String
     private let tabs = ["Carte", "Saisie", "Voix"]
-    #else
-    @State private var tab = "Saisie"
-    private let tabs = ["Saisie", "Voix"]
-    #endif
+    init(initialTab: String = "Saisie", onCreated: @escaping (String) -> Void) {
+        _tab = State(initialValue: initialTab)
+        self.onCreated = onCreated
+    }
     @State private var draft = LeadDraft()
     @State private var jobTitle = ""
     @State private var website = ""
@@ -31,7 +30,6 @@ struct NewLeadView: View {
                         else { VText(item).tag(item) }
                     }
                 }.pickerStyle(.segmented)
-                #if os(iOS)
                 if tab == "Carte" {
                     BusinessCardScanner { card in
                         draft.company = card.company
@@ -43,7 +41,6 @@ struct NewLeadView: View {
                         fromCard = true
                     }
                 }
-                #endif
                 if tab == "Voix" { VoiceCaptureView(capture: capture) }
                 field("Entreprise", text: $draft.company).accessibilityIdentifier("newLead.company")
                 field("Contact", text: $draft.contactName).accessibilityIdentifier("newLead.contact")

@@ -9,6 +9,7 @@ public protocol VenioAPI: Sendable {
     func lead(id: String) async throws -> Lead
     func timeline(leadId: String) async throws -> [TimelineEntry]
     func quotes() async throws -> [QuoteProposal]
+    func lostReasons() async throws -> [String]
     func quoteTemplates() async throws -> [QuoteTemplate]
     func createQuote(templateId: String, projectId: String?, leadId: String?, title: String?) async throws -> QuoteProposal
     func attachQuote(id: String, projectId: String) async throws -> QuoteProposal
@@ -19,6 +20,10 @@ public protocol VenioAPI: Sendable {
     func appointments() async throws -> [Appointment]
     func projects() async throws -> [Project]
     func project(id: String) async throws -> ProjectDetail
+    func documents(projectId: String) async throws -> [ProjectDocument]
+    func uploadDocument(_ draft: DocumentDraft) async throws -> ProjectDocument
+    func deleteDocument(id: String) async throws
+    func documentFile(id: String) async throws -> URL
 }
 
 public struct DemoClock: Sendable {
@@ -36,5 +41,10 @@ public struct DemoClock: Sendable {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
         return calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour, minute: minute))!
+    }
+
+    public var tomorrowMorning: Date {
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now)!
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)!
     }
 }

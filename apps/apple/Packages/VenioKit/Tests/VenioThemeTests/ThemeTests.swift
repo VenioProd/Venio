@@ -17,6 +17,17 @@ import Testing
     }
 }
 
+@Test func themeViewsOnlyIndexThePalettePartsOfTheirTheme() {
+    for theme in ThemeKind.allCases {
+        for background in theme.backgrounds {
+            let palette = ThemePalette(ThemeSelection(theme: theme, background: background, accent: theme.accents[0]))
+            let combination = "\(theme.rawValue)/\(background)"
+            if palette.theme == .glass { #expect(palette.halos.count >= 2, Comment(rawValue: combination)) }
+            else { #expect(!palette.surfaces.isEmpty, Comment(rawValue: combination)) }
+        }
+    }
+}
+
 @Test func urgentRemainsDistinct() {
     let coral = ThemePalette(ThemeSelection(theme: .glass, background: "mist", accent: "coral"))
     let magenta = ThemePalette(ThemeSelection(theme: .neon, background: "black", accent: "magenta"))

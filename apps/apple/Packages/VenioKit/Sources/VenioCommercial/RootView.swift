@@ -10,20 +10,23 @@ public struct RootView: View {
     @State private var store: CommercialStore
     private let initialTab: CommercialTab
     private let initialLeadID: String?
+    private let initialProjectID: String?
     private let initialAdminSection: AdminSection?
     private let initialAdminItemID: String?
 
-    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
+    public init(api: any VenioAPI, clock: DemoClock = DemoClock(), initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
         _store = State(initialValue: CommercialStore(api: api, clock: clock))
         self.initialTab = initialTab
         self.initialLeadID = initialLeadID
+        self.initialProjectID = initialProjectID
         self.initialAdminSection = initialAdminSection
         self.initialAdminItemID = initialAdminItemID
     }
-    public init(store: CommercialStore, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
+    public init(store: CommercialStore, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
         _store = State(initialValue: store)
         self.initialTab = initialTab
         self.initialLeadID = initialLeadID
+        self.initialProjectID = initialProjectID
         self.initialAdminSection = initialAdminSection
         self.initialAdminItemID = initialAdminItemID
     }
@@ -31,7 +34,7 @@ public struct RootView: View {
         Group {
             if store.hasLoaded, let user = store.currentUser {
                 switch user.role {
-                case .commercial: CommercialSpace(initialTab: initialTab, initialLeadID: initialLeadID)
+                case .commercial: CommercialSpace(initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID)
                 case .admin:
                     AdminRootView(user: user, session: session, clock: store.clock,
                         initialSection: initialAdminSection, initialItemID: initialAdminItemID).id(user.id)

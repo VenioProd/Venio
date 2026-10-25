@@ -18,8 +18,11 @@ public struct LeadDetailView: View {
         true
         #endif
     }
+    @State private var messageChannel: FollowUpChannel?
     @State private var showingVoice = false
     @State private var showingQuote = false
+    @State private var showingFollowUp = false
+    @State private var showingStage = false
     let id: String
     public init(id: String) { self.id = id }
     private var formats: CommercialFormats { CommercialFormats(locale: locale) }
@@ -27,7 +30,7 @@ public struct LeadDetailView: View {
         Group {
             if let lead = store.lead(for: id) {
                 CommercialPage {
-                    header(lead)
+                    header(lead).leadInteractions(lead)
                     if regular {
                         HStack(alignment: .top, spacing: 22) {
                             information(lead).frame(maxWidth: .infinity)
@@ -48,14 +51,26 @@ public struct LeadDetailView: View {
         }
         .task(id: id) { await store.openLead(id: id) }
         .background { ThemedBackground() }
+        .sheet(item: $messageChannel) { channel in
+            MessageFollowUpView(leadID: id, channel: channel)
+        }
         .sheet(isPresented: $showingVoice) {
             if let lead = store.lead(for: id) { VoiceNoteView(lead: lead) }
+        }
+        .sheet(isPresented: $showingFollowUp) {
+            if let lead = store.lead(for: id) { LeadFollowUpSheet(lead: lead, clock: store.clock) }
+        }
+        .sheet(isPresented: $showingStage) {
+            if let lead = store.lead(for: id) { LeadStageSheet(lead: lead) }
         }
         .sheet(isPresented: $showingQuote) {
             if let lead = store.lead(for: id) {
                 NewQuoteView(leadId: lead.id)
             }
         }
+    }
+    private func canEdit(_ lead: Lead) -> Bool {
+        store.currentUser?.permissions.contains("manage_crm") == true && lead.assignedTo == store.currentUser?.id
     }
     private func information(_ lead: Lead) -> some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -66,10 +81,12 @@ public struct LeadDetailView: View {
             }.venioCard()
             nextAction(lead)
             HStack(spacing: 6) {
-                action("Appeler", icon: "phone", url: lead.phoneURL)
-                action("E-mail", icon: "envelope", url: lead.emailURL)
-                action("Relance", icon: "clock", url: nil)
-                action("Étape", icon: "arrow.right.circle", url: nil)
+                action("Appeler", icon: "phone", url: lead.phoneURL).disabled(!canEdit(lead))
+                action("E-mail", icon: "envelope", url: lead.emailURL).disabled(!canEdit(lead))
+                editAction("Relance", icon: "clock") { showingFollowUp = true }
+                    .disabled(!canEdit(lead)).accessibilityIdentifier("lead.followUp")
+                editAction("Étape", icon: "arrow.right.circle") { showingStage = true }
+                    .disabled(!canEdit(lead)).accessibilityIdentifier("lead.stage")
                 if store.canManageQuotes {
                     Button { showingQuote = true } label: {
                         VStack(spacing: 8) {
@@ -80,6 +97,12 @@ public struct LeadDetailView: View {
                     }.buttonStyle(.plain).frame(maxWidth: .infinity).disabled(!lead.canQuote)
                 }
             }
+            HStack(spacing: 16) {
+                Button { messageChannel = .email } label: { VText("Relancer par e-mail") }
+                    .disabled(!canEdit(lead) || lead.emailURL == nil)
+                Button { messageChannel = .sms } label: { VText("Relancer par SMS") }
+                    .disabled(!canEdit(lead) || lead.phoneURL == nil)
+            }.font(.caption).foregroundStyle(palette.accentText.color)
             if store.canManageQuotes && !lead.canQuote {
                 VText("Aucun projet lié dans votre portefeuille. Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption).foregroundStyle(palette.textSecondary.color)
             }
@@ -142,14 +165,19 @@ public struct LeadDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             VText("Prochaine action").font(.headline)
             if let date = lead.nextActionAt {
-                if store.clock.calendar.isDate(date, inSameDayAs: store.clock.now) {
-                    Text(verbatim: CommercialStrings.format("Relance aujourd’hui · %@", locale: locale, formats.time(date)))
-                } else {
-                    Text(verbatim: CommercialStrings.format("Relance du %@", locale: locale, formats.date(date)))
-                }
+                Text(verbatim: formats.followUp(date, clock: store.clock))
                 CommercialBadge(text: formats.countdown(to: date, from: store.clock.now), tone: date < store.clock.now ? .urgent : .accent)
             } else { VText("Aucune action prévue") }
         }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
+    }
+    private func editAction(_ title: String, icon: String, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            VStack(spacing: 8) {
+                Image(systemName: icon).font(.title3).accessibilityHidden(true)
+                VText(title).font(.caption)
+            }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(palette.accent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        }.buttonStyle(.plain).frame(maxWidth: .infinity)
     }
     private func action(_ title: String, icon: String, url: URL?) -> some View {
         Button {

@@ -30,13 +30,17 @@ public struct CommercialSpace: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.locale) private var locale
-    @State private var showingNewLead = false
+    @State private var tabRouteRevision = 0
+    @State private var searchDestination: DeepLink?
+    private let initialProjectID: String?
     @State private var tab: CommercialTab
     @State private var todayPath: [String]
     @State private var pipelinePath: [String]
+    @Namespace private var pipelineTransition
 
-    public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
-        _tab = State(initialValue: initialLeadID == nil ? initialTab : .pipeline)
+    public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil) {
+        self.initialProjectID = initialProjectID
+        _tab = State(initialValue: initialProjectID != nil ? .projects : initialLeadID == nil ? initialTab : .pipeline)
         _todayPath = State(initialValue: [])
         _pipelinePath = State(initialValue: initialLeadID.map { [$0] } ?? [])
     }
@@ -46,38 +50,57 @@ public struct CommercialSpace: View {
             NavigationStack(path: $todayPath) {
                 TodayView { todayPath.append($0) }
                     .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
-            }.tabItem { tabLabel(.today) }.tag(CommercialTab.today)
+            }.commercialQuickEntry(inHeader: true).tabItem { tabLabel(.today) }.tag(CommercialTab.today)
             if store.currentUser?.permissions.contains("view_crm") == true {
                 NavigationStack(path: $pipelinePath) {
-                    PipelineView { pipelinePath.append($0) }
-                        .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
-                }.tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
+                    PipelineView(transitionNamespace: pipelineTransition) { pipelinePath.append($0) }
+                        .navigationDestination(for: String.self) { id in
+                            LeadDetailView(id: id)
+                                #if os(iOS)
+                                .navigationTransition(.zoom(sourceID: id, in: pipelineTransition))
+                                #endif
+                        }
+                }.commercialQuickEntry(inHeader: true).tabItem { tabLabel(.pipeline) }.tag(CommercialTab.pipeline)
             }
             if store.currentUser?.permissions.contains("view_projects") == true {
-                ProjectsTab().tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
+                ProjectsTab(initialProjectID: initialProjectID).commercialQuickEntry().tabItem { tabLabel(.projects) }.tag(CommercialTab.projects)
             }
             if store.canManageQuotes {
-                NavigationStack { QuotesView() }.tabItem { tabLabel(.quotes) }.tag(CommercialTab.quotes)
+                NavigationStack { QuotesView() }.commercialQuickEntry().tabItem { tabLabel(.quotes) }.tag(CommercialTab.quotes)
             }
             if store.canViewFigures {
-                NavigationStack { SalesFiguresView() }.tabItem { tabLabel(.figures) }.tag(CommercialTab.figures)
+                NavigationStack { SalesFiguresView() }.commercialQuickEntry().tabItem { tabLabel(.figures) }.tag(CommercialTab.figures)
             }
         }
+        .id(tabRouteRevision)
+        #if os(iOS)
+        .sensoryFeedback(.success, trigger: store.successFeedback)
+        .sensoryFeedback(.error, trigger: store.errorFeedback)
+        #endif
         .tabViewStyle(.sidebarAdaptable)
         #if os(iOS)
         // La maquette iPad garde la barre d'onglets en haut, même en paysage, pour laisser toute la largeur au kanban.
         .defaultAdaptableTabBarPlacement(.tabBar)
         #endif
-        .quickEntry(isEnabled: store.currentUser?.permissions.contains("manage_crm") == true) {
-            HStack {
-                OutboxStatusView()
-                Button { showingNewLead = true } label: {
-                    Label { VText("Saisie rapide") } icon: { Image(systemName: "plus") }
-                }.frame(maxWidth: .infinity).accessibilityIdentifier("quickEntry.open")
-            }
+        .background {
+            Button { store.showingQuickEntry = true } label: { VText("Ajouter") }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(!store.canQuickEntry)
+                .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
+            Button { store.showingSearch = true } label: { VText("Rechercher") }
+                .keyboardShortcut("k", modifiers: .command)
+                .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
         }
-        .sheet(isPresented: $showingNewLead) {
-            NewLeadView { id in tab = .pipeline; pipelinePath = [id] }
+        .sheet(isPresented: Binding(get: { store.showingSearch }, set: { store.showingSearch = $0 }), onDismiss: {
+            if let destination = searchDestination {
+                searchDestination = nil
+                Task { await store.open(destination) }
+            }
+        }) {
+            GlobalSearchView { link in searchDestination = link; store.showingSearch = false }
+        }
+        .sheet(isPresented: Binding(get: { store.showingQuickEntry }, set: { store.showingQuickEntry = $0 })) {
+            QuickEntryView { id in tab = .pipeline; pipelinePath = [id] }
         }
         .sheet(isPresented: Binding(get: { store.destination != nil }, set: { if !$0 { store.destination = nil } })) {
             if let destination = store.destination { NotificationDestinationView(destination: destination) }
@@ -92,6 +115,21 @@ public struct CommercialSpace: View {
             if phase == .active { store.returnedToApplication() }
         }
         #endif
+        .onChange(of: store.requestedTab, initial: true) { _, link in
+            guard let link else { return }
+            store.requestedTab = nil
+            store.showingQuickEntry = false
+            #if os(iOS)
+            store.callPrompt = nil
+            #endif
+            tabRouteRevision += 1
+            switch link {
+            case .today: todayPath = []; tab = .today
+            case .pipeline: pipelinePath = []; tab = .pipeline
+            case .figures: tab = .figures
+            default: break
+            }
+        }
         .onAppear {
             if tab == .quotes && !store.canManageQuotes { tab = .today }
             if tab == .figures && !store.canViewFigures { tab = .today }
@@ -114,14 +152,4 @@ public struct AdminPlaceholderView: View {
     }
 }
 
-private extension View {
-    /// Accessoire de la barre d'onglets sur iOS, bouton de barre d'outils sur Mac.
-    @ViewBuilder func quickEntry(isEnabled: Bool, @ViewBuilder content: () -> some View) -> some View {
-        #if os(iOS)
-        tabViewBottomAccessory(isEnabled: isEnabled, content: content)
-        #else
-        toolbar { if isEnabled { ToolbarItem(placement: .primaryAction) { content() } } }
-        #endif
-    }
-}
 #endif

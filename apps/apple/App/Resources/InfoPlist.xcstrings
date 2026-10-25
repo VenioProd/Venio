@@ -41,13 +41,30 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio utilise la caméra pour lire les cartes de visite."
+            "value": "Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio uses the camera to read business cards."
+            "value": "Venio uses the camera to read business cards and scan your project documents."
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio utilise Face ID pour déverrouiller vos données sur cet appareil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venio uses Face ID to unlock your data on this device."
           }
         }
       }
