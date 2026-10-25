@@ -55,6 +55,9 @@ import XCTest
         app.launch()
         XCTAssertTrue(app.staticTexts["Maison Calder"].waitForExistence(timeout: 30))
         app.buttons["quickEntry.open"].firstMatch.tap()
+        let newLead = app.buttons["quickEntry.newLead"].firstMatch
+        XCTAssertTrue(newLead.waitForExistence(timeout: 5))
+        newLead.tap()
         let manual = app.buttons["newLead.manualTab"].firstMatch
         if manual.waitForExistence(timeout: 5) { manual.tap() }
         let company = app.textFields["newLead.company"]
@@ -70,7 +73,7 @@ import XCTest
     func test5_offlineLeadIsCreatedWhenBackOnline() {
         app.launch()
         XCTAssertTrue(app.staticTexts["Maison Calder"].waitForExistence(timeout: 30))
-        // L'indicateur de file (accessoire de la barre d'onglets) disparaît quand la file est vide.
+        // L'indicateur de file disparaît quand la file est vide.
         let pending = app.descendants(matching: .any).containing(NSPredicate(format: "label CONTAINS[c] 'en attente'")).firstMatch
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: pending)
         waitForExpectations(timeout: 60)

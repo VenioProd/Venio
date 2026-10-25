@@ -12,6 +12,8 @@ import VenioCore
     public private(set) var projects: [Project] = []
     public private(set) var projectDocuments: [String: [ProjectDocument]] = [:]
     public var showingSearch = false
+    var showingQuickEntry = false
+    var canQuickEntry: Bool { currentUser?.permissions.contains("manage_crm") == true || canManageDocuments }
     public private(set) var projectDetails: [String: ProjectDetail] = [:]
     public private(set) var currentUser: UserSummary?
     public private(set) var isLoading = false

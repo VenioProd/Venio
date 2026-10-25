@@ -47,14 +47,15 @@ struct LeadRow: View {
     var icon: String = "building.2"
     var urgent = false
     var showsAssignee = false
+    var dense = false
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: dense ? 8 : 10) {
             Image(systemName: icon)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(urgent ? palette.urgent.color : palette.accentText.color)
-                .frame(width: 34, height: 34)
+                .frame(width: dense ? 32 : 34, height: dense ? 32 : 34)
                 .background((urgent ? palette.urgent.color : palette.accent.color).opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 10))
+                            in: RoundedRectangle(cornerRadius: dense ? 8 : 10))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: lead.company).font(.subheadline.weight(.semibold))
@@ -77,20 +78,23 @@ struct LeadRow: View {
             }.fixedSize(horizontal: true, vertical: false)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 10)
+        .padding(.vertical, dense ? 8 : 10)
         .contentShape(Rectangle())
     }
 }
 
 struct CommercialPage<Content: View>: View {
+    #if os(iOS)
+    @Environment(\.hasFloatingQuickEntry) private var hasFloatingQuickEntry
+    #endif
     @ViewBuilder let content: Content
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) { content }
+            VStack(alignment: .leading, spacing: 24) { content }
                 .padding().frame(maxWidth: 1000).frame(maxWidth: .infinity)
         }
-        #if !os(watchOS)
-        .commercialScrollClearance()
+        #if os(iOS)
+        .contentMargins(.bottom, hasFloatingQuickEntry ? 72 : 0, for: .scrollContent)
         #endif
         .background { ThemedBackground() }
     }

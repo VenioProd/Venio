@@ -5,7 +5,6 @@ import VenioTheme
 
 extension View {
     func commercialRefreshable() -> some View { modifier(CommercialRefreshModifier()) }
-    func commercialScrollClearance() -> some View { modifier(CommercialScrollClearance()) }
     func leadInteractions(_ lead: Lead, swipe: Bool = false, onOpen: (() -> Void)? = nil) -> some View {
         modifier(LeadInteractions(lead: lead, swipe: swipe, onOpen: onOpen))
     }
@@ -27,18 +26,6 @@ private struct CommercialRefreshModifier: ViewModifier {
             if let session { await session.refresh() }
             else { await store.load(force: true) }
         }
-    }
-}
-
-private struct CommercialScrollClearance: ViewModifier {
-    // Les écrans de connexion utilisent aussi `CommercialPage`, hors de l'environnement du store.
-    @Environment(CommercialStore.self) private var store: CommercialStore?
-    func body(content: Content) -> some View {
-        #if os(iOS)
-        content.safeAreaPadding(.bottom, store?.currentUser?.permissions.contains("manage_crm") == true ? 88 : 0)
-        #else
-        content
-        #endif
     }
 }
 

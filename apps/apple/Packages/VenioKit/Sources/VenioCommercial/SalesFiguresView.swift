@@ -23,7 +23,7 @@ public struct SalesFiguresView: View {
         let figures = store.figures
         CommercialPage {
             VText("Mes chiffres").font(.largeTitle.bold())
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 22) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 16) {
                     VText("CA signé du mois").font(.headline)
                     Text(verbatim: CommercialFormats(locale: locale).money(figures.signedThisMonth))
@@ -31,6 +31,7 @@ public struct SalesFiguresView: View {
                         .contentTransition(.numericText()).animation(.smooth, value: figures.signedThisMonth)
                     if figures.targetPercent != nil { MonthlyTargetCard(figures: figures, ring: false) }
                 }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
+                PipelineFunnel(stages: store.summary.stages).venioCard()
                 FinancialTimeline(months: figures.months).venioCard()
                 HStack(spacing: 16) {
                     metric("Conversion sur 12 mois", value: CommercialFormats(locale: locale).percent(Decimal(figures.conversionPercent) / 100))
@@ -46,6 +47,29 @@ public struct SalesFiguresView: View {
             VText(title).font(.subheadline)
             Text(verbatim: value).font(.title2.bold().monospacedDigit())
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).venioCard()
+    }
+}
+
+struct PipelineFunnel: View {
+    @Environment(\.locale) private var locale
+    @Environment(\.venioPalette) private var palette
+    let stages: [PipelineSummary.Stage]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VText("Entonnoir pondéré").font(.headline)
+            ForEach(stages) { stage in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        VText(stage.id.label)
+                        Spacer()
+                        Text(verbatim: CommercialFormats(locale: locale).money(stage.weighted)).monospacedDigit()
+                    }.font(.caption)
+                    ProgressView(value: NSDecimalNumber(decimal: stage.weighted).doubleValue,
+                                 total: max(1, NSDecimalNumber(decimal: stages.map(\.weighted).max() ?? 0).doubleValue))
+                        .tint(palette.accent.color)
+                }
+            }
+        }
     }
 }
 

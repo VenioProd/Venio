@@ -1,10 +1,12 @@
-#if os(iOS)
+#if !os(watchOS)
 import SwiftUI
 import PhotosUI
-import VisionKit
 import Vision
-import AVFoundation
 import VenioCore
+#if os(iOS)
+import VisionKit
+import AVFoundation
+#endif
 
 struct BusinessCardScanner: View {
     @Environment(\.locale) private var locale
@@ -17,6 +19,7 @@ struct BusinessCardScanner: View {
     let onCard: (BusinessCard) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            #if os(iOS)
             if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
                 Button {
                     Task { @MainActor in
@@ -25,6 +28,7 @@ struct BusinessCardScanner: View {
                     }
                 } label: { Label { VText("Scanner une carte") } icon: { Image(systemName: "viewfinder") } }
             }
+            #endif
             PhotosPicker(selection: $photo, matching: .images) {
                 Label { VText("Choisir une photo") } icon: { Image(systemName: "photo") }
             }.disabled(busy)
@@ -35,6 +39,7 @@ struct BusinessCardScanner: View {
             }
             if failed { VText("Lecture impossible. Choisissez une autre photo ou saisissez les champs.") }
         }
+        #if os(iOS)
         .sheet(isPresented: $scanning) {
             LiveCardScanner { lines in
                 apply(lines)
@@ -44,6 +49,7 @@ struct BusinessCardScanner: View {
                 scanning = false
             }
         }
+        #endif
         .task(id: photo) {
             guard let photo else { return }
             busy = true
@@ -75,6 +81,7 @@ struct BusinessCardScanner: View {
     }
 }
 
+#if os(iOS)
 private struct LiveCardScanner: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
@@ -124,4 +131,5 @@ private struct ScannerCamera: UIViewControllerRepresentable {
         }
     }
 }
+#endif
 #endif
