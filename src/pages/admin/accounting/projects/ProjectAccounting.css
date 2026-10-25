@@ -116,6 +116,11 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
+/* App.css isole chaque élément au même niveau : sans cela, les champs suivants recouvrent la liste ouverte. */
+.accounting-card:has(.pf-select-list),
+.accounting-card :has(.pf-select-list) {
+  z-index: 20;
+}
 .pf-select-list li:hover,
 .pf-select-list .pf-select-active {
   background: var(--bg-hover, #303030);
