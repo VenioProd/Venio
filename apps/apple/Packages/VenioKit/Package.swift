@@ -14,7 +14,7 @@ let package = Package(
     targets: [
         .target(name: "VenioCore"),
         .target(name: "VenioTheme"),
-        .target(name: "VenioCommercial", dependencies: ["VenioCore", "VenioTheme"], resources: [.process("Resources")]),
+        .target(name: "VenioCommercial", dependencies: ["VenioCore", "VenioTheme", "VenioAdmin"], resources: [.process("Resources")]),
         .target(name: "VenioAdmin", dependencies: ["VenioCore", "VenioTheme"], resources: [.process("Resources")]),
         .testTarget(name: "VenioAdminTests", dependencies: ["VenioAdmin", "VenioCore"]),
         .testTarget(name: "VenioCoreTests", dependencies: ["VenioCore"]),

@@ -1,6 +1,7 @@
 #if !os(watchOS)
 import SwiftUI
 import VenioCore
+import VenioAdmin
 import VenioTheme
 
 private struct SessionEnvironmentKey: EnvironmentKey { static let defaultValue: SessionModel? = nil }
@@ -17,15 +18,18 @@ public struct SessionRootView: View {
     @State private var session: SessionModel
     private let initialTab: CommercialTab
     private let initialLeadID: String?
-    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil) {
+    private let initialAdminSection: AdminSection?
+    private let initialAdminItemID: String?
+    public init(session: SessionModel, initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialAdminSection: AdminSection? = nil, initialAdminItemID: String? = nil) {
         _session = State(initialValue: session)
         self.initialTab = initialTab; self.initialLeadID = initialLeadID
+        self.initialAdminSection = initialAdminSection; self.initialAdminItemID = initialAdminItemID
     }
     public var body: some View {
         Group {
             if session.starting { ProgressView { VText("Chargement") } }
             else if let store = session.commercial {
-                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID)
+                RootView(store: store, initialTab: initialTab, initialLeadID: initialLeadID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID)
                     .refreshable { await session.refresh() }
             } else { LoginView(session: session) }
         }

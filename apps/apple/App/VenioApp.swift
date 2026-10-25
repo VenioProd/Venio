@@ -3,6 +3,7 @@ import SwiftData
 import VenioCore
 import VenioTheme
 import VenioCommercial
+import VenioAdmin
 #if os(iOS)
 import UIKit
 #else
@@ -22,9 +23,13 @@ import AppKit
     private let mockAPI: MockVenioAPI?
     private let initialTab: CommercialTab
     private let initialLeadID: String?
+    private let initialAdminSection: AdminSection?
+    private let initialAdminItemID: String?
 
     init() {
         let defaults = UserDefaults.standard
+        initialAdminSection = defaults.string(forKey: "VenioAdminSection").flatMap(AdminSection.init(rawValue:))
+        initialAdminItemID = defaults.string(forKey: "VenioAdminItem")
         let manager = ThemeManager()
         let stored = manager.selection
         let theme = defaults.string(forKey: "VenioTheme").flatMap(ThemeKind.init(rawValue:)) ?? stored.theme
@@ -40,7 +45,9 @@ import AppKit
         do {
             let configuration = try BackendConfiguration()
             if configuration.backend == .mock {
-                let mock = MockVenioAPI()
+                let mock: MockVenioAPI
+                if defaults.string(forKey: "VenioMockRole") == "admin" { mock = MockVenioAPI(user: MockAdminAPI.demoUser) }
+                else { mock = MockVenioAPI() }
                 mockAPI = mock
                 _mockStore = State(initialValue: CommercialStore(api: mock))
                 _session = State(initialValue: nil)
@@ -83,8 +90,8 @@ import AppKit
         WindowGroup {
             ThemeHost(manager: themes) {
                 Group {
-                    if let session { SessionRootView(session: session, initialTab: initialTab, initialLeadID: initialLeadID) }
-                    else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID) }
+                    if let session { SessionRootView(session: session, initialTab: initialTab, initialLeadID: initialLeadID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID) }
+                    else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID) }
                     else { StorageUnavailableView() }
                 }
                 .onChange(of: currentStore?.hasLoaded, initial: true) { _, loaded in
