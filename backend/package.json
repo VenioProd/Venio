@@ -23,7 +23,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "provision:app-review": "tsx src/scripts/provisionAppReviewDemo.ts",
+    "provision:app-review:dry": "tsx src/scripts/provisionAppReviewDemo.ts --dry-run"
   },
   "keywords": [],
   "author": "",

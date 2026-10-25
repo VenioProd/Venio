@@ -46,3 +46,7 @@ prospection/
 
 # Playwright CLI (outil local)
 .playwright-cli/
+
+# Apple signing et compte de revue (secrets locaux)
+apps/apple/Config/Signing.local.xcconfig
+backend/.app-review-credentials.local.json
