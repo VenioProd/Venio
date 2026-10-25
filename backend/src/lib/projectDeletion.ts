@@ -33,8 +33,9 @@ import logger from './logger.js'
  *
  * Un projet qui porte une facture, une écriture comptable ou un devis déjà
  * envoyé est refusé (409) : ces pièces doivent survivre, on archive le projet.
- * Ce qui appartient à quelqu'un d'autre que le projet (tickets internes,
- * demandes et dépôts du client) est détaché plutôt que supprimé.
+ * Ce qui appartient à quelqu'un d'autre que le projet (tickets internes et
+ * dépôts du client) est détaché plutôt que supprimé. Les demandes de changement
+ * n'ont de sens que pour leur projet : elles partent avec lui.
  */
 export async function deleteProject(projectId: string): Promise<IProject | null> {
   const removed = await runInTransaction(async (session) => {
@@ -54,10 +55,17 @@ export async function deleteProject(projectId: string): Promise<IProject | null>
     const items = await ProjectItem.find(filter).select('file.storagePath').session(session).lean()
     const documents = await Document.find(filter).select('storagePath').session(session).lean()
     const tasks = await Task.find(filter).select('attachments.storagePath').session(session).lean()
+    const requests = await ChangeRequest.find(filter)
+      .select('attachments.filename replies.attachments.filename')
+      .session(session)
+      .lean()
     const files = [
       ...items.map((item) => item.file?.storagePath),
       ...documents.map((document) => document.storagePath),
       ...tasks.flatMap((task) => task.attachments.map((attachment) => attachment.storagePath)),
+      ...requests
+        .flatMap((request) => [...request.attachments, ...request.replies.flatMap((reply) => reply.attachments)])
+        .map((attachment) => path.join('uploads', 'change-requests', attachment.filename)),
     ].filter((file): file is string => Boolean(file))
 
     // Opérations séquentielles : une transaction n'accepte pas d'écritures parallèles.
@@ -78,7 +86,7 @@ export async function deleteProject(projectId: string): Promise<IProject | null>
     await QuoteProposal.deleteMany(filter, { session })
     await ActivityLog.deleteMany(filter, { session })
     await InternalTicket.updateMany(filter, { $set: { project: null } }, { session })
-    await ChangeRequest.updateMany(filter, { $set: { project: null } }, { session })
+    await ChangeRequest.deleteMany(filter, { session })
     await ClientUpload.updateMany(filter, { $set: { project: null } }, { session })
     await Project.deleteOne({ _id: project._id }, { session })
     return { project, files }

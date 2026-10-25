@@ -8,6 +8,7 @@ import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEn
 import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { deleteProject } from '../lib/projectDeletion.js'
 import BillingDocument from '../models/BillingDocument.js'
+import ChangeRequest from '../models/ChangeRequest.js'
 import ClientUpload from '../models/ClientUpload.js'
 import InternalTicket from '../models/InternalTicket.js'
 import MissionBrief from '../models/MissionBrief.js'
@@ -114,6 +115,15 @@ it('supprime le projet, ce qui en dépend et ses fichiers, même si un fichier r
     authorId: owner,
     authorName: 'A',
   })
+  const requestFile = path.join('uploads', 'change-requests', `test-${Date.now()}-demande.pdf`)
+  fs.mkdirSync(path.dirname(requestFile), { recursive: true })
+  fs.writeFileSync(requestFile, 'demande')
+  await ChangeRequest.collection.insertOne({
+    project: project._id,
+    title: 'Demande',
+    attachments: [{ filename: path.basename(requestFile) }],
+    replies: [{ attachments: [] }],
+  })
 
   const rm = fsPromises.rm
   vi.spyOn(fsPromises, 'rm').mockImplementation(async (target, options) => {
@@ -132,6 +142,8 @@ it('supprime le projet, ce qui en dépend et ses fichiers, même si un fichier r
   expect((await ClientUpload.findById(upload._id))!.project).toBeNull()
   expect(fs.existsSync(upload.storagePath)).toBe(true)
   expect((await InternalTicket.findById(ticket._id))!.project).toBeNull()
+  expect(await ChangeRequest.countDocuments()).toBe(0)
+  expect(fs.existsSync(requestFile)).toBe(false)
   expect(await ProjectItem.countDocuments({ project: kept._id })).toBe(1)
   expect(fs.existsSync(itemFile) || fs.existsSync(documentFile)).toBe(false)
   expect(fs.existsSync(stubborn)).toBe(true)
