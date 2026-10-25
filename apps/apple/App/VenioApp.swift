@@ -14,6 +14,7 @@ import AppKit
     #if os(iOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var watch = WatchBridge()
+    @State private var meetings = MeetingActivityController()
     #else
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     #endif
@@ -44,9 +45,11 @@ import AppKit
         do {
             let configuration = try BackendConfiguration()
             if configuration.backend == .mock {
-                let mock = MockVenioAPI()
+                let clock = defaults.string(forKey: "VenioNow").flatMap { ISO8601DateFormatter().date(from: $0) }
+                    .map { DemoClock(now: $0) } ?? DemoClock()
+                let mock = MockVenioAPI(clock: clock)
                 mockAPI = mock
-                _mockStore = State(initialValue: CommercialStore(api: mock))
+                _mockStore = State(initialValue: CommercialStore(api: mock, clock: clock))
                 _session = State(initialValue: nil)
             } else {
                 let container = try ModelContainer(for: SyncedRecord.self, SyncCursor.self, PendingWrite.self,
@@ -118,6 +121,7 @@ import AppKit
                         IntentBridge.connect(store: nil, session: nil)
                         #if os(iOS)
                         watch.disconnected()
+                        meetings.refresh(store: nil, themes: themes, mock: mockAPI != nil)
                         #endif
                     }
                     if let session, !session.starting, case .signedOut = session.state { session.onDisconnect?() }
@@ -129,6 +133,7 @@ import AppKit
                     #endif
                 }
                 #if os(iOS)
+                .modifier(WidgetIntegration(store: currentStore, themes: themes, mock: mockAPI != nil, controller: meetings))
                 .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
                     watch.usesLiveBackend = session != nil
                     watch.store = currentStore

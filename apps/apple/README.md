@@ -6,7 +6,7 @@ Apps iPhone, iPad, Mac et Apple Watch. Xcode 27.1, Swift 6.4 et XcodeGen ≥ 2.4
 
 - `-VenioBackend mock|live` : mock en Debug, live en Release par défaut.
 - `-VenioAPIBaseURL <url>` : origine HTTP injectée ; HTTPS par défaut. HTTP est accepté uniquement en Debug sur `localhost` et `127.0.0.1`, avec un plist ATS Debug distinct. La base Release par défaut est `https://venio.paris`.
-- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`, `-VenioProject <id>`.
+- Captures : `-VenioTheme glass|neon`, `-VenioBackground <clé>`, `-VenioAccent <clé>`, `-VenioLocale fr|en`, `-VenioTab today|pipeline|projects|quotes|figures`, `-VenioLead <id>`, `-VenioProject <id>`, `-VenioNow <ISO 8601>` (horloge mock uniquement, par exemple `2026-10-23T13:40:00+02:00` pour le RDV de 14 h).
 - Les previews et tests utilisent le mock ou un faux transport, jamais le réseau.
 
 ```sh
@@ -31,6 +31,8 @@ Ordre : `test1` (connexion, synchro, note en ligne), serveur coupé, `test2` (no
 
 ## Session et données
 
+Les widgets lisent un instantané JSON dans l’App Group `group.paris.venio.app` (relances, CA agrégé, objectif et apparence), sans jeton ni session, vidé à la déconnexion ou au changement de compte.
+
 `VenioCore` contient le transport injectable, la session et le magasin SwiftData. Le couple access/refresh et les informations de session occupent une seule entrée Keychain, après premier déverrouillage, liée à cet appareil et sans iCloud. L’identifiant d’installation est séparé et survit à la déconnexion. Le Keychain et le magasin sont séparés par origine ; le magasin efface les données de l’ancien compte avant d’activer un autre utilisateur, et refuse ce changement tant que l’ancien compte a des écritures non envoyées.
 
 Un 401 rejoint une rotation unique, puis un rejeu unique. Le couple est sauvegardé avant sa publication ; un refus de rotation ou un second 401 déconnecte. Le serveur consomme le refresh avant de répondre : la session est marquée « rotation en cours » dans le Keychain avant l'envoi, et une issue ambiguë (5xx, délai dépassé, connexion perdue, app tuée) impose une reconnexion au lieu de représenter ce refresh, ce qui révoquerait l'appareil. Seule une erreur où la requête n'est certainement pas partie (hors ligne, hôte injoignable) conserve la session. L’identité de session accompagne les opérations pour refuser les réponses tardives après déconnexion. Pas de refresh proactif.
@@ -51,6 +53,7 @@ La référence des devis vient du serveur. Un devis peut naître sur un lead ou 
 
 Limites restantes :
 
+- Widgets et Live Activity non vérifiés sur appareil réel ; l’App Group exige une signature avec les droits correspondants. Les widgets reflètent le dernier chargement de l’app ; sans push, le démarrage et la fin effective d’une Live Activity dépendent de l’exécution de l’app (l’échéance rend son contenu périmé lorsque l’app est suspendue). Les RDV sans heure de fin ne déclenchent pas d’activité.
 - Le code serveur `today.ts` ne sélectionne pas `leadId` dans `quotesViewedNotSigned` ; Aujourd’hui utilise le `leadId` des devis synchronisés pour ouvrir un lead connu.
 - `canQuote` peut rester périmé après un changement de droits ou de propriétaire sans modification de l’objet ; le serveur revérifie chaque création et rattachement.
 - L’avancement est calculé depuis les étapes synchronisées. Les événements système du CRM ne font pas partie de la synchro d’interactions. Pas de route d’envoi d’identifiants dans l’app.

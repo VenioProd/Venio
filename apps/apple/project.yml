@@ -33,6 +33,7 @@ targets:
     info:
       path: .build/Venio-Info.plist
       properties:
+        NSSupportsLiveActivities: true
         CFBundleURLTypes:
           - CFBundleURLName: paris.venio.app
             CFBundleURLSchemes: [venio]
@@ -61,6 +62,33 @@ targets:
       - target: VenioWatch
         platformFilter: iOS
         embed: true
+      - target: VenioWidgets
+        platformFilter: iOS
+        embed: true
+  VenioWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widgets
+      - Shared/MeetingActivityAttributes.swift
+    info:
+      path: .build/VenioWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Venio
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: paris.venio.app.widgets
+        CODE_SIGN_ENTITLEMENTS: Widgets/VenioWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: '1,2'
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: VenioKit
+        product: VenioCore
+      - package: VenioKit
+        product: VenioTheme
   VenioWatch:
     type: application
     platform: watchOS

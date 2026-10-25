@@ -17,6 +17,7 @@ public actor LiveVenioAPI: VenioAPI {
     public nonisolated let outbox: Outbox
     private var connected = true
     private var retryTask: Task<Void, Never>?
+    private var followUpTask: Task<Void, Never>?
     private var observers: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     public init(session: AuthSession, store: SyncStore) {
@@ -37,6 +38,8 @@ public actor LiveVenioAPI: VenioAPI {
     public func refresh() async throws {
         defer { changed() }
         guard connected else { return }
+        let scope = try await session.identity()
+        let hadDocuments = try await store.writes(scope: scope).contains { $0.type == "document" && $0.state == "pending" }
         try await outbox.drain()
         if let next = await outbox.nextRetryAt {
             let scope = try await session.identity()
@@ -48,6 +51,14 @@ public actor LiveVenioAPI: VenioAPI {
             }
         }
         try await syncEngine.sync()
+        if hadDocuments {
+            // Le serveur ne publie un élément dans la synchro qu'après un court délai : un second passage le récupère.
+            followUpTask?.cancel()
+            followUpTask = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                try? await self?.refresh()
+            }
+        }
     }
     private func retryReady(scope: SessionIdentity) async {
         retryTask = nil

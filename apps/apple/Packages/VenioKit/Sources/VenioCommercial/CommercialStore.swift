@@ -19,6 +19,7 @@ import VenioCore
     public private(set) var isLoading = false
     public private(set) var failed = false
     public private(set) var hasLoaded = false
+    public private(set) var loadRevision = 0
     public private(set) var errorKey: String?
     private(set) var successFeedback = 0
     private(set) var errorFeedback = 0
@@ -67,6 +68,7 @@ import VenioCore
             if user.role == .admin {
                 currentUser = user
                 hasLoaded = true
+                loadRevision += 1
                 #if !os(watchOS)
                 SpotlightIndex.shared.purge()
                 #endif
@@ -107,6 +109,7 @@ import VenioCore
             projectDocuments = documents
             guard active else { return }
             hasLoaded = true
+            loadRevision += 1
             #if !os(watchOS)
             SpotlightIndex.shared.replace(leads: leads, projects: projects)
             #endif
@@ -249,6 +252,7 @@ import VenioCore
     }
     public func deactivate() {
         active = false
+        hasLoaded = false
         pendingRoutes = []
         destination = nil
         requestedTab = nil

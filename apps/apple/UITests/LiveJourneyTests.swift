@@ -176,13 +176,13 @@ import XCTest
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.16, dy: 0.42)).tap()
         sleep(1)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.905, dy: 0.115)).tap()
-        let add = app.buttons["Ajouter"].firstMatch
+        let add = app.navigationBars.buttons["Ajouter"].firstMatch
         XCTAssertTrue(add.waitForExistence(timeout: 10), "feuille d’ajout")
         let title = app.textFields["Titre"].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 15))
         title.tap(); title.typeText(" E2E")
         add.tap()
-        XCTAssertTrue(app.buttons["Ajouter"].firstMatch.waitForNonExistence(timeout: 20))
+        XCTAssertTrue(add.waitForNonExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'attente'")).firstMatch.waitForExistence(timeout: 15),
                       "le document est en attente")
         snap("5-document-en-attente")
