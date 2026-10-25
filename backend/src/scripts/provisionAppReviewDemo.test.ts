@@ -85,7 +85,7 @@ it('rejoue deux fois sans doublons ni changement de mots de passe et donne accè
   expect(await Project.countDocuments({ tags: DEMO_MARKER })).toBe(5)
   expect(await Interaction.countDocuments()).toBe(4)
   const incoming = await Lead.findOne({ company: 'Studio Okami' }).lean()
-  expect(incoming!.createdAt.toISOString()).toBe('2026-11-12T06:52:00.000Z')
+  expect(incoming!.createdAt.toISOString()).toBe('2026-11-12T07:52:00.000Z')
   const lea = secondUsers.find((user) => user.email === 'lea@app-review.venio.test')!
   const admin = secondUsers.find((user) => user.email === 'admin@app-review.venio.test')!
   for (const user of [lea, admin]) {

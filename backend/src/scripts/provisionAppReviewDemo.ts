@@ -262,13 +262,26 @@ interface Credentials {
   accounts: Record<string, { email: string; password: string }>
 }
 
-// Les données de démo sont écrites pour le vendredi 23 octobre 2026 ; on les décale d'un nombre
-// entier de jours pour que « Aujourd'hui » reste rempli le jour où l'on provisionne.
+// Les données de démo sont écrites pour le vendredi 23 octobre 2026 à Paris ; on les décale d'un
+// nombre entier de jours en gardant l'heure murale, pour que « Aujourd'hui » reste rempli le jour du provisionnement.
+function parisOffsetMs(instant: number): number {
+  const label = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'longOffset' })
+    .formatToParts(instant)
+    .find((part) => part.type === 'timeZoneName')!.value
+  const [, sign, hours, minutes] = /GMT([+-])(\d{2}):(\d{2})/.exec(label) ?? ['', '+', '00', '00']
+  return (sign === '-' ? -1 : 1) * (Number(hours) * 60 + Number(minutes)) * 60_000
+}
+
 function dayShift(now: Date): (value: string) => Date {
+  const today = new Date(now.getTime() + parisOffsetMs(now.getTime()))
   const days = Math.round(
-    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 23)) / 86_400_000,
+    (Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - Date.UTC(2026, 9, 23)) / 86_400_000,
   )
-  return (value) => new Date(Date.parse(value) + days * 86_400_000)
+  return (value) => {
+    const [, y, m, d, h = '0', min = '0'] = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(value)!
+    const wall = Date.UTC(Number(y), Number(m) - 1, Number(d) + days, Number(h), Number(min))
+    return new Date(wall - parisOffsetMs(wall - parisOffsetMs(wall)))
+  }
 }
 
 export async function provisionAppReviewDemo(options: {
