@@ -4,6 +4,7 @@ import fs from 'fs'
 import multer from 'multer'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import User from '../../models/User.js'
@@ -135,6 +136,7 @@ router.get('/conversations/:conversationId/messages', async (req: Request, res: 
 router.post(
   '/conversations/:conversationId/messages',
   requirePermission(PERMISSIONS.SEND_MESSAGES),
+  idempotentRequest,
   body('content').isString().trim().notEmpty().withMessage('Le contenu du message est requis'),
   body('parentMessage').optional({ nullable: true }).isString(),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -144,7 +146,7 @@ router.post(
         content: req.body.content,
         parentMessage: req.body.parentMessage || null,
       })
-      return res.status(201).json({ message })
+      return res.status(201).json({ message: message.toObject() })
     } catch (err) {
       return next(err)
     }

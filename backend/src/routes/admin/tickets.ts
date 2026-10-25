@@ -6,6 +6,7 @@ import { hasProjectAccess } from '../../lib/adminProjectAccess.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import InternalTicket from '../../models/InternalTicket.js'
@@ -322,6 +323,7 @@ router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_TICKETS),
   upload.array('files', 10),
+  idempotentRequest,
   async (req: Request, res: Response) => {
     try {
       const user = (req as any).user

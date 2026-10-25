@@ -42,10 +42,23 @@ const BEARER_ALLOWED_PREFIXES = [
   '/api/admin/search',
 ]
 
-function isBearerAllowed(path: string): boolean {
+const BEARER_ALLOWED_ROUTES = [
+  { method: 'GET', pattern: /^\/api\/admin\/accounting\/reports\/dashboard\/?$/i },
+  { method: 'GET', pattern: /^\/api\/admin\/accounting\/project-finance\/dashboard\/?$/i },
+  { method: 'GET', pattern: /^\/api\/admin\/accounting\/project-finance\/cash-in\/?$/i },
+  { method: 'GET', pattern: /^\/api\/admin\/accounting\/projects\/[a-f\d]{24}\/finance\/?$/i },
+  { method: 'GET', pattern: /^\/api\/admin\/accounting\/beneficiaries\/?$/i },
+  { method: 'GET', pattern: /^\/api\/admin\/dev\/issues\/?$/i },
+  { method: 'PATCH', pattern: /^\/api\/admin\/dev\/issues\/[a-f\d]{24}\/?$/i },
+]
+
+function isBearerAllowed(path: string, method: string): boolean {
   // Le routage Express ignore la casse : la comparaison aussi.
   const normalized = path.toLowerCase()
-  return BEARER_ALLOWED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+  return (
+    BEARER_ALLOWED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)) ||
+    BEARER_ALLOWED_ROUTES.some((route) => route.method === method && route.pattern.test(path))
+  )
 }
 
 /**
@@ -111,7 +124,7 @@ async function authenticateBearer(
       invalid()
       return
     }
-    if (!isBearerAllowed(path)) {
+    if (!isBearerAllowed(path, req.method)) {
       res.status(403).json({
         error: 'Cette action se fait depuis le navigateur.',
         code: 'BROWSER_SESSION_REQUIRED',

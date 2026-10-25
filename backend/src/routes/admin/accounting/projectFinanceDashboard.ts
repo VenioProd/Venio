@@ -13,6 +13,7 @@ import User from '../../../models/User.js'
 import BillingDocument from '../../../models/BillingDocument.js'
 import Beneficiary from '../../../models/Beneficiary.js'
 import ProjectCost from '../../../models/ProjectCost.js'
+import ProjectPayment from '../../../models/ProjectPayment.js'
 import projectFinanceErrors from './projectFinanceErrors.js'
 
 const router = express.Router()
@@ -182,5 +183,39 @@ router.get('/dashboard', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (
     next(err)
   }
 })
+router.get('/cash-in', requirePermission(PERMISSIONS.VIEW_ACCOUNTING), async (req, res, next) => {
+  try {
+    if (req.query.months !== undefined && req.query.months !== '6' && req.query.months !== '12') {
+      return res.status(400).json({ error: 'months doit valoir 6 ou 12' })
+    }
+    const count = req.query.months === '6' ? 6 : 12
+    const now = new Date()
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - count + 1, 1))
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+    const months = Array.from({ length: count }, (_, index) => ({
+      month: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + index, 1)).toISOString().slice(0, 7),
+      receivedTtcCents: 0,
+      refundedTtcCents: 0,
+      netTtcCents: 0,
+    }))
+    const payments = await ProjectPayment.find({ receivedAt: { $gte: start, $lt: end } })
+      .select('kind amountTtcCents receivedAt')
+      .lean()
+    for (const payment of payments) {
+      assertCents(payment.amountTtcCents)
+      const row = months.find((row) => row.month === payment.receivedAt.toISOString().slice(0, 7))!
+      if (payment.kind === 'PAYMENT') row.receivedTtcCents += payment.amountTtcCents
+      else row.refundedTtcCents -= payment.amountTtcCents
+      row.netTtcCents = row.receivedTtcCents - row.refundedTtcCents
+      assertCents(row.receivedTtcCents)
+      assertCents(row.refundedTtcCents)
+      assertCents(row.netTtcCents)
+    }
+    return res.json({ months })
+  } catch (err) {
+    return next(err)
+  }
+})
+
 router.use(projectFinanceErrors)
 export default router

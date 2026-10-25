@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../middleware/auth.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
@@ -12,14 +13,14 @@ import AccountingLine from '../../models/AccountingLine.js'
 import { getNextSequence } from '../../models/Sequence.js'
 import { generateBillingPdf } from '../../lib/pdfBilling.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
-import { sendInvoiceEmail } from '../../lib/email.js'
+import { sendInvoiceEmail, sendInvoiceReminderEmail } from '../../lib/email.js'
 import { paymentLinkUrl } from '../../lib/stripe/paymentLinks.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { createSaleEntryFromBilling, buildBillingIdempotencyKey } from '../../lib/accounting/billingToEntry.js'
 import ProjectPayment from '../../models/ProjectPayment.js'
 import { issueProjectInvoice } from '../../lib/projectFinance/issueInvoice.js'
-import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
+import { invoicePaymentBalance, markInvoicePaid } from '../../lib/projectFinance/payments.js'
 import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
 import { createPaymentEntryFromBilling } from '../../lib/accounting/paymentToEntry.js'
 import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
@@ -352,6 +353,50 @@ router.post(
         excludeUserId: req.user!.id,
       }).catch(() => {})
 
+      return res.json({ document: doc.toObject() })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.post(
+  '/:id/remind',
+  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  idempotentRequest,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const doc = await BillingDocument.findById(req.params.id)
+      if (!doc) return res.status(404).json({ error: 'Billing document not found' })
+      if (
+        doc.type !== 'INVOICE' ||
+        !['ISSUED', 'SENT', 'PARTIALLY_PAID'].includes(doc.status) ||
+        !doc.dueAt ||
+        doc.dueAt.getTime() >= Date.now()
+      ) {
+        return res.status(409).json({ error: 'Cette facture n’est pas en retard', code: 'INVOICE_NOT_OVERDUE' })
+      }
+      const payerEmail = doc.payer?.billingContact.email?.trim()
+      if (doc.payer && doc.payer.kind !== 'CLIENT' && !payerEmail) {
+        return res.status(400).json({ error: 'Renseignez l’e-mail de facturation du payeur avant l’envoi' })
+      }
+      const client = await User.findById(doc.client)
+      const recipientEmail = payerEmail || client?.email
+      if (!recipientEmail) return res.status(400).json({ error: 'Aucun e-mail de facturation' })
+
+      const balance = await invoicePaymentBalance(doc, null)
+      const result = await sendInvoiceReminderEmail({
+        to: recipientEmail,
+        name: doc.payer?.billingContact.name || client?.name || recipientEmail,
+        invoiceNumber: doc.number,
+        amount: `${(balance.remainingTtcCents / 100).toLocaleString('fr-FR')} ${doc.currency}`,
+        daysPastDue: Math.floor((Date.now() - doc.dueAt.getTime()) / 86400000),
+      })
+      if (!result.sent)
+        return res.status(503).json({ error: 'Relance non envoyée : e-mail indisponible', code: 'EMAIL_UNAVAILABLE' })
+
+      doc.reminderSentAt = new Date()
+      await doc.save()
       return res.json({ document: doc.toObject() })
     } catch (err) {
       return next(err)

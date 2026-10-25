@@ -3,6 +3,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../../middleware/auth.js'
+import idempotentRequest from '../../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
@@ -469,6 +470,7 @@ router.delete(
 router.post(
   '/:id/updates',
   requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  idempotentRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { title, description } = req.body || {}
