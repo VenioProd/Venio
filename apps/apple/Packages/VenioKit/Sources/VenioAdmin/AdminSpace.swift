@@ -8,6 +8,7 @@ import UIKit
 public struct AdminSpace<Settings: View>: View {
     @Environment(AdminStore.self) private var store
     @Environment(\.locale) private var locale
+    @Environment(\.scenePhase) private var scenePhase
     @State private var section: AdminSection?
     @State private var projectID: String?
     @State private var conversationID: String?
@@ -39,6 +40,20 @@ public struct AdminSpace<Settings: View>: View {
         false
         #endif
     }
+    /// Sur iOS, la capture du sélecteur d'apps est prise dès que la scène devient inactive.
+    private var hidesContent: Bool {
+        #if os(iOS)
+        scenePhase != .active
+        #else
+        false
+        #endif
+    }
+    private var privacyMask: some View {
+        ZStack {
+            ThemedBackground()
+            Label { AdminText("Contenu masqué") } icon: { Image(systemName: "lock.fill").accessibilityHidden(true) }.font(.headline)
+        }
+    }
     private var current: AdminSection { section ?? store.availableSections.first ?? .activity }
     public var body: some View {
         Group {
@@ -57,6 +72,7 @@ public struct AdminSpace<Settings: View>: View {
         }
         .environment(\.adminReadOnly, phone)
         .background { ThemedBackground() }
+        .overlay { if hidesContent { privacyMask } }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { Task { await refreshCurrent() } } label: {
@@ -141,6 +157,7 @@ public struct AdminSpace<Settings: View>: View {
             case .dev: AdminDevView(selection: $issueID)
             }
         }.navigationTitle(AdminStrings.text(item.title, locale: locale))
+            .inlineNavigationTitle()
             .refreshable { await refreshCurrent() }
     }
     @ViewBuilder private func detail(_ item: AdminSection) -> some View {
@@ -201,6 +218,17 @@ public struct AdminSpace<Settings: View>: View {
             if let conversationID { await store.loadMessages(conversationId: conversationID) }
         default: break
         }
+    }
+}
+
+extension View {
+    /// Les pages portent leur propre titre : le grand titre d'iOS ferait doublon.
+    func inlineNavigationTitle() -> some View {
+        #if os(iOS)
+        navigationBarTitleDisplayMode(.inline)
+        #else
+        self
+        #endif
     }
 }
 

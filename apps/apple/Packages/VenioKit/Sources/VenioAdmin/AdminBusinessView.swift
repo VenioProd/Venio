@@ -20,7 +20,7 @@ struct AdminBusinessView: View {
                         AdminText("Vue business").font(.largeTitle.bold())
                         Text(verbatim: formats.date(overview.month, template: "MMMMyyyy") + " · " + formats.date(store.clock.now, template: "EEEEdMMM"))
                     }
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), alignment: .top)], spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), alignment: .top)], spacing: 16) {
                         metric("CA facturé du mois", cents: overview.invoicedCents) {
                             Text(verbatim: formats.date(overview.month, template: "MMMMyyyy"))
                         }
@@ -92,7 +92,7 @@ struct AdminBusinessView: View {
                         Text(verbatim: AdminStrings.format("Dernière relance : %@", locale: locale, formats.date(date))).font(.caption)
                     }
                     if !readOnly && store.capabilities.canRemindInvoices {
-                        Button { reminderIDs = [invoice.id]; confirming = true } label: { AdminText("Relancer") }
+                        Button { reminderIDs = [invoice.id]; confirming = true } label: { AdminText("Relancer") }.buttonStyle(.bordered)
                             .disabled(remindingAll || store.inFlight.contains(.invoice(invoice.id)))
                         AdminActionError(operation: .invoice(invoice.id))
                     }
@@ -105,7 +105,7 @@ struct AdminBusinessView: View {
                     reminderIDs = overview.overdueInvoices.map(\.id); confirming = true
                 } label: {
                     Text(verbatim: AdminStrings.format("Relancer les %lld factures", locale: locale, overview.overdueInvoices.count))
-                }.disabled(remindingAll || overview.overdueInvoices.contains { store.inFlight.contains(.invoice($0.id)) })
+                }.buttonStyle(.borderedProminent).disabled(remindingAll || overview.overdueInvoices.contains { store.inFlight.contains(.invoice($0.id)) })
             }
         }.venioCard()
     }

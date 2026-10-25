@@ -45,7 +45,7 @@ struct AdminProjectDTO: Decodable, Sendable {
     var budget: Budget?
     var billing: Billing?
     var isArchived: Bool?
-    struct Budget: Decodable, Sendable { var amount: Decimal? }
+    struct Budget: Decodable, Sendable { var amount: Decimal?; var currency: String? }
     struct Billing: Decodable, Sendable { var amountInvoiced: Decimal? }
 
     func model(phases: [AdminPhase], requests: [ChangeRequest]) -> AdminProject {
@@ -55,11 +55,13 @@ struct AdminProjectDTO: Decodable, Sendable {
         return AdminProject(id: _id, projectNumber: projectNumber ?? "", name: name, clientName: client?.displayName ?? "",
             status: status, endDate: endDate,
             progress: sorted.isEmpty ? 0 : sorted.filter { $0.status == .completed }.count * 100 / sorted.count,
-            budgetCents: cents(budget?.amount), invoicedCents: cents(billing?.amountInvoiced), currentPhase: current,
+            budgetCents: cents(budget?.amount), invoicedCents: cents(billing?.amountInvoiced),
+            currency: budget?.currency.flatMap { $0.isEmpty ? nil : $0.uppercased() } ?? "EUR", currentPhase: current,
             openChangeRequests: requests.filter { $0.projectId == _id && $0.status.isOpen }.count)
     }
-    private func cents(_ euros: Decimal?) -> Int {
-        var value = (euros ?? 0) * 100
+    private func cents(_ amount: Decimal?) -> Int? {
+        guard let amount else { return nil }
+        var value = amount * 100
         var rounded = Decimal()
         NSDecimalRound(&rounded, &value, 0, .plain)
         return NSDecimalNumber(decimal: rounded).intValue
@@ -157,13 +159,22 @@ struct MessageDTO: Decodable, Sendable {
 struct ActivitySectionDTO: Decodable, Sendable {
     var key: String
     var label: String
-    var entries: [Entry]
+    @Lossy var entries: [Entry]
     var hasMore: Bool
     struct Entry: Decodable, Sendable {
         var id: String
         var title: String
         var meta: String
         var dueAt: Date?
+        enum Keys: String, CodingKey { case id, title, meta, dueAt }
+        init(from decoder: any Decoder) throws {
+            let values = try decoder.container(keyedBy: Keys.self)
+            id = try values.decode(String.self, forKey: .id)
+            title = try values.decode(String.self, forKey: .title)
+            meta = try values.decode(String.self, forKey: .meta)
+            // Le serveur renvoie "" quand il n'y a pas d'échéance.
+            dueAt = try? values.decodeIfPresent(Date.self, forKey: .dueAt)
+        }
     }
     var model: ActivitySection {
         ActivitySection(key: key, title: label, entries: entries.map {

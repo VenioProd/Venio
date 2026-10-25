@@ -2871,6 +2871,57 @@
           }
         }
       }
+    },
+    "Résultat incertain : l’envoi a peut-être abouti. Vérifiez avant de renvoyer.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résultat incertain : l’envoi a peut-être abouti. Vérifiez avant de renvoyer."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncertain result: it may have been sent. Check before sending again."
+          }
+        }
+      }
+    },
+    "Non renseigné": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non renseigné"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set"
+          }
+        }
+      }
+    },
+    "Contenu masqué": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contenu masqué"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content hidden"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

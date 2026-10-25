@@ -60,9 +60,9 @@ public struct AdminFormats: Sendable {
     public func percent(_ value: Int) -> String {
         (Double(value) / 100).formatted(.percent.precision(.fractionLength(0)).locale(locale))
     }
-    public func money(_ cents: Int) -> String {
+    public func money(_ cents: Int, currency: String = "EUR") -> String {
         let precision = cents.isMultiple(of: 100) ? 0 : 2
-        return (Decimal(cents) / 100).formatted(.currency(code: "EUR")
+        return (Decimal(cents) / 100).formatted(.currency(code: currency)
             .precision(.fractionLength(precision)).locale(locale))
     }
 }

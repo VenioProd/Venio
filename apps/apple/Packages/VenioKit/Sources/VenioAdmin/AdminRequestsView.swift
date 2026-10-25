@@ -76,7 +76,7 @@ struct AdminRequestsView: View {
         Button(role: .destructive) { reason = ""; refusing = request } label: { AdminText("Refuser") }
     }
     private func actionButton(_ title: String, request: ChangeRequest, action: TriageAction) -> some View {
-        Button { Task { await store.triage(changeRequestId: request.id, action: action) } } label: { AdminText(title) }
+        Button { Task { await store.triage(changeRequestId: request.id, action: action) } } label: { AdminText(title) }.buttonStyle(.bordered)
     }
 }
 #endif

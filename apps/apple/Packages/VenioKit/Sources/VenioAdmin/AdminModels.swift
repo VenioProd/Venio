@@ -84,12 +84,14 @@ public struct AdminProject: Sendable, Equatable, Identifiable {
     public var status: AdminProjectStatus
     public var endDate: Date?
     public var progress: Int
-    public var budgetCents: Int
-    public var invoicedCents: Int
+    /// `nil` quand le montant n'est pas renseigné côté serveur : ce n'est pas un zéro.
+    public var budgetCents: Int?
+    public var invoicedCents: Int?
+    public var currency: String
     public var currentPhase: CurrentPhase?
     public var openChangeRequests: Int
 
-    public init(id: String, projectNumber: String, name: String, clientName: String, status: AdminProjectStatus, endDate: Date?, progress: Int, budgetCents: Int, invoicedCents: Int, currentPhase: CurrentPhase?, openChangeRequests: Int) {
+    public init(id: String, projectNumber: String, name: String, clientName: String, status: AdminProjectStatus, endDate: Date?, progress: Int, budgetCents: Int?, invoicedCents: Int?, currency: String = "EUR", currentPhase: CurrentPhase?, openChangeRequests: Int) {
         self.id = id
         self.projectNumber = projectNumber
         self.name = name
@@ -99,6 +101,7 @@ public struct AdminProject: Sendable, Equatable, Identifiable {
         self.progress = progress
         self.budgetCents = budgetCents
         self.invoicedCents = invoicedCents
+        self.currency = currency
         self.currentPhase = currentPhase
         self.openChangeRequests = openChangeRequests
     }

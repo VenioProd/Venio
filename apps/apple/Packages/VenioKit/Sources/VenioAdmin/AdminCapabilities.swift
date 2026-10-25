@@ -19,7 +19,11 @@ public enum AdminSection: String, CaseIterable, Sendable {
 
 public struct AdminCapabilities: Sendable {
     private let permissions: Set<String>
-    public init(permissions: Set<String>) { self.permissions = permissions }
+    private let isSuperAdmin: Bool
+    public init(permissions: Set<String>, isSuperAdmin: Bool) {
+        self.permissions = permissions
+        self.isSuperAdmin = isSuperAdmin
+    }
     public var canRemindInvoices: Bool { permissions.contains("manage_billing") }
     public var canManagePhases: Bool { permissions.contains("manage_phases") }
     public var canPublishUpdates: Bool { permissions.contains("edit_projects") }
@@ -28,6 +32,7 @@ public struct AdminCapabilities: Sendable {
     public var canQuote: Bool { canTriage && permissions.contains("manage_billing") }
     public var canViewProjectFinance: Bool { permissions.contains("view_accounting") }
     public var canSendMessages: Bool { permissions.contains("send_messages") }
-    public var canManageTickets: Bool { permissions.contains("manage_tickets") }
+    /// Le serveur refuse réponse et statut à tout autre rôle que SUPER_ADMIN, même avec la permission.
+    public var canManageTickets: Bool { isSuperAdmin && permissions.contains("manage_tickets") }
     public var canManageDev: Bool { permissions.contains("manage_dev") }
 }

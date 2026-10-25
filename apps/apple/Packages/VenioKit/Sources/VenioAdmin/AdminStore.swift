@@ -7,6 +7,13 @@ public enum AdminLoadState: Sendable, Equatable {
 }
 
 public enum AdminOperation: Hashable, Sendable {
+    /// Écritures qui préviennent quelqu'un (e-mail au client, message, réponse) : un échec réseau ne dit pas si elles sont parties.
+    public var notifiesSomeone: Bool {
+        switch self {
+        case .invoice, .update, .sendMessage, .ticket: true
+        default: false
+        }
+    }
     case load(AdminSection), project(String), changeRequests, finance(String), messages(String)
     case invoice(String), phase(projectId: String, phaseId: String), update(String)
     case item(projectId: String, itemId: String), triage(String), sendMessage(String), markRead(String)
@@ -17,7 +24,8 @@ public enum AdminOperation: Hashable, Sendable {
     public let user: UserSummary
     public let clock: DemoClock
     public var availableSections: [AdminSection] { AdminSection.available(for: user.permissions) }
-    public var capabilities: AdminCapabilities { AdminCapabilities(permissions: user.permissions) }
+    public let isSuperAdmin: Bool
+    public var capabilities: AdminCapabilities { AdminCapabilities(permissions: user.permissions, isSuperAdmin: isSuperAdmin) }
     public private(set) var sectionStates: [AdminSection: AdminLoadState] = [:]
     public private(set) var inFlight: Set<AdminOperation> = []
     public private(set) var errors: [AdminOperation: AdminAPIError] = [:]
@@ -34,9 +42,10 @@ public enum AdminOperation: Hashable, Sendable {
     private let api: any AdminAPI
     @ObservationIgnored private var tasks: [AdminOperation: Task<Void, Never>] = [:]
 
-    public init(api: any AdminAPI, user: UserSummary, clock: DemoClock = DemoClock()) {
+    public init(api: any AdminAPI, user: UserSummary, isSuperAdmin: Bool, clock: DemoClock = DemoClock()) {
         self.api = api
         self.user = user
+        self.isSuperAdmin = isSuperAdmin
         self.clock = clock
         sectionStates = Dictionary(uniqueKeysWithValues: AdminSection.allCases.map { ($0, .idle) })
     }
@@ -147,7 +156,9 @@ public enum AdminOperation: Hashable, Sendable {
         await perform(.invoice(id), fetch: { [api] in try await api.remindInvoice(id: id) }) { [self] invoice in
             if var overview = business { replace(invoice, in: &overview.overdueInvoices); business = overview }
         }
+        if errors[.invoice(id)]?.isUncertain == true { await loadBusiness() }
     }
+
     public func transitionPhase(projectId: String, phaseId: String, action: PhaseAction) async {
         await perform(.phase(projectId: projectId, phaseId: phaseId), fetch: { [api] in
             try await api.transitionPhase(projectId: projectId, phaseId: phaseId, action: action)
@@ -166,7 +177,9 @@ public enum AdminOperation: Hashable, Sendable {
         await perform(.update(projectId), fetch: { [api] in try await api.publishUpdate(projectId: projectId, title: title, body: body) }) { [self] in
             projectDetails[projectId]?.updates.insert($0, at: 0)
         }
+        if errors[.update(projectId)]?.isUncertain == true { await loadProject(id: projectId) }
     }
+
     public func setItemVisibility(projectId: String, itemId: String, visible: Bool) async {
         await perform(.item(projectId: projectId, itemId: itemId), fetch: { [api] in
             try await api.setItemVisibility(projectId: projectId, itemId: itemId, visible: visible)
@@ -200,7 +213,9 @@ public enum AdminOperation: Hashable, Sendable {
                 conversations.sort { ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast) }
             }
         }
+        if errors[.sendMessage(conversationId)]?.isUncertain == true { await loadMessages(conversationId: conversationId) }
     }
+
     public func markRead(conversationId: String) async {
         await perform(.markRead(conversationId), fetch: { [api] in try await api.markRead(conversationId: conversationId) }) { [self] _ in
             if let index = conversations.firstIndex(where: { $0.id == conversationId }) { conversations[index].unreadCount = 0 }
@@ -208,7 +223,9 @@ public enum AdminOperation: Hashable, Sendable {
     }
     public func replyTicket(id: String, message: String) async {
         await perform(.ticket(id), fetch: { [api] in try await api.replyTicket(id: id, message: message) }) { [self] in replace($0, in: &tickets) }
+        if errors[.ticket(id)]?.isUncertain == true { await loadTickets() }
     }
+
     public func setTicketStatus(id: String, status: AdminTicketStatus) async {
         await perform(.ticket(id), fetch: { [api] in try await api.setTicketStatus(id: id, status: status) }) { [self] in replace($0, in: &tickets) }
     }

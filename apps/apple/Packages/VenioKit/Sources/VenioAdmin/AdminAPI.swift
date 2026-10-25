@@ -27,6 +27,9 @@ public protocol AdminAPI: Sendable {
 public enum AdminAPIError: Error, Sendable, Equatable {
     case forbidden, webOnly, conflict(String), notFound, connectionRequired, invalidInput, other
 
+    /// La requête a pu aboutir sans que la réponse arrive.
+    public var isUncertain: Bool { self == .connectionRequired || self == .other }
+
     public init(_ error: any Error) {
         if let error = error as? Self { self = error; return }
         if let error = error as? HTTPFailure {

@@ -72,7 +72,7 @@ struct AdminMessagesView: View {
                         .disabled(store.inFlight.contains(.sendMessage(id)))
                     Button { send() } label: {
                         Label { AdminText("Envoyer") } icon: { Image(systemName: "paperplane").accessibilityHidden(true) }
-                    }.keyboardShortcut(.return, modifiers: .command)
+                    }.buttonStyle(.borderedProminent).keyboardShortcut(.return, modifiers: .command)
                         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 4000 || store.inFlight.contains(.sendMessage(id)))
                     AdminActionError(operation: .sendMessage(id))
                 }.padding().venioCard().padding()
@@ -80,6 +80,7 @@ struct AdminMessagesView: View {
         }
         .background { ThemedBackground() }
         .navigationTitle(store.conversations.first { $0.id == id }?.title ?? AdminStrings.text("Messagerie", locale: locale))
+            .inlineNavigationTitle()
         .task(id: id) { await load() }
         .refreshable { await load() }
     }
@@ -103,7 +104,7 @@ struct AdminMessagesView: View {
     }
     private func load() async {
         await store.loadMessages(conversationId: id)
-        if store.errors[.messages(id)] == nil { await store.markRead(conversationId: id) }
+        if !readOnly && store.errors[.messages(id)] == nil { await store.markRead(conversationId: id) }
     }
     private func send() {
         let content = text

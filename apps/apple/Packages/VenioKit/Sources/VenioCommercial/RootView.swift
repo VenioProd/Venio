@@ -58,9 +58,15 @@ private struct AdminRootView: View {
     let initialItemID: String?
     init(user: UserSummary, session: SessionModel?, clock: DemoClock, initialSection: AdminSection?, initialItemID: String?) {
         let api: any AdminAPI
-        if let session { api = LiveAdminAPI(session: session.api.session) }
-        else { api = MockAdminAPI(clock: clock, user: user) }
-        _store = State(initialValue: AdminStore(api: api, user: user, clock: clock))
+        var isSuperAdmin = false
+        if let session {
+            api = LiveAdminAPI(session: session.api.session)
+            if case .signedIn(let account, _) = session.state { isSuperAdmin = account.role == "SUPER_ADMIN" }
+        } else {
+            api = MockAdminAPI(clock: clock, user: user)
+            isSuperAdmin = user.id == MockAdminAPI.demoUser.id
+        }
+        _store = State(initialValue: AdminStore(api: api, user: user, isSuperAdmin: isSuperAdmin, clock: clock))
         self.initialSection = initialSection
         self.initialItemID = initialItemID
     }

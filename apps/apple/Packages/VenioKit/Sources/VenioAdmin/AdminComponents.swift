@@ -34,16 +34,20 @@ struct AdminBadge: View {
 struct AdminMoney: View {
     @Environment(\.locale) private var locale
     let cents: Int
+    var currency = "EUR"
     var body: some View {
-        Text(verbatim: AdminFormats(locale: locale).money(cents)).monospacedDigit().privacySensitive()
+        Text(verbatim: AdminFormats(locale: locale).money(cents, currency: currency)).monospacedDigit().privacySensitive()
     }
 }
 
 struct AdminMoneyRow: View {
     let title: String
-    let cents: Int
+    let cents: Int?
+    var currency = "EUR"
     var body: some View {
-        LabeledContent { AdminMoney(cents: cents) } label: { AdminText(title) }
+        LabeledContent {
+            if let cents { AdminMoney(cents: cents, currency: currency) } else { AdminText("Non renseigné") }
+        } label: { AdminText(title) }
     }
 }
 
@@ -80,7 +84,7 @@ struct AdminActionError: View {
     let operation: AdminOperation
     var body: some View {
         if let error = store.errors[operation] {
-            AdminText(error.messageKey).font(.caption).foregroundStyle(palette.urgent.color)
+            AdminText(operation.notifiesSomeone && error.isUncertain ? "Résultat incertain : l’envoi a peut-être abouti. Vérifiez avant de renvoyer." : error.messageKey).font(.caption).foregroundStyle(palette.urgent.color)
                 .accessibilityAddTraits(.updatesFrequently)
         }
     }

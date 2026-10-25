@@ -39,9 +39,11 @@ struct AdminProjectFollowView: View {
         }.venioCard()
         VStack(alignment: .leading, spacing: 12) {
             AdminText("Finances").font(.headline)
-            AdminMoneyRow(title: "Budget", cents: detail.project.budgetCents)
-            AdminMoneyRow(title: "Facturé", cents: detail.project.invoicedCents)
-            AdminMoneyRow(title: "Reste à facturer", cents: detail.project.budgetCents - detail.project.invoicedCents)
+            let project = detail.project
+            AdminMoneyRow(title: "Budget", cents: project.budgetCents, currency: project.currency)
+            AdminMoneyRow(title: "Facturé", cents: project.invoicedCents, currency: project.currency)
+            AdminMoneyRow(title: "Reste à facturer", cents: project.budgetCents.flatMap { budget in project.invoicedCents.map { budget - $0 } },
+                          currency: project.currency)
         }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
         VStack(alignment: .leading, spacing: 16) {
             AdminText("Dernières mises à jour client").font(.headline)
@@ -63,7 +65,7 @@ struct AdminProjectFollowView: View {
         ForEach(phase.allowedActions, id: \.rawValue) { action in
             Button {
                 Task { await store.transitionPhase(projectId: id, phaseId: phase.id, action: action) }
-            } label: { AdminText(action.title) }
+            } label: { AdminText(action.title) }.buttonStyle(.bordered)
                 .disabled(store.inFlight.contains(.phase(projectId: id, phaseId: phase.id)))
         }
     }

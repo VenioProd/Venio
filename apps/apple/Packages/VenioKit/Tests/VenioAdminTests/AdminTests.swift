@@ -25,8 +25,9 @@ import VenioAdmin
     #expect(AdminSection.available(for: MockAdminAPI.demoUser.permissions) == AdminSection.allCases)
     let accountant: Set<String> = ["view_billing", "view_accounting", "view_projects", "view_messaging", "send_messages"]
     #expect(AdminSection.available(for: accountant) == [.business, .projects, .messaging, .activity])
-    let capabilities = AdminCapabilities(permissions: accountant)
+    let capabilities = AdminCapabilities(permissions: accountant, isSuperAdmin: false)
     #expect(capabilities.canViewProjectFinance && !capabilities.canPublishUpdates && !capabilities.canManagePhases)
+    #expect(!AdminCapabilities(permissions: ["manage_tickets"], isSuperAdmin: false).canManageTickets)
     #expect(AdminSection.available(for: ["view_projects"]) == [.projects, .activity])
 }
 
@@ -75,6 +76,8 @@ private actor AdminTransport: HTTPTransport {
                 body = #"{"phases":[{"_id":"one","title":"Cadrage","order":0,"status":"TERMINEE","requiresClientValidation":false},{"_id":"two","title":"Conception","order":1,"status":"EN_COURS","requiresClientValidation":true},{"_id":"three","title":"Développement","order":2,"status":"FUTURE_STATUS","requiresClientValidation":false}]}"#
             case "/api/admin/tickets":
                 body = #"[{"_id":"ticket","title":"Paiement","message":"À vérifier","category":"PROBLEME","priority":"NEW_PRIORITY","status":"OUVERT","authorName":"Camille","project":"project","createdAt":"2026-10-23T07:41:00Z","replies":[{"authorId":"user","authorName":"Raphaël","message":"Je regarde","createdAt":"2026-10-23T08:00:00.000Z"}]}]"#
+            case "/api/admin/activity-center":
+                body = #"{"sections":[{"key":"crm","label":"CRM","entries":[{"id":"a","title":"Lead","meta":"Sans relance","dueAt":""},{"id":"b","title":"Lead 2","meta":"Relance","dueAt":"2026-10-23T08:00:00.000Z"}],"hasMore":false}]}"#
             default:
                 Issue.record("Requête inattendue")
                 body = "{}"
@@ -104,6 +107,8 @@ private actor AdminTransport: HTTPTransport {
     let ticket = try #require(try await api.tickets().first)
     #expect(ticket.status == .open && ticket.priority == .unknown && ticket.replies.count == 1)
     #expect(ticket.replies.first?.message == "Je regarde" && ticket.projectName == nil)
+    let entries = try #require(try await api.activity().first).entries
+    #expect(entries.count == 2 && entries[0].dueAt == nil && entries[1].dueAt != nil)
     await transport.requireBrowser()
     await #expect(throws: AdminAPIError.webOnly) { _ = try await api.tickets() }
 }

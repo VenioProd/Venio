@@ -68,7 +68,7 @@ struct AdminTicketView: View {
                             } label: { AdminText("Changer le statut") }
                             TextField(AdminStrings.text("Votre réponse", locale: locale), text: $reply, axis: .vertical)
                                 .textFieldStyle(.roundedBorder).lineLimit(3...8)
-                            Button { send() } label: { AdminText("Répondre") }
+                            Button { send() } label: { AdminText("Répondre") }.buttonStyle(.borderedProminent)
                                 .disabled(reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             AdminActionError(operation: .ticket(id))
                         }.disabled(store.inFlight.contains(.ticket(id))).venioCard()
