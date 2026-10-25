@@ -1,8 +1,19 @@
+import fs from 'node:fs'
 import type { NextFunction, Request, Response } from 'express'
 import UserIdempotencyKey from '../models/UserIdempotencyKey.js'
 import { computeRequestHash } from '../lib/agent/idempotency.js'
 
 const UUID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i
+
+function uploadedFiles(req: Request): Express.Multer.File[] {
+  if (req.file) return [req.file]
+  return Array.isArray(req.files) ? req.files : Object.values(req.files ?? {}).flat()
+}
+
+// Monté après multer, le middleware peut répondre sans exécuter la route : les fichiers reçus n'ont alors plus de propriétaire.
+function discardUploads(req: Request): void {
+  for (const file of uploadedFiles(req)) if (file.path) fs.rmSync(file.path, { force: true })
+}
 
 /**
  * Idempotence facultative d'une mutation, pour l'app hors ligne : sans en-tête
@@ -25,6 +36,7 @@ export default async function idempotentRequest(req: Request, res: Response, nex
     return
   }
   if (!UUID.test(raw)) {
+    discardUploads(req)
     res.status(400).json({ error: 'Idempotency-Key doit être un UUID', code: 'INVALID_IDEMPOTENCY_KEY' })
     return
   }
@@ -34,7 +46,11 @@ export default async function idempotentRequest(req: Request, res: Response, nex
     key: raw.toLowerCase(),
     method: req.method.toUpperCase(),
     path: (req.originalUrl || req.url).split('?')[0]!,
-    requestHash: computeRequestHash(req.body),
+    requestHash: computeRequestHash(
+      uploadedFiles(req).length
+        ? { body: req.body, files: uploadedFiles(req).map((f) => [f.originalname, f.mimetype, f.size]) }
+        : req.body,
+    ),
   }
 
   try {
@@ -69,6 +85,7 @@ export default async function idempotentRequest(req: Request, res: Response, nex
       next(err)
       return
     }
+    discardUploads(req)
     const existing = await UserIdempotencyKey.findOne({ userId: record.userId, key: record.key }).lean()
     if (
       !existing ||

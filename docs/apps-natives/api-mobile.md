@@ -439,10 +439,11 @@ Ces routes complètent la liste blanche de la section 1. Elles acceptent `Author
 
 **MFA comptable** : la MFA passée au login de l'appareil vaut pour ces lectures, même après quinze minutes. Sans elle, `403 { "error": "MFA_STEP_UP_REQUIRED", "message": "Une vérification MFA récente est requise." }` quand la MFA est active et requise pour le rôle (ou `MFA_SETUP_REQUIRED` si elle n'est pas configurée). Les sessions navigateur et les actions sensibles gardent leur exigence de MFA récente. Les autres routes comptables, notamment `GET /entries` et `POST /beneficiaries`, restent fermées en Bearer (`403 BROWSER_SESSION_REQUIRED`).
 
-**Relance de facture** : `POST /api/admin/billing/:id/remind`, sans corps, accepte un en-tête facultatif `Idempotency-Key: <UUID>`. La facture doit être de type `INVOICE`, au statut `ISSUED`, `SENT` ou `PARTIALLY_PAID`, avec `dueAt` strictement passée. L'e-mail utilise le contact de facturation du payeur, sinon le client ; un payeur tiers sans e-mail est refusé. Le montant est le reste dû TTC, après encaissements, remboursements et avoirs, calculé par la comptabilité projet.
+**Relance de facture** : `POST /api/admin/billing/:id/remind`, sans corps, accepte un en-tête facultatif `Idempotency-Key: <UUID>`. La facture doit être de type `INVOICE` (pas un avoir), au statut `ISSUED`, `SENT` ou `PARTIALLY_PAID`, avec `dueAt` strictement passée. L'e-mail utilise le contact de facturation du payeur, sinon le client ; un payeur tiers sans e-mail est refusé. Le montant est le reste dû TTC, après encaissements, remboursements et avoirs, calculé par la comptabilité projet.
 
 - `200 { "document": <BillingDocument> }` : document complet, avec `reminderSentAt` en ISO 8601, statut inchangé ;
 - `409 { "error": "Cette facture n’est pas en retard", "code": "INVOICE_NOT_OVERDUE" }` : type, statut ou échéance incompatible ;
+- `409 { "error": "Cette facture n’a plus rien à régler", "code": "NOTHING_DUE" }` : reste dû nul ou négatif ;
 - `503 { "error": "Relance non envoyée : e-mail indisponible", "code": "EMAIL_UNAVAILABLE" }` : e-mail non envoyé (SMTP indisponible), facture inchangée ;
 - `400 { "error": "Renseignez l’e-mail de facturation du payeur avant l’envoi" }` : payeur tiers sans e-mail ;
 - `400 { "error": "Aucun e-mail de facturation" }` : aucun destinataire ;
@@ -456,7 +457,7 @@ Ces routes complètent la liste blanche de la section 1. Elles acceptent `Author
 
 Réponse `200` avec six ou douze éléments ; autre valeur de `months` : `400 { "error": "months doit valoir 6 ou 12" }`.
 
-**Rejeu des publications** : les trois routes `POST /api/admin/projects/:id/updates`, `POST /api/admin/messaging/conversations/:conversationId/messages` et `POST /api/admin/tickets/:id/reply` acceptent aussi `Idempotency-Key: <UUID>` facultatif (réponse de ticket en multipart, champ `message`, fichiers `files`). Même fonctionnement que les leads hors ligne : même clé, méthode, chemin et corps → même statut et même réponse, sans nouvel e-mail, notification ou message. Pour les tickets, la comparaison porte sur les champs du corps multipart après parsing. Sans clé, chaque appel s'exécute. Erreurs : `400 INVALID_IDEMPOTENCY_KEY`, `409 IDEMPOTENCY_CONFLICT`, `409 IDEMPOTENCY_IN_PROGRESS` ; les `5xx` sont également rejoués, clés conservées 24 heures. Cette règle vaut aussi pour la relance de facture.
+**Rejeu des publications** : les trois routes `POST /api/admin/projects/:id/updates`, `POST /api/admin/messaging/conversations/:conversationId/messages` et `POST /api/admin/tickets/:id/reply` acceptent aussi `Idempotency-Key: <UUID>` facultatif (réponse de ticket en multipart, champ `message`, fichiers `files`). Même fonctionnement que les leads hors ligne : même clé, méthode, chemin et corps → même statut et même réponse, sans nouvel e-mail, notification ou message. Pour les tickets, la comparaison porte sur les champs du corps multipart et sur les fichiers joints (nom, type, taille) ; au rejeu, les fichiers renvoyés sont écartés. La réponse à un ticket reste réservée au rôle `SUPER_ADMIN`, vérifié avant le rejeu. Sans clé, chaque appel s'exécute. Erreurs : `400 INVALID_IDEMPOTENCY_KEY`, `409 IDEMPOTENCY_CONFLICT`, `409 IDEMPOTENCY_IN_PROGRESS` ; les `5xx` sont également rejoués, clés conservées 24 heures. Cette règle vaut aussi pour la relance de facture.
 
 ## 8. Langues
 

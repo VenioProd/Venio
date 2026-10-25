@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import multer from 'multer'
 import mongoose from 'mongoose'
 import Project from '../../models/Project.js'
@@ -322,12 +322,17 @@ router.post(
 router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_TICKETS),
+  // Avant l'upload et le rejeu : une réponse enregistrée ne doit pas survivre à la perte du rôle.
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.user!.role !== 'SUPER_ADMIN')
+      return res.status(403).json({ error: 'Seuls les super admins peuvent repondre' })
+    return next()
+  },
   upload.array('files', 10),
   idempotentRequest,
   async (req: Request, res: Response) => {
     try {
       const user = (req as any).user
-      if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent repondre' })
 
       const { message } = req.body
       if (!message) return res.status(400).json({ error: 'Message requis' })

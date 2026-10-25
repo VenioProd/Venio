@@ -11,6 +11,10 @@ import accountingRoutes from '../routes/admin/accounting/index.js'
 import billingRoutes from '../routes/admin/billing.js'
 import devRoutes from '../routes/admin/dev/index.js'
 import messagingRoutes from '../routes/admin/messaging.js'
+import ticketRoutes from '../routes/admin/tickets.js'
+import InternalTicket from '../models/InternalTicket.js'
+import fs from 'node:fs'
+import path from 'node:path'
 import User from '../models/User.js'
 import MobileDevice from '../models/MobileDevice.js'
 import Project from '../models/Project.js'
@@ -35,6 +39,7 @@ app.use('/api/admin/accounting', auth, requireMfa, accountingRoutes)
 app.use('/api/admin/billing', billingRoutes)
 app.use('/api/admin/dev', devRoutes)
 app.use('/api/admin/messaging', messagingRoutes)
+app.use('/api/admin/tickets', ticketRoutes)
 
 let author: string
 let project: string
@@ -268,4 +273,80 @@ it('rejoue un message sans créer de second message ni de seconde notification',
   expect(await InternalMessage.countDocuments({ conversation: conversation._id })).toBe(1)
   expect(await Notification.countDocuments({ type: 'INTERNAL_MESSAGE', recipient: recipient._id })).toBe(1)
   expect(sendPushToUser).toHaveBeenCalledTimes(1)
+})
+
+it('ne relance ni un avoir ni une facture soldée', async () => {
+  const overdue = new Date(Date.now() - 2 * 86400000)
+  const invoice = await BillingDocument.create({
+    type: 'INVOICE',
+    number: 'FAC-TEST-2',
+    project,
+    client: author,
+    createdBy: author,
+    status: 'ISSUED',
+    subtotal: 100,
+    taxTotal: 20,
+    total: 120,
+    dueAt: overdue,
+  })
+  const credit = await BillingDocument.create({
+    type: 'INVOICE',
+    number: 'AV-TEST-2',
+    project,
+    client: author,
+    createdBy: author,
+    creditedInvoice: invoice._id,
+    status: 'ISSUED',
+    subtotal: -100,
+    taxTotal: -20,
+    total: -120,
+    dueAt: overdue,
+  })
+  const refused = await request(app)
+    .post(`/api/admin/billing/${credit._id}/remind`)
+    .set('Authorization', bearer)
+    .expect(409)
+  expect(refused.body.code).toBe('INVOICE_NOT_OVERDUE')
+  const settled = await request(app)
+    .post(`/api/admin/billing/${invoice._id}/remind`)
+    .set('Authorization', bearer)
+    .expect(409)
+  expect(settled.body.code).toBe('NOTHING_DUE')
+  expect(sendInvoiceReminderEmail).not.toHaveBeenCalled()
+})
+
+it('rejoue une réponse de ticket sans fichier orphelin, et plus après la perte du rôle', async () => {
+  const dir = path.resolve('uploads/tickets')
+  const before = new Set(fs.existsSync(dir) ? fs.readdirSync(dir) : [])
+  const added = () => fs.readdirSync(dir).filter((name) => !before.has(name))
+  try {
+    await User.updateOne({ _id: author }, { role: 'SUPER_ADMIN' })
+    const ticket = await InternalTicket.create({
+      title: 'Bug',
+      message: 'Écran blanc',
+      authorId: author,
+      authorName: 'Auteur',
+    })
+    const key = randomUUID()
+    const reply = () =>
+      request(app)
+        .post(`/api/admin/tickets/${ticket._id}/reply`)
+        .set('Authorization', bearer)
+        .set('Idempotency-Key', key)
+        .field('message', 'Corrigé')
+        .attach('files', Buffer.from('capture'), 'capture.png')
+    const first = await reply().expect(200)
+    expect((await reply().expect(200)).body).toEqual(first.body)
+    expect(added()).toHaveLength(1)
+    expect((await InternalTicket.findById(ticket._id))!.replies).toHaveLength(1)
+
+    await User.updateOne({ _id: author }, { role: 'ADMIN', grantedPermissions: ['manage_tickets'] })
+    const demoted = await reply().expect(403)
+    expect(demoted.body.error).toBe('Seuls les super admins peuvent repondre')
+    expect(added()).toHaveLength(1)
+  } finally {
+    for (const name of fs.existsSync(dir) ? fs.readdirSync(dir).filter((name) => !before.has(name)) : []) {
+      fs.rmSync(path.join(dir, name), { force: true })
+    }
+  }
 })

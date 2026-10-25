@@ -368,8 +368,10 @@ router.post(
     try {
       const doc = await BillingDocument.findById(req.params.id)
       if (!doc) return res.status(404).json({ error: 'Billing document not found' })
+      // Un avoir est une facture de montant négatif : il n'y a rien à réclamer.
       if (
         doc.type !== 'INVOICE' ||
+        doc.creditedInvoice ||
         !['ISSUED', 'SENT', 'PARTIALLY_PAID'].includes(doc.status) ||
         !doc.dueAt ||
         doc.dueAt.getTime() >= Date.now()
@@ -385,6 +387,9 @@ router.post(
       if (!recipientEmail) return res.status(400).json({ error: 'Aucun e-mail de facturation' })
 
       const balance = await invoicePaymentBalance(doc, null)
+      if (balance.remainingTtcCents <= 0) {
+        return res.status(409).json({ error: 'Cette facture n’a plus rien à régler', code: 'NOTHING_DUE' })
+      }
       const result = await sendInvoiceReminderEmail({
         to: recipientEmail,
         name: doc.payer?.billingContact.name || client?.name || recipientEmail,
