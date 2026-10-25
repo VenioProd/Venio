@@ -26,6 +26,7 @@
     "EDIT_PROJECTS": "edit_projects",
     "VIEW_CONTENT": "view_content",
     "EDIT_CONTENT": "edit_content",
+    "UPLOAD_PROJECT_DOCUMENTS": "upload_project_documents",
     "VIEW_PHASES": "view_phases",
     "MANAGE_PHASES": "manage_phases",
     "VIEW_BILLING": "view_billing",
@@ -57,6 +58,7 @@
   },
   "rolePermissions": {
     "SUPER_ADMIN": [
+      "upload_project_documents",
       "manage_quotes",
       "manage_admins",
       "manage_clients",
@@ -181,6 +183,7 @@
       "create_tickets"
     ],
     "COMMERCIAL": [
+      "upload_project_documents",
       "manage_quotes",
       "view_crm",
       "manage_crm",

@@ -23,6 +23,7 @@ export const PERMISSIONS: Record<string, Permission> = {
   EDIT_PROJECTS: 'edit_projects',
   VIEW_CONTENT: 'view_content',
   EDIT_CONTENT: 'edit_content',
+  UPLOAD_PROJECT_DOCUMENTS: 'upload_project_documents',
   VIEW_PHASES: 'view_phases',
   MANAGE_PHASES: 'manage_phases',
   VIEW_BILLING: 'view_billing',
@@ -161,6 +162,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_BETA,
   ]),
   COMMERCIAL: new Set([
+    PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS,
     PERMISSIONS.MANAGE_QUOTES,
     PERMISSIONS.VIEW_CRM,
     PERMISSIONS.MANAGE_CRM,

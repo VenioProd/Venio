@@ -7,6 +7,7 @@ import type { Permission } from '../../types/enums.js'
 import Lead from '../../models/Lead.js'
 import Interaction from '../../models/Interaction.js'
 import Project from '../../models/Project.js'
+import ProjectItem from '../../models/ProjectItem.js'
 import ProjectPhase from '../../models/ProjectPhase.js'
 import ProjectUpdate from '../../models/ProjectUpdate.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
@@ -25,6 +26,7 @@ const permissions: Record<SyncEntityType, Permission[]> = {
   projects: [PERMISSIONS.VIEW_PROJECTS],
   projectPhases: [PERMISSIONS.VIEW_PHASES],
   projectUpdates: [PERMISSIONS.VIEW_PROJECTS],
+  projectDocuments: [PERMISSIONS.VIEW_CONTENT],
   quotes: [PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.VIEW_BILLING],
 }
 
@@ -108,10 +110,11 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         },
       ]
     }
-    if (['projects', 'projectPhases', 'projectUpdates'].includes(type)) {
+    if (['projects', 'projectPhases', 'projectUpdates', 'projectDocuments'].includes(type)) {
       const projectIds = await accessibleProjectIds(req.user!)
       if (projectIds !== null) filter.$and = [{ [type === 'projects' ? '_id' : 'project']: { $in: projectIds } }]
     }
+    if (type === 'projectDocuments') filter['file.storagePath'] = { $exists: true, $ne: '' }
     const options = { sort: { [stamp]: 1, _id: 1 } as Record<string, 1>, limit: limit + 1 }
     let items
     switch (type) {
@@ -133,6 +136,19 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         break
       case 'projectUpdates':
         items = await ProjectUpdate.find(filter, null, options).lean()
+        break
+      case 'projectDocuments':
+        items = (
+          await ProjectItem.find(filter, null, options)
+            .select(
+              '_id project section type title description file.originalName file.mimeType file.size isVisible createdBy createdAt updatedAt',
+            )
+            .populate('createdBy', 'name')
+            .lean()
+        ).map((item) => ({
+          ...item,
+          downloadUrl: `/api/admin/projects/${item.project}/items/${item._id}/download`,
+        }))
         break
       case 'quotes':
         items = await QuoteProposal.find(filter, null, options).lean()

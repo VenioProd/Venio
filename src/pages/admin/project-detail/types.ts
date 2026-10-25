@@ -59,6 +59,11 @@ export interface ProjectDetailsTabProps {
 }
 
 export interface ProjectContentTabProps {
+  canUploadDocuments: boolean
+  editingItemId: string | null
+  canModifyItem: (item: ProjectItem) => boolean
+  onEditItem: (item: ProjectItem) => void
+  onCancelEdit: () => void
   projectId: string
   sections: ProjectSection[]
   items: ProjectItem[]

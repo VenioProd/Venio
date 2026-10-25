@@ -64,6 +64,7 @@ const AdminProjectDetail = () => {
   const [error, setError] = useState<string>('')
   const [activeTab, setActiveTab] = useTabState('content')
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
+  const canUploadDocuments = hasPermission(user, PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS)
   const canEditContent = hasPermission(user, PERMISSIONS.EDIT_CONTENT)
   const canManageBilling = hasPermission(user, PERMISSIONS.MANAGE_BILLING)
   const canViewContent = hasPermission(user, PERMISSIONS.VIEW_CONTENT)
@@ -206,6 +207,9 @@ const AdminProjectDetail = () => {
   const projectContent = useProjectContent({
     projectId: id,
     canEditContent,
+    canUploadDocuments,
+    userId: user?._id,
+    items,
     canViewContent,
     confirm,
     ensurePermission,
@@ -608,6 +612,11 @@ const AdminProjectDetail = () => {
           setItemForm={projectContent.setItemForm}
           selectedFile={projectContent.selectedFile}
           setSelectedFile={projectContent.setSelectedFile}
+          canUploadDocuments={canUploadDocuments}
+          editingItemId={projectContent.editingItemId}
+          canModifyItem={projectContent.canModifyItem}
+          onEditItem={projectContent.handleEditItem}
+          onCancelEdit={projectContent.resetItemForm}
           canEditContent={canEditContent}
           canViewContent={canViewContent}
           onAddSection={projectContent.handleAddSection}

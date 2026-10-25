@@ -28,6 +28,7 @@ const permissionLabels: Record<string, string> = {
   [PERMISSIONS.EDIT_PROJECTS]: 'Modification des projets',
   [PERMISSIONS.VIEW_CONTENT]: 'Lecture du contenu',
   [PERMISSIONS.EDIT_CONTENT]: 'Modification du contenu',
+  [PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS]: 'Ajout de documents aux projets',
   [PERMISSIONS.VIEW_BILLING]: 'Lecture de la facturation',
   [PERMISSIONS.MANAGE_BILLING]: 'Gestion de la facturation',
   [PERMISSIONS.MANAGE_TASKS]: 'Gestion des tâches',
