@@ -72,17 +72,22 @@ router.patch(
         res.status(404).json({ error: 'Exercice introuvable' })
         return
       }
-      if (fy.status === 'CLOTURE') {
+      const { code, label, startDate, endDate } = req.body || {}
+      const update: Record<string, unknown> = {}
+      if (code !== undefined) update.code = code
+      if (label !== undefined) update.label = label
+      if (startDate !== undefined) update.startDate = new Date(startDate)
+      if (endDate !== undefined) update.endDate = new Date(endDate)
+      const updated = await FiscalYear.findOneAndUpdate(
+        { _id: fy._id, status: 'OUVERT' },
+        { $set: update },
+        { new: true, runValidators: true },
+      )
+      if (!updated) {
         res.status(423).json({ error: 'Exercice clôturé, modification impossible' })
         return
       }
-      const { code, label, startDate, endDate } = req.body || {}
-      if (code !== undefined) fy.code = code
-      if (label !== undefined) fy.label = label
-      if (startDate !== undefined) fy.startDate = new Date(startDate)
-      if (endDate !== undefined) fy.endDate = new Date(endDate)
-      await fy.save()
-      res.json({ fiscalYear: fy })
+      res.json({ fiscalYear: updated })
     } catch (err) {
       next(err)
     }

@@ -14,6 +14,8 @@ import type {
 } from '../../types/models/index.js'
 import type { AccountingEntryStatus, AccountingEntrySource } from '../../types/enums.js'
 
+import { runInTransaction } from '../transaction.js'
+
 const EPSILON = 0.005
 
 function roundCents(n: number | null | undefined): number {
@@ -72,6 +74,17 @@ export async function ensureFiscalYearFor(date: Date | string, session?: ClientS
     throw err
   }
   return fiscal as IFiscalYear
+}
+
+async function touchOpenFiscalYear(fiscalYearId: Types.ObjectId, session: ClientSession): Promise<void> {
+  const updated = await FiscalYear.updateOne(
+    { _id: fiscalYearId, status: 'OUVERT' },
+    { $currentDate: { updatedAt: true } },
+    { session },
+  )
+  if (updated.matchedCount === 0) {
+    throw Object.assign(new Error('L’exercice contenant cette date est clôturé'), { status: 423 })
+  }
 }
 
 type JournalRef = string | Types.ObjectId | IJournal
@@ -160,6 +173,8 @@ export interface CreateEntryResult {
  * cette clé, on la retourne avec `alreadyExisted: true`.
  */
 export async function createEntry(input: CreateEntryInput): Promise<CreateEntryResult> {
+  const session = input.session
+  if (!session) return runInTransaction((session) => createEntry({ ...input, session }))
   const {
     journal: journalRef,
     date,
@@ -174,7 +189,6 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
     notes = '',
     currency = 'EUR',
     externalSource = null,
-    session,
   } = input || ({} as CreateEntryInput)
 
   if (!Array.isArray(lines) || lines.length < 2) {
@@ -198,21 +212,7 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
   }
 
   const fiscalYear = await ensureFiscalYearFor(entryDate, session)
-  if (fiscalYear.status === 'CLOTURE') {
-    const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
-    err.status = 423
-    throw err
-  }
-  const updated = await FiscalYear.updateOne(
-    { _id: fiscalYear._id, status: 'OUVERT' },
-    { $currentDate: { updatedAt: true } },
-    session ? { session } : undefined,
-  )
-  if (updated.matchedCount === 0) {
-    const err = new Error('L’exercice contenant cette date est clôturé') as Error & { status?: number }
-    err.status = 423
-    throw err
-  }
+  await touchOpenFiscalYear(fiscalYear._id as Types.ObjectId, session)
 
   // Idempotency : si une écriture existe déjà avec cette clé, la retourner
   if (idempotencyKey) {
@@ -283,73 +283,58 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
   const { value } = await getNextSequence(seqName, { padding: 0, session })
   const entryNumber = `${journal.code}-${yearForNumbering}-${String(value).padStart(5, '0')}`
 
-  // Sans session, on conserve le nettoyage manuel pour les appels hors transaction.
-  let entry: IAccountingEntry | null = null
-  try {
-    const entryDoc = new AccountingEntry({
-      journal: journal._id,
+  const entryDoc = new AccountingEntry({
+    journal: journal._id,
+    journalCode: journal.code,
+    fiscalYear: fiscalYear._id,
+    entryNumber,
+    date: entryDate,
+    label,
+    pieceRef,
+    status,
+    source,
+    sourceRef: sourceRef || undefined,
+    externalSource: externalSource || undefined,
+    idempotencyKey: idempotencyKey || undefined,
+    totalDebit,
+    totalCredit,
+    currency,
+    createdBy: createdBy || undefined,
+    validatedBy: status === 'VALIDATED' ? createdBy || undefined : undefined,
+    validatedAt: status === 'VALIDATED' ? new Date() : undefined,
+    notes,
+  })
+  await entryDoc.save({ session })
+  const entry = entryDoc
+
+  const lineDocs = []
+  for (let i = 0; i < resolvedLines.length; i += 1) {
+    const { raw, account, debit, credit } = resolvedLines[i]!
+    lineDocs.push({
+      entry: entry._id,
+      project: raw.project ?? null,
       journalCode: journal.code,
       fiscalYear: fiscalYear._id,
-      entryNumber,
       date: entryDate,
-      label,
-      pieceRef,
-      status,
-      source,
-      sourceRef: sourceRef || undefined,
-      externalSource: externalSource || undefined,
-      idempotencyKey: idempotencyKey || undefined,
-      totalDebit,
-      totalCredit,
+      account: account._id,
+      accountCode: account.code,
+      accountLabel: account.label,
+      label: raw.label || label,
+      debit,
+      credit,
+      vatRate: raw.vatRate || undefined,
+      vatRateValue: raw.vatRateValue != null ? Number(raw.vatRateValue) : undefined,
       currency,
-      createdBy: createdBy || undefined,
-      validatedBy: status === 'VALIDATED' ? createdBy || undefined : undefined,
-      validatedAt: status === 'VALIDATED' ? new Date() : undefined,
-      notes,
+      lettrage: raw.lettrage || '',
+      lettrageDate: raw.lettrage ? new Date() : null,
+      auxiliaryRef: raw.auxiliaryRef || undefined,
+      sortIndex: i,
     })
-    await entryDoc.save({ session })
-    entry = entryDoc
-
-    const lineDocs = []
-    for (let i = 0; i < resolvedLines.length; i += 1) {
-      const { raw, account, debit, credit } = resolvedLines[i]!
-      lineDocs.push({
-        entry: entry._id,
-        project: raw.project ?? null,
-        journalCode: journal.code,
-        fiscalYear: fiscalYear._id,
-        date: entryDate,
-        account: account._id,
-        accountCode: account.code,
-        accountLabel: account.label,
-        label: raw.label || label,
-        debit,
-        credit,
-        vatRate: raw.vatRate || undefined,
-        vatRateValue: raw.vatRateValue != null ? Number(raw.vatRateValue) : undefined,
-        currency,
-        lettrage: raw.lettrage || '',
-        lettrageDate: raw.lettrage ? new Date() : null,
-        auxiliaryRef: raw.auxiliaryRef || undefined,
-        sortIndex: i,
-      })
-    }
-
-    const insertedLines = (await AccountingLine.insertMany(lineDocs, { session })) as unknown as IAccountingLine[]
-
-    return { entry, lines: insertedLines }
-  } catch (err) {
-    // Cleanup best-effort : si on a créé l'entry mais raté les lines, on supprime l'entry
-    if (entry?._id && !session) {
-      try {
-        await AccountingLine.deleteMany({ entry: entry._id })
-        await AccountingEntry.deleteOne({ _id: entry._id })
-      } catch {
-        /* noop */
-      }
-    }
-    throw err
   }
+
+  const insertedLines = (await AccountingLine.insertMany(lineDocs, { session })) as unknown as IAccountingLine[]
+
+  return { entry, lines: insertedLines }
 }
 
 /**
@@ -358,14 +343,16 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
  */
 export async function validateEntry(
   entryId: string | Types.ObjectId,
-  { userId }: { userId?: string | Types.ObjectId | null } = {},
+  { userId, session }: { userId?: string | Types.ObjectId | null; session?: ClientSession } = {},
 ): Promise<IAccountingEntry> {
-  const entry = await AccountingEntry.findById(entryId)
+  if (!session) return runInTransaction((session) => validateEntry(entryId, { userId, session }))
+  const entry = await AccountingEntry.findById(entryId).session(session)
   if (!entry) {
     const err = new Error('Écriture introuvable') as Error & { status?: number }
     err.status = 404
     throw err
   }
+  await touchOpenFiscalYear(entry.fiscalYear, session)
   if (entry.status === 'LOCKED') {
     const err = new Error('Écriture verrouillée') as Error & { status?: number }
     err.status = 423
@@ -374,7 +361,7 @@ export async function validateEntry(
   if (entry.status === 'VALIDATED') {
     return entry
   }
-  const lines = await AccountingLine.find({ entry: entry._id })
+  const lines = await AccountingLine.find({ entry: entry._id }).session(session)
   const totDebit = lines.reduce((s, l) => s + l.debit, 0)
   const totCredit = lines.reduce((s, l) => s + l.credit, 0)
   if (Math.abs(totDebit - totCredit) > EPSILON) {
@@ -387,23 +374,25 @@ export async function validateEntry(
   entry.validatedBy = (userId as Types.ObjectId | null) || entry.validatedBy
   entry.totalDebit = roundCents(totDebit)
   entry.totalCredit = roundCents(totCredit)
-  await entry.save()
+  await entry.save({ session })
   return entry
 }
 
-export async function deleteDraftEntry(entryId: string | Types.ObjectId): Promise<boolean> {
-  const entry = await AccountingEntry.findById(entryId)
+export async function deleteDraftEntry(entryId: string | Types.ObjectId, session?: ClientSession): Promise<boolean> {
+  if (!session) return runInTransaction((session) => deleteDraftEntry(entryId, session))
+  const entry = await AccountingEntry.findById(entryId).session(session)
   if (!entry) {
     const err = new Error('Écriture introuvable') as Error & { status?: number }
     err.status = 404
     throw err
   }
+  await touchOpenFiscalYear(entry.fiscalYear, session)
   if (entry.status !== 'DRAFT') {
     const err = new Error('Seules les écritures DRAFT peuvent être supprimées') as Error & { status?: number }
     err.status = 400
     throw err
   }
-  await AccountingLine.deleteMany({ entry: entry._id })
-  await entry.deleteOne()
+  await AccountingLine.deleteMany({ entry: entry._id }, { session })
+  await entry.deleteOne({ session })
   return true
 }
