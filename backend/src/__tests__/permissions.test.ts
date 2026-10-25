@@ -16,6 +16,7 @@ describe('permissions module', () => {
         'EDIT_PROJECTS',
         'VIEW_CONTENT',
         'EDIT_CONTENT',
+        'UPLOAD_PROJECT_DOCUMENTS',
         // Pipeline d'étapes de production
         'VIEW_PHASES',
         'MANAGE_PHASES',

@@ -21,10 +21,12 @@ const CANONICAL_VALUES = [
   'edit_projects',
   'view_content',
   'edit_content',
+  'upload_project_documents',
   'view_phases',
   'manage_phases',
   'view_billing',
   'manage_billing',
+  'manage_quotes',
   'manage_tasks',
   'view_qualiopi',
   'manage_qualiopi',
@@ -62,10 +64,12 @@ const CANONICAL_KEYS = [
   'EDIT_PROJECTS',
   'VIEW_CONTENT',
   'EDIT_CONTENT',
+  'UPLOAD_PROJECT_DOCUMENTS',
   'VIEW_PHASES',
   'MANAGE_PHASES',
   'VIEW_BILLING',
   'MANAGE_BILLING',
+  'MANAGE_QUOTES',
   'MANAGE_TASKS',
   'VIEW_QUALIOPI',
   'MANAGE_QUALIOPI',
@@ -118,8 +122,8 @@ describe('Frontend PERMISSIONS (src/lib/permissions.ts)', () => {
   const frontValues = Object.values(PERMISSIONS) as string[]
   const frontKeys = Object.keys(PERMISSIONS)
 
-  it('has exactly 38 permissions', () => {
-    expect(frontValues.length).toBe(38)
+  it('has exactly 40 permissions', () => {
+    expect(frontValues.length).toBe(40)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
@@ -140,8 +144,8 @@ describe('Backend PERMISSIONS (backend/src/lib/permissions.ts)', () => {
   const backendSrc = readFileSync(resolve(__dirname, '../../../backend/src/lib/permissions.ts'), 'utf-8')
   const { keys: backendKeys, values: backendValues } = parseBackendPermissions(backendSrc)
 
-  it('has exactly 38 permissions', () => {
-    expect(backendValues.length).toBe(38)
+  it('has exactly 40 permissions', () => {
+    expect(backendValues.length).toBe(40)
   })
 
   it('values match the canonical list exactly (same set, same cardinality)', () => {
