@@ -47,6 +47,19 @@ async function withCanQuote(req: Request, type: 'projects' | 'leads', items: Quo
   }))
 }
 
+// `client` reste un identifiant : le portefeuille de devis le compare à des ids.
+// Le nom à afficher voyage à part, dans `clientName`.
+async function withClientNames<T extends { client?: unknown }>(projects: T[]) {
+  const ids = [...new Set(projects.map((project) => String(project.client ?? '')).filter(Boolean))]
+  const clients = ids.length
+    ? await User.find({ _id: { $in: ids } })
+        .select('name companyName')
+        .lean()
+    : []
+  const names = new Map(clients.map((client) => [String(client._id), client.companyName || client.name]))
+  return projects.map((project) => ({ ...project, clientName: names.get(String(project.client ?? '')) ?? '' }))
+}
+
 router.get('/:type', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const type = req.params.type as SyncEntityType | 'deletions'
@@ -131,7 +144,9 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
         items = await Interaction.find(filter, null, options).populate('author', 'name email').lean()
         break
       case 'projects':
-        items = await Project.find(filter, null, options).populate('assignedTo', 'name email').lean()
+        items = await withClientNames(
+          await Project.find(filter, null, options).populate('assignedTo', 'name email').lean(),
+        )
         break
       case 'projectPhases':
         items = await ProjectPhase.find(filter, null, options)

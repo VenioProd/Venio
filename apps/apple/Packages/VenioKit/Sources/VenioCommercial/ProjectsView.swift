@@ -67,7 +67,7 @@ public struct ProjectsView: View {
             ForEach(store.projects) { project in
                 Button { onProject(project.id) } label: {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(verbatim: project.client).font(.title3.bold())
+                        Text(verbatim: project.clientName).font(.title3.bold())
                         Text(verbatim: project.projectNumber + " · " + CommercialStrings.text(project.name, locale: locale)).font(.subheadline)
                         if store.currentUser?.permissions.contains("view_phases") == true, let detail = store.projectDetails[project.id], let phase = detail.phases.first(where: { $0.status == .active }) {
                             Text(verbatim: CommercialStrings.text(phase.title, locale: locale) + " · " +
@@ -162,7 +162,7 @@ public struct ProjectDetailView: View {
     }
     private func header(_ detail: ProjectDetail) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(verbatim: detail.project.client).font(.largeTitle.bold())
+            Text(verbatim: detail.project.clientName).font(.largeTitle.bold())
             Text(verbatim: detail.project.projectNumber + " · " + CommercialStrings.text(detail.project.name, locale: locale)).font(.subheadline)
             ProgressView(value: Double(detail.project.progress), total: 100) {
                 VText("Avancement")

@@ -335,7 +335,7 @@ import VenioCore
 
     var contentIdentifiers: [String] {
         leads.flatMap { [$0.company, $0.contactName, $0.contactEmail, $0.contactPhone] }
-            + projects.flatMap { [$0.client, $0.projectNumber] }
+            + projects.flatMap { [$0.clientName, $0.projectNumber] }
             + quotes.compactMap(\.reference)
             + [currentUser?.name ?? "", "Léa", "Hugo Bernard", "Raphaël B.", "Vivatech Paris", "Apple Pay"]
     }

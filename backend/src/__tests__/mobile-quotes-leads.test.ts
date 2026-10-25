@@ -126,6 +126,11 @@ it('dit dans la synchro si l’on peut chiffrer chaque projet et chaque lead', a
   }
   // Un commercial non associé synchronise ses projets et ceux de ses clients, pas ceux des collègues.
   expect(await canQuote('projects', 'name')).toEqual({ Responsable: true, 'Client à moi': true })
+  // Le nom du client voyage à part ; `client` reste l'identifiant.
+  const projects = await request(app).get('/api/mobile/sync/projects').set('Authorization', bearer).expect(200)
+  const own = projects.body.items.find((item: { name: string }) => item.name === 'Client à moi')
+  expect(own.clientName).toBe(ownClient.companyName || ownClient.name)
+  expect(own.client).toBe(String(ownClient._id))
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: true, Autre: false })
   await User.updateOne({ _id: me }, { deniedPermissions: ['manage_quotes'] })
   expect(await canQuote('leads', 'company')).toEqual({ Assigné: false, Autre: false })

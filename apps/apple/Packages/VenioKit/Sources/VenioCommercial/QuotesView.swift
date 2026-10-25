@@ -158,7 +158,7 @@ private struct AttachQuoteView: View {
                             do { try await store.attachQuote(id: quoteId, projectId: project.id); dismiss() }
                             catch { errorKey = quoteErrorKey(error) }
                         }
-                    } label: { Text(verbatim: project.client + " · " + project.name) }
+                    } label: { Text(verbatim: project.clientName + " · " + project.name) }
                 }
                 if !store.projects.contains(where: \.canQuote) { VText("Aucun projet dans votre portefeuille") }
                 if let errorKey { MobileErrorView(key: errorKey) }
@@ -215,7 +215,7 @@ struct NewQuoteView: View {
                         Button { projectId = project.id; leadId = "" } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text(verbatim: project.client + " · " + project.name)
+                                    Text(verbatim: project.clientName + " · " + project.name)
                                     if !store.canQuote(project) {
                                         VText("Vous devez être responsable du projet ou propriétaire du compte client.").font(.caption)
                                     }

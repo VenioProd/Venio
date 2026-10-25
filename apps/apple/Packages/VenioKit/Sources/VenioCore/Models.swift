@@ -236,7 +236,10 @@ public struct Project: Codable, Sendable, Identifiable {
     public var id: String
     public var projectNumber: String
     public var name: String
+    /// Identifiant du compte client : sert à rapprocher, jamais à afficher.
     public var client: String
+    /// Nom à afficher pour le client.
+    public var clientName: String
     public var status: ProjectStatus
     public var budget: ProjectBudget
     public var billing: ProjectBilling
@@ -245,11 +248,13 @@ public struct Project: Codable, Sendable, Identifiable {
     public var assignedTo: String?
     public var canQuote: Bool
 
-    public init(id: String, projectNumber: String, name: String, client: String, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, canQuote: Bool = false) {
+    public init(id: String, projectNumber: String, name: String, client: String, clientName: String? = nil, status: ProjectStatus, budget: ProjectBudget, billing: ProjectBilling, endDate: Date?, progress: Int, assignedTo: String? = nil, canQuote: Bool = false) {
         self.id = id
         self.projectNumber = projectNumber
         self.name = name
         self.client = client
+        // Sans nom explicite (démo, tests), `client` est déjà un nom ; le live passe toujours le sien.
+        self.clientName = clientName ?? client
         self.status = status
         self.budget = budget
         self.billing = billing

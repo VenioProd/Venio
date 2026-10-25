@@ -94,7 +94,7 @@ public struct ProjectEntity: AppEntity {
     public let name: String
     public let client: String
     public var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)", subtitle: "\(client)") }
-    init(_ project: Project) { id = project.id; name = project.name; client = project.client }
+    init(_ project: Project) { id = project.id; name = project.name; client = project.clientName }
 }
 
 public struct ProjectEntityQuery: EntityStringQuery {

@@ -31,7 +31,7 @@ struct MockDocumentFiles {
                 throw VenioAPIError(code: "FILE_UNAVAILABLE")
             }
             context.beginPDFPage(nil)
-            for (index, line) in [title, project.client, project.projectNumber, project.name].enumerated() {
+            for (index, line) in [title, project.clientName, project.projectNumber, project.name].enumerated() {
                 let attributes: [NSAttributedString.Key: Any] = [
                     NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("Helvetica" as CFString, index == 0 ? 24 : 16, nil)
                 ]

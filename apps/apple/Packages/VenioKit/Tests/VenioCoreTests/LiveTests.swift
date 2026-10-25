@@ -712,3 +712,13 @@ private let syncedDocument = json(#"{"_id":"document","project":"project","secti
     try await owner.deleteDocument(id: ownDocument.id)
     #expect(try await !owner.documents(projectId: "project-pilote").contains { $0.id == ownDocument.id })
 }
+
+@Test func projectKeepsClientIdentifierApartFromDisplayedName() throws {
+    let withName = try ServerCoding.decoder().decode(ProjectDTO.self, from: json(#"{"_id":"p1","name":"Site","client":"402d97d76793db2d2085555a","clientName":"Boulangerie Rivière"}"#)).model
+    #expect(withName.client == "402d97d76793db2d2085555a")
+    #expect(withName.clientName == "Boulangerie Rivière")
+    // Un serveur qui ne donne pas encore le nom ne doit jamais faire afficher l'identifiant.
+    let withoutName = try ServerCoding.decoder().decode(ProjectDTO.self, from: json(#"{"_id":"p2","name":"Site","client":"402d97d76793db2d2085555a"}"#)).model
+    #expect(withoutName.client == "402d97d76793db2d2085555a")
+    #expect(withoutName.clientName.isEmpty)
+}
