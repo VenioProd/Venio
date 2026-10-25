@@ -48,10 +48,17 @@ const AdminEdit = () => {
   const { showToast } = useToast()
   const [admin, setAdmin] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState<{ name: string; title: string; role: string; password: string }>({
+  const [form, setForm] = useState<{
+    name: string
+    title: string
+    role: string
+    password: string
+    isAssociate: boolean
+  }>({
     name: '',
     title: '',
     role: 'ADMIN',
+    isAssociate: false,
     password: '',
   })
   const [customMode, setCustomMode] = useState(false)
@@ -86,7 +93,13 @@ const AdminEdit = () => {
         const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`)
         const u = data.user
         setAdmin(u)
-        setForm({ name: u.name || '', title: u.title || '', role: u.role || 'ADMIN', password: '' })
+        setForm({
+          name: u.name || '',
+          title: u.title || '',
+          role: u.role || 'ADMIN',
+          password: '',
+          isAssociate: u.isAssociate ?? false,
+        })
         // Initialize custom permissions from server
         if (Array.isArray(u.customPermissions) && u.customPermissions.length > 0) {
           setCustomMode(true)
@@ -146,7 +159,12 @@ const AdminEdit = () => {
     setError('')
     setLoading(true)
     try {
-      const payload: Record<string, unknown> = { name: form.name, title: form.title, role: form.role }
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        title: form.title,
+        role: form.role,
+        isAssociate: form.isAssociate,
+      }
       if (form.password) {
         payload.password = form.password
       }
@@ -329,6 +347,28 @@ const AdminEdit = () => {
                 { value: 'STAGIAIRE', label: 'Stagiaire' },
               ]}
             />
+          </div>
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: 'var(--text-primary)',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.isAssociate}
+                onChange={(e) => setForm({ ...form, isAssociate: e.target.checked })}
+              />
+              Associé
+            </label>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
+              Un commercial associé lit tous les projets, sans pouvoir les modifier.
+            </p>
           </div>
           {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
             <div>

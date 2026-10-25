@@ -48,6 +48,7 @@ export interface User {
   permissions: Permission[]
   /** Titre affiché à côté du nom (ex: "Stagiaire UX", "CTO"). Optionnel — fallback sur le rôle. */
   title?: string
+  isAssociate?: boolean
   jobTitle?: string
   /** Permissions ad-hoc ajoutées par un admin en plus du rôle. */
   customPermissions?: string[]

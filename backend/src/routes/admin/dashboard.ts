@@ -1,3 +1,5 @@
+import mongoose from 'mongoose'
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireSuperAdmin, userHasPermission } from '../../middleware/role.js'
@@ -23,15 +25,22 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
     const now = new Date()
+    const ids = await readableProjectIds(req.user!)
+    const projectScope = ids === null ? {} : { _id: { $in: ids } }
+    const taskScope = ids === null ? {} : { project: { $in: ids } }
+    const objectIds = ids?.map((id) => new mongoose.Types.ObjectId(id))
+    const aggregateScope = objectIds ? [{ $match: { _id: { $in: objectIds } } }] : []
+    const taskAggregateScope = objectIds ? [{ $match: { project: { $in: objectIds } } }] : []
 
     // My tasks (assigned to me, not done)
-    const myTasks = await Task.find({ assignee: userId, status: { $ne: 'TERMINE' } })
+    const myTasks = await Task.find({ ...taskScope, assignee: userId, status: { $ne: 'TERMINE' } })
       .sort({ priority: -1, dueDate: 1 })
       .limit(10)
       .populate('project', 'name')
 
     // Overdue tasks (all, with dueDate in the past and not done)
     const overdueTasks = await Task.find({
+      ...taskScope,
       status: { $ne: 'TERMINE' },
       dueDate: { $lt: now, $ne: null },
     })
@@ -41,17 +50,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .populate('project', 'name')
 
     // Task counts by status (all tasks)
-    const taskCounts = await Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+    const taskCounts = await Task.aggregate([...taskAggregateScope, { $group: { _id: '$status', count: { $sum: 1 } } }])
     const tasksByStatus = Object.fromEntries(taskCounts.map((t) => [t._id, t.count]))
 
     // Active projects count
     const activeProjectCount = await Project.countDocuments({
+      ...projectScope,
       $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
     })
 
     // Revenue this month (sum of budget.amount for projects created this month)
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const monthlyRevenue = await Project.aggregate([
+      ...aggregateScope,
       {
         $match: {
           'billing.billingStatus': { $in: ['PARTIEL', 'FACTURE'] },
@@ -82,6 +93,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       ]).catch(() => []),
       Decision.countDocuments({ status: 'PENDING' }).catch(() => 0),
       Project.countDocuments({
+        ...projectScope,
         $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
         updatedAt: { $lt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000) },
       }),
@@ -98,6 +110,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     // Recent projects (last 5 updated)
     const recentProjects = await Project.find({
+      ...projectScope,
       $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
     })
       .sort({ updatedAt: -1 })

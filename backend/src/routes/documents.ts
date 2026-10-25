@@ -5,6 +5,7 @@ import Document from '../models/Document.js'
 import Project from '../models/Project.js'
 import { getProjectAccess } from '../lib/projectAccess.js'
 import { isAdminRole } from '../lib/permissions.js'
+import { canReadProject } from '../lib/adminProjectAccess.js'
 
 const router = express.Router()
 
@@ -32,6 +33,10 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
     } else if (!isAdminRole(req.user!.role)) {
       // Non-client, non-admin sessions (e.g. AGENT) have no document scope here.
       return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    if (!(await canReadProject(req.user!, String(project._id)))) {
+      return res.status(404).json({ error: 'Projet non trouvé' })
     }
 
     if (!document.downloadedAt) {

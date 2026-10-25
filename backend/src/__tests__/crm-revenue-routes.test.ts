@@ -76,6 +76,8 @@ beforeEach(async () => {
     { email: 'com2@test.local', name: 'Com2', role: 'COMMERCIAL', passwordHash: 'x', twoFactorEnabled: true },
     { email: 'client@acme.fr', name: 'Acme SAS', role: 'CLIENT', passwordHash: 'x' },
   ])
+  // Comme à la conversion d'un lead : le compte client appartient au commercial du lead.
+  await User.updateOne({ _id: client._id }, { ownerAdminId: commercial._id })
   superAdminId = superAdmin._id as mongoose.Types.ObjectId
   commercialId = commercial._id as mongoose.Types.ObjectId
   otherCommercialId = other._id as mongoose.Types.ObjectId

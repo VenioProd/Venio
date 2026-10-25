@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { type Request, type Response, type NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
@@ -14,9 +15,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
     const includeSnoozed = req.query.includeSnoozed === 'true'
-    const inbox = await buildInbox(userId, { includeSnoozed })
+    const inbox = await buildInbox(userId, { includeSnoozed, projectIds: await readableProjectIds(req.user!) })
     res.json(inbox)
-  } catch (e) { next(e) }
+  } catch (e) {
+    next(e)
+  }
 })
 
 // POST /api/admin/inbox/snooze
@@ -34,10 +37,12 @@ router.post('/snooze', async (req: Request, res: Response, next: NextFunction) =
     const snooze = await InboxSnooze.findOneAndUpdate(
       { userId: req.user!.id, itemType, sourceId },
       { snoozedUntil: until },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     )
     res.json(snooze)
-  } catch (e) { next(e) }
+  } catch (e) {
+    next(e)
+  }
 })
 
 // DELETE /api/admin/inbox/snooze/:itemType/:sourceId
@@ -49,7 +54,9 @@ router.delete('/snooze/:itemType/:sourceId', async (req: Request, res: Response,
       sourceId: req.params.sourceId,
     })
     res.status(204).send()
-  } catch (e) { next(e) }
+  } catch (e) {
+    next(e)
+  }
 })
 
 // POST /api/admin/inbox/pin — body: { refType, refId, title, link, color?, expiresAt? }
@@ -69,7 +76,9 @@ router.post('/pin', async (req: Request, res: Response, next: NextFunction) => {
       expiresAt: expiresAt ? new Date(expiresAt) : undefined,
     })
     res.status(201).json(pin)
-  } catch (e) { next(e) }
+  } catch (e) {
+    next(e)
+  }
 })
 
 // DELETE /api/admin/inbox/pin/:id
@@ -77,7 +86,9 @@ router.delete('/pin/:id', async (req: Request, res: Response, next: NextFunction
   try {
     await InboxPin.deleteOne({ _id: req.params.id, userId: req.user!.id })
     res.status(204).send()
-  } catch (e) { next(e) }
+  } catch (e) {
+    next(e)
+  }
 })
 
 export default router

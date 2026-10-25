@@ -7,7 +7,7 @@ import idempotentRequest from '../../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
-import { accessibleProjectIds } from '../../../lib/adminProjectAccess.js'
+import { accessibleProjectIds, readableProjectIds } from '../../../lib/adminProjectAccess.js'
 import { deleteProject } from '../../../lib/projectDeletion.js'
 import ProjectUpdate from '../../../models/ProjectUpdate.js'
 import User from '../../../models/User.js'
@@ -87,7 +87,7 @@ router.get(
         filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
       }
 
-      const projectIds = await accessibleProjectIds(user)
+      const projectIds = await (user.role === 'COMMERCIAL' ? readableProjectIds(user) : accessibleProjectIds(user))
       if (projectIds !== null) filter._id = { $in: projectIds }
 
       const query = Project.find(filter).sort({ updatedAt: -1 }).populate('assignedTo', 'name email')

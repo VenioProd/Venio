@@ -1,3 +1,4 @@
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { body, param, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
@@ -108,7 +109,9 @@ router.get(
   requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = {}
+      const ids = await readableProjectIds(req.user!)
+      const filter: Record<string, unknown> =
+        ids === null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: ids } }] }] }
       if (req.query.project) filter.project = String(req.query.project)
       if (req.query.lead) filter.leadId = String(req.query.lead)
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()
@@ -127,7 +130,8 @@ router.get(
     try {
       if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
       const proposal = await QuoteProposal.findById(req.params.id).lean()
-      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      if (!proposal || (proposal.project && !(await canReadProject(req.user!, String(proposal.project)))))
+        return res.status(404).json({ error: 'Proposition non trouvée' })
       return res.json({ proposal })
     } catch (err) {
       return next(err)

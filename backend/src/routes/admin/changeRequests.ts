@@ -1,3 +1,4 @@
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { body, param, query, validationResult } from 'express-validator'
 import multer from 'multer'
@@ -81,7 +82,7 @@ const validQuotePayload = [
 
 async function loadOr404(req: Request, res: Response): Promise<IChangeRequest | null> {
   const found = await ChangeRequest.findById(req.params.id)
-  if (!found) {
+  if (!found || (req.method === 'GET' && found.project && !(await canReadProject(req.user!, String(found.project))))) {
     res.status(404).json({ error: 'Demande non trouvée' })
     return null
   }
@@ -116,7 +117,9 @@ router.get(
   ...validListFilters,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = {}
+      const ids = await readableProjectIds(req.user!)
+      const filter: Record<string, unknown> =
+        ids === null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: ids } }] }] }
       if (req.query.status) filter.status = req.query.status
       if (req.query.client) filter.client = req.query.client
       if (req.query.project) filter.project = req.query.project
@@ -142,11 +145,13 @@ router.get(
 router.get(
   '/stats',
   requirePermission(PERMISSIONS.VIEW_CHANGE_REQUESTS),
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const ids = await readableProjectIds(req.user!)
+      const scope = ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }
       const [aTraiter, enCours] = await Promise.all([
-        ChangeRequest.countDocuments({ status: 'SOUMISE' }),
-        ChangeRequest.countDocuments({ status: { $in: ACTIVE_STATUSES } }),
+        ChangeRequest.countDocuments({ ...scope, status: 'SOUMISE' }),
+        ChangeRequest.countDocuments({ ...scope, status: { $in: ACTIVE_STATUSES } }),
       ])
       return res.json({ aTraiter, enCours })
     } catch (err) {
@@ -165,9 +170,10 @@ router.get(
       const owner = await ChangeRequest.findOne({
         $or: [{ attachments: { $elemMatch: { filename } } }, { 'replies.attachments': { $elemMatch: { filename } } }],
       })
-        .select('attachments replies')
+        .select('attachments replies project')
         .lean()
-      if (!owner) return res.status(404).json({ error: 'Fichier introuvable' })
+      if (!owner || (owner.project && !(await canReadProject(req.user!, String(owner.project)))))
+        return res.status(404).json({ error: 'Fichier introuvable' })
 
       const filePath = path.resolve(uploadsDir, filename)
       if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })

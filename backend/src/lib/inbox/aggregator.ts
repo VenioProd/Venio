@@ -11,6 +11,7 @@ import { getPinnedItems } from './sources/pinned.js'
 
 export interface BuildInboxOpts {
   includeSnoozed?: boolean
+  projectIds?: string[] | null
 }
 
 export interface InboxResponse {
@@ -22,7 +23,7 @@ export interface InboxResponse {
 export async function buildInbox(userId: string, opts: BuildInboxOpts = {}): Promise<InboxResponse> {
   const [decisions, briefs, leads, messages, tickets, tasks, system, pins, snoozes] = await Promise.all([
     getDecisionItems(),
-    getBriefP1Items(userId),
+    getBriefP1Items(userId, opts.projectIds),
     getLeadItems(),
     getMessageItems(userId),
     getTicketItems(userId),
@@ -33,20 +34,24 @@ export async function buildInbox(userId: string, opts: BuildInboxOpts = {}): Pro
   ])
 
   const snoozeMap = new Map(
-    snoozes.map((s: any) => [`${s.itemType}:${s.sourceId}`, new Date(s.snoozedUntil).toISOString()])
+    snoozes.map((s: any) => [`${s.itemType}:${s.sourceId}`, new Date(s.snoozedUntil).toISOString()]),
   )
 
   const all: InboxItem[] = [
-    ...decisions, ...briefs, ...leads, ...messages,
-    ...tickets, ...tasks, ...system, ...pins,
+    ...decisions,
+    ...briefs,
+    ...leads,
+    ...messages,
+    ...tickets,
+    ...tasks,
+    ...system,
+    ...pins,
   ].map((it) => {
     const snoozedIso = snoozeMap.get(it.id)
     return snoozedIso ? { ...it, snoozedUntil: snoozedIso } : it
   })
 
-  const items = opts.includeSnoozed
-    ? all
-    : all.filter((it) => !it.snoozedUntil)
+  const items = opts.includeSnoozed ? all : all.filter((it) => !it.snoozedUntil)
 
   items.sort((a, b) => b.urgency - a.urgency)
 
@@ -56,7 +61,7 @@ export async function buildInbox(userId: string, opts: BuildInboxOpts = {}): Pro
       acc.all = (acc.all ?? 0) + 1
       return acc
     },
-    { all: 0 } as Record<string, number>
+    { all: 0 } as Record<string, number>,
   )
 
   return { items, counts, snoozedCount: snoozeMap.size }

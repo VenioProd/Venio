@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
+import mongoose from 'mongoose'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../middleware/auth.js'
@@ -8,6 +9,7 @@ import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import BillingDocument from '../../models/BillingDocument.js'
+import { canReadProject } from '../../lib/adminProjectAccess.js'
 import CompanySettings from '../../models/CompanySettings.js'
 import AccountingEntry from '../../models/AccountingEntry.js'
 import AccountingLine from '../../models/AccountingLine.js'
@@ -31,6 +33,24 @@ const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
+// Un commercial non associé ne lit que les factures de son périmètre de projets.
+router.use(async (req, res, next) => {
+  try {
+    if (req.method !== 'GET' || req.user!.role !== 'COMMERCIAL') return next()
+    const [first, second] = req.path.split('/').slice(1).map(decodeURIComponent)
+    const byProject = first?.toLowerCase() === 'projects'
+    if (!byProject && !mongoose.isObjectIdOrHexString(first)) return next()
+    const projectId = byProject
+      ? second
+      : (await BillingDocument.findById(first).select('project').lean())?.project?.toString()
+    if (projectId && !(await canReadProject(req.user!, projectId))) {
+      return res.status(404).json({ error: 'Projet non trouvé' })
+    }
+    return next()
+  } catch (err) {
+    return next(err)
+  }
+})
 
 // List billing documents for a project
 router.get(

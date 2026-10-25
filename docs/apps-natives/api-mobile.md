@@ -87,6 +87,7 @@ Réponses :
     "name": "Camille",
     "email": "camille@venio.paris",
     "role": "COMMERCIAL",
+    "isAssociate": false,
     "permissions": ["view_crm", "manage_crm", "manage_quotes", "…"]
   }
 }
@@ -136,6 +137,12 @@ Autres limites :
 - Les actions qui exigent une vérification MFA récente (`MFA_STEP_UP_REQUIRED`) ne sont pas faisables depuis l'app.
 - La messagerie temps réel (Socket.IO) reste authentifiée par cookie : l'app interroge les routes REST de la messagerie.
 - `/api/auth/me` ne renvoie jamais le secret TOTP ni les empreintes des codes de secours.
+
+### Profil : `GET /api/auth/me`
+
+`GET /api/auth/me` et le login natif exposent `user.isAssociate` (booléen, `false` par défaut). Seule la gestion des administrateurs (`manage_admins`) peut le modifier. Pour un `COMMERCIAL`, `true` ouvre la lecture de tous les projets, sans droit d’écriture supplémentaire. Sinon, les projets lisibles sont ceux assignés au commercial (directement, via une tâche ou un brief) et ceux des clients dont il est propriétaire (`ownerAdminId`). Le serveur relit ce statut à chaque requête.
+
+La vue « tous les projets » et les synchros `projects`, `projectPhases`, `projectUpdates`, `projectDocuments` suivent ce périmètre. `canQuote` conserve sa règle de portefeuille : lire un projet ne suffit pas à pouvoir y créer un devis. À un changement de `isAssociate`, vider les données de projets et leurs données liées en cache puis relancer une synchronisation complète : un changement de périmètre n’est pas une suppression et n’apparaît pas dans `deletions`.
 
 ### Erreurs d'authentification communes
 
@@ -487,3 +494,5 @@ Ce que l'app doit prendre en compte par rapport à la première version du contr
 9. **Documents de projet** : ajout multipart avec `upload_project_documents`, documents internes modifiables par leur auteur, `Idempotency-Key` facultatif, HEIC/HEIF et synchro `projectDocuments` avec suppressions.
 
 10. **Espace admin** : lectures comptables et liste/modification des tickets dev en Bearer, MFA d’appareil pour la comptabilité, relance de facture, encaissements mensuels et `Idempotency-Key` facultatif sur les publications projet, messages et réponses aux tickets.
+
+11. **Associé** : lire `user.isAssociate` dans le profil et le login. Un commercial associé reçoit tous les projets dans la synchro et la vue « tous les projets », en lecture seulement ; un non-associé reçoit son périmètre et son portefeuille client. Au changement du statut, purger le cache des projets et resynchroniser sans curseur. Les lectures hors périmètre répondent `404`.

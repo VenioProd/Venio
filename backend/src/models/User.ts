@@ -71,6 +71,7 @@ const userSchema = new mongoose.Schema<IUser>(
     // retain access long enough to enroll without a deployment lock-out.
     mfaGraceUntil: { type: Date, default: null },
     jobTitle: { type: String, default: '' },
+    isAssociate: { type: Boolean, default: false },
     // Fine-grained permission overrides
     grantedPermissions: { type: [String], default: [] },
     deniedPermissions: { type: [String], default: [] },

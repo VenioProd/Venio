@@ -12,7 +12,7 @@ import ProjectPhase from '../../models/ProjectPhase.js'
 import ProjectUpdate from '../../models/ProjectUpdate.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import User from '../../models/User.js'
-import { accessibleProjectIds } from '../../lib/adminProjectAccess.js'
+import { accessibleProjectIds, readableProjectIds } from '../../lib/adminProjectAccess.js'
 import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityType } from '../../models/SyncTombstone.js'
 import { leadScopeFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
@@ -111,8 +111,14 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
       ]
     }
     if (['projects', 'projectPhases', 'projectUpdates', 'projectDocuments'].includes(type)) {
-      const projectIds = await accessibleProjectIds(req.user!)
+      const projectIds = await (req.user!.role === 'COMMERCIAL'
+        ? readableProjectIds(req.user!)
+        : accessibleProjectIds(req.user!))
       if (projectIds !== null) filter.$and = [{ [type === 'projects' ? '_id' : 'project']: { $in: projectIds } }]
+    }
+    if (type === 'quotes') {
+      const ids = await readableProjectIds(req.user!)
+      if (ids !== null) filter.$and = [{ $or: [{ project: null }, { project: { $in: ids } }] }]
     }
     if (type === 'projectDocuments') filter['file.storagePath'] = { $exists: true, $ne: '' }
     const options = { sort: { [stamp]: 1, _id: 1 } as Record<string, 1>, limit: limit + 1 }

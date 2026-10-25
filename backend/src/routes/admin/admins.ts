@@ -13,6 +13,7 @@ import { resetTokens } from '../auth.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import AuditLog from '../../models/AuditLog.js'
+import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
 import { readSessionCookie, revokeSession, revokeUserSessions, setSessionCookie } from '../../lib/session.js'
 
 const router = express.Router()
@@ -139,6 +140,7 @@ router.get(
 router.patch(
   '/:userId',
   requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  body('isAssociate').optional().isBoolean({ strict: true }).withMessage('Statut associé invalide'),
   body('role').optional().isIn(ADMIN_ROLES).withMessage('Rôle invalide'),
   body('password').optional().isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -153,6 +155,7 @@ router.patch(
       if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
         return res.status(404).json({ error: 'Admin not found' })
       }
+      const oldIsAssociate = user.isAssociate ?? false
       const oldRole = user.role
       const oldPermissions = JSON.stringify({
         granted: user.grantedPermissions || [],
@@ -186,6 +189,7 @@ router.patch(
         revokeSessions = role !== oldRole
       }
 
+      if (req.body.isAssociate !== undefined) user.isAssociate = req.body.isAssociate
       if (name !== undefined) user.name = name
       if (req.body.title !== undefined) (user as any).title = req.body.title
       if (password) {
@@ -303,6 +307,16 @@ router.patch(
       if (oldPermissions !== newPermissions) revokeSessions = true
       if (revokeSessions) user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
+      if (oldIsAssociate !== user.isAssociate) {
+        await recordAudit({
+          action: 'PERMISSION_CHANGED',
+          actor: buildActorFromReq(req),
+          entityType: 'User',
+          entityId: String(user._id),
+          before: { isAssociate: oldIsAssociate },
+          after: { isAssociate: user.isAssociate },
+        })
+      }
       if (revokeSessions) await revokeUserSessions(user._id.toString())
       const safeUser = await User.findById(user._id).select('-passwordHash')
       if (oldPermissions !== newPermissions && String(user._id) !== req.user!.id) {

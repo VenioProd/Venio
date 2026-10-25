@@ -34,6 +34,7 @@ export interface IUser extends Document {
   twoFactorEnabled: boolean
   twoFactorRecoveryCodeHashes: string[]
   mfaGraceUntil: Date | null
+  isAssociate: boolean
   jobTitle: string
   grantedPermissions: string[]
   deniedPermissions: string[]

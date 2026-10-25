@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { type Request, type Response, type NextFunction } from 'express'
 import mongoose from 'mongoose'
 import auth from '../../middleware/auth.js'
@@ -110,8 +111,9 @@ async function getUnreadMessages(userId: mongoose.Types.ObjectId, limit: number)
   }
 }
 
-async function getOverdueTasks(limit: number): Promise<ActivitySection> {
+async function getOverdueTasks(limit: number, ids: string[] | null): Promise<ActivitySection> {
   const tasks = await Task.find({
+    ...(ids === null ? {} : { project: { $in: ids } }),
     isArchived: { $ne: true },
     status: { $nin: OPEN_TASK_STATUSES },
     dueDate: { $lte: new Date(), $ne: null },
@@ -187,8 +189,9 @@ function describeWorklistReason(lead: LeadSignalFields): string {
   return 'À traiter'
 }
 
-async function getCriticalInvoices(limit: number): Promise<ActivitySection> {
+async function getCriticalInvoices(limit: number, ids: string[] | null): Promise<ActivitySection> {
   const documents = await BillingDocument.find({
+    ...(ids === null ? {} : { project: { $in: ids } }),
     type: 'INVOICE',
     status: { $nin: ['PAID', 'CANCELLED', 'DRAFT'] },
     dueAt: { $lte: new Date(), $ne: null },
@@ -213,9 +216,10 @@ async function getCriticalInvoices(limit: number): Promise<ActivitySection> {
   }
 }
 
-async function getProjectRisks(limit: number): Promise<ActivitySection> {
+async function getProjectRisks(limit: number, ids: string[] | null): Promise<ActivitySection> {
   const threshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   const projects = await Project.find({
+    ...(ids === null ? {} : { _id: { $in: ids } }),
     status: 'EN_COURS',
     isArchived: { $ne: true },
     endDate: { $lte: threshold, $ne: null },
@@ -273,6 +277,7 @@ async function getOpenTickets(
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = readLimit(req.query.limit)
+    const ids = await readableProjectIds(req.user!)
     const userId = new mongoose.Types.ObjectId(req.user!.id)
     const permissions = await getPermissions(req)
     const isSuperAdmin = req.user!.role === 'SUPER_ADMIN'
@@ -280,10 +285,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     if (permissions.has(PERMISSIONS.VIEW_MESSAGING)) sections.push(getUnreadMessages(userId, limit))
     if (permissions.has(PERMISSIONS.VIEW_PROJECTS)) {
-      sections.push(getOverdueTasks(limit), getProjectRisks(limit))
+      sections.push(getOverdueTasks(limit, ids), getProjectRisks(limit, ids))
     }
     if (permissions.has(PERMISSIONS.VIEW_CRM)) sections.push(getCrmWorklist(userId, isSuperAdmin, limit))
-    if (permissions.has(PERMISSIONS.VIEW_BILLING)) sections.push(getCriticalInvoices(limit))
+    if (permissions.has(PERMISSIONS.VIEW_BILLING)) sections.push(getCriticalInvoices(limit, ids))
     if (permissions.has(PERMISSIONS.VIEW_TICKETS)) sections.push(getOpenTickets(userId, isSuperAdmin, limit))
 
     return res.json({ sections: await Promise.all(sections), limit, checkedAt: new Date().toISOString() })
