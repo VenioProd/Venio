@@ -13,13 +13,19 @@
     "cleanup:demo:dry": "tsx src/scripts/cleanupDemoData.ts --dry-run",
     "accounting:migrate-billing": "tsx src/scripts/migrateExistingBilling.ts",
     "accounting:migrate-billing:dry": "tsx src/scripts/migrateExistingBilling.ts --dry-run",
+    "migrate:project-update-timestamps": "tsx src/scripts/backfillProjectUpdateTimestamps.ts",
+    "migrate:project-update-timestamps:dry": "tsx src/scripts/backfillProjectUpdateTimestamps.ts --dry-run",
+    "migrate:quote-references": "tsx src/scripts/backfillQuoteReferences.ts",
+    "migrate:quote-references:dry": "tsx src/scripts/backfillQuoteReferences.ts --dry-run",
     "provision:consultant": "tsx src/scripts/provisionExternalConsultant.ts",
     "provision:consultant:dry": "tsx src/scripts/provisionExternalConsultant.ts --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "provision:app-review": "tsx src/scripts/provisionAppReviewDemo.ts",
+    "provision:app-review:dry": "tsx src/scripts/provisionAppReviewDemo.ts --dry-run"
   },
   "keywords": [],
   "author": "",
@@ -46,6 +52,7 @@
     "pino-http": "11.0.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
+    "stripe": "18.5.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

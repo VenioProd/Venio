@@ -1,8 +1,10 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IProject } from '../types/models/index.js'
 
 const projectSchema = new mongoose.Schema<IProject>(
   {
+    writeVersion: { type: Number, default: 0 },
     name: { type: String, required: true },
     description: { type: String, default: '' },
     status: {
@@ -57,5 +59,7 @@ const projectSchema = new mongoose.Schema<IProject>(
 )
 
 projectSchema.index({ sourceLead: 1 }, { partialFilterExpression: { sourceLead: { $type: 'objectId' } } })
+
+syncTombstones(projectSchema, 'projects')
 
 export default mongoose.model<IProject>('Project', projectSchema)

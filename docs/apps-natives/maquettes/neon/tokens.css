@@ -1,0 +1,37 @@
+/* Néon — jetons de thème. Pilotés par data-bg et data-accent sur <html>.
+   Source de vérité des valeurs : docs/apps-natives/themes.md. Défaut : black + cyan. */
+
+:root{
+  --bg:#050505; --s1:#0D0F12; --s3:#14171C;
+  --s0:color-mix(in srgb,var(--bg) 50%,var(--s1));
+  --s2:color-mix(in srgb,var(--s1) 50%,var(--s3));
+  --s4:color-mix(in srgb,var(--s3) 94%,#9BB0C8);
+
+  --accent:#0EA5E9; --accent-rgb:14 165 233; --on-accent:#050505;
+  --accent-hi:color-mix(in srgb,var(--accent) 70%,#fff);   /* texte et lueur d'accent */
+  --accent-lo:color-mix(in srgb,var(--accent) 65%,#000);
+
+  /* Urgent / en retard : fixe, sauf repli quand l'accent est magenta. */
+  --urgent:#FF0080; --urgent-rgb:255 0 128;
+  --urgent-hi:color-mix(in srgb,var(--urgent) 70%,#fff);
+  --urgent-lo:color-mix(in srgb,var(--urgent) 80%,#000);
+
+  /* Chaud (violet décoratif) : fixe, sauf repli quand l'accent est violet. */
+  --hot:#8B5CF6; --hot-rgb:139 92 246; --hot-hi:#A78BFA;
+
+  --line:rgb(var(--accent-rgb) / .2);
+}
+
+/* ---- fonds ---- */
+html[data-bg=graphite]{--bg:#0D1117;--s1:#161B22;--s3:#1F2630}
+html[data-bg=abyss]{--bg:#04121F;--s1:#0A1D30;--s3:#112840}
+html[data-bg=plum]{--bg:#12071C;--s1:#1C0F2A;--s3:#26163A}
+html[data-bg=forest]{--bg:#03130E;--s1:#0A1F18;--s3:#112B22}
+
+/* ---- accents ---- */
+html[data-accent=magenta]{--accent:#FF0080;--accent-rgb:255 0 128;--on-accent:#050505;
+  --urgent:#FF3B30;--urgent-rgb:255 59 48}
+html[data-accent=violet]{--accent:#A855F7;--accent-rgb:168 85 247;--on-accent:#050505;
+  --hot:#6366F1;--hot-rgb:99 102 241;--hot-hi:#818CF8}
+html[data-accent=acid]{--accent:#39FF88;--accent-rgb:57 255 136;--on-accent:#050505}
+html[data-accent=orange]{--accent:#FF7A1A;--accent-rgb:255 122 26;--on-accent:#050505}

@@ -23,6 +23,7 @@ export interface IInternalTicket extends Document {
   priority: 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
   status: 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
   authorId: mongoose.Types.ObjectId
+  project?: mongoose.Types.ObjectId
   authorName: string
   attachments: ITicketFile[]
   replies: ITicketReply[]
@@ -39,7 +40,7 @@ const fileSchema = new Schema<ITicketFile>(
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const replySchema = new Schema<ITicketReply>(
@@ -49,11 +50,12 @@ const replySchema = new Schema<ITicketReply>(
     message: { type: String, required: true },
     attachments: { type: [fileSchema], default: [] },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: { createdAt: true, updatedAt: false } },
 )
 
 const internalTicketSchema = new Schema<IInternalTicket>(
   {
+    project: { type: Schema.Types.ObjectId, ref: 'Project', index: true },
     title: { type: String, required: true, trim: true },
     message: { type: String, required: true },
     category: { type: String, enum: ['QUESTION', 'DEMANDE', 'PROBLEME'], default: 'QUESTION' },
@@ -66,7 +68,7 @@ const internalTicketSchema = new Schema<IInternalTicket>(
     isArchived: { type: Boolean, default: false },
     archivedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<IInternalTicket>('InternalTicket', internalTicketSchema)

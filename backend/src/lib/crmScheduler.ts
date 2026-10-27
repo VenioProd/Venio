@@ -25,6 +25,7 @@ import {
   sendTaskReminderEmail,
   sendBriefReminderEmail,
 } from './email.js'
+import { invoicePaymentBalance } from './projectFinance/payments.js'
 import logger from './logger.js'
 
 interface SchedulerResult {
@@ -160,6 +161,44 @@ export async function processColdLeads(): Promise<SchedulerResult> {
     logger.error({ data: err }, 'Error processing cold leads:')
     return { processed: 0, sent: 0, error: (err as Error).message }
   }
+}
+
+export async function processLeadFollowUps(): Promise<{ notified: number }> {
+  const now = new Date()
+  const leads = await Lead.find({
+    nextActionAt: { $lte: now, $ne: null },
+    status: { $nin: ['WON', 'LOST'] },
+    assignedTo: { $ne: null },
+    // Ne relit pas, à chaque minute, les échéances déjà notifiées.
+    $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
+  }).select('assignedTo nextActionAt followUpNotifiedFor company')
+  let notified = 0
+  for (const lead of leads) {
+    const due = lead.nextActionAt!
+    // Au premier passage, les anciennes échéances sont consommées sans rafale de notifications.
+    const stale = !lead.followUpNotifiedFor && due.getTime() < now.getTime() - 7 * 86400000
+    const result = await Lead.updateOne(
+      {
+        _id: lead._id,
+        nextActionAt: due,
+        assignedTo: lead.assignedTo,
+        status: { $nin: ['WON', 'LOST'] },
+        followUpNotifiedFor: { $ne: due },
+      },
+      { $set: { followUpNotifiedFor: due } },
+    )
+    if (!result.modifiedCount || stale) continue
+    await createNotification({
+      recipient: lead.assignedTo!,
+      type: 'LEAD_FOLLOW_UP_DUE',
+      title: 'Relance à effectuer',
+      message: lead.company,
+      link: `/admin/crm/leads/${lead._id}`,
+      metadata: { leadId: String(lead._id) },
+    })
+    notified++
+  }
+  return { notified }
 }
 
 /**
@@ -453,6 +492,9 @@ export async function processInvoiceReminders(): Promise<InvoiceReminderResult> 
     // Find sent invoices that are past due and haven't had a reminder sent
     const overdueInvoices = await BillingDocument.find({
       type: 'INVOICE',
+      // Un avoir est une facture de montant négatif : rien à réclamer.
+      creditedInvoice: null,
+      total: { $gt: 0 },
       status: { $in: ['SENT', 'ISSUED'] },
       dueAt: { $lt: new Date(), $ne: null },
       reminderSentAt: null,
@@ -469,7 +511,9 @@ export async function processInvoiceReminders(): Promise<InvoiceReminderResult> 
       // Only send if past the configured reminder threshold
       if (daysPastDue < settings.invoiceReminderDays) continue
 
-      const amountStr = `${invoice.total.toLocaleString('fr-FR')} ${invoice.currency}`
+      const { remainingTtcCents } = await invoicePaymentBalance(invoice, null)
+      if (remainingTtcCents <= 0) continue
+      const amountStr = `${(remainingTtcCents / 100).toLocaleString('fr-FR')} ${invoice.currency}`
       const result = await sendInvoiceReminderEmail({
         to: client.email,
         name: client.name || client.email,
@@ -725,6 +769,7 @@ export async function runScheduledJobs(): Promise<void> {
   const currentDay = now.getDay() // 0 = Sunday
 
   try {
+    await processLeadFollowUps()
     const settings = await CrmSettings.getSettings()
 
     // Daily jobs at 08:00 (CRM + task/brief/project reminders)

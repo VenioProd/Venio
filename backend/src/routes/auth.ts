@@ -11,7 +11,8 @@ import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
-import { consumeRecoveryCode, graceEndsAt, isMfaEnabled, requiresMfa, verifyTotp } from '../lib/mfa.js'
+import { requiresMfa } from '../lib/mfa.js'
+import { checkLoginCredentials, requestIp } from '../lib/loginCredentials.js'
 import {
   clearSessionCookie,
   readSessionCookie,
@@ -65,91 +66,14 @@ router.post(
         return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
       }
 
-      const { email, password } = req.body
-
-      const clientIp = req.headers['x-forwarded-for'] || req.ip || ''
+      const { email } = req.body
+      const clientIp = requestIp(req)
       const userAgent = req.headers['user-agent'] || ''
 
-      const user = await User.findOne({ email: email.toLowerCase().trim() })
-      if (!user) {
-        AuditLog.create({
-          email,
-          action: 'LOGIN_FAILED',
-          ip: clientIp,
-          userAgent,
-          metadata: { reason: 'user_not_found' },
-        }).catch(() => {})
-        return res.status(401).json({ error: 'Identifiants invalides' })
-      }
-
-      const isValid = await bcrypt.compare(password, user.passwordHash)
-      if (!isValid) {
-        AuditLog.create({
-          userId: user._id,
-          email,
-          action: 'LOGIN_FAILED',
-          ip: clientIp,
-          userAgent,
-          metadata: { reason: 'bad_password' },
-        }).catch(() => {})
-        return res.status(401).json({ error: 'Identifiants invalides' })
-      }
-
-      // Every inactive or archived account is blocked, including administrators.
-      if (!user.isActive || user.status === 'ARCHIVE') {
-        AuditLog.create({
-          userId: user._id,
-          email,
-          action: 'LOGIN_FAILED',
-          ip: clientIp,
-          userAgent,
-          metadata: { reason: 'account_archived' },
-        }).catch(() => {})
-        return res.status(403).json({ error: 'Votre accès a été désactivé. Contactez votre chargé de compte.' })
-      }
-
-      let mfaVerifiedAt: number | undefined
-      let mfaEnrollmentOnly = false
-      // Check 2FA, including a single-use recovery code when the authenticator
-      // is unavailable. A recovery code is consumed atomically with the login.
-      if (isMfaEnabled() && user.twoFactorEnabled && user.twoFactorSecret) {
-        const { totpCode, recoveryCode } = req.body
-        if (!totpCode && !recoveryCode) {
-          return res.json({ requires2FA: true })
-        }
-        const validTotp = totpCode && verifyTotp(user.twoFactorSecret, user.email, totpCode)
-        const recovery = validTotp
-          ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] }
-          : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
-        if (!validTotp && !recovery.valid) {
-          AuditLog.create({
-            userId: user._id,
-            email,
-            action: 'LOGIN_FAILED',
-            ip: clientIp,
-            userAgent,
-            metadata: { reason: '2fa_invalid' },
-          }).catch(() => {})
-          return res.status(401).json({ error: 'Code 2FA invalide' })
-        }
-        if (recovery.valid) {
-          user.twoFactorRecoveryCodeHashes = recovery.hashes
-          AuditLog.create({ userId: user._id, email, action: 'MFA_RECOVERY_CODE_USED', ip: clientIp, userAgent }).catch(
-            () => {},
-          )
-        }
-        mfaVerifiedAt = Date.now()
-      } else if (requiresMfa(user.role)) {
-        // Rolling grace is initialized on first login, rather than at deploy,
-        // so existing administrators are never locked out by a release.
-        if (!user.mfaGraceUntil) user.mfaGraceUntil = graceEndsAt()
-        if (user.mfaGraceUntil.getTime() <= Date.now()) {
-          // Issue a constrained browser session so the account can complete
-          // enrollment instead of becoming permanently locked out. The auth
-          // middleware limits this session to /me, logout and MFA setup APIs.
-          mfaEnrollmentOnly = true
-        }
-      }
+      const check = await checkLoginCredentials(req)
+      if (check.kind === 'rejected') return res.status(check.status).json(check.body)
+      if (check.kind === 'mfa_required') return res.json({ requires2FA: true })
+      const { user, mfaVerifiedAt, mfaEnrollmentOnly } = check
 
       AuditLog.create({
         userId: user._id,
@@ -162,11 +86,11 @@ router.post(
 
       // Track last login
       user.lastLoginAt = new Date()
-      user.lastLoginIp = typeof clientIp === 'string' ? clientIp : Array.isArray(clientIp) ? clientIp[0] : ''
+      user.lastLoginIp = clientIp
       user.save().catch(() => {})
 
       await setSessionCookie(res, user._id.toString(), {
-        ...(mfaVerifiedAt ? { mfaVerifiedAt: new Date(mfaVerifiedAt) } : {}),
+        ...(mfaVerifiedAt ? { mfaVerifiedAt } : {}),
         ...(mfaEnrollmentOnly ? { mfaEnrollmentOnly: true } : {}),
       })
       return res.json({
@@ -202,7 +126,8 @@ router.post('/logout', auth, async (req: Request, res: Response, next: NextFunct
 // GET /api/auth/me
 router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('-passwordHash')
+    // Le secret TOTP et les empreintes des codes de secours ne quittent jamais le serveur.
+    const user = await User.findById(req.user!.id).select('-passwordHash -twoFactorSecret -twoFactorRecoveryCodeHashes')
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }
@@ -217,6 +142,7 @@ router.get('/me', auth, async (req: Request, res: Response, next: NextFunction) 
 router.patch(
   '/profile',
   auth,
+  body('isAssociate').not().exists().withMessage('Le statut associé se modifie depuis la gestion des administrateurs'),
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Le nom ne peut pas être vide'),
   body('email').optional().isEmail().withMessage('Email invalide'),
   body('phone').optional().trim(),

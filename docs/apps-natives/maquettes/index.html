@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venio apps natives · deux thèmes</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:48px 16px;font:16px/1.5 -apple-system,"SF Pro Text",Inter,sans-serif;background:#f6f6f4;color:#0a0a0a;overflow-x:hidden}
+  main{max-width:880px;margin:0 auto}
+  h1{font-size:32px;margin:0 0 8px}
+  .lead{color:#555;margin:0 0 32px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  a.card{display:block;padding:24px;border-radius:20px;text-decoration:none;color:inherit;border:1px solid #ddd;background:#fff;transition:border-color .15s}
+  a.card:hover{border-color:#0ea5e9}
+  .card strong{display:block;font-size:20px;margin-bottom:4px}
+  .card p{margin:0;color:#555;font-size:14px}
+  .glass{background:linear-gradient(135deg,#e0f2fe,#ede9fe)}
+  .neon{background:#050505;color:#e5f6ff;border-color:#14171c}
+  .neon p{color:#98a4b3}
+  .neon:hover{border-color:#39ff88}
+  h2{margin:18px 0 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
+  .sw{display:flex;gap:8px}
+  .sw i{display:block;width:36px;height:36px;border-radius:12px;border:1px solid rgba(128,128,128,.35)}
+  .sw.dot i{border-radius:50%}
+  .devices{font-size:13px;color:#888;margin-top:16px}
+  .neon .devices{color:#667386}
+  .note{margin:32px 0 0;font-size:14px;color:#555}.note a{color:inherit}
+</style>
+</head>
+<body>
+<main>
+  <h1>Apps natives Venio</h1>
+  <p class="lead">Deux thèmes sur les mêmes écrans et les mêmes données : espace commercial sur iPhone, iPad et Apple Watch, espace admin sur Mac. Dans chaque thème, l’utilisateur choisit un fond et un accent (5 chacun).</p>
+  <div class="grid">
+    <a class="card glass" href="liquid-glass/index.html">
+      <strong>Liquid glass</strong>
+      <p>Matériaux translucides, barres flottantes.</p>
+      <h2>Fonds</h2>
+      <div class="sw">
+        <i title="Brume" style="background:linear-gradient(135deg,#BAE6FD,#EEF3F8 55%,#DDD6FE)"></i>
+        <i title="Aurore" style="background:linear-gradient(135deg,#FECDD3,#FBF1EC 55%,#FDE68A)"></i>
+        <i title="Lagune" style="background:linear-gradient(135deg,#99F6E4,#ECF7F5 55%,#BAE6FD)"></i>
+        <i title="Lavande" style="background:linear-gradient(135deg,#DDD6FE,#F3F0FA 55%,#FBCFE8)"></i>
+        <i title="Nuit" style="background:linear-gradient(135deg,#1E3A8A,#0B1220 55%,#4C1D95)"></i>
+      </div>
+      <h2>Accents</h2>
+      <div class="sw dot">
+        <i title="Sky Venio" style="background:#0EA5E9"></i>
+        <i title="Violet" style="background:#7C3AED"></i>
+        <i title="Menthe" style="background:#10B981"></i>
+        <i title="Corail" style="background:#F97362"></i>
+        <i title="Ambre" style="background:#F59E0B"></i>
+      </div>
+      <div class="devices">iPhone · iPad · Watch · Mac</div>
+    </a>
+    <a class="card neon" href="neon/index.html">
+      <strong>Néon</strong>
+      <p>Cockpit sombre, lueurs d’accent.</p>
+      <h2>Fonds</h2>
+      <div class="sw">
+        <i title="Noir" style="background:linear-gradient(135deg,#14171C,#050505 60%,#0D0F12)"></i>
+        <i title="Graphite" style="background:linear-gradient(135deg,#1F2630,#0D1117 60%,#161B22)"></i>
+        <i title="Abysse" style="background:linear-gradient(135deg,#112840,#04121F 60%,#0A1D30)"></i>
+        <i title="Aubergine" style="background:linear-gradient(135deg,#26163A,#12071C 60%,#1C0F2A)"></i>
+        <i title="Forêt" style="background:linear-gradient(135deg,#112B22,#03130E 60%,#0A1F18)"></i>
+      </div>
+      <h2>Accents</h2>
+      <div class="sw dot">
+        <i title="Cyan Venio" style="background:#0EA5E9"></i>
+        <i title="Magenta" style="background:#FF0080"></i>
+        <i title="Violet" style="background:#A855F7"></i>
+        <i title="Vert acide" style="background:#39FF88"></i>
+        <i title="Orange" style="background:#FF7A1A"></i>
+      </div>
+      <div class="devices">iPhone · iPad · Watch · Mac</div>
+    </a>
+  </div>
+  <p class="note">Sur chaque page, le bouton rond en bas à droite ouvre le sélecteur de fond et d’accent. Le choix est mémorisé et suit d’une piste à l’autre. Réglages › Apparence : <a href="liquid-glass/iphone.html">iPhone</a> · <a href="liquid-glass/mac.html#reglages">Mac</a> (Liquid glass), <a href="neon/iphone.html">iPhone</a> · <a href="neon/mac.html#reglages">Mac</a> (Néon).</p>
+</main>
+</body>
+</html>

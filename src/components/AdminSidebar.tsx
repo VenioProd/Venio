@@ -358,6 +358,15 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
             <User size={15} aria-hidden />
             <span className="admin-sb-label">Mon profil</span>
           </button>
+          <button
+            type="button"
+            className="admin-sb-footer-btn"
+            title="Mon relevé"
+            onClick={() => navigate('/admin/mon-releve')}
+          >
+            <User size={15} aria-hidden />
+            <span className="admin-sb-label">Mon relevé</span>
+          </button>
           <button type="button" className="admin-sb-footer-btn danger" title="Se déconnecter" onClick={handleLogout}>
             <LogOut size={15} aria-hidden />
             <span className="admin-sb-label">Déconnexion</span>
@@ -445,6 +454,17 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                 >
                   <User size={15} aria-hidden />
                   <span>Mon profil</span>
+                </button>
+                <button
+                  type="button"
+                  className="admin-sb-footer-btn"
+                  onClick={() => {
+                    onDrawerClose?.()
+                    navigate('/admin/mon-releve')
+                  }}
+                >
+                  <User size={15} aria-hidden />
+                  <span>Mon relevé</span>
                 </button>
                 <button type="button" className="admin-sb-footer-btn danger" onClick={handleLogout}>
                   <LogOut size={15} aria-hidden />

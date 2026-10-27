@@ -10,6 +10,8 @@ export interface JwtPayload {
   mfaVerifiedAt?: number
   mfaEnrollmentOnly?: boolean
   impersonatorId?: string
+  /** Appareil natif (MobileDevice) quand la requête est authentifiée par Bearer. */
+  deviceId?: string
   iat?: number
   exp?: number
 }

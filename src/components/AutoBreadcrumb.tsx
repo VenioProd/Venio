@@ -28,6 +28,9 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   fec: { label: 'FEC', to: '/admin/comptabilite/fec' },
   lettrage: { label: 'Lettrage', to: '/admin/comptabilite/lettrage' },
   'plan-comptable': { label: 'Plan comptable', to: '/admin/comptabilite/plan-comptable' },
+  beneficiaires: { label: 'Bénéficiaires', to: '/admin/comptabilite/beneficiaires' },
+  'modeles-repartition': { label: 'Modèles de répartition', to: '/admin/comptabilite/modeles-repartition' },
+  'mon-releve': { label: 'Mon relevé', to: '/admin/mon-releve' },
   journaux: { label: 'Journaux', to: '/admin/comptabilite/journaux' },
   parametres: { label: 'Paramètres', to: null },
   'sources-externes': { label: 'Sources externes', to: '/admin/comptabilite/sources-externes' },
@@ -117,9 +120,7 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
                   {c.label}
                 </Link>
               ) : (
-                <span className={`breadcrumb-current${isLast ? ' is-last' : ''}`}>
-                  {c.label}
-                </span>
+                <span className={`breadcrumb-current${isLast ? ' is-last' : ''}`}>{c.label}</span>
               )}
               {!isLast && (
                 <span className="breadcrumb-sep" aria-hidden>

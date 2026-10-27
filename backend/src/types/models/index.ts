@@ -111,3 +111,18 @@ export type {
 } from './workspace.js'
 
 export type { IClientUpload } from './upload.js'
+
+export type {
+  IBeneficiary,
+  IShareRule,
+  IShareTemplate,
+  IShareRuleVersion,
+  IFinanceInstallment,
+  IFinanceSubscription,
+  IFinancePayer,
+  IProjectFinance,
+  IProjectPayment,
+  IShareAllocation,
+  IShareSettlement,
+  IProjectCost,
+} from './projectFinance.js'

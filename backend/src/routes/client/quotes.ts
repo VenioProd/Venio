@@ -6,11 +6,14 @@ import auth from '../../middleware/auth.js'
 import AuditLog from '../../models/AuditLog.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import { clientBillingVisibility } from '../../lib/clientBillingVisibility.js'
 import { getProjectAccess } from '../../lib/projectAccess.js'
 import { computeQuoteTotals, validateSelection } from '../../lib/quoteTotals.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import { buildBillingDocumentForProposal, lockProposalForSignature } from '../../lib/quoteSignature.js'
 import { promoteChangeRequestOnSignature } from '../../lib/changeRequestFlow.js'
+import { createNotification } from '../../lib/notifications.js'
+import logger from '../../lib/logger.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 
 const router = express.Router()
@@ -95,6 +98,22 @@ router.get(
       const loaded = await loadProposalForClient(req, res)
       if (!loaded) return
 
+      const firstViewedAt = new Date()
+      const viewed = await QuoteProposal.updateOne(
+        { _id: loaded.proposal._id, firstViewedAt: null },
+        { $set: { firstViewedAt } },
+      )
+      if (viewed.modifiedCount === 1) {
+        loaded.proposal.firstViewedAt = firstViewedAt
+        await createNotification({
+          recipient: loaded.proposal.createdBy,
+          type: 'QUOTE_PROPOSAL_VIEWED',
+          title: 'Devis consulté',
+          message: loaded.proposal.title,
+          link: `/admin/projets/${loaded.proposal.project}`,
+          metadata: { proposalId: String(loaded.proposal._id) },
+        }).catch(() => logger.warn('[quotes] Échec notification de consultation'))
+      }
       AuditLog.create({
         userId: req.user!.id,
         email: req.user!.email,
@@ -257,6 +276,15 @@ router.post(
         return res.status(409).json({ error: 'Cette proposition a déjà été signée', code: 'PROPOSAL_ALREADY_SIGNED' })
       }
 
+      await createNotification({
+        recipient: locked.createdBy,
+        type: 'QUOTE_PROPOSAL_SIGNED',
+        title: 'Devis signé',
+        message: locked.title,
+        link: `/admin/projets/${locked.project}`,
+        metadata: { proposalId: String(locked._id) },
+      }).catch(() => logger.warn('[quotes] Échec notification de signature'))
+
       // Une demande de changement adossée à ce devis passe en PLANIFIEE dès la
       // signature. Best-effort et placé avant la génération du document : un
       // échec de PDF (rattrapable via rebuild-document) ne doit pas laisser la
@@ -281,7 +309,7 @@ router.post(
   },
 )
 
-const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PAID']
+const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID']
 
 router.get('/:projectId/billing', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -292,6 +320,7 @@ router.get('/:projectId/billing', async (req: Request, res: Response, next: Next
     const documents = await BillingDocument.find({
       project: access.project._id,
       status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+      ...clientBillingVisibility(req.user!.id, [access.project]),
     })
       .sort({ issuedAt: -1, createdAt: -1 })
       .select('-pdfStoragePath -createdBy')
@@ -318,6 +347,7 @@ router.get(
         _id: req.params.documentId,
         project: access.project._id,
         status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
+        ...clientBillingVisibility(req.user!.id, [access.project]),
       }).lean()
       if (!document?.pdfStoragePath) {
         return res.status(404).json({ error: 'Document non disponible' })

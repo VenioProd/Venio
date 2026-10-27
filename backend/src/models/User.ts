@@ -9,14 +9,29 @@ const userAddressSchema = new mongoose.Schema(
     postalCode: { type: String, default: '' },
     country: { type: String, default: '' },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const userSchema = new mongoose.Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['CLIENT', 'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'], required: true },
+    role: {
+      type: String,
+      enum: [
+        'CLIENT',
+        'SUPER_ADMIN',
+        'ADMIN',
+        'MANAGER',
+        'RH',
+        'COMMERCIAL',
+        'COMPTABLE',
+        'VIEWER',
+        'STAGIAIRE',
+        'AGENT',
+      ],
+      required: true,
+    },
     name: { type: String, required: true },
     title: { type: String, default: '' },
     companyName: { type: String, default: '' },
@@ -48,14 +63,15 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     lastContactAt: { type: Date, default: null },
     archivedAt: { type: Date, default: null },
-    // 2FA fields
-    twoFactorSecret: { type: String, default: null },
+    // 2FA fields : jamais lus par défaut, une liste d'administrateurs ne doit pas exposer le second facteur.
+    twoFactorSecret: { type: String, default: null, select: false },
     twoFactorEnabled: { type: Boolean, default: false },
-    twoFactorRecoveryCodeHashes: { type: [String], default: [] },
+    twoFactorRecoveryCodeHashes: { type: [String], default: [], select: false },
     // Set lazily at the first privileged login after rollout: existing admins
     // retain access long enough to enroll without a deployment lock-out.
     mfaGraceUntil: { type: Date, default: null },
     jobTitle: { type: String, default: '' },
+    isAssociate: { type: Boolean, default: false },
     // Fine-grained permission overrides
     grantedPermissions: { type: [String], default: [] },
     deniedPermissions: { type: [String], default: [] },
@@ -66,6 +82,19 @@ const userSchema = new mongoose.Schema<IUser>(
     isActive: { type: Boolean, default: true },
     // Incremented when credentials or authorizations change to revoke issued JWTs.
     sessionVersion: { type: Number, default: 0 },
+    appTheme: {
+      type: new mongoose.Schema(
+        {
+          theme: { type: String, required: true, enum: ['glass', 'neon'] },
+          background: { type: String, required: true },
+          accent: { type: String, required: true },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
+    // Langue choisie dans l'app native ; `locale` reste celle de l'interface web.
+    appLocale: { type: String, enum: ['system', 'fr', 'en'], default: 'system' },
     locale: { type: String, enum: ['fr', 'en'], default: null },
     colorTheme: {
       type: String,
@@ -93,7 +122,7 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     avatarUrl: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 userSchema.index({ role: 1, status: 1 })

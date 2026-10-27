@@ -72,11 +72,13 @@ describe('prerender des pages publiques', () => {
 
   it('couvre toutes les pages publiques déclarées', () => {
     const app = read('src/App.tsx')
-    // Routes de premier niveau, hors redirections, paramètres et espaces privés.
+    // Routes de premier niveau, hors redirections, paramètres et espaces privés. Les pages à lien
+    // privé (`/payer/`, `/beta/`, cf. `isPrivateLinkSpace` dans App.tsx) ne s'adressent pas aux moteurs.
     const declarees = [...app.matchAll(/<Route\s+path="(\/[a-z0-9/-]*)"\s+element=\{<(\w+)/g)]
       .filter(
         ([, path, element]) =>
-          element !== 'Navigate' && !path.startsWith('/espace-client') && !path.startsWith('/admin'),
+          element !== 'Navigate' &&
+          !['/espace-client', '/admin', '/payer/', '/beta/'].some((prefix) => path.startsWith(prefix)),
       )
       .map(([, path]) => path)
 

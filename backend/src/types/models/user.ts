@@ -1,7 +1,6 @@
 import type { Document, Types } from 'mongoose'
-import type {
-  UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus,
-} from '../enums.js'
+import type { AppTheme } from '../../lib/appTheme.js'
+import type { UserRole, UserSource, ClientStatus, OnboardingStatus, HealthStatus } from '../enums.js'
 
 // ─── User ───
 export interface IUserAddress {
@@ -35,6 +34,7 @@ export interface IUser extends Document {
   twoFactorEnabled: boolean
   twoFactorRecoveryCodeHashes: string[]
   mfaGraceUntil: Date | null
+  isAssociate: boolean
   jobTitle: string
   grantedPermissions: string[]
   deniedPermissions: string[]
@@ -43,6 +43,8 @@ export interface IUser extends Document {
   lastLoginIp: string
   isActive: boolean
   sessionVersion: number
+  appTheme?: AppTheme
+  appLocale: 'system' | 'fr' | 'en'
   locale: 'fr' | 'en' | null
   colorTheme?:
     | 'sky'

@@ -50,14 +50,18 @@ export interface IQuoteSpecification {
 }
 
 export interface IQuoteProposal extends Document {
+  reference?: string
   _id: Types.ObjectId
-  project: Types.ObjectId
-  client: Types.ObjectId
+  /** Absent tant que le devis n'est rattaché qu'à un lead. */
+  project: Types.ObjectId | null
+  client: Types.ObjectId | null
+  leadId: Types.ObjectId | null
   createdBy: Types.ObjectId
   title: string
   intro: string
   status: QuoteProposalStatus
   expiresAt: Date | null
+  firstViewedAt: Date | null
   questions: Types.DocumentArray<IQuoteQuestion>
   answers: Types.DocumentArray<IQuoteAnswer>
   lines: Types.DocumentArray<IQuoteLine>

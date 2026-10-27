@@ -1,0 +1,52 @@
+/* Liquid glass — jetons de thème. Pilotés par data-bg et data-accent sur <html>.
+   Source de vérité des valeurs : docs/apps-natives/themes.md. Défaut : mist + sky. */
+
+:root{
+  --bg-base:#EEF3F8; --halo-1:#BAE6FD; --halo-2:#DDD6FE;
+  --bg-image:
+    radial-gradient(60vmax 50vmax at 6% -6%,var(--halo-1),transparent 62%),
+    radial-gradient(55vmax 45vmax at 104% 8%,var(--halo-2),transparent 62%),
+    radial-gradient(52vmax 42vmax at 16% 104%,var(--halo-1),transparent 62%),
+    radial-gradient(46vmax 36vmax at 96% 96%,var(--halo-2),transparent 62%),
+    var(--bg-base);
+
+  --accent:#0EA5E9; --accent-rgb:14 165 233; --on-accent:#0D1424;
+  --accent-hi:color-mix(in srgb,var(--accent) 75%,#fff);   /* reflets, dégradés */
+  --accent-lo:color-mix(in srgb,var(--accent) 80%,#000);   /* pressé, bas de dégradé */
+  --accent-ink:color-mix(in srgb,var(--accent) 55%,#000);  /* accent utilisé comme texte */
+
+  /* Urgent / en retard : fixe, sauf repli quand l'accent est corail. */
+  --urgent:#FF453A; --urgent-rgb:255 69 58; --urgent-ink:#D70015;
+
+  /* Violet décoratif (étapes, tags) : fixe, sauf repli quand l'accent est violet. */
+  --violet:#8B5CF6; --violet-rgb:139 92 246; --violet-ink:#6D28D9;
+}
+
+/* ---- fonds ---- */
+html[data-bg=dawn]{--bg-base:#FBF1EC;--halo-1:#FECDD3;--halo-2:#FDE68A}
+html[data-bg=lagoon]{--bg-base:#ECF7F5;--halo-1:#99F6E4;--halo-2:#BAE6FD}
+html[data-bg=lavender]{--bg-base:#F3F0FA;--halo-1:#DDD6FE;--halo-2:#FBCFE8}
+html[data-bg=night]{
+  --bg-base:#0B1220;--halo-1:#1E3A8A;--halo-2:#4C1D95;
+  --t1:rgba(255,255,255,.96);--t2:rgba(226,232,255,.68);--t3:rgba(226,232,255,.42);
+  --glass:rgba(34,40,78,.46);--glass-2:rgba(70,80,138,.5);--glass-3:rgba(255,255,255,.07);
+  --fill:rgba(180,190,255,.13);--fill-2:rgba(180,190,255,.22);--sep:rgba(255,255,255,.1);
+  --hi:rgba(255,255,255,.3);--lo:rgba(255,255,255,.05);
+  --rim-a:rgba(255,255,255,.55);--rim-b:rgba(255,255,255,.05);--rim-c:rgba(255,255,255,.32);
+  --shadow:0 16px 36px -10px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.2);
+  --accent-ink:color-mix(in srgb,var(--accent) 55%,#fff);
+  --urgent-ink:#FF8A82; --violet-ink:#C4B5FD;
+  color-scheme:dark;
+}
+
+/* ---- accents ---- */
+html[data-accent=violet]{--accent:#7C3AED;--accent-rgb:124 58 237;--on-accent:#FFFFFF;
+  --violet:#6366F1;--violet-rgb:99 102 241;--violet-ink:#4338CA}
+html[data-accent=mint]{--accent:#10B981;--accent-rgb:16 185 129;--on-accent:#0D1424}
+html[data-accent=coral]{--accent:#F97362;--accent-rgb:249 115 98;--on-accent:#0D1424;
+  --urgent:#C81E3A;--urgent-rgb:200 30 58;--urgent-ink:color-mix(in srgb,#C81E3A 55%,#000)}
+html[data-accent=amber]{--accent:#F59E0B;--accent-rgb:245 158 11;--on-accent:#0D1424}
+
+/* repli sur Nuit */
+html[data-bg=night][data-accent=violet]{--violet-ink:#A5B4FC}
+html[data-bg=night][data-accent=coral]{--urgent-ink:color-mix(in srgb,#C81E3A 55%,#fff)}

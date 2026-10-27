@@ -86,11 +86,15 @@ router.patch('/:key/settings', async (req: Request, res: Response) => {
     if (!automation) {
       return res.status(404).json({ error: 'Automation not found' })
     }
+    if (!automation.permissionsScope.includes(req.user!.role)) {
+      return res.status(403).json({ error: 'Accès refusé' })
+    }
 
     const updates: Record<string, unknown> = {}
     if (typeof req.body.enabled === 'boolean') updates.enabled = req.body.enabled
     if (Array.isArray(req.body.channels)) updates.channels = req.body.channels
-    if (typeof req.body.throttleWindowMinutes === 'number') updates.throttleWindowMinutes = req.body.throttleWindowMinutes
+    if (typeof req.body.throttleWindowMinutes === 'number')
+      updates.throttleWindowMinutes = req.body.throttleWindowMinutes
     if (typeof req.body.escalationEnabled === 'boolean') updates.escalationEnabled = req.body.escalationEnabled
     if (req.body.config && typeof req.body.config === 'object') updates.config = req.body.config
 
@@ -108,6 +112,10 @@ router.post('/:key/trigger', async (req: Request, res: Response) => {
     const automation = getAutomation(key)
     if (!automation) {
       return res.status(404).json({ error: 'Automation not found' })
+    }
+    // requireAdmin seul laissait n'importe quel rôle admin piloter les automatisations du super-admin.
+    if (!automation.permissionsScope.includes(req.user!.role)) {
+      return res.status(403).json({ error: 'Accès refusé' })
     }
 
     const ctx = buildContext()

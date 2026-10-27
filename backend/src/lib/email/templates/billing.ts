@@ -4,7 +4,23 @@ import type { EmailResult } from '../transport.js'
 /**
  * Envoie un email de notification de facture au client.
  */
-export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDate, downloadUrl }: { to: string; name: string; invoiceNumber: string; amount: string; dueDate: string; downloadUrl: string }): Promise<EmailResult> {
+export async function sendInvoiceEmail({
+  to,
+  name,
+  invoiceNumber,
+  amount,
+  dueDate,
+  downloadUrl,
+  paymentUrl,
+}: {
+  to: string
+  name: string
+  invoiceNumber: string
+  amount: string
+  dueDate: string
+  downloadUrl: string
+  paymentUrl?: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -27,6 +43,7 @@ export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDat
         `  Échéance : ${dueDate}`,
         '',
         `Télécharger la facture : ${downloadUrl}`,
+        ...(paymentUrl ? [`Payer par carte : ${paymentUrl}`] : []),
         '',
         `— L'équipe ${appName}`,
       ].join('\n'),
@@ -39,6 +56,7 @@ export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDat
         `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Échéance</td><td style="padding: 4px 0; font-weight: 600;">${escapeHtml(dueDate)}</td></tr>`,
         '</table>',
         `<p><a href="${escapeHtml(downloadUrl)}" style="display: inline-block; padding: 10px 20px; background: #0ea5e9; color: white; text-decoration: none; border-radius: 6px;">Télécharger la facture</a></p>`,
+        ...(paymentUrl ? [`<p><a href="${escapeHtml(paymentUrl)}">Payer par carte</a></p>`] : []),
         `<p>— L'équipe ${escapeHtml(appName)}</p>`,
       ].join(''),
     })
@@ -51,7 +69,19 @@ export async function sendInvoiceEmail({ to, name, invoiceNumber, amount, dueDat
 /**
  * Envoie un email de relance de facture impayée.
  */
-export async function sendInvoiceReminderEmail({ to, name, invoiceNumber, amount, daysPastDue }: { to: string; name: string; invoiceNumber: string; amount: string; daysPastDue: number }): Promise<EmailResult> {
+export async function sendInvoiceReminderEmail({
+  to,
+  name,
+  invoiceNumber,
+  amount,
+  daysPastDue,
+}: {
+  to: string
+  name: string
+  invoiceNumber: string
+  amount: string
+  daysPastDue: number
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }

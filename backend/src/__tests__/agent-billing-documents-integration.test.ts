@@ -4,18 +4,39 @@ import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import fs from 'fs/promises'
 import path from 'path'
-import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
+import { setupMongoReplSet, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import BillingDocument from '../models/BillingDocument.js'
 import Document from '../models/Document.js'
+import ProjectPayment from '../models/ProjectPayment.js'
+import ShareAllocation from '../models/ShareAllocation.js'
+import Sequence from '../models/Sequence.js'
+import AccountingEntry from '../models/AccountingEntry.js'
+import AccountingLine from '../models/AccountingLine.js'
+import FiscalYear from '../models/FiscalYear.js'
+import Journal from '../models/Journal.js'
+import ChartOfAccount from '../models/ChartOfAccount.js'
 
 let app: Express
 let projectId: string
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  await Promise.all(
+    [
+      ProjectPayment,
+      ShareAllocation,
+      BillingDocument,
+      Sequence,
+      AccountingEntry,
+      AccountingLine,
+      FiscalYear,
+      Journal,
+      ChartOfAccount,
+    ].map((model) => model.init()),
+  )
   app = await createTestApp()
 })
 
@@ -114,6 +135,11 @@ describe('Agent Billing / CRUD + transitions', () => {
   })
 
   it('runs the full status transitions DRAFT → ISSUED → SENT → PAID', async () => {
+    await Journal.create({ code: 'BQ', label: 'Banque', type: 'BANQUE' })
+    await ChartOfAccount.create([
+      { code: '411000', label: 'Clients', accountClass: 4, type: 'ACTIF' },
+      { code: '512000', label: 'Banque', accountClass: 5, type: 'ACTIF' },
+    ])
     const { plainSecret } = await createAgentTokenInDb(['write:billing'])
     const created = await request(app)
       .post('/api/v1/agent/billing')

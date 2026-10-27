@@ -31,6 +31,7 @@ export interface IInteraction extends Document {
   kind: InteractionKind
   direction: InteractionDirection
   occurredAt: Date
+  endsAt?: Date
   subject: string
   body: string
   pinned: boolean
@@ -40,6 +41,10 @@ export interface IInteraction extends Document {
   /** Identifiant du document d'origine, pour rendre la migration idempotente.
    *  Absent hors migration : voir l'index partiel du modèle. */
   migratedFrom?: string
+  lang?: 'fr' | 'en' | null
+  clientRequestId?: string
+  clientRequestHash?: string
+  audio?: { filename: string; originalName: string; mimeType: string; size: number } | null
   createdAt: Date
   updatedAt: Date
 }

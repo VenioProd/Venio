@@ -231,3 +231,4 @@ Découpage en lots indépendamment mergeables :
 10. **OpenAPI complet + test de synchronisation routeur ↔ spec**.
 
 L'API est utilisable dès la fin du lot 1 (avec `ping`). Chaque lot suivant ajoute des modules sans casser les précédents.
+Une écriture au nom d’un utilisateur hors du périmètre de lecture du projet renvoie 403 `PROJECT_OUT_OF_SCOPE`.

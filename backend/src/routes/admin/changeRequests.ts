@@ -1,3 +1,4 @@
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { body, param, query, validationResult } from 'express-validator'
 import multer from 'multer'
@@ -13,6 +14,8 @@ import User from '../../models/User.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { findAttachmentMeta, serveAttachment } from '../../lib/attachmentResponse.js'
+import { runInTransaction } from '../../lib/transaction.js'
+import { lockProject } from '../../lib/projectWriteLock.js'
 import {
   actorFromRequest,
   auditChangeRequest,
@@ -81,8 +84,8 @@ const validQuotePayload = [
 
 async function loadOr404(req: Request, res: Response): Promise<IChangeRequest | null> {
   const found = await ChangeRequest.findById(req.params.id)
-  if (!found) {
-    res.status(404).json({ error: 'Demande non trouvée' })
+  if (!found || (found.project && !(await canReadProject(req.user!, String(found.project))))) {
+    res.status(404).json({ error: found ? 'Projet non trouvé' : 'Demande non trouvée' })
     return null
   }
   return found
@@ -116,7 +119,9 @@ router.get(
   ...validListFilters,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = {}
+      const ids = await readableProjectIds(req.user!)
+      const filter: Record<string, unknown> =
+        ids === null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: ids } }] }] }
       if (req.query.status) filter.status = req.query.status
       if (req.query.client) filter.client = req.query.client
       if (req.query.project) filter.project = req.query.project
@@ -142,11 +147,13 @@ router.get(
 router.get(
   '/stats',
   requirePermission(PERMISSIONS.VIEW_CHANGE_REQUESTS),
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const ids = await readableProjectIds(req.user!)
+      const scope = ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }
       const [aTraiter, enCours] = await Promise.all([
-        ChangeRequest.countDocuments({ status: 'SOUMISE' }),
-        ChangeRequest.countDocuments({ status: { $in: ACTIVE_STATUSES } }),
+        ChangeRequest.countDocuments({ ...scope, status: 'SOUMISE' }),
+        ChangeRequest.countDocuments({ ...scope, status: { $in: ACTIVE_STATUSES } }),
       ])
       return res.json({ aTraiter, enCours })
     } catch (err) {
@@ -165,9 +172,10 @@ router.get(
       const owner = await ChangeRequest.findOne({
         $or: [{ attachments: { $elemMatch: { filename } } }, { 'replies.attachments': { $elemMatch: { filename } } }],
       })
-        .select('attachments replies')
+        .select('attachments replies project')
         .lean()
-      if (!owner) return res.status(404).json({ error: 'Fichier introuvable' })
+      if (!owner || (owner.project && !(await canReadProject(req.user!, String(owner.project)))))
+        return res.status(404).json({ error: 'Fichier introuvable' })
 
       const filePath = path.resolve(uploadsDir, filename)
       if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
@@ -222,14 +230,23 @@ router.post(
   '/:id/reply',
   requirePermission(PERMISSIONS.MANAGE_CHANGE_REQUESTS),
   ...validId,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const changeRequest = await loadOr404(req, res)
+      if (!changeRequest) return
+      res.locals.changeRequest = changeRequest
+      return next()
+    } catch (err) {
+      return next(err)
+    }
+  },
   upload.array('files', 10),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const message = String(req.body.message ?? '').trim()
       if (!message) return res.status(400).json({ error: 'Message requis' })
 
-      const changeRequest = await loadOr404(req, res)
-      if (!changeRequest) return
+      const changeRequest = res.locals.changeRequest as IChangeRequest
 
       const actor = actorFromRequest(req.user!)
       const files = (req.files as Express.Multer.File[]) || []
@@ -329,6 +346,9 @@ router.post(
           .status(400)
           .json({ error: 'Un projet est requis pour créer un devis', code: 'PROJECT_REQUIRED_FOR_QUOTE' })
       }
+      if (!(await canReadProject(req.user!, targetProjectId))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
       const project = await Project.findById(targetProjectId).select('client').lean()
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
       if (String(project.client) !== String(changeRequest.client)) {
@@ -338,14 +358,19 @@ router.post(
       }
 
       const actor = actorFromRequest(req.user!)
-      const proposal = await QuoteProposal.create({
-        project: targetProjectId,
-        client: changeRequest.client,
-        createdBy: actor.id,
-        title: changeRequest.title,
-        intro: changeRequest.description,
-        status: 'DRAFT',
-        expiresAt: req.body.expiresAt ? new Date(String(req.body.expiresAt)) : null,
+      const proposal = await runInTransaction(async (session) => {
+        await lockProject(targetProjectId, session)
+        const proposal = new QuoteProposal({
+          project: targetProjectId,
+          client: changeRequest.client,
+          createdBy: actor.id,
+          title: changeRequest.title,
+          intro: changeRequest.description,
+          status: 'DRAFT',
+          expiresAt: req.body.expiresAt ? new Date(String(req.body.expiresAt)) : null,
+        })
+        await proposal.save({ session })
+        return proposal
       })
 
       const updated = await transitionChangeRequest({

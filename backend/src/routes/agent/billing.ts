@@ -8,6 +8,11 @@ import { getNextSequence } from '../../models/Sequence.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { markInvoicePaid } from '../../lib/projectFinance/payments.js'
+import { expireInvoiceCheckout } from '../../lib/stripe/checkoutSession.js'
+import { computeBillingTotals } from '../../lib/projectFinance/vatBreakdown.js'
+import { runInTransaction } from '../../lib/transaction.js'
+import { createBillingDocument } from '../../lib/billingDocument.js'
 
 /**
  * Routes agent pour la facturation (BillingDocument).
@@ -18,9 +23,8 @@ import { respondError } from './_middleware/errors.js'
  * Numérotation auto via Sequence (DEV-0001, FAC-0001…). L'agent peut aussi
  * fournir un `number` explicite (rare, pour migration). Le numéro est unique.
  *
- * Calcul des totaux : `subtotal = Σ lines.total`, `taxTotal = Σ lines.total *
- * lines.taxRate/100`, `total = subtotal + taxTotal`. Si `lines.total` n'est
- * pas fourni, on calcule `quantity * unitPrice`.
+ * Totaux en centimes : le total HT d'une ligne vaut `lines.total` s'il est
+ * fourni (remise), sinon `quantity * unitPrice` ; TVA calculée par taux.
  *
  * Transitions de statut typées via endpoints dédiés :
  *   POST /:id/issue       DRAFT → ISSUED (+ issuedAt)
@@ -35,7 +39,7 @@ import { respondError } from './_middleware/errors.js'
 const router = express.Router()
 
 const TYPES = ['QUOTE', 'INVOICE'] as const
-const STATUSES = ['DRAFT', 'ISSUED', 'SENT', 'ACCEPTED', 'PAID', 'CANCELLED'] as const
+const STATUSES = ['DRAFT', 'ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED'] as const
 
 function isValidObjectId(id: unknown): boolean {
   return typeof id === 'string' && mongoose.isValidObjectId(id)
@@ -79,21 +83,18 @@ function normalizeLines(raw: unknown): NormalizedLine[] {
     const quantity = Number(l.quantity) || 1
     const unitPrice = Number(l.unitPrice) || 0
     const taxRate = Number(l.taxRate) || 0
-    const lineTotal = l.total !== undefined && l.total !== null ? Number(l.total) : quantity * unitPrice
     return {
       description: String(l.description || ''),
       quantity,
       unitPrice,
       taxRate,
-      total: Number.isFinite(lineTotal) ? lineTotal : 0,
+      total: l.total === undefined || l.total === null ? quantity * unitPrice : Number(l.total),
     }
   })
 }
 
 function computeTotals(lines: NormalizedLine[]): ComputedTotals {
-  const subtotal = lines.reduce((s, l) => s + (l.total || 0), 0)
-  const taxTotal = lines.reduce((s, l) => s + (l.total || 0) * ((l.taxRate || 0) / 100), 0)
-  return { lines, subtotal, taxTotal, total: subtotal + taxTotal }
+  return computeBillingTotals(lines)
 }
 
 async function nextBillingNumber(type: 'QUOTE' | 'INVOICE'): Promise<string> {
@@ -163,7 +164,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -173,8 +174,12 @@ router.get(
 router.post(
   '/billing',
   requireScope('write:billing'),
-  body('type').isIn(TYPES as unknown as string[]).withMessage('type QUOTE ou INVOICE requis'),
-  body('project').custom((v) => isValidObjectId(v)).withMessage('project (ObjectId) requis'),
+  body('type')
+    .isIn(TYPES as unknown as string[])
+    .withMessage('type QUOTE ou INVOICE requis'),
+  body('project')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('project (ObjectId) requis'),
   body('lines').optional().isArray(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
@@ -201,21 +206,26 @@ router.post(
 
       const number = req.body.number ? String(req.body.number).trim() : await nextBillingNumber(req.body.type)
 
-      const doc = await BillingDocument.create({
-        type: req.body.type,
-        number,
-        project: project._id,
-        client: project.client,
-        status: 'DRAFT',
-        lines: totals.lines,
-        subtotal: totals.subtotal,
-        taxTotal: totals.taxTotal,
-        total: totals.total,
-        currency: typeof req.body.currency === 'string' ? req.body.currency : project.budget?.currency || 'EUR',
-        dueAt: req.body.dueAt ? new Date(req.body.dueAt) : null,
-        note: typeof req.body.note === 'string' ? req.body.note : '',
-        createdBy: admin._id,
-      })
+      const doc = await runInTransaction((session) =>
+        createBillingDocument(
+          {
+            type: req.body.type,
+            number,
+            project: project._id,
+            client: project.client,
+            status: 'DRAFT',
+            lines: totals.lines,
+            subtotal: totals.subtotal,
+            taxTotal: totals.taxTotal,
+            total: totals.total,
+            currency: typeof req.body.currency === 'string' ? req.body.currency : project.budget?.currency || 'EUR',
+            dueAt: req.body.dueAt ? new Date(req.body.dueAt) : null,
+            note: typeof req.body.note === 'string' ? req.body.note : '',
+            createdBy: admin._id,
+          },
+          session,
+        ),
+      )
 
       res.locals.audit = {
         entityType: 'BillingDocument',
@@ -232,7 +242,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -249,6 +259,14 @@ router.patch(
       const doc = await BillingDocument.findById(req.params.id)
       if (!doc) return respondError(res, 404, 'NOT_FOUND', 'Document introuvable')
       const before = doc.toObject()
+      if (req.body.status === 'PARTIALLY_PAID') {
+        return respondError(
+          res,
+          400,
+          'VALIDATION_ERROR',
+          'Le statut partiellement payé est calculé depuis les encaissements',
+        )
+      }
 
       // Sur les non-DRAFT on autorise un sous-ensemble très restreint
       const isDraft = doc.status === 'DRAFT'
@@ -289,7 +307,7 @@ router.patch(
       }
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -297,8 +315,8 @@ router.patch(
 // ───────────────────────────────────────────────────────────────────────────
 
 function transition(
-  to: typeof STATUSES[number],
-  options: { from?: readonly string[]; setField?: 'issuedAt' | 'sentAt' | 'paidAt' } = {}
+  to: (typeof STATUSES)[number],
+  options: { from?: readonly string[]; setField?: 'issuedAt' | 'sentAt' | 'paidAt' } = {},
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const errors = validationResult(req)
@@ -312,12 +330,18 @@ function transition(
         respondError(res, 404, 'NOT_FOUND', 'Document introuvable')
         return
       }
+      if ((doc.financeLink || doc.creditedInvoice) && doc.status === 'DRAFT' && ['ISSUED', 'SENT'].includes(to)) {
+        respondError(res, 409, 'INVALID_TRANSITION', 'Émettez ce document par la génération du PDF')
+        return
+      }
+      // Une session Checkout ouverte resterait payable après l'annulation.
+      if (to === 'CANCELLED' && doc.type === 'INVOICE') await expireInvoiceCheckout(String(doc._id))
       if (options.from && !options.from.includes(doc.status)) {
         respondError(
           res,
           409,
           'INVALID_TRANSITION',
-          `Transition ${doc.status} → ${to} non autorisée. Attendu : ${options.from.join(', ')}`
+          `Transition ${doc.status} → ${to} non autorisée. Attendu : ${options.from.join(', ')}`,
         )
         return
       }
@@ -346,36 +370,66 @@ router.post(
   '/billing/:id/issue',
   requireScope('write:billing'),
   param('id').isMongoId(),
-  transition('ISSUED', { from: ['DRAFT'], setField: 'issuedAt' })
+  transition('ISSUED', { from: ['DRAFT'], setField: 'issuedAt' }),
 )
 
 router.post(
   '/billing/:id/mark-sent',
   requireScope('write:billing'),
   param('id').isMongoId(),
-  transition('SENT', { from: ['ISSUED'], setField: 'sentAt' })
+  transition('SENT', { from: ['ISSUED'], setField: 'sentAt' }),
 )
 
 router.post(
   '/billing/:id/mark-paid',
   requireScope('write:billing'),
   param('id').isMongoId(),
-  transition('PAID', { from: ['ISSUED', 'SENT', 'ACCEPTED'], setField: 'paidAt' })
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const doc = await BillingDocument.findById(req.params.id)
+      if (!doc) return respondError(res, 404, 'NOT_FOUND', 'Document introuvable')
+      if (doc.type !== 'INVOICE' || !['ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID'].includes(doc.status)) {
+        return respondError(
+          res,
+          409,
+          'INVALID_TRANSITION',
+          'Seule une facture émise avec un reste dû peut être encaissée',
+        )
+      }
+      const before = doc.toObject()
+      const admin = await User.findOne({ role: 'SUPER_ADMIN' }).select('_id').lean()
+      if (!admin) return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN pour createdBy')
+      const result = await markInvoicePaid({
+        invoice: doc,
+        method: req.body?.method,
+        paidAt: req.body?.paidAt,
+        userId: String(admin._id),
+      })
+      if (!result) return respondError(res, 409, 'INVALID_TRANSITION', 'La facture n’a plus de reste dû')
+      const updated = (await BillingDocument.findById(doc._id))!
+      res.locals.audit = {
+        entityType: 'BillingDocument',
+        entityId: String(doc._id),
+        entityRef: doc.number,
+        before,
+        after: updated.toObject(),
+      }
+      res.json(updated.toObject())
+    } catch (err) {
+      next(err)
+    }
+  },
 )
 
 router.post(
   '/billing/:id/accept',
   requireScope('write:billing'),
   param('id').isMongoId(),
-  transition('ACCEPTED', { from: ['ISSUED', 'SENT'] })
+  transition('ACCEPTED', { from: ['ISSUED', 'SENT'] }),
 )
 
-router.post(
-  '/billing/:id/cancel',
-  requireScope('write:billing'),
-  param('id').isMongoId(),
-  transition('CANCELLED')
-)
+router.post('/billing/:id/cancel', requireScope('write:billing'), param('id').isMongoId(), transition('CANCELLED'))
 
 // ───────────────────────────────────────────────────────────────────────────
 // DELETE /billing/:id — uniquement sur DRAFT
@@ -395,11 +449,14 @@ router.delete(
           res,
           409,
           'IMMUTABLE_AFTER_DRAFT',
-          'Suppression réservée aux DRAFT. Pour invalider un document émis, utiliser /cancel.'
+          'Suppression réservée aux DRAFT. Pour invalider un document émis, utiliser /cancel.',
         )
       }
       const before = doc.toObject()
-      await BillingDocument.deleteOne({ _id: doc._id })
+      const deleted = await BillingDocument.deleteOne({ _id: doc._id, status: 'DRAFT' })
+      if (deleted.deletedCount === 0) {
+        return respondError(res, 409, 'INVALID_TRANSITION', 'Le statut du document a changé ; rechargez-le')
+      }
       res.locals.audit = {
         entityType: 'BillingDocument',
         entityId: String(doc._id),
@@ -410,7 +467,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

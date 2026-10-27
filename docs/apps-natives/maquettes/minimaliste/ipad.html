@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iPad · Venio apps natives, piste minimaliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF7; --paper-2:#F1F1EC; --paper-3:#E9E9E3;
+  --ink:#0A0A0A; --ink-2:#4F4F4A; --ink-3:#8C8C84;
+  --line:#E2E2DB; --line-2:#CFCFC7;
+  --accent:#0EA5E9;
+  --f:'Archivo',-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--f);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;line-height:1.35;overflow-x:hidden}
+a{color:inherit}
+.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+
+/* ---- barre de navigation de la piste ---- */
+.top{border-bottom:1px solid var(--ink);padding:16px 24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 32px;background:var(--paper)}
+.top .brand{font-weight:800;letter-spacing:-.02em;font-size:17px;text-decoration:none}
+.top .brand span{color:var(--ink-3);font-weight:500;margin-left:8px}
+.top nav{display:flex;flex-wrap:wrap;gap:4px 22px;margin-left:auto}
+.top nav a{font-size:14px;font-weight:600;text-decoration:none;padding:4px 0;border-bottom:2px solid transparent;color:var(--ink-2)}
+.top nav a:hover{color:var(--ink)}
+.top nav a[aria-current]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* ---- page ---- */
+.wrap{max-width:1480px;margin:0 auto;padding:0 24px}
+.head{padding:56px 0 36px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px 64px;align-items:end;border-bottom:1px solid var(--line)}
+.head .k{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+.head h1{font-size:clamp(40px,6vw,80px);font-weight:800;letter-spacing:-.045em;line-height:.95}
+.head p{font-size:17px;color:var(--ink-2);max-width:520px}
+.head p b{color:var(--ink);font-weight:700}
+.grid{display:grid;gap:56px 32px;padding:48px 0 72px}
+.grid.phones{grid-template-columns:repeat(auto-fill,minmax(min(100%,417px),1fr))}
+.grid.watches{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.grid.wide{grid-template-columns:minmax(0,1fr)}
+.cell{min-width:0}
+.stage{display:flex;justify-content:center}
+.fit{position:relative;flex:none}
+.fit>.dev{position:absolute;left:0;top:0;transform-origin:0 0}
+figcaption{margin-top:20px;max-width:417px;margin-left:auto;margin-right:auto;border-top:1px solid var(--ink);padding-top:12px}
+.wide figcaption{max-width:none;margin-left:0;margin-right:0}
+figcaption .n{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin-right:10px}
+figcaption b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+figcaption p{font-size:14px;color:var(--ink-2);margin-top:6px;max-width:62ch}
+.foot{border-top:1px solid var(--ink);padding:20px 0 40px;display:flex;flex-wrap:wrap;gap:8px 32px;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+@media (max-width:760px){
+  .top{padding:14px 16px}.top nav{margin-left:0;width:100%}
+  .wrap{padding:0 16px}.head{grid-template-columns:1fr;padding:36px 0 28px}
+  .grid{gap:44px 24px;padding:32px 0 48px}
+}
+
+/* ---- éléments communs aux écrans ---- */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--ink);line-height:1.35;white-space:nowrap}
+.tag.fill{background:var(--ink);color:var(--paper)}
+.tag.acc{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.tag.soft{border-color:var(--line-2);color:var(--ink-2)}
+.temp{display:inline-flex;gap:2px;align-items:center}
+.temp s{display:block;width:5px;height:9px;background:var(--line-2);text-decoration:none}
+.temp s.on{background:var(--ink)}
+.av{width:22px;height:22px;border:1px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;border-radius:50%;flex:none;letter-spacing:0}
+.av.none{border-style:dashed;border-color:var(--ink-3);color:var(--ink-3)}
+.bar{height:3px;background:var(--line);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.bar.acc i{background:var(--accent)}
+.mute{color:var(--ink-3)}.mute2{color:var(--ink-2)}
+
+.pad{width:1226px;height:866px;padding:16px;background:var(--ink);border-radius:48px}
+.pscr{width:1194px;height:834px;border-radius:32px;overflow:hidden;background:var(--paper);position:relative;display:flex;flex-direction:column;font-size:14px;color:var(--ink)}
+.pst{flex:none;height:26px;display:flex;justify-content:space-between;align-items:center;padding:6px 28px 0 30px;font-size:13px;font-weight:700}
+.pst .r{display:flex;gap:6px;align-items:center;font-weight:600}
+.ptab{flex:none;height:54px;display:flex;align-items:center;padding:0 28px;border-bottom:1px solid var(--line);gap:0}
+.ptab .lg{font-weight:800;font-size:19px;letter-spacing:-.04em;width:210px;display:flex;align-items:center;gap:10px}
+.ptab .lg .i{width:22px;height:22px}
+.ptab .ts{display:flex;gap:6px;margin:0 auto}
+.ptab .ts div{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:14px;font-weight:600;color:var(--ink-3);position:relative}
+.ptab .ts div .i{width:19px;height:19px}
+.ptab .ts div.on{color:var(--ink);font-weight:700}
+.ptab .ts div.on::after{content:'';position:absolute;left:16px;right:16px;bottom:-9px;height:2px;background:var(--accent)}
+.ptab .rt{width:210px;display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.ptab .rt .i{width:21px;height:21px}
+.av2{width:30px;height:30px;background:var(--ink);color:var(--paper);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.ph{flex:none;display:flex;align-items:flex-end;gap:12px;padding:20px 28px 14px}
+.ph>*{flex:none;white-space:nowrap}.ph h1{font-size:38px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.pseg{margin-left:6px;display:flex;border:1px solid var(--ink);border-radius:9px;padding:2px}
+.pseg span{padding:5px 14px;font-size:13px;font-weight:600;border-radius:7px;color:var(--ink-2)}
+.pseg .on{background:var(--ink);color:var(--paper);font-weight:700}
+.fchip{display:flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.fchip .i{width:13px;height:13px}
+.ph .sp{flex:1 1 auto;min-width:0}
+.ph .kp{display:flex;gap:18px;text-align:right}
+.ph .kp small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.ph .kp b{font-size:24px;font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.ph .kp div+div{padding-left:18px;border-left:1px solid var(--line)}
+.cols{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:16px;padding:0 28px}
+.col .h{border-top:2px solid var(--ink);padding:8px 0 10px}
+.col .h .a{display:flex;justify-content:space-between;align-items:baseline}
+.col .h .a b{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.col .h .a i{font-style:normal;font-size:12px;font-weight:700;color:var(--ink-3)}
+.col .h .v{font-size:22px;font-weight:800;letter-spacing:-.04em;margin-top:2px}
+.col .h .w{font-size:11.5px;color:var(--ink-2)}
+.kc{border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;margin-bottom:10px;background:var(--paper)}
+.kc.o{border-color:var(--line)}
+.kc.o .co{font-weight:500;color:var(--ink-2)}
+.kc .co{font-size:14.5px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+.kc .sv{font-size:12px;color:var(--ink-2);margin-top:2px}
+.kc .mm{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.kc .mm b{font-size:17px;font-weight:800;letter-spacing:-.03em}
+.kc .mm .z{display:flex;align-items:center;gap:8px}
+.kc .mm small{font-size:11px;font-weight:700;color:var(--ink-3)}
+.kc .nx{display:flex;align-items:center;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-2);font-weight:500}
+.kc .nx .i{width:13px;height:13px}
+.kc .nx.late{color:var(--ink);font-weight:700}
+.kc .nx.none{color:var(--ink-3)}
+.dock{margin:auto 28px 0;border-top:1px solid var(--ink);height:262px;display:grid;grid-template-columns:250px 1fr 210px;gap:0}
+.dock>div{padding:14px 0}
+.dock .c1{padding-right:24px}
+.dock small.k{display:block;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.dock .c1 b{display:block;font-size:40px;font-weight:800;letter-spacing:-.05em;line-height:1.05;margin-top:4px}
+.dock .c1 p{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.dock .c1 .bar{height:5px;margin-top:14px}
+.dock .c1 .bl{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-top:6px}
+.dock .c2{border-left:1px solid var(--line);border-right:1px solid var(--line);padding:12px 20px 8px}
+.dock .c2 .t{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.dock .c2 .t em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.dock .c3{padding-left:24px}
+.dock .c3 div{margin-bottom:12px}
+.dock .c3 b{display:block;font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.dock .c3 span{font-size:12px;color:var(--ink-2)}
+.gap{flex:none;height:14px}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--ink);margin-top:26px}
+.strip div{padding:14px 0 0 16px;border-left:1px solid var(--line)}.strip div:first-child{padding-left:0;border:0}
+.strip small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}.strip b{font-size:26px;font-weight:800;letter-spacing:-.04em}
+.port{margin-top:auto;border-top:1px solid var(--ink);padding:16px 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.port small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}.port b{font-size:22px;font-weight:800;letter-spacing:-.04em}
+
+/* split */
+.split{flex:1;min-height:0;display:grid;grid-template-columns:372px 1fr}
+.sl{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.sl .hh{padding:20px 24px 12px}
+.sl .hh h1{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.sl .hh .s{font-size:13px;color:var(--ink-2);margin-top:6px}
+.srch{margin:0 24px 12px;border:1px solid var(--line-2);border-radius:9px;padding:8px 12px;display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink-3)}
+.srch .i{width:16px;height:16px}
+.pr{padding:20px 24px 20px 21px;border-top:1px solid var(--line);border-left:3px solid transparent}
+.pr.sel{background:var(--paper-2);border-left-color:var(--accent)}
+.pr .a{display:flex;justify-content:space-between;align-items:baseline}
+.pr .a b{font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.pr .a span{font-size:12px;font-weight:700;color:var(--ink-2)}
+.pr .pf{font-size:12.5px;color:var(--ink-2);margin-top:1px}
+.pr .bar{margin:10px 0 7px;height:3px}
+.pr .f{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--ink-2)}
+.pr .f b{color:var(--ink);font-weight:700}
+.sr{overflow:hidden;min-height:0;padding:20px 32px 0}
+.sr .top2{display:flex;justify-content:space-between;align-items:flex-start}
+.sr .top2 h1{font-size:40px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.sr .top2 .s{font-size:14px;color:var(--ink-2);margin-top:6px}
+.sr .tgs{display:flex;gap:6px;align-items:center}
+.pg{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:end;margin-top:26px;padding-bottom:24px}
+.pg .n{font-size:88px;font-weight:800;letter-spacing:-.07em;line-height:.85}
+.pg .n i{font-style:normal;font-size:38px;letter-spacing:-.03em}
+.pgs{display:flex;gap:6px}
+.pgs div{flex:1}
+.pgs div i{display:block;height:5px;background:var(--line-2)}
+.pgs div.d i{background:var(--ink)}
+.pgs div.c i{background:var(--accent)}
+.pgs div small{display:block;font-size:11px;font-weight:700;color:var(--ink-3);margin-top:7px}
+.pgs div.d small{color:var(--ink-2)}
+.pgs div.c small{color:var(--ink)}
+.pgs div em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:36px;border-top:1px solid var(--ink);padding-top:4px}
+.blk h3{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:20px 0 12px;display:flex;justify-content:space-between}
+.blk h3 em{font-style:normal;letter-spacing:.02em;text-transform:none;font-size:12px;color:var(--ink-2);font-weight:600}
+.fin3{display:grid;grid-template-columns:repeat(3,1fr)}
+.fin3 small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fin3 b{font-size:26px;font-weight:800;letter-spacing:-.04em}
+.fin3 div+div{padding-left:14px;border-left:1px solid var(--line)}
+.blk .bar{height:6px;margin-top:12px}
+.blk .bl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);margin-top:6px}
+.rqs{display:flex;gap:12px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.rqs .i{width:20px;height:20px}
+.rqs .m{flex:1}
+.rqs .m b{display:block;font-size:14.5px;font-weight:700}
+.rqs .m span{font-size:12px;color:var(--ink-2)}
+.fe{padding:16px 0;border-top:1px solid var(--line)}
+.fe small{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3)}
+.fe p{font-size:15px;font-weight:500;margin-top:2px}
+.fe.n small{color:var(--ink)}
+.facts4{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:2px}
+.facts4 div{padding:14px 0 14px 14px;border-left:1px solid var(--line)}
+.facts4 div:first-child{padding-left:0;border-left:0}
+.facts4 small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.facts4 b{font-size:15px;font-weight:700;letter-spacing:-.01em}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></symbol><symbol id="i-docplus" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M12.5 12v6M9.5 15h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-6M11 20V6M17 20v-9M3 20h18"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol><symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M4.5 4.5L3 6M19.5 4.5L21 6"/></symbol><symbol id="i-step" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-chevd" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol><symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-tray" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 5a3.5 3.5 0 0 1 0 6.5M18 14a7 7 0 0 1 4 6"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9"/><path d="M3 21h18"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" fill="currentColor" stroke="none"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7z"/><path d="M10 13l4-4"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol><symbol id="i-euro" viewBox="0 0 24 24"><path d="M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol><symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16"/><rect x="10" y="4" width="5" height="10"/><rect x="17" y="4" width="4" height="13"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3"/></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.8L8 15"/></symbol></defs></svg>
+<header class="top"><a class="brand" href="index.html">Venio<span>Apps natives · Minimaliste</span></a><nav><a href="index.html">Accueil</a><a href="iphone.html">iPhone</a><a href="ipad.html" aria-current="page">iPad</a><a href="watch.html">Watch</a><a href="mac.html">Mac</a></nav></header>
+
+<main class="wrap">
+<div class="head"><div><div class="k">Espace commercial · iPad · 1194 × 834 paysage</div><h1>Au bureau,<br>en rendez-vous.</h1></div>
+<p><b>Le kanban et le split view.</b> L'iPad garde la barre d'onglets en haut et laisse toute la largeur au contenu. Les colonnes sont séparées par des filets, les cartes sont plates, la courbe suit le style financial timeline.</p></div>
+<div class="grid wide"><figure class="cell"><div class="stage"><div class="fit" data-w="1226" data-h="866"><div class="dev pad"><div class="pscr"><div class="pst"><span>9:41&nbsp;&nbsp;&nbsp;<span style="font-weight:500">ven. 23 oct.</span></span><span class="r">100&nbsp;%<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div><div class="ptab"><div class="lg"><svg class="i"><use href="#i-sidebar"/></svg>Venio</div><div class="ts"><div class=""><svg class="i"><use href="#i-sun"/></svg>Aujourd'hui</div><div class="on"><svg class="i"><use href="#i-funnel"/></svg>Pipeline</div><div class=""><svg class="i"><use href="#i-folder"/></svg>Projets</div><div class=""><svg class="i"><use href="#i-doc"/></svg>Devis</div><div class=""><svg class="i"><use href="#i-bars"/></svg>Chiffres</div></div><div class="rt"><svg class="i"><use href="#i-search"/></svg><svg class="i"><use href="#i-plus"/></svg><div class="av2">LM</div></div></div>
+<div class="ph"><h1>Pipeline</h1><div class="pseg"><span>Mes leads</span><span class="on">Tous</span></div>
+<div class="fchip">Température<svg class="i"><use href="#i-chevd"/></svg></div><div class="fchip">Service<svg class="i"><use href="#i-chevd"/></svg></div><div class="fchip">Source<svg class="i"><use href="#i-chevd"/></svg></div>
+<div class="sp"></div><div class="kp"><div><small>Mes leads</small><b>71 500 €</b></div><div><small>Valeur totale</small><b>152 500 €</b></div><div><small>Pondérée</small><b>65 370 €</b></div></div></div>
+<div class="cols"><div class="col"><div class="h"><div class="a"><b>Lead</b><i>1</i></div><div class="v">38 000 €</div><div class="w">× 10 % = 3 800 € pondéré</div></div><div class="kc o"><div class="co">Studio Okami</div><div class="sv">App mobile</div><div class="mm"><b>38 000 €</b><span class="z"><small>41</small><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span><span class="av none">—</span></span></div><div class="nx "><svg class="i"><use href="#i-tray"/></svg>Entrant ce matin 8:52 (formulaire du site)</div></div></div><div class="col"><div class="h"><div class="a"><b>Qualifié</b><i>1</i></div><div class="v">6 400 €</div><div class="w">× 25 % = 1 600 € pondéré</div></div><div class="kc"><div class="co">Brasserie Les Halles</div><div class="sv">Site + réservation</div><div class="mm"><b>6 400 €</b><span class="z"><small>69</small><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span><span class="av">LM</span></span></div><div class="nx none"><svg class="i"><use href="#i-alarm"/></svg>Aucune action prévue</div></div></div><div class="col"><div class="h"><div class="a"><b>Contacté</b><i>2</i></div><div class="v">21 600 €</div><div class="w">× 35 % = 7 560 € pondéré</div></div><div class="kc o"><div class="co">Domaine Verlaine</div><div class="sv">E-commerce vins</div><div class="mm"><b>12 000 €</b><span class="z"><small>35</small><span class="temp"><s class="on"></s><s class=""></s><s class=""></s><s class=""></s></span><span class="av">HB</span></span></div><div class="nx "><svg class="i"><use href="#i-clock"/></svg>Relance mar. 27 oct.</div></div><div class="kc"><div class="co">Cabinet Ferrand Avocats</div><div class="sv">Site + espace client</div><div class="mm"><b>9 600 €</b><span class="z"><small>58</small><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span><span class="av">LM</span></span></div><div class="nx late"><svg class="i"><use href="#i-alarm"/></svg>Relance en retard (mer. 21 oct.)</div></div></div><div class="col"><div class="h"><div class="a"><b>Démo</b><i>2</i></div><div class="v">40 700 €</div><div class="w">× 50 % = 20 350 € pondéré</div></div><div class="kc"><div class="co">Atelier Nova</div><div class="sv">E-commerce</div><div class="mm"><b>22 500 €</b><span class="z"><small>74</small><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span><span class="av">LM</span></span></div><div class="nx "><svg class="i"><use href="#i-video"/></svg>RDV démo aujourd'hui 14:00</div></div><div class="kc"><div class="co">Fondation Arcadie</div><div class="sv">Refonte de site</div><div class="mm"><b>18 200 €</b><span class="z"><small>62</small><span class="temp"><s class="on"></s><s class="on"></s><s class=""></s><s class=""></s></span><span class="av">LM</span></span></div><div class="nx "><svg class="i"><use href="#i-clock"/></svg>Relance aujourd'hui 16:00</div></div></div><div class="col"><div class="h"><div class="a"><b>Proposition</b><i>2</i></div><div class="v">45 800 €</div><div class="w">× 70 % = 32 060 € pondéré</div></div><div class="kc o"><div class="co">Clinique Saint-Aubin</div><div class="sv">Plateforme de RDV</div><div class="mm"><b>31 000 €</b><span class="z"><small>80</small><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class=""></s></span><span class="av">HB</span></span></div><div class="nx "><svg class="i"><use href="#i-clock"/></svg>Relance lun. 26 oct.</div></div><div class="kc"><div class="co">Maison Calder</div><div class="sv">Site vitrine + SEO</div><div class="mm"><b>14 800 €</b><span class="z"><small>86</small><span class="temp"><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s></span><span class="av">LM</span></span></div><div class="nx "><svg class="i"><use href="#i-clock"/></svg>Relance aujourd'hui 10:30</div></div></div></div>
+
+<div class="dock">
+<div class="c1"><small class="k">CA signé · octobre</small><b>27 300 €</b><p>Objectif 40 000 €</p><div class="bar acc"><i style="width:68%"></i></div><div class="bl"><span>68 %</span><span>reste 12 700 €</span></div></div>
+<div class="c2"><div class="t"><small class="k">CA signé, cumul depuis mai</small><em>courbe : cumul · barres : mois</em></div><div style="width:640px;height:196px;margin:0 auto"><svg viewBox="0 0 640 196" width="100%" height="100%" font-family="Archivo,Helvetica,Arial,sans-serif" font-size="11" preserveAspectRatio="none" style="display:block"><defs><linearGradient id="gpad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0EA5E9" stop-opacity=".16"/><stop offset="1" stop-color="#0EA5E9" stop-opacity="0"/></linearGradient></defs><line x1="6" x2="578" y1="84.6" y2="84.6" stroke="#E2E2DB" stroke-width="1"/><text x="586" y="88.4" fill="#8C8C84">50 k€</text><line x1="6" x2="578" y1="52.0" y2="52.0" stroke="#E2E2DB" stroke-width="1"/><text x="586" y="55.9" fill="#8C8C84">100 k€</text><line x1="6" x2="578" y1="147.4" y2="147.4" stroke="#E2E2DB" stroke-width="1"/><text x="586" y="151.3" fill="#8C8C84">20 k€</text><line x1="6" x2="578" y1="130.9" y2="130.9" stroke="#E2E2DB" stroke-width="1"/><text x="586" y="134.7" fill="#8C8C84">40 k€</text><line x1="6" x2="578" y1="164.0" y2="164.0" stroke="#0A0A0A" stroke-width="1"/><rect x="29.8" y="148.9" width="47.7" height="15.1" fill="#D6D6CE"/><rect x="125.2" y="143.6" width="47.7" height="20.4" fill="#D6D6CE"/><rect x="220.5" y="155.9" width="47.7" height="8.1" fill="#D6D6CE"/><rect x="315.8" y="151.2" width="47.7" height="12.8" fill="#D6D6CE"/><rect x="411.2" y="138.2" width="47.7" height="25.8" fill="#D6D6CE"/><rect x="506.5" y="141.4" width="47.7" height="22.6" fill="#0A0A0A"/><path d="M53.7,117.1 L53.7,105.2 L149.0,89.2 L244.3,82.9 L339.7,72.8 L435.0,52.5 L530.3,34.8 L530.3,117.1 Z" fill="url(#gpad)"/><polyline fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linejoin="miter" points="53.7,105.2 149.0,89.2 244.3,82.9 339.7,72.8 435.0,52.5 530.3,34.8"/><rect x="51.2" y="102.7" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="146.5" y="86.7" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="241.8" y="80.4" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="337.2" y="70.3" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><rect x="432.5" y="50.0" width="5" height="5" fill="#FAFAF7" stroke="#0EA5E9" stroke-width="1.5"/><text x="53.7" y="192" text-anchor="middle" fill="#8C8C84" font-weight="500">mai</text><text x="149.0" y="192" text-anchor="middle" fill="#8C8C84" font-weight="500">juin</text><text x="244.3" y="192" text-anchor="middle" fill="#8C8C84" font-weight="500">juil.</text><text x="339.7" y="192" text-anchor="middle" fill="#8C8C84" font-weight="500">août</text><text x="435.0" y="192" text-anchor="middle" fill="#8C8C84" font-weight="500">sept.</text><text x="530.3" y="192" text-anchor="middle" fill="#0A0A0A" font-weight="700">oct.</text><line x1="530.3" x2="530.3" y1="20" y2="164.0" stroke="#0A0A0A" stroke-width="1" stroke-dasharray="3 3"/><line x1="6" x2="578" y1="34.8" y2="34.8" stroke="#0A0A0A" stroke-width="1" stroke-dasharray="3 3"/><rect x="525.3" y="29.8" width="10" height="10" fill="#0EA5E9" stroke="#FAFAF7" stroke-width="2"/><rect x="580" y="25.8" width="56" height="18" fill="#0A0A0A"/><text x="608.0" y="38.6" text-anchor="middle" fill="#FAFAF7" font-weight="700">126,5 k€</text><rect x="459.9" y="0" width="118.1" height="19" fill="#0A0A0A"/><text x="519.0" y="13" text-anchor="middle" fill="#FAFAF7" font-weight="600">oct. · +27 300 €</text></svg></div></div>
+<div class="c3"><div><small class="k">Conversion 12 mois</small><b>24 %</b></div><div><small class="k">Cycle de vente moyen</small><b>34 jours</b></div></div>
+</div><div class="gap"></div></div></div></div></div><figcaption><span class="n">01</span><b>Pipeline en kanban</b><p>Cinq colonnes avec valeur et pondéré par étape, filtres température, service et source. Dessous, le CA signé de Léa : 27 300 € sur 40 000 €.</p></figcaption></figure><figure class="cell"><div class="stage"><div class="fit" data-w="1226" data-h="866"><div class="dev pad"><div class="pscr"><div class="pst"><span>9:41&nbsp;&nbsp;&nbsp;<span style="font-weight:500">ven. 23 oct.</span></span><span class="r">100&nbsp;%<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.3a10 10 0 0 1 14 0"/><path d="M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div><div class="ptab"><div class="lg"><svg class="i"><use href="#i-sidebar"/></svg>Venio</div><div class="ts"><div class=""><svg class="i"><use href="#i-sun"/></svg>Aujourd'hui</div><div class=""><svg class="i"><use href="#i-funnel"/></svg>Pipeline</div><div class="on"><svg class="i"><use href="#i-folder"/></svg>Projets</div><div class=""><svg class="i"><use href="#i-doc"/></svg>Devis</div><div class=""><svg class="i"><use href="#i-bars"/></svg>Chiffres</div></div><div class="rt"><svg class="i"><use href="#i-search"/></svg><svg class="i"><use href="#i-plus"/></svg><div class="av2">LM</div></div></div>
+<div class="split">
+<div class="sl"><div class="hh"><h1>Projets</h1><div class="s">4 plateformes en construction</div></div>
+<div class="srch"><svg class="i"><use href="#i-search"/></svg>Rechercher un projet</div><div class="pr sel"><div class="a"><b>Agence Pilote</b><span>62 %</span></div><div class="pf">Plateforme de réservation</div><div class="bar acc"><i style="width:62%"></i></div><div class="f"><span><b>Développement</b> · 3/5 · livraison 28 nov.</span><span class="tag">1 demande</span></div></div><div class="pr"><div class="a"><b>Boulangerie Rivière</b><span>85 %</span></div><div class="pf">Site + click & collect</div><div class="bar"><i style="width:85%"></i></div><div class="f"><span><b>Recette</b> · 4/5 · livraison 6 nov.</span><span class="tag">1 ticket</span></div></div><div class="pr"><div class="a"><b>Cabinet Morel</b><span>30 %</span></div><div class="pf">Espace client</div><div class="bar"><i style="width:30%"></i></div><div class="f"><span><b>Conception</b> · 2/5 · livraison 15 déc.</span><span class="tag">2 demandes</span></div></div><div class="pr"><div class="a"><b>Lumen Formation</b><span>96 %</span></div><div class="pf">Plateforme e-learning</div><div class="bar"><i style="width:96%"></i></div><div class="f"><span><b>Mise en ligne</b> · 5/5 · livraison 30 oct.</span><span></span></div></div><div class="port"><div><small>Budgets cumulés</small><b>83 300 €</b></div><div><small>Facturé</small><b>46 450 €</b></div></div></div>
+<div class="sr">
+<div class="top2"><div><h1>Agence Pilote</h1><div class="s">Plateforme de réservation · P-2026-018</div></div><div class="tgs"><span class="tag soft"><svg class="i" style="width:11px;height:11px"><use href="#i-lock"/></svg>Lecture seule</span></div></div>
+<div class="pg"><div class="n">62<i>%</i></div><div class="pgs"><div class="d"><i></i><small>Cadrage</small><em>terminée</em></div><div class="d"><i></i><small>Conception</small><em>terminée</em></div><div class="c"><i></i><small>Développement</small><em>en cours</em></div><div class=""><i></i><small>Recette</small><em>à venir</em></div><div class=""><i></i><small>Mise en ligne</small><em>à venir</em></div></div></div>
+<div class="facts4"><div><small>Phase en cours</small><b>Développement · 3/5</b></div><div><small>Livraison</small><b>28 nov. 2026</b></div><div><small>Budget</small><b>18 400 €</b></div><div><small>Facturation</small><b>Partielle</b></div></div>
+<div class="two">
+<div class="blk"><h3><span>Finances</span><em>Devis DV-2026-038 signé le 9 oct.</em></h3>
+<div class="fin3"><div><small>Budget</small><b>18 400 €</b></div><div><small>Facturé</small><b>9 200 €</b></div><div><small>Reste</small><b>9 200 €</b></div></div>
+<div class="bar acc"><i style="width:50%"></i></div><div class="bl"><span>50 % facturé</span><span>statut : Partiel</span></div>
+<h3 style="padding-top:20px"><span>Demandes et tickets</span><em>1 demande · 0 ticket</em></h3>
+<div class="rqs"><svg class="i"><use href="#i-pencil"/></svg><div class="m"><b>Calendrier de disponibilités partagé</b><span>Demande de modification</span></div><span class="tag">À chiffrer</span></div>
+<div class="rqs"><svg class="i"><use href="#i-ticket"/></svg><div class="m"><b>Aucun ticket ouvert</b><span>Tickets client</span></div></div></div>
+<div class="blk"><h3><span>Mises à jour publiées au client</span><em>2</em></h3>
+<div class="fe n"><small>20 OCT.</small><p>Maquettes validées, début du développement</p></div>
+<div class="fe"><small>13 OCT.</small><p>Cadrage terminé, conception des maquettes en cours</p></div>
+<div class="fe"><small>9 OCT.</small><p>Devis signé, lancement du cadrage</p></div></div>
+</div>
+<div class="strip"><div><small>Livraison dans</small><b>36 jours</b></div><div><small>Phase suivante</small><b>Recette</b></div><div><small>Dernière mise à jour client</small><b>20 oct.</b></div></div></div></div></div></div></div></div><figcaption><span class="n">02</span><b>Projets en split view</b><p>La liste des quatre plateformes à gauche, la fiche d'Agence Pilote à droite : phases, finances, demande à chiffrer, mises à jour client. Lecture seule.</p></figcaption></figure></div>
+<div class="foot"><span>Données : donnees-demo.md</span><span>Total pipeline 152 500 € · pondéré 65 370 € · mes leads 71 500 €</span></div>
+</main>
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,mx=+(f.dataset.max||1);
+      var av=f.closest('.cell').clientWidth;
+      var s=Math.min(mx,av/w);
+      f.style.width=(w*s)+'px';f.style.height=(h*s)+'px';
+      f.firstElementChild.style.transform='scale('+s+')';
+    });
+  }
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
+})();
+</script>
+</body>
+</html>

@@ -22,6 +22,8 @@ import ProjectPhasesTab from './ProjectPhasesTab'
 import { useProjectContent } from './hooks/useProjectContent'
 import { useProjectPhases } from './hooks/useProjectPhases'
 
+const ProjectAccountingTab = React.lazy(() => import('../accounting/projects/ProjectAccountingTab'))
+
 const AdminProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -62,12 +64,14 @@ const AdminProjectDetail = () => {
   const [error, setError] = useState<string>('')
   const [activeTab, setActiveTab] = useTabState('content')
   const canEditProjects = hasPermission(user, PERMISSIONS.EDIT_PROJECTS)
+  const canUploadDocuments = hasPermission(user, PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS)
   const canEditContent = hasPermission(user, PERMISSIONS.EDIT_CONTENT)
   const canManageBilling = hasPermission(user, PERMISSIONS.MANAGE_BILLING)
   const canViewContent = hasPermission(user, PERMISSIONS.VIEW_CONTENT)
   const canViewBilling = hasPermission(user, PERMISSIONS.VIEW_BILLING)
   const canViewPhases = hasPermission(user, PERMISSIONS.VIEW_PHASES)
   const canManagePhases = hasPermission(user, PERMISSIONS.MANAGE_PHASES)
+  const canViewAccounting = hasPermission(user, PERMISSIONS.VIEW_ACCOUNTING)
 
   const ensurePermission = (allowed: boolean, message: string): boolean => {
     if (!allowed) {
@@ -203,6 +207,9 @@ const AdminProjectDetail = () => {
   const projectContent = useProjectContent({
     projectId: id,
     canEditContent,
+    canUploadDocuments,
+    userId: user?._id,
+    items,
     canViewContent,
     confirm,
     ensurePermission,
@@ -496,6 +503,14 @@ const AdminProjectDetail = () => {
 
       {/* Onglets */}
       <div className="admin-tabs" style={{ marginTop: 24 }}>
+        {canViewAccounting && (
+          <button
+            className={`admin-tab ${activeTab === 'accounting' ? 'active' : ''}`}
+            onClick={() => setActiveTab('accounting')}
+          >
+            Comptabilité
+          </button>
+        )}
         <button
           className={`admin-tab ${activeTab === 'details' ? 'active' : ''}`}
           onClick={() => setActiveTab('details')}
@@ -546,6 +561,11 @@ const AdminProjectDetail = () => {
       </div>
 
       {/* Contenu des onglets */}
+      {activeTab === 'accounting' && id && canViewAccounting && (
+        <React.Suspense fallback={<p role="status">Chargement de la comptabilité…</p>}>
+          <ProjectAccountingTab key={id} projectId={id} clientId={project?.client?._id} />
+        </React.Suspense>
+      )}
       {activeTab === 'details' && (
         <ProjectDetailsTab
           project={project}
@@ -592,6 +612,11 @@ const AdminProjectDetail = () => {
           setItemForm={projectContent.setItemForm}
           selectedFile={projectContent.selectedFile}
           setSelectedFile={projectContent.setSelectedFile}
+          canUploadDocuments={canUploadDocuments}
+          editingItemId={projectContent.editingItemId}
+          canModifyItem={projectContent.canModifyItem}
+          onEditItem={projectContent.handleEditItem}
+          onCancelEdit={projectContent.resetItemForm}
           canEditContent={canEditContent}
           canViewContent={canViewContent}
           onAddSection={projectContent.handleAddSection}

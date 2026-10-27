@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import auth from '../../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
+import { assertTransactionsSupported } from '../../../lib/transaction.js'
 import AccountingEntry from '../../../models/AccountingEntry.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import { createEntry, validateEntry, deleteDraftEntry } from '../../../lib/accounting/doubleEntry.js'
@@ -136,6 +137,7 @@ router.post(
         res.status(400).json({ error: 'ids[] requis' })
         return
       }
+      await assertTransactionsSupported()
       const results: Array<{ id: string; ok: boolean; entryNumber?: string; error?: string }> = []
       for (const id of ids) {
         try {

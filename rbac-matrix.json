@@ -26,10 +26,12 @@
     "EDIT_PROJECTS": "edit_projects",
     "VIEW_CONTENT": "view_content",
     "EDIT_CONTENT": "edit_content",
+    "UPLOAD_PROJECT_DOCUMENTS": "upload_project_documents",
     "VIEW_PHASES": "view_phases",
     "MANAGE_PHASES": "manage_phases",
     "VIEW_BILLING": "view_billing",
     "MANAGE_BILLING": "manage_billing",
+    "MANAGE_QUOTES": "manage_quotes",
     "MANAGE_TASKS": "manage_tasks",
     "VIEW_QUALIOPI": "view_qualiopi",
     "MANAGE_QUALIOPI": "manage_qualiopi",
@@ -56,6 +58,8 @@
   },
   "rolePermissions": {
     "SUPER_ADMIN": [
+      "upload_project_documents",
+      "manage_quotes",
       "manage_admins",
       "manage_clients",
       "view_crm",
@@ -179,6 +183,8 @@
       "create_tickets"
     ],
     "COMMERCIAL": [
+      "upload_project_documents",
+      "manage_quotes",
       "view_crm",
       "manage_crm",
       "manage_clients",

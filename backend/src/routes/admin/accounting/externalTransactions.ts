@@ -9,6 +9,7 @@ import AccountingEntry from '../../../models/AccountingEntry.js'
 import AccountingLine from '../../../models/AccountingLine.js'
 import { normalizePayload } from '../../../lib/external/normalize.js'
 import { classifyTransaction } from '../../../lib/external/classifier.js'
+import { assertTransactionsSupported, runInTransaction } from '../../../lib/transaction.js'
 import { createEntry, deleteDraftEntry } from '../../../lib/accounting/doubleEntry.js'
 
 /**
@@ -54,18 +55,14 @@ router.get(
       }
       const skip = (Number(page) - 1) * Number(limit)
       const [items, total] = await Promise.all([
-        ExternalTransaction.find(filter)
-          .sort({ receivedAt: -1 })
-          .skip(skip)
-          .limit(Number(limit))
-          .lean(),
+        ExternalTransaction.find(filter).sort({ receivedAt: -1 }).skip(skip).limit(Number(limit)).lean(),
         ExternalTransaction.countDocuments(filter),
       ])
       res.json({ items, total, page: Number(page), limit: Number(limit) })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -88,16 +85,14 @@ router.get(
         const entryDoc = await AccountingEntry.findById(tx.generatedEntry).lean()
         if (entryDoc) {
           entry = entryDoc
-          lines = await AccountingLine.find({ entry: entryDoc._id })
-            .sort({ sortIndex: 1 })
-            .lean()
+          lines = await AccountingLine.find({ entry: entryDoc._id }).sort({ sortIndex: 1 }).lean()
         }
       }
       res.json({ transaction: tx, entry, lines })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -120,6 +115,8 @@ router.post(
         res.status(404).json({ error: 'Transaction introuvable' })
         return
       }
+      // Un rejet enregistré sans transactions ne serait plus rejoué.
+      await assertTransactionsSupported()
       const tx = await ExternalTransaction.findById(req.params.id)
       if (!tx) {
         res.status(404).json({ error: 'Transaction introuvable' })
@@ -132,82 +129,79 @@ router.post(
         return
       }
 
-      // Supprimer une éventuelle écriture DRAFT précédente liée
-      if (tx.generatedEntry) {
-        const previous = await AccountingEntry.findById(tx.generatedEntry)
-        if (previous) {
-          if (previous.status === 'DRAFT') {
-            await deleteDraftEntry(previous._id as Types.ObjectId)
-          } else {
-            res.status(422).json({
-              error:
-                "L'écriture liée est validée ou verrouillée — impossible de rejouer. Annulez-la manuellement avant.",
-            })
-            return
-          }
-        }
-        tx.generatedEntry = null
-      }
-
+      const linkedEntryError = Object.assign(
+        new Error("L'écriture liée est validée ou verrouillée — impossible de rejouer. Annulez-la manuellement avant."),
+        { status: 422 },
+      )
       try {
         const normalized = normalizePayload(tx.rawPayload)
         const classification = await classifyTransaction(source, normalized)
         const entryIdempotencyKey = `external:${source.slug}:${tx.idempotencyKey}`
+        const replayed = await runInTransaction(async (session) => {
+          const tx = await ExternalTransaction.findById(req.params.id).session(session)
+          if (!tx) throw Object.assign(new Error('Transaction introuvable'), { status: 404 })
+          if (tx.generatedEntry) {
+            const previous = await AccountingEntry.findById(tx.generatedEntry).session(session)
+            if (previous) {
+              if (previous.status !== 'DRAFT') throw linkedEntryError
+              await deleteDraftEntry(previous._id as Types.ObjectId, session)
+            }
+          }
+          const result = await createEntry({
+            journal: classification.journalCode,
+            date: normalized.date,
+            label: classification.labelTemplate,
+            pieceRef: normalized.externalId || '',
+            lines: classification.lines.map((l) => ({
+              account: l.accountCode,
+              label: l.label,
+              debit: l.debit,
+              credit: l.credit,
+              vatRateValue: l.vatRateValue,
+              lettrage: l.lettrage,
+              auxiliaryRef: l.auxiliaryRef
+                ? {
+                    kind: (l.auxiliaryRef.kind || 'OTHER') as 'CLIENT' | 'SUPPLIER' | 'OTHER',
+                    id: null,
+                  }
+                : undefined,
+            })),
+            source: 'EXTERNAL',
+            externalSource: source._id as Types.ObjectId,
+            sourceRef: { kind: 'EXTERNAL_TX', id: tx._id as Types.ObjectId },
+            idempotencyKey: entryIdempotencyKey,
+            status: classification.autoValidate ? 'VALIDATED' : 'DRAFT',
+            currency: normalized.currency || 'EUR',
+            createdBy: req.user?.id || null,
+            notes: classification.auxiliaryWarnings?.join(' | ') || '',
+            session,
+          })
 
-        const result = await createEntry({
-          journal: classification.journalCode,
-          date: normalized.date,
-          label: classification.labelTemplate,
-          pieceRef: normalized.externalId || '',
-          lines: classification.lines.map((l) => ({
-            account: l.accountCode,
-            label: l.label,
-            debit: l.debit,
-            credit: l.credit,
-            vatRateValue: l.vatRateValue,
-            lettrage: l.lettrage,
-            auxiliaryRef: l.auxiliaryRef
-              ? {
-                  kind: (l.auxiliaryRef.kind || 'OTHER') as 'CLIENT' | 'SUPPLIER' | 'OTHER',
-                  id: null,
-                }
-              : undefined,
-          })),
-          source: 'EXTERNAL',
-          externalSource: source._id as Types.ObjectId,
-          sourceRef: { kind: 'EXTERNAL_TX', id: tx._id as Types.ObjectId },
-          idempotencyKey: entryIdempotencyKey,
-          status: classification.autoValidate ? 'VALIDATED' : 'DRAFT',
-          currency: normalized.currency || 'EUR',
-          createdBy: req.user?.id || null,
-          notes: classification.auxiliaryWarnings?.join(' | ') || '',
+          tx.status = classification.autoValidate ? 'POSTED' : 'AWAITING_REVIEW'
+          tx.autoValidated = Boolean(classification.autoValidate)
+          tx.matchedRule = classification.ruleId
+          tx.normalizedPayload = normalized
+          tx.generatedEntry = result.entry._id as Types.ObjectId
+          tx.errorReason = ''
+          tx.processedAt = new Date()
+          await tx.save({ session })
+          return { tx, result }
         })
 
-        tx.status = classification.autoValidate ? 'POSTED' : 'AWAITING_REVIEW'
-        tx.autoValidated = Boolean(classification.autoValidate)
-        tx.matchedRule = classification.ruleId
-        tx.normalizedPayload = normalized
-        tx.generatedEntry = result.entry._id as Types.ObjectId
-        tx.errorReason = ''
-        tx.processedAt = new Date()
-        await tx.save()
-
         res.json({
-          transaction: tx,
+          transaction: replayed.tx,
           entry: {
-            _id: result.entry._id,
-            entryNumber: result.entry.entryNumber,
-            status: result.entry.status,
+            _id: replayed.result.entry._id,
+            entryNumber: replayed.result.entry.entryNumber,
+            status: replayed.result.entry.status,
           },
           replayed: true,
         })
       } catch (err) {
         const e = err as Error & { errors?: unknown[]; status?: number }
+        if (e.status === 503 || e === linkedEntryError) throw e
         tx.status = 'REJECTED'
-        tx.errorReason =
-          e.errors && Array.isArray(e.errors)
-            ? JSON.stringify(e.errors)
-            : e.message || 'Erreur inconnue'
+        tx.errorReason = e.errors && Array.isArray(e.errors) ? JSON.stringify(e.errors) : e.message || 'Erreur inconnue'
         tx.processedAt = new Date()
         await tx.save()
         res.status(e.status || 422).json({
@@ -224,7 +218,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 export default router

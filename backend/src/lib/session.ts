@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import type { Response } from 'express'
 import AuthSession, { hashSessionToken } from '../models/AuthSession.js'
 import User from '../models/User.js'
+import MobileDevice from '../models/MobileDevice.js'
+import MobileRefreshToken from '../models/MobileRefreshToken.js'
 import type { JwtPayload } from '../types/express.js'
 
 export const SESSION_COOKIE = 'venio_session'
@@ -38,12 +40,19 @@ export function readSessionCookie(cookieHeader: string | undefined): string | nu
 
 export async function createSession(
   userId: string,
-  options: { impersonatorId?: string; mfaVerifiedAt?: Date; mfaEnrollmentOnly?: boolean; ttlMs?: number } = {},
+  options: {
+    impersonatorId?: string
+    mfaVerifiedAt?: Date
+    mfaEnrollmentOnly?: boolean
+    ttlMs?: number
+    deviceId?: string
+    tokenPrefix?: string
+  } = {},
 ): Promise<{ token: string; expiresAt: Date }> {
   const user = await User.findById(userId).select('sessionVersion').lean()
   if (!user) throw new Error('Cannot create a session for an unknown user')
 
-  const token = crypto.randomBytes(32).toString('base64url')
+  const token = (options.tokenPrefix ?? '') + crypto.randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + (options.ttlMs ?? SESSION_TTL_MS))
   await AuthSession.create({
     userId,
@@ -53,6 +62,7 @@ export async function createSession(
     impersonatorId: options.impersonatorId ?? null,
     mfaVerifiedAt: options.mfaVerifiedAt ?? null,
     mfaEnrollmentOnly: options.mfaEnrollmentOnly ?? false,
+    deviceId: options.deviceId ?? null,
   })
   return { token, expiresAt }
 }
@@ -91,15 +101,30 @@ export async function revokeSession(token: string | null): Promise<void> {
   )
 }
 
+/** Révoque tout : sessions navigateur, appareils natifs et leurs refresh tokens. */
 export async function revokeUserSessions(userId: string): Promise<void> {
-  await AuthSession.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: new Date() } })
+  const now = new Date()
+  await MobileDevice.updateMany(
+    { userId, revokedAt: null },
+    { $set: { revokedAt: now, revokedReason: 'CREDENTIALS_CHANGED', apnsToken: null, apnsEnvironment: null } },
+  )
+  await MobileRefreshToken.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: now } })
+  await AuthSession.updateMany({ userId, revokedAt: null }, { $set: { revokedAt: now } })
 }
 
-export async function authenticateSession(token: string): Promise<JwtPayload | null> {
+/**
+ * `cookie` n'accepte que les sessions navigateur, `bearer` que les access
+ * tokens de l'app native : un jeton ne change jamais de transport.
+ */
+export async function authenticateSession(
+  token: string,
+  transport: 'cookie' | 'bearer' = 'cookie',
+): Promise<JwtPayload | null> {
   const session = await AuthSession.findOne({
     tokenHash: hashSessionToken(token),
     revokedAt: null,
     expiresAt: { $gt: new Date() },
+    deviceId: transport === 'bearer' ? { $ne: null } : null,
   }).lean()
   if (!session) return null
 
@@ -113,6 +138,21 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
     return null
   }
 
+  // Un access token natif meurt avec son appareil, y compris s'il a été émis
+  // pendant que la révocation de l'appareil était en cours.
+  if (session.deviceId) {
+    const device = await MobileDevice.exists({
+      _id: session.deviceId,
+      userId: session.userId,
+      // Un login engagé avant un changement de mot de passe ne doit pas
+      // produire un appareil valable après la révocation.
+      sessionVersion: user.sessionVersion ?? 0,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    })
+    if (!device) return null
+  }
+
   return {
     id: String(user._id),
     role: user.role,
@@ -122,5 +162,6 @@ export async function authenticateSession(token: string): Promise<JwtPayload | n
     mfaVerifiedAt: session.mfaVerifiedAt?.getTime(),
     mfaEnrollmentOnly: session.mfaEnrollmentOnly || undefined,
     impersonatorId: session.impersonatorId ? String(session.impersonatorId) : undefined,
+    deviceId: session.deviceId ? String(session.deviceId) : undefined,
   }
 }

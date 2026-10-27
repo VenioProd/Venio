@@ -1,3 +1,4 @@
+import { canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { type Request, type Response } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
@@ -47,6 +48,10 @@ router.get('/:id', async (req: Request, res: Response) => {
       .populate('project', 'name')
 
     if (!brief) return res.status(404).json({ error: 'Brief introuvable' })
+    const projectId = (brief.project as unknown as { _id?: unknown } | null)?._id ?? brief.project
+    if (projectId && !(await canReadProject(req.user!, String(projectId)))) {
+      return res.status(404).json({ error: 'Brief introuvable' })
+    }
     res.json(brief)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -57,13 +62,25 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user
-    if (user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seuls les super admins peuvent creer des briefs' })
+    if (user.role !== 'SUPER_ADMIN')
+      return res.status(403).json({ error: 'Seuls les super admins peuvent creer des briefs' })
 
     const {
-      project, destinataire, entity, briefPriority, deadline,
-      intitule, contexte, livrablesAttendus, formatLivrable,
-      ressources, pointsVigilance, pointIntermediaire,
-      validationPar, datesCles, commentaires,
+      project,
+      destinataire,
+      entity,
+      briefPriority,
+      deadline,
+      intitule,
+      contexte,
+      livrablesAttendus,
+      formatLivrable,
+      ressources,
+      pointsVigilance,
+      pointIntermediaire,
+      validationPar,
+      datesCles,
+      commentaires,
     } = req.body
 
     if (!project || !destinataire || !intitule || !deadline) {
@@ -71,10 +88,17 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const brief = await MissionBrief.create({
-      project, destinataire, entity, briefPriority, deadline: new Date(deadline),
-      intitule, contexte, livrablesAttendus,
+      project,
+      destinataire,
+      entity,
+      briefPriority,
+      deadline: new Date(deadline),
+      intitule,
+      contexte,
+      livrablesAttendus,
       formatLivrable: Array.isArray(formatLivrable) ? formatLivrable : [],
-      ressources, pointsVigilance,
+      ressources,
+      pointsVigilance,
       pointIntermediaire: pointIntermediaire ? new Date(pointIntermediaire) : null,
       validationPar: validationPar || null,
       datesCles: Array.isArray(datesCles) ? datesCles : [],
@@ -137,10 +161,22 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
     if (user.role === 'SUPER_ADMIN') {
       const fields = [
-        'project', 'destinataire', 'entity', 'briefPriority', 'deadline',
-        'intitule', 'contexte', 'livrablesAttendus', 'formatLivrable',
-        'ressources', 'pointsVigilance', 'pointIntermediaire',
-        'validationPar', 'statut', 'datesCles', 'commentaires',
+        'project',
+        'destinataire',
+        'entity',
+        'briefPriority',
+        'deadline',
+        'intitule',
+        'contexte',
+        'livrablesAttendus',
+        'formatLivrable',
+        'ressources',
+        'pointsVigilance',
+        'pointIntermediaire',
+        'validationPar',
+        'statut',
+        'datesCles',
+        'commentaires',
       ] as const
       for (const f of fields) {
         if (req.body[f] !== undefined) {

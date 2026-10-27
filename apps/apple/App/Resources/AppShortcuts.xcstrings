@@ -1,0 +1,74 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "Créer un lead avec ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un lead avec ${applicationName}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a lead with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Planifier une relance avec ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier une relance avec ${applicationName}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedule a follow-up with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Ajouter un document avec ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un document avec ${applicationName}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a document with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Ouvrir Aujourd’hui dans ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Aujourd’hui dans ${applicationName}"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Today in ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

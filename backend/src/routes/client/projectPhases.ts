@@ -139,7 +139,13 @@ router.post('/:projectId/phases/:phaseId/validate', async (req: Request, res: Re
         title: `Étape validée — ${project.name}`,
         message: `${req.user!.name} a validé l’étape « ${phase.title} ».`,
         link: `/admin/projets/${projectId}?tab=phases`,
-        metadata: { projectId, phaseId: String(phase._id) },
+        metadata: {
+          projectId,
+          phaseId: String(phase._id),
+          projectName: project.name,
+          phaseTitle: phase.title,
+          actorName: req.user!.name,
+        },
       })
     } catch (err) {
       logger.warn(
@@ -214,7 +220,13 @@ router.post('/:projectId/phases/:phaseId/revisions', async (req: Request, res: R
         title: `Retouches demandées — ${project.name}`,
         message: `${req.user!.name} a demandé des retouches sur l’étape « ${phase.title} ».`,
         link: `/admin/projets/${projectId}?tab=phases`,
-        metadata: { projectId, phaseId: String(phase._id) },
+        metadata: {
+          projectId,
+          phaseId: String(phase._id),
+          projectName: project.name,
+          phaseTitle: phase.title,
+          actorName: req.user!.name,
+        },
       })
     } catch (err) {
       logger.warn(

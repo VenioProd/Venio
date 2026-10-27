@@ -19,6 +19,15 @@ const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url),
 const APP_VERSION = pkg.version
 
 import authRoutes from './routes/auth.js'
+import mobileAuthRoutes from './routes/mobileAuth.js'
+import mobilePushRoutes from './routes/mobile/push.js'
+import mobilePreferenceRoutes from './routes/mobile/preferences.js'
+import adminQuoteTemplateRoutes from './routes/admin/quoteTemplates.js'
+import mobileTodayRoutes from './routes/mobile/today.js'
+import mobileSyncRoutes from './routes/mobile/sync.js'
+import mobileInteractionRoutes from './routes/mobile/interactions.js'
+import mobileSalesTargetRoutes from './routes/mobile/salesTargets.js'
+import adminSalesTargetRoutes from './routes/admin/salesTargets.js'
 import projectRoutes from './routes/projects.js'
 import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
@@ -73,6 +82,8 @@ import betaTesterRoutes from './routes/beta/index.js'
 import adminEducationRoutes from './routes/admin/education/index.js'
 import avatarRoutes from './routes/avatars.js'
 import externalRoutes from './routes/external.js'
+import stripeRoutes from './routes/stripe.js'
+import publicPayRoutes from './routes/public/pay.js'
 import agentRoutes from './routes/agent/index.js'
 import { requestIdMiddleware } from './routes/agent/_middleware/errors.js'
 import { agentJsonBodyParser } from './routes/agent/_middleware/jsonBody.js'
@@ -91,8 +102,11 @@ import clientFileRoutes from './routes/client/files.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
+import StripeEvent from './models/StripeEvent.js'
+import InvoicePaymentLink from './models/InvoicePaymentLink.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
+import { startSubscriptionInvoiceScheduler } from './lib/projectFinance/subscriptionScheduler.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
 import { startRepoQualityScheduler } from './lib/dev/repoQualityScheduler.js'
 import { initSentry, Sentry } from './lib/sentry.js'
@@ -195,6 +209,7 @@ app.use(
 // HMAC nécessite le raw body en bytes. Le router gère son propre body parsing
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
+app.use('/api/stripe', stripeRoutes)
 
 // API agent : limite body plus haute (8 MiB) pour permettre l'upload de
 // documents en base64 (jusqu'à ~5 MiB bruts ≈ 6,7 MiB encodés). Le wrapper
@@ -208,12 +223,21 @@ app.use('/api/v1/agent', requestIdMiddleware, agentJsonBodyParser, agentRoutes)
 app.use('/api/artosera', artoseraDevisRoutes)
 
 app.use(express.json({ limit: '2mb' }))
+app.use('/api/public/pay', publicPayRoutes)
 
 // Logging requêtes — pino-http (remplace morgan)
 import type { IncomingMessage, ServerResponse } from 'http'
 app.use(
   pinoHttp({
     logger,
+    serializers: {
+      // Les liens de paiement portent un jeton secret dans l'URL : il ne doit jamais atteindre les journaux.
+      req: (req: { url?: string; headers?: Record<string, unknown> }) => ({
+        ...req,
+        url: req.url?.replace(/\/(payer|api\/public\/pay)\/[^/?#]+/, '/$1/[REDACTED]'),
+        headers: { ...req.headers, referer: undefined },
+      }),
+    },
     customLogLevel: function (_req: IncomingMessage, res: ServerResponse, err?: Error) {
       if (err || res.statusCode >= 500) return 'error'
       if (res.statusCode >= 400) return 'warn'
@@ -290,6 +314,9 @@ const authLimiter = rateLimit({
 })
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/auth/login', loginLimiter)
+// App native : même quota de tentatives que le login web, partagé par IP.
+app.use('/api/auth/mobile/login', loginLimiter)
+app.use('/api/auth/mobile', authLimiter, mobileAuthRoutes)
 app.use('/api/auth/forgot-password', passwordResetLimiter)
 app.use('/api/auth/reset-password', passwordResetLimiter)
 app.use('/api/auth', authLimiter, authRoutes)
@@ -297,6 +324,8 @@ app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/push', pushRoutes)
+app.use('/api/mobile/push', auth, mobilePushRoutes)
+app.use('/api/mobile/preferences', auth, mobilePreferenceRoutes)
 app.use('/api/notification-preferences', notificationPreferencesRoutes)
 
 app.use('/api/admin/users', auth, requireMfa, adminUserRoutes)
@@ -306,6 +335,12 @@ app.use('/api/admin/admins', auth, requireMfa, adminAdminsRoutes)
 app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)
 app.use('/api/admin/quote-proposals', adminQuoteProposalRoutes)
+app.use('/api/admin/quote-templates', adminQuoteTemplateRoutes)
+app.use('/api/mobile/today', mobileTodayRoutes)
+app.use('/api/mobile/sync', mobileSyncRoutes)
+app.use('/api/mobile/interactions', mobileInteractionRoutes)
+app.use('/api/mobile/sales-targets', mobileSalesTargetRoutes)
+app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
@@ -473,6 +508,7 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 mongoose
   .connect(mongoUri)
   .then(async () => {
+    await Promise.all([StripeEvent.init(), InvoicePaymentLink.init()])
     // Bootstrap SUPER_ADMIN — idempotent, vérifié à chaque démarrage.
     // Note : les migrations one-shot historiques (unset plainPassword, fix slug:null)
     // ont été sorties vers backend/scripts/migrations/. Voir le README de ce dossier.
@@ -507,6 +543,7 @@ mongoose
       initAutomationEngine()
       // Verrouillage automatique des écritures comptables VALIDATED expirées
       startAutoLockScheduler()
+      startSubscriptionInvoiceScheduler()
       // Snapshots repo/cockpit : jamais de scan lourd depuis une route HTTP.
       startRepoQualityScheduler()
     })

@@ -1,3 +1,4 @@
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 import express, { type Request, type Response } from 'express'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
@@ -61,9 +62,9 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
       filter.assignee = currentUser.id
     }
 
-    const allTasks = await Task.find(filter)
-      .populate('assignee', 'name email')
-      .populate('project', 'name')
+    const ids = await readableProjectIds(req.user!)
+    if (ids !== null) filter.project = { $in: ids }
+    const allTasks = await Task.find(filter).populate('assignee', 'name email').populate('project', 'name')
 
     // Stats globales
     const tasksByStatus: Record<string, number> = { A_FAIRE: 0, EN_COURS: 0, EN_REVIEW: 0, TERMINE: 0 }
@@ -74,17 +75,20 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
     })
 
     // Per-person performance
-    const personMap: Record<string, {
-      name: string
-      total: number
-      completed: number
-      inProgress: number
-      overdue: number
-      onTime: number
-      late: number
-      totalDurationHours: number
-      completedWithDuration: number
-    }> = {}
+    const personMap: Record<
+      string,
+      {
+        name: string
+        total: number
+        completed: number
+        inProgress: number
+        overdue: number
+        onTime: number
+        late: number
+        totalDurationHours: number
+        completedWithDuration: number
+      }
+    > = {}
 
     allTasks.forEach((t) => {
       const assignee = t.assignee as any
@@ -93,7 +97,17 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
       const name = assignee.name || 'Inconnu'
 
       if (!personMap[id]) {
-        personMap[id] = { name, total: 0, completed: 0, inProgress: 0, overdue: 0, onTime: 0, late: 0, totalDurationHours: 0, completedWithDuration: 0 }
+        personMap[id] = {
+          name,
+          total: 0,
+          completed: 0,
+          inProgress: 0,
+          overdue: 0,
+          onTime: 0,
+          late: 0,
+          totalDurationHours: 0,
+          completedWithDuration: 0,
+        }
       }
       const p = personMap[id]
       p.total++
@@ -134,10 +148,9 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
       completed: p.completed,
       inProgress: p.inProgress,
       overdue: p.overdue,
-      complianceRate: (p.onTime + p.late) > 0 ? Math.round((p.onTime / (p.onTime + p.late)) * 100) : null,
-      avgTreatmentHours: p.completedWithDuration > 0
-        ? Math.round((p.totalDurationHours / p.completedWithDuration) * 10) / 10
-        : null,
+      complianceRate: p.onTime + p.late > 0 ? Math.round((p.onTime / (p.onTime + p.late)) * 100) : null,
+      avgTreatmentHours:
+        p.completedWithDuration > 0 ? Math.round((p.totalDurationHours / p.completedWithDuration) * 10) / 10 : null,
     }))
 
     // Global stats
@@ -146,10 +159,15 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
     const overdueTasks = allTasks.filter((t) => t.dueDate && t.status !== 'TERMINE' && new Date(t.dueDate) < now).length
 
     // Admin list for filters
-    const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] } }).select('_id name email')
+    const admins = await User.find({
+      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] },
+    }).select('_id name email')
 
     // Brief stats — missions attribuees par super admin
-    const briefFilter: Record<string, unknown> = { createdAt: { $gte: since } }
+    const briefFilter: Record<string, unknown> = {
+      createdAt: { $gte: since },
+      ...(ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }),
+    }
     const allBriefs = await MissionBrief.find(briefFilter)
       .populate('createdBy', 'name')
       .populate('destinataire', 'name')
@@ -163,7 +181,11 @@ router.get('/kpi', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Req
       const cId = creator?._id?.toString() || ''
       const cName = creator?.name || 'Inconnu'
       if (!briefsByCreator[cId]) {
-        briefsByCreator[cId] = { name: cName, total: 0, byStatus: { A_FAIRE: 0, EN_COURS: 0, EN_REVIEW: 0, VALIDE: 0, LIVRE: 0, NON_VALIDE: 0, A_AMELIORER: 0 } }
+        briefsByCreator[cId] = {
+          name: cName,
+          total: 0,
+          byStatus: { A_FAIRE: 0, EN_COURS: 0, EN_REVIEW: 0, VALIDE: 0, LIVRE: 0, NON_VALIDE: 0, A_AMELIORER: 0 },
+        }
       }
       briefsByCreator[cId].total++
       briefsByCreator[cId].byStatus[b.statut] = (briefsByCreator[cId].byStatus[b.statut] || 0) + 1

@@ -14,8 +14,10 @@ export type Permission =
   | 'edit_projects'
   | 'view_content'
   | 'edit_content'
+  | 'upload_project_documents'
   | 'view_billing'
   | 'manage_billing'
+  | 'manage_quotes'
   | 'manage_tasks'
   | 'view_qualiopi'
   | 'manage_qualiopi'
@@ -46,6 +48,7 @@ export interface User {
   permissions: Permission[]
   /** Titre affiché à côté du nom (ex: "Stagiaire UX", "CTO"). Optionnel — fallback sur le rôle. */
   title?: string
+  isAssociate?: boolean
   jobTitle?: string
   /** Permissions ad-hoc ajoutées par un admin en plus du rôle. */
   customPermissions?: string[]

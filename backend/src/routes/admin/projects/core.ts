@@ -3,10 +3,13 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs/promises'
 import auth from '../../../middleware/auth.js'
+import idempotentRequest from '../../../middleware/idempotentRequest.js'
 import { requireAdmin, requirePermission } from '../../../middleware/role.js'
 import Project from '../../../models/Project.js'
 import Task from '../../../models/Task.js'
-import MissionBrief from '../../../models/MissionBrief.js'
+import { accessibleProjectIds, readableProjectIds } from '../../../lib/adminProjectAccess.js'
+import { deleteProject } from '../../../lib/projectDeletion.js'
+import { runInTransaction } from '../../../lib/transaction.js'
 import ProjectUpdate from '../../../models/ProjectUpdate.js'
 import User from '../../../models/User.js'
 import Document from '../../../models/Document.js'
@@ -85,22 +88,8 @@ router.get(
         filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
       }
 
-      // Non-SUPER_ADMIN : projets assignés directement, ou via tâches/briefs
-      if (user.role !== 'SUPER_ADMIN') {
-        const [taskProjectIds, briefProjectIds, assignedProjectIds] = await Promise.all([
-          Task.distinct('project', { assignee: user.id }),
-          MissionBrief.distinct('project', { destinataire: user.id }),
-          Project.distinct('_id', { assignedTo: user.id }),
-        ])
-        const allProjectIds = [
-          ...new Set([
-            ...taskProjectIds.map(String),
-            ...briefProjectIds.map(String),
-            ...assignedProjectIds.map(String),
-          ]),
-        ]
-        filter._id = { $in: allProjectIds }
-      }
+      const projectIds = await (user.role === 'COMMERCIAL' ? readableProjectIds(user) : accessibleProjectIds(user))
+      if (projectIds !== null) filter._id = { $in: projectIds }
 
       const query = Project.find(filter).sort({ updatedAt: -1 }).populate('assignedTo', 'name email')
       if (req.query.includeClient === 'true') {
@@ -261,23 +250,34 @@ router.post(
       }
 
       const options = normalizeOptions(req.body || {})
+      if (
+        (await readableProjectIds(req.user!)) !== null &&
+        String(client.ownerAdminId) !== req.user!.id &&
+        String(options.assignedTo) !== req.user!.id
+      ) {
+        return res.status(403).json({
+          error: "Ce client n'est pas dans votre portefeuille",
+          code: 'CLIENT_OUT_OF_SCOPE',
+        })
+      }
 
       if (!options.projectNumber || String(options.projectNumber).trim() === '') {
         const { formatted } = await getNextSequence('projectNumber', { prefix: 'PROJ-', padding: 4 })
         options.projectNumber = formatted
       }
 
-      const project = await Project.create({
-        client: clientId,
-        name,
-        description: description || '',
-        status: status || 'EN_COURS',
-        ...options,
-      })
+      const project = await runInTransaction(async (session) => {
+        const project = new Project({
+          client: clientId,
+          name,
+          description: description || '',
+          status: status || 'EN_COURS',
+          ...options,
+        })
+        await project.save({ session })
 
-      if (template) {
-        const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
-        try {
+        if (template) {
+          const defaultPhases = Array.isArray(template.defaultPhases) ? template.defaultPhases : []
           await ProjectPhase.insertMany(
             defaultPhases.map((phase, index) => ({
               project: project._id,
@@ -290,16 +290,11 @@ router.post(
               linkedItems: [],
               createdBy: req.user!.id,
             })),
+            { session },
           )
-        } catch (err) {
-          // Faute de transaction, on compense : un projet sans son pipeline
-          // serait un demi-état que l'appelant ne peut pas rattraper, sa
-          // relance créant un second projet.
-          await ProjectPhase.deleteMany({ project: project._id }).catch(() => null)
-          await Project.deleteOne({ _id: project._id }).catch(() => null)
-          throw err
         }
-      }
+        return project
+      })
 
       await logActivity({
         project: project._id,
@@ -469,7 +464,7 @@ router.delete(
   sensitiveAction('PROJECT_DELETE'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const project = await Project.findByIdAndDelete(req.params.id)
+      const project = await deleteProject(req.params.id as string)
       if (!project) {
         return res.status(404).json({ error: 'Project not found' })
       }
@@ -483,6 +478,7 @@ router.delete(
 router.post(
   '/:id/updates',
   requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  idempotentRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { title, description } = req.body || {}

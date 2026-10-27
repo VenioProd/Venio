@@ -2,13 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
-import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { setupMongoReplSet, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import ProjectSection from '../models/ProjectSection.js'
@@ -19,7 +15,10 @@ let adminId: string
 let clientId: string
 
 beforeAll(async () => {
-  await setupMongo()
+  // La suppression d'un projet est transactionnelle.
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
+  await Promise.all([Project, ProjectSection, ProjectItem].map((model) => model.init()))
   app = await createTestApp()
 })
 
@@ -78,9 +77,7 @@ describe('Agent Projects / CRUD project', () => {
       { name: 'A', client: clientId },
       { name: 'B', client: clientId, isArchived: true },
     ])
-    const res = await request(app)
-      .get('/api/v1/agent/projects')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/projects').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(1)
     expect(res.body.items[0].name).toBe('A')

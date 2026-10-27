@@ -5,6 +5,7 @@ import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import Task from '../../models/Task.js'
 import Lead from '../../models/Lead.js'
+import { readableProjectIds } from '../../lib/adminProjectAccess.js'
 
 const router = express.Router()
 
@@ -21,8 +22,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
 
+    const ids = await readableProjectIds(req.user!)
     const [projects, clients, tasks, leads] = await Promise.all([
-      Project.find({ name: regex })
+      Project.find({ name: regex, ...(ids === null ? {} : { _id: { $in: ids } }) })
         .limit(5)
         .select('name status priority')
         .lean(),
@@ -30,7 +32,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         .limit(5)
         .select('name email status')
         .lean(),
-      Task.find({ title: regex })
+      Task.find({ title: regex, ...(ids === null ? {} : { project: { $in: ids } }) })
         .limit(5)
         .populate('project', 'name')
         .select('title status priority project')

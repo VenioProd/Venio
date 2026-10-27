@@ -1,9 +1,5 @@
 import type { Model } from 'mongoose'
-import type {
-  IChartOfAccount,
-  IJournal,
-  IVatRate,
-} from '../../types/models/index.js'
+import type { IChartOfAccount, IJournal, IVatRate } from '../../types/models/index.js'
 import type { AccountType, JournalType } from '../../types/enums.js'
 
 /**
@@ -82,12 +78,24 @@ const PCG_AGENCE: PcgAccountSeed[] = [
   // ---- Classe 4 : Comptes de tiers ----
   { code: '401000', label: 'Fournisseurs', accountClass: 4, type: 'PASSIF', isLettrable: true },
   { code: '404000', label: "Fournisseurs d'immobilisations", accountClass: 4, type: 'PASSIF', isLettrable: true },
-  { code: '408000', label: 'Fournisseurs - Factures non parvenues', accountClass: 4, type: 'PASSIF', isLettrable: true },
+  {
+    code: '408000',
+    label: 'Fournisseurs - Factures non parvenues',
+    accountClass: 4,
+    type: 'PASSIF',
+    isLettrable: true,
+  },
   { code: '409000', label: 'Fournisseurs débiteurs (avances)', accountClass: 4, type: 'ACTIF', isLettrable: true },
   { code: '411000', label: 'Clients', accountClass: 4, type: 'ACTIF', isLettrable: true },
   { code: '413000', label: 'Clients - Effets à recevoir', accountClass: 4, type: 'ACTIF', isLettrable: true },
   { code: '416000', label: 'Clients douteux ou litigieux', accountClass: 4, type: 'ACTIF', isLettrable: true },
-  { code: '418000', label: 'Clients - Produits non encore facturés', accountClass: 4, type: 'ACTIF', isLettrable: true },
+  {
+    code: '418000',
+    label: 'Clients - Produits non encore facturés',
+    accountClass: 4,
+    type: 'ACTIF',
+    isLettrable: true,
+  },
   { code: '419000', label: 'Clients créditeurs (acomptes reçus)', accountClass: 4, type: 'PASSIF', isLettrable: true },
   { code: '421000', label: 'Personnel - Rémunérations dues', accountClass: 4, type: 'PASSIF' },
   { code: '425000', label: 'Personnel - Avances et acomptes', accountClass: 4, type: 'ACTIF' },
@@ -102,13 +110,20 @@ const PCG_AGENCE: PcgAccountSeed[] = [
   { code: '445800', label: 'TVA à régulariser', accountClass: 4, type: 'PASSIF' },
   { code: '447000', label: 'Autres impôts, taxes et versements assimilés', accountClass: 4, type: 'PASSIF' },
   { code: '455000', label: 'Associés - Comptes courants', accountClass: 4, type: 'PASSIF' },
-  { code: '467000', label: 'Autres comptes débiteurs ou créditeurs', accountClass: 4, type: 'PASSIF', isLettrable: true },
+  {
+    code: '467000',
+    label: 'Autres comptes débiteurs ou créditeurs',
+    accountClass: 4,
+    type: 'PASSIF',
+    isLettrable: true,
+  },
   { code: '471000', label: "Compte d'attente", accountClass: 4, type: 'PASSIF', isLettrable: true },
   { code: '486000', label: 'Charges constatées d’avance', accountClass: 4, type: 'ACTIF' },
   { code: '487000', label: 'Produits constatés d’avance', accountClass: 4, type: 'PASSIF' },
 
   // ---- Classe 5 : Comptes financiers ----
   { code: '512000', label: 'Banque (compte principal)', accountClass: 5, type: 'ACTIF', isLettrable: true },
+  { code: '512800', label: 'Stripe — compte d’attente', accountClass: 5, type: 'ACTIF', isLettrable: true },
   { code: '514000', label: 'Chèques postaux', accountClass: 5, type: 'ACTIF', isLettrable: true },
   { code: '517000', label: 'Stripe / passerelles de paiement', accountClass: 5, type: 'ACTIF', isLettrable: true },
   { code: '530000', label: 'Caisse', accountClass: 5, type: 'ACTIF' },
@@ -116,7 +131,12 @@ const PCG_AGENCE: PcgAccountSeed[] = [
 
   // ---- Classe 6 : Charges ----
   { code: '601000', label: 'Achats de matières premières', accountClass: 6, type: 'CHARGE' },
-  { code: '604000', label: "Achats d'études et prestations de services (sous-traitance)", accountClass: 6, type: 'CHARGE' },
+  {
+    code: '604000',
+    label: "Achats d'études et prestations de services (sous-traitance)",
+    accountClass: 6,
+    type: 'CHARGE',
+  },
   { code: '606300', label: 'Fournitures d’entretien et de petit équipement', accountClass: 6, type: 'CHARGE' },
   { code: '606400', label: 'Fournitures administratives', accountClass: 6, type: 'CHARGE' },
   { code: '606800', label: 'Autres matières et fournitures', accountClass: 6, type: 'CHARGE' },
@@ -163,7 +183,7 @@ const PCG_AGENCE: PcgAccountSeed[] = [
   { code: '675000', label: 'Valeurs comptables des éléments d’actif cédés', accountClass: 6, type: 'CHARGE' },
   { code: '678000', label: 'Autres charges exceptionnelles', accountClass: 6, type: 'CHARGE' },
   { code: '681100', label: 'Dotations aux amortissements sur immobilisations', accountClass: 6, type: 'CHARGE' },
-  { code: '695000', label: "Impôt sur les bénéfices", accountClass: 6, type: 'CHARGE' },
+  { code: '695000', label: 'Impôt sur les bénéfices', accountClass: 6, type: 'CHARGE' },
 
   // ---- Classe 7 : Produits ----
   { code: '706000', label: 'Prestations de services', accountClass: 7, type: 'PRODUIT' },

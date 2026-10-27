@@ -124,13 +124,13 @@ describe('GET /api/admin/crm/pilotage', () => {
     expect(response.body.losses.unspecified).toBe(1)
   })
 
-  it('restreint la cohorte au périmètre du commercial', async () => {
+  it('inclut les leads des collègues dans la cohorte commerciale', async () => {
     await seedLead({ company: 'AMoi' })
     await seedLead({ company: 'AUnAutre', assignedTo: otherCommercialId })
 
     actAs(commercialId, 'COMMERCIAL')
     const response = await request(app).get('/api/admin/crm/pilotage').expect(200)
-    expect(response.body.funnel.total).toBe(1)
+    expect(response.body.funnel.total).toBe(2)
   })
 
   it('ne ventile par commercial que pour qui voit tout le monde', async () => {
@@ -138,7 +138,7 @@ describe('GET /api/admin/crm/pilotage', () => {
 
     actAs(commercialId, 'COMMERCIAL')
     const restricted = await request(app).get('/api/admin/crm/pilotage').expect(200)
-    expect(restricted.body.byOwner).toBeNull()
+    expect(Array.isArray(restricted.body.byOwner)).toBe(true)
 
     actAs(superAdminId, 'SUPER_ADMIN')
     const full = await request(app).get('/api/admin/crm/pilotage').expect(200)

@@ -25,5 +25,10 @@ export async function requireRecentMfaStepUp(req: Request, res: Response): Promi
 
 /** Require a recent second factor for security-sensitive endpoints. */
 export default async function requireMfa(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Les lectures natives restent couvertes par la MFA passée à la connexion de l'appareil.
+  if (req.method === 'GET' && req.user?.deviceId && req.user.mfaVerifiedAt) {
+    next()
+    return
+  }
   if (await requireRecentMfaStepUp(req, res)) next()
 }

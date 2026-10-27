@@ -2,9 +2,14 @@ import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import fsp from 'fs/promises'
 import path from 'path'
+import type { Types } from 'mongoose'
+import BillingDocument from '../models/BillingDocument.js'
 import CompanySettings from '../models/CompanySettings.js'
-import { buildFacturXMinimum } from './facturx.js'
+import Subsidiary from '../models/Subsidiary.js'
+import type { IBillingPayer } from '../types/models/billing.js'
+import { billingBuyer, buildFacturXMinimum } from './facturx.js'
 import logger from './logger.js'
+import { billingVatBreakdown } from './projectFinance/vatBreakdown.js'
 
 const PAGE_MARGIN = 40
 const COL_DESC_X = PAGE_MARGIN
@@ -25,6 +30,8 @@ interface BillingLine {
 }
 
 export interface PdfBillingDoc {
+  payer?: IBillingPayer | null
+  creditedInvoice?: Types.ObjectId | null
   type: string
   number: string
   lines?: BillingLine[]
@@ -47,21 +54,16 @@ export interface PdfClient {
   siret?: string
   address?: {
     line1?: string
+    line2?: string
     zip?: string
     city?: string
+    country?: string
   }
 }
 
 export interface PdfProject {
   name?: string
   projectNumber?: string
-}
-
-interface VatGroup {
-  rate: number
-  ht: number
-  tax: number
-  ttc: number
 }
 
 function fmtAmount(n: number | null | undefined, currency = 'EUR'): string {
@@ -77,27 +79,6 @@ function fmtDate(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = date instanceof Date ? date : new Date(date)
   return d.toLocaleDateString('fr-FR')
-}
-
-function aggregateVat(lines: BillingLine[] | undefined): VatGroup[] {
-  const map = new Map<number, { ht: number; tax: number }>()
-  for (const line of lines || []) {
-    const rate = Number(line.taxRate || 0)
-    const ht = Number(line.total || 0)
-    const tax = ht * (rate / 100)
-    if (!map.has(rate)) map.set(rate, { ht: 0, tax: 0 })
-    const acc = map.get(rate)!
-    acc.ht += ht
-    acc.tax += tax
-  }
-  const result: VatGroup[] = []
-  for (const [rate, { ht, tax }] of map.entries()) {
-    const htR = Math.round(ht * 100) / 100
-    const taxR = Math.round(tax * 100) / 100
-    result.push({ rate, ht: htR, tax: taxR, ttc: Math.round((htR + taxR) * 100) / 100 })
-  }
-  result.sort((a, b) => b.rate - a.rate)
-  return result
 }
 
 function drawHorizontalLine(pdf: PDFKit.PDFDocument, y: number, color = '#cccccc'): void {
@@ -140,9 +121,16 @@ interface PdfSettings {
   }>
 }
 
-function renderHeader(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, settings: PdfSettings | null): void {
+function renderHeader(
+  pdf: PDFKit.PDFDocument,
+  doc: PdfBillingDoc,
+  settings: PdfSettings | null,
+  creditedNumber: string | null,
+): void {
   const isQuote = doc.type === 'QUOTE'
-  const title = isQuote ? 'DEVIS' : 'FACTURE'
+  let title = 'FACTURE'
+  if (isQuote) title = 'DEVIS'
+  else if ((doc.total ?? 0) < 0) title = 'AVOIR'
 
   // Bloc gauche : société émettrice
   pdf.fillColor('#111').font('Helvetica-Bold').fontSize(14)
@@ -170,6 +158,9 @@ function renderHeader(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, settings: Pdf
     width: 175,
     align: 'right',
   })
+  if (creditedNumber) {
+    pdf.text(`Avoir sur facture N° ${creditedNumber}`, PAGE_MARGIN, 140, { width: TABLE_RIGHT - PAGE_MARGIN })
+  }
   if (!isQuote && doc.dueAt) {
     pdf.text(`Échéance ${fmtDate(doc.dueAt)}`, 380, PAGE_MARGIN + 68, {
       width: 175,
@@ -182,7 +173,7 @@ function renderClientBlock(
   pdf: PDFKit.PDFDocument,
   client: PdfClient | null,
   project: PdfProject | null,
-  yStart: number
+  yStart: number,
 ): void {
   pdf.save()
   pdf.rect(PAGE_MARGIN, yStart, 240, 90).fillOpacity(0.04).fillColor('#0ea5e9').fill()
@@ -199,12 +190,11 @@ function renderClientBlock(
   if (client?.email) pdf.text(client.email, PAGE_MARGIN + 10, pdf.y, { width: 220 })
   if (client?.phone) pdf.text(client.phone, { width: 220 })
   if (client?.address?.line1) pdf.text(client.address.line1, { width: 220 })
+  if (client?.address?.line2) pdf.text(client.address.line2, { width: 220 })
   if (client?.address?.zip || client?.address?.city) {
-    pdf.text(
-      [client.address.zip, client.address.city].filter(Boolean).join(' '),
-      { width: 220 }
-    )
+    pdf.text([client.address.zip, client.address.city].filter(Boolean).join(' '), { width: 220 })
   }
+  if (client?.address?.country) pdf.text(client.address.country, { width: 220 })
   if (client?.vatNumber) pdf.text(`TVA ${client.vatNumber}`, { width: 220 })
   if (client?.siret) pdf.text(`SIRET ${client.siret}`, { width: 220 })
 
@@ -225,11 +215,15 @@ function renderLinesTable(
   pdf: PDFKit.PDFDocument,
   lines: BillingLine[] | undefined,
   currency: string,
-  yStart: number
+  yStart: number,
 ): number {
   // En-tête
   pdf.save()
-  pdf.rect(PAGE_MARGIN, yStart, TABLE_RIGHT - PAGE_MARGIN, 24).fillColor('#0ea5e9').fillOpacity(0.12).fill()
+  pdf
+    .rect(PAGE_MARGIN, yStart, TABLE_RIGHT - PAGE_MARGIN, 24)
+    .fillColor('#0ea5e9')
+    .fillOpacity(0.12)
+    .fill()
   pdf.restore()
 
   pdf.fillColor('#111').font('Helvetica-Bold').fontSize(8.5)
@@ -271,16 +265,12 @@ function renderLinesTable(
   return y
 }
 
-function renderTotalsAndVat(
-  pdf: PDFKit.PDFDocument,
-  doc: PdfBillingDoc,
-  currency: string,
-  yStart: number
-): number {
-  const grouped = aggregateVat(doc.lines)
-  const totalHt = grouped.reduce((s, g) => s + g.ht, 0)
-  const totalTax = grouped.reduce((s, g) => s + g.tax, 0)
-  const totalTtc = totalHt + totalTax
+function renderTotalsAndVat(pdf: PDFKit.PDFDocument, doc: PdfBillingDoc, currency: string, yStart: number): number {
+  const groups = billingVatBreakdown(doc)
+  const grouped = groups.map((group) => ({ rate: group.rate, ht: group.htCents / 100, tax: group.taxCents / 100 }))
+  const totalHt = groups.reduce((sum, group) => sum + group.htCents, 0) / 100
+  const totalTax = groups.reduce((sum, group) => sum + group.taxCents, 0) / 100
+  const totalTtc = groups.reduce((sum, group) => sum + group.htCents + group.taxCents, 0) / 100
 
   let y = yStart + 8
 
@@ -324,7 +314,11 @@ function renderTotalsAndVat(
   })
 
   pdf.save()
-  pdf.rect(totalsBoxX, totalsBoxY + 34, totalsBoxWidth, 26).fillColor('#0ea5e9').fillOpacity(0.18).fill()
+  pdf
+    .rect(totalsBoxX, totalsBoxY + 34, totalsBoxWidth, 26)
+    .fillColor('#0ea5e9')
+    .fillOpacity(0.18)
+    .fill()
   pdf.restore()
 
   pdf.font('Helvetica-Bold').fontSize(12).fillColor('#0c4a6e')
@@ -344,7 +338,8 @@ function renderPaymentBlock(
   pdf: PDFKit.PDFDocument,
   doc: PdfBillingDoc,
   settings: PdfSettings | null,
-  yStart: number
+  yStart: number,
+  paymentUrl?: string,
 ): number {
   const isQuote = doc.type === 'QUOTE'
   let y = yStart + 20
@@ -354,6 +349,13 @@ function renderPaymentBlock(
   pdf.font('Helvetica').fontSize(8.5).fillColor('#222')
 
   if (!isQuote) {
+    if (paymentUrl) {
+      pdf.text(`Payer par carte : ${paymentUrl}`, PAGE_MARGIN, y, {
+        width: TABLE_RIGHT - PAGE_MARGIN,
+        link: paymentUrl,
+      })
+      y = pdf.y + 4
+    }
     const term = settings?.paymentTermsDays ?? 30
     pdf.text(`Paiement à ${term} jours à compter de la date d'émission.`, PAGE_MARGIN, y, {
       width: TABLE_RIGHT - PAGE_MARGIN,
@@ -443,7 +445,7 @@ export async function generateBillingPdf(
   client: PdfClient | null,
   project: PdfProject | null,
   storagePath: string,
-  opts: { settings?: PdfSettings | null } = {}
+  opts: { settings?: PdfSettings | null; paymentUrl?: string } = {},
 ): Promise<string> {
   const absolutePath = path.resolve(process.cwd(), storagePath)
   await fsp.mkdir(path.dirname(absolutePath), { recursive: true })
@@ -455,6 +457,16 @@ export async function generateBillingPdf(
       .catch(() => null)) as PdfSettings | null
   }
 
+  let subsidiary = null
+  if (doc.payer?.kind === 'SUBSIDIARY' && !doc.payer.billingContact.name?.trim()) {
+    subsidiary = await Subsidiary.findById(doc.payer.subsidiary).select('name').lean()
+  }
+  const buyer = billingBuyer(doc.payer, client, subsidiary)
+
+  const credited = doc.creditedInvoice
+    ? await BillingDocument.findById(doc.creditedInvoice).select('number').lean()
+    : null
+
   return new Promise<string>((resolve, reject) => {
     const pdf = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN })
     const stream = fs.createWriteStream(absolutePath)
@@ -462,29 +474,27 @@ export async function generateBillingPdf(
 
     const currency = doc.currency || 'EUR'
 
-    renderHeader(pdf, doc, settings)
-    renderClientBlock(pdf, client, project, 160)
+    renderHeader(pdf, doc, settings, credited?.number ?? null)
+    renderClientBlock(pdf, buyer, project, 160)
     const linesEndY = renderLinesTable(pdf, doc.lines, currency, 280)
     const totalsEndY = renderTotalsAndVat(pdf, doc, currency, linesEndY + 10)
-    renderPaymentBlock(pdf, doc, settings, totalsEndY)
+    renderPaymentBlock(pdf, doc, settings, totalsEndY, opts.paymentUrl)
     renderFooter(pdf, settings)
 
     // Embed Factur-X (profil MINIMUM) si activé et facture (type INVOICE).
     // Les avoirs (type=INVOICE avec total < 0) restent éligibles.
     // L'embed se fait AVANT pdf.end() pour que PDFKit l'écrive dans le PDF.
-    if (
-      process.env.FACTUR_X_ENABLED === 'true' &&
-      doc &&
-      doc.type === 'INVOICE'
-    ) {
+    if (process.env.FACTUR_X_ENABLED === 'true' && doc && doc.type === 'INVOICE') {
       try {
-        const xml = buildFacturXMinimum({ doc, client, project, settings })
+        const xml = buildFacturXMinimum({ doc, client, project, settings, subsidiary })
         // PDFKit v0.13+ : pdf.file() attache un fichier intégré au PDF.
         // Pour une vraie conformité PDF/A-3 il faudrait poser l'AFRelationship
         // dans le catalogue — on documente la limitation côté lib.
-        ;(pdf as unknown as {
-          file: (buf: Buffer, opts: { name: string; type: string; description: string; relationship: string }) => void
-        }).file(Buffer.from(xml, 'utf-8'), {
+        ;(
+          pdf as unknown as {
+            file: (buf: Buffer, opts: { name: string; type: string; description: string; relationship: string }) => void
+          }
+        ).file(Buffer.from(xml, 'utf-8'), {
           name: 'factur-x.xml',
           type: 'text/xml',
           description: 'Factur-X invoice data',

@@ -2,110 +2,21 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import mongoose from 'mongoose'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
-import { PERMISSIONS, resolvePermissions } from '../../lib/permissions.js'
-import type { Permission, UserRole } from '../../types/enums.js'
 import Interaction, {
   INTERACTION_KINDS,
   INTERACTION_DIRECTIONS,
   INTERACTION_BODY_MAX_LENGTH,
   INTERACTION_SUBJECT_MAX_LENGTH,
 } from '../../models/Interaction.js'
-import Lead from '../../models/Lead.js'
-import User from '../../models/User.js'
-import { isLeadOutOfScope } from '../../lib/crmScope.js'
+import { resolveSubject } from '../../lib/interactionAccess.js'
 import { buildTimeline, logInteraction, TIMELINE_MAX_ENTRIES } from '../../lib/interactions.js'
 import { sendBulkEmail, deliveryStatusFrom, EmailTransportUnavailableError } from '../../lib/email/send.js'
-import type { InteractionKind, InteractionSubjectType } from '../../types/models/index.js'
+import type { InteractionKind } from '../../types/models/index.js'
 
 const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
-
-interface ResolvedSubject {
-  type: InteractionSubjectType
-  id: mongoose.Types.ObjectId
-  /** Adresse de contact par défaut, pré-remplie dans le composeur d'email. */
-  contactEmail: string
-  contactName: string
-  label: string
-}
-
-async function userHasPermission(req: Request, permission: Permission): Promise<boolean> {
-  if (req.user!.role === 'SUPER_ADMIN') return true
-  const dbUser = await User.findById(req.user!.id).select('grantedPermissions deniedPermissions').lean()
-  const granted = resolvePermissions(
-    req.user!.role as UserRole,
-    dbUser?.grantedPermissions ?? [],
-    dbUser?.deniedPermissions ?? [],
-  )
-  return granted.includes(permission)
-}
-
-/**
- * Résout le sujet d'une interaction et contrôle l'accès. La permission dépend
- * de la nature du sujet : le journal d'un lead suit les permissions du CRM,
- * celui d'un client celles des comptes clients — exactement les permissions
- * des routes que ce journal remplace.
- *
- * Un sujet hors périmètre répond 404 et non 403 : un commercial ne doit pas
- * pouvoir déduire l'existence du lead d'un collègue.
- */
-async function resolveSubject(req: Request, res: Response, mode: 'read' | 'write'): Promise<ResolvedSubject | null> {
-  const rawType = String(req.params.subjectType || '').toUpperCase()
-  const { subjectId } = req.params
-
-  if (rawType !== 'LEAD' && rawType !== 'CLIENT') {
-    res.status(400).json({ error: 'Type de sujet inconnu' })
-    return null
-  }
-  if (!mongoose.isValidObjectId(subjectId)) {
-    res.status(400).json({ error: 'Identifiant invalide' })
-    return null
-  }
-
-  if (rawType === 'LEAD') {
-    const permission = mode === 'read' ? PERMISSIONS.VIEW_CRM : PERMISSIONS.MANAGE_CRM
-    if (!(await userHasPermission(req, permission))) {
-      res.status(403).json({ error: 'Forbidden' })
-      return null
-    }
-    const lead = await Lead.findById(subjectId).select('company contactName contactEmail assignedTo createdBy')
-    if (!lead || isLeadOutOfScope(req, lead)) {
-      res.status(404).json({ error: 'Lead not found' })
-      return null
-    }
-    return {
-      type: 'LEAD',
-      id: lead._id as mongoose.Types.ObjectId,
-      contactEmail: lead.contactEmail || '',
-      contactName: lead.contactName || '',
-      label: lead.company,
-    }
-  }
-
-  if (!(await userHasPermission(req, PERMISSIONS.MANAGE_CLIENTS))) {
-    res.status(403).json({ error: 'Forbidden' })
-    return null
-  }
-  const client = await User.findOne({ _id: subjectId, role: 'CLIENT' }).select('name email companyName ownerAdminId')
-  if (!client) {
-    res.status(404).json({ error: 'Client not found' })
-    return null
-  }
-  // Même règle de périmètre que ensureClient() côté fiche client.
-  if (req.user!.role !== 'SUPER_ADMIN' && client.ownerAdminId?.toString() !== req.user!.id) {
-    res.status(404).json({ error: 'Client not found' })
-    return null
-  }
-  return {
-    type: 'CLIENT',
-    id: client._id as mongoose.Types.ObjectId,
-    contactEmail: client.email || '',
-    contactName: client.name || '',
-    label: client.companyName || client.name || '',
-  }
-}
 
 /** Interaction existante, avec le même contrôle d'accès que son sujet. */
 async function resolveInteraction(req: Request, res: Response) {

@@ -6,6 +6,7 @@ import BillingDocument from '../../models/BillingDocument.js'
 import ProjectItem from '../../models/ProjectItem.js'
 import Document from '../../models/Document.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import { clientBillingVisibility } from '../../lib/clientBillingVisibility.js'
 import { computeQuoteTotals } from '../../lib/quoteTotals.js'
 import type { IQuoteLine } from '../../types/models/index.js'
 import type { ClientActionItemType, ClientVaultDocumentType, ClientVaultSource } from '../../types/enums.js'
@@ -47,7 +48,7 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
   return Array.from(ids)
 }
 
-const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PAID']
+const CLIENT_VISIBLE_BILLING_STATUSES = ['ISSUED', 'SENT', 'ACCEPTED', 'PARTIALLY_PAID', 'PAID']
 
 router.get('/documents', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -62,7 +63,7 @@ router.get('/documents', async (req: Request, res: Response, next: NextFunction)
     if (projectIds.length === 0) return res.json({ documents: [] })
 
     const projects = await Project.find({ _id: { $in: projectIds } })
-      .select('name')
+      .select('name client')
       .lean()
     const projectNameById = new Map(projects.map((project) => [String(project._id), project.name]))
 
@@ -71,6 +72,7 @@ router.get('/documents', async (req: Request, res: Response, next: NextFunction)
         project: { $in: projectIds },
         status: { $in: CLIENT_VISIBLE_BILLING_STATUSES },
         pdfStoragePath: { $ne: null },
+        ...clientBillingVisibility(userId, projects),
       }).lean(),
       ProjectItem.find({
         project: { $in: projectIds },
@@ -147,7 +149,7 @@ router.get('/action-items', async (req: Request, res: Response, next: NextFuncti
     if (req.user!.role !== 'CLIENT') return res.status(403).json({ error: 'Forbidden' })
     const userId = req.user!.id
 
-    const ownedProjects = await Project.find({ client: userId }).select('name').lean()
+    const ownedProjects = await Project.find({ client: userId }).select('name client').lean()
     const ownedProjectIds = ownedProjects.map((project) => String(project._id))
     const projectNameById = new Map(ownedProjects.map((project) => [String(project._id), project.name]))
 
@@ -163,6 +165,7 @@ router.get('/action-items', async (req: Request, res: Response, next: NextFuncti
       BillingDocument.find({
         project: { $in: ownedProjectIds },
         type: 'INVOICE',
+        ...clientBillingVisibility(userId, ownedProjects),
         status: { $in: ['ISSUED', 'SENT'] },
       }).lean(),
     ])

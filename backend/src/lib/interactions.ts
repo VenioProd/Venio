@@ -21,11 +21,14 @@ export interface TimelineEntry {
   kind: string
   direction: string
   occurredAt: string
+  endsAt?: string
   label: string
   body: string
   pinned: boolean
   author: TimelineAuthor | null
   recipients: { email: string; name: string; status: string; error: string }[]
+  audio?: { filename: string; originalName: string; mimeType: string; size: number; url: string }
+  lang?: 'fr' | 'en'
   deliveryStatus: string
 }
 
@@ -54,27 +57,75 @@ function interactionLabel(kind: string, subject: string, body: string): string {
   return kind === 'CALL' ? 'Appel' : kind === 'MEETING' ? 'Rendez-vous' : 'Note'
 }
 
+export function toTimelineEntry(item: {
+  _id: unknown
+  kind: string
+  direction: string
+  occurredAt: Date | string
+  endsAt?: Date | string
+  subject?: string
+  body?: string
+  pinned?: boolean
+  author?: unknown
+  recipients?: { email: string; name?: string; status: string; error?: string }[]
+  deliveryStatus?: string
+  audio?: { filename: string; originalName: string; mimeType: string; size: number } | null
+  lang?: 'fr' | 'en' | null
+}): TimelineEntry {
+  return {
+    id: String(item._id),
+    source: 'INTERACTION',
+    kind: item.kind,
+    direction: item.direction,
+    occurredAt: new Date(item.occurredAt).toISOString(),
+    ...(item.endsAt ? { endsAt: new Date(item.endsAt).toISOString() } : {}),
+    label: interactionLabel(item.kind, item.subject || '', item.body || ''),
+    body: item.body || '',
+    pinned: Boolean(item.pinned),
+    author: toAuthor(item.author),
+    recipients: (item.recipients || []).map((recipient) => ({
+      email: recipient.email,
+      name: recipient.name || '',
+      status: recipient.status,
+      error: recipient.error || '',
+    })),
+    deliveryStatus: item.deliveryStatus || 'NONE',
+    ...(item.audio ? { audio: { ...item.audio, url: `/api/mobile/interactions/${item._id}/audio` } } : {}),
+    ...(item.lang ? { lang: item.lang } : {}),
+  }
+}
+
 export interface LogInteractionInput {
   subjectType: InteractionSubjectType
   subjectId: Types.ObjectId | string
   kind: InteractionKind
   direction?: InteractionDirection
   occurredAt?: Date
+  endsAt?: Date
   subject?: string
   body?: string
   pinned?: boolean
   author?: Types.ObjectId | string | null
   recipients?: { email: string; name?: string; status: 'SENT' | 'FAILED'; error?: string }[]
   deliveryStatus?: 'NONE' | 'SENT' | 'PARTIAL' | 'FAILED'
+  lang?: 'fr' | 'en' | null
+  clientRequestId?: string
+  clientRequestHash?: string
+  audio?: { filename: string; originalName: string; mimeType: string; size: number }
 }
 
 export async function logInteraction(input: LogInteractionInput) {
   return Interaction.create({
+    lang: input.lang ?? null,
+    clientRequestId: input.clientRequestId,
+    clientRequestHash: input.clientRequestHash,
+    audio: input.audio,
     subjectType: input.subjectType,
     subjectId: input.subjectId,
     kind: input.kind,
     direction: input.direction ?? 'NONE',
     occurredAt: input.occurredAt ?? new Date(),
+    endsAt: input.endsAt,
     subject: input.subject ?? '',
     body: input.body ?? '',
     pinned: input.pinned ?? false,
@@ -121,24 +172,7 @@ export async function buildTimeline(
       .lean(),
   ])
 
-  const fromInteractions: TimelineEntry[] = interactions.map((item) => ({
-    id: String(item._id),
-    source: 'INTERACTION',
-    kind: item.kind,
-    direction: item.direction,
-    occurredAt: new Date(item.occurredAt).toISOString(),
-    label: interactionLabel(item.kind, item.subject || '', item.body || ''),
-    body: item.body || '',
-    pinned: Boolean(item.pinned),
-    author: toAuthor(item.author),
-    recipients: (item.recipients || []).map((recipient) => ({
-      email: recipient.email,
-      name: recipient.name || '',
-      status: recipient.status,
-      error: recipient.error || '',
-    })),
-    deliveryStatus: item.deliveryStatus || 'NONE',
-  }))
+  const fromInteractions = interactions.map(toTimelineEntry)
 
   const fromSystem: TimelineEntry[] = systemEvents.map((item) => ({
     id: String(item._id),

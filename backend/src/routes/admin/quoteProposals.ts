@@ -1,19 +1,47 @@
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { body, param, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requireAnyPermission, requirePermission, userHasPermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import QuoteTemplate from '../../models/QuoteTemplate.js'
+import Lead from '../../models/Lead.js'
+import { canReadLead } from '../../lib/crmScope.js'
+import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
+import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
 import { buildSpecificationMarkdown } from '../../lib/quoteSpecification.js'
 import ChangeRequest from '../../models/ChangeRequest.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
+import mongoose, { type ClientSession } from 'mongoose'
+import { runInTransaction } from '../../lib/transaction.js'
+import { lockProject } from '../../lib/projectWriteLock.js'
 
 const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
+
+router.use(async (req, res, next) => {
+  try {
+    if (req.method === 'GET' || req.method === 'HEAD') return next()
+    const id = decodeURIComponent(req.path.split('/')[1] ?? '')
+    const proposal = mongoose.isObjectIdOrHexString(id)
+      ? await QuoteProposal.findById(id).select('project').lean()
+      : null
+    const projectIds = [proposal?.project, req.body?.project].filter(Boolean)
+    for (const projectId of projectIds) {
+      if (!(await canReadProject(req.user!, String(projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
+    }
+    return next()
+  } catch (err) {
+    return next(err)
+  }
+})
 
 router.post(
   '/:id/rebuild-document',
@@ -53,15 +81,119 @@ async function loadEditable(res: Response, id: string) {
   return proposal
 }
 
+async function initializeProposal(proposal: IQuoteProposal, session: ClientSession) {
+  proposal.selectedOptionalLineIds = proposal.lines
+    .filter((line) => line.isOptional && line.isSelectedByDefault)
+    .map((line) => line._id)
+  proposal.specification.content = buildSpecificationMarkdown({
+    title: proposal.title,
+    questions: proposal.questions.toObject(),
+    answers: [],
+    lines: proposal.lines.toObject(),
+    selectedOptionalLineIds: proposal.selectedOptionalLineIds,
+  })
+  await proposal.save({ session })
+}
+
+/**
+ * Ce sur quoi porte un nouveau devis : un projet, ou un lead seul. Répond
+ * lui-même 404 ou 403 et renvoie null quand la cible n'est pas admissible.
+ */
+async function quoteTarget(req: Request, res: Response, wanted: { project?: string; leadId?: string }) {
+  if (wanted.project) {
+    const project = await Project.findById(wanted.project).select('client assignedTo').lean()
+    if (!project) {
+      res.status(404).json({ error: 'Projet non trouvé' })
+      return null
+    }
+    if (!(await loadQuotePortfolio(req, { projects: [project] })).canQuoteProject(project)) {
+      res.status(403).json({ error: "Ce projet n'est pas dans votre portefeuille", code: 'PROJECT_OUT_OF_SCOPE' })
+      return null
+    }
+    return { project: project._id, client: project.client, leadId: null }
+  }
+  const lead = await Lead.findById(wanted.leadId).select('assignedTo createdBy clientAccountId').lean()
+  if (!lead || !canReadLead(req, lead)) {
+    res.status(404).json({ error: 'Lead non trouvé' })
+    return null
+  }
+  if (!(await loadQuotePortfolio(req, { leads: [lead] })).canQuoteLead(lead)) {
+    res.status(403).json({ error: "Ce lead n'est pas dans votre portefeuille", code: 'LEAD_OUT_OF_SCOPE' })
+    return null
+  }
+  // Le compte client lié au lead n'est pas repris : sans projet, personne
+  // n'accède au devis, et le rattachement fixera le client à partir du projet.
+  return { project: null, client: null, leadId: lead._id }
+}
+
 router.get(
   '/',
-  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = {}
-      if (req.query.project) filter.project = req.query.project
+      const ids = await readableProjectIds(req.user!)
+      const filter: Record<string, unknown> =
+        ids === null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: ids } }] }] }
+      if (req.query.project) filter.project = String(req.query.project)
+      if (req.query.lead) filter.leadId = String(req.query.lead)
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()
       return res.json({ proposals })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.get(
+  '/:id',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  param('id').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id).lean()
+      if (!proposal || (proposal.project && !(await canReadProject(req.user!, String(proposal.project)))))
+        return res.status(404).json({ error: 'Proposition non trouvée' })
+      return res.json({ proposal })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.post(
+  '/from-template',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  body('templateId').isMongoId(),
+  body('project').optional().isMongoId(),
+  body('leadId').optional().isMongoId(),
+  body().custom((value) => Boolean(value?.project) !== Boolean(value?.leadId)),
+  body('title').optional().isString().trim().notEmpty(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) {
+        return res.status(400).json({ error: 'Modèle, projet ou lead (un seul des deux), ou titre invalide' })
+      }
+      const template = await QuoteTemplate.findOne({ _id: req.body.templateId, isActive: true }).lean()
+      if (!template) return res.status(404).json({ error: 'Modèle actif non trouvé' })
+      const target = await quoteTarget(req, res, { project: req.body.project, leadId: req.body.leadId })
+      if (!target) return
+      const proposal = await runInTransaction(async (session) => {
+        if (target.project) await lockProject(target.project, session)
+        const proposal = new QuoteProposal({
+          ...target,
+          createdBy: req.user!.id,
+          title: req.body.title ?? template.title,
+          intro: template.intro,
+          questions: template.questions,
+          lines: template.lines,
+          status: 'DRAFT',
+          expiresAt: new Date(Date.now() + template.validityDays * 86400000),
+        })
+        await initializeProposal(proposal, session)
+        return proposal
+      })
+      return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
       return next(err)
     }
@@ -82,28 +214,22 @@ router.post(
       const project = await Project.findById(req.body.project).lean()
       if (!project) return res.status(404).json({ error: 'Projet non trouvé' })
 
-      const proposal = await QuoteProposal.create({
-        project: project._id,
-        client: project.client,
-        createdBy: req.user!.id,
-        title: String(req.body.title).trim(),
-        intro: req.body.intro ?? '',
-        expiresAt: req.body.expiresAt ?? null,
-        questions: req.body.questions ?? [],
-        lines: req.body.lines ?? [],
-      })
+      const proposal = await runInTransaction(async (session) => {
+        await lockProject(project._id, session)
+        const proposal = new QuoteProposal({
+          project: project._id,
+          client: project.client,
+          createdBy: req.user!.id,
+          title: String(req.body.title).trim(),
+          intro: req.body.intro ?? '',
+          expiresAt: req.body.expiresAt ?? null,
+          questions: req.body.questions ?? [],
+          lines: req.body.lines ?? [],
+        })
 
-      proposal.selectedOptionalLineIds = proposal.lines
-        .filter((line) => line.isOptional && line.isSelectedByDefault)
-        .map((line) => line._id)
-      proposal.specification.content = buildSpecificationMarkdown({
-        title: proposal.title,
-        questions: proposal.questions.toObject(),
-        answers: [],
-        lines: proposal.lines.toObject(),
-        selectedOptionalLineIds: proposal.selectedOptionalLineIds,
+        await initializeProposal(proposal, session)
+        return proposal
       })
-      await proposal.save()
 
       return res.status(201).json({ proposal: proposal.toObject() })
     } catch (err) {
@@ -136,16 +262,78 @@ router.patch(
   },
 )
 
+// Un devis né sur un lead passe sur le projet de l'affaire quand il existe.
+router.post(
+  '/:id/attach-project',
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
+  param('id').isMongoId(),
+  body('project').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id)
+      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      if (!(await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) && String(proposal.createdBy) !== req.user!.id) {
+        return res
+          .status(403)
+          .json({ error: 'Vous ne pouvez rattacher que vos propositions', code: 'NOT_PROPOSAL_OWNER' })
+      }
+      if (proposal.project) {
+        return res
+          .status(409)
+          .json({ error: 'Ce devis est déjà rattaché à un projet', code: 'PROPOSAL_ALREADY_ATTACHED' })
+      }
+      if (proposal.status !== 'DRAFT') {
+        return res.status(409).json({ error: 'Seul un brouillon peut être rattaché', code: 'PROPOSAL_NOT_DRAFT' })
+      }
+      const target = await quoteTarget(req, res, { project: req.body.project })
+      if (!target) return
+      // Conditionnel : deux rattachements simultanés ne peuvent pas s'écraser.
+      const attached = await runInTransaction(async (session) => {
+        await lockProject(target.project!, session)
+        return QuoteProposal.findOneAndUpdate(
+          { _id: proposal._id, project: null, status: 'DRAFT' },
+          { $set: { project: target.project, client: target.client } },
+          { new: true, session },
+        ).lean()
+      })
+      if (!attached) {
+        return res
+          .status(409)
+          .json({ error: 'Ce devis est déjà rattaché à un projet', code: 'PROPOSAL_ALREADY_ATTACHED' })
+      }
+      return res.json({ proposal: attached })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
 router.post(
   '/:id/send',
-  requirePermission(PERMISSIONS.MANAGE_BILLING),
+  requireAnyPermission([PERMISSIONS.MANAGE_QUOTES, PERMISSIONS.MANAGE_BILLING]),
   param('id').isMongoId(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const proposal = await loadEditable(res, req.params.id as string)
-      if (!proposal) return
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
+      const proposal = await QuoteProposal.findById(req.params.id)
+      if (!proposal) return res.status(404).json({ error: 'Proposition non trouvée' })
+      if (!(await userHasPermission(req, PERMISSIONS.MANAGE_BILLING)) && String(proposal.createdBy) !== req.user!.id) {
+        return res
+          .status(403)
+          .json({ error: 'Vous ne pouvez envoyer que vos propositions', code: 'NOT_PROPOSAL_OWNER' })
+      }
+      if (proposal.status === 'SIGNED') {
+        return res.status(409).json({ error: 'Une proposition signée est figée', code: 'PROPOSAL_ALREADY_SIGNED' })
+      }
       if (proposal.status !== 'DRAFT') {
         return res.status(409).json({ error: 'Seul un brouillon peut être envoyé', code: 'PROPOSAL_NOT_DRAFT' })
+      }
+      if (!proposal.project) {
+        return res.status(409).json({
+          error: 'Rattachez le devis à un projet avant de l’envoyer',
+          code: 'PROPOSAL_NOT_ATTACHED',
+        })
       }
       proposal.status = 'SENT'
       await proposal.save()

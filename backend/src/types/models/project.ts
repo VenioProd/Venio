@@ -28,6 +28,7 @@ export interface IProjectBilling {
 }
 
 export interface IProject extends Document {
+  writeVersion: number
   name: string
   description: string
   status: ProjectStatus
@@ -133,6 +134,8 @@ export interface IProjectItemFile {
 }
 
 export interface IProjectItem extends Document {
+  clientRequestId?: string
+  clientRequestHash?: string
   project: Types.ObjectId
   section: Types.ObjectId | null
   type: ItemType
@@ -198,4 +201,5 @@ export interface IProjectUpdate extends Document {
   description: string
   createdBy: Types.ObjectId
   createdAt: Date
+  updatedAt: Date
 }

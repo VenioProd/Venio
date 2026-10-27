@@ -1,3 +1,4 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
 import type { IProjectPhase } from '../types/models/index.js'
 
@@ -48,5 +49,7 @@ const projectPhaseSchema = new mongoose.Schema<IProjectPhase>(
 
 // Tri du pipeline : toutes les lectures trient par ordre croissant sur un projet.
 projectPhaseSchema.index({ project: 1, order: 1 })
+
+syncTombstones(projectPhaseSchema, 'projectPhases')
 
 export default mongoose.model<IProjectPhase>('ProjectPhase', projectPhaseSchema)

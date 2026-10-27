@@ -1,7 +1,9 @@
+import { syncTombstones } from '../lib/syncTombstones.js'
 import mongoose from 'mongoose'
+import QuoteCounter from './QuoteCounter.js'
 import type { IQuoteProposal } from '../types/models/index.js'
 
-const questionSchema = new mongoose.Schema(
+export const questionSchema = new mongoose.Schema(
   {
     type: {
       type: String,
@@ -25,7 +27,7 @@ const answerSchema = new mongoose.Schema(
   { _id: false },
 )
 
-const lineSchema = new mongoose.Schema(
+export const lineSchema = new mongoose.Schema(
   {
     description: { type: String, required: true, trim: true },
     detail: { type: String, default: '' },
@@ -55,11 +57,20 @@ const signatureSchema = new mongoose.Schema(
   { _id: false },
 )
 
+function requiredWithoutLead(this: { leadId?: unknown }): boolean {
+  return !this.leadId
+}
+
 const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
   {
-    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
-    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Un devis naît sur un projet, ou sur un lead seul tant que l'affaire n'a
+    // pas encore de projet. Il ne peut être envoyé qu'une fois rattaché à un
+    // projet : c'est par le projet que le client y accède.
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null, required: requiredWithoutLead },
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, required: requiredWithoutLead },
+    leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    reference: { type: String },
     title: { type: String, required: true, trim: true },
     intro: { type: String, default: '' },
     status: {
@@ -68,6 +79,7 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
       default: 'DRAFT',
     },
     expiresAt: { type: Date, default: null },
+    firstViewedAt: { type: Date, default: null },
     questions: { type: [questionSchema], default: [] },
     answers: { type: [answerSchema], default: [] },
     lines: { type: [lineSchema], default: [] },
@@ -83,7 +95,30 @@ const quoteProposalSchema = new mongoose.Schema<IQuoteProposal>(
   { timestamps: true },
 )
 
+export async function allocateQuoteReference(createdAt: Date): Promise<string> {
+  const year = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric' }).format(createdAt)
+  const counter = await QuoteCounter.findOneAndUpdate(
+    { _id: `quote:${year}` },
+    { $inc: { seq: 1 } },
+    { upsert: true, new: true },
+  )
+  return `DV-${year}-${String(counter.seq).padStart(3, '0')}`
+}
+
+quoteProposalSchema.pre('validate', async function () {
+  if (this.isNew && !this.reference) {
+    this.createdAt ??= new Date()
+    this.reference = await allocateQuoteReference(this.createdAt)
+  }
+})
+quoteProposalSchema.index(
+  { reference: 1 },
+  { unique: true, partialFilterExpression: { reference: { $type: 'string' } } },
+)
 quoteProposalSchema.index({ project: 1, status: 1 })
 quoteProposalSchema.index({ client: 1, status: 1 })
+quoteProposalSchema.index({ leadId: 1 }, { partialFilterExpression: { leadId: { $type: 'objectId' } } })
+
+syncTombstones(quoteProposalSchema, 'quotes')
 
 export default mongoose.model<IQuoteProposal>('QuoteProposal', quoteProposalSchema)

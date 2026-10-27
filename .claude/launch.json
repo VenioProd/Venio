@@ -4,8 +4,23 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5501", "--host", "0.0.0.0"],
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5501",
+        "--host",
+        "0.0.0.0"
+      ],
       "port": 5501
+    },
+    {
+      "name": "backend-compta-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "backend/src/scripts/devPreviewComptaProjets.ts"
+      ],
+      "port": 3000
     }
   ]
 }

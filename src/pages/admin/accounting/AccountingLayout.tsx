@@ -15,6 +15,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin/comptabilite', label: 'Tableau de bord', end: true, perm: PERMISSIONS.VIEW_ACCOUNTING },
+  { to: '/admin/comptabilite/projets', label: 'Projets', perm: PERMISSIONS.VIEW_ACCOUNTING },
+  { to: '/admin/comptabilite/stripe', label: 'Stripe', perm: PERMISSIONS.VIEW_ACCOUNTING },
+  { to: '/admin/comptabilite/beneficiaires', label: 'Bénéficiaires', perm: PERMISSIONS.VIEW_ACCOUNTING },
+  { to: '/admin/comptabilite/modeles-repartition', label: 'Modèles de répartition', perm: PERMISSIONS.VIEW_ACCOUNTING },
   { to: '/admin/comptabilite/ecritures', label: 'Écritures', perm: PERMISSIONS.VIEW_ACCOUNTING },
   { to: '/admin/comptabilite/grand-livre', label: 'Grand livre', perm: PERMISSIONS.VIEW_ACCOUNTING },
   { to: '/admin/comptabilite/balance', label: 'Balance', perm: PERMISSIONS.VIEW_ACCOUNTING },

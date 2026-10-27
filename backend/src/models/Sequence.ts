@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { type ClientSession } from 'mongoose'
 import type { ISequence } from '../types/models/index.js'
 
 const sequenceSchema = new mongoose.Schema<ISequence>(
@@ -9,7 +9,7 @@ const sequenceSchema = new mongoose.Schema<ISequence>(
     suffix: { type: String, default: '' },
     padding: { type: Number, default: 0 },
   },
-  { timestamps: false }
+  { timestamps: false },
 )
 
 /**
@@ -17,14 +17,14 @@ const sequenceSchema = new mongoose.Schema<ISequence>(
  */
 export async function getNextSequence(
   name: string,
-  options: { prefix?: string; suffix?: string; padding?: number } = {}
+  options: { prefix?: string; suffix?: string; padding?: number; session?: ClientSession } = {},
 ): Promise<{ value: number; formatted: string }> {
   const { prefix = '', suffix = '', padding = 3 } = options
   const SequenceModel = mongoose.model('Sequence')
   const doc = await SequenceModel.findOneAndUpdate(
     { name },
     { $inc: { value: 1 } },
-    { new: true, upsert: true }
+    { new: true, upsert: true, session: options.session },
   )
   const value = doc?.value ?? 1
   const padded = padding > 0 ? String(value).padStart(padding, '0') : String(value)

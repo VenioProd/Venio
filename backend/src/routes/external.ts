@@ -9,11 +9,9 @@ import { verifySignature } from '../lib/external/hmac.js'
 import { consume as rateLimitConsume } from '../lib/external/rateLimit.js'
 import { normalizePayload } from '../lib/external/normalize.js'
 import { classifyTransaction } from '../lib/external/classifier.js'
+import { assertTransactionsSupported, runInTransaction } from '../lib/transaction.js'
 import { createEntry } from '../lib/accounting/doubleEntry.js'
-import type {
-  IExternalSource,
-  IExternalTransaction,
-} from '../types/models/index.js'
+import type { IExternalSource, IExternalTransaction } from '../types/models/index.js'
 
 /**
  * Routes publiques pour les sources externes (Arrow, ecom-bcg, etc.)
@@ -92,7 +90,7 @@ router.use(
   express.raw({
     type: () => true,
     limit: RAW_LIMIT,
-  })
+  }),
 )
 
 // ----------------------------------------------------------------------------
@@ -145,28 +143,21 @@ function parseJsonBody(rawBuffer: Buffer): unknown {
 // Ping (public)
 // ----------------------------------------------------------------------------
 
-router.get(
-  '/:sourceSlug/ping',
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const slug = String(req.params.sourceSlug || '').toLowerCase()
-      res.json({ ok: true, slug, serverTime: new Date().toISOString() })
-    } catch (err) {
-      next(err)
-    }
+router.get('/:sourceSlug/ping', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const slug = String(req.params.sourceSlug || '').toLowerCase()
+    res.json({ ok: true, slug, serverTime: new Date().toISOString() })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // ----------------------------------------------------------------------------
 // Middleware d'authentification (signature + clé + timestamp + idempotency)
 // Charge req.externalSource, req.rawBody, req.parsedBody, req.idempotencyKey
 // ----------------------------------------------------------------------------
 
-async function authenticateSource(
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+async function authenticateSource(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const slug = String(req.params.sourceSlug || '').toLowerCase()
 
@@ -204,7 +195,7 @@ async function authenticateSource(
         res,
         401,
         'MISSING_HEADERS',
-        'Headers requis : X-Api-Key, X-Venio-Signature, X-Venio-Timestamp, Idempotency-Key'
+        'Headers requis : X-Api-Key, X-Venio-Signature, X-Venio-Timestamp, Idempotency-Key',
       )
       return
     }
@@ -325,7 +316,7 @@ async function processSingleEntry({
     // On incrémente le compteur de doublons (best effort)
     ExternalSource.updateOne(
       { _id: source._id },
-      { $inc: { totalDuplicates: 1 }, $set: { lastSeenAt: new Date() } }
+      { $inc: { totalDuplicates: 1 }, $set: { lastSeenAt: new Date() } },
     ).catch(() => {})
     return {
       externalId: existing.externalId || externalIdHint || '',
@@ -384,40 +375,49 @@ async function processSingleEntry({
 
     const entryIdempotencyKey = `external:${source.slug}:${idempotencyKey}`
 
-    const result = await createEntry({
-      journal: classification.journalCode,
-      date: normalized.date,
-      label: classification.labelTemplate,
-      pieceRef: normalized.externalId || '',
-      lines: classification.lines.map((l) => ({
-        account: l.accountCode,
-        label: l.label,
-        debit: l.debit,
-        credit: l.credit,
-        vatRateValue: l.vatRateValue,
-        lettrage: l.lettrage,
-        auxiliaryRef: l.auxiliaryRef
-          ? { kind: (l.auxiliaryRef.kind || 'OTHER') as 'CLIENT' | 'SUPPLIER' | 'OTHER', id: null }
-          : undefined,
-      })),
-      source: 'EXTERNAL',
-      externalSource: source._id as Types.ObjectId,
-      sourceRef: { kind: 'EXTERNAL_TX', id: externalTx._id as Types.ObjectId },
-      idempotencyKey: entryIdempotencyKey,
-      status: classification.autoValidate ? 'VALIDATED' : 'DRAFT',
-      currency: normalized.currency || 'EUR',
-      notes: classification.auxiliaryWarnings?.join(' | ') || '',
-    })
+    const posted = await runInTransaction(async (session) => {
+      const tx = await ExternalTransaction.findById(externalTx._id).session(session)
+      if (!tx) throw new Error('Transaction introuvable')
+      const result = await createEntry({
+        journal: classification.journalCode,
+        date: normalized.date,
+        label: classification.labelTemplate,
+        pieceRef: normalized.externalId || '',
+        lines: classification.lines.map((l) => ({
+          account: l.accountCode,
+          label: l.label,
+          debit: l.debit,
+          credit: l.credit,
+          vatRateValue: l.vatRateValue,
+          lettrage: l.lettrage,
+          auxiliaryRef: l.auxiliaryRef
+            ? { kind: (l.auxiliaryRef.kind || 'OTHER') as 'CLIENT' | 'SUPPLIER' | 'OTHER', id: null }
+            : undefined,
+        })),
+        source: 'EXTERNAL',
+        externalSource: source._id as Types.ObjectId,
+        sourceRef: { kind: 'EXTERNAL_TX', id: tx._id as Types.ObjectId },
+        idempotencyKey: entryIdempotencyKey,
+        status: classification.autoValidate ? 'VALIDATED' : 'DRAFT',
+        currency: normalized.currency || 'EUR',
+        notes: classification.auxiliaryWarnings?.join(' | ') || '',
+        session,
+      })
 
-    // 4. Mettre à jour la transaction
-    externalTx.status = classification.autoValidate ? 'POSTED' : 'AWAITING_REVIEW'
-    externalTx.autoValidated = Boolean(classification.autoValidate)
-    externalTx.matchedRule = classification.ruleId
-    externalTx.normalizedPayload = normalized
-    externalTx.generatedEntry = result.entry._id as Types.ObjectId
-    externalTx.externalId = normalized.externalId || externalTx.externalId
-    externalTx.processedAt = new Date()
-    await externalTx.save()
+      // 4. Mettre à jour la transaction
+      tx.status = classification.autoValidate ? 'POSTED' : 'AWAITING_REVIEW'
+      tx.autoValidated = Boolean(classification.autoValidate)
+      tx.matchedRule = classification.ruleId
+      tx.normalizedPayload = normalized
+      tx.generatedEntry = result.entry._id as Types.ObjectId
+      tx.externalId = normalized.externalId || tx.externalId
+      tx.processedAt = new Date()
+      await tx.save({ session })
+
+      return { result, tx }
+    })
+    const { result } = posted
+    externalTx = posted.tx
 
     // 5. Stats source
     ExternalSource.updateOne(
@@ -425,7 +425,7 @@ async function processSingleEntry({
       {
         $inc: { totalIngested: 1 },
         $set: { lastSeenAt: new Date() },
-      }
+      },
     ).catch(() => {})
 
     // 6. Audit de l'ingestion (acteur externe) — uniquement si une vraie
@@ -470,11 +470,9 @@ async function processSingleEntry({
     }
   } catch (err) {
     // Échec normalisation / classification / création
-    const e = err as Error & { errors?: unknown[] }
-    const reason =
-      e.errors && Array.isArray(e.errors)
-        ? JSON.stringify(e.errors)
-        : e.message || 'Erreur inconnue'
+    const e = err as Error & { errors?: unknown[]; status?: number }
+    if (e.status === 503) throw e
+    const reason = e.errors && Array.isArray(e.errors) ? JSON.stringify(e.errors) : e.message || 'Erreur inconnue'
     externalTx.status = 'REJECTED'
     externalTx.errorReason = reason
     externalTx.processedAt = new Date()
@@ -489,7 +487,7 @@ async function processSingleEntry({
           lastErrorAt: new Date(),
           lastError: String(e.message || '').slice(0, 500),
         },
-      }
+      },
     ).catch(() => {})
 
     return {
@@ -507,6 +505,7 @@ router.post(
   authenticateSource as (req: Request, res: Response, next: NextFunction) => void,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      await assertTransactionsSupported()
       const authedReq = req as AuthedRequest
       const source = authedReq.externalSource!
       const body = authedReq.parsedBody
@@ -535,12 +534,7 @@ router.post(
       }
 
       if (isBatch && entries.length > MAX_BATCH) {
-        respondError(
-          res,
-          413,
-          'BATCH_TOO_LARGE',
-          `Batch limité à ${MAX_BATCH} entries (reçu : ${entries.length})`
-        )
+        respondError(res, 413, 'BATCH_TOO_LARGE', `Batch limité à ${MAX_BATCH} entries (reçu : ${entries.length})`)
         return
       }
       if (entries.length === 0) {
@@ -573,14 +567,13 @@ router.post(
           })
           results.push(r)
         } catch (err) {
+          if ((err as { status?: number }).status === 503) throw err
           results.push({
             externalId: externalIdForKey,
             status: 'REJECTED',
             transactionId: null,
             entry: null,
-            errors: [
-              { field: '_root', message: (err as Error).message || 'Erreur interne' },
-            ],
+            errors: [{ field: '_root', message: (err as Error).message || 'Erreur interne' }],
           })
         }
       }
@@ -610,7 +603,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -646,7 +639,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -724,7 +717,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // Handler d'erreur local (codes et format JSON cohérents)

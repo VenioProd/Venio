@@ -1,8 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
+import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
-import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { clearDb, setupMongoReplSet, teardownMongo } from './helpers/mongoTestEnv.js'
+import { resetTransactionSupportCache } from '../lib/transaction.js'
 import { createSession } from '../lib/session.js'
 import clientQuoteRoutes from '../routes/client/quotes.js'
 import User from '../models/User.js'
@@ -38,10 +40,12 @@ async function createProposal(overrides: Record<string, unknown> = {}) {
 const CONSENT = { signerName: 'Jean Client', consent: true }
 
 beforeAll(async () => {
-  await setupMongo()
+  await setupMongoReplSet()
+  resetTransactionSupportCache()
   app = express()
   app.use(express.json())
   app.use('/api/projects', clientQuoteRoutes)
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 
 afterAll(teardownMongo)

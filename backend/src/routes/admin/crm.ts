@@ -1,3 +1,4 @@
+import { readableProjectIds, canReadProject } from '../../lib/adminProjectAccess.js'
 import express, { Request, Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
@@ -24,7 +25,8 @@ import { createClientFolders } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
-import { leadScopeFilter, isLeadOutOfScope } from '../../lib/crmScope.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
+import { canReadLead, leadScopeFilter, isLeadOutOfScope, readsWholeCrm } from '../../lib/crmScope.js'
 import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
@@ -102,7 +104,8 @@ async function ensureClientForWonLead(
     if (!client.companyName && lead.company) updatePayload.companyName = lead.company
     if (!client.serviceType && lead.serviceType) updatePayload.serviceType = lead.serviceType
     if (!client.phone && lead.contactPhone) updatePayload.phone = lead.contactPhone
-    if (!client.ownerAdminId && lead.assignedTo) updatePayload.ownerAdminId = lead.assignedTo
+    // Pas de propriétaire attribué à un compte existant : la propriété d'un
+    // client ouvre des droits (devis), et le lier par son email ne prouve rien.
     if (!client.name && (lead.contactName || lead.company)) {
       updatePayload.name = lead.contactName || lead.company
     }
@@ -210,6 +213,7 @@ router.get(
 router.post(
   '/leads',
   requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
   body('company').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('Email de contact invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -270,7 +274,9 @@ router.post(
         payload.score = calculateLeadScore(payload as any, settings.scoringWeights)
       }
 
-      const lead = await Lead.create(payload)
+      const lead = new Lead(payload)
+      lead.$locals.assignmentActorId = req.user!.id
+      await lead.save()
 
       // Log creation activity (if enabled)
       if (settings.activityLogging) {
@@ -283,18 +289,6 @@ router.post(
         if (assignee) {
           notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
         }
-      }
-
-      // Notif in-app à l'assigné (toujours, même si email désactivé)
-      if (lead.assignedTo && String(lead.assignedTo) !== req.user!.id) {
-        createNotification({
-          recipient: lead.assignedTo,
-          type: 'CRM_LEAD_ASSIGNED',
-          title: `Nouveau lead assigné`,
-          message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
-          link: `/admin/crm/leads/${lead._id}`,
-          metadata: { leadId: String(lead._id) },
-        }).catch(() => {})
       }
 
       // Auto-create client account when lead is WON
@@ -315,6 +309,7 @@ router.post(
 router.patch(
   '/leads/:id',
   requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id)
@@ -325,6 +320,8 @@ router.patch(
         return res.status(404).json({ error: 'Lead not found' })
       }
 
+      lead.$locals.assignmentActorId = req.user!.id
+
       // Load settings for automation control
       const settings = await CrmSettings.getSettings()
 
@@ -332,6 +329,21 @@ router.patch(
       const oldAssignee = lead.assignedTo?.toString() || null
 
       const payload = normalizeLeadPayload(req.body || {})
+
+      // Le lead d'un collègue ne se reprend pas : l'assignation ouvre des
+      // droits (devis), et en être le créateur ne suffit pas pour la changer.
+      if (
+        payload.assignedTo !== undefined &&
+        req.user!.role !== 'SUPER_ADMIN' &&
+        oldAssignee &&
+        oldAssignee !== req.user!.id &&
+        String(payload.assignedTo ?? '') !== oldAssignee
+      ) {
+        return res.status(403).json({
+          error: 'Seul le titulaire du lead ou un super-admin peut le réassigner',
+          code: 'LEAD_ASSIGNMENT_FORBIDDEN',
+        })
+      }
 
       // La liste des motifs est fermée : accepter une valeur hors liste la
       // rendrait ouverte et les statistiques de perte inexploitables.
@@ -437,18 +449,6 @@ router.patch(
             notifyAssignment(lead, assignee).catch(() => {}) // Fire and forget
           }
         }
-
-        // Notif in-app au nouvel assigné (toujours)
-        if (newAssignee && newAssignee !== req.user!.id) {
-          createNotification({
-            recipient: newAssignee,
-            type: 'CRM_LEAD_ASSIGNED',
-            title: `Lead réassigné à vous`,
-            message: `${lead.company}${lead.contactName ? ` — ${lead.contactName}` : ''}`,
-            link: `/admin/crm/leads/${lead._id}`,
-            metadata: { leadId: String(lead._id) },
-          }).catch(() => {})
-        }
       }
 
       // Auto-qualification: if budget + source are now set and status is still LEAD (if enabled)
@@ -483,7 +483,7 @@ router.get(
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })
       }
-      if (isLeadOutOfScope(req, lead)) {
+      if (!canReadLead(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       return res.json({ lead })
@@ -523,7 +523,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
-      if (!lead || isLeadOutOfScope(req, lead)) {
+      if (!lead || !canReadLead(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       const activities = await LeadActivity.find({ leadId: req.params.id })
@@ -554,10 +554,13 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await loadLeadInScope(req, res)
-      if (!lead) return undefined
+      const lead = await Lead.findOne({ _id: req.params.id, ...leadScopeFilter(req) }).select('company budget')
+      if (!lead) return res.status(404).json({ error: 'Lead not found' })
 
-      const projects = await Project.find({ sourceLead: lead._id }).select('name status createdAt').lean()
+      const ids = await readableProjectIds(req.user!)
+      const projects = await Project.find({ sourceLead: lead._id, ...(ids === null ? {} : { _id: { $in: ids } }) })
+        .select('name status createdAt')
+        .lean()
       const projectIds = projects.map((project) => project._id)
 
       const [documents, proposals] = await Promise.all([
@@ -598,14 +601,16 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await loadLeadInScope(req, res)
-      if (!lead) return undefined
+      const lead = await Lead.findOne({ _id: req.params.id, ...leadScopeFilter(req) }).select('clientAccountId')
+      if (!lead) return res.status(404).json({ error: 'Lead not found' })
 
       if (!lead.clientAccountId) {
         return res.json({ candidates: [], reason: 'NO_CLIENT_ACCOUNT' })
       }
 
+      const ids = await readableProjectIds(req.user!)
       const candidates = await Project.find({
+        ...(ids === null ? {} : { _id: { $in: ids } }),
         client: lead.clientAccountId,
         $or: [{ sourceLead: null }, { sourceLead: { $exists: false } }],
       })
@@ -630,6 +635,9 @@ router.post(
 
       if (!mongoose.isValidObjectId(req.params.projectId)) {
         return res.status(400).json({ error: 'Identifiant de projet invalide' })
+      }
+      if (!(await canReadProject(req.user!, String(req.params.projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
       }
       const project = await Project.findById(req.params.projectId).select('name sourceLead')
       if (!project) return res.status(404).json({ error: 'Project not found' })
@@ -669,6 +677,9 @@ router.delete(
 
       if (!mongoose.isValidObjectId(req.params.projectId)) {
         return res.status(400).json({ error: 'Identifiant de projet invalide' })
+      }
+      if (!(await canReadProject(req.user!, String(req.params.projectId)))) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
       }
       const project = await Project.findOne({ _id: req.params.projectId, sourceLead: lead._id }).select('name')
       if (!project) return res.status(404).json({ error: 'Project not found' })
@@ -710,7 +721,7 @@ router.get(
     try {
       const now = new Date()
       const { period, since } = resolvePeriod(req.query.period, now)
-      const seesEveryone = req.user!.role === 'SUPER_ADMIN'
+      const seesEveryone = readsWholeCrm(req)
 
       // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
       // sur deux populations différentes ne veut rien dire — c'est l'erreur que
@@ -753,7 +764,11 @@ router.get(
       // Chiffre d'affaires réellement produit par la cohorte, via les projets
       // qui lui sont rattachés. Le budget déclaré est renvoyé en regard :
       // l'écart entre annoncé et signé est ce que le CRM n'a jamais su dire.
-      const cohortProjects = await Project.find({ sourceLead: { $in: leadDocs.map((lead) => lead._id) } })
+      const ids = await readableProjectIds(req.user!)
+      const cohortProjects = await Project.find({
+        ...(ids === null ? {} : { _id: { $in: ids } }),
+        sourceLead: { $in: leadDocs.map((lead) => lead._id) },
+      })
         .select('_id sourceLead')
         .lean()
       const cohortDocuments =
@@ -878,14 +893,19 @@ router.post(
     try {
       const settings = await CrmSettings.getSettings()
       const lead = await Lead.findById(req.params.id)
-      if (!lead) {
+      if (!lead || isLeadOutOfScope(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
       if (lead.status !== 'WON') {
         return res.status(400).json({ error: 'Only WON leads can be converted to clients' })
       }
       const alreadyLinked = Boolean(lead.clientAccountId)
-      const client = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+      const linked = await ensureClientForWonLead(lead, req.user!.id, settings.activityLogging)
+      // Le compte est relu sans ses secrets : le document chargé porte le hash
+      // du mot de passe et le second facteur.
+      const client = await User.findById(linked._id)
+        .select('-passwordHash -twoFactorSecret -twoFactorRecoveryCodeHashes')
+        .lean()
       return res.status(alreadyLinked ? 200 : 201).json({ client, lead })
     } catch (err) {
       return next(err)
