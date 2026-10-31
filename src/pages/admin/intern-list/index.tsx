@@ -165,6 +165,8 @@ const InternList = () => {
           onClick={() => {
             resetForm()
             setShowForm(true)
+            // Le formulaire n'existe que dans l'onglet Équipe
+            setActiveTab('stagiaires')
           }}
         >
           + Nouveau membre
