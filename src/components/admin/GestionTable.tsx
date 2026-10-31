@@ -1,25 +1,28 @@
 import { useState, useRef } from 'react'
 import { apiDownload, apiUpload } from '../../lib/api'
 import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types/task.types'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
-  A_FAIRE: { label: 'A faire', color: '#64748b' },
-  EN_COURS: { label: 'En cours', color: '#0ea5e9' },
-  EN_REVIEW: { label: 'En review', color: '#f59e0b' },
-  TERMINE: { label: 'Termine', color: '#22c55e' },
-  VALIDE: { label: 'Valide', color: '#22c55e' },
-  NON_VALIDE: { label: 'Non valide', color: '#ef4444' },
-  A_MODIFIER: { label: 'A modifier', color: '#fb923c' },
+const STATUS_CONFIG: Record<TaskStatus, { labelKey: MessageKey; color: string }> = {
+  A_FAIRE: { labelKey: 'compA.taskStatus.todo', color: '#64748b' },
+  EN_COURS: { labelKey: 'compA.taskStatus.inProgress', color: '#0ea5e9' },
+  EN_REVIEW: { labelKey: 'compA.taskStatus.inReview', color: '#f59e0b' },
+  TERMINE: { labelKey: 'compA.taskStatus.done', color: '#22c55e' },
+  VALIDE: { labelKey: 'compA.taskStatus.valid', color: '#22c55e' },
+  NON_VALIDE: { labelKey: 'compA.taskStatus.invalid', color: '#ef4444' },
+  A_MODIFIER: { labelKey: 'compA.taskStatus.toEdit', color: '#fb923c' },
 }
 
 // Statuts que le super admin utilise pour évaluer les tâches
 const ADMIN_TASK_STATUSES: TaskStatus[] = ['EN_REVIEW', 'VALIDE', 'NON_VALIDE', 'A_MODIFIER']
 
-const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
-  BASSE: { label: 'Basse', color: '#64748b' },
-  NORMALE: { label: 'Normale', color: '#0ea5e9' },
-  HAUTE: { label: 'Haute', color: '#f59e0b' },
-  URGENTE: { label: 'Urgente', color: '#ef4444' },
+const PRIORITY_CONFIG: Record<TaskPriority, { labelKey: MessageKey; color: string }> = {
+  BASSE: { labelKey: 'compA.priority.low', color: '#64748b' },
+  NORMALE: { labelKey: 'compA.priority.normal', color: '#0ea5e9' },
+  HAUTE: { labelKey: 'compA.priority.high', color: '#f59e0b' },
+  URGENTE: { labelKey: 'compA.priority.urgent', color: '#ef4444' },
 }
 
 interface Props {
@@ -32,6 +35,7 @@ interface Props {
 }
 
 export default function GestionTable({ tasks, loading, onUpdate, getProjectId, readOnly, onRefresh }: Props) {
+  const { t } = useI18n()
   const [sortKey, setSortKey] = useState<string>('dueDate')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -92,9 +96,9 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
     return ''
   }
 
-  const formatDate = (d: string | null) => {
+  const formatShortDate = (d: string | null) => {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    return formatDate(d, { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
 
   const isOverdue = (task: Task) => {
@@ -104,9 +108,9 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
   const sortArrow = (key: string) => (sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '')
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} o`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+    if (bytes < 1024) return t('compA.gTable.sizeBytes', { n: bytes })
+    if (bytes < 1024 * 1024) return t('compA.gTable.sizeKb', { n: (bytes / 1024).toFixed(1) })
+    return t('compA.gTable.sizeMb', { n: (bytes / (1024 * 1024)).toFixed(1) })
   }
 
   const handleUpload = async (task: Task) => {
@@ -185,7 +189,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
           <td>
             {readOnly || task.progress < 100 ? (
               <span className="gestion-inline-badge" style={{ color: STATUS_CONFIG[task.status].color }}>
-                {STATUS_CONFIG[task.status].label}
+                {t(STATUS_CONFIG[task.status].labelKey)}
               </span>
             ) : (
               <select
@@ -196,11 +200,11 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                 onChange={(e) => onUpdate(getProjectId(task), task._id, { status: e.target.value })}
               >
                 {!ADMIN_TASK_STATUSES.includes(task.status) && (
-                  <option value={task.status}>{STATUS_CONFIG[task.status].label}</option>
+                  <option value={task.status}>{t(STATUS_CONFIG[task.status].labelKey)}</option>
                 )}
                 {ADMIN_TASK_STATUSES.map((k) => (
                   <option key={k} value={k}>
-                    {STATUS_CONFIG[k].label}
+                    {t(STATUS_CONFIG[k].labelKey)}
                   </option>
                 ))}
               </select>
@@ -209,7 +213,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
           <td>
             {readOnly ? (
               <span className="gestion-inline-badge" style={{ color: PRIORITY_CONFIG[task.priority].color }}>
-                {PRIORITY_CONFIG[task.priority].label}
+                {t(PRIORITY_CONFIG[task.priority].labelKey)}
               </span>
             ) : (
               <select
@@ -221,13 +225,13 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
               >
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => (
                   <option key={k} value={k}>
-                    {v.label}
+                    {t(v.labelKey)}
                   </option>
                 ))}
               </select>
             )}
           </td>
-          <td className={isOverdue(task) ? 'gestion-cell-overdue' : ''}>{formatDate(task.dueDate)}</td>
+          <td className={isOverdue(task) ? 'gestion-cell-overdue' : ''}>{formatShortDate(task.dueDate)}</td>
           <td>{task.estimatedDuration ?? '—'}</td>
           <td>
             <div className="gestion-progress-cell">
@@ -265,13 +269,13 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
               <div className="gestion-task-details">
                 {task.description && (
                   <div className="gestion-detail-section">
-                    <span className="gestion-detail-label">Description</span>
+                    <span className="gestion-detail-label">{t('compA.gTable.description')}</span>
                     <p className="gestion-detail-text">{task.description}</p>
                   </div>
                 )}
                 {task.tags && task.tags.length > 0 && (
                   <div className="gestion-detail-section">
-                    <span className="gestion-detail-label">Tags</span>
+                    <span className="gestion-detail-label">{t('compA.gTable.tags')}</span>
                     <div className="gestion-detail-tags">
                       {task.tags.map((tag, i) => (
                         <span key={i} className="gestion-detail-tag">
@@ -282,7 +286,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                   </div>
                 )}
                 <div className="gestion-detail-section">
-                  <span className="gestion-detail-label">Livrables / Fichiers</span>
+                  <span className="gestion-detail-label">{t('compA.gTable.deliverables')}</span>
                   {task.attachments && task.attachments.length > 0 ? (
                     <div className="gestion-attachments-list">
                       {task.attachments.map((att) => (
@@ -303,7 +307,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                       ))}
                     </div>
                   ) : (
-                    <p className="gestion-detail-empty">Aucun fichier</p>
+                    <p className="gestion-detail-empty">{t('compA.gTable.noFile')}</p>
                   )}
                   <div className="gestion-upload-area" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -319,7 +323,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading}
                     >
-                      {uploading ? 'Envoi...' : '+ Ajouter un livrable'}
+                      {uploading ? t('compA.gTable.sending') : t('compA.gTable.addDeliverable')}
                     </button>
                   </div>
                 </div>
@@ -331,28 +335,46 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
     )
   }
 
-  if (loading) return <div className="gestion-loading">Chargement...</div>
+  if (loading) return <div className="gestion-loading">{t('common.loading')}</div>
 
   return (
     <div className="gestion-table-wrap">
       <table className="gestion-table">
         <thead>
           <tr>
-            <th onClick={() => handleSort('title')}>Tache{sortArrow('title')}</th>
-            <th>Projet</th>
-            <th onClick={() => handleSort('assignee')}>Assignee{sortArrow('assignee')}</th>
-            <th onClick={() => handleSort('status')}>Statut{sortArrow('status')}</th>
-            <th onClick={() => handleSort('priority')}>Priorite{sortArrow('priority')}</th>
-            <th onClick={() => handleSort('dueDate')}>Deadline{sortArrow('dueDate')}</th>
-            <th>Duree (h)</th>
-            <th onClick={() => handleSort('progress')}>Progression{sortArrow('progress')}</th>
+            <th onClick={() => handleSort('title')}>
+              {t('compA.gTable.thTask')}
+              {sortArrow('title')}
+            </th>
+            <th>{t('compA.gTable.thProject')}</th>
+            <th onClick={() => handleSort('assignee')}>
+              {t('compA.gTable.thAssignee')}
+              {sortArrow('assignee')}
+            </th>
+            <th onClick={() => handleSort('status')}>
+              {t('compA.gTable.thStatus')}
+              {sortArrow('status')}
+            </th>
+            <th onClick={() => handleSort('priority')}>
+              {t('compA.gTable.thPriority')}
+              {sortArrow('priority')}
+            </th>
+            <th onClick={() => handleSort('dueDate')}>
+              {t('compA.gTable.thDeadline')}
+              {sortArrow('dueDate')}
+            </th>
+            <th>{t('compA.gTable.thDuration')}</th>
+            <th onClick={() => handleSort('progress')}>
+              {t('compA.gTable.thProgress')}
+              {sortArrow('progress')}
+            </th>
           </tr>
         </thead>
         <tbody>
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <tr>
               <td colSpan={8} className="gestion-empty">
-                Aucune tache
+                {t('compA.gTable.noTask')}
               </td>
             </tr>
           ) : (
@@ -360,7 +382,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
               {activeTasks.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="gestion-empty">
-                    Aucune tache en cours
+                    {t('compA.gTable.noActiveTask')}
                   </td>
                 </tr>
               ) : (
@@ -375,20 +397,20 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
         <div className="gestion-completed-section">
           <button className="gestion-completed-toggle" onClick={() => setShowCompleted(!showCompleted)}>
             <span className="gestion-completed-icon">{showCompleted ? '▾' : '▸'}</span>
-            Taches terminees ({completedTasks.length})
+            {t('compA.gTable.completedTasks', { n: completedTasks.length })}
           </button>
           {showCompleted && (
             <table className="gestion-table gestion-table-completed">
               <thead>
                 <tr>
-                  <th>Tache</th>
-                  <th>Projet</th>
-                  <th>Assignee</th>
-                  <th>Statut</th>
-                  <th>Priorite</th>
-                  <th>Deadline</th>
-                  <th>Duree (h)</th>
-                  <th>Progression</th>
+                  <th>{t('compA.gTable.thTask')}</th>
+                  <th>{t('compA.gTable.thProject')}</th>
+                  <th>{t('compA.gTable.thAssignee')}</th>
+                  <th>{t('compA.gTable.thStatus')}</th>
+                  <th>{t('compA.gTable.thPriority')}</th>
+                  <th>{t('compA.gTable.thDeadline')}</th>
+                  <th>{t('compA.gTable.thDuration')}</th>
+                  <th>{t('compA.gTable.thProgress')}</th>
                 </tr>
               </thead>
               <tbody>{completedTasks.map(renderRow)}</tbody>
