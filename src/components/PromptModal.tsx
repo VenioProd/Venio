@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useI18n } from '../context/I18nContext'
 
 export interface PromptModalProps {
   isOpen: boolean
@@ -21,14 +22,15 @@ export default function PromptModal({
   message,
   placeholder,
   initialValue = '',
-  confirmLabel = 'Valider',
-  cancelLabel = 'Annuler',
+  confirmLabel,
+  cancelLabel,
   multiline = false,
   maxLength,
   validate,
   onConfirm,
   onCancel,
 }: PromptModalProps) {
+  const { t } = useI18n()
   const [value, setValue] = useState(initialValue)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
@@ -67,7 +69,7 @@ export default function PromptModal({
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim()
     if (!trimmed) {
-      setError('Champ requis')
+      setError(t('shell.prompt.required'))
       return
     }
     if (validate) {
@@ -78,7 +80,7 @@ export default function PromptModal({
       }
     }
     onConfirm(trimmed)
-  }, [value, validate, onConfirm])
+  }, [value, validate, onConfirm, t])
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -91,7 +93,7 @@ export default function PromptModal({
         handleSubmit()
       }
     },
-    [handleSubmit, multiline]
+    [handleSubmit, multiline],
   )
 
   if (!isOpen) return null
@@ -107,9 +109,18 @@ export default function PromptModal({
         aria-labelledby="prompt-modal-title"
       >
         <div className="confirm-modal__header">
-          <h2 id="prompt-modal-title" className="confirm-modal__title">{title}</h2>
-          <button className="confirm-modal__close" onClick={onCancel} aria-label="Fermer" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <h2 id="prompt-modal-title" className="confirm-modal__title">
+            {title}
+          </h2>
+          <button className="confirm-modal__close" onClick={onCancel} aria-label={t('common.close')} type="button">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -119,35 +130,53 @@ export default function PromptModal({
           {message && <p className="confirm-modal__message">{message}</p>}
           {multiline ? (
             <textarea
-              ref={(node) => { inputRef.current = node }}
+              ref={(node) => {
+                inputRef.current = node
+              }}
               className="prompt-modal__input prompt-modal__input--multiline"
               value={value}
               placeholder={placeholder}
               maxLength={maxLength}
               rows={4}
-              onChange={(event) => { setValue(event.target.value); setError(null) }}
+              onChange={(event) => {
+                setValue(event.target.value)
+                setError(null)
+              }}
               onKeyDown={handleKeyDown}
             />
           ) : (
             <input
-              ref={(node) => { inputRef.current = node }}
+              ref={(node) => {
+                inputRef.current = node
+              }}
               type="text"
               className="prompt-modal__input"
               value={value}
               placeholder={placeholder}
               maxLength={maxLength}
-              onChange={(event) => { setValue(event.target.value); setError(null) }}
+              onChange={(event) => {
+                setValue(event.target.value)
+                setError(null)
+              }}
               onKeyDown={handleKeyDown}
             />
           )}
-          {error && <p className="prompt-modal__error" role="alert">{error}</p>}
+          {error && (
+            <p className="prompt-modal__error" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <div className="confirm-modal__footer">
           <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={onCancel} type="button">
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
-          <button className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info" onClick={handleSubmit} type="button">
-            {confirmLabel}
+          <button
+            className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
+            onClick={handleSubmit}
+            type="button"
+          >
+            {confirmLabel ?? t('shell.prompt.submit')}
           </button>
         </div>
       </div>

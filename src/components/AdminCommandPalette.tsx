@@ -4,7 +4,9 @@ import { Command, Search, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { trackAdminEvent } from '../lib/adminAnalytics'
-import { getCommandPaletteItems, type AdminCommandPaletteItem } from '../lib/adminNavigation'
+import { getCommandPaletteItems, getZoneLabel, type AdminCommandPaletteItem } from '../lib/adminNavigation'
+import { useI18n } from '../context/I18nContext'
+import { intlLocale } from '../i18n'
 import { useModalA11y } from '../hooks/useModalA11y'
 import './AdminCommandPalette.css'
 
@@ -12,7 +14,7 @@ const normalize = (value: string) =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('fr-FR')
+    .toLocaleLowerCase(intlLocale())
 
 interface AdminCommandPaletteProps {
   onClose: () => void
@@ -20,6 +22,7 @@ interface AdminCommandPaletteProps {
 
 export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProps) {
   const { user } = useAuth()
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -34,7 +37,7 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
     return getCommandPaletteItems(user).filter(
       (item) => !normalizedQuery || normalize(item.label).includes(normalizedQuery),
     )
-  }, [query, user])
+  }, [query, user, locale])
 
   useEffect(() => {
     const activeItem = listRef.current?.querySelector<HTMLElement>('[data-active="true"]')
@@ -71,7 +74,7 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
         className="admin-command-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Recherche rapide"
+        aria-label={t('shell.palette.quickSearch')}
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={onKeyDown}
@@ -85,14 +88,19 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
               setQuery(event.target.value)
               setActiveIndex(0)
             }}
-            placeholder="Rechercher un module ou une action"
-            aria-label="Rechercher un module ou une action"
+            placeholder={t('shell.palette.placeholder')}
+            aria-label={t('shell.palette.placeholder')}
           />
-          <kbd>Échap</kbd>
+          <kbd>{t('shell.palette.escKey')}</kbd>
         </div>
-        <div className="admin-command-palette__results" ref={listRef} role="listbox" aria-label="Résultats">
+        <div
+          className="admin-command-palette__results"
+          ref={listRef}
+          role="listbox"
+          aria-label={t('shell.palette.results')}
+        >
           {items.length === 0 ? (
-            <p className="admin-command-palette__empty">Aucun module ou action autorisé ne correspond.</p>
+            <p className="admin-command-palette__empty">{t('shell.palette.empty')}</p>
           ) : (
             items.map((item, index) => (
               <button
@@ -107,12 +115,12 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
               >
                 {item.kind === 'action' ? <Zap size={16} aria-hidden /> : <Command size={16} aria-hidden />}
                 <span>{item.label}</span>
-                <small>{item.kind === 'action' ? 'Action' : item.zone}</small>
+                <small>{item.kind === 'action' ? t('shell.palette.actionBadge') : getZoneLabel(item.zone)}</small>
               </button>
             ))
           )}
         </div>
-        <footer className="admin-command-palette__footer">↑↓ naviguer · Entrée ouvrir · Échap fermer</footer>
+        <footer className="admin-command-palette__footer">{t('shell.palette.footerHint')}</footer>
       </section>
     </div>,
     document.body,

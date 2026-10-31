@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useI18n } from '../context/I18nContext'
 import './PerformanceControl.css'
 
 const PerformanceControl = () => {
+  const { t } = useI18n()
   const [gpuMode, setGpuMode] = useState<boolean>(() => {
     // Récupérer la préférence sauvegardée
     const saved = localStorage.getItem('gpu-mode')
@@ -28,8 +30,8 @@ const PerformanceControl = () => {
     <button
       className={`performance-control ${!gpuMode ? 'gpu-off' : ''}`}
       onClick={toggleGpuMode}
-      title={gpuMode ? 'Désactiver les animations GPU' : 'Activer les animations GPU'}
-      aria-label={gpuMode ? 'Désactiver les animations GPU' : 'Activer les animations GPU'}
+      title={gpuMode ? t('shell.perf.disableGpu') : t('shell.perf.enableGpu')}
+      aria-label={gpuMode ? t('shell.perf.disableGpu') : t('shell.perf.enableGpu')}
     >
       <svg
         className="performance-icon"
@@ -52,9 +54,7 @@ const PerformanceControl = () => {
           </>
         )}
       </svg>
-      <span className="performance-label">
-        {gpuMode ? 'GPU ON' : 'GPU OFF'}
-      </span>
+      <span className="performance-label">{gpuMode ? 'GPU ON' : 'GPU OFF'}</span>
     </button>
   )
 }
