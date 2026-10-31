@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../context/I18nContext'
+import { translate } from '../../../../i18n'
 import { Field } from './shared'
 import { parseMoney, formatPercent } from './money'
 import type { Beneficiary, ShareRule } from './types'
@@ -11,10 +13,9 @@ export const ruleDrafts = (rules: ShareRule[]) =>
 export function rulesPayload(rows: RuleDraft[]): ShareRule[] {
   const rules = rows.map((row) => ({ beneficiary: row.beneficiary, bp: parseMoney(row.percent, true) }))
   if (rules.some((rule) => !rule.beneficiary) || new Set(rules.map((rule) => rule.beneficiary)).size !== rules.length) {
-    throw new Error('Choisissez chaque bénéficiaire une seule fois.')
+    throw new Error(translate('accProjects.rules.uniqueBeneficiary'))
   }
-  if (rules.reduce((sum, rule) => sum + rule.bp, 0) > 10000)
-    throw new Error('La somme des parts ne peut pas dépasser 100 %.')
+  if (rules.reduce((sum, rule) => sum + rule.bp, 0) > 10000) throw new Error(translate('accProjects.rules.sumTooHigh'))
   return rules
 }
 
@@ -27,6 +28,7 @@ export default function RulesEditor({
   onChange: (rows: RuleDraft[]) => void
   beneficiaries: Beneficiary[]
 }) {
+  const { t } = useI18n()
   let sum: number | null = null
   try {
     sum = rows.reduce((total, row) => total + parseMoney(row.percent, true), 0)
@@ -38,7 +40,7 @@ export default function RulesEditor({
       {rows.map((row, index) => (
         <div className="pf-record" key={index}>
           <div className="pf-grid">
-            <Field label="Bénéficiaire">
+            <Field label={t('accProjects.cols.beneficiary')}>
               <select
                 required
                 value={row.beneficiary}
@@ -46,18 +48,18 @@ export default function RulesEditor({
                   onChange(rows.map((item, i) => (i === index ? { ...item, beneficiary: event.target.value } : item)))
                 }
               >
-                <option value="">Choisir un bénéficiaire</option>
+                <option value="">{t('accProjects.rules.chooseBeneficiary')}</option>
                 {beneficiaries
                   .filter((item) => item.isActive || item._id === row.beneficiary)
                   .map((item) => (
                     <option key={item._id} value={item._id}>
                       {item.displayName}
-                      {!item.isActive && ' (archivé)'}
+                      {!item.isActive && t('accProjects.rules.archivedSuffix')}
                     </option>
                   ))}
               </select>
             </Field>
-            <Field label="Part (%)">
+            <Field label={t('accProjects.rules.sharePercent')}>
               <input
                 inputMode="decimal"
                 required
@@ -73,21 +75,21 @@ export default function RulesEditor({
             type="button"
             onClick={() => onChange(rows.filter((_, i) => i !== index))}
           >
-            Retirer cette part
+            {t('accProjects.rules.remove')}
           </button>
         </div>
       ))}
       <p aria-live="polite">
         {sum === null
-          ? 'Pourcentages à compléter.'
-          : `Total des bénéficiaires : ${formatPercent(sum)} · Part de la société : ${formatPercent(10000 - sum)}`}
+          ? t('accProjects.rules.incomplete')
+          : t('accProjects.rules.total', { beneficiaries: formatPercent(sum), company: formatPercent(10000 - sum) })}
       </p>
       <button
         className="portal-button secondary"
         type="button"
         onClick={() => onChange([...rows, { beneficiary: '', percent: '' }])}
       >
-        Ajouter une part
+        {t('accProjects.rules.add')}
       </button>
     </div>
   )
