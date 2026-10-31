@@ -7,6 +7,9 @@ import {
   type DevIssueComment,
   type DevIssueEvent,
 } from '../../../services/dev'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate, formatDateTime } from '../../../i18n/format'
 
 export function criterion(value: string) {
   return { checked: /^\s*(?:-\s*)?\[x\]/i.test(value), label: value.replace(/^\s*(?:-\s*)?\[[ x]\]\s*/i, '') }
@@ -19,10 +22,10 @@ export function productionEvidence(issue: DevIssue, events: DevIssueEvent[]): st
       (e) =>
         e.type === 'deployed' && ['prod', 'production'].includes(String(e.metadata.environment).trim().toLowerCase()),
     )
-  if (!event) return 'Non confirmée'
+  if (!event) return translate('devA.evidence.notConfirmed')
   const status = String(event.metadata.status).toLowerCase()
-  if (['failed', 'failure', 'error'].includes(status)) return 'Dernier déploiement en échec'
-  if (!['success', 'succeeded', 'completed'].includes(status)) return 'Déploiement non confirmé'
+  if (['failed', 'failure', 'error'].includes(status)) return translate('devA.evidence.lastDeployFailed')
+  if (!['success', 'succeeded', 'completed'].includes(status)) return translate('devA.evidence.deployUnconfirmed')
   const sha = event.metadata.commitSha ?? (event.metadata.github as { commitSha?: string } | undefined)?.commitSha
   const health = event.metadata.healthcheck as { status?: string } | undefined
   if (
@@ -31,11 +34,19 @@ export function productionEvidence(issue: DevIssue, events: DevIssueEvent[]): st
     !issue.github?.commitSha ||
     sha.toLowerCase() !== issue.github.commitSha.toLowerCase()
   )
-    return 'Déploiement observé, version à vérifier'
-  const observed = new Date(event.createdAt).toLocaleString('fr-FR')
-  return health?.status === 'healthy'
-    ? `Disponibilité vérifiée le ${observed} · ${sha.slice(0, 7)}`
-    : `Déployé le ${observed} · ${sha.slice(0, 7)} · disponibilité à vérifier`
+    return translate('devA.evidence.versionToCheck')
+  const observed = formatDateTime(event.createdAt, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  })
+  return translate(health?.status === 'healthy' ? 'devA.evidence.healthy' : 'devA.evidence.deployedUnchecked', {
+    date: observed,
+    sha: sha.slice(0, 7),
+  })
 }
 
 export function ReviewEvidence({
@@ -55,6 +66,7 @@ export function ReviewEvidence({
   onEvidence: (comment: DevIssueComment) => void
   onBusy: (busy: boolean) => void
 }) {
+  const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [body, setBody] = useState('')
@@ -69,7 +81,7 @@ export function ReviewEvidence({
     try {
       onUpdated(await updateDevIssue(issue._id, { acceptanceCriteria: values }))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Critère non enregistré')
+      setError(err instanceof Error ? err.message : t('devA.evidence.criterionError'))
     } finally {
       setBusy(false)
       onBusy(false)
@@ -85,7 +97,7 @@ export function ReviewEvidence({
       onEvidence(comment)
       setBody('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Preuve non enregistrée')
+      setError(err instanceof Error ? err.message : t('devA.evidence.evidenceError'))
     } finally {
       setBusy(false)
       onBusy(false)
@@ -93,31 +105,31 @@ export function ReviewEvidence({
   }
   const evidence = comments.filter((comment) => comment.kind === 'EVIDENCE')
   return (
-    <section className="review-evidence" aria-label="Critères et preuves de validation">
-      <h4>État de livraison</h4>
+    <section className="review-evidence" aria-label={t('devA.evidence.aria')}>
+      <h4>{t('devA.evidence.deliveryHeading')}</h4>
       <dl className="review-delivery-states">
         <div>
-          <dt>Développement</dt>
+          <dt>{t('devA.evidence.development')}</dt>
           <dd>{STATUS_LABEL[issue.status]}</dd>
         </div>
         <div>
-          <dt>Fusion</dt>
+          <dt>{t('devA.evidence.merge')}</dt>
           <dd>
             {issue.github?.mergedAt
-              ? `Fusionné le ${new Date(issue.github.mergedAt).toLocaleDateString('fr-FR')}`
+              ? t('devA.evidence.mergedOn', { date: formatDate(issue.github.mergedAt) })
               : issue.github?.prUrl
-                ? 'Non confirmée'
-                : 'Aucune PR liée'}
+                ? t('devA.evidence.notConfirmed')
+                : t('devA.evidence.noPr')}
           </dd>
         </div>
         <div>
-          <dt>Production</dt>
+          <dt>{t('devA.evidence.production')}</dt>
           <dd>{productionEvidence(issue, events)}</dd>
         </div>
       </dl>
-      <h4>Critères d’acceptation</h4>
+      <h4>{t('devA.evidence.criteriaHeading')}</h4>
       {(issue.acceptanceCriteria ?? []).length === 0 ? (
-        <p>Aucun critère défini pour cette tâche.</p>
+        <p>{t('devA.evidence.noCriteria')}</p>
       ) : (
         (issue.acceptanceCriteria ?? []).map((value, index) => {
           const item = criterion(value)
@@ -138,13 +150,13 @@ export function ReviewEvidence({
       )}
       {issue.executionProfile?.verificationPlan && (
         <details>
-          <summary>Vérification prévue</summary>
+          <summary>{t('devA.evidence.verificationPlan')}</summary>
           <p className="review-queue-comment-body">{issue.executionProfile.verificationPlan}</p>
         </details>
       )}
-      <h4>Tests et preuves</h4>
+      <h4>{t('devA.evidence.testsHeading')}</h4>
       {evidence.length === 0 ? (
-        <p>Aucune preuve consignée. Ajoutez les vérifications utiles à cette tâche.</p>
+        <p>{t('devA.evidence.noEvidence')}</p>
       ) : (
         evidence.map((comment) => (
           <div className="review-queue-comment" key={comment._id}>
@@ -153,12 +165,12 @@ export function ReviewEvidence({
         ))
       )}
       <label className="review-evidence-input">
-        Nouvelle preuve
+        {t('devA.evidence.newEvidence')}
         <textarea
           disabled={!canManage || busy}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Tests exécutés, résultat, lien vers la recette ou le déploiement…"
+          placeholder={t('devA.evidence.placeholder')}
         />
       </label>
       <button
@@ -168,12 +180,10 @@ export function ReviewEvidence({
           void saveEvidence()
         }}
       >
-        Enregistrer la preuve
+        {t('devA.evidence.save')}
       </button>
       {error && <p role="alert">{error}</p>}
-      <p className="review-queue-muted">
-        Valider termine la tâche. Les informations de fusion et de production restent indépendantes.
-      </p>
+      <p className="review-queue-muted">{t('devA.evidence.footnote')}</p>
     </section>
   )
 }
