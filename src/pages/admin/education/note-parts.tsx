@@ -67,6 +67,8 @@ import {
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { useEducationAutosave } from './useEducationAutosave'
 import { AutosaveStatus } from './AutosaveStatus'
@@ -112,6 +114,7 @@ export function NotesView({
   incomingOpenId?: string | null
   onCloseIncomingOpen?: () => void
 }) {
+  const { t } = useI18n()
   const [notes, setNotes] = useState<EducationNote[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeNote, setActiveNote] = useState<EducationNote | null>(null)
@@ -129,7 +132,7 @@ export function NotesView({
         setActiveNote(restore('note', r.notes[0]._id, r.notes[0]))
       }
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Impossible de charger les notes')
+      setLoadError(err instanceof Error ? err.message : translate('eduA.notes.loadError'))
     }
   }, [fixedLink, activeId, restore])
 
@@ -159,7 +162,7 @@ export function NotesView({
         setActiveNote(restore('note', note._id, note))
         setLoadError(null)
       } catch {
-        if (!cancelled) setLoadError('La note demandée n’est plus accessible.')
+        if (!cancelled) setLoadError(translate('eduA.notes.unavailable'))
       } finally {
         if (!cancelled) onCloseIncomingOpen?.()
       }
@@ -182,14 +185,14 @@ export function NotesView({
     if (!(await flush())) return
     try {
       const r = await createNote({
-        title: 'Nouvelle note',
+        title: translate('eduA.notes.new'),
         blocks: [{ id: makeBlockId(), type: 'paragraph', text: '', checked: false, level: 1, meta: {} }],
         links: fixedLink ? [fixedLink] : [],
       })
       await refresh()
       setActiveId(r.note._id)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Impossible de créer la note')
+      setErrorMessage(err instanceof Error ? err.message : translate('eduA.notes.createError'))
     }
   }
 
@@ -198,25 +201,23 @@ export function NotesView({
       {!fixedLink && (
         <div className="edu-row between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <h1 className="edu-h1" style={{ margin: 0 }}>
-            Notes
+            {t('eduA.notes.title')}
           </h1>
           <div className="edu-row" style={{ gap: 8 }}>
             <AutosaveStatus status={saveState} error={saveError} onRetry={flush} />
             <button className="edu-btn" onClick={newNote}>
-              <Plus size={14} /> Nouvelle note
+              <Plus size={14} /> {t('eduA.notes.new')}
             </button>
           </div>
         </div>
       )}
       {fixedLink && (
         <div className="edu-row between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-          <strong>
-            {notes.length} note{notes.length > 1 ? 's' : ''}
-          </strong>
+          <strong>{t('eduA.notes.count', { count: notes.length })}</strong>
           <div className="edu-row" style={{ gap: 8 }}>
             <AutosaveStatus status={saveState} error={saveError} onRetry={flush} />
             <button className="edu-btn" onClick={newNote}>
-              <Plus size={14} /> Nouvelle note
+              <Plus size={14} /> {t('eduA.notes.new')}
             </button>
           </div>
         </div>
@@ -233,7 +234,7 @@ export function NotesView({
               refresh()
             }}
           >
-            Réessayer
+            {t('eduA.common.retry')}
           </button>
         </div>
       )}
@@ -242,10 +243,10 @@ export function NotesView({
           {notes.length === 0 ? (
             <div className="edu-empty edu-empty-compact">
               <div className="edu-empty-icon">📝</div>
-              <div>Aucune note encore.</div>
-              <div className="edu-empty-sub">Crée ta première note pour ce contexte.</div>
+              <div>{t('eduA.notes.emptyTitle')}</div>
+              <div className="edu-empty-sub">{t('eduA.notes.emptyText')}</div>
               <button className="edu-btn" style={{ marginTop: 10 }} onClick={newNote}>
-                <Plus size={13} /> Première note
+                <Plus size={13} /> {t('eduA.notes.first')}
               </button>
             </div>
           ) : (
@@ -259,13 +260,11 @@ export function NotesView({
               >
                 <div className="edu-note-list-title">
                   {n.pinned && <span className="edu-note-list-pin">📌</span>}
-                  {n.title || 'Sans titre'}
+                  {n.title || t('eduA.note.untitled')}
                 </div>
                 <div className="edu-note-list-preview">{n.markdown.replace(/[#>*`\-]/g, '').slice(0, 80) || '—'}</div>
                 {n.links.length > 0 && (
-                  <div className="edu-note-list-links">
-                    {n.links.length} lien{n.links.length > 1 ? 's' : ''}
-                  </div>
+                  <div className="edu-note-list-links">{t('eduA.notes.linkCount', { count: n.links.length })}</div>
                 )}
               </div>
             ))
@@ -275,8 +274,8 @@ export function NotesView({
           {!activeNote ? (
             <div className="edu-empty">
               <div className="edu-empty-icon">✍️</div>
-              <div>Sélectionne ou crée une note.</div>
-              <div className="edu-empty-sub">Tape « / » dans un bloc pour les commandes Notion.</div>
+              <div>{t('eduA.notes.selectOrCreate')}</div>
+              <div className="edu-empty-sub">{t('eduA.notes.slashHint')}</div>
             </div>
           ) : (
             <NoteEditor
@@ -292,7 +291,7 @@ export function NotesView({
                 persist({ ...activeNote, blocks: [...activeNote.blocks, ...tplBlocks] })
               }}
               onDelete={async () => {
-                if (!confirm('Supprimer cette note ?')) return
+                if (!confirm(t('eduA.notes.deleteConfirm'))) return
                 try {
                   if (!(await flush())) return
                   await deleteNote(activeNote._id)
@@ -300,7 +299,7 @@ export function NotesView({
                   setActiveId(null)
                   refresh()
                 } catch (err) {
-                  setErrorMessage(err instanceof Error ? err.message : 'Impossible de supprimer la note')
+                  setErrorMessage(err instanceof Error ? err.message : t('eduA.notes.deleteError'))
                 }
               }}
             />
@@ -312,8 +311,10 @@ export function NotesView({
 }
 
 export function NoteSaveIndicator({ state }: { state: NoteSaveState }) {
+  const { t } = useI18n()
   if (state === 'idle') return null
-  const label = state === 'saving' ? 'Sauvegarde…' : state === 'saved' ? 'Sauvegardé' : 'Erreur'
+  const label =
+    state === 'saving' ? t('eduA.notes.saving') : state === 'saved' ? t('eduA.notes.saved') : t('common.error')
   const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
   return (
     <span
@@ -345,7 +346,7 @@ export function buildBacklinks(
       return {
         type: l.type,
         refId: l.refId,
-        label: c?.name ?? `Classe ${l.refId.slice(-6)}`,
+        label: c?.name ?? translate('eduA.notes.backlinkClass', { id: l.refId.slice(-6) }),
         meta: c ? [c.school, c.level].filter(Boolean).join(' · ') : undefined,
         onOpen: onOpenClass ? () => onOpenClass(l.refId) : undefined,
       }
@@ -353,7 +354,14 @@ export function buildBacklinks(
     return {
       type: l.type,
       refId: l.refId,
-      label: `${l.type === 'session' ? 'Séance' : l.type === 'assignment' ? 'Devoir' : 'Étudiant'} ${l.refId.slice(-6)}`,
+      label: translate(
+        l.type === 'session'
+          ? 'eduA.notes.backlinkSession'
+          : l.type === 'assignment'
+            ? 'eduA.notes.backlinkAssignment'
+            : 'eduA.notes.backlinkStudent',
+        { id: l.refId.slice(-6) },
+      ),
     }
   })
 }

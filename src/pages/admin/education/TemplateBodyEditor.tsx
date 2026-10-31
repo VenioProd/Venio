@@ -1,6 +1,9 @@
 import { NoteEditor } from './NoteEditor'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
 import {
   ASSIGNMENT_KIND_LABEL,
+  type EducationAssignmentKind,
   type EducationNote,
   type EducationTemplateKind,
   type NoteBlock,
@@ -8,26 +11,38 @@ import {
 } from '../../../services/education'
 
 type Body = Record<string, unknown>
-const FIELD_LABELS: Record<string, string> = {
-  title: 'Titre',
-  name: 'Nom de la classe',
-  theme: 'Thème',
-  agenda: 'Déroulé',
-  objectives: 'Objectifs',
-  durationMin: 'Durée (minutes)',
-  supports: 'Supports (liens)',
-  instructions: 'Consignes',
-  maxGrade: 'Note maximale',
-  weight: 'Coefficient',
-  expectedDeliverables: 'Livrables attendus',
-  rubric: 'Barème',
-  school: 'École',
-  level: 'Niveau',
-  program: 'Programme',
-  weeklyHours: 'Heures par semaine',
-  location: 'Lieu',
-  blocks: 'Contenu de la note',
-}
+const FIELD_LABEL_KEYS = {
+  title: 'eduA.templates.field.title',
+  name: 'eduA.templates.field.name',
+  theme: 'eduA.templates.field.theme',
+  agenda: 'eduA.templates.field.agenda',
+  objectives: 'eduA.templates.field.objectives',
+  durationMin: 'eduA.templates.field.durationMin',
+  supports: 'eduA.templates.field.supports',
+  instructions: 'eduA.templates.field.instructions',
+  maxGrade: 'eduA.templates.field.maxGrade',
+  weight: 'eduA.templates.field.weight',
+  expectedDeliverables: 'eduA.templates.field.expectedDeliverables',
+  rubric: 'eduA.templates.field.rubric',
+  school: 'eduA.templates.field.school',
+  level: 'eduA.templates.field.level',
+  program: 'eduA.templates.field.program',
+  weeklyHours: 'eduA.templates.field.weeklyHours',
+  location: 'eduA.templates.field.location',
+  blocks: 'eduA.templates.field.blocks',
+} as const satisfies Record<string, MessageKey>
+
+type FieldKey = keyof typeof FIELD_LABEL_KEYS
+
+const ASSIGNMENT_KIND_KEYS = {
+  DEVOIR: 'eduA.templates.assignmentKind.devoir',
+  PROJET: 'eduA.templates.assignmentKind.projet',
+  EXPOSE: 'eduA.templates.assignmentKind.expose',
+  QCM: 'eduA.templates.assignmentKind.qcm',
+  EXAMEN: 'eduA.templates.assignmentKind.examen',
+  AUTRE: 'eduA.templates.assignmentKind.autre',
+} as const satisfies Record<EducationAssignmentKind, MessageKey>
+
 export function TemplateBodyEditor({
   kind,
   body,
@@ -37,8 +52,9 @@ export function TemplateBodyEditor({
   body: Body
   onChange: (body: Body) => void
 }) {
+  const { t } = useI18n()
   const patch = (key: string, value: unknown) => onChange({ ...body, [key]: value })
-  const field = (key: string, mode: 'text' | 'long' | 'lines' | 'number' = 'text', min = 0) => {
+  const field = (key: FieldKey, mode: 'text' | 'long' | 'lines' | 'number' = 'text', min = 0) => {
     const raw = body[key]
     const value =
       mode === 'lines'
@@ -50,17 +66,17 @@ export function TemplateBodyEditor({
           : ''
     return (
       <label className="edu-form-group" key={key}>
-        {FIELD_LABELS[key]}
+        {t(FIELD_LABEL_KEYS[key])}
         {mode === 'long' || mode === 'lines' ? (
           <textarea
-            aria-label={FIELD_LABELS[key]}
+            aria-label={t(FIELD_LABEL_KEYS[key])}
             className="edu-textarea"
             value={value}
             onChange={(e) => patch(key, mode === 'lines' ? e.target.value.split('\n') : e.target.value)}
           />
         ) : (
           <input
-            aria-label={FIELD_LABELS[key]}
+            aria-label={t(FIELD_LABEL_KEYS[key])}
             className="edu-input"
             type={mode === 'number' ? 'number' : 'text'}
             min={min}
@@ -71,7 +87,7 @@ export function TemplateBodyEditor({
             }
           />
         )}
-        {mode === 'lines' && <small>Un élément par ligne.</small>}
+        {mode === 'lines' && <small>{t('eduA.templates.onePerLine')}</small>}
       </label>
     )
   }
@@ -127,15 +143,15 @@ export function TemplateBodyEditor({
         <>
           {field('title')}
           <label className="edu-form-group">
-            Type de devoir
+            {t('eduA.templates.assignmentType')}
             <select
               className="edu-select"
               value={String(body.kind || 'DEVOIR')}
               onChange={(e) => patch('kind', e.target.value)}
             >
-              {Object.entries(ASSIGNMENT_KIND_LABEL).map(([key, label]) => (
+              {(Object.keys(ASSIGNMENT_KIND_KEYS) as EducationAssignmentKind[]).map((key) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(ASSIGNMENT_KIND_KEYS[key])}
                 </option>
               ))}
             </select>
@@ -145,11 +161,11 @@ export function TemplateBodyEditor({
           {field('weight', 'number', 0.01)}
           {field('expectedDeliverables', 'lines')}
           <fieldset className="edu-template-rubric">
-            <legend>Barème de correction</legend>
+            <legend>{t('eduA.templates.rubricLegend')}</legend>
             {rubric.map((item, index) => (
               <div className="edu-row" key={index}>
                 <label>
-                  Critère {index + 1}
+                  {t('eduA.templates.criterion', { n: index + 1 })}
                   <input
                     className="edu-input"
                     value={item.label}
@@ -162,7 +178,7 @@ export function TemplateBodyEditor({
                   />
                 </label>
                 <label>
-                  Points
+                  {t('eduA.templates.points')}
                   <input
                     className="edu-input"
                     type="number"
@@ -179,7 +195,7 @@ export function TemplateBodyEditor({
                 </label>
                 <button
                   className="edu-btn ghost"
-                  aria-label={`Supprimer le critère ${index + 1}`}
+                  aria-label={t('eduA.templates.removeCriterion', { n: index + 1 })}
                   onClick={() =>
                     patch(
                       'rubric',
@@ -187,16 +203,19 @@ export function TemplateBodyEditor({
                     )
                   }
                 >
-                  Retirer
+                  {t('eduA.templates.remove')}
                 </button>
               </div>
             ))}
             <button className="edu-btn ghost" onClick={() => patch('rubric', [...rubric, { label: '', max: 0 }])}>
-              Ajouter un critère
+              {t('eduA.templates.addCriterion')}
             </button>
             {rubric.length > 0 && (
               <p>
-                Total du barème : {rubric.reduce((sum, r) => sum + r.max, 0)} / {Number(body.maxGrade ?? 20)}
+                {t('eduA.templates.rubricTotal', {
+                  total: rubric.reduce((sum, r) => sum + r.max, 0),
+                  max: Number(body.maxGrade ?? 20),
+                })}
               </p>
             )}
           </fieldset>
@@ -207,33 +226,49 @@ export function TemplateBodyEditor({
 }
 
 export function templateBodyError(kind: EducationTemplateKind, body: Body): string | null {
-  const strings = ['title', 'name', 'theme', 'agenda', 'location', 'instructions', 'school', 'level', 'program']
+  const strings = [
+    'title',
+    'name',
+    'theme',
+    'agenda',
+    'location',
+    'instructions',
+    'school',
+    'level',
+    'program',
+  ] as const
   for (const key of strings)
-    if (body[key] !== undefined && typeof body[key] !== 'string') return `${FIELD_LABELS[key]} doit être du texte.`
-  for (const key of ['objectives', 'supports', 'expectedDeliverables'])
+    if (body[key] !== undefined && typeof body[key] !== 'string')
+      return translate('eduA.templates.error.notText', { field: translate(FIELD_LABEL_KEYS[key]) })
+  for (const key of ['objectives', 'supports', 'expectedDeliverables'] as const)
     if (
       body[key] !== undefined &&
       (!Array.isArray(body[key]) || !(body[key] as unknown[]).every((v) => typeof v === 'string'))
     )
-      return `${FIELD_LABELS[key]} doit être une liste de textes.`
-  for (const key of kind === 'session'
-    ? ['durationMin']
-    : kind === 'assignment'
-      ? ['maxGrade', 'weight']
-      : kind === 'class'
-        ? ['weeklyHours']
-        : []) {
+      return translate('eduA.templates.error.notList', { field: translate(FIELD_LABEL_KEYS[key]) })
+  const numberKeys: FieldKey[] =
+    kind === 'session'
+      ? ['durationMin']
+      : kind === 'assignment'
+        ? ['maxGrade', 'weight']
+        : kind === 'class'
+          ? ['weeklyHours']
+          : []
+  for (const key of numberKeys) {
     const value = body[key]
     if (
       value !== undefined &&
       !(key === 'weeklyHours' && value === null) &&
       (typeof value !== 'number' || !Number.isFinite(value) || (key === 'weeklyHours' ? value < 0 : value <= 0))
     )
-      return `${FIELD_LABELS[key]} doit être un nombre ${key === 'weeklyHours' ? 'positif ou nul' : 'supérieur à zéro'}.`
+      return translate(
+        key === 'weeklyHours' ? 'eduA.templates.error.notNonNegative' : 'eduA.templates.error.notPositive',
+        { field: translate(FIELD_LABEL_KEYS[key]) },
+      )
   }
   if (kind === 'assignment') {
     if (body.kind !== undefined && !Object.prototype.hasOwnProperty.call(ASSIGNMENT_KIND_LABEL, String(body.kind)))
-      return 'Type de devoir invalide.'
+      return translate('eduA.templates.error.invalidKind')
     if (
       body.rubric !== undefined &&
       (!Array.isArray(body.rubric) ||
@@ -247,12 +282,12 @@ export function templateBodyError(kind: EducationTemplateKind, body: Body): stri
             r.max >= 0,
         ))
     )
-      return 'Chaque critère du barème nécessite un libellé et des points positifs ou nuls.'
+      return translate('eduA.templates.error.invalidRubric')
     const total = (Array.isArray(body.rubric) ? (body.rubric as RubricCriterion[]) : []).reduce(
       (sum, r) => sum + r.max,
       0,
     )
-    if (total > Number(body.maxGrade ?? 20)) return 'Le total du barème dépasse la note maximale.'
+    if (total > Number(body.maxGrade ?? 20)) return translate('eduA.templates.error.rubricTotal')
   }
   if (
     kind === 'note' &&
@@ -262,12 +297,13 @@ export function templateBodyError(kind: EducationTemplateKind, body: Body): stri
         (b) => b && typeof b.id === 'string' && typeof b.type === 'string' && typeof b.text === 'string',
       ))
   )
-    return 'Le contenu de la note est invalide.'
+    return translate('eduA.templates.error.invalidNote')
   return null
 }
 
 export function TemplatePreview({ kind, body }: { kind: EducationTemplateKind; body: Body }) {
-  const keys =
+  const { t } = useI18n()
+  const keys: FieldKey[] =
     kind === 'session'
       ? ['title', 'theme', 'durationMin', 'location', 'objectives', 'agenda', 'supports']
       : kind === 'assignment'
@@ -276,14 +312,14 @@ export function TemplatePreview({ kind, body }: { kind: EducationTemplateKind; b
           ? ['name', 'school', 'level', 'program', 'weeklyHours']
           : ['blocks']
   return (
-    <section className="edu-template-preview" aria-label="Aperçu du template">
-      <h3>Aperçu</h3>
+    <section className="edu-template-preview" aria-label={t('eduA.templates.previewAria')}>
+      <h3>{t('eduA.templates.preview')}</h3>
       {keys.map((key) => {
         const value = body[key]
         if (value === undefined || value === '' || value === null) return null
         return (
           <div key={key}>
-            <strong>{FIELD_LABELS[key]}</strong>
+            <strong>{t(FIELD_LABEL_KEYS[key])}</strong>
             {Array.isArray(value) ? (
               <ul>
                 {value.map((item, i) => (
@@ -292,7 +328,7 @@ export function TemplatePreview({ kind, body }: { kind: EducationTemplateKind; b
                       ? item
                       : item && typeof item === 'object'
                         ? key === 'rubric'
-                          ? `${item.label} · ${item.max} points`
+                          ? t('eduA.templates.rubricItem', { label: item.label, max: item.max })
                           : item.text
                         : ''}
                   </li>
