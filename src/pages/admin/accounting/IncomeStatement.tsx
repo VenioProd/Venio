@@ -2,16 +2,14 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
 import { getIncomeStatement, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
 import type { IFiscalYear, IIncomeGroup, IIncomeLine, IIncomeStatementData } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatMoney } from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function detailsByGroup(items: IIncomeLine[] | undefined): Map<string, IIncomeLine[]> {
@@ -35,6 +33,7 @@ interface GroupSectionProps {
 }
 
 const GroupSection = ({ title, totalLabel, groups, total, details, color }: GroupSectionProps) => {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   function toggle(g: string) {
@@ -55,7 +54,7 @@ const GroupSection = ({ title, totalLabel, groups, total, details, color }: Grou
         {title}
       </h2>
       {!groups || groups.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucune ligne sur la période.</p>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accAccounts.income.noLines')}</p>
       ) : (
         <table className="accounting-table">
           <tbody>
@@ -135,6 +134,7 @@ interface IncomeFilters {
 }
 
 const IncomeStatement = () => {
+  const { t } = useI18n()
   const [fiscalYears, setFiscalYears] = useState<IFiscalYear[]>([])
   const [data, setData] = useState<IIncomeStatementData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -153,7 +153,7 @@ const IncomeStatement = () => {
         const f = await listFiscalYears()
         if (!cancelled) setFiscalYears(f || [])
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       }
     })()
     return () => {
@@ -172,7 +172,7 @@ const IncomeStatement = () => {
       })
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
       setData(null)
     } finally {
       setLoading(false)
@@ -192,7 +192,7 @@ const IncomeStatement = () => {
         to: filters.to || undefined,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -203,11 +203,11 @@ const IncomeStatement = () => {
 
   return (
     <AccountingLayout
-      title="Compte de résultat"
-      subtitle="Charges, produits et résultat net sur la période"
+      title={t('accAccounts.income.title')}
+      subtitle={t('accAccounts.income.subtitle')}
       actions={
         <button className="portal-button secondary" onClick={handleExport}>
-          ⬇ Export CSV
+          {t('accAccounts.common.exportCsv')}
         </button>
       }
     >
@@ -220,7 +220,7 @@ const IncomeStatement = () => {
             value={filters.fiscalYear}
             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
           >
-            <option value="">Tous exercices</option>
+            <option value="">{t('accAccounts.common.allFiscalYears')}</option>
             {fiscalYears.map((fy) => (
               <option key={fy._id} value={fy._id}>
                 {fy.code || fy.label}
@@ -232,30 +232,28 @@ const IncomeStatement = () => {
             className="portal-input"
             value={filters.from}
             onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-            title="Date de début"
+            title={t('accAccounts.common.startDate')}
           />
           <input
             type="date"
             className="portal-input"
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-            title="Date de fin"
+            title={t('accAccounts.common.endDate')}
           />
           <button className="portal-button" onClick={runQuery}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
-          <div className="accounting-empty">
-            Sélectionnez une période puis cliquez sur « Filtrer » pour afficher le compte de résultat.
-          </div>
+          <div className="accounting-empty">{t('accAccounts.income.prompt')}</div>
         ) : (
           <>
             <div className="accounting-message info" style={{ marginBottom: 16 }}>
-              Période : <strong>{data.periodLabel || '—'}</strong>
+              {t('accAccounts.income.period')} <strong>{data.periodLabel || '—'}</strong>
             </div>
 
             <div
@@ -266,16 +264,16 @@ const IncomeStatement = () => {
               }}
             >
               <GroupSection
-                title="Charges"
-                totalLabel="Total charges"
+                title={t('accAccounts.income.expenses')}
+                totalLabel={t('accAccounts.income.totalExpenses')}
                 groups={data.chargesByGroup}
                 total={data.totalCharges}
                 details={chargesDetails}
                 color="#f87171"
               />
               <GroupSection
-                title="Produits"
-                totalLabel="Total produits"
+                title={t('accAccounts.income.revenue')}
+                totalLabel={t('accAccounts.income.totalRevenue')}
                 groups={data.produitsByGroup}
                 total={data.totalProduits}
                 details={produitsDetails}
@@ -304,7 +302,7 @@ const IncomeStatement = () => {
                   marginBottom: 8,
                 }}
               >
-                Résultat de l'exercice
+                {t('accAccounts.balanceSheet.fiscalResult')}
               </div>
               <div
                 style={{
@@ -314,7 +312,7 @@ const IncomeStatement = () => {
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {isProfit ? 'BÉNÉFICE NET : ' : 'PERTE NETTE : '}
+                {isProfit ? t('accAccounts.income.netProfit') : t('accAccounts.income.netLoss')}
                 {isProfit ? '+' : ''}
                 {formatEur(result)}
               </div>
@@ -325,7 +323,10 @@ const IncomeStatement = () => {
                   color: 'rgba(255,255,255,0.6)',
                 }}
               >
-                Total produits {formatEur(data.totalProduits)} − Total charges {formatEur(data.totalCharges)}
+                {t('accAccounts.income.formula', {
+                  revenue: formatEur(data.totalProduits),
+                  expenses: formatEur(data.totalCharges),
+                })}
               </div>
             </div>
           </>

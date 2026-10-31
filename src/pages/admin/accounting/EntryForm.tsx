@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
-import {
-  listJournals,
-  listAccounts,
-  createEntry,
-} from '../../../services/accounting'
+import { listJournals, listAccounts, createEntry } from '../../../services/accounting'
 import type { IChartOfAccount, IJournal } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatMoney } from '../../../i18n/format'
 
 interface LineInput {
   account: string
@@ -30,6 +29,7 @@ function emptyLine(): LineInput {
 }
 
 const EntryForm = () => {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [journals, setJournals] = useState<IJournal[]>([])
   const [accounts, setAccounts] = useState<IChartOfAccount[]>([])
@@ -84,14 +84,11 @@ const EntryForm = () => {
     setForm({ ...form, lines: form.lines.filter((_, i) => i !== idx) })
   }
 
-  async function handleSubmit(
-    e: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>,
-    validate = false
-  ) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>, validate = false) {
     e.preventDefault()
     setError('')
     if (!totals.balanced) {
-      setError("L'écriture doit être équilibrée (débit = crédit) et non nulle.")
+      setError(t('accAccounts.entryForm.unbalanced'))
       return
     }
     setSaving(true)
@@ -115,7 +112,7 @@ const EntryForm = () => {
       const r = await createEntry(payload)
       navigate(`/admin/comptabilite/ecritures/${r.entry._id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setSaving(false)
     }
@@ -123,21 +120,21 @@ const EntryForm = () => {
 
   if (loading) {
     return (
-      <AccountingLayout title="Nouvelle écriture">
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+      <AccountingLayout title={t('accAccounts.entryForm.title')}>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
       </AccountingLayout>
     )
   }
 
   return (
-    <AccountingLayout title="Nouvelle écriture" subtitle="Saisie manuelle (double partie)">
+    <AccountingLayout title={t('accAccounts.entryForm.title')} subtitle={t('accAccounts.entryForm.subtitle')}>
       {error && <div className="accounting-message error">{error}</div>}
 
       <form className="accounting-card" onSubmit={(e) => handleSubmit(e, false)}>
-        <h2>Entête</h2>
+        <h2>{t('accAccounts.entryForm.header')}</h2>
         <div className="accounting-form">
           <div className="accounting-form-field">
-            <label>Journal</label>
+            <label>{t('accAccounts.col.journal')}</label>
             <select
               className="portal-input"
               value={form.journal}
@@ -152,7 +149,7 @@ const EntryForm = () => {
             </select>
           </div>
           <div className="accounting-form-field">
-            <label>Date</label>
+            <label>{t('accAccounts.col.date')}</label>
             <input
               type="date"
               className="portal-input"
@@ -162,7 +159,7 @@ const EntryForm = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Référence pièce</label>
+            <label>{t('accAccounts.entryForm.pieceRef')}</label>
             <input
               className="portal-input"
               value={form.pieceRef}
@@ -171,7 +168,7 @@ const EntryForm = () => {
             />
           </div>
           <div className="accounting-form-field full">
-            <label>Libellé</label>
+            <label>{t('accAccounts.col.label')}</label>
             <input
               className="portal-input"
               value={form.label}
@@ -181,14 +178,14 @@ const EntryForm = () => {
           </div>
         </div>
 
-        <h2 style={{ marginTop: 24 }}>Lignes</h2>
+        <h2 style={{ marginTop: 24 }}>{t('accAccounts.entry.lines')}</h2>
         <table className="accounting-lines-table">
           <thead>
             <tr>
-              <th style={{ width: 200 }}>Compte</th>
-              <th>Libellé ligne</th>
-              <th style={{ width: 140 }}>Débit</th>
-              <th style={{ width: 140 }}>Crédit</th>
+              <th style={{ width: 200 }}>{t('accAccounts.col.account')}</th>
+              <th>{t('accAccounts.entryForm.lineLabel')}</th>
+              <th style={{ width: 140 }}>{t('accAccounts.col.debit')}</th>
+              <th style={{ width: 140 }}>{t('accAccounts.col.credit')}</th>
               <th style={{ width: 40 }}></th>
             </tr>
           </thead>
@@ -196,12 +193,8 @@ const EntryForm = () => {
             {form.lines.map((line, idx) => (
               <tr key={idx}>
                 <td>
-                  <select
-                    value={line.account}
-                    onChange={(e) => updateLine(idx, { account: e.target.value })}
-                    required
-                  >
-                    <option value="">— compte —</option>
+                  <select value={line.account} onChange={(e) => updateLine(idx, { account: e.target.value })} required>
+                    <option value="">{t('accAccounts.entryForm.accountPlaceholder')}</option>
                     {accounts.map((a) => (
                       <option key={a._id} value={a.code}>
                         {a.code} — {a.label}
@@ -256,7 +249,7 @@ const EntryForm = () => {
                         cursor: 'pointer',
                         fontSize: '1.1rem',
                       }}
-                      title="Supprimer la ligne"
+                      title={t('accAccounts.entryForm.removeLine')}
                     >
                       ×
                     </button>
@@ -269,27 +262,27 @@ const EntryForm = () => {
 
         <div className="accounting-toolbar" style={{ marginTop: 8 }}>
           <button type="button" className="portal-button secondary" onClick={addLine}>
-            ✚ Ajouter une ligne
+            {t('accAccounts.entryForm.addLine')}
           </button>
         </div>
 
         <div className={`accounting-totals ${totals.balanced ? 'balanced' : 'unbalanced'}`}>
           <div>
-            <span className="label">Total débit</span>{' '}
-            <span className="value">{totals.debit.toFixed(2)} €</span>
+            <span className="label">{t('accAccounts.entryForm.totalDebit')}</span>{' '}
+            <span className="value">{formatMoney(totals.debit)}</span>
           </div>
           <div>
-            <span className="label">Total crédit</span>{' '}
-            <span className="value">{totals.credit.toFixed(2)} €</span>
+            <span className="label">{t('accAccounts.entryForm.totalCredit')}</span>{' '}
+            <span className="value">{formatMoney(totals.credit)}</span>
           </div>
           <div>
-            <span className="label">Solde</span>{' '}
-            <span className="value">{(totals.debit - totals.credit).toFixed(2)} €</span>
+            <span className="label">{t('accAccounts.entryForm.balance')}</span>{' '}
+            <span className="value">{formatMoney(totals.debit - totals.credit)}</span>
           </div>
         </div>
 
         <div className="accounting-form-field full" style={{ marginTop: 16 }}>
-          <label>Notes (internes)</label>
+          <label>{t('accAccounts.entryForm.internalNotes')}</label>
           <textarea
             className="portal-input"
             rows={2}
@@ -304,10 +297,10 @@ const EntryForm = () => {
             className="portal-button secondary"
             onClick={() => navigate('/admin/comptabilite/ecritures')}
           >
-            Annuler
+            {t('common.cancel')}
           </button>
           <button type="submit" className="portal-button secondary" disabled={saving}>
-            Enregistrer brouillon
+            {t('accAccounts.entryForm.saveDraft')}
           </button>
           <button
             type="button"
@@ -315,7 +308,7 @@ const EntryForm = () => {
             disabled={saving || !totals.balanced}
             onClick={(e) => handleSubmit(e, true)}
           >
-            Enregistrer & valider
+            {t('accAccounts.entryForm.saveAndValidate')}
           </button>
         </div>
       </form>

@@ -2,16 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
 import { getTrialBalance, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
 import type { AccountType, IFiscalYear, ITrialBalanceData, ITrialBalanceRow } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatMoney } from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function balanceColor(type: AccountType | undefined, balance: unknown): string {
@@ -40,6 +38,7 @@ function isSeparator(r: DisplayRow): r is SeparatorRow {
 }
 
 const TrialBalance = () => {
+  const { t } = useI18n()
   const [fiscalYears, setFiscalYears] = useState<IFiscalYear[]>([])
   const [data, setData] = useState<ITrialBalanceData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -60,7 +59,7 @@ const TrialBalance = () => {
         const f = await listFiscalYears()
         if (!cancelled) setFiscalYears(f || [])
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       }
     })()
     return () => {
@@ -81,7 +80,7 @@ const TrialBalance = () => {
       })
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
       setData(null)
     } finally {
       setLoading(false)
@@ -103,7 +102,7 @@ const TrialBalance = () => {
         includeZero: filters.includeZero,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -129,11 +128,11 @@ const TrialBalance = () => {
 
   return (
     <AccountingLayout
-      title="Balance comptable"
-      subtitle="Totaux débit / crédit et solde par compte"
+      title={t('accAccounts.trial.title')}
+      subtitle={t('accAccounts.trial.subtitle')}
       actions={
         <button className="portal-button secondary" onClick={handleExport}>
-          ⬇ Export CSV
+          {t('accAccounts.common.exportCsv')}
         </button>
       }
     >
@@ -146,21 +145,21 @@ const TrialBalance = () => {
             className="portal-input"
             value={filters.from}
             onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-            title="Date de début"
+            title={t('accAccounts.common.startDate')}
           />
           <input
             type="date"
             className="portal-input"
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-            title="Date de fin"
+            title={t('accAccounts.common.endDate')}
           />
           <select
             className="portal-input"
             value={filters.fiscalYear}
             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
           >
-            <option value="">Tous exercices</option>
+            <option value="">{t('accAccounts.common.allFiscalYears')}</option>
             {fiscalYears.map((fy) => (
               <option key={fy._id} value={fy._id}>
                 {fy.code || fy.label}
@@ -172,10 +171,10 @@ const TrialBalance = () => {
             value={filters.accountClass}
             onChange={(e) => setFilters({ ...filters, accountClass: e.target.value })}
           >
-            <option value="">Toutes classes</option>
+            <option value="">{t('accAccounts.trial.allClasses')}</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
               <option key={c} value={c}>
-                Classe {c}
+                {t('accAccounts.accounts.classN', { n: c })}
               </option>
             ))}
           </select>
@@ -185,30 +184,30 @@ const TrialBalance = () => {
               checked={filters.includeZero}
               onChange={(e) => setFilters({ ...filters, includeZero: e.target.checked })}
             />{' '}
-            Inclure soldes nuls
+            {t('accAccounts.trial.includeZero')}
           </label>
           <button className="portal-button" onClick={runQuery}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data || rows.length === 0 ? (
           <div className="accounting-empty">
-            Aucune ligne pour ces filtres.
-            <div className="hint">Activez « Inclure soldes nuls » pour afficher tous les comptes.</div>
+            {t('accAccounts.trial.empty')}
+            <div className="hint">{t('accAccounts.trial.emptyHint')}</div>
           </div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Libellé</th>
-                <th>Classe</th>
-                <th className="amount">Débit</th>
-                <th className="amount">Crédit</th>
-                <th className="amount">Solde</th>
+                <th>{t('accAccounts.col.code')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th>{t('accAccounts.accounts.class')}</th>
+                <th className="amount">{t('accAccounts.col.debit')}</th>
+                <th className="amount">{t('accAccounts.col.credit')}</th>
+                <th className="amount">{t('accAccounts.col.balance')}</th>
               </tr>
             </thead>
             <tbody>
@@ -231,7 +230,7 @@ const TrialBalance = () => {
                         fontWeight: 600,
                       }}
                     >
-                      Classe {r.classNum}
+                      {t('accAccounts.accounts.classN', { n: r.classNum })}
                     </td>
                   </tr>
                 ) : (
@@ -258,7 +257,7 @@ const TrialBalance = () => {
               <tfoot>
                 <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                   <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, padding: '14px' }}>
-                    Totaux
+                    {t('accAccounts.entry.totals')}
                   </td>
                   <td className="amount" style={{ fontWeight: 700 }}>
                     {formatEur(totals.debit)}
@@ -268,10 +267,12 @@ const TrialBalance = () => {
                   </td>
                   <td className="amount" style={{ fontWeight: 700 }}>
                     {balanced ? (
-                      <span style={{ color: '#4ade80' }}>Équilibré ✓</span>
+                      <span style={{ color: '#4ade80' }}>{t('accAccounts.trial.balanced')}</span>
                     ) : (
                       <span style={{ color: '#f87171' }}>
-                        Écart : {formatEur(Number(totals.debit) - Number(totals.credit))}
+                        {t('accAccounts.trial.difference', {
+                          amount: formatEur(Number(totals.debit) - Number(totals.credit)),
+                        })}
                       </span>
                     )}
                   </td>

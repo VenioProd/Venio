@@ -8,31 +8,26 @@ import {
   unletterCode,
 } from '../../../services/accounting'
 import type { IChartOfAccount, ILetteredData, IUnletteredData } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate as formatDateIntl, formatMoney } from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return formatDateIntl(d) || '—'
 }
 
 const EMPTY_UNLETTERED: IUnletteredData = { account: null, lines: [] }
 const EMPTY_LETTERED: ILetteredData = { account: null, groups: [] }
 
 const Lettrage = () => {
+  const { t } = useI18n()
   const [lettrableAccounts, setLettrableAccounts] = useState<IChartOfAccount[]>([])
   const [accountCode, setAccountCode] = useState('')
 
@@ -63,7 +58,7 @@ const Lettrage = () => {
         if (default411) setAccountCode(default411.code)
         else if (first) setAccountCode(first.code)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       } finally {
         if (!cancelled) setAccountsLoading(false)
       }
@@ -83,7 +78,7 @@ const Lettrage = () => {
       setUnlettered(u || EMPTY_UNLETTERED)
       setLettered(l || EMPTY_LETTERED)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -148,34 +143,40 @@ const Lettrage = () => {
       const r = await letterLines(ids)
       if (r.partial) {
         setInfo(
-          `Lettrage partiel créé sous le code ${r.code} (${r.lineCount} ligne(s)). Écart : ${formatEur(
-            Math.abs(Number(r.totalDebit) - Number(r.totalCredit)),
-          )}.`,
+          t('accAccounts.recon.partialCreated', {
+            code: r.code,
+            count: r.lineCount,
+            amount: formatEur(Math.abs(Number(r.totalDebit) - Number(r.totalCredit))),
+          }),
         )
       } else {
         setSuccess(
-          `Lettrage ${r.code} créé : ${r.lineCount} ligne(s) lettrée(s) pour ${formatEur(Number(r.totalDebit))}.`,
+          t('accAccounts.recon.created', {
+            code: r.code,
+            count: r.lineCount,
+            amount: formatEur(Number(r.totalDebit)),
+          }),
         )
       }
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLettering(false)
     }
   }
 
   async function handleUnletter(code: string) {
-    if (!confirm(`Délettrer le code ${code} ? Les lignes redeviendront non lettrées.`)) return
+    if (!confirm(t('accAccounts.recon.confirmUnreconcile', { code }))) return
     setError('')
     setSuccess('')
     setInfo('')
     try {
       const r = await unletterCode(accountCode, code)
-      setSuccess(`Lettrage ${code} supprimé (${r.unlinked} ligne(s)).`)
+      setSuccess(t('accAccounts.recon.removed', { code, count: r.unlinked }))
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -183,7 +184,7 @@ const Lettrage = () => {
   const showSuggestions = suggestionIds.size > 0
 
   return (
-    <AccountingLayout title="Lettrage" subtitle="Rapprochement manuel des écritures sur un compte lettrable">
+    <AccountingLayout title={t('accAccounts.nav.reconciliation')} subtitle={t('accAccounts.recon.subtitle')}>
       {error && <div className="accounting-message error">{error}</div>}
       {info && <div className="accounting-message info">{info}</div>}
       {success && <div className="accounting-message success">{success}</div>}
@@ -191,13 +192,12 @@ const Lettrage = () => {
       <section className="accounting-card" style={{ marginBottom: 16 }}>
         <div className="accounting-toolbar">
           <div className="accounting-form-field" style={{ flex: 1, minWidth: 280 }}>
-            <label>Compte lettrable</label>
+            <label>{t('accAccounts.recon.accountLabel')}</label>
             {accountsLoading ? (
-              <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Chargement des comptes…</p>
+              <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>{t('accAccounts.recon.loadingAccounts')}</p>
             ) : lettrableAccounts.length === 0 ? (
               <p style={{ color: 'rgba(248,113,113,0.85)', margin: 0, fontSize: '0.88rem' }}>
-                Aucun compte lettrable trouvé. Activez l'option « Lettrable » sur les comptes concernés dans le plan
-                comptable.
+                {t('accAccounts.recon.noAccounts')}
               </p>
             ) : (
               <select className="portal-input" value={accountCode} onChange={(e) => setAccountCode(e.target.value)}>
@@ -229,7 +229,7 @@ const Lettrage = () => {
       </section>
 
       {!accountCode ? null : loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
       ) : (
         <>
           <section className="accounting-card" style={{ marginBottom: 16 }}>
@@ -244,7 +244,7 @@ const Lettrage = () => {
               }}
             >
               <h2 style={{ margin: 0, fontSize: '1.05rem' }}>
-                À lettrer
+                {t('accAccounts.recon.toReconcile')}
                 <span
                   style={{
                     marginLeft: 10,
@@ -253,27 +253,28 @@ const Lettrage = () => {
                     fontWeight: 400,
                   }}
                 >
-                  ({(unlettered.lines || []).length} ligne(s))
+                  {t('accAccounts.recon.lineCount', { count: (unlettered.lines || []).length })}
                 </span>
               </h2>
               <button className="portal-button" onClick={handleLetter} disabled={selected.size < 2 || lettering}>
-                {lettering ? 'Lettrage…' : `✓ Lettrer la sélection${selected.size > 0 ? ` (${selected.size})` : ''}`}
+                {lettering
+                  ? t('accAccounts.recon.reconciling')
+                  : selected.size > 0
+                    ? t('accAccounts.recon.reconcileSelectionCount', { count: selected.size })
+                    : t('accAccounts.recon.reconcileSelection')}
               </button>
             </div>
 
             {showSuggestions && (
               <div className="accounting-message info" style={{ marginBottom: 12 }}>
-                Suggestion : {suggestionIds.size} ligne(s) avec un montant opposé identique sont mises en évidence
-                ci-dessous.
+                {t('accAccounts.recon.suggestion', { count: suggestionIds.size })}
               </div>
             )}
 
             {(unlettered.lines || []).length === 0 ? (
               <div className="accounting-empty">
-                Aucune ligne à lettrer sur ce compte.
-                <div className="hint">
-                  Toutes les écritures de ce compte sont déjà lettrées ou il n'y a pas encore d'écritures validées.
-                </div>
+                {t('accAccounts.recon.noLines')}
+                <div className="hint">{t('accAccounts.recon.noLinesHint')}</div>
               </div>
             ) : (
               <>
@@ -281,13 +282,13 @@ const Lettrage = () => {
                   <thead>
                     <tr>
                       <th style={{ width: 32 }}></th>
-                      <th>Date</th>
-                      <th>Journal</th>
-                      <th>N° écriture</th>
-                      <th>Pièce</th>
-                      <th>Libellé</th>
-                      <th className="amount">Débit</th>
-                      <th className="amount">Crédit</th>
+                      <th>{t('accAccounts.col.date')}</th>
+                      <th>{t('accAccounts.col.journal')}</th>
+                      <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                      <th>{t('accAccounts.col.piece')}</th>
+                      <th>{t('accAccounts.col.label')}</th>
+                      <th className="amount">{t('accAccounts.col.debit')}</th>
+                      <th className="amount">{t('accAccounts.col.credit')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -329,25 +330,25 @@ const Lettrage = () => {
                   style={{ marginTop: 14 }}
                 >
                   <div>
-                    <div className="label">Débit sélectionné</div>
+                    <div className="label">{t('accAccounts.recon.selectedDebit')}</div>
                     <div className="value">{formatEur(totalDebit)}</div>
                   </div>
                   <div>
-                    <div className="label">Crédit sélectionné</div>
+                    <div className="label">{t('accAccounts.recon.selectedCredit')}</div>
                     <div className="value">{formatEur(totalCredit)}</div>
                   </div>
                   <div>
-                    <div className="label">Différence</div>
+                    <div className="label">{t('accAccounts.recon.difference')}</div>
                     <div className="value">
                       {selected.size === 0 ? (
                         <span style={{ color: 'rgba(255,255,255,0.55)' }}>—</span>
                       ) : balanced ? (
                         <span className="accounting-badge validated" style={{ fontSize: '0.78rem' }}>
-                          Équilibré ✓
+                          {t('accAccounts.trial.balanced')}
                         </span>
                       ) : (
                         <span className="accounting-badge draft" style={{ fontSize: '0.78rem' }}>
-                          Déséquilibre : {formatEur(Math.abs(diff))}
+                          {t('accAccounts.balanceSheet.imbalance', { amount: formatEur(Math.abs(diff)) })}
                         </span>
                       )}
                     </div>
@@ -359,7 +360,7 @@ const Lettrage = () => {
 
           <section className="accounting-card">
             <h2 style={{ margin: '0 0 12px 0', fontSize: '1.05rem' }}>
-              Lettrées
+              {t('accAccounts.recon.reconciled')}
               <span
                 style={{
                   marginLeft: 10,
@@ -368,16 +369,14 @@ const Lettrage = () => {
                   fontWeight: 400,
                 }}
               >
-                ({(lettered.groups || []).length} groupe(s))
+                {t('accAccounts.recon.groupCount', { count: (lettered.groups || []).length })}
               </span>
             </h2>
 
             {(lettered.groups || []).length === 0 ? (
               <div className="accounting-empty">
-                Aucun lettrage sur ce compte.
-                <div className="hint">
-                  Sélectionnez au moins 2 lignes ci-dessus puis cliquez sur « Lettrer la sélection ».
-                </div>
+                {t('accAccounts.recon.noGroups')}
+                <div className="hint">{t('accAccounts.recon.noGroupsHint')}</div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -420,18 +419,22 @@ const Lettrage = () => {
                               fontSize: '0.88rem',
                             }}
                           >
-                            {g.lineCount} ligne(s) · Débit {formatEur(g.totalDebit)} · Crédit {formatEur(g.totalCredit)}{' '}
-                            · {formatDate(g.lettrageDate)}
+                            {t('accAccounts.recon.groupSummary', {
+                              count: g.lineCount,
+                              debit: formatEur(g.totalDebit),
+                              credit: formatEur(g.totalCredit),
+                              date: formatDate(g.lettrageDate),
+                            })}
                           </span>
                           {!groupBalanced && (
                             <span className="accounting-badge draft" style={{ fontSize: '0.72rem' }}>
-                              Partiel
+                              {t('accAccounts.recon.partial')}
                             </span>
                           )}
                         </div>
                         <div className="accounting-row-actions">
                           <button type="button" className="danger" onClick={() => handleUnletter(g.code)}>
-                            Délettrer
+                            {t('accAccounts.recon.unreconcile')}
                           </button>
                         </div>
                       </div>
@@ -439,12 +442,12 @@ const Lettrage = () => {
                       <table className="accounting-table">
                         <thead>
                           <tr>
-                            <th>Date</th>
-                            <th>Journal</th>
-                            <th>N° écriture</th>
-                            <th>Libellé</th>
-                            <th className="amount">Débit</th>
-                            <th className="amount">Crédit</th>
+                            <th>{t('accAccounts.col.date')}</th>
+                            <th>{t('accAccounts.col.journal')}</th>
+                            <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                            <th>{t('accAccounts.col.label')}</th>
+                            <th className="amount">{t('accAccounts.col.debit')}</th>
+                            <th className="amount">{t('accAccounts.col.credit')}</th>
                           </tr>
                         </thead>
                         <tbody>
