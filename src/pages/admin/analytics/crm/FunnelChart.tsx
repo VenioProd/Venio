@@ -1,6 +1,7 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { FunnelStageResult } from '../../../../types/pilotage.types'
-import { STAGE_LABELS, formatPercent } from './constants'
+import { STAGE_LABEL_KEYS, formatPercent } from './constants'
 
 interface FunnelChartProps {
   stages: FunnelStageResult[]
@@ -13,15 +14,16 @@ interface FunnelChartProps {
  * l'étape précédente — c'est là que se lit la déperdition.
  */
 const FunnelChart: React.FC<FunnelChartProps> = ({ stages, total }) => {
+  const { t } = useI18n()
   if (total === 0) {
-    return <p className="pilotage-empty">Aucun lead créé sur la période.</p>
+    return <p className="pilotage-empty">{t('adminTech.pilotage.noLeadsCreated')}</p>
   }
 
   return (
     <div className="pilotage-funnel">
       {stages.map((stage) => (
         <div key={stage.stage} className="pilotage-funnel-row">
-          <span className="pilotage-funnel-label">{STAGE_LABELS[stage.stage]}</span>
+          <span className="pilotage-funnel-label">{t(STAGE_LABEL_KEYS[stage.stage])}</span>
           <div className="pilotage-funnel-track">
             <div
               className={`pilotage-funnel-fill${stage.stage === 'WON' ? ' is-won' : ''}`}
@@ -35,7 +37,11 @@ const FunnelChart: React.FC<FunnelChartProps> = ({ stages, total }) => {
             className={`pilotage-funnel-rate${
               stage.rateFromPrevious !== null && stage.rateFromPrevious < 0.5 ? ' is-low' : ''
             }`}
-            title={stage.rateFromPrevious === null ? 'Première étape' : "Depuis l'étape précédente"}
+            title={
+              stage.rateFromPrevious === null
+                ? t('adminTech.pilotage.firstStage')
+                : t('adminTech.pilotage.fromPreviousStage')
+            }
           >
             {formatPercent(stage.rateFromPrevious)}
           </span>

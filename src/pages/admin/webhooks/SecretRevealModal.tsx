@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 
 interface Props {
   secret: string
@@ -11,6 +12,7 @@ interface Props {
  * jamais plus, l'avertissement doit donc être explicite.
  */
 export default function SecretRevealModal({ secret, endpointName, onClose }: Props) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -32,12 +34,12 @@ export default function SecretRevealModal({ secret, endpointName, onClose }: Pro
         aria-modal="true"
       >
         <div className="confirm-modal__header">
-          <h2 className="confirm-modal__title">Secret de « {endpointName} »</h2>
+          <h2 className="confirm-modal__title">{t('adminTech.webhooks.secretTitle', { name: endpointName })}</h2>
         </div>
         <div className="confirm-modal__body">
           <p className="admin-info" style={{ margin: 0 }}>
-            Ce secret ne sera plus jamais affiché. Copiez-le maintenant et enregistrez-le côté récepteur : il sert à
-            vérifier l’en-tête <code>X-Venio-Signature</code> de chaque envoi.
+            {t('adminTech.webhooks.secretWarningLead')} <code>X-Venio-Signature</code>{' '}
+            {t('adminTech.webhooks.secretWarningTail')}
           </p>
           <div
             style={{
@@ -52,7 +54,7 @@ export default function SecretRevealModal({ secret, endpointName, onClose }: Pro
             {secret}
           </div>
           <button type="button" onClick={copy} className="portal-button" style={{ marginTop: 12, width: '100%' }}>
-            {copied ? 'Copié' : 'Copier le secret'}
+            {copied ? t('adminTech.webhooks.copied') : t('adminTech.webhooks.copySecret')}
           </button>
         </div>
         <div className="confirm-modal__footer">
@@ -61,7 +63,7 @@ export default function SecretRevealModal({ secret, endpointName, onClose }: Pro
             className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
             onClick={onClose}
           >
-            J’ai copié, fermer
+            {t('adminTech.webhooks.copiedClose')}
           </button>
         </div>
       </div>

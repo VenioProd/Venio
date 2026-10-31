@@ -1,4 +1,6 @@
 import { ACCENT, STATUS, categoricalAt } from '../../../lib/chartColors'
+import { formatMoney } from '../../../i18n/format'
+import type { MessageKey } from '../../../i18n'
 
 export interface AnalyticsData {
   projectsByStatus: Record<string, number>
@@ -32,20 +34,20 @@ export interface PublicSiteAnalyticsData {
   }[]
 }
 
-export const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Termine',
-  A_FAIRE: 'A faire',
-  EN_REVIEW: 'En review',
-}
+export const STATUS_LABEL_KEYS = {
+  EN_COURS: 'adminTech.analytics.status.inProgress',
+  EN_ATTENTE: 'adminTech.analytics.status.waiting',
+  TERMINE: 'adminTech.analytics.status.done',
+  A_FAIRE: 'adminTech.analytics.status.todo',
+  EN_REVIEW: 'adminTech.analytics.status.review',
+} as const satisfies Record<string, MessageKey>
 
-export const PRIORITY_LABELS: Record<string, string> = {
-  BASSE: 'Basse',
-  NORMALE: 'Normale',
-  HAUTE: 'Haute',
-  URGENTE: 'Urgente',
-}
+export const PRIORITY_LABEL_KEYS = {
+  BASSE: 'adminTech.analytics.priority.low',
+  NORMALE: 'adminTech.analytics.priority.normal',
+  HAUTE: 'adminTech.analytics.priority.high',
+  URGENTE: 'adminTech.analytics.priority.urgent',
+} as const satisfies Record<string, MessageKey>
 
 /**
  * La priorité est une échelle de gravité : elle emploie donc les couleurs de
@@ -74,8 +76,21 @@ export const STATUS_COLORS: Record<string, string> = {
   TERMINE: categoricalAt(4),
 }
 
-export const MONTH_LABELS = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec']
+export const MONTH_LABEL_KEYS = [
+  'adminTech.analytics.month.jan',
+  'adminTech.analytics.month.feb',
+  'adminTech.analytics.month.mar',
+  'adminTech.analytics.month.apr',
+  'adminTech.analytics.month.may',
+  'adminTech.analytics.month.jun',
+  'adminTech.analytics.month.jul',
+  'adminTech.analytics.month.aug',
+  'adminTech.analytics.month.sep',
+  'adminTech.analytics.month.oct',
+  'adminTech.analytics.month.nov',
+  'adminTech.analytics.month.dec',
+] as const satisfies readonly MessageKey[]
 
 export function formatEur(n: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+  return formatMoney(n, 'EUR', { maximumFractionDigits: 0 })
 }

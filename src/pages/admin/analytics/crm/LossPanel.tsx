@@ -1,20 +1,24 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { PilotageResponse } from '../../../../types/pilotage.types'
-import { STAGE_LABELS, displayKey, formatPercent } from './constants'
+import { STAGE_LABEL_KEYS, displayKey, formatPercent } from './constants'
 import type { FunnelStage } from '../../../../types/pilotage.types'
+import { translate } from '../../../../i18n'
 
 interface LossPanelProps {
   losses: PilotageResponse['losses']
 }
 
 function stageLabel(stage: string): string {
-  return STAGE_LABELS[stage as FunnelStage] ?? displayKey(stage)
+  const key = STAGE_LABEL_KEYS[stage as FunnelStage]
+  return key ? translate(key) : displayKey(stage)
 }
 
 /** Pourquoi on perd, et à quelle étape. */
 const LossPanel: React.FC<LossPanelProps> = ({ losses }) => {
+  const { t } = useI18n()
   if (losses.total === 0) {
-    return <p className="pilotage-empty">Aucune affaire perdue sur la période.</p>
+    return <p className="pilotage-empty">{t('adminTech.pilotage.noLosses')}</p>
   }
 
   const maxReason = Math.max(...losses.byReason.map((entry) => entry.count), 1)
@@ -23,7 +27,7 @@ const LossPanel: React.FC<LossPanelProps> = ({ losses }) => {
   return (
     <div className="pilotage-losses">
       <div>
-        <h4 className="pilotage-subtitle">Par motif</h4>
+        <h4 className="pilotage-subtitle">{t('adminTech.pilotage.byReason')}</h4>
         <div className="pilotage-bars">
           {losses.byReason.map((entry) => (
             <div key={entry.reason} className="pilotage-bar-row">
@@ -42,14 +46,13 @@ const LossPanel: React.FC<LossPanelProps> = ({ losses }) => {
         </div>
         {losses.unspecified > 0 && (
           <p className="pilotage-note">
-            {formatPercent(losses.unspecified / losses.total)} des pertes n'ont pas de motif renseigné : ces affaires-là
-            ne diront rien tant qu'il manquera.
+            {t('adminTech.pilotage.unspecifiedLosses', { share: formatPercent(losses.unspecified / losses.total) })}
           </p>
         )}
       </div>
 
       <div>
-        <h4 className="pilotage-subtitle">Étape de sortie</h4>
+        <h4 className="pilotage-subtitle">{t('adminTech.pilotage.exitStage')}</h4>
         <div className="pilotage-bars">
           {losses.byStage.map((entry) => (
             <div key={entry.stage} className="pilotage-bar-row">

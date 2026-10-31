@@ -1,6 +1,7 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { PipelineResult, RevenueBlock } from '../../../../types/pilotage.types'
-import { STAGE_LABELS, formatEuro, formatPercent } from './constants'
+import { STAGE_LABEL_KEYS, formatEuro, formatPercent } from './constants'
 
 interface PipelinePanelProps {
   pipeline: PipelineResult
@@ -15,65 +16,57 @@ interface PipelinePanelProps {
  * courant. On le dit, plutôt que de le présenter comme une certitude.
  */
 const PipelinePanel: React.FC<PipelinePanelProps> = ({ pipeline, revenue }) => {
+  const { t } = useI18n()
   const stages = pipeline.stages.filter((stage) => stage.count > 0)
 
   return (
     <div className="pilotage-revenue">
       <div className="pilotage-money">
         <div className="pilotage-money-item">
-          <span className="pilotage-money-label">Budget déclaré</span>
+          <span className="pilotage-money-label">{t('adminTech.pilotage.declaredBudget')}</span>
           <span className="pilotage-money-value is-muted">{formatEuro(revenue.declaredBudget)}</span>
-          <span className="pilotage-money-sub">à la saisie des leads</span>
+          <span className="pilotage-money-sub">{t('adminTech.pilotage.declaredBudgetSub')}</span>
         </div>
         <div className="pilotage-money-item">
-          <span className="pilotage-money-label">Signé</span>
+          <span className="pilotage-money-label">{t('adminTech.pilotage.signed')}</span>
           <span className="pilotage-money-value">{formatEuro(revenue.signed)}</span>
           <span className="pilotage-money-sub">
-            {revenue.linkedProjects} projet{revenue.linkedProjects > 1 ? 's' : ''} rattaché
-            {revenue.linkedProjects > 1 ? 's' : ''}
+            {t('adminTech.pilotage.linkedProjects', { count: revenue.linkedProjects })}
           </span>
         </div>
         <div className="pilotage-money-item">
-          <span className="pilotage-money-label">Encaissé</span>
+          <span className="pilotage-money-label">{t('adminTech.pilotage.collected')}</span>
           <span className="pilotage-money-value">{formatEuro(revenue.collected)}</span>
-          <span className="pilotage-money-sub">factures payées</span>
+          <span className="pilotage-money-sub">{t('adminTech.pilotage.collectedSub')}</span>
         </div>
       </div>
 
-      {revenue.linkedProjects === 0 && (
-        <p className="pilotage-coverage">
-          Aucun projet n'est rattaché aux leads de cette période : les montants resteront à zéro tant que la chaîne ne
-          sera pas établie depuis les fiches leads.
-        </p>
-      )}
+      {revenue.linkedProjects === 0 && <p className="pilotage-coverage">{t('adminTech.pilotage.noLinkedProjects')}</p>}
 
       <h4 className="pilotage-subtitle" style={{ marginTop: 18 }}>
-        Pipeline pondéré — {formatEuro(pipeline.total)}
+        {t('adminTech.pilotage.weightedPipeline', { amount: formatEuro(pipeline.total) })}
       </h4>
 
       {!pipeline.reliable && (
-        <p className="pilotage-coverage">
-          Projection à prendre avec précaution : elle s'appuie sur {pipeline.cohortSize} lead
-          {pipeline.cohortSize > 1 ? 's' : ''} seulement. Les taux observés ne sont pas encore stables.
-        </p>
+        <p className="pilotage-coverage">{t('adminTech.pilotage.unreliable', { count: pipeline.cohortSize })}</p>
       )}
 
       {stages.length === 0 ? (
-        <p className="pilotage-empty">Aucune affaire en cours.</p>
+        <p className="pilotage-empty">{t('adminTech.pilotage.noDeals')}</p>
       ) : (
         <table className="pilotage-table">
           <thead>
             <tr>
-              <th>Étape</th>
-              <th>Affaires</th>
-              <th>Chance de signer</th>
-              <th>Valeur pondérée</th>
+              <th>{t('adminTech.pilotage.colStage')}</th>
+              <th>{t('adminTech.pilotage.colDeals')}</th>
+              <th>{t('adminTech.pilotage.colChance')}</th>
+              <th>{t('adminTech.pilotage.colWeighted')}</th>
             </tr>
           </thead>
           <tbody>
             {stages.map((stage) => (
               <tr key={stage.stage}>
-                <td>{STAGE_LABELS[stage.stage]}</td>
+                <td>{t(STAGE_LABEL_KEYS[stage.stage])}</td>
                 <td className="is-muted">{stage.count}</td>
                 <td className="is-muted">{formatPercent(stage.probability)}</td>
                 <td className="is-strong">{formatEuro(stage.weighted)}</td>
@@ -84,10 +77,7 @@ const PipelinePanel: React.FC<PipelinePanelProps> = ({ pipeline, revenue }) => {
       )}
 
       {pipeline.withoutBudget > 0 && (
-        <p className="pilotage-note">
-          {pipeline.withoutBudget} affaire{pipeline.withoutBudget > 1 ? 's' : ''} en cours sans budget saisi{' '}
-          {pipeline.withoutBudget > 1 ? 'comptent' : 'compte'} pour zéro : la projection est sous-estimée d'autant.
-        </p>
+        <p className="pilotage-note">{t('adminTech.pilotage.withoutBudget', { count: pipeline.withoutBudget })}</p>
       )}
     </div>
   )
