@@ -1,7 +1,7 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { getLeadAlerts } from './constants'
+import { PROJECT_MAP, getLeadAlerts } from './constants'
 import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadCardProps {
@@ -27,6 +27,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
 }) => {
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
+  const projectInfo = PROJECT_MAP[lead.project || '']
   const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
@@ -53,11 +54,20 @@ const LeadCard: React.FC<LeadCardProps> = ({
         </div>
       )}
       <div className="crm-card-row">
+        {projectInfo && (
+          <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
+            {projectInfo.label}
+          </span>
+        )}
         {lead.priority && <span className="crm-badge">{lead.priority}</span>}
         {lead.source && <span className="crm-badge">{lead.source}</span>}
-        {lead.budget != null && <span className="crm-badge">{lead.budget} \u20ac</span>}
+        {lead.budget != null && (
+          <span className="crm-badge">
+            {lead.budget.toLocaleString('fr-FR')} {'\u20ac'}
+          </span>
+        )}
       </div>
-      <div className="crm-card-row" style={{ marginTop: 8 }}>
+      <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>
         <CustomSelect
           className="portal-input"
           value={lead.assignedTo || ''}

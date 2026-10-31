@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import CustomSelect from '../../../components/admin/CustomSelect'
 import LeadFilters from './LeadFilters'
 import LeadTableRow from './LeadTableRow'
 import type { Lead, AdminUser, CrmStatusConfig } from '../../../types/crm.types'
@@ -11,6 +12,7 @@ interface LeadTableProps {
   filterStatus: string
   filterPriority: string
   filterAssignee: string
+  filterProject?: string
   sortField: string
   sortDir: string
   collapsedGroups: Record<string, boolean>
@@ -26,6 +28,7 @@ interface LeadTableProps {
   onFilterStatusChange: (value: string) => void
   onFilterPriorityChange: (value: string) => void
   onFilterAssigneeChange: (value: string) => void
+  onFilterProjectChange?: (value: string) => void
   onClearFilters: () => void
   onToggleAll: () => void
   onToggleSort: (field: string) => void
@@ -44,6 +47,20 @@ const SortIcon = ({ field, sortField, sortDir }: { field: string; sortField: str
   return <span className="crm-sort-icon active">{sortDir === 'asc' ? '↑' : '↓'}</span>
 }
 
+// Tri proposé sur mobile, où l'en-tête du tableau n'existe pas (les lignes sont
+// des cartes). Mêmes champs que les colonnes triables de l'en-tête.
+const MOBILE_SORT_OPTIONS = [
+  { value: 'company', label: 'Entreprise' },
+  { value: 'contactName', label: 'Contact' },
+  { value: 'nextActionAt', label: 'Prochaine action' },
+  { value: 'updatedAt', label: 'Mis \u00e0 jour' },
+  { value: 'priority', label: 'Priorit\u00e9' },
+  { value: 'budget', label: 'Budget' },
+  { value: 'leadTemperature', label: 'Chaleur' },
+  { value: 'project', label: 'Projet' },
+  { value: 'source', label: 'Source' },
+]
+
 const LeadTable: React.FC<LeadTableProps> = ({
   groupedLeads,
   filteredLeads,
@@ -52,6 +69,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   filterStatus,
   filterPriority,
   filterAssignee,
+  filterProject,
   sortField,
   sortDir,
   collapsedGroups,
@@ -67,6 +85,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   onFilterStatusChange,
   onFilterPriorityChange,
   onFilterAssigneeChange,
+  onFilterProjectChange,
   onClearFilters,
   onToggleAll,
   onToggleSort,
@@ -94,7 +113,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
 
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds))
 
-  const colSpanTotal = canManageCrm ? (onTransferSelectionToArrow ? 14 : 13) : onTransferSelectionToArrow ? 13 : 12
+  const colSpanTotal = canManageCrm ? (onTransferSelectionToArrow ? 15 : 14) : onTransferSelectionToArrow ? 14 : 13
 
   return (
     <div className="crm-table-container">
@@ -103,6 +122,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
         filterStatus={filterStatus}
         filterPriority={filterPriority}
         filterAssignee={filterAssignee}
+        filterProject={filterProject}
         admins={admins}
         filteredCount={filteredLeads.length}
         totalCount={totalLeads}
@@ -113,28 +133,40 @@ const LeadTable: React.FC<LeadTableProps> = ({
         onFilterStatusChange={onFilterStatusChange}
         onFilterPriorityChange={onFilterPriorityChange}
         onFilterAssigneeChange={onFilterAssigneeChange}
+        onFilterProjectChange={onFilterProjectChange}
         onClearFilters={onClearFilters}
         onToggleAll={onToggleAll}
       />
 
+      {/* Tri (mobile uniquement : l'en-tête du tableau y est masqué) */}
+      <div className="crm-sort-bar">
+        <span className="crm-sort-bar-label">Trier par</span>
+        <CustomSelect
+          className="crm-sort-bar-select"
+          value={sortField}
+          onChange={(v) => {
+            if (v !== sortField) onToggleSort(v)
+          }}
+          options={MOBILE_SORT_OPTIONS}
+        />
+        <button
+          type="button"
+          className="crm-sort-bar-dir"
+          onClick={() => onToggleSort(sortField)}
+          aria-label={sortDir === 'asc' ? 'Tri croissant' : 'Tri d\u00e9croissant'}
+        >
+          {sortDir === 'asc' ? '\u2191' : '\u2193'}
+        </button>
+      </div>
+
       {/* Barre de sélection */}
       {someSelected && onTransferSelectionToArrow && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '10px 20px',
-            background: 'rgba(14, 165, 233, 0.08)',
-            borderBottom: '1px solid rgba(14, 165, 233, 0.2)',
-          }}
-        >
-          <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
+        <div className="crm-selection-bar">
+          <span className="crm-selection-count">
             {selected.size} lead{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}
           </span>
           <button
-            className="portal-button"
-            style={{ fontSize: 12, padding: '5px 14px' }}
+            className="portal-button crm-selection-transfer"
             onClick={() => {
               onTransferSelectionToArrow([...selected])
               setSelected(new Set())
@@ -142,10 +174,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
           >
             Transférer vers Arrow Écoles
           </button>
-          <button
-            onClick={() => setSelected(new Set())}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}
-          >
+          <button className="crm-selection-clear" onClick={() => setSelected(new Set())}>
             Désélectionner
           </button>
         </div>
@@ -156,12 +185,13 @@ const LeadTable: React.FC<LeadTableProps> = ({
           <thead>
             <tr>
               {onTransferSelectionToArrow && (
-                <th className="crm-th" style={{ width: 36, padding: '14px 8px' }}>
+                <th className="crm-th crm-th-select">
                   <input
                     type="checkbox"
+                    className="crm-select-checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    style={{ cursor: 'pointer', width: 15, height: 15 }}
+                    aria-label="Tout sélectionner"
                   />
                 </th>
               )}
@@ -175,6 +205,9 @@ const LeadTable: React.FC<LeadTableProps> = ({
               <th className="crm-th crm-th-phone">Téléphone</th>
               <th className="crm-th crm-th-source" onClick={() => onToggleSort('source')}>
                 Source <SortIcon field="source" sortField={sortField} sortDir={sortDir} />
+              </th>
+              <th className="crm-th crm-th-project" onClick={() => onToggleSort('project')}>
+                Projet <SortIcon field="project" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-priority" onClick={() => onToggleSort('priority')}>
                 Priorité <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />

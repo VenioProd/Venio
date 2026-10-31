@@ -2,7 +2,7 @@ import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { CRM_SERVICE_TYPES, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { LeadFormData, AdminUser } from '../../../types/crm.types'
-import { CRM_STATUSES, CRM_SOURCES, CRM_TEMPERATURES, EMPTY_FORM } from './constants'
+import { CRM_STATUSES, CRM_SOURCES, CRM_PROJECTS, CRM_TEMPERATURES, EMPTY_FORM } from './constants'
 
 interface LeadFormPanelProps {
   form: LeadFormData
@@ -11,6 +11,8 @@ interface LeadFormPanelProps {
   canManageCrm: boolean
   onFormChange: (form: LeadFormData) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+  /** Ferme le panneau. Sur mobile il occupe l'écran : c'est son seul moyen de sortie. */
+  onClose?: () => void
 }
 
 const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
@@ -20,12 +22,25 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
   canManageCrm,
   onFormChange,
   onSubmit,
+  onClose,
 }) => {
   return (
-    <div className="portal-card" style={{ marginTop: 24 }}>
+    <div className="portal-card crm-form-panel">
       <form onSubmit={onSubmit} className="portal-list">
         <div className="admin-form-section" style={{ marginBottom: 0 }}>
-          <h2>Nouveau lead</h2>
+          <div className="crm-form-panel-header">
+            <h2>Nouveau lead</h2>
+            {onClose && (
+              <button
+                type="button"
+                className="crm-form-panel-close"
+                onClick={onClose}
+                aria-label="Fermer le formulaire"
+              >
+                &times;
+              </button>
+            )}
+          </div>
           <div className="crm-form-grid">
             <input
               className="portal-input"
@@ -59,6 +74,12 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               onChange={(v) => onFormChange({ ...form, source: v })}
               options={[{ value: '', label: 'Source' }, ...CRM_SOURCES.map((s) => ({ value: s, label: s }))]}
             />
+            <CustomSelect
+              className="portal-input"
+              value={form.project}
+              onChange={(v) => onFormChange({ ...form, project: v })}
+              options={[{ value: '', label: 'Projet' }, ...CRM_PROJECTS.map((p) => ({ value: p.key, label: p.label }))]}
+            />
             <input
               className="portal-input"
               placeholder="Budget estimé"
@@ -90,7 +111,10 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
                 className="portal-input"
                 value={form.assignedTo}
                 onChange={(v) => onFormChange({ ...form, assignedTo: v })}
-                options={[{ value: '', label: 'Commercial (optionnel)' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+                options={[
+                  { value: '', label: 'Commercial (optionnel)' },
+                  ...admins.map((a) => ({ value: a._id, label: a.name })),
+                ]}
               />
             )}
             <input
@@ -103,7 +127,10 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               className="portal-input"
               value={form.serviceType}
               onChange={(v) => onFormChange({ ...form, serviceType: v })}
-              options={[{ value: '', label: 'Type de service' }, ...CRM_SERVICE_TYPES.map((s) => ({ value: s, label: s }))]}
+              options={[
+                { value: '', label: 'Type de service' },
+                ...CRM_SERVICE_TYPES.map((s) => ({ value: s, label: s })),
+              ]}
             />
             <CustomSelect
               className="portal-input"
@@ -128,15 +155,11 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
             />
           </div>
-          <div className="crm-inline-actions" style={{ marginTop: 12 }}>
+          <div className="crm-inline-actions crm-form-panel-actions" style={{ marginTop: 12 }}>
             <button className="portal-button" type="submit" disabled={!canManageCrm}>
               Créer le lead
             </button>
-            <button
-              className="portal-button secondary"
-              type="button"
-              onClick={() => onFormChange({ ...EMPTY_FORM })}
-            >
+            <button className="portal-button secondary" type="button" onClick={() => onFormChange({ ...EMPTY_FORM })}>
               Réinitialiser
             </button>
           </div>

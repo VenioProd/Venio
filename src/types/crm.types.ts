@@ -15,6 +15,7 @@ export interface Lead {
   contactEmail?: string
   contactPhone?: string
   source?: string
+  project?: string
   budget?: number | null
   priority?: string
   status: string
@@ -44,6 +45,7 @@ export interface LeadFormData {
   contactEmail: string
   contactPhone: string
   source: string
+  project: string
   budget: string
   priority: string
   status: string

@@ -6,6 +6,7 @@ import {
   CRM_PRIORITIES,
   CRM_TEMPERATURES,
   PRIORITY_MAP,
+  PROJECT_MAP,
   TEMPERATURE_MAP,
   getLeadAlerts,
 } from './constants'
@@ -49,21 +50,23 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
   const priorityInfo = PRIORITY_MAP[lead.priority || '']
+  const projectInfo = PROJECT_MAP[lead.project || '']
   const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
 
   return (
     <tr
-      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''}`}
+      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''} ${onToggleSelect ? 'crm-row-selectable' : ''}`}
     >
       {onToggleSelect && (
-        <td className="crm-td" style={{ padding: '0 8px', width: 36 }} onClick={(e) => e.stopPropagation()}>
+        <td className="crm-td crm-td-select" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
+            className="crm-select-checkbox"
             checked={!!isSelected}
             onChange={onToggleSelect}
-            style={{ cursor: 'pointer', width: 15, height: 15 }}
+            aria-label={`Sélectionner ${lead.company}`}
           />
         </td>
       )}
@@ -84,8 +87,10 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           </span>
         )}
       </td>
-      <td className="crm-td">{lead.contactName || '\u2014'}</td>
-      <td className="crm-td crm-td-email">
+      <td className="crm-td" data-label="Contact">
+        {lead.contactName || '\u2014'}
+      </td>
+      <td className="crm-td crm-td-email" data-label="Email">
         {lead.contactEmail ? (
           <a href={`mailto:${lead.contactEmail}`} className="crm-email-link">
             {lead.contactEmail}
@@ -94,9 +99,22 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           '\u2014'
         )}
       </td>
-      <td className="crm-td">{lead.contactPhone || '\u2014'}</td>
-      <td className="crm-td">{lead.source ? <span className="crm-table-badge">{lead.source}</span> : '\u2014'}</td>
-      <td className="crm-td">
+      <td className="crm-td" data-label="Téléphone">
+        {lead.contactPhone || '\u2014'}
+      </td>
+      <td className="crm-td" data-label="Source">
+        {lead.source ? <span className="crm-table-badge">{lead.source}</span> : '\u2014'}
+      </td>
+      <td className="crm-td crm-td-project" data-label="Projet">
+        {projectInfo ? (
+          <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
+            {projectInfo.label}
+          </span>
+        ) : (
+          '\u2014'
+        )}
+      </td>
+      <td className="crm-td" data-label="Priorité">
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select"
@@ -113,13 +131,13 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           </span>
         )}
       </td>
-      <td className="crm-td crm-td-budget">
+      <td className="crm-td crm-td-budget" data-label="Budget">
         {lead.budget != null ? `${lead.budget.toLocaleString('fr-FR')} \u20ac` : '\u2014'}
       </td>
-      <td className="crm-td crm-td-service">
+      <td className="crm-td crm-td-service" data-label="Service">
         {lead.serviceType ? <span className="crm-table-badge">{lead.serviceType}</span> : '\u2014'}
       </td>
-      <td className="crm-td crm-td-temperature">
+      <td className="crm-td crm-td-temperature" data-label="Chaleur">
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select"
@@ -138,7 +156,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           </span>
         )}
       </td>
-      <td className="crm-td">
+      <td className="crm-td crm-td-assignee" data-label="Commercial">
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select crm-inline-assignee"
@@ -153,11 +171,11 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           <span>{assigned?.name || 'Non assign\u00e9'}</span>
         )}
       </td>
-      <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`}>
+      <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`} data-label="Prochaine action">
         {lead.nextActionAt ? new Date(lead.nextActionAt).toLocaleDateString('fr-FR') : '\u2014'}
         {isOverdue && <span className="crm-overdue-tag">En retard</span>}
       </td>
-      <td className="crm-td crm-td-date">
+      <td className="crm-td crm-td-date" data-label="Mis à jour">
         {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString('fr-FR') : '\u2014'}
       </td>
       {canManageCrm && (

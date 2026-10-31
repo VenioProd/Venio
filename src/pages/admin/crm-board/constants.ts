@@ -19,6 +19,16 @@ export const CRM_PRIORITIES = [
 
 export const CRM_SOURCES = ['Ads', 'Site', 'Referral', 'R\u00e9seaux sociaux', 'Email', 'Autre']
 
+// Projet / produit concerné par un lead. Les leads historiques n'en ont pas
+// (project vide) : l'interface affiche alors « — ».
+export const CRM_PROJECTS = [
+  { key: 'ARTOSERA', label: 'Artosera', color: '#ec4899' },
+  { key: 'VIGNO', label: 'Vigno', color: '#22c55e' },
+  { key: 'ARROW', label: 'Arrow', color: '#0ea5e9' },
+  { key: 'VENIO', label: 'Venio', color: '#8b5cf6' },
+  { key: 'AUTRE', label: 'Autre', color: '#64748b' },
+]
+
 export const CRM_TEMPERATURES = [
   { key: 'FROID', label: 'Froid \u2744\ufe0f', color: '#64748b' },
   { key: 'TIEDE', label: 'Ti\u00e8de \ud83c\udf24\ufe0f', color: '#f59e0b' },
@@ -28,6 +38,7 @@ export const CRM_TEMPERATURES = [
 
 export const STATUS_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, s]))
 export const PRIORITY_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_PRIORITIES.map((p) => [p.key, p]))
+export const PROJECT_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_PROJECTS.map((p) => [p.key, p]))
 export const TEMPERATURE_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(
   CRM_TEMPERATURES.map((t) => [t.key, t]),
 )
@@ -38,6 +49,7 @@ export const EMPTY_FORM = {
   contactEmail: '',
   contactPhone: '',
   source: '',
+  project: '',
   budget: '',
   priority: 'NORMALE',
   status: 'LEAD',

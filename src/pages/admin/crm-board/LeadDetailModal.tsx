@@ -5,7 +5,7 @@ import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { CRM_STATUSES, CRM_TEMPERATURES, TEMPERATURE_MAP } from './constants'
+import { CRM_STATUSES, CRM_TEMPERATURES, PROJECT_MAP, TEMPERATURE_MAP } from './constants'
 
 interface LeadDetailModalProps {
   lead: Lead
@@ -60,6 +60,27 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </p>
             <p>
               <strong>Service :</strong> {lead.serviceType || '—'}
+            </p>
+            <p>
+              <strong>Projet :</strong>{' '}
+              {PROJECT_MAP[lead.project || ''] ? (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: PROJECT_MAP[lead.project || ''].color,
+                    background: `${PROJECT_MAP[lead.project || ''].color}22`,
+                    border: `1px solid ${PROJECT_MAP[lead.project || ''].color}55`,
+                  }}
+                >
+                  {PROJECT_MAP[lead.project || ''].label}
+                </span>
+              ) : (
+                '—'
+              )}
             </p>
             <p>
               <strong>Chaleur :</strong> {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}

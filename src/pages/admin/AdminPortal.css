@@ -9494,3 +9494,849 @@ a.portal-button {
 .crm-td {
   font-variant-numeric: tabular-nums;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   CRM — éléments communs et affichage mobile
+   Les règles hors @media reprennent à l'identique les styles qui
+   étaient en ligne dans le TSX (rendu bureau inchangé) ; tout ce
+   qui change le rendu est derrière un point de rupture.
+   ───────────────────────────────────────────────────────────── */
+
+.crm-project-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--project-color, var(--primary)) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--project-color, var(--primary)) 40%, transparent);
+  color: var(--project-color, var(--primary));
+  white-space: nowrap;
+}
+
+.crm-th-project {
+  min-width: 110px;
+}
+
+.crm-th.crm-th-select {
+  width: 36px;
+  padding: 14px 8px;
+}
+
+.crm-td.crm-td-select {
+  width: 36px;
+  padding: 0 8px;
+}
+
+.crm-select-checkbox {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.crm-table-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.crm-table-toggle-all {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s;
+}
+
+.crm-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(14, 165, 233, 0.08);
+  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+.crm-selection-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.crm-selection-bar .crm-selection-transfer {
+  font-size: 12px;
+  padding: 5px 14px;
+}
+
+.crm-selection-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Barre de tri : réservée au mobile, où l'en-tête du tableau disparaît. */
+.crm-sort-bar {
+  display: none;
+}
+
+.crm-form-panel {
+  margin-top: 24px;
+}
+
+.crm-form-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.crm-form-panel-header h2 {
+  margin: 0;
+}
+
+.crm-form-panel-close {
+  display: none;
+}
+
+/* ── Tablette étroite et mobile (≤ 768 px) : tableau en cartes, filtres en grille, kanban ── */
+@media (max-width: 768px) {
+  .crm-view-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .crm-view-btn-count {
+    top: 4px;
+    right: 4px;
+  }
+
+  /* En-tête de page : onglets et actions tactiles, qui passent à la ligne au lieu d'être écrasés */
+  .crm-section-tab {
+    min-height: 44px;
+  }
+
+  .crm-page-container .admin-actions {
+    flex-wrap: wrap;
+  }
+
+  .crm-page-container .admin-actions > .portal-button:not(.portal-action-link) {
+    flex: 1 1 auto;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .crm-page-container .crm-settings-link {
+    min-height: 44px;
+  }
+
+  /* Barre d'outils : recherche pleine largeur, filtres en grille de deux */
+  .crm-table-toolbar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .crm-table-search-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  .crm-table-search {
+    min-height: 44px;
+    padding: 10px 44px 10px 38px;
+    font-size: 16px;
+  }
+
+  .crm-table-search-clear {
+    right: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 22px;
+  }
+
+  .crm-table-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .crm-table-filters .custom-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .crm-table-filters .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-table-filter-clear {
+    grid-column: 1 / -1;
+    min-height: 44px;
+  }
+
+  .crm-table-stats {
+    gap: 12px;
+  }
+
+  .crm-table-toggle-all {
+    min-height: 44px;
+    padding: 5px 16px;
+    font-size: 13px;
+  }
+
+  .crm-sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 0;
+  }
+
+  .crm-sort-bar-label {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .crm-sort-bar .custom-select {
+    display: block;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .crm-sort-bar .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-sort-bar-dir {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--primary);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .crm-selection-bar {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+
+  .crm-selection-count {
+    flex: 1 1 100%;
+  }
+
+  .crm-selection-bar .crm-selection-transfer {
+    flex: 1 1 auto;
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .crm-selection-clear {
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  /* Tableau → cartes. L'en-tête est masqué (le tri passe par la barre dédiée). */
+  .crm-table-scroll {
+    overflow: visible;
+    padding: 12px;
+  }
+
+  .crm-table,
+  .crm-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .crm-table thead {
+    display: none;
+  }
+
+  .crm-table tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 10px;
+  }
+
+  .crm-group-row {
+    display: block;
+    grid-column: 1 / -1;
+    margin-top: 6px;
+  }
+
+  .crm-group-row:first-child {
+    margin-top: 0;
+  }
+
+  .crm-group-row td {
+    display: block;
+  }
+
+  .crm-group-header {
+    min-height: 44px;
+  }
+
+  .crm-table-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row dense;
+    gap: 10px 12px;
+    align-content: start;
+    padding: 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+  }
+
+  .crm-td,
+  .crm-th.crm-th-select {
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    border: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+
+  .crm-td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .crm-td.crm-td-company {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 16px;
+  }
+
+  .crm-row-selectable .crm-td-company {
+    padding-right: 40px;
+  }
+
+  .crm-td.crm-td-select {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .crm-select-checkbox {
+    width: 20px;
+    height: 20px;
+  }
+
+  .crm-alerts-inline {
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
+  .crm-td.crm-td-email {
+    grid-column: 1 / -1;
+  }
+
+  .crm-td-budget {
+    text-align: left;
+  }
+
+  .crm-td.crm-td-date {
+    font-size: 14px;
+  }
+
+  .crm-td.crm-td-date::before {
+    font-family: var(--font-body);
+  }
+
+  .crm-table-row .custom-select,
+  .crm-table-row .crm-inline-select {
+    display: block;
+    width: 100%;
+    max-width: none;
+  }
+
+  .crm-table-row .custom-select-trigger {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-table-row .custom-select-trigger > span,
+  .crm-table-filters .custom-select-trigger > span,
+  .crm-sort-bar .custom-select-trigger > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .crm-td.crm-td-actions {
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .crm-row-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .crm-row-actions .crm-inline-status {
+    flex: 1 1 100%;
+    width: auto;
+    background: none;
+  }
+
+  .crm-row-actions .crm-btn-notes,
+  .crm-row-actions .crm-btn-delete,
+  .crm-row-actions .crm-btn-convert {
+    width: 44px;
+    height: 44px;
+  }
+
+  .crm-delete-confirm {
+    gap: 8px;
+  }
+
+  .crm-btn-confirm-delete,
+  .crm-btn-cancel-delete {
+    min-width: 56px;
+    min-height: 44px;
+  }
+
+  /* Kanban : colonnes de largeur fixe, défilement horizontal accroché */
+  .crm-board {
+    grid-auto-columns: min(300px, 82vw);
+    gap: 12px;
+    padding: 12px;
+    scroll-snap-type: x proximity;
+    scroll-padding: 12px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crm-column {
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .crm-card {
+    cursor: default;
+  }
+
+  .crm-card:hover {
+    transform: none;
+  }
+
+  .crm-card .custom-select {
+    display: block;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .crm-card .custom-select.portal-input {
+    padding: 0;
+    border: none;
+  }
+
+  /* Le nom du commercial est déjà dans le sélecteur */
+  .crm-card-assignee .crm-card-meta {
+    display: none;
+  }
+
+  .crm-card .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-card .custom-select-trigger > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .crm-btn-convert-card {
+    min-height: 44px;
+  }
+}
+
+/* ── Mobile (≤ 640 px) : modales et panneau en plein écran, file de travail ── */
+@media (max-width: 640px) {
+  /* Dialogue court (motif de perte) : reste centré, sans la marge haute du bureau */
+  .crm-modal-overlay {
+    padding: 16px;
+  }
+
+  .crm-modal {
+    max-height: 90dvh;
+  }
+
+  /* Fiche détail : plein écran, corps scrollable, en-tête fixe */
+  /* Le calque vit dans le contenu de l'admin : la barre du haut (44 px) et la
+     barre d'onglets du bas (56 px) restent au-dessus, on leur laisse la place. */
+  .crm-modal-overlay:has(> .crm-modal-wide) {
+    padding: calc(44px + env(safe-area-inset-top, 0px)) 0 calc(56px + env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+  }
+
+  .crm-modal.crm-modal-wide {
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border: none;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--bg-primary);
+    box-shadow: none;
+  }
+
+  .crm-modal-header {
+    gap: 8px;
+    padding: 8px 8px 8px 16px;
+  }
+
+  .crm-modal-header h2 {
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .crm-modal-close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+  }
+
+  .crm-modal-body {
+    min-height: 0;
+    padding: 16px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  /* Infos du lead en liste clé / valeur */
+  .crm-modal-info {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 16px;
+    padding: 4px 14px;
+  }
+
+  .crm-modal-info p {
+    display: grid;
+    grid-template-columns: minmax(84px, 34%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    overflow-wrap: anywhere;
+  }
+
+  .crm-modal-info p:last-child {
+    border-bottom: none;
+  }
+
+  .crm-modal-info strong {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .crm-modal-quick-actions {
+    padding: 12px;
+  }
+
+  .crm-modal-quick-btns {
+    flex-direction: column;
+  }
+
+  .crm-modal-quick-btns .portal-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .crm-modal-quick-fields .crm-modal-quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-modal-quick-field .portal-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .crm-modal-quick-field .custom-select {
+    display: block;
+    width: 100%;
+  }
+
+  .crm-modal-quick-field .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-modal-actions .portal-button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .lost-reason-select {
+    align-self: stretch;
+  }
+
+  .lost-reason-select .custom-select-trigger {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .lost-reason-form .portal-input {
+    font-size: 16px;
+  }
+
+  /* Formulaire « Nouveau lead » : plein écran, en-tête et actions collés */
+  .crm-form-panel {
+    position: fixed;
+    inset: calc(44px + env(safe-area-inset-top, 0px)) 0 calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 1200;
+    margin: 0;
+    padding: 0 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border: none;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--bg-primary);
+  }
+
+  .crm-form-panel .admin-form-section {
+    padding: 0;
+    border: none;
+    animation: none;
+  }
+
+  /* Le thème portail impose le filet d'accent en !important : même spécificité renforcée. */
+  html.theme-portail .crm-form-panel .admin-form-section::before,
+  .crm-form-panel .admin-form-section::before {
+    display: none !important;
+  }
+
+  html.theme-portail .crm-form-panel.portal-card,
+  .crm-form-panel.portal-card {
+    border: none !important;
+    border-radius: var(--r-lg) var(--r-lg) 0 0 !important;
+  }
+
+  .crm-form-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 -16px 16px;
+    padding: 8px 8px 8px 16px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .crm-form-panel-header h2 {
+    font-size: 18px;
+  }
+
+  .crm-form-panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .crm-form-panel .crm-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* L'icône calendrier injectée par ClientPortal.css retombe ici sur la grille
+     entière (l'input est son enfant direct) : elle flotte hors de son champ. */
+  .crm-form-panel .crm-form-grid::after {
+    display: none;
+  }
+
+  .crm-form-panel input.portal-input,
+  .crm-form-panel textarea.portal-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .crm-form-panel .custom-select.portal-input {
+    display: block;
+    padding: 0;
+    border: none;
+  }
+
+  .crm-form-panel .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+    font-size: 16px;
+  }
+
+  .crm-form-panel-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-wrap: nowrap;
+    margin: 16px -16px 0;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+  }
+
+  .crm-form-panel-actions .portal-button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  /* File de travail : une carte par lead, actions en grille tactile */
+  .crm-worklist {
+    gap: 22px;
+  }
+
+  .crm-worklist-group-header {
+    gap: 4px 10px;
+  }
+
+  .crm-worklist-row {
+    padding: 14px;
+  }
+
+  .crm-worklist-row-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .crm-worklist-identity {
+    flex: none;
+    min-width: 0;
+  }
+
+  .crm-worklist-title {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .crm-worklist-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-left: 0;
+  }
+
+  .crm-worklist-action {
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .crm-worklist-status {
+    grid-column: 1 / -1;
+  }
+
+  .crm-worklist-status .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+
+  .crm-worklist-popover {
+    left: 0;
+    right: auto;
+    min-width: 200px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .crm-worklist-popover button {
+    min-height: 44px;
+  }
+
+  .crm-worklist-popover-date input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .crm-worklist-panel-fields {
+    flex-direction: column;
+  }
+
+  .crm-worklist-panel-fields label {
+    width: 100%;
+  }
+
+  .crm-worklist-panel-note {
+    flex: none;
+  }
+
+  .crm-worklist-panel .portal-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .crm-worklist-panel-actions .portal-button {
+    flex: 1;
+    min-height: 44px;
+  }
+}

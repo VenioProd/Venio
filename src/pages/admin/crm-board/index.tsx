@@ -70,6 +70,7 @@ const CrmBoard = () => {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterPriority, setFilterPriority] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
+  const [filterProject, setFilterProject] = useState<string>('')
   const [sortField, setSortField] = useState<string>('updatedAt')
   const [sortDir, setSortDir] = useState<string>('desc')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
@@ -333,6 +334,7 @@ const CrmBoard = () => {
     if (filterStatus) leads = leads.filter((l) => l.status === filterStatus)
     if (filterPriority) leads = leads.filter((l) => l.priority === filterPriority)
     if (filterAssignee) leads = leads.filter((l) => l.assignedTo === filterAssignee)
+    if (filterProject) leads = leads.filter((l) => l.project === filterProject)
 
     leads.sort((a, b) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -357,7 +359,7 @@ const CrmBoard = () => {
     })
 
     return leads
-  }, [allLeads, search, filterStatus, filterPriority, filterAssignee, sortField, sortDir])
+  }, [allLeads, search, filterStatus, filterPriority, filterAssignee, filterProject, sortField, sortDir])
 
   // Group leads by status for Monday.com style
   const groupedLeads = useMemo(() => {
@@ -381,6 +383,7 @@ const CrmBoard = () => {
         contactEmail: form.contactEmail,
         contactPhone: form.contactPhone,
         source: form.source,
+        project: form.project,
         budget: form.budget === '' ? null : Number(form.budget),
         priority: form.priority,
         status: form.status,
@@ -523,12 +526,13 @@ const CrmBoard = () => {
     setFilterStatus('')
     setFilterPriority('')
     setFilterAssignee('')
+    setFilterProject('')
   }, [])
 
   const worklistOverdueCount = worklist?.counts.overdue ?? 0
   const lostReasons = worklist?.lostReasons ?? []
   const totalLeads = allLeads.length
-  const activeFilters = [filterStatus, filterPriority, filterAssignee, search].filter(Boolean).length
+  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, search].filter(Boolean).length
 
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
@@ -548,7 +552,7 @@ const CrmBoard = () => {
                   : 'Prospection des établissements scolaires pour Arrow'}
               </p>
               {/* Onglets */}
-              <div style={{ display: 'flex', gap: 4, marginTop: 16 }}>
+              <div className="crm-section-tabs" style={{ display: 'flex', gap: 4, marginTop: 16 }}>
                 {(
                   [
                     ['leads', 'Leads & Clients'],
@@ -557,6 +561,7 @@ const CrmBoard = () => {
                 ).map(([key, label]) => (
                   <button
                     key={key}
+                    className="crm-section-tab"
                     onClick={() => setSection(key)}
                     style={{
                       padding: '6px 16px',
@@ -734,6 +739,7 @@ const CrmBoard = () => {
             canManageCrm={canManageCrm}
             onFormChange={setForm}
             onSubmit={handleCreateLead}
+            onClose={() => setShowForm(false)}
           />
         )}
 
@@ -826,6 +832,7 @@ const CrmBoard = () => {
               filterStatus={filterStatus}
               filterPriority={filterPriority}
               filterAssignee={filterAssignee}
+              filterProject={filterProject}
               sortField={sortField}
               sortDir={sortDir}
               collapsedGroups={collapsedGroups}
@@ -840,6 +847,7 @@ const CrmBoard = () => {
               onFilterStatusChange={setFilterStatus}
               onFilterPriorityChange={setFilterPriority}
               onFilterAssigneeChange={setFilterAssignee}
+              onFilterProjectChange={setFilterProject}
               allCollapsed={allCollapsed}
               onClearFilters={clearFilters}
               onToggleAll={toggleAllGroups}
