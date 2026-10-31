@@ -1,6 +1,14 @@
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AuthContext } from './AuthContext'
-import locales, { formatMessage, setActiveLocale, type Locale, type MessageKey, type MessageParams } from '../i18n'
+import locales, {
+  formatMessage,
+  isLazyLoaded,
+  loadLazyMessages,
+  setActiveLocale,
+  type Locale,
+  type MessageKey,
+  type MessageParams,
+} from '../i18n'
 import { apiFetch } from '../lib/api'
 
 export type { Locale, MessageKey, MessageParams }
@@ -35,8 +43,16 @@ const fallbackValue: I18nContextValue = { locale: 'fr', setLocale: () => {}, t: 
 
 const I18nContext = createContext<I18nContextValue>(fallbackValue)
 
+// Private areas rely on the lazily loaded dictionaries: hold their first render until they arrive.
+function pathNeedsLazyMessages(): boolean {
+  if (typeof window === 'undefined') return false
+  const path = window.location.pathname
+  return path.startsWith('/admin') || path.startsWith('/espace-client') || path.startsWith('/beta')
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(readStoredLocale)
+  const [lazyReady, setLazyReady] = useState(isLazyLoaded)
   const auth = useContext(AuthContext)
   const user = auth?.user ?? null
   const isSignedIn = user !== null
@@ -47,6 +63,16 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
+
+  useEffect(() => {
+    let active = true
+    loadLazyMessages().then(() => {
+      if (active) setLazyReady(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   // The account preference wins once the session is known.
   const accountLocale = user?.locale
@@ -70,14 +96,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const t = useMemo(() => makeTranslator(locale), [locale])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- lazyReady re-creates t once the private dictionaries are registered
+  const t = useMemo(() => makeTranslator(locale), [locale, lazyReady])
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t])
 
   // Re-mount the tree on a language switch so that components which only format
   // dates/numbers through the module-level helpers refresh too.
   return (
     <I18nContext.Provider value={value}>
-      <Fragment key={locale}>{children}</Fragment>
+      <Fragment key={locale}>{lazyReady || !pathNeedsLazyMessages() ? children : null}</Fragment>
     </I18nContext.Provider>
   )
 }

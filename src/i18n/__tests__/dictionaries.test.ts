@@ -10,7 +10,7 @@ const domainOf = (path: string) => path.split('/').pop()!.replace(/\.ts$/, '')
 const domains = (modules: Record<string, unknown>) =>
   Object.keys(modules)
     .map(domainOf)
-    .filter((name) => name !== 'index')
+    .filter((name) => name !== 'index' && name !== 'lazy')
     .sort()
 
 const placeholders = (message: string) =>

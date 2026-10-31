@@ -1,17 +1,52 @@
 import fr from './fr'
 import en from './en'
+import type frLazy from './fr/lazy'
 
 export type Locale = 'fr' | 'en'
 /** Every key of the French dictionary — `en` is typed to cover exactly the same set. */
-export type MessageKey = keyof typeof fr
+export type MessageKey = keyof typeof fr | keyof typeof frLazy
 export type MessageParams = Record<string, string | number>
 
-const locales: Record<Locale, Record<string, string>> = { fr, en }
+const locales: Record<Locale, Record<string, string>> = { fr: { ...fr }, en: { ...en } }
+
+let lazyLoaded = false
+let lazyLoading: Promise<void> | null = null
+
+export function isLazyLoaded(): boolean {
+  return lazyLoaded
+}
+
+/** Add the admin / client / beta dictionaries to the registry (idempotent). */
+export function registerLazyMessages(frMessages: Record<string, string>, enMessages: Record<string, string>): void {
+  Object.assign(locales.fr, frMessages)
+  Object.assign(locales.en, enMessages)
+  lazyLoaded = true
+}
+
+/** Fetch the private-area dictionaries (own chunk, kept out of the public landing bundle). */
+export function loadLazyMessages(): Promise<void> {
+  if (lazyLoaded) return Promise.resolve()
+  lazyLoading ??= Promise.all([import('./fr/lazy'), import('./en/lazy')]).then(([frModule, enModule]) => {
+    registerLazyMessages(frModule.default, enModule.default)
+  })
+  return lazyLoading
+}
 
 /** BCP 47 tags handed to `Intl` for each UI language. */
 export const INTL_LOCALES: Record<Locale, string> = { fr: 'fr-FR', en: 'en-GB' }
 
-let activeLocale: Locale = 'fr'
+function initialLocale(): Locale {
+  try {
+    const stored = localStorage.getItem('venio-lang')
+    if (stored === 'fr' || stored === 'en') return stored
+  } catch {
+    // localStorage may not be available
+  }
+  return 'fr'
+}
+
+// Read at load so the very first render (before I18nProvider mounts) already uses the saved language.
+let activeLocale: Locale = initialLocale()
 
 /** Called by I18nProvider so that non-React code (formatters, toasts) follows the UI language. */
 export function setActiveLocale(locale: Locale): void {
