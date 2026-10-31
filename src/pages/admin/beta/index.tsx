@@ -3,23 +3,26 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, FlaskConical, Plus, Users } from 'lucide-react'
 import { listDevProjects, type DevProject } from '../../../services/dev'
 import { createCampaign, listCampaigns, type BetaCampaign, type BetaCampaignStatus } from '../../../services/beta'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
 import { formatRelative } from './helpers'
 import './Beta.css'
 
-const STATUS_LABEL: Record<BetaCampaignStatus, string> = {
-  DRAFT: 'Brouillon',
-  RUNNING: 'En cours',
-  CLOSED: 'Close',
-}
+const STATUS_LABEL_KEY = {
+  DRAFT: 'beta.admin.statusDraft',
+  RUNNING: 'beta.admin.statusRunning',
+  CLOSED: 'beta.admin.statusClosed',
+} as const satisfies Record<BetaCampaignStatus, MessageKey>
 
-const FILTERS: Array<{ id: 'all' | BetaCampaignStatus; label: string }> = [
-  { id: 'all', label: 'Toutes' },
-  { id: 'RUNNING', label: 'En cours' },
-  { id: 'DRAFT', label: 'Brouillons' },
-  { id: 'CLOSED', label: 'Closes' },
+const FILTERS: Array<{ id: 'all' | BetaCampaignStatus; labelKey: MessageKey }> = [
+  { id: 'all', labelKey: 'beta.admin.filterAll' },
+  { id: 'RUNNING', labelKey: 'beta.admin.filterRunning' },
+  { id: 'DRAFT', labelKey: 'beta.admin.filterDraft' },
+  { id: 'CLOSED', labelKey: 'beta.admin.filterClosed' },
 ]
 
 export default function BetaWorkspace() {
+  const { t } = useI18n()
   const [campaigns, setCampaigns] = useState<BetaCampaign[]>([])
   const [projects, setProjects] = useState<DevProject[]>([])
   const [filter, setFilter] = useState<'all' | BetaCampaignStatus>('all')
@@ -35,7 +38,7 @@ export default function BetaWorkspace() {
       setCampaigns(campaignsResult.campaigns)
       setProjects(projectsResult.projects ?? [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Chargement impossible')
+      setError(err instanceof Error ? err.message : translate('beta.admin.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -55,14 +58,14 @@ export default function BetaWorkspace() {
       <header className="beta-header">
         <div className="beta-header-title">
           <FlaskConical size={18} aria-hidden />
-          <h1>Beta tests</h1>
+          <h1>{t('beta.admin.title')}</h1>
         </div>
         <button type="button" className="beta-btn beta-btn-primary" onClick={() => setCreating(true)}>
-          <Plus size={14} aria-hidden /> Nouvelle campagne
+          <Plus size={14} aria-hidden /> {t('beta.admin.newCampaign')}
         </button>
       </header>
 
-      <nav className="beta-tabs" aria-label="Filtrer les campagnes">
+      <nav className="beta-tabs" aria-label={t('beta.admin.filterAria')}>
         {FILTERS.map((entry) => (
           <button
             key={entry.id}
@@ -71,20 +74,22 @@ export default function BetaWorkspace() {
             onClick={() => setFilter(entry.id)}
             aria-pressed={filter === entry.id}
           >
-            {entry.label}
+            {t(entry.labelKey)}
           </button>
         ))}
       </nav>
 
       {error && <p className="beta-error">{error}</p>}
-      {loading && <p className="beta-muted">Chargement…</p>}
+      {loading && <p className="beta-muted">{t('beta.shared.loading')}</p>}
 
       {!loading && visible.length === 0 && (
         <div className="beta-empty">
-          <p>Aucune campagne {filter === 'all' ? '' : STATUS_LABEL[filter as BetaCampaignStatus].toLowerCase()}.</p>
-          <p className="beta-muted">
-            Une campagne regroupe les démarches à tester, les testeurs invités et leurs retours.
+          <p>
+            {filter === 'all'
+              ? t('beta.admin.emptyAll')
+              : t('beta.admin.emptyFiltered', { status: t(STATUS_LABEL_KEY[filter]).toLowerCase() })}
           </p>
+          <p className="beta-muted">{t('beta.admin.emptyHint')}</p>
         </div>
       )}
 
@@ -96,7 +101,7 @@ export default function BetaWorkspace() {
               <Link to={`/admin/beta/campaigns/${campaign._id}`} className="beta-campaign-card">
                 <div className="beta-campaign-main">
                   <span className={`beta-status beta-status-${campaign.status.toLowerCase()}`}>
-                    {STATUS_LABEL[campaign.status]}
+                    {t(STATUS_LABEL_KEY[campaign.status])}
                   </span>
                   <h2>{campaign.name}</h2>
                   {campaign.description && <p className="beta-muted">{campaign.description}</p>}
@@ -106,10 +111,13 @@ export default function BetaWorkspace() {
                   <span className="beta-muted">
                     <Users size={12} aria-hidden /> {campaign.counts?.testers ?? 0}
                   </span>
-                  <span className="beta-muted">{campaign.counts?.scenarios ?? 0} démarche(s)</span>
+                  <span className="beta-muted">
+                    {t('beta.admin.scenarioCount', { count: campaign.counts?.scenarios ?? 0 })}
+                  </span>
                   {(campaign.counts?.openFindings ?? 0) > 0 && (
                     <span className="beta-chip beta-chip-fail">
-                      <AlertTriangle size={12} aria-hidden /> {campaign.counts?.openFindings} à traiter
+                      <AlertTriangle size={12} aria-hidden />{' '}
+                      {t('beta.admin.openCount', { count: campaign.counts?.openFindings ?? 0 })}
                     </span>
                   )}
                   <span className="beta-muted">{formatRelative(campaign.updatedAt)}</span>
@@ -141,6 +149,7 @@ interface ModalProps {
 }
 
 function CampaignCreateModal({ projects, onClose, onCreated }: ModalProps) {
+  const { t } = useI18n()
   const [name, setName] = useState('')
   const [devProject, setDevProject] = useState(projects[0]?._id ?? '')
   const [targetUrl, setTargetUrl] = useState('')
@@ -163,7 +172,7 @@ function CampaignCreateModal({ projects, onClose, onCreated }: ModalProps) {
       })
       onCreated(campaign)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Création impossible')
+      setError(err instanceof Error ? err.message : t('beta.admin.createFailed'))
     } finally {
       setSaving(false)
     }
@@ -175,15 +184,15 @@ function CampaignCreateModal({ projects, onClose, onCreated }: ModalProps) {
         className="beta-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Nouvelle campagne"
+        aria-label={t('beta.admin.createTitle')}
         onClick={(event) => event.stopPropagation()}
       >
-        <h2>Nouvelle campagne</h2>
+        <h2>{t('beta.admin.createTitle')}</h2>
         <form onSubmit={submit}>
           <label>
-            Projet dev
+            {t('beta.admin.devProject')}
             <select value={devProject} onChange={(event) => setDevProject(event.target.value)} required>
-              <option value="">Choisir…</option>
+              <option value="">{t('beta.admin.choose')}</option>
               {projects.map((project) => (
                 <option key={project._id} value={project._id}>
                   {project.key} — {project.name}
@@ -192,39 +201,39 @@ function CampaignCreateModal({ projects, onClose, onCreated }: ModalProps) {
             </select>
           </label>
           <label>
-            Nom
+            {t('beta.admin.name')}
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Recette du site vitrine"
+              placeholder={t('beta.admin.namePlaceholder')}
               required
             />
           </label>
           <label>
-            URL à tester
+            {t('beta.admin.targetUrl')}
             <input
               value={targetUrl}
               onChange={(event) => setTargetUrl(event.target.value)}
-              placeholder="https://exemple.fr"
+              placeholder={t('beta.admin.targetUrlPlaceholder')}
             />
           </label>
           <label>
-            Ce que les testeurs doivent savoir
+            {t('beta.admin.testersShouldKnow')}
             <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} />
           </label>
           <label>
-            Fin de campagne
+            {t('beta.admin.endsAt')}
             <input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
           </label>
-          <p className="beta-muted beta-hint">À la date de fin, les liens des testeurs cessent de fonctionner.</p>
+          <p className="beta-muted beta-hint">{t('beta.admin.endsAtHint')}</p>
 
           {error && <p className="beta-error">{error}</p>}
           <div className="beta-modal-actions">
             <button type="button" className="beta-btn" onClick={onClose}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="beta-btn beta-btn-primary" disabled={saving || !devProject || !name}>
-              {saving ? 'Création…' : 'Créer'}
+              {saving ? t('beta.admin.creating') : t('beta.admin.create')}
             </button>
           </div>
         </form>

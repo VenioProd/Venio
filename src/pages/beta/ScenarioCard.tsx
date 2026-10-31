@@ -8,21 +8,23 @@ import {
   type TesterRun,
   type TesterScenario,
 } from '../../services/betaTester'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
 import type { BetaReproducibility, BetaSeverity, BetaVerdict } from '../../services/beta'
 import { splitPreconditions, toReadableStep } from './steps'
 import { clearScenarioProgress, readProgress, writeChecked, writeDraft } from './progress'
 
-const SEVERITIES: Array<{ id: BetaSeverity; label: string; hint: string }> = [
-  { id: 'BLOCKER', label: 'Bloquant', hint: 'Impossible d’aller plus loin' },
-  { id: 'MAJOR', label: 'Gênant', hint: 'Contournable, mais pénible' },
-  { id: 'MINOR', label: 'Mineur', hint: 'Petit défaut sans gravité' },
-  { id: 'COSMETIC', label: 'Cosmétique', hint: 'Une question d’apparence' },
+const SEVERITIES: Array<{ id: BetaSeverity; labelKey: MessageKey; hintKey: MessageKey }> = [
+  { id: 'BLOCKER', labelKey: 'beta.severity.blocker', hintKey: 'beta.card.severityBlockerHint' },
+  { id: 'MAJOR', labelKey: 'beta.card.severityMajor', hintKey: 'beta.card.severityMajorHint' },
+  { id: 'MINOR', labelKey: 'beta.severity.minor', hintKey: 'beta.card.severityMinorHint' },
+  { id: 'COSMETIC', labelKey: 'beta.severity.cosmetic', hintKey: 'beta.card.severityCosmeticHint' },
 ]
 
-const REPRODUCIBILITIES: Array<{ id: BetaReproducibility; label: string }> = [
-  { id: 'ALWAYS', label: 'À chaque fois' },
-  { id: 'SOMETIMES', label: 'De temps en temps' },
-  { id: 'ONCE', label: 'Vu une seule fois' },
+const REPRODUCIBILITIES: Array<{ id: BetaReproducibility; labelKey: MessageKey }> = [
+  { id: 'ALWAYS', labelKey: 'beta.card.reproAlways' },
+  { id: 'SOMETIMES', labelKey: 'beta.card.reproSometimes' },
+  { id: 'ONCE', labelKey: 'beta.card.reproOnce' },
 ]
 
 interface Props {
@@ -53,6 +55,7 @@ export default function ScenarioCard({
   onSubmitted,
   onProgress,
 }: Props) {
+  const { t } = useI18n()
   // La saisie en cours survit à un rechargement : une campagne longue se
   // déroule en plusieurs sessions, et repartir de zéro décourage.
   const saved = readProgress(testerKey, scenario._id)
@@ -93,7 +96,7 @@ export default function ScenarioCard({
       try {
         setShots(await uploadScreenshot(token, runId, file))
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Envoi de la capture impossible')
+        setError(err instanceof Error ? err.message : translate('beta.card.screenshotFailed'))
       }
     }
   }
@@ -121,7 +124,7 @@ export default function ScenarioCard({
       clearScenarioProgress(testerKey, scenario._id)
       onSubmitted()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Envoi impossible')
+      setError(err instanceof Error ? err.message : translate('beta.shared.sendFailed'))
     } finally {
       setBusy(false)
     }
@@ -137,10 +140,10 @@ export default function ScenarioCard({
           <span className="bt-card-id">{scenario.identifier}</span>
           <h2>{scenario.title}</h2>
         </div>
-        {myRun && !done && <span className="bt-badge">Déjà répondu</span>}
+        {myRun && !done && <span className="bt-badge">{t('beta.card.alreadyAnswered')}</span>}
         {done && (
           <span className="bt-badge bt-badge-ok">
-            <Check size={12} aria-hidden /> Envoyé
+            <Check size={12} aria-hidden /> {t('beta.card.sent')}
           </span>
         )}
       </header>
@@ -174,14 +177,14 @@ export default function ScenarioCard({
                   <strong>{step.instruction}</strong>
                   {step.expected && (
                     <span className="bt-step-expected">
-                      <span className="bt-step-label">Attendu</span> {step.expected}
+                      <span className="bt-step-label">{t('beta.card.expected')}</span> {step.expected}
                     </span>
                   )}
                   {step.watchOut && (
                     <span className="bt-step-trap">
                       <AlertTriangle size={12} aria-hidden />
                       <span>
-                        <span className="bt-step-label">Piège</span> {step.watchOut}
+                        <span className="bt-step-label">{t('beta.card.trap')}</span> {step.watchOut}
                       </span>
                     </span>
                   )}
@@ -192,7 +195,7 @@ export default function ScenarioCard({
         </ol>
       )}
 
-      <div className="bt-verdicts" role="group" aria-label="Votre verdict">
+      <div className="bt-verdicts" role="group" aria-label={t('beta.card.verdictGroup')}>
         <button
           type="button"
           className={`bt-verdict bt-verdict-ok${verdict === 'WORKS' ? ' active' : ''}`}
@@ -202,7 +205,7 @@ export default function ScenarioCard({
           }}
           aria-pressed={verdict === 'WORKS'}
         >
-          Ça fonctionne
+          {t('beta.card.works')}
         </button>
         <button
           type="button"
@@ -213,7 +216,7 @@ export default function ScenarioCard({
           }}
           aria-pressed={verdict === 'BROKEN'}
         >
-          Ça ne fonctionne pas
+          {t('beta.card.broken')}
         </button>
         <button
           type="button"
@@ -224,7 +227,7 @@ export default function ScenarioCard({
           }}
           aria-pressed={verdict === 'TO_OPTIMIZE'}
         >
-          À optimiser
+          {t('beta.card.toOptimize')}
         </button>
         <button
           type="button"
@@ -235,34 +238,32 @@ export default function ScenarioCard({
           }}
           aria-pressed={verdict === 'BLOCKED'}
         >
-          Je n’ai pas pu tester
+          {t('beta.card.blocked')}
         </button>
       </div>
 
       {needsDetail && (
         <div className="bt-detail">
           <label>
-            {isBlocked ? 'Qu’est-ce qui vous a empêché de tester\u00a0?' : 'En une phrase, qu’est-ce qui cloche\u00a0?'}
+            {isBlocked ? t('beta.card.blockedQuestion') : t('beta.card.brokenQuestion')}
             <input
               value={title}
               onChange={(event) => {
                 setTitle(event.target.value)
                 rememberDraft({ title: event.target.value })
               }}
-              placeholder={
-                isBlocked ? 'Je n’ai pas reçu l’accès à l’espace intervenant' : 'Le bouton Envoyer ne réagit pas'
-              }
+              placeholder={isBlocked ? t('beta.card.blockedPlaceholder') : t('beta.card.brokenPlaceholder')}
             />
           </label>
 
           {!isBlocked && scenario.steps.length > 0 && (
             <label>
-              À quelle étape&nbsp;?
+              {t('beta.card.whichStep')}
               <select
                 value={failedStep ?? ''}
                 onChange={(event) => setFailedStep(event.target.value ? Number(event.target.value) : null)}
               >
-                <option value="">Pas une étape en particulier</option>
+                <option value="">{t('beta.card.noParticularStep')}</option>
                 {scenario.steps.map((step) => (
                   <option key={step.order} value={step.order}>
                     {step.order}.{' '}
@@ -275,7 +276,7 @@ export default function ScenarioCard({
 
           {!isBlocked && (
             <fieldset>
-              <legend>C’est à quel point gênant&nbsp;?</legend>
+              <legend>{t('beta.card.howBad')}</legend>
               <div className="bt-choices">
                 {SEVERITIES.map((entry) => (
                   <button
@@ -285,8 +286,8 @@ export default function ScenarioCard({
                     onClick={() => setSeverity(entry.id)}
                     aria-pressed={severity === entry.id}
                   >
-                    <strong>{entry.label}</strong>
-                    <span>{entry.hint}</span>
+                    <strong>{t(entry.labelKey)}</strong>
+                    <span>{t(entry.hintKey)}</span>
                   </button>
                 ))}
               </div>
@@ -295,7 +296,7 @@ export default function ScenarioCard({
 
           {!isBlocked && (
             <fieldset>
-              <legend>Ça arrive…</legend>
+              <legend>{t('beta.card.happens')}</legend>
               <div className="bt-choices bt-choices-inline">
                 {REPRODUCIBILITIES.map((entry) => (
                   <button
@@ -305,7 +306,7 @@ export default function ScenarioCard({
                     onClick={() => setReproducibility(entry.id)}
                     aria-pressed={reproducibility === entry.id}
                   >
-                    <strong>{entry.label}</strong>
+                    <strong>{t(entry.labelKey)}</strong>
                   </button>
                 ))}
               </div>
@@ -313,7 +314,7 @@ export default function ScenarioCard({
           )}
 
           <label>
-            {isBlocked ? 'Précisez, si besoin' : 'Racontez ce qui s’est passé'}
+            {isBlocked ? t('beta.card.blockedDetail') : t('beta.card.brokenDetail')}
             <textarea
               value={body}
               onChange={(event) => {
@@ -321,7 +322,7 @@ export default function ScenarioCard({
                 rememberDraft({ body: event.target.value })
               }}
               rows={3}
-              placeholder="J’ai rempli le formulaire, cliqué sur Envoyer, et la page est restée figée."
+              placeholder={t('beta.card.detailPlaceholder')}
               onPaste={(event) => {
                 // Coller une capture est le geste naturel juste après l'avoir
                 // prise : on l'accepte au même titre qu'un choix de fichier.
@@ -340,7 +341,7 @@ export default function ScenarioCard({
             }}
           >
             <button type="button" className="bt-btn" onClick={() => fileInput.current?.click()} disabled={!runId}>
-              <ImagePlus size={14} aria-hidden /> Ajouter une capture
+              <ImagePlus size={14} aria-hidden /> {t('beta.card.addScreenshot')}
             </button>
             <input
               ref={fileInput}
@@ -349,11 +350,7 @@ export default function ScenarioCard({
               hidden
               onChange={(event) => void attach(event.target.files)}
             />
-            <p className="bt-hint">
-              {runId
-                ? 'Glissez une image ici, ou collez-la directement avec Ctrl+V dans le champ ci-dessus.'
-                : 'Envoyez d’abord votre retour, vous pourrez ensuite y joindre des captures.'}
-            </p>
+            <p className="bt-hint">{runId ? t('beta.card.dropHint') : t('beta.card.sendFirstHint')}</p>
           </div>
 
           {shots.length > 0 && (
@@ -370,17 +367,17 @@ export default function ScenarioCard({
 
       {verdict && (
         <button type="button" className="bt-btn bt-btn-primary bt-send" onClick={send} disabled={busy}>
-          {busy ? 'Envoi…' : myRun ? 'Mettre à jour mon retour' : 'Envoyer mon retour'}
+          {busy ? t('beta.shared.sending') : myRun ? t('beta.card.update') : t('beta.card.submit')}
         </button>
       )}
 
       {othersRuns.length > 0 && (
         <div className="bt-others">
-          <h3>Déjà signalé sur cette démarche</h3>
+          <h3>{t('beta.card.alreadyReported')}</h3>
           <ul>
             {othersRuns.map((run) => (
               <li key={run._id}>
-                <span className="bt-others-title">{run.title || 'Problème signalé'}</span>
+                <span className="bt-others-title">{run.title || t('beta.card.reportedFallback')}</span>
                 <button
                   type="button"
                   className="bt-btn bt-btn-small"
@@ -392,21 +389,21 @@ export default function ScenarioCard({
                 >
                   {run.confirmedByMe ? (
                     <>
-                      <Check size={12} aria-hidden /> Confirmé
+                      <Check size={12} aria-hidden /> {t('beta.card.confirmed')}
                     </>
                   ) : (
                     <>
-                      <ThumbsUp size={12} aria-hidden /> J’ai le même souci
+                      <ThumbsUp size={12} aria-hidden /> {t('beta.card.sameIssue')}
                     </>
                   )}
                 </button>
                 {run.confirmationCount > 0 && (
-                  <span className="bt-hint">{run.confirmationCount} personne(s) confirment</span>
+                  <span className="bt-hint">{t('beta.card.confirmations', { count: run.confirmationCount })}</span>
                 )}
-                {run.status === 'FIXED' && <span className="bt-badge bt-badge-ok">Corrigé, à revérifier</span>}
+                {run.status === 'FIXED' && <span className="bt-badge bt-badge-ok">{t('beta.shared.toRecheck')}</span>}
                 {run.status === 'REJECTED' && (
                   <span className="bt-badge">
-                    <X size={11} aria-hidden /> Classé sans suite
+                    <X size={11} aria-hidden /> {t('beta.tester.dismissed')}
                   </span>
                 )}
               </li>
