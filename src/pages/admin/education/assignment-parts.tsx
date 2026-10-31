@@ -46,14 +46,8 @@ import {
   listTemplates,
   searchEducation,
   studentDisplayName,
-  formatDate,
   downloadAssignmentExport,
-  CLASS_STATUS_LABEL,
-  SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL,
   ASSIGNMENT_STATUS_COLOR,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
   type EducationDashboard,
   type EducationClass,
@@ -72,15 +66,20 @@ import { CorrectionMode } from './CorrectionMode'
 import { Kpi } from './class-parts'
 import { DocumentsPanel } from './DocumentsPanel'
 import type { RubricCriterion } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
+import { formatNumber } from '../../../i18n/format'
+import { formatShortDate } from './eduFormat'
+import { ASSIGNMENT_KIND_KEYS, ASSIGNMENT_STATUS_KEYS, SUBMISSION_STATUS_KEYS } from './eduCLabels'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
-const KANBAN_COLS: { status: EducationAssignmentStatus; label: string }[] = [
-  { status: 'DRAFT', label: 'Brouillon' },
-  { status: 'OUVERT', label: 'Ouvert' },
-  { status: 'EN_CORRECTION', label: 'En correction' },
-  { status: 'CLOS', label: 'Clos' },
+const KANBAN_COLS: { status: EducationAssignmentStatus; labelKey: MessageKey }[] = [
+  { status: 'DRAFT', labelKey: ASSIGNMENT_STATUS_KEYS.DRAFT },
+  { status: 'OUVERT', labelKey: ASSIGNMENT_STATUS_KEYS.OUVERT },
+  { status: 'EN_CORRECTION', labelKey: ASSIGNMENT_STATUS_KEYS.EN_CORRECTION },
+  { status: 'CLOS', labelKey: ASSIGNMENT_STATUS_KEYS.CLOS },
 ]
 
 /**
@@ -98,6 +97,7 @@ function AssignmentKanban({
   onMoved: () => void
   showClassDot?: boolean
 }) {
+  const { t } = useI18n()
   const [dragOver, setDragOver] = useState<EducationAssignmentStatus | null>(null)
   const [local, setLocal] = useState(items)
   useEffect(() => setLocal(items), [items])
@@ -137,7 +137,7 @@ function AssignmentKanban({
             }}
           >
             <div className="edu-kanban-col-head">
-              <span>{col.label}</span>
+              <span>{t(col.labelKey)}</span>
               <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
             </div>
             {list.length === 0 && <div className="edu-kanban-empty">—</div>}
@@ -157,8 +157,8 @@ function AssignmentKanban({
                   <div className="edu-kanban-card-title">{a.title}</div>
                   <div className="edu-kanban-card-meta">
                     {cls && <span style={{ color: cls.color }}>● </span>}
-                    {ASSIGNMENT_KIND_LABEL[a.kind]}
-                    {a.deadline && ` · ${formatDate(a.deadline)}`}
+                    {t(ASSIGNMENT_KIND_KEYS[a.kind])}
+                    {a.deadline && ` · ${formatShortDate(a.deadline)}`}
                   </div>
                 </div>
               )
@@ -179,6 +179,7 @@ export function AssignmentsTab({
   onChanged: () => void
   templates?: EducationTemplate[]
 }) {
+  const { t } = useI18n()
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -194,11 +195,9 @@ export function AssignmentsTab({
   return (
     <div>
       <div className="edu-row between" style={{ marginBottom: 12 }}>
-        <strong>
-          {items.length} devoir{items.length > 1 ? 's' : ''}
-        </strong>
+        <strong>{t('eduC.shared.assignmentCount', { count: items.length })}</strong>
         <button className="edu-btn" onClick={() => setShowCreate(true)}>
-          <Plus size={14} /> Nouveau devoir
+          <Plus size={14} /> {t('eduC.shared.newAssignment')}
         </button>
       </div>
 
@@ -253,6 +252,7 @@ export function AssignmentForm({
   /** Reçoit le devoir créé (utilisé par PostSessionFlow pour l'afficher). */
   onSaved: (created?: EducationAssignment) => void
 }) {
+  const { t } = useI18n()
   const [classChoice, setClassChoice] = useState(classId ?? '')
   const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
@@ -274,7 +274,7 @@ export function AssignmentForm({
     const t = templates?.find((x) => x._id === id)
     if (!t) return
     const b = t.body as Record<string, unknown>
-    const kinds = Object.keys(ASSIGNMENT_KIND_LABEL)
+    const kinds = Object.keys(ASSIGNMENT_KIND_KEYS)
     setForm((f) => ({
       ...f,
       title: typeof b.title === 'string' ? b.title : f.title,
@@ -300,7 +300,7 @@ export function AssignmentForm({
       <div className="edu-drawer" style={{ width: 'min(560px, 92vw)' }}>
         <div className="edu-drawer-head">
           <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Nouveau devoir
+            {t('eduC.shared.newAssignment')}
           </h2>
           <button className="edu-btn-icon" onClick={onClose}>
             <X size={18} />
@@ -309,9 +309,9 @@ export function AssignmentForm({
         <div className="edu-drawer-body">
           {templates && templates.length > 0 && (
             <div className="edu-form-group">
-              <label>Partir d'un template…</label>
+              <label>{t('eduC.assignment.fromTemplate')}</label>
               <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
-                <option value="">— Aucun —</option>
+                <option value="">{t('eduC.assignment.noTemplate')}</option>
                 {templates.map((t) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
@@ -322,9 +322,9 @@ export function AssignmentForm({
           )}
           {!classId && (
             <div className="edu-form-group">
-              <label>Classe *</label>
+              <label>{t('eduC.assignment.classRequired')}</label>
               <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
-                <option value="">Choisir une classe…</option>
+                <option value="">{t('eduC.assignment.chooseClass')}</option>
                 {(classes ?? []).map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -334,7 +334,7 @@ export function AssignmentForm({
             </div>
           )}
           <div className="edu-form-group">
-            <label>Titre</label>
+            <label>{t('eduC.assignment.fieldTitle')}</label>
             <input
               className="edu-input"
               autoFocus
@@ -344,29 +344,29 @@ export function AssignmentForm({
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Type</label>
+              <label>{t('eduC.assignment.fieldType')}</label>
               <select
                 className="edu-select"
                 value={form.kind}
                 onChange={(e) => setForm({ ...form, kind: e.target.value as EducationAssignment['kind'] })}
               >
-                {Object.entries(ASSIGNMENT_KIND_LABEL).map(([k, v]) => (
+                {Object.entries(ASSIGNMENT_KIND_KEYS).map(([k, v]) => (
                   <option key={k} value={k}>
-                    {v}
+                    {t(v)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="edu-form-group">
-              <label>Statut</label>
+              <label>{t('eduC.shared.status')}</label>
               <select
                 className="edu-select"
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value as EducationAssignmentStatus })}
               >
-                {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => (
+                {Object.entries(ASSIGNMENT_STATUS_KEYS).map(([k, v]) => (
                   <option key={k} value={k}>
-                    {v}
+                    {t(v)}
                   </option>
                 ))}
               </select>
@@ -374,7 +374,7 @@ export function AssignmentForm({
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Échéance</label>
+              <label>{t('eduC.shared.dueDate')}</label>
               <input
                 type="datetime-local"
                 className="edu-input"
@@ -383,7 +383,7 @@ export function AssignmentForm({
               />
             </div>
             <div className="edu-form-group">
-              <label>Note max</label>
+              <label>{t('eduC.assignment.fieldMaxGrade')}</label>
               <input
                 type="number"
                 className="edu-input"
@@ -393,7 +393,7 @@ export function AssignmentForm({
             </div>
           </div>
           <div className="edu-form-group">
-            <label>Consignes</label>
+            <label>{t('eduC.shared.instructions')}</label>
             <textarea
               className="edu-textarea"
               value={form.instructions}
@@ -402,18 +402,20 @@ export function AssignmentForm({
           </div>
           {form.rubric.length > 0 && (
             <p className="edu-sub" style={{ marginTop: 4 }}>
-              Barème du template : {form.rubric.map((r) => `${r.label} (${r.max})`).join(' · ')}
+              {t('eduC.assignment.templateRubric', {
+                items: form.rubric.map((r) => `${r.label} (${formatNumber(r.max)})`).join(' · '),
+              })}
             </p>
           )}
           {form.expectedDeliverables.length > 0 && (
             <p className="edu-sub" style={{ marginTop: 4 }}>
-              Livrables attendus : {form.expectedDeliverables.join(' · ')}
+              {t('eduC.assignment.expectedDeliverables', { items: form.expectedDeliverables.join(' · ') })}
             </p>
           )}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button
             className="edu-btn"
@@ -439,7 +441,7 @@ export function AssignmentForm({
               }
             }}
           >
-            {saving ? 'Création…' : 'Créer'}
+            {saving ? t('eduC.assignment.creating') : t('eduC.assignment.create')}
           </button>
         </div>
       </div>
@@ -458,6 +460,7 @@ export function AssignmentDetailDrawer({
   onChanged: () => void
   onStartCorrection?: (id: string) => void
 }) {
+  const { t } = useI18n()
   const [data, setData] = useState<{
     assignment: EducationAssignment
     submissions: EducationSubmission[]
@@ -484,8 +487,9 @@ export function AssignmentDetailDrawer({
               {assignment.title}
             </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
-              {ASSIGNMENT_KIND_LABEL[assignment.kind]}
-              {assignment.deadline && ` · échéance ${formatDate(assignment.deadline)}`}
+              {t(ASSIGNMENT_KIND_KEYS[assignment.kind])}
+              {assignment.deadline &&
+                ` · ${t('eduC.assignment.dueOn', { date: formatShortDate(assignment.deadline) })}`}
             </div>
           </div>
           <div className="edu-row" style={{ gap: 6 }}>
@@ -499,9 +503,9 @@ export function AssignmentDetailDrawer({
                 onChanged()
               }}
             >
-              {Object.entries(ASSIGNMENT_STATUS_LABEL).map(([k, v]) => (
+              {Object.entries(ASSIGNMENT_STATUS_KEYS).map(([k, v]) => (
                 <option key={k} value={k}>
-                  {v}
+                  {t(v)}
                 </option>
               ))}
             </select>
@@ -509,9 +513,9 @@ export function AssignmentDetailDrawer({
               <button
                 className="edu-btn"
                 onClick={() => onStartCorrection(assignmentId)}
-                title="Ouvrir le mode correction groupée"
+                title={t('eduC.assignment.openCorrectionTitle')}
               >
-                Mode correction
+                {t('eduC.assignment.correctionMode')}
               </button>
             )}
             <button
@@ -522,9 +526,9 @@ export function AssignmentDetailDrawer({
                   // dans les surfaces qui le pilotent ; ici il ne doit pas fermer le tiroir.
                 })
               }
-              title="Exporter les corrections en CSV"
+              title={t('eduC.assignment.exportTitle')}
             >
-              Export CSV
+              {t('eduC.shared.exportCsv')}
             </button>
             <button className="edu-btn-icon" onClick={onClose}>
               <X size={18} />
@@ -533,15 +537,19 @@ export function AssignmentDetailDrawer({
         </div>
         <div className="edu-drawer-body">
           <div className="edu-kpi-grid">
-            <Kpi label="Rendus" value={`${stats.rendu} / ${stats.total}`} />
-            <Kpi label="En retard" value={stats.retard} />
-            <Kpi label="Corrigés" value={stats.corrige} />
-            <Kpi label="Moyenne" value={stats.moyenne != null ? stats.moyenne : '—'} sub={`/ ${assignment.maxGrade}`} />
+            <Kpi label={t('eduC.assignment.kpiSubmitted')} value={`${stats.rendu} / ${stats.total}`} />
+            <Kpi label={t('eduC.shared.late')} value={stats.retard} />
+            <Kpi label={t('eduC.shared.graded')} value={stats.corrige} />
+            <Kpi
+              label={t('eduC.assignment.kpiAverage')}
+              value={stats.moyenne != null ? formatNumber(stats.moyenne) : '—'}
+              sub={`/ ${formatNumber(assignment.maxGrade)}`}
+            />
           </div>
 
           {assignment.instructions && (
             <>
-              <h2 className="edu-h2">Consignes</h2>
+              <h2 className="edu-h2">{t('eduC.shared.instructions')}</h2>
               <div
                 style={{
                   whiteSpace: 'pre-wrap',
@@ -558,22 +566,24 @@ export function AssignmentDetailDrawer({
           )}
 
           {/* Pièces jointes (documents uploadés) */}
-          <h2 className="edu-h2">Pièces jointes</h2>
+          <h2 className="edu-h2">{t('eduC.assignment.attachments')}</h2>
           <DocumentsPanel parentType="assignment" parentId={assignmentId} />
 
-          <h2 className="edu-h2">Suivi par étudiant</h2>
+          <h2 className="edu-h2">{t('eduC.assignment.followUp')}</h2>
           {submissions.length === 0 ? (
             <div className="edu-empty">
-              Le devoir est encore en brouillon. Passe-le à <strong>Ouvert</strong> pour créer les soumissions.
+              {t('eduC.assignment.draftHintLead')}
+              <strong>{t(ASSIGNMENT_STATUS_KEYS.OUVERT)}</strong>
+              {t('eduC.assignment.draftHintTail')}
             </div>
           ) : (
             <table className="edu-table">
               <thead>
                 <tr>
-                  <th>Étudiant</th>
-                  <th>Statut</th>
-                  <th>Note</th>
-                  <th>Feedback</th>
+                  <th>{t('eduC.assignment.colStudent')}</th>
+                  <th>{t('eduC.shared.status')}</th>
+                  <th>{t('eduC.assignment.colGrade')}</th>
+                  <th>{t('eduC.assignment.colFeedback')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -595,9 +605,9 @@ export function AssignmentDetailDrawer({
                             await refresh()
                           }}
                         >
-                          {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => (
+                          {Object.entries(SUBMISSION_STATUS_KEYS).map(([k, v]) => (
                             <option key={k} value={k}>
-                              {v}
+                              {t(v)}
                             </option>
                           ))}
                         </select>
@@ -628,7 +638,7 @@ export function AssignmentDetailDrawer({
                           className="edu-input"
                           style={{ minWidth: 200 }}
                           value={s.feedback}
-                          placeholder="Feedback…"
+                          placeholder={t('eduC.assignment.feedbackPlaceholder')}
                           onBlur={async (e) => {
                             const studentId = typeof s.studentId === 'string' ? s.studentId : s.studentId._id
                             if (e.target.value !== s.feedback) {
@@ -668,6 +678,7 @@ export function AssignmentsView({
   onStartCorrection?: (id: string) => void
   templates?: EducationTemplate[]
 }) {
+  const { t } = useI18n()
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationAssignment[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
@@ -691,7 +702,7 @@ export function AssignmentsView({
   return (
     <div>
       <div className="edu-row between">
-        <h1 className="edu-h1">Devoirs & projets</h1>
+        <h1 className="edu-h1">{t('eduC.assignment.viewTitle')}</h1>
         <div className="edu-row" style={{ gap: 8 }}>
           <select
             className="edu-select"
@@ -699,7 +710,7 @@ export function AssignmentsView({
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
           >
-            <option value="">Toutes les classes</option>
+            <option value="">{t('eduC.assignment.allClasses')}</option>
             {classes.map((c) => (
               <option key={c._id} value={c._id}>
                 {c.name}
@@ -707,20 +718,16 @@ export function AssignmentsView({
             ))}
           </select>
           <button className="edu-btn" onClick={() => setShowCreate(true)}>
-            <Plus size={14} /> Nouveau devoir
+            <Plus size={14} /> {t('eduC.shared.newAssignment')}
           </button>
         </div>
       </div>
-      <p className="edu-sub">
-        {items.length} devoir{items.length > 1 ? 's' : ''}
-      </p>
+      <p className="edu-sub">{t('eduC.shared.assignmentCount', { count: items.length })}</p>
       {items.length === 0 ? (
         <div className="edu-empty">
           <div className="edu-empty-icon">📋</div>
-          <div>{filterClass ? 'Aucun devoir pour cette classe.' : 'Aucun devoir encore.'}</div>
-          <div className="edu-empty-sub">
-            Crée un devoir depuis l'onglet « Devoirs » d'une classe pour démarrer le kanban.
-          </div>
+          <div>{filterClass ? t('eduC.assignment.emptyForClass') : t('eduC.assignment.emptyAll')}</div>
+          <div className="edu-empty-sub">{t('eduC.assignment.emptyHint')}</div>
         </div>
       ) : (
         <AssignmentKanban

@@ -8,9 +8,6 @@ import {
   bulkUpdateSubmissions,
   downloadAssignmentExport,
   studentDisplayName,
-  ASSIGNMENT_STATUS_LABEL,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
   type EducationAssignment,
   type EducationSubmission,
   type EducationSubmissionStatus,
@@ -18,6 +15,10 @@ import {
   type SubmissionBulkUpdate,
 } from '../../../services/education'
 import { EducationAiDraftPanel } from './EducationAiDraft'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate, formatNumber } from '../../../i18n/format'
+import { ASSIGNMENT_KIND_KEYS, ASSIGNMENT_STATUS_KEYS, SUBMISSION_STATUS_KEYS } from './eduCLabels'
 
 /**
  * VENIO-30 — Mode correction groupée.
@@ -64,6 +65,7 @@ export function CorrectionMode({
   onClose: () => void
   onSaved?: () => void
 }) {
+  const { t } = useI18n()
   const [assignment, setAssignment] = useState<EducationAssignment | null>(null)
   const [submissions, setSubmissions] = useState<EducationSubmission[]>([])
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
@@ -108,7 +110,7 @@ export function CorrectionMode({
         setActiveStudentId(firstSid)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger la correction')
+      setError(err instanceof Error ? err.message : translate('eduC.correction.loadError'))
     }
   }, [assignmentId, activeStudentId])
 
@@ -261,7 +263,7 @@ export function CorrectionMode({
       await updateAssignment(assignment._id, { feedbackSnippets: next })
       setSnippets(next)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -284,7 +286,7 @@ export function CorrectionMode({
       })
       setShowRubricEditor(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -311,7 +313,7 @@ export function CorrectionMode({
         await refresh()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement")
+      setError(err instanceof Error ? err.message : translate('eduC.correction.saveError'))
     } finally {
       setSaving(false)
     }
@@ -321,7 +323,7 @@ export function CorrectionMode({
     return (
       <WorkspaceOverlayPortal>
         <div className="edu-correction-overlay">
-          <div className="edu-correction-loading">Chargement…</div>
+          <div className="edu-correction-loading">{t('eduC.correction.loading')}</div>
         </div>
       </WorkspaceOverlayPortal>
     )
@@ -329,26 +331,26 @@ export function CorrectionMode({
 
   return (
     <WorkspaceOverlayPortal>
-      <div className="edu-correction-overlay" role="dialog" aria-label="Mode correction">
+      <div className="edu-correction-overlay" role="dialog" aria-label={t('eduC.correction.dialogLabel')}>
         <div className="edu-correction-toolbar">
           <div className="edu-correction-toolbar-left">
-            <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)">
+            <button className="edu-btn-icon" onClick={onClose} title={t('eduC.correction.closeTitle')}>
               <X size={18} />
             </button>
             <div>
               <h2 className="edu-correction-title">{assignment.title}</h2>
               <div className="edu-correction-subtitle">
-                {ASSIGNMENT_KIND_LABEL[assignment.kind]} · {ASSIGNMENT_STATUS_LABEL[assignment.status]} · /
-                {assignment.maxGrade}
+                {t(ASSIGNMENT_KIND_KEYS[assignment.kind])} · {t(ASSIGNMENT_STATUS_KEYS[assignment.status])} · /
+                {formatNumber(assignment.maxGrade)}
                 {' · '}
                 <strong>
                   {stats.done}/{stats.total}
                 </strong>{' '}
-                corrigés
+                {t('eduC.correction.gradedSuffix')}
                 {stats.avg != null && (
                   <>
                     {' '}
-                    · moy. <strong>{stats.avg}</strong>
+                    · {t('eduC.correction.averageShort')} <strong>{formatNumber(stats.avg)}</strong>
                   </>
                 )}
               </div>
@@ -359,18 +361,22 @@ export function CorrectionMode({
               className="edu-btn ghost"
               onClick={() =>
                 void downloadAssignmentExport(assignment._id).catch((err: unknown) => {
-                  setError(err instanceof Error ? err.message : 'Impossible d’exporter les corrections')
+                  setError(err instanceof Error ? err.message : translate('eduC.correction.exportError'))
                 })
               }
-              title="Télécharger les corrections en CSV"
+              title={t('eduC.correction.exportTitle')}
             >
-              <Download size={14} /> Export CSV
+              <Download size={14} /> {t('eduC.shared.exportCsv')}
             </button>
-            <button className="edu-btn ghost" onClick={() => setShowShortcuts((v) => !v)} title="Raccourcis clavier">
+            <button
+              className="edu-btn ghost"
+              onClick={() => setShowShortcuts((v) => !v)}
+              title={t('eduC.correction.shortcutsTitle')}
+            >
               <Keyboard size={14} />
             </button>
             <button className="edu-btn" disabled={saving} onClick={saveAll}>
-              <Save size={14} /> {saving ? 'Enregistrement…' : 'Tout enregistrer'}
+              <Save size={14} /> {saving ? t('eduC.shared.saving') : t('eduC.correction.saveAll')}
             </button>
           </div>
         </div>
@@ -379,19 +385,19 @@ export function CorrectionMode({
           <div className="edu-banner-error" style={{ margin: '0 16px 8px' }}>
             {error}
             <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
-              Fermer
+              {t('common.close')}
             </button>
           </div>
         )}
         {lastSavedAt && !error && (
           <div className="edu-correction-saved-toast" aria-live="polite">
-            Enregistré ✓
+            {t('eduC.correction.savedToast')}
           </div>
         )}
 
         {showShortcuts && (
           <div className="edu-correction-shortcuts">
-            <strong>Raccourcis :</strong> J/↓ suivant · K/↑ précédent · ⌘/Ctrl+S enregistrer · Esc fermer · ? aide
+            <strong>{t('eduC.correction.shortcutsLabel')}</strong> {t('eduC.correction.shortcutsText')}
           </div>
         )}
 
@@ -400,9 +406,9 @@ export function CorrectionMode({
             <div className="edu-correction-filters">
               {(
                 [
-                  ['pending', 'À corriger'],
-                  ['done', 'Corrigés'],
-                  ['all', 'Tous'],
+                  ['pending', t('eduC.correction.filterPending')],
+                  ['done', t('eduC.correction.filterDone')],
+                  ['all', t('eduC.correction.filterAll')],
                 ] as Array<['pending' | 'done' | 'all', string]>
               ).map(([k, l]) => (
                 <button
@@ -416,19 +422,19 @@ export function CorrectionMode({
             </div>
             <div className="edu-correction-quick-actions">
               <button className="edu-correction-quick" onClick={() => applyQuickAction('all-rendu')}>
-                Tous → Rendu
+                {t('eduC.correction.quickAllSubmitted')}
               </button>
               <button className="edu-correction-quick" onClick={() => applyQuickAction('mark-absent-non-rendu')}>
-                Non rendus → Non validé
+                {t('eduC.correction.quickNotSubmittedInvalid')}
               </button>
               <button className="edu-correction-quick" onClick={() => applyQuickAction('all-corrige-zero')}>
-                Mettre 0 si non noté
+                {t('eduC.correction.quickZeroIfUngraded')}
               </button>
             </div>
             <div className="edu-correction-list-items">
               {filtered.length === 0 && (
                 <div className="edu-empty edu-empty-compact" style={{ padding: 14 }}>
-                  Tout est traité ici. Bascule le filtre pour voir les autres.
+                  {t('eduC.correction.listEmpty')}
                 </div>
               )}
               {filtered.map((s) => {
@@ -446,9 +452,9 @@ export function CorrectionMode({
                   >
                     <div className="edu-correction-row-name">{stu ? studentDisplayName(stu) : '—'}</div>
                     <div className="edu-correction-row-meta">
-                      <span className="edu-pill">{SUBMISSION_STATUS_LABEL[status]}</span>
+                      <span className="edu-pill">{t(SUBMISSION_STATUS_KEYS[status])}</span>
                       <span className="edu-correction-row-grade">
-                        {grade != null ? `${grade}/${assignment.maxGrade}` : '—'}
+                        {grade != null ? `${formatNumber(grade)}/${formatNumber(assignment.maxGrade)}` : '—'}
                       </span>
                     </div>
                   </button>
@@ -459,7 +465,7 @@ export function CorrectionMode({
 
           <section className="edu-correction-panel">
             {!activeDraft || !activeSubmission ? (
-              <div className="edu-empty">Sélectionne un étudiant à corriger.</div>
+              <div className="edu-empty">{t('eduC.correction.selectStudent')}</div>
             ) : (
               <>
                 <CorrectionPanel
@@ -486,10 +492,10 @@ export function CorrectionMode({
           <aside className="edu-correction-side">
             <div className="edu-correction-side-block">
               <div className="edu-correction-side-head">
-                <strong>Barème</strong>
+                <strong>{t('eduC.correction.rubricTitle')}</strong>
                 <button className="edu-btn ghost" onClick={() => setShowRubricEditor((v) => !v)}>
                   {showRubricEditor ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  {assignment.rubric.length ? 'Éditer' : 'Configurer'}
+                  {assignment.rubric.length ? t('eduC.correction.rubricEdit') : t('eduC.correction.rubricConfigure')}
                 </button>
               </div>
               {showRubricEditor ? (
@@ -499,7 +505,7 @@ export function CorrectionMode({
                       <input
                         className="edu-input"
                         value={r.label}
-                        placeholder="Critère"
+                        placeholder={t('eduC.correction.criterionPlaceholder')}
                         onChange={(e) => {
                           const next = [...rubricDraft]
                           next[i] = { ...next[i], label: e.target.value }
@@ -522,7 +528,7 @@ export function CorrectionMode({
                       <button
                         className="edu-btn-icon"
                         onClick={() => setRubricDraft(rubricDraft.filter((_, j) => j !== i))}
-                        aria-label="Supprimer"
+                        aria-label={t('common.delete')}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -533,10 +539,13 @@ export function CorrectionMode({
                       className="edu-btn ghost"
                       onClick={() => setRubricDraft([...rubricDraft, { label: '', max: 0 }])}
                     >
-                      <Plus size={13} /> Critère
+                      <Plus size={13} /> {t('eduC.correction.addCriterion')}
                     </button>
                     <span className="edu-correction-rubric-sum">
-                      Total : {rubricDraft.reduce((acc, r) => acc + (Number(r.max) || 0), 0)} / {assignment.maxGrade}
+                      {t('eduC.correction.rubricSum', {
+                        sum: formatNumber(rubricDraft.reduce((acc, r) => acc + (Number(r.max) || 0), 0)),
+                        max: formatNumber(assignment.maxGrade),
+                      })}
                     </span>
                   </div>
                   <div className="edu-row" style={{ gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
@@ -547,29 +556,28 @@ export function CorrectionMode({
                         setShowRubricEditor(false)
                       }}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                     <button className="edu-btn" onClick={saveRubric}>
-                      Enregistrer le barème
+                      {t('eduC.correction.rubricSave')}
                     </button>
                   </div>
                 </div>
               ) : assignment.rubric.length === 0 ? (
-                <div className="edu-correction-rubric-empty">
-                  Pas de barème. Ajoute des critères (ex. méthode, contenu, forme) pour noter par sous-totaux.
-                </div>
+                <div className="edu-correction-rubric-empty">{t('eduC.correction.rubricEmpty')}</div>
               ) : (
                 <div className="edu-correction-rubric-summary">
                   {assignment.rubric.map((c, i) => (
                     <div key={i} className="edu-correction-rubric-summary-row">
                       <span>{c.label}</span>
-                      <span className="edu-correction-rubric-summary-max">/ {c.max}</span>
+                      <span className="edu-correction-rubric-summary-max">/ {formatNumber(c.max)}</span>
                     </div>
                   ))}
                   <div className="edu-correction-rubric-summary-row total">
-                    <span>Total</span>
+                    <span>{t('eduC.correction.rubricTotal')}</span>
                     <span>
-                      {assignment.rubric.reduce((acc, c) => acc + c.max, 0)} / {assignment.maxGrade}
+                      {formatNumber(assignment.rubric.reduce((acc, c) => acc + c.max, 0))} /{' '}
+                      {formatNumber(assignment.maxGrade)}
                     </span>
                   </div>
                 </div>
@@ -578,7 +586,7 @@ export function CorrectionMode({
 
             <div className="edu-correction-side-block">
               <div className="edu-correction-side-head">
-                <strong>Snippets feedback</strong>
+                <strong>{t('eduC.correction.snippetsTitle')}</strong>
                 <Sparkles size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
               </div>
               <SnippetsEditor
@@ -608,6 +616,7 @@ function CorrectionPanel({
   onChange: (patch: Partial<Draft>) => void
   onApplyRubric: (scores: number[]) => void
 }) {
+  const { t } = useI18n()
   const stu = typeof submission.studentId === 'string' ? null : submission.studentId
   const rubricLen = assignment.rubric.length
   const safeScores = useMemo(() => {
@@ -620,10 +629,10 @@ function CorrectionPanel({
       <div className="edu-correction-student">
         <h3 className="edu-correction-student-name">{stu ? studentDisplayName(stu) : '—'}</h3>
         <div className="edu-correction-student-meta">
-          {submission.submittedAt && `Rendu ${new Date(submission.submittedAt).toLocaleDateString('fr-FR')}`}
+          {submission.submittedAt && t('eduC.correction.submittedOn', { date: formatDate(submission.submittedAt) })}
           {submission.isLate && (
             <span className="edu-pill" style={{ marginLeft: 8, background: 'rgba(245,158,11,0.15)', color: '#FBBF24' }}>
-              En retard
+              {t('eduC.shared.late')}
             </span>
           )}
         </div>
@@ -640,21 +649,21 @@ function CorrectionPanel({
 
       <div className="edu-correction-row-controls">
         <div className="edu-form-group">
-          <label>Statut</label>
+          <label>{t('eduC.shared.status')}</label>
           <select
             className="edu-select"
             value={draft.status}
             onChange={(e) => onChange({ status: e.target.value as EducationSubmissionStatus })}
           >
-            {Object.entries(SUBMISSION_STATUS_LABEL).map(([k, v]) => (
+            {Object.entries(SUBMISSION_STATUS_KEYS).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {t(v)}
               </option>
             ))}
           </select>
         </div>
         <div className="edu-form-group">
-          <label>Note (/{assignment.maxGrade})</label>
+          <label>{t('eduC.correction.gradeLabel', { max: formatNumber(assignment.maxGrade) })}</label>
           <input
             type="number"
             className="edu-input"
@@ -676,9 +685,12 @@ function CorrectionPanel({
       {assignment.rubric.length > 0 && (
         <div className="edu-correction-rubric-input">
           <div className="edu-correction-side-head">
-            <strong>Barème détaillé</strong>
+            <strong>{t('eduC.correction.rubricDetail')}</strong>
             <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              Total : {sumScores(safeScores)} / {assignment.rubric.reduce((acc, c) => acc + c.max, 0)}
+              {t('eduC.correction.rubricSum', {
+                sum: formatNumber(sumScores(safeScores)),
+                max: formatNumber(assignment.rubric.reduce((acc, c) => acc + c.max, 0)),
+              })}
             </span>
           </div>
           {assignment.rubric.map((c, i) => (
@@ -698,20 +710,20 @@ function CorrectionPanel({
                 }}
                 style={{ width: 80 }}
               />
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>/ {c.max}</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(c.max)}</span>
             </div>
           ))}
         </div>
       )}
 
       <div className="edu-form-group" style={{ marginTop: 12 }}>
-        <label>Feedback</label>
+        <label>{t('eduC.correction.feedback')}</label>
         <textarea
           className="edu-textarea"
           value={draft.feedback}
           rows={8}
           onChange={(e) => onChange({ feedback: e.target.value })}
-          placeholder="Retour personnalisé à l'étudiant…"
+          placeholder={t('eduC.correction.feedbackPlaceholder')}
         />
       </div>
     </div>
@@ -729,15 +741,14 @@ function SnippetsEditor({
   onSave: (next: string[]) => void
   disabled?: boolean
 }) {
+  const { t } = useI18n()
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState('')
 
   return (
     <div className="edu-correction-snippets">
       {snippets.length === 0 && !adding && (
-        <div className="edu-correction-snippets-empty">
-          Aucun snippet. Crée des phrases-clés réutilisables : "À retravailler", "Argumentation à étoffer"…
-        </div>
+        <div className="edu-correction-snippets-empty">{t('eduC.correction.snippetsEmpty')}</div>
       )}
       {snippets.map((s, i) => (
         <div key={i} className="edu-correction-snippet">
@@ -745,14 +756,14 @@ function SnippetsEditor({
             className="edu-correction-snippet-apply"
             disabled={disabled}
             onClick={() => onApply(s)}
-            title="Coller dans le feedback de l'étudiant actif"
+            title={t('eduC.correction.snippetApplyTitle')}
           >
             {s}
           </button>
           <button
             className="edu-btn-icon"
             onClick={() => onSave(snippets.filter((_, j) => j !== i))}
-            aria-label="Supprimer"
+            aria-label={t('common.delete')}
           >
             <Trash2 size={13} />
           </button>
@@ -765,7 +776,7 @@ function SnippetsEditor({
             value={draft}
             autoFocus
             rows={2}
-            placeholder="Texte du snippet"
+            placeholder={t('eduC.correction.snippetPlaceholder')}
             onChange={(e) => setDraft(e.target.value)}
           />
           <div className="edu-row" style={{ gap: 6, justifyContent: 'flex-end' }}>
@@ -776,7 +787,7 @@ function SnippetsEditor({
                 setDraft('')
               }}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button
               className="edu-btn"
@@ -787,13 +798,13 @@ function SnippetsEditor({
                 setDraft('')
               }}
             >
-              Ajouter
+              {t('common.add')}
             </button>
           </div>
         </div>
       ) : (
         <button className="edu-btn ghost edu-correction-snippet-add" onClick={() => setAdding(true)}>
-          <Plus size={13} /> Ajouter un snippet
+          <Plus size={13} /> {t('eduC.correction.addSnippet')}
         </button>
       )}
     </div>
