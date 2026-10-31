@@ -7,6 +7,7 @@ import MessageList from '../../components/admin/messaging/MessageList'
 import { useAuth } from '../../context/AuthContext'
 import { useMessaging } from '../../context/MessagingContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
 import { createChannel, fetchMessagingUsers, openDirectConversation, searchMessages } from '../../services/messaging'
 import type { MessagingSearchResult, MessagingUser } from '../../types/messaging.types'
 import './Messaging.css'
@@ -16,6 +17,7 @@ type MobileView = 'sidebar' | 'thread'
 function MessagingSurface() {
   const { user: authUser } = useAuth()
   const { showToast } = useToast()
+  const { t } = useI18n()
   const [users, setUsers] = useState<MessagingUser[]>([])
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<MessagingSearchResult[]>([])
@@ -40,7 +42,7 @@ function MessagingSurface() {
 
   const activeConversation = useMemo(
     () => conversations.find((conversation) => conversation._id === activeConversationId) || null,
-    [conversations, activeConversationId]
+    [conversations, activeConversationId],
   )
 
   useEffect(() => {
@@ -63,7 +65,9 @@ function MessagingSurface() {
       return
     }
     const timeout = setTimeout(() => {
-      searchMessages(query).then(setResults).catch(() => setResults([]))
+      searchMessages(query)
+        .then(setResults)
+        .catch(() => setResults([]))
     }, 250)
     return () => clearTimeout(timeout)
   }, [query])
@@ -106,7 +110,7 @@ function MessagingSurface() {
             await refreshConversations()
             selectConversation(conversation._id)
           } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+            const msg = err instanceof Error ? err.message : t('adminAccess.messaging.unknownError')
             showToast(msg, 'error')
           }
         }}
@@ -122,7 +126,15 @@ function MessagingSurface() {
         {showSearch && (
           <div className="messaging-search">
             <div className="messaging-search-field">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.3-4.3" />
               </svg>
@@ -130,14 +142,14 @@ function MessagingSurface() {
                 ref={searchInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher dans les messages..."
+                placeholder={t('adminAccess.messaging.searchPlaceholder')}
               />
               {query.length > 0 && (
                 <button
                   type="button"
                   className="messaging-search-clear"
                   onClick={() => setQuery('')}
-                  aria-label="Effacer la recherche"
+                  aria-label={t('adminAccess.messaging.clearSearch')}
                 >
                   ×
                 </button>
@@ -148,7 +160,7 @@ function MessagingSurface() {
                 {results.map((result) => {
                   const q = query.trim().toLowerCase()
                   const matchingAttachment = result.attachments?.find((att) =>
-                    att.originalName.toLowerCase().includes(q)
+                    att.originalName.toLowerCase().includes(q),
                   )
                   return (
                     <button
@@ -163,7 +175,15 @@ function MessagingSurface() {
                       <span>{result.content}</span>
                       {matchingAttachment && (
                         <span className="messaging-search-result-attachment">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                           </svg>
                           {matchingAttachment.originalName}
@@ -175,7 +195,7 @@ function MessagingSurface() {
               </div>
             )}
             {query.trim().length >= 2 && results.length === 0 && (
-              <div className="messaging-search-empty">Aucun résultat</div>
+              <div className="messaging-search-empty">{t('adminAccess.messaging.noResults')}</div>
             )}
           </div>
         )}
@@ -183,17 +203,24 @@ function MessagingSurface() {
           {!activeConversation ? (
             <div className="messaging-empty">
               <div className="messaging-empty-glyph" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
-              <h2>Aucune conversation sélectionnée</h2>
-              <p>Choisissez un channel ou un message direct pour commencer à discuter.</p>
+              <h2>{t('adminAccess.messaging.noConversationTitle')}</h2>
+              <p>{t('adminAccess.messaging.noConversationText')}</p>
             </div>
           ) : loading ? (
             <div className="messaging-empty">
               <div className="messaging-spinner" aria-hidden="true" />
-              <p>Chargement de la conversation…</p>
+              <p>{t('adminAccess.messaging.loadingConversation')}</p>
             </div>
           ) : (
             <MessageList messages={messages} typingUsers={typingUsers} onReplaceMessage={replaceMessage} />

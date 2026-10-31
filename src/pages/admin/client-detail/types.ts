@@ -9,6 +9,7 @@ import type {
 } from '../../../types/client.types'
 import type { Project } from '../../../types/project.types'
 import type { AdminClientFile } from '../../../services/adminClients'
+import type { MessageKey } from '../../../i18n'
 
 export interface OverviewTabProps {
   client: Client | null
@@ -51,15 +52,15 @@ export interface FilesTabProps {
   clientId: string
 }
 
-export const TABS = [
-  { id: 'overview', label: "Vue d'ensemble" },
-  { id: 'cloud', label: 'Cloud' },
-  { id: 'projects', label: 'Projets' },
-  { id: 'deliverables', label: 'Livrables' },
-  { id: 'contacts', label: 'Contacts' },
-  { id: 'notes', label: 'Échanges' },
-  { id: 'files', label: 'Fichiers reçus' },
-  { id: 'billing', label: 'Facturation' },
+export const TABS: { id: string; labelKey: MessageKey }[] = [
+  { id: 'overview', labelKey: 'adminAccess.clientDetail.tabOverview' },
+  { id: 'cloud', labelKey: 'adminAccess.clientDetail.tabCloud' },
+  { id: 'projects', labelKey: 'adminAccess.clientDetail.tabProjects' },
+  { id: 'deliverables', labelKey: 'adminAccess.clientDetail.tabDeliverables' },
+  { id: 'contacts', labelKey: 'adminAccess.clientDetail.tabContacts' },
+  { id: 'notes', labelKey: 'adminAccess.clientDetail.tabNotes' },
+  { id: 'files', labelKey: 'adminAccess.clientDetail.tabFiles' },
+  { id: 'billing', labelKey: 'adminAccess.clientDetail.tabBilling' },
 ]
 
 export const FOLDER_ICONS: Record<string, string> = {
@@ -74,3 +75,17 @@ export const FOLDER_ICONS: Record<string, string> = {
 
 export const STATUS_OPTIONS = ['PROSPECT', 'ACTIF', 'EN_PAUSE', 'CLOS', 'ARCHIVE']
 export const HEALTH_OPTIONS = ['BON', 'ATTENTION', 'CRITIQUE']
+
+export const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  PROSPECT: 'adminAccess.clientDetail.statusProspect',
+  ACTIF: 'adminAccess.clientDetail.statusActive',
+  EN_PAUSE: 'adminAccess.clientDetail.statusPaused',
+  CLOS: 'adminAccess.clientDetail.statusClosed',
+  ARCHIVE: 'adminAccess.clientDetail.statusArchived',
+}
+
+export const HEALTH_LABEL_KEYS: Record<string, MessageKey> = {
+  BON: 'adminAccess.clientDetail.healthGood',
+  ATTENTION: 'adminAccess.clientDetail.healthWarning',
+  CRITIQUE: 'adminAccess.clientDetail.healthCritical',
+}

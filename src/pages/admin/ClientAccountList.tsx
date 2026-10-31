@@ -1,34 +1,45 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listAdminClients } from '../../services/adminClients'
 import { exportToCsv } from '../../lib/exportCsv'
 import { SkeletonRow } from '../../components/Skeleton'
 import type { Client } from '../../types/client.types'
 import CustomSelect from '../../components/admin/CustomSelect'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Tous statuts' },
-  { value: 'PROSPECT', label: 'Prospect' },
-  { value: 'ACTIF', label: 'Actif' },
-  { value: 'EN_PAUSE', label: 'En pause' },
-  { value: 'CLOS', label: 'Clos' },
-  { value: 'ARCHIVE', label: 'Archivé' },
+const STATUS_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: '', labelKey: 'adminAccess.clients.allStatuses' },
+  { value: 'PROSPECT', labelKey: 'adminAccess.clients.statusProspect' },
+  { value: 'ACTIF', labelKey: 'adminAccess.clients.statusActive' },
+  { value: 'EN_PAUSE', labelKey: 'adminAccess.clients.statusPaused' },
+  { value: 'CLOS', labelKey: 'adminAccess.clients.statusClosed' },
+  { value: 'ARCHIVE', labelKey: 'adminAccess.clients.statusArchived' },
 ]
 
-const HEALTH_OPTIONS = [
-  { value: '', label: 'Toute santé' },
-  { value: 'BON', label: 'Bon' },
-  { value: 'ATTENTION', label: 'Attention' },
-  { value: 'CRITIQUE', label: 'Critique' },
+const HEALTH_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: '', labelKey: 'adminAccess.clients.allHealth' },
+  { value: 'BON', labelKey: 'adminAccess.clients.healthGood' },
+  { value: 'ATTENTION', labelKey: 'adminAccess.clients.healthWarning' },
+  { value: 'CRITIQUE', labelKey: 'adminAccess.clients.healthCritical' },
 ]
 
-const SORT_OPTIONS = [
-  { value: 'updatedAt_desc', label: 'Dernière activité' },
-  { value: 'name_asc', label: 'Nom A-Z' },
-  { value: 'status_asc', label: 'Statut' },
-  { value: 'health_asc', label: 'Santé' },
+const SORT_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: 'updatedAt_desc', labelKey: 'adminAccess.clients.sortActivity' },
+  { value: 'name_asc', labelKey: 'adminAccess.clients.sortName' },
+  { value: 'status_asc', labelKey: 'adminAccess.clients.sortStatus' },
+  { value: 'health_asc', labelKey: 'adminAccess.clients.sortHealth' },
+]
+
+const TABLE_COLUMN_KEYS: MessageKey[] = [
+  'adminAccess.clients.colClient',
+  'adminAccess.clients.colEmail',
+  'adminAccess.clients.colStatus',
+  'adminAccess.clients.colHealth',
+  'adminAccess.clients.colService',
+  'adminAccess.clients.colOwner',
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,12 +56,18 @@ const HEALTH_COLORS: Record<string, string> = {
   CRITIQUE: '#ef4444',
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  PROSPECT: 'Prospect',
-  ACTIF: 'Actif',
-  EN_PAUSE: 'En pause',
-  CLOS: 'Clos',
-  ARCHIVE: 'Archivé',
+const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  PROSPECT: 'adminAccess.clients.statusProspect',
+  ACTIF: 'adminAccess.clients.statusActive',
+  EN_PAUSE: 'adminAccess.clients.statusPaused',
+  CLOS: 'adminAccess.clients.statusClosed',
+  ARCHIVE: 'adminAccess.clients.statusArchived',
+}
+
+const HEALTH_LABEL_KEYS: Record<string, MessageKey> = {
+  BON: 'adminAccess.clients.healthGoodCaps',
+  ATTENTION: 'adminAccess.clients.healthWarningCaps',
+  CRITIQUE: 'adminAccess.clients.healthCriticalCaps',
 }
 
 interface ClientListFilters {
@@ -63,6 +80,14 @@ interface ClientListFilters {
 }
 
 const ClientAccountList = () => {
+  const { t } = useI18n()
+  const statusLabel = (status: string | undefined) =>
+    status && STATUS_LABEL_KEYS[status] ? t(STATUS_LABEL_KEYS[status]) : undefined
+  const healthLabel = (health: string | undefined) =>
+    health && HEALTH_LABEL_KEYS[health] ? t(HEALTH_LABEL_KEYS[health]) : health
+  const statusOptions = useMemo(() => STATUS_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t])
+  const healthOptions = useMemo(() => HEALTH_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t])
+  const sortOptions = useMemo(() => SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t])
   const [clients, setClients] = useState<Client[]>([])
   const [meta, setMeta] = useState<{ page: number; totalPages: number; total: number }>({
     page: 1,
@@ -96,13 +121,13 @@ const ClientAccountList = () => {
           },
         )
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement comptes')
+        setError((err as Error).message || t('adminAccess.clients.loadFailed'))
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [filters])
+  }, [filters, t])
 
   const updateFilter = (key: string, value: string | number) => {
     setFilters((current) => ({ ...current, [key]: value, page: key === 'page' ? (value as number) : 1 }))
@@ -114,25 +139,33 @@ const ClientAccountList = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Comptes clients</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clients.breadcrumb')}</span>
         </div>
         <div className="admin-header">
-          <h1>Comptes clients</h1>
+          <h1>{t('adminAccess.clients.breadcrumb')}</h1>
           <div className="admin-actions portal-actions-reveal">
             <button
               className="portal-button secondary portal-action-link"
               type="button"
-              title="Exporter CSV"
+              title={t('adminAccess.clients.exportCsv')}
               onClick={() => {
-                const headers = ['Nom', 'Entreprise', 'Email', 'Service', 'Statut', 'Sante', 'Responsable']
+                const headers = [
+                  t('adminAccess.clients.csvName'),
+                  t('adminAccess.clients.csvCompany'),
+                  t('adminAccess.clients.csvEmail'),
+                  t('adminAccess.clients.csvService'),
+                  t('adminAccess.clients.csvStatus'),
+                  t('adminAccess.clients.csvHealth'),
+                  t('adminAccess.clients.csvOwner'),
+                ]
                 const rows = clients.map((c) => [
                   c.name || '',
                   c.companyName || '',
                   c.email || '',
                   c.serviceType || '',
-                  STATUS_LABELS[c.status] || c.status || '',
-                  c.healthStatus || '',
-                  c.ownerAdminId?.name || 'Non assigne',
+                  statusLabel(c.status) || c.status || '',
+                  healthLabel(c.healthStatus) || '',
+                  c.ownerAdminId?.name || t('adminAccess.clients.unassignedCsv'),
                 ])
                 exportToCsv('clients.csv', headers, rows)
               }}
@@ -151,12 +184,12 @@ const ClientAccountList = () => {
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </span>
-              <span className="portal-action-label">Exporter CSV</span>
+              <span className="portal-action-label">{t('adminAccess.clients.exportCsv')}</span>
             </button>
             <Link
               className="portal-button portal-action-link"
               to="/admin/comptes-clients/nouveau"
-              title="Nouveau compte"
+              title={t('adminAccess.clients.newAccount')}
             >
               <span className="portal-action-icon" aria-hidden>
                 <svg
@@ -172,7 +205,7 @@ const ClientAccountList = () => {
                   <line x1="8" y1="12" x2="16" y2="12" />
                 </svg>
               </span>
-              <span className="portal-action-label">Nouveau compte</span>
+              <span className="portal-action-label">{t('adminAccess.clients.newAccount')}</span>
             </Link>
           </div>
         </div>
@@ -180,7 +213,7 @@ const ClientAccountList = () => {
         <div className="portal-grid">
           <input
             className="portal-input"
-            placeholder="Recherche nom, société, email"
+            placeholder={t('adminAccess.clients.searchPlaceholder')}
             value={filters.q}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFilter('q', e.target.value)}
           />
@@ -188,19 +221,19 @@ const ClientAccountList = () => {
             className="portal-input"
             value={filters.status}
             onChange={(v) => updateFilter('status', v)}
-            options={STATUS_OPTIONS}
+            options={statusOptions}
           />
           <CustomSelect
             className="portal-input"
             value={filters.health}
             onChange={(v) => updateFilter('health', v)}
-            options={HEALTH_OPTIONS}
+            options={healthOptions}
           />
           <CustomSelect
             className="portal-input"
             value={filters.sort}
             onChange={(v) => updateFilter('sort', v)}
-            options={SORT_OPTIONS}
+            options={sortOptions}
           />
         </div>
       </div>
@@ -222,7 +255,7 @@ const ClientAccountList = () => {
           <div className="portal-card">
             <div className="admin-empty-state">
               <div className="admin-empty-state-icon">👥</div>
-              <p className="admin-empty-state-text">Aucun compte client</p>
+              <p className="admin-empty-state-text">{t('adminAccess.clients.empty')}</p>
             </div>
           </div>
         ) : (
@@ -245,7 +278,7 @@ const ClientAccountList = () => {
                     transition: 'all 0.2s',
                   }}
                 >
-                  {v === 'cards' ? 'Cartes' : 'Liste'}
+                  {v === 'cards' ? t('adminAccess.clients.viewCards') : t('adminAccess.clients.viewList')}
                 </button>
               ))}
             </div>
@@ -275,7 +308,9 @@ const ClientAccountList = () => {
                         <span
                           className="client-card-health"
                           style={{ background: HEALTH_COLORS[client.healthStatus || ''] || '#64748b' }}
-                          title={`Santé: ${client.healthStatus || 'N/A'}`}
+                          title={t('adminAccess.clients.healthTitle', {
+                            health: healthLabel(client.healthStatus) || t('adminAccess.clients.na'),
+                          })}
                         />
                       </div>
                       <h3 className="client-card-name">{client.companyName || client.name}</h3>
@@ -287,12 +322,14 @@ const ClientAccountList = () => {
                         <span
                           className={`client-card-status client-card-status--${(client.status || 'ACTIF').toLowerCase()}`}
                         >
-                          {STATUS_LABELS[client.status] || client.status || 'Actif'}
+                          {statusLabel(client.status) || client.status || t('adminAccess.clients.statusActive')}
                         </span>
                         {client.serviceType && <span className="client-card-service">{client.serviceType}</span>}
                       </div>
                       <div className="client-card-footer">
-                        <span className="client-card-owner">{client.ownerAdminId?.name || 'Non assigné'}</span>
+                        <span className="client-card-owner">
+                          {client.ownerAdminId?.name || t('adminAccess.clients.unassigned')}
+                        </span>
                       </div>
                     </Link>
                   )
@@ -304,7 +341,7 @@ const ClientAccountList = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                      {['Client', 'Email', 'Statut', 'Santé', 'Service', 'Responsable'].map((h) => (
+                      {TABLE_COLUMN_KEYS.map((h) => (
                         <th
                           key={h}
                           style={{
@@ -317,7 +354,7 @@ const ClientAccountList = () => {
                             letterSpacing: '0.5px',
                           }}
                         >
-                          {h}
+                          {t(h)}
                         </th>
                       ))}
                     </tr>
@@ -391,7 +428,7 @@ const ClientAccountList = () => {
                                 border: `1px solid ${statusColor}35`,
                               }}
                             >
-                              {STATUS_LABELS[client.status] || client.status || '—'}
+                              {statusLabel(client.status) || client.status || '—'}
                             </span>
                           </td>
                           {/* Santé */}
@@ -409,7 +446,7 @@ const ClientAccountList = () => {
                                 }}
                               />
                               <span style={{ color: healthColor, fontSize: 12, fontWeight: 500 }}>
-                                {client.healthStatus || '—'}
+                                {healthLabel(client.healthStatus) || '—'}
                               </span>
                             </div>
                           </td>
@@ -419,7 +456,7 @@ const ClientAccountList = () => {
                           </td>
                           {/* Responsable */}
                           <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.4)' }}>
-                            {client.ownerAdminId?.name || 'Non assigné'}
+                            {client.ownerAdminId?.name || t('adminAccess.clients.unassigned')}
                           </td>
                         </tr>
                       )
@@ -440,7 +477,9 @@ const ClientAccountList = () => {
                 flexWrap: 'wrap',
               }}
             >
-              <p style={{ margin: 0, opacity: 0.7 }}>{meta.total || 0} compte(s)</p>
+              <p style={{ margin: 0, opacity: 0.7 }}>
+                {t('adminAccess.clients.accountCount', { count: meta.total || 0 })}
+              </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   type="button"
@@ -448,7 +487,7 @@ const ClientAccountList = () => {
                   disabled={(meta.page || 1) <= 1}
                   onClick={() => updateFilter('page', (meta.page || 1) - 1)}
                 >
-                  Précédent
+                  {t('adminAccess.clients.previous')}
                 </button>
                 <button
                   type="button"
@@ -456,7 +495,7 @@ const ClientAccountList = () => {
                   disabled={(meta.page || 1) >= (meta.totalPages || 1)}
                   onClick={() => updateFilter('page', (meta.page || 1) + 1)}
                 >
-                  Suivant
+                  {t('adminAccess.clients.next')}
                 </button>
               </div>
             </div>
