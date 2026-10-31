@@ -4,6 +4,7 @@ import type { IExternalTransaction } from '../../../../types/accounting'
 import type { TxFilters } from './types'
 import { formatDateTime, TRANSACTION_STATUSES, txStatusClass } from './helpers'
 import { replayExternalTransaction } from '../../../../services/accounting'
+import { useI18n } from '../../../../context/I18nContext'
 
 interface TransactionsTabProps {
   transactions: IExternalTransaction[]
@@ -24,17 +25,18 @@ export default function TransactionsTab({
   onReload,
   onError,
 }: TransactionsTabProps) {
+  const { t } = useI18n()
   const [txDetail, setTxDetail] = useState<IExternalTransaction | null>(null)
 
   const txTotalPages = Math.max(1, Math.ceil(txTotal / filters.limit))
 
   async function handleReplay(tx: IExternalTransaction) {
-    if (!confirm(`Rejouer la transaction ${tx.externalId} ?`)) return
+    if (!confirm(t('accVat.tx.confirmReplay', { id: tx.externalId ?? '—' }))) return
     try {
       await replayExternalTransaction(tx._id)
       onReload()
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Erreur')
+      onError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
@@ -48,7 +50,7 @@ export default function TransactionsTab({
         >
           {TRANSACTION_STATUSES.map((o) => (
             <option key={o.value} value={o.value}>
-              {o.label}
+              {t(o.labelKey)}
             </option>
           ))}
         </select>
@@ -72,35 +74,35 @@ export default function TransactionsTab({
           onChange={(e) => setFilters({ ...filters, to: e.target.value })}
         />
         <button className="portal-button secondary" onClick={() => onReload()}>
-          Filtrer
+          {t('accVat.tx.filter')}
         </button>
       </div>
 
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
       ) : transactions.length === 0 ? (
-        <div className="accounting-empty">Aucune transaction reçue pour ces filtres.</div>
+        <div className="accounting-empty">{t('accVat.tx.empty')}</div>
       ) : (
         <>
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Reçue le</th>
+                <th>{t('accVat.tx.colReceivedAt')}</th>
                 <th>External ID</th>
-                <th>Statut</th>
-                <th>Auto-validée</th>
-                <th>Écriture liée</th>
-                <th>Actions</th>
+                <th>{t('accVat.src.colStatus')}</th>
+                <th>{t('accVat.tx.colAutoValidated')}</th>
+                <th>{t('accVat.tx.colEntry')}</th>
+                <th>{t('accVat.src.colActions')}</th>
               </tr>
             </thead>
             <tbody>
-              {transactions.map((t) => (
-                <tr key={t._id}>
-                  <td style={{ fontSize: '0.82rem' }}>{formatDateTime(t.receivedAt)}</td>
-                  <td className="code">{t.externalId || '—'}</td>
+              {transactions.map((tx) => (
+                <tr key={tx._id}>
+                  <td style={{ fontSize: '0.82rem' }}>{formatDateTime(tx.receivedAt)}</td>
+                  <td className="code">{tx.externalId || '—'}</td>
                   <td>
-                    <span className={`accounting-badge ${txStatusClass(t.status)}`}>{t.status}</span>
-                    {t.errorReason && (
+                    <span className={`accounting-badge ${txStatusClass(tx.status)}`}>{tx.status}</span>
+                    {tx.errorReason && (
                       <div
                         style={{
                           fontSize: '0.72rem',
@@ -108,26 +110,26 @@ export default function TransactionsTab({
                           marginTop: 2,
                         }}
                       >
-                        {t.errorReason}
+                        {tx.errorReason}
                       </div>
                     )}
                   </td>
                   <td>
-                    {t.autoValidated ? (
-                      <span className="accounting-badge validated">Oui</span>
+                    {tx.autoValidated ? (
+                      <span className="accounting-badge validated">{t('accVat.tx.yes')}</span>
                     ) : (
                       <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
                     )}
                   </td>
                   <td>
-                    {t.generatedEntry ? (
+                    {tx.generatedEntry ? (
                       <Link
                         to={`/admin/comptabilite/ecritures/${
-                          typeof t.generatedEntry === 'object' ? t.generatedEntry._id : t.generatedEntry
+                          typeof tx.generatedEntry === 'object' ? tx.generatedEntry._id : tx.generatedEntry
                         }`}
                         className="code"
                       >
-                        Voir →
+                        {t('accVat.tx.view')}
                       </Link>
                     ) : (
                       <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
@@ -135,12 +137,12 @@ export default function TransactionsTab({
                   </td>
                   <td>
                     <div className="accounting-row-actions">
-                      <button type="button" onClick={() => setTxDetail(t)}>
-                        Détail
+                      <button type="button" onClick={() => setTxDetail(tx)}>
+                        {t('accVat.tx.detail')}
                       </button>
-                      {(t.status === 'REJECTED' || t.status === 'AWAITING_REVIEW') && (
-                        <button type="button" onClick={() => handleReplay(t)}>
-                          Rejouer
+                      {(tx.status === 'REJECTED' || tx.status === 'AWAITING_REVIEW') && (
+                        <button type="button" onClick={() => handleReplay(tx)}>
+                          {t('accVat.tx.replay')}
                         </button>
                       )}
                     </div>
@@ -157,7 +159,7 @@ export default function TransactionsTab({
                 disabled={filters.page <= 1}
                 onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
               >
-                ← Précédent
+                {t('accVat.tx.previous')}
               </button>
               <span
                 style={{
@@ -165,14 +167,14 @@ export default function TransactionsTab({
                   color: 'rgba(255,255,255,0.6)',
                 }}
               >
-                Page {filters.page} / {txTotalPages} ({txTotal} total)
+                {t('accVat.tx.pageInfo', { page: filters.page, pages: txTotalPages, total: txTotal })}
               </span>
               <button
                 className="portal-button secondary"
                 disabled={filters.page >= txTotalPages}
                 onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
               >
-                Suivant →
+                {t('accVat.tx.next')}
               </button>
             </div>
           )}
@@ -215,7 +217,7 @@ export default function TransactionsTab({
             >
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
-                  Transaction <span className="code">{txDetail.externalId}</span>
+                  {t('accVat.tx.transaction')} <span className="code">{txDetail.externalId}</span>
                 </h2>
                 <div
                   style={{
@@ -224,17 +226,17 @@ export default function TransactionsTab({
                     marginTop: 4,
                   }}
                 >
-                  Reçue le {formatDateTime(txDetail.receivedAt)} ·{' '}
+                  {t('accVat.tx.receivedOn', { date: formatDateTime(txDetail.receivedAt) })}{' '}
                   <span className={`accounting-badge ${txStatusClass(txDetail.status)}`}>{txDetail.status}</span>
                   {txDetail.signatureVerified === false && (
                     <span className="accounting-badge draft" style={{ marginLeft: 8 }}>
-                      ⚠ Signature non vérifiée
+                      ⚠ {t('accVat.tx.signatureUnverified')}
                     </span>
                   )}
                 </div>
               </div>
               <button type="button" className="portal-button secondary" onClick={() => setTxDetail(null)}>
-                Fermer
+                {t('common.close')}
               </button>
             </div>
 
@@ -246,7 +248,7 @@ export default function TransactionsTab({
 
             {txDetail.matchedRule && (
               <div className="accounting-message info" style={{ marginTop: 14 }}>
-                Règle matchée :{' '}
+                {t('accVat.tx.matchedRule')}{' '}
                 <strong>
                   {typeof txDetail.matchedRule === 'object' ? txDetail.matchedRule.name : txDetail.matchedRule}
                 </strong>
@@ -263,7 +265,7 @@ export default function TransactionsTab({
                   color: 'var(--primary)',
                 }}
               >
-                Payload brut reçu
+                {t('accVat.tx.rawPayload')}
               </h3>
               <pre
                 style={{
@@ -292,7 +294,7 @@ export default function TransactionsTab({
                   color: 'var(--primary)',
                 }}
               >
-                Payload normalisé
+                {t('accVat.tx.normalizedPayload')}
               </h3>
               <pre
                 style={{
@@ -322,7 +324,7 @@ export default function TransactionsTab({
                     color: 'rgba(74,222,128,0.85)',
                   }}
                 >
-                  Écriture comptable
+                  {t('accVat.tx.entry')}
                 </h3>
                 <Link
                   to={`/admin/comptabilite/ecritures/${
@@ -330,7 +332,7 @@ export default function TransactionsTab({
                   }`}
                   className="portal-button secondary"
                 >
-                  Voir l'écriture →
+                  {t('accVat.tx.viewEntry')}
                 </Link>
               </div>
             )}
@@ -342,7 +344,7 @@ export default function TransactionsTab({
                 color: 'rgba(255,255,255,0.45)',
               }}
             >
-              IP : {txDetail.requestIp || '—'} · UA : {txDetail.requestUserAgent || '—'} · Idempotency :{' '}
+              {t('accVat.tx.footer', { ip: txDetail.requestIp || '—', ua: txDetail.requestUserAgent || '—' })}{' '}
               <span className="code">{txDetail.idempotencyKey || '—'}</span>
             </div>
           </div>

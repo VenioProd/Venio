@@ -1,18 +1,25 @@
 import type { ExternalSourceStatus, ExternalTransactionStatus } from '../../../../types/accounting'
+import { formatDateTime as formatLocaleDateTime } from '../../../../i18n/format'
+import type { MessageKey } from '../../../../i18n'
 
 export function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return (
+    formatLocaleDateTime(d, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }) || '—'
+  )
 }
 
-export const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Active',
-  PAUSED: 'En pause',
-  DISABLED: 'Désactivée',
+export const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  ACTIVE: 'accVat.integ.statusActive',
+  PAUSED: 'accVat.integ.statusPaused',
+  DISABLED: 'accVat.integ.statusDisabled',
 }
 
 export function statusBadgeClass(status: ExternalSourceStatus): string {
@@ -21,14 +28,14 @@ export function statusBadgeClass(status: ExternalSourceStatus): string {
   return 'locked'
 }
 
-export const TRANSACTION_STATUSES = [
-  { value: '', label: 'Tous statuts' },
-  { value: 'RECEIVED', label: 'Reçue' },
-  { value: 'CLASSIFIED', label: 'Classifiée' },
-  { value: 'POSTED', label: 'Publiée' },
-  { value: 'AWAITING_REVIEW', label: 'Revue à faire' },
-  { value: 'REJECTED', label: 'Rejetée' },
-  { value: 'DUPLICATE', label: 'Doublon' },
+export const TRANSACTION_STATUSES: { value: string; labelKey: MessageKey }[] = [
+  { value: '', labelKey: 'accVat.esd.txAll' },
+  { value: 'RECEIVED', labelKey: 'accVat.esd.txReceived' },
+  { value: 'CLASSIFIED', labelKey: 'accVat.esd.txClassified' },
+  { value: 'POSTED', labelKey: 'accVat.esd.txPosted' },
+  { value: 'AWAITING_REVIEW', labelKey: 'accVat.esd.txAwaitingReview' },
+  { value: 'REJECTED', labelKey: 'accVat.esd.txRejected' },
+  { value: 'DUPLICATE', labelKey: 'accVat.esd.txDuplicate' },
 ]
 
 export function txStatusClass(status: ExternalTransactionStatus): string {
@@ -39,15 +46,15 @@ export function txStatusClass(status: ExternalTransactionStatus): string {
   return 'locked'
 }
 
-export const RULE_TYPE_OPTIONS = [
-  { value: '', label: 'Tout type' },
-  { value: 'SALE', label: 'Vente (SALE)' },
-  { value: 'REFUND', label: 'Remboursement (REFUND)' },
-  { value: 'EXPENSE', label: 'Dépense (EXPENSE)' },
-  { value: 'FEE', label: 'Frais (FEE)' },
-  { value: 'PAYMENT', label: 'Paiement (PAYMENT)' },
-  { value: 'TRANSFER', label: 'Transfert (TRANSFER)' },
-  { value: 'ADJUSTMENT', label: 'Ajustement (ADJUSTMENT)' },
+export const RULE_TYPE_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: '', labelKey: 'accVat.esd.typeAny' },
+  { value: 'SALE', labelKey: 'accVat.esd.typeSale' },
+  { value: 'REFUND', labelKey: 'accVat.esd.typeRefund' },
+  { value: 'EXPENSE', labelKey: 'accVat.esd.typeExpense' },
+  { value: 'FEE', labelKey: 'accVat.esd.typeFee' },
+  { value: 'PAYMENT', labelKey: 'accVat.esd.typePayment' },
+  { value: 'TRANSFER', labelKey: 'accVat.esd.typeTransfer' },
+  { value: 'ADJUSTMENT', labelKey: 'accVat.esd.typeAdjustment' },
 ]
 
 export const EMPTY_RULE = {

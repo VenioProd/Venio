@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AccountingLayout from '../AccountingLayout'
 import { updateExternalSource, deleteExternalSource, rotateExternalSourceKey } from '../../../../services/accounting'
 import type { ExternalSourceStatus, IRotateKeyResult } from '../../../../types/accounting'
 import { TABS, type TabId } from './types'
-import { STATUS_LABELS, statusBadgeClass } from './helpers'
+import { STATUS_LABEL_KEYS, statusBadgeClass } from './helpers'
 import { useExternalSource } from './useExternalSource'
 import InfoTab from './InfoTab'
 import RulesTab from './RulesTab'
@@ -12,6 +13,7 @@ import TransactionsTab from './TransactionsTab'
 import RotateKeyModal from './RotateKeyModal'
 
 const ExternalSourceDetail = () => {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -68,9 +70,9 @@ const ExternalSourceDetail = () => {
         defaultExpenseAccount: updated.defaultExpenseAccount || '',
         defaultBankAccount: updated.defaultBankAccount || '',
       })
-      setSuccess('Modifications enregistrées.')
+      setSuccess(t('accVat.esd.saved'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setSaving(false)
     }
@@ -79,47 +81,37 @@ const ExternalSourceDetail = () => {
   async function handleTogglePause() {
     if (!source || !id) return
     const nextStatus: ExternalSourceStatus = source.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
-    const verb = nextStatus === 'PAUSED' ? 'Mettre en pause' : 'Réactiver'
-    if (!confirm(`${verb} la source « ${source.name} » ?`)) return
+    const confirmKey = nextStatus === 'PAUSED' ? 'accVat.src.confirmPause' : 'accVat.src.confirmResume'
+    if (!confirm(t(confirmKey, { name: source.name }))) return
     try {
       await updateExternalSource(id, { status: nextStatus })
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   async function handleRotate() {
     if (!id) return
-    if (
-      !confirm(
-        'Régénérer la clé API et le secret webhook ? Les anciennes valeurs seront immédiatement invalidées et le site tiers devra être mis à jour.',
-      )
-    )
-      return
+    if (!confirm(t('accVat.esd.confirmRotate'))) return
     setError('')
     try {
       const result = await rotateExternalSourceKey(id)
       setRotateResult(result)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   async function handleDelete() {
     if (!source || !id) return
-    if (
-      !confirm(
-        `Supprimer définitivement la source « ${source.name} » ? Cette action est irréversible. Les écritures déjà publiées seront conservées.`,
-      )
-    )
-      return
+    if (!confirm(t('accVat.esd.confirmDelete', { name: source.name }))) return
     try {
       await deleteExternalSource(id)
       navigate('/admin/comptabilite/sources-externes')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
@@ -135,17 +127,17 @@ const ExternalSourceDetail = () => {
 
   if (loading) {
     return (
-      <AccountingLayout title="Source externe">
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+      <AccountingLayout title={t('accVat.esd.pageTitle')}>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
       </AccountingLayout>
     )
   }
 
   if (!source) {
     return (
-      <AccountingLayout title="Source externe">
+      <AccountingLayout title={t('accVat.esd.pageTitle')}>
         {error && <div className="accounting-message error">{error}</div>}
-        <div className="accounting-empty">Source introuvable.</div>
+        <div className="accounting-empty">{t('accVat.esd.notFound')}</div>
       </AccountingLayout>
     )
   }
@@ -159,20 +151,20 @@ const ExternalSourceDetail = () => {
             {source.slug}
           </span>{' '}
           <span className={`accounting-badge ${statusBadgeClass(source.status)}`} style={{ marginLeft: 8 }}>
-            {STATUS_LABELS[source.status] || source.status}
+            {STATUS_LABEL_KEYS[source.status] ? t(STATUS_LABEL_KEYS[source.status]) : source.status}
           </span>
         </span>
       }
       actions={
         <>
           <Link to="/admin/comptabilite/sources-externes" className="portal-button secondary">
-            ← Retour
+            {t('accVat.esd.back')}
           </Link>
           <button className="portal-button secondary" onClick={handleTogglePause}>
-            {source.status === 'ACTIVE' ? '⏸ Pause' : '▶ Reprendre'}
+            {source.status === 'ACTIVE' ? t('accVat.esd.pause') : t('accVat.esd.resume')}
           </button>
           <button className="portal-button secondary" onClick={handleRotate}>
-            🔄 Rotate clé
+            🔄 {t('accVat.esd.rotate')}
           </button>
           <button
             className="portal-button"
@@ -183,7 +175,7 @@ const ExternalSourceDetail = () => {
             }}
             onClick={handleDelete}
           >
-            🗑 Supprimer
+            🗑 {t('accVat.esd.delete')}
           </button>
         </>
       }
@@ -202,28 +194,28 @@ const ExternalSourceDetail = () => {
           flexWrap: 'wrap',
         }}
       >
-        {TABS.map((t) => (
+        {TABS.map((tab) => (
           <button
-            key={t.id}
+            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(t.id)}
+            onClick={() => setActiveTab(tab.id)}
             style={{
               padding: '8px 16px',
               border: '1px solid transparent',
               borderRadius: 8,
               background:
-                activeTab === t.id
+                activeTab === tab.id
                   ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.18) 100%)'
                   : 'transparent',
-              color: activeTab === t.id ? '#fff' : 'rgba(255,255,255,0.65)',
+              color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.65)',
               cursor: 'pointer',
               fontSize: '0.88rem',
               fontWeight: 500,
-              borderColor: activeTab === t.id ? 'rgba(14, 165, 233, 0.5)' : 'transparent',
+              borderColor: activeTab === tab.id ? 'rgba(14, 165, 233, 0.5)' : 'transparent',
               transition: 'all 0.2s ease',
             }}
           >
-            {t.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </nav>
