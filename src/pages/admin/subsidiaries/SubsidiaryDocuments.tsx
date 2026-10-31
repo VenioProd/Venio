@@ -11,11 +11,11 @@ import {
 } from 'lucide-react'
 import { apiUpload, apiDownload, apiFetch, ApiError } from '../../../lib/api'
 import { useToast } from '../../../context/ToastContext'
+import { useI18n } from '../../../context/I18nContext'
 import type { SubsidiaryDocument, SubsidiaryDocumentCategory } from '../../../types/subsidiary.types'
 
-function formatBytes(n: number): string {
-  if (!n) return '0 o'
-  const units = ['o', 'Ko', 'Mo', 'Go']
+function formatBytes(n: number, units: string[]): string {
+  if (!n) return `0 ${units[0]}`
   const i = Math.floor(Math.log(n) / Math.log(1024))
   return `${(n / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
@@ -38,12 +38,19 @@ interface Props {
 }
 
 export default function SubsidiaryDocuments({ subsidiaryId, category, documents, accent, onChange }: Props) {
+  const { t } = useI18n()
   const { showToast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const docs = documents.filter((d) => d.category === category)
+  const sizeUnits = [
+    t('orgs.subsidiary.documents.unitByte'),
+    t('orgs.subsidiary.documents.unitKilo'),
+    t('orgs.subsidiary.documents.unitMega'),
+    t('orgs.subsidiary.documents.unitGiga'),
+  ]
 
   async function handleUpload(file: File) {
     setUploading(true)
@@ -56,9 +63,9 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
         fd,
       )
       onChange(res.documents)
-      showToast('Document ajouté', 'success')
+      showToast(t('orgs.subsidiary.documents.added'), 'success')
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Échec de l’envoi', 'error')
+      showToast(err instanceof ApiError ? err.message : t('orgs.subsidiary.documents.uploadFailed'), 'error')
     } finally {
       setUploading(false)
     }
@@ -77,14 +84,14 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
       a.remove()
       URL.revokeObjectURL(href)
     } catch {
-      showToast('Téléchargement impossible', 'error')
+      showToast(t('orgs.subsidiary.documents.downloadFailed'), 'error')
     } finally {
       setBusyId(null)
     }
   }
 
   async function handleDelete(doc: SubsidiaryDocument) {
-    if (!confirm(`Supprimer « ${doc.originalName} » ?`)) return
+    if (!confirm(t('orgs.subsidiary.documents.confirmDelete', { name: doc.originalName }))) return
     setBusyId(doc._id)
     try {
       const res = await apiFetch<{ documents: SubsidiaryDocument[] }>(
@@ -93,7 +100,7 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
       )
       onChange(res.documents)
     } catch {
-      showToast('Suppression impossible', 'error')
+      showToast(t('orgs.subsidiary.documents.deleteFailed'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -103,7 +110,12 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
     <div className="sub-docs">
       {docs.map((doc) => (
         <div key={doc._id} className="sub-doc" style={{ ['--sub-accent' as string]: accent }}>
-          <button type="button" className="sub-doc__main" onClick={() => handleDownload(doc)} title="Télécharger">
+          <button
+            type="button"
+            className="sub-doc__main"
+            onClick={() => handleDownload(doc)}
+            title={t('orgs.subsidiary.documents.download')}
+          >
             <span className="sub-doc__icon" style={{ color: accent }}>
               {busyId === doc._id ? (
                 <Loader2 size={18} className="sub-spin" />
@@ -113,7 +125,7 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
             </span>
             <span className="sub-doc__meta">
               <span className="sub-doc__name">{doc.originalName}</span>
-              <span className="sub-doc__size">{formatBytes(doc.size)}</span>
+              <span className="sub-doc__size">{formatBytes(doc.size, sizeUnits)}</span>
             </span>
             <Download size={15} className="sub-doc__dl" />
           </button>
@@ -121,8 +133,8 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
             type="button"
             className="sub-doc__del"
             onClick={() => handleDelete(doc)}
-            title="Supprimer"
-            aria-label="Supprimer le document"
+            title={t('orgs.subsidiary.documents.delete')}
+            aria-label={t('orgs.subsidiary.documents.deleteAria')}
           >
             <Trash2 size={14} />
           </button>
@@ -146,7 +158,8 @@ export default function SubsidiaryDocuments({ subsidiaryId, category, documents,
         disabled={uploading}
         style={{ ['--sub-accent' as string]: accent }}
       >
-        {uploading ? <Loader2 size={14} className="sub-spin" /> : <Paperclip size={14} />} Joindre un document
+        {uploading ? <Loader2 size={14} className="sub-spin" /> : <Paperclip size={14} />}{' '}
+        {t('orgs.subsidiary.documents.attach')}
       </button>
     </div>
   )

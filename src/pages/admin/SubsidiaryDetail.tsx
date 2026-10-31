@@ -44,19 +44,22 @@ import { DashKpiCard } from '../../components/dashboard'
 import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
 import SubsidiaryDocuments from './subsidiaries/SubsidiaryDocuments'
 import SubsidiaryCredentials from './subsidiaries/SubsidiaryCredentials'
-import { LINK_TYPE_LABELS } from '../../types/subsidiary.types'
+import { LINK_TYPE_LABEL_KEYS, STATUS_LABEL_KEYS, HEALTH_LABEL_KEYS } from './subsidiaries/labels'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate, formatMoney } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 import type { SubsidiaryLinkType } from '../../types/subsidiary.types'
 import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
-import { STATUS_LABELS, STATUS_COLORS, HEALTH_COLORS, HEALTH_LABELS } from '../../types/subsidiary.types'
+import { STATUS_COLORS, HEALTH_COLORS } from '../../types/subsidiary.types'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import './Subsidiaries.css'
 
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Terminé',
-  ARCHIVE: 'Archivé',
+const PROJECT_STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  EN_COURS: 'orgs.subsidiary.detail.projectStatus.EN_COURS',
+  EN_ATTENTE: 'orgs.subsidiary.detail.projectStatus.EN_ATTENTE',
+  TERMINE: 'orgs.subsidiary.detail.projectStatus.TERMINE',
+  ARCHIVE: 'orgs.subsidiary.detail.projectStatus.ARCHIVE',
 }
 
 function hexToRgb(hex: string): string {
@@ -74,8 +77,7 @@ function hexToRgb(hex: string): string {
 }
 
 const initials = (name: string) => name?.trim().slice(0, 2).toUpperCase() || '?'
-const formatEUR = (n: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0)
+const formatEUR = (n: number) => formatMoney(n || 0, 'EUR', { maximumFractionDigits: 0 })
 
 /** Bloc documentaire — titre, contenu texte (sauts de ligne préservés) + pièces jointes. */
 function DossierBlock({
@@ -93,6 +95,7 @@ function DossierBlock({
   children?: ReactNode
   hideEmptyHint?: boolean
 }) {
+  const { t } = useI18n()
   const has = content && content.trim()
   return (
     <div className="sub-dossier-card">
@@ -105,7 +108,7 @@ function DossierBlock({
       {has ? (
         <div className="sub-prose">{content}</div>
       ) : !hideEmptyHint ? (
-        <p className="sub-dossier-empty">Aucune description — clique sur « Éditer » pour la renseigner.</p>
+        <p className="sub-dossier-empty">{t('orgs.subsidiary.detail.emptyDescription')}</p>
       ) : null}
       {children}
     </div>
@@ -121,22 +124,33 @@ function DossierTab({
   accent: string
   onDocsChange: (docs: Subsidiary['documents']) => void
 }) {
+  const { t } = useI18n()
   const docs = sub.documents || []
   const blocks = [
     {
       key: 'product' as const,
       icon: <Package size={16} />,
-      title: 'Description du produit',
+      title: t('orgs.subsidiary.detail.productTitle'),
       content: sub.productDescription,
     },
     {
       key: 'service' as const,
       icon: <Wrench size={16} />,
-      title: 'Description du service',
+      title: t('orgs.subsidiary.detail.serviceTitle'),
       content: sub.serviceDescription,
     },
-    { key: 'businessModel' as const, icon: <Coins size={16} />, title: 'Business model', content: sub.businessModel },
-    { key: 'businessPlan' as const, icon: <FileText size={16} />, title: 'Business plan', content: sub.businessPlan },
+    {
+      key: 'businessModel' as const,
+      icon: <Coins size={16} />,
+      title: t('orgs.subsidiary.detail.businessModelTitle'),
+      content: sub.businessModel,
+    },
+    {
+      key: 'businessPlan' as const,
+      icon: <FileText size={16} />,
+      title: t('orgs.subsidiary.detail.businessPlanTitle'),
+      content: sub.businessPlan,
+    },
   ]
   const sections = (sub.sections || []).filter((s) => (s.title && s.title.trim()) || (s.content && s.content.trim()))
 
@@ -158,13 +172,19 @@ function DossierTab({
         <DossierBlock
           key={`sec-${i}`}
           icon={<BookOpen size={16} />}
-          title={s.title || 'Section'}
+          title={s.title || t('orgs.subsidiary.detail.sectionFallback')}
           content={s.content}
           accent={accent}
         />
       ))}
 
-      <DossierBlock icon={<Paperclip size={16} />} title="Documents généraux" content="" accent={accent} hideEmptyHint>
+      <DossierBlock
+        icon={<Paperclip size={16} />}
+        title={t('orgs.subsidiary.detail.generalDocuments')}
+        content=""
+        accent={accent}
+        hideEmptyHint
+      >
         <SubsidiaryDocuments
           subsidiaryId={sub._id}
           category="general"
@@ -203,6 +223,7 @@ function ContexteTab({
   accent: string
   onCredsChange: (creds: Subsidiary['credentials']) => void
 }) {
+  const { t } = useI18n()
   const links = sub.links || []
   const infos = sub.infos || []
   const contacts = sub.contacts || []
@@ -223,7 +244,7 @@ function ContexteTab({
           <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
             <Link2 size={16} />
           </span>
-          Liens & accès
+          {t('orgs.subsidiary.detail.linksTitle')}
         </h2>
         {links.length > 0 ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -237,12 +258,12 @@ function ContexteTab({
                 style={{ ['--sub-accent' as string]: accent }}
               >
                 <span style={{ color: accent, display: 'inline-flex' }}>{linkIcon(l.type)}</span>
-                {l.label || LINK_TYPE_LABELS[l.type]}
+                {l.label || t(LINK_TYPE_LABEL_KEYS[l.type])}
               </a>
             ))}
           </div>
         ) : (
-          <p className="sub-dossier-empty">Aucun lien. Ajoute le repo GitHub, la prod, le staging, l’hébergement…</p>
+          <p className="sub-dossier-empty">{t('orgs.subsidiary.detail.linksEmpty')}</p>
         )}
       </div>
 
@@ -252,7 +273,7 @@ function ContexteTab({
           <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
             <Info size={16} />
           </span>
-          Infos
+          {t('orgs.subsidiary.detail.infosTitle')}
         </h2>
         {infos.length > 0 ? (
           <div className="sub-infos">
@@ -262,7 +283,12 @@ function ContexteTab({
                 <span className="sub-info-val">
                   <code>{info.value}</code>
                   {info.value && (
-                    <button type="button" className="sub-icon-btn" onClick={() => copy(info.value)} title="Copier">
+                    <button
+                      type="button"
+                      className="sub-icon-btn"
+                      onClick={() => copy(info.value)}
+                      title={t('orgs.subsidiary.detail.infosCopy')}
+                    >
                       <Copy size={12} />
                     </button>
                   )}
@@ -271,7 +297,7 @@ function ContexteTab({
             ))}
           </div>
         ) : (
-          <p className="sub-dossier-empty">Aucune info. Ajoute SIRET, banque, stack, abonnements…</p>
+          <p className="sub-dossier-empty">{t('orgs.subsidiary.detail.infosEmpty')}</p>
         )}
       </div>
 
@@ -281,7 +307,7 @@ function ContexteTab({
           <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
             <Users size={16} />
           </span>
-          Contacts
+          {t('orgs.subsidiary.detail.contactsTitle')}
         </h2>
         {contacts.length > 0 ? (
           <div className="sub-contacts">
@@ -308,9 +334,7 @@ function ContexteTab({
             ))}
           </div>
         ) : (
-          <p className="sub-dossier-empty">
-            Aucun contact. Ajoute qui fait quoi (lead dev, designer, support, prestataires).
-          </p>
+          <p className="sub-dossier-empty">{t('orgs.subsidiary.detail.contactsEmpty')}</p>
         )}
       </div>
 
@@ -320,9 +344,9 @@ function ContexteTab({
           <span className="sub-dossier-chip" style={{ ['--sub-accent' as string]: accent }}>
             <KeyRound size={16} />
           </span>
-          Identifiants
+          {t('orgs.subsidiary.detail.credentialsTitle')}
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>
-            · chiffrés au repos · super-admin
+            {t('orgs.subsidiary.detail.credentialsHint')}
           </span>
         </h2>
         <SubsidiaryCredentials
@@ -337,6 +361,7 @@ function ContexteTab({
 }
 
 export default function SubsidiaryDetail() {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
@@ -354,9 +379,9 @@ export default function SubsidiaryDetail() {
     setLoading(true)
     apiFetch<{ subsidiary: Subsidiary }>(`/api/admin/subsidiaries/${id}`)
       .then((d) => setSub(d.subsidiary))
-      .catch(() => showToast('Filiale introuvable', 'error'))
+      .catch(() => showToast(t('orgs.subsidiary.detail.notFoundToast'), 'error'))
       .finally(() => setLoading(false))
-  }, [id, showToast])
+  }, [id, showToast, t])
 
   useEffect(() => {
     load()
@@ -372,10 +397,10 @@ export default function SubsidiaryDetail() {
     if (!sub) return
     try {
       await apiFetch(`/api/admin/subsidiaries/${sub._id}`, { method: 'DELETE' })
-      showToast('Filiale supprimée', 'success')
+      showToast(t('orgs.subsidiary.detail.deletedToast'), 'success')
       navigate('/admin/filiales')
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Erreur lors de la suppression', 'error')
+      showToast(err instanceof ApiError ? err.message : t('orgs.subsidiary.detail.deleteError'), 'error')
     }
   }
 
@@ -395,9 +420,9 @@ export default function SubsidiaryDetail() {
     return (
       <div className="portal-container">
         <Link to="/admin/filiales" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
-          ← Retour aux filiales
+          {t('orgs.subsidiary.detail.backToList')}
         </Link>
-        <p style={{ marginTop: 16, color: 'var(--text-secondary)' }}>Cette filiale est introuvable.</p>
+        <p style={{ marginTop: 16, color: 'var(--text-secondary)' }}>{t('orgs.subsidiary.detail.notFound')}</p>
       </div>
     )
   }
@@ -426,7 +451,7 @@ export default function SubsidiaryDetail() {
           marginBottom: 14,
         }}
       >
-        <ArrowLeft size={14} /> Filiales
+        <ArrowLeft size={14} /> {t('orgs.subsidiary.detail.backLink')}
       </Link>
 
       {/* En-tête */}
@@ -449,24 +474,24 @@ export default function SubsidiaryDetail() {
                 className="sub-status-pill"
                 style={{ borderColor: STATUS_COLORS[sub.status], color: STATUS_COLORS[sub.status] }}
               >
-                {STATUS_LABELS[sub.status]}
+                {t(STATUS_LABEL_KEYS[sub.status])}
               </span>
               <span
                 className="sub-status-pill"
                 style={{ borderColor: HEALTH_COLORS[sub.health], color: HEALTH_COLORS[sub.health] }}
               >
                 <span className="sub-dot" style={{ background: HEALTH_COLORS[sub.health] }} />{' '}
-                {HEALTH_LABELS[sub.health]}
+                {t(HEALTH_LABEL_KEYS[sub.health])}
               </span>
             </div>
             <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
               {[
                 sub.sector,
-                sub.foundedYear ? `créée ${sub.foundedYear}` : null,
-                sub.lead ? `responsable ${sub.lead.name || sub.lead.email}` : null,
+                sub.foundedYear ? t('orgs.subsidiary.detail.founded', { year: sub.foundedYear }) : null,
+                sub.lead ? t('orgs.subsidiary.detail.lead', { name: sub.lead.name || sub.lead.email || '' }) : null,
               ]
                 .filter(Boolean)
-                .join(' · ') || 'Aucune information'}
+                .join(' · ') || t('orgs.subsidiary.detail.noInfo')}
             </p>
             {sub.tagline && (
               <p style={{ margin: '8px 0 0', color: 'var(--text-primary)', fontSize: 14 }}>{sub.tagline}</p>
@@ -474,7 +499,7 @@ export default function SubsidiaryDetail() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" className="portal-button secondary" onClick={() => setEditing((v) => !v)}>
-              <Pencil size={14} style={{ verticalAlign: -2, marginRight: 5 }} /> Éditer
+              <Pencil size={14} style={{ verticalAlign: -2, marginRight: 5 }} /> {t('orgs.subsidiary.detail.edit')}
             </button>
             <button type="button" className="portal-button secondary" onClick={() => setConfirmDelete(true)}>
               <Trash2 size={14} style={{ verticalAlign: -2 }} />
@@ -511,21 +536,21 @@ export default function SubsidiaryDetail() {
           className={`admin-tab${tab === 'synthese' ? ' active' : ''}`}
           onClick={() => setTab('synthese')}
         >
-          Synthèse
+          {t('orgs.subsidiary.detail.tabSummary')}
         </button>
         <button
           type="button"
           className={`admin-tab${tab === 'dossier' ? ' active' : ''}`}
           onClick={() => setTab('dossier')}
         >
-          Dossier
+          {t('orgs.subsidiary.detail.tabDossier')}
         </button>
         <button
           type="button"
           className={`admin-tab${tab === 'contexte' ? ' active' : ''}`}
           onClick={() => setTab('contexte')}
         >
-          Contexte & accès
+          {t('orgs.subsidiary.detail.tabContext')}
         </button>
       </div>
 
@@ -541,7 +566,7 @@ export default function SubsidiaryDetail() {
             }}
           >
             <DashKpiCard
-              label="CA / mois"
+              label={t('orgs.subsidiary.detail.kpiRevenue')}
               value={formatEUR(k.caMtd)}
               icon={<TrendingUp size={14} />}
               accentColor={accent}
@@ -553,34 +578,42 @@ export default function SubsidiaryDetail() {
               }}
             />
             <DashKpiCard
-              label="Marge"
+              label={t('orgs.subsidiary.detail.kpiMargin')}
               value={`${k.margin}%`}
               icon={<Percent size={14} />}
               accentColor="#9b9b9b"
               accentRgb="155, 155, 155"
               objective={
                 k.marginTarget
-                  ? { current: k.margin, target: k.marginTarget, label: `cible ${k.marginTarget}%` }
+                  ? {
+                      current: k.margin,
+                      target: k.marginTarget,
+                      label: t('orgs.subsidiary.detail.marginTarget', { target: k.marginTarget }),
+                    }
                   : undefined
               }
             />
             <DashKpiCard
-              label="Trésorerie"
+              label={t('orgs.subsidiary.detail.kpiTreasury')}
               value={formatEUR(k.treasury)}
               icon={<Wallet size={14} />}
               accentColor="#22c55e"
               accentRgb="34, 197, 94"
-              hint={k.runwayMonths ? `~${k.runwayMonths} mois de runway` : undefined}
+              hint={k.runwayMonths ? t('orgs.subsidiary.detail.runway', { months: k.runwayMonths }) : undefined}
             />
             <DashKpiCard
-              label="Équipe"
+              label={t('orgs.subsidiary.detail.kpiTeam')}
               value={headcount}
               icon={<Users size={14} />}
               accentColor="#f59e0b"
               accentRgb="245, 158, 11"
               objective={
                 k.headcountTarget
-                  ? { current: headcount, target: k.headcountTarget, label: `cible ${k.headcountTarget}` }
+                  ? {
+                      current: headcount,
+                      target: k.headcountTarget,
+                      label: t('orgs.subsidiary.detail.headcountTarget', { target: k.headcountTarget }),
+                    }
                   : undefined
               }
             />
@@ -599,10 +632,10 @@ export default function SubsidiaryDetail() {
                   gap: 7,
                 }}
               >
-                <ListChecks size={16} /> Projets liés
+                <ListChecks size={16} /> {t('orgs.subsidiary.detail.linkedProjects')}
                 {sub.linkedEntity && (
                   <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>
-                    · entité {sub.linkedEntity}
+                    {t('orgs.subsidiary.detail.linkedEntity', { entity: sub.linkedEntity })}
                   </span>
                 )}
               </h2>
@@ -616,15 +649,15 @@ export default function SubsidiaryDetail() {
                   >
                     <span>{p.name}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                      {PROJECT_STATUS_LABELS[p.status] || p.status}
+                      {PROJECT_STATUS_LABEL_KEYS[p.status] ? t(PROJECT_STATUS_LABEL_KEYS[p.status]) : p.status}
                     </span>
                   </Link>
                 ))
               ) : (
                 <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                   {sub.linkedEntity
-                    ? 'Aucun projet interne sur cette entité.'
-                    : 'Associe une entité dans l’édition pour agréger les projets internes.'}
+                    ? t('orgs.subsidiary.detail.noInternalProject')
+                    : t('orgs.subsidiary.detail.linkEntityHint')}
                 </p>
               )}
 
@@ -638,7 +671,7 @@ export default function SubsidiaryDetail() {
                   gap: 7,
                 }}
               >
-                <Target size={16} /> Objectif du trimestre
+                <Target size={16} /> {t('orgs.subsidiary.detail.quarterObjective')}
               </h2>
               {obj && obj.label ? (
                 <>
@@ -661,7 +694,7 @@ export default function SubsidiaryDetail() {
                   </div>
                 </>
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucun objectif défini.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('orgs.subsidiary.detail.noObjective')}</p>
               )}
             </div>
 
@@ -677,7 +710,7 @@ export default function SubsidiaryDetail() {
                   gap: 7,
                 }}
               >
-                <Users size={16} /> Équipe
+                <Users size={16} /> {t('orgs.subsidiary.detail.teamTitle')}
               </h2>
               {sub.team && sub.team.length > 0 ? (
                 sub.team.map((m) => (
@@ -690,7 +723,7 @@ export default function SubsidiaryDetail() {
                   </div>
                 ))
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucun membre rattaché.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('orgs.subsidiary.detail.noMember')}</p>
               )}
 
               <h2
@@ -703,7 +736,7 @@ export default function SubsidiaryDetail() {
                   gap: 7,
                 }}
               >
-                <Link2 size={16} /> Ressources
+                <Link2 size={16} /> {t('orgs.subsidiary.detail.resources')}
               </h2>
               {sub.links && sub.links.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -721,7 +754,7 @@ export default function SubsidiaryDetail() {
                   ))}
                 </div>
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aucun lien.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('orgs.subsidiary.detail.noLinkShort')}</p>
               )}
 
               {sub.alerts && sub.alerts.length > 0 && (
@@ -736,7 +769,7 @@ export default function SubsidiaryDetail() {
                       gap: 7,
                     }}
                   >
-                    <AlertTriangle size={16} /> Alertes
+                    <AlertTriangle size={16} /> {t('orgs.subsidiary.detail.alerts')}
                   </h2>
                   {sub.alerts.map((a, i) => (
                     <div key={i} className={`sub-alert sub-alert--${a.level}`}>
@@ -786,14 +819,14 @@ export default function SubsidiaryDetail() {
           gap: 5,
         }}
       >
-        <Calendar size={12} /> Mise à jour {new Date(sub.updatedAt).toLocaleDateString('fr-FR')}
+        <Calendar size={12} /> {t('orgs.subsidiary.detail.updatedOn', { date: formatDate(sub.updatedAt) })}
       </p>
 
       <ConfirmModal
         isOpen={confirmDelete}
-        title="Supprimer la filiale"
-        message={`Supprimer définitivement « ${sub.name} » ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title={t('orgs.subsidiary.detail.deleteTitle')}
+        message={t('orgs.subsidiary.detail.deleteMessage', { name: sub.name })}
+        confirmLabel={t('orgs.subsidiary.detail.deleteConfirm')}
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false)
