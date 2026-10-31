@@ -1,5 +1,6 @@
 import { apiDownload } from '../../../lib/api'
-import { MSL, type Mission } from './types'
+import { useI18n } from '../../../context/I18nContext'
+import { MSL_KEYS, type Mission } from './types'
 
 interface MissionFilesAndActionsProps {
   projectId?: string
@@ -26,6 +27,7 @@ export default function MissionFilesAndActions({
   onStatusChange: handleMissionStatus,
   onDeleteMission: handleDeleteMission,
 }: MissionFilesAndActionsProps) {
+  const { t } = useI18n()
   return (
     <>
       {/* Fichiers */}
@@ -40,7 +42,7 @@ export default function MissionFilesAndActions({
             marginBottom: 8,
           }}
         >
-          📎 Fichiers ({mission.files?.length || 0})
+          {t('projB.detail.filesHeading', { count: mission.files?.length || 0 })}
         </div>
         {mission.files?.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
@@ -87,7 +89,7 @@ export default function MissionFilesAndActions({
                   {f.originalName}
                 </button>
                 <span style={{ fontSize: 10, color: 'var(--text-secondary)', flexShrink: 0 }}>
-                  {(f.size / 1024).toFixed(0)} Ko
+                  {t('projB.detail.fileSize', { size: (f.size / 1024).toFixed(0) })}
                 </span>
                 <button
                   type="button"
@@ -141,15 +143,15 @@ export default function MissionFilesAndActions({
             <polyline points="17 8 12 3 7 8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          {uploadingFile[mission._id] ? 'Envoi...' : 'Joindre un fichier'}
+          {uploadingFile[mission._id] ? t('projB.detail.uploading') : t('projB.detail.attachFile')}
         </button>
       </div>
 
       {/* Actions */}
       <div style={{ padding: '12px 16px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        {Object.entries(MSL)
+        {Object.entries(MSL_KEYS)
           .filter(([v]) => v !== mission.status)
-          .map(([v, l]) => (
+          .map(([v, labelKey]) => (
             <button
               key={v}
               type="button"
@@ -164,7 +166,7 @@ export default function MissionFilesAndActions({
                 color: 'var(--text-secondary)',
               }}
             >
-              {l}
+              {t(labelKey)}
             </button>
           ))}
         {isSuperAdmin && (
@@ -182,7 +184,7 @@ export default function MissionFilesAndActions({
               marginLeft: 'auto',
             }}
           >
-            Supprimer
+            {t('common.delete')}
           </button>
         )}
       </div>

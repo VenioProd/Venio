@@ -1,3 +1,4 @@
+import { useI18n } from '../../../context/I18nContext'
 import type { Mission } from './types'
 
 interface MissionProgressProps {
@@ -11,6 +12,7 @@ export default function MissionProgress({
   isSuperAdmin,
   onProgressUpdate: handleProgressUpdate,
 }: MissionProgressProps) {
+  const { t } = useI18n()
   return (
     <>
       {/* Progression globale */}
@@ -33,7 +35,7 @@ export default function MissionProgress({
             minWidth: 130,
           }}
         >
-          📊 Progression globale
+          {t('projB.detail.progress')}
         </span>
         <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
           <div

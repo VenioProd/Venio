@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { Mission } from './types'
 
 interface MissionStepsProps {
@@ -34,6 +35,7 @@ export default function MissionSteps({
   onRequestReview: handleRequestReview,
   onValidateStep: handleValidateStep,
 }: MissionStepsProps) {
+  const { t } = useI18n()
   const doneSteps = mission.steps?.filter((step) => step.done).length ?? 0
   const totalSteps = mission.steps?.length ?? 0
 
@@ -52,7 +54,7 @@ export default function MissionSteps({
                 color: 'var(--text-secondary)',
               }}
             >
-              ✅ Étapes
+              {t('projB.detail.stepsHeading')}
             </span>
             {totalSteps > 0 && (
               <span
@@ -168,7 +170,7 @@ export default function MissionSteps({
                         padding: '1px 5px',
                       }}
                     >
-                      En attente
+                      {t('projB.detail.stepWaiting')}
                     </span>
                   )}
                   {/* Request review — assigned member, not SA */}
@@ -189,7 +191,7 @@ export default function MissionSteps({
                         color: '#fde047',
                       }}
                     >
-                      Vérification
+                      {t('projB.detail.stepReview')}
                     </button>
                   )}
                   {/* Validate — SA only */}
@@ -211,7 +213,7 @@ export default function MissionSteps({
                         fontWeight: 600,
                       }}
                     >
-                      ✓ Valider
+                      {t('projB.detail.stepValidate')}
                     </button>
                   )}
                   {isSuperAdmin && (
@@ -252,7 +254,7 @@ export default function MissionSteps({
                       defaultValue={step.description || ''}
                       key={`desc-${step._id}`}
                       onBlur={(e) => handleStepDescUpdate(mission._id, mission, step._id, e.target.value)}
-                      placeholder="Ajouter des détails, notes, contexte…"
+                      placeholder={t('projB.detail.stepDetailsPlaceholder')}
                       rows={3}
                       style={{
                         width: '100%',
@@ -277,7 +279,7 @@ export default function MissionSteps({
             <div style={{ marginTop: 8 }}>
               {(mission.assignedTo || []).length > 1 && (
                 <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('projB.detail.forLabel')}</span>
                   <button
                     type="button"
                     onClick={() => setStepAssigneeInputs((s) => ({ ...s, [mission._id]: '' }))}
@@ -291,7 +293,7 @@ export default function MissionSteps({
                       cursor: 'pointer',
                     }}
                   >
-                    Tous
+                    {t('projB.detail.everyone')}
                   </button>
                   {(mission.assignedTo || []).map((a) => (
                     <button
@@ -349,7 +351,7 @@ export default function MissionSteps({
                       )
                     }
                   }}
-                  placeholder="Nouvelle étape… (Entrée)"
+                  placeholder={t('projB.detail.newStepPlaceholder')}
                   style={{ fontSize: 12, padding: '5px 9px', flex: 1 }}
                 />
                 <button
