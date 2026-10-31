@@ -1,0 +1,724 @@
+/* Invitation d'un membre de l'équipe (AdminNew).
+   Charte Portail : jetons uniquement, rayons de l'échelle, aucune capitale forcée. */
+
+.invite-head,
+.invite-layout,
+.invite-done {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.invite-head {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.invite-head h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.invite-lead {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.invite-head .admin-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.invite-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.invite-main,
+.invite-done {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ── Cartes ─────────────────────────────────────────────────────────── */
+
+.invite-card {
+  position: relative;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.invite-card__head {
+  margin-bottom: 16px;
+}
+
+.invite-card__head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.invite-card__head p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.invite-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--accent-medium);
+  color: var(--primary-light);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.invite-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.invite-fields > :last-child {
+  grid-column: 1 / -1;
+}
+
+.invite-main .portal-input[aria-invalid='true'] {
+  border-color: var(--critical);
+}
+
+.invite-hint {
+  display: block;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.invite-hint a,
+.invite-steps a {
+  color: var(--primary-light);
+}
+
+/* ── Choix du rôle ──────────────────────────────────────────────────── */
+
+.invite-roles {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.invite-roles:last-child {
+  margin-bottom: 0;
+}
+
+.invite-roles legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.invite-roles__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.invite-role {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+/* Pastille de radio : la sélection ne repose pas sur la seule teinte de la carte. */
+.invite-role::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-pill);
+}
+
+.invite-role[data-selected='true']::after {
+  border-color: var(--primary);
+  background: radial-gradient(circle, var(--primary) 0 3px, transparent 4px);
+}
+
+.invite-role__name {
+  padding-right: 24px;
+}
+
+.invite-role:hover {
+  background: var(--bg-card-hover);
+}
+
+.invite-role[data-selected='true'] {
+  border-color: var(--accent-border-strong);
+  background: var(--accent-surface);
+}
+
+.invite-role:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+/* La radio couvre toute la carte : clic et clavier tombent sur le vrai champ. */
+.invite-role input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.invite-role__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.invite-role__desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ── Cases à cocher ─────────────────────────────────────────────────── */
+
+.invite-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.invite-check input,
+.invite-perm input {
+  flex: none;
+  margin: 3px 0 0;
+  accent-color: var(--primary);
+}
+
+.invite-check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invite-check strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invite-check small {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.invite-note {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ── Droits par module ──────────────────────────────────────────────── */
+
+.invite-customize {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+
+.invite-customize__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.invite-modules {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.invite-module {
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.invite-module:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.invite-module:last-child {
+  padding-bottom: 0;
+}
+
+.invite-module__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invite-module__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invite-module__count {
+  min-width: 40px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.invite-module__detail {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.invite-level {
+  padding: 2px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.invite-level[data-level='read'] {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--primary-light);
+}
+
+.invite-level[data-level='write'] {
+  border-color: var(--good);
+  background: var(--good-surface);
+  color: var(--good);
+}
+
+.invite-module__perms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 10px;
+}
+
+.invite-perm {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.invite-perm em {
+  margin-left: auto;
+  padding-left: 6px;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+/* ── Commercial externe ─────────────────────────────────────────────── */
+
+.invite-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.invite-commission {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 16px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-md);
+  background: var(--accent-surface);
+}
+
+.invite-commission__label {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.invite-commission__rate {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-light);
+}
+
+.invite-commission p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ── Mot de passe ───────────────────────────────────────────────────── */
+
+.invite-password {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-password .portal-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.invite-password .portal-button {
+  flex: none;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+/* ── Récapitulatif ──────────────────────────────────────────────────── */
+
+.invite-aside {
+  position: sticky;
+  top: 104px;
+}
+
+.invite-aside__title {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.invite-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invite-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--accent-medium);
+  color: var(--primary-light);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.invite-who__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.invite-who__text strong,
+.invite-who__text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-who__text strong {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.invite-who__text span {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.invite-who__text [data-empty='true'] {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.invite-aside__role {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.invite-pill {
+  padding: 3px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-light);
+}
+
+.invite-aside__desc {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.invite-aside__access {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.invite-aside__access span {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.invite-aside__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.invite-aside__actions .portal-button,
+.invite-actions .portal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
+.invite-aside .admin-error {
+  margin: 16px 0 0;
+}
+
+/* ── Écran de confirmation ──────────────────────────────────────────── */
+
+.invite-credentials {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+
+.invite-credentials__row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.invite-credentials__row + .invite-credentials__row {
+  border-top: 1px solid var(--border-color);
+}
+
+.invite-credentials dt {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.invite-credentials dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invite-card__head:has(.invite-pill) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.invite-actions .portal-button {
+  flex: 1 1 180px;
+}
+
+.invite-done .admin-error {
+  margin: 12px 0 0;
+}
+
+.invite-link {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-light);
+  cursor: pointer;
+}
+
+.invite-link:hover {
+  background: var(--bg-card-hover);
+}
+
+.invite-link:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+/* ── Écrans étroits ─────────────────────────────────────────────────── */
+
+@media (max-width: 960px) {
+  .invite-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .invite-aside {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .invite.portal-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .invite-head h1 {
+    font-size: 24px;
+  }
+
+  .invite-card {
+    padding: 16px;
+  }
+
+  .invite-fields,
+  .invite-roles__grid,
+  .invite-module__perms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .invite-password {
+    flex-wrap: wrap;
+  }
+
+  .invite-password .portal-input {
+    flex-basis: 100%;
+  }
+
+  .invite-password .portal-button {
+    flex: 1;
+  }
+
+  .invite-module__head {
+    flex-wrap: wrap;
+  }
+
+  .invite-module__name {
+    flex-basis: 100%;
+  }
+
+  .invite-module__count {
+    margin-left: auto;
+  }
+
+  .invite-credentials__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .invite-credentials dt {
+    grid-column: 1 / -1;
+    margin-bottom: -6px;
+  }
+}
+
+/* Le conteneur du portail pose un corps de texte épais : les textes d'aide reviennent au poids normal. */
+.invite :is(p, small, li, dd, .invite-role__desc, .invite-module__detail) {
+  font-weight: 400;
+}
