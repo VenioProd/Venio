@@ -1,20 +1,23 @@
 import React, { useState, useRef } from 'react'
 import { apiUpload } from '../../lib/api'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
 import '../../pages/admin/AdminPortal.css'
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-  QUESTION: { label: 'Question', color: '#0ea5e9' },
-  DEMANDE: { label: 'Demande', color: '#9b9b9b' },
-  PROBLEME: { label: 'Probleme', color: '#ef4444' },
+const CATEGORY_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
+  QUESTION: { labelKey: 'compB.ticket.categoryQuestion', color: '#0ea5e9' },
+  DEMANDE: { labelKey: 'compB.ticket.categoryRequest', color: '#9b9b9b' },
+  PROBLEME: { labelKey: 'compB.ticket.categoryProblem', color: '#ef4444' },
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return `${bytes} ${translate('compB.fileUnit.b')}`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} ${translate('compB.fileUnit.kb')}`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} ${translate('compB.fileUnit.mb')}`
 }
 
 const TicketFab = () => {
+  const { t } = useI18n()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ message: '', category: 'QUESTION' })
   const [files, setFiles] = useState<File[]>([])
@@ -58,7 +61,7 @@ const TicketFab = () => {
   return (
     <>
       {/* Bouton "+" flottant */}
-      <button className="ticket-fab" onClick={() => setShowForm(true)} title="Nouvelle demande">
+      <button className="ticket-fab" onClick={() => setShowForm(true)} title={t('compB.ticket.newRequest')}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
@@ -70,7 +73,7 @@ const TicketFab = () => {
         <div className="ticket-quick-overlay" onClick={handleClose}>
           <div className="ticket-quick-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ticket-quick-header">
-              <h3>Nouvelle demande</h3>
+              <h3>{t('compB.ticket.newRequest')}</h3>
               <button onClick={handleClose} className="ticket-quick-close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -93,27 +96,27 @@ const TicketFab = () => {
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
-                <p style={{ fontSize: 16, fontWeight: 600 }}>Demande envoyee !</p>
-                <p style={{ fontSize: 13, opacity: 0.6 }}>Un super admin vous repondra bientot</p>
+                <p style={{ fontSize: 16, fontWeight: 600 }}>{t('compB.ticket.sentTitle')}</p>
+                <p style={{ fontSize: 13, opacity: 0.6 }}>{t('compB.ticket.sentText')}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="ticket-quick-form">
                 <div className="ticket-form-field">
-                  <label>Categorie</label>
+                  <label>{t('compB.ticket.categoryLabel')}</label>
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                     {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
                       <option key={k} value={k}>
-                        {v.label}
+                        {t(v.labelKey)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="ticket-form-field">
-                  <label>Votre message</label>
+                  <label>{t('compB.ticket.messageLabel')}</label>
                   <textarea
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    placeholder="Decrivez votre question ou demande..."
+                    placeholder={t('compB.ticket.messagePlaceholder')}
                     rows={5}
                     required
                     autoFocus
@@ -177,15 +180,15 @@ const TicketFab = () => {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                       </svg>
-                      Joindre
+                      {t('compB.ticket.attach')}
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" className="ticket-cancel-btn" onClick={handleClose}>
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                     <button type="submit" className="ticket-submit-btn" disabled={submitting || !form.message.trim()}>
-                      {submitting ? 'Envoi...' : 'Envoyer'}
+                      {submitting ? t('compB.ticket.sending') : t('compB.ticket.send')}
                     </button>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../../context/NotificationContext'
+import { useI18n } from '../../context/I18nContext'
 import '../../styles/notifications.css'
 
 type NotificationBellProps = {
@@ -8,6 +9,7 @@ type NotificationBellProps = {
 }
 
 const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
+  const { t } = useI18n()
   const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotifications()
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -40,12 +42,12 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
   const formatTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
     const minutes = Math.floor(diff / 60000)
-    if (minutes < 1) return 'maintenant'
-    if (minutes < 60) return `il y a ${minutes}min`
+    if (minutes < 1) return t('compB.bell.now')
+    if (minutes < 60) return t('compB.bell.minutesAgo', { n: minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `il y a ${hours}h`
+    if (hours < 24) return t('compB.bell.hoursAgo', { n: hours })
     const days = Math.floor(hours / 24)
-    return `il y a ${days}j`
+    return t('compB.bell.daysAgo', { n: days })
   }
 
   return (
@@ -53,7 +55,7 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
       <button
         className="notif-bell-btn"
         onClick={() => setOpen(!open)}
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} non lues)` : ''}`}
+        aria-label={unreadCount > 0 ? t('compB.bell.titleUnread', { count: unreadCount }) : t('compB.bell.title')}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
@@ -61,25 +63,23 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-        {unreadCount > 0 && (
-          <span className="notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
-        )}
+        {unreadCount > 0 && <span className="notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
       </button>
 
       {open && (
-        <div className="notif-dropdown" role="dialog" aria-label="Notifications">
+        <div className="notif-dropdown" role="dialog" aria-label={t('compB.bell.title')}>
           <div className="notif-dropdown-header">
-            <span className="notif-dropdown-title">Notifications</span>
+            <span className="notif-dropdown-title">{t('compB.bell.title')}</span>
             {unreadCount > 0 && (
               <button className="notif-mark-all" onClick={markAllAsRead}>
-                Tout marquer comme lu
+                {t('compB.bell.markAllRead')}
               </button>
             )}
           </div>
 
           <div className="notif-dropdown-list">
             {notifications.length === 0 ? (
-              <div className="notif-empty">Aucune notification</div>
+              <div className="notif-empty">{t('compB.bell.empty')}</div>
             ) : (
               notifications.map((notif) => (
                 <button

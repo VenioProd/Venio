@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { SendEmailInput, SendEmailResult, TimelineSubject } from '../../../types/interaction.types'
 
 interface EmailComposerProps {
@@ -14,6 +15,7 @@ interface EmailComposerProps {
  * qu'un simple succès ou échec global.
  */
 const EmailComposer: React.FC<EmailComposerProps> = ({ subject, busy, onCancel, onSend }) => {
+  const { t } = useI18n()
   const [to, setTo] = useState(subject.contactEmail)
   const [emailSubject, setEmailSubject] = useState('')
   const [body, setBody] = useState('')
@@ -41,17 +43,17 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ subject, busy, onCancel, 
     >
       <div className="interaction-composer-head">
         <label className="interaction-email-field">
-          <span>Destinataires</span>
+          <span>{t('compB.email.recipients')}</span>
           <input
             type="text"
             className="portal-input"
-            placeholder="contact@exemple.fr, autre@exemple.fr"
+            placeholder={t('compB.email.recipientsPlaceholder')}
             value={to}
             onChange={(event) => setTo(event.target.value)}
           />
         </label>
         <label className="interaction-email-field">
-          <span>Objet</span>
+          <span>{t('compB.email.subject')}</span>
           <input
             type="text"
             className="portal-input"
@@ -66,29 +68,29 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ subject, busy, onCancel, 
         className="portal-input"
         rows={6}
         maxLength={20000}
-        placeholder="Bonjour,"
+        placeholder={t('compB.email.bodyPlaceholder')}
         value={body}
         onChange={(event) => setBody(event.target.value)}
       />
 
       {!subject.contactEmail && recipients.length === 0 && (
         <p className="interaction-hint">
-          Ce {subject.type === 'LEAD' ? 'lead' : 'client'} n'a pas d'adresse enregistrée : saisissez un destinataire.
+          {subject.type === 'LEAD' ? t('compB.email.noAddressLead') : t('compB.email.noAddressClient')}
         </p>
       )}
 
       {outcome && (
         <div className={`interaction-outcome ${outcome.failed > 0 ? 'is-warning' : ''}`}>
           {outcome.failed === 0
-            ? `Envoyé à ${outcome.sent} destinataire${outcome.sent > 1 ? 's' : ''}.`
-            : `${outcome.sent} envoi${outcome.sent > 1 ? 's' : ''} sur ${outcome.total}. L'échange est journalisé avec le détail.`}
+            ? t('compB.email.sentAll', { count: outcome.sent })
+            : t('compB.email.sentPartial', { sent: outcome.sent, total: outcome.total })}
           {outcome.failed > 0 && (
             <ul>
               {outcome.results
                 .filter((result) => !result.success)
                 .map((result) => (
                   <li key={result.email}>
-                    {result.email} — {result.error || 'non délivré'}
+                    {result.email} — {result.error || t('compB.timeline.notDelivered')}
                   </li>
                 ))}
             </ul>
@@ -98,14 +100,14 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ subject, busy, onCancel, 
 
       <div className="interaction-composer-actions">
         <button type="button" className="portal-button secondary" onClick={onCancel} disabled={busy}>
-          Fermer
+          {t('common.close')}
         </button>
         <button
           type="submit"
           className="portal-button"
           disabled={busy || !emailSubject.trim() || !body.trim() || recipients.length === 0}
         >
-          {busy ? 'Envoi…' : 'Envoyer'}
+          {busy ? t('compB.email.sending') : t('compB.email.send')}
         </button>
       </div>
     </form>

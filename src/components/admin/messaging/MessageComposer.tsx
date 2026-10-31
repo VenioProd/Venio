@@ -3,6 +3,8 @@ import { useToast } from '../../../context/ToastContext'
 import { uploadMessageAttachments } from '../../../services/messaging'
 import { getEmojiSuggestions, type EmojiSuggestion } from '../../../lib/emojiShortcodes'
 import type { MessagingUser } from '../../../types/messaging.types'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 
 interface MessageComposerProps {
   conversationId: string | null
@@ -61,7 +63,12 @@ function detectInlineTrigger(text: string, cursor: number): InlineSuggestState |
 
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return ''
-  const units = ['o', 'Ko', 'Mo', 'Go']
+  const units = [
+    translate('compB.fileUnit.b'),
+    translate('compB.fileUnit.kb'),
+    translate('compB.fileUnit.mb'),
+    translate('compB.fileUnit.gb'),
+  ]
   let size = bytes
   let index = 0
   while (size >= 1024 && index < units.length - 1) {
@@ -72,6 +79,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function MessageComposer({ conversationId, users, onSend, onUploaded, onTyping }: MessageComposerProps) {
+  const { t } = useI18n()
   const { showToast } = useToast()
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
@@ -85,7 +93,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
 
   const emojiSuggestions = useMemo<EmojiSuggestion[]>(
     () => (inlineSuggest?.type === 'emoji' ? getEmojiSuggestions(inlineSuggest.query) : []),
-    [inlineSuggest]
+    [inlineSuggest],
   )
 
   const mentionSuggestions = useMemo<MessagingUser[]>(() => {
@@ -141,7 +149,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
     setSending(true)
     try {
       if (files.length > 0) {
-        await uploadMessageAttachments(conversationId, trimmed || 'Pièce jointe', files)
+        await uploadMessageAttachments(conversationId, trimmed || t('compB.msg.attachmentFallback'), files)
         await onUploaded()
       } else {
         await onSend(trimmed)
@@ -152,7 +160,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       setEmojiOpen(false)
       onTyping(false)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi'
+      const msg = err instanceof Error ? err.message : t('compB.msg.sendError')
       showToast(msg, 'error')
     } finally {
       setSending(false)
@@ -195,7 +203,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
         textarea.setSelectionRange(newCursor, newCursor)
       })
     },
-    [content, inlineSuggest]
+    [content, inlineSuggest],
   )
 
   const selectSuggestion = useCallback(
@@ -209,16 +217,13 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
         if (user) applyInlineSuggestion(`@[${user.name}](${user._id}) `)
       }
     },
-    [inlineSuggest, emojiSuggestions, mentionSuggestions, applyInlineSuggestion]
+    [inlineSuggest, emojiSuggestions, mentionSuggestions, applyInlineSuggestion],
   )
 
-  const refreshTrigger = useCallback(
-    (text: string, cursor: number) => {
-      const next = detectInlineTrigger(text, cursor)
-      setInlineSuggest(next)
-    },
-    []
-  )
+  const refreshTrigger = useCallback((text: string, cursor: number) => {
+    const next = detectInlineTrigger(text, cursor)
+    setInlineSuggest(next)
+  }, [])
 
   const addFiles = (newFiles: FileList | null) => {
     if (!newFiles) return
@@ -236,7 +241,14 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
           {files.map((file) => (
             <li key={`${file.name}-${file.size}-${file.lastModified}`}>
               <span className="messaging-composer-file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
@@ -249,7 +261,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
                 type="button"
                 className="messaging-composer-file-remove"
                 onClick={() => removeFile(file)}
-                aria-label={`Retirer ${file.name}`}
+                aria-label={t('compB.msg.removeFile', { name: file.name })}
               >
                 ×
               </button>
@@ -260,10 +272,10 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
 
       {mentionOpen && (
         <div className="messaging-composer-popover">
-          <header>Mentionner</header>
+          <header>{t('compB.msg.mention')}</header>
           <div className="messaging-composer-popover-list">
             {users.length === 0 ? (
-              <p>Aucun utilisateur</p>
+              <p>{t('compB.msg.noUser')}</p>
             ) : (
               users.slice(0, 20).map((user) => (
                 <button
@@ -285,7 +297,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
 
       {emojiOpen && (
         <div className="messaging-composer-popover">
-          <header>Emoji</header>
+          <header>{t('compB.msg.emoji')}</header>
           <div className="messaging-composer-emojis">
             {QUICK_EMOJIS.map((emoji) => (
               <button
@@ -304,7 +316,13 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
       )}
 
       {inlineSuggest && suggestionCount > 0 && (
-        <div className="messaging-composer-inline-suggest" role="listbox" aria-label={inlineSuggest.type === 'emoji' ? 'Suggestions emoji' : 'Suggestions de mention'}>
+        <div
+          className="messaging-composer-inline-suggest"
+          role="listbox"
+          aria-label={
+            inlineSuggest.type === 'emoji' ? t('compB.msg.emojiSuggestions') : t('compB.msg.mentionSuggestions')
+          }
+        >
           {inlineSuggest.type === 'emoji'
             ? emojiSuggestions.map((suggestion, index) => (
                 <button
@@ -337,7 +355,13 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
                   onMouseEnter={() => setSuggestIndex(index)}
                 >
                   <span className="messaging-composer-inline-avatar" aria-hidden="true">
-                    {user.name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+                    {user.name
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .map((p) => p[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </span>
                   <span className="messaging-composer-inline-body">
                     <strong>{user.name}</strong>
@@ -350,8 +374,16 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
 
       <div className="messaging-composer-row">
         <div className="messaging-composer-tools">
-          <label className="messaging-composer-tool" title="Joindre un fichier">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <label className="messaging-composer-tool" title={t('compB.msg.attachFile')}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
             <input
@@ -372,9 +404,17 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
               setMentionOpen(false)
             }}
             disabled={disabled}
-            aria-label="Insérer un emoji"
+            aria-label={t('compB.msg.insertEmoji')}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <circle cx="12" cy="12" r="10" />
               <path d="M8 14s1.5 2 4 2 4-2 4-2" />
               <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -389,7 +429,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
               setEmojiOpen(false)
             }}
             disabled={disabled}
-            aria-label="Mentionner un utilisateur"
+            aria-label={t('compB.msg.mentionUser')}
           >
             <span className="messaging-composer-tool-text">@</span>
           </button>
@@ -399,7 +439,7 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
           ref={textareaRef}
           value={content}
           disabled={disabled}
-          placeholder={conversationId ? 'Écrire un message…' : 'Sélectionnez une conversation pour écrire'}
+          placeholder={conversationId ? t('compB.msg.writePlaceholder') : t('compB.msg.selectToWrite')}
           rows={1}
           onChange={(event) => {
             const value = event.target.value
@@ -453,12 +493,20 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
           className="messaging-composer-send"
           onClick={submit}
           disabled={!canSend}
-          aria-label="Envoyer le message"
+          aria-label={t('compB.msg.sendMessage')}
         >
           {sending ? (
             <span className="messaging-spinner messaging-spinner-sm" aria-hidden="true" />
           ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
@@ -466,8 +514,8 @@ export default function MessageComposer({ conversationId, users, onSend, onUploa
         </button>
       </div>
       <p className="messaging-composer-hint">
-        <span>Entrée pour envoyer · Maj + Entrée pour aller à la ligne</span>
-        {files.length > 0 && <span>{files.length}/5 pièce(s) jointe(s)</span>}
+        <span>{t('compB.msg.sendHint')}</span>
+        {files.length > 0 && <span>{t('compB.msg.attachmentCount', { count: files.length })}</span>}
       </p>
     </div>
   )
