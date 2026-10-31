@@ -1,18 +1,20 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../context/I18nContext'
 import './CTA.css'
 
 const CTA = () => {
+  const { t } = useI18n()
   return (
     <section className="cta-section">
       <h2 className="cta-title">
-        Construisons ensemble
+        {t('pubHome.shared.ctaTitleA')}
         <br />
-        quelque chose de solide
+        {t('pubHome.shared.ctaTitleB')}
       </h2>
-      <p className="cta-text">Discutons de votre projet avec lucidité. Sans discours creux.</p>
+      <p className="cta-text">{t('pubHome.shared.ctaText')}</p>
       <Link to="/contact" className="hero-cta" data-analytics-cta="shared_cta_contact">
-        Prendre contact →
+        {t('pubHome.shared.ctaButton')}
       </Link>
     </section>
   )
