@@ -1,19 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FileText, RefreshCw, Save } from 'lucide-react'
 import { createNote, getClassCouncilPreparation, type EducationCouncilPreparation } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDateTime } from '../../../i18n/format'
+import { translate } from '../../../i18n'
 import { EducationAiDraftPanel } from './EducationAiDraft'
 
 function councilSummary(report: EducationCouncilPreparation): string {
   const { summary } = report
   const grade =
     summary.grades.average == null
-      ? 'Aucune moyenne disponible à ce stade.'
-      : `Moyenne des ${summary.grades.gradedStudents} étudiant(s) noté(s) : ${summary.grades.average}/20.`
+      ? translate('eduD.council.noAverage')
+      : translate('eduD.council.average', {
+          count: summary.grades.gradedStudents,
+          average: summary.grades.average,
+        })
   return [
-    `${summary.activeStudents} étudiant(s) actif(s).`,
-    `${summary.sessions.completed}/${summary.sessions.total} séance(s) terminée(s), dont ${summary.sessions.withRecap} avec compte-rendu.`,
-    `${summary.assignments.open}/${summary.assignments.total} devoir(s) ouvert(s) ou en correction.`,
-    `Présences renseignées : ${summary.attendance.recorded} ; absences : ${summary.attendance.absences} ; retards : ${summary.attendance.late}.`,
+    translate('eduD.council.activeStudents', { count: summary.activeStudents }),
+    translate('eduD.council.sessions', {
+      completed: summary.sessions.completed,
+      total: summary.sessions.total,
+      withRecap: summary.sessions.withRecap,
+    }),
+    translate('eduD.council.assignments', { open: summary.assignments.open, total: summary.assignments.total }),
+    translate('eduD.council.attendance', {
+      recorded: summary.attendance.recorded,
+      absences: summary.attendance.absences,
+      late: summary.attendance.late,
+    }),
     grade,
   ].join(' ')
 }
@@ -23,6 +37,7 @@ function councilSummary(report: EducationCouncilPreparation): string {
  * une note que sur une seconde action explicite de l'intervenant.
  */
 export function CouncilPreparationPanel({ classId }: { classId: string }) {
+  const { t } = useI18n()
   const [report, setReport] = useState<EducationCouncilPreparation | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,17 +51,17 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
     try {
       setReport(await getClassCouncilPreparation(classId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger le bilan de classe.')
+      setError(err instanceof Error ? err.message : t('eduD.council.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [classId])
+  }, [classId, t])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const summary = useMemo(() => (report ? councilSummary(report) : ''), [report])
+  const summary = useMemo(() => (report ? councilSummary(report) : ''), [report, t])
 
   async function saveDraft() {
     if (!report || !draft.trim()) return
@@ -54,14 +69,14 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
     setError(null)
     try {
       await createNote({
-        title: `Préparation conseil de classe — ${report.class.name}`,
+        title: t('eduD.council.noteTitle', { name: report.class.name }),
         links: [{ type: 'class', refId: classId }],
         tags: ['conseil-classe'],
         blocks: [
           {
             id: crypto.randomUUID(),
             type: 'heading',
-            text: 'Préparation conseil de classe',
+            text: t('eduD.council.noteHeading'),
             checked: false,
             level: 1,
             meta: {},
@@ -71,39 +86,47 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
       })
       setSaved(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible d’enregistrer le brouillon.')
+      setError(err instanceof Error ? err.message : t('eduD.council.saveError'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="edu-empty">Chargement du bilan de classe…</div>
+  if (loading) return <div className="edu-empty">{t('eduD.council.loading')}</div>
   if (!report) {
     return (
       <div className="edu-banner-error" role="alert">
-        {error || 'Bilan indisponible.'}
+        {error || t('eduD.council.unavailable')}
         <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => void load()}>
-          Réessayer
+          {t('eduD.common.retry')}
         </button>
       </div>
     )
   }
 
   return (
-    <section aria-label="Bilan et préparation du conseil de classe">
+    <section aria-label={t('eduD.council.sectionAria')}>
       <div className="edu-row between" style={{ alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
         <div>
           <h2 className="edu-h2">
             <FileText size={17} style={{ verticalAlign: 'middle', marginRight: 7 }} />
-            Bilan & conseil
+            {t('eduD.council.heading')}
           </h2>
           <p className="edu-sub">
-            Données internes en lecture seule, mises à jour le{' '}
-            {new Date(report.provenance.generatedAt).toLocaleString('fr-FR')}.
+            {t('eduD.council.readOnly', {
+              date: formatDateTime(report.provenance.generatedAt, {
+                day: 'numeric',
+                month: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+              }),
+            })}
           </p>
         </div>
         <button className="edu-btn ghost" onClick={() => void load()} disabled={loading}>
-          <RefreshCw size={14} /> Actualiser
+          <RefreshCw size={14} /> {t('eduD.council.refresh')}
         </button>
       </div>
 
@@ -115,12 +138,12 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
         <table className="edu-table">
           <thead>
             <tr>
-              <th>Étudiant</th>
-              <th>Moyenne</th>
-              <th>Abs.</th>
-              <th>Retards</th>
-              <th>À rendre</th>
-              <th>En retard</th>
+              <th>{t('eduD.council.colStudent')}</th>
+              <th>{t('eduD.council.colAverage')}</th>
+              <th>{t('eduD.council.colAbsences')}</th>
+              <th>{t('eduD.council.colLates')}</th>
+              <th>{t('eduD.council.colPending')}</th>
+              <th>{t('eduD.council.colLateAssignments')}</th>
             </tr>
           </thead>
           <tbody>
@@ -138,7 +161,7 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
             ))}
             {report.students.length === 0 && (
               <tr>
-                <td colSpan={6}>Aucun étudiant actif dans cette classe.</td>
+                <td colSpan={6}>{t('eduD.council.noStudents')}</td>
               </tr>
             )}
           </tbody>
@@ -159,7 +182,7 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
 
       {draft && (
         <div className="edu-form-group" style={{ marginTop: 16 }}>
-          <label>Brouillon du conseil, éditable avant enregistrement</label>
+          <label>{t('eduD.council.draftLabel')}</label>
           <textarea className="edu-textarea" value={draft} onChange={(event) => setDraft(event.target.value)} />
           {error && (
             <div className="edu-banner-error" role="alert" style={{ marginTop: 8 }}>
@@ -168,11 +191,11 @@ export function CouncilPreparationPanel({ classId }: { classId: string }) {
           )}
           <div className="edu-row" style={{ gap: 10, marginTop: 8 }}>
             <button className="edu-btn" disabled={saving || !draft.trim()} onClick={() => void saveDraft()}>
-              <Save size={14} /> {saving ? 'Enregistrement…' : 'Enregistrer dans les notes de la classe'}
+              <Save size={14} /> {saving ? t('eduD.council.saving') : t('eduD.council.save')}
             </button>
             {saved && (
               <span className="edu-sub" role="status">
-                Note créée. Rien n’a été envoyé ni publié.
+                {t('eduD.council.saved')}
               </span>
             )}
           </div>

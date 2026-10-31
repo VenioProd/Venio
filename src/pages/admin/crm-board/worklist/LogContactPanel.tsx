@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import { inDays } from './PostponeMenu'
 import { toDateTimeLocal, fromDateTimeLocal } from '../../../../lib/formatUtils'
 
@@ -16,6 +17,7 @@ interface LogContactPanelProps {
  * file dès le lendemain — la file ne se viderait jamais.
  */
 const LogContactPanel: React.FC<LogContactPanelProps> = ({ followUpDays, saving, onCancel, onSubmit }) => {
+  const { t } = useI18n()
   const [nextActionAt, setNextActionAt] = useState<string>(() => toDateTimeLocal(inDays(followUpDays).toISOString()))
   const [note, setNote] = useState('')
 
@@ -29,7 +31,7 @@ const LogContactPanel: React.FC<LogContactPanelProps> = ({ followUpDays, saving,
     >
       <div className="crm-worklist-panel-fields">
         <label>
-          <span>Prochaine relance</span>
+          <span>{t('crm.logContact.nextFollowUp')}</span>
           <input
             type="datetime-local"
             className="portal-input"
@@ -38,11 +40,11 @@ const LogContactPanel: React.FC<LogContactPanelProps> = ({ followUpDays, saving,
           />
         </label>
         <label className="crm-worklist-panel-note">
-          <span>Note (facultative)</span>
+          <span>{t('crm.logContact.noteOptional')}</span>
           <input
             type="text"
             className="portal-input"
-            placeholder="Ce qui s'est dit…"
+            placeholder={t('crm.logContact.notePlaceholder')}
             maxLength={2000}
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -51,17 +53,13 @@ const LogContactPanel: React.FC<LogContactPanelProps> = ({ followUpDays, saving,
       </div>
       <div className="crm-worklist-panel-actions">
         <button type="button" className="portal-button secondary" onClick={onCancel} disabled={saving}>
-          Annuler
+          {t('common.cancel')}
         </button>
         <button type="submit" className="portal-button" disabled={saving}>
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? t('crm.lost.saving') : t('common.save')}
         </button>
       </div>
-      {!nextActionAt && (
-        <p className="crm-worklist-panel-hint">
-          Sans prochaine relance, ce lead sortira de vos échéances et n'apparaîtra plus que s'il dérive.
-        </p>
-      )}
+      {!nextActionAt && <p className="crm-worklist-panel-hint">{t('crm.logContact.noFollowUpHint')}</p>}
     </form>
   )
 }

@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { isChunkLoadError, recoverChunkError } from '../lib/chunkRecovery'
+import { translate } from '../i18n'
 
 export default class ErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
@@ -31,18 +32,16 @@ export default class ErrorBoundary extends Component<
         }}
       >
         <div style={{ maxWidth: 480, textAlign: 'center' }}>
-          <h1>{this.state.isChunkError ? 'La page doit être actualisée' : 'Une erreur est survenue'}</h1>
-          <p>
-            {this.state.isChunkError
-              ? 'Une nouvelle version est disponible ou la connexion a été interrompue.'
-              : 'Rechargez la page pour réessayer.'}
-          </p>
+          <h1>
+            {this.state.isChunkError ? translate('shell.error.refreshTitle') : translate('shell.error.genericTitle')}
+          </h1>
+          <p>{this.state.isChunkError ? translate('shell.error.refreshText') : translate('shell.error.genericText')}</p>
           <button
             type="button"
             onClick={() => window.location.reload()}
             style={{ padding: '10px 18px', borderRadius: 'var(--r-md, 10px)', cursor: 'pointer' }}
           >
-            Recharger
+            {translate('shell.error.reload')}
           </button>
         </div>
       </div>

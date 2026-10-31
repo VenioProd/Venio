@@ -1,4 +1,5 @@
 import type React from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import { apiFetch } from '../../../lib/api'
 
 interface AdminUser {
@@ -27,6 +28,7 @@ export default function ParametresTab({
   notifSuccess,
   setNotifSuccess,
 }: Props) {
+  const { t } = useI18n()
   const allAdminUsers = admins.filter((a) => a.role === 'SUPER_ADMIN' || a.role === 'RH' || a.role === 'ADMIN')
   const selectedIds = new Set(notifRecipients.map((r) => r._id))
 
@@ -60,11 +62,8 @@ export default function ParametresTab({
 
   return (
     <div className="portal-card" style={{ maxWidth: 600, marginTop: 24 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Notifications — rapports d'activité</h2>
-      <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
-        Choisissez qui reçoit un email et une notification quand un membre soumet un rapport. Si aucun destinataire
-        n'est sélectionné, seuls les Super Admins sont notifiés.
-      </p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{t('intern.settings.title')}</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>{t('intern.settings.help')}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
         {allAdminUsers.map((a) => (
           <label
@@ -97,14 +96,14 @@ export default function ParametresTab({
                 letterSpacing: '0.05em',
               }}
             >
-              {a.role === 'SUPER_ADMIN' ? 'Super Admin' : a.role}
+              {a.role === 'SUPER_ADMIN' ? t('intern.settings.superAdmin') : a.role}
             </span>
           </label>
         ))}
       </div>
-      {notifSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 12 }}>Enregistré</p>}
+      {notifSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 12 }}>{t('intern.settings.saved')}</p>}
       <button className="portal-button" onClick={save} disabled={notifSaving} style={{ alignSelf: 'flex-start' }}>
-        {notifSaving ? 'Enregistrement...' : 'Enregistrer'}
+        {notifSaving ? t('intern.settings.saving') : t('intern.settings.save')}
       </button>
     </div>
   )

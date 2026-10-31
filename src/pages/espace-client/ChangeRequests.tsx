@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { listChangeRequests } from '../../services/changeRequests'
 import type { ClientChangeRequest } from '../../types/changeRequest.types'
 import {
@@ -11,6 +12,7 @@ import {
 import './ClientPortal.css'
 
 const ClientChangeRequests = () => {
+  const { t } = useI18n()
   const [changeRequests, setChangeRequests] = useState<ClientChangeRequest[]>([])
   const [group, setGroup] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -19,9 +21,9 @@ const ClientChangeRequests = () => {
   useEffect(() => {
     listChangeRequests()
       .then((data) => setChangeRequests(data.changeRequests || []))
-      .catch((err: Error) => setError(err.message || 'Chargement impossible'))
+      .catch((err: Error) => setError(err.message || t('client.billing.loadError')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const counts = useMemo(() => {
     const result: Record<string, number> = {}
@@ -53,12 +55,12 @@ const ClientChangeRequests = () => {
               fontSize: '0.7rem',
             }}
           >
-            Espace client
+            {t('client.crList.eyebrow')}
           </span>
-          <h1 style={{ margin: '6px 0 0' }}>Vos demandes</h1>
+          <h1 style={{ margin: '6px 0 0' }}>{t('client.crList.heading')}</h1>
         </div>
         <Link to="/espace-client/demandes/nouvelle" className="portal-badge" style={{ padding: '10px 18px' }}>
-          + Nouvelle demande
+          {t('client.crList.newRequest')}
         </Link>
       </div>
 
@@ -68,14 +70,17 @@ const ClientChangeRequests = () => {
       {!loading && changeRequests.length === 0 && (
         <div className="client-dashboard-empty" style={{ marginTop: 32 }}>
           <div className="client-dashboard-empty-icon">✳</div>
-          <h3>Aucune demande pour le moment</h3>
-          <p>Une retouche, une évolution ? Décrivez-la, nous la qualifions sous 48 h ouvrées.</p>
+          <h3>{t('client.crList.emptyTitle')}</h3>
+          <p>{t('client.crList.emptyBody')}</p>
         </div>
       )}
 
       {!loading && changeRequests.length > 0 && (
         <>
-          <nav aria-label="Filtrer par état" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '24px 0' }}>
+          <nav
+            aria-label={t('client.crList.filterAria')}
+            style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '24px 0' }}
+          >
             {CLIENT_STATUS_GROUPS.map((entry) => (
               <button
                 key={entry.key}
@@ -85,7 +90,7 @@ const ClientChangeRequests = () => {
                 onClick={() => setGroup(entry.key)}
                 style={{ padding: '8px 14px', opacity: group === entry.key ? 1 : 0.6 }}
               >
-                {entry.label} · {counts[entry.key] ?? 0}
+                {t(entry.labelKey)} · {counts[entry.key] ?? 0}
               </button>
             ))}
           </nav>
@@ -103,13 +108,17 @@ const ClientChangeRequests = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700 }}>{request.title}</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                      {request.project ? request.project.name : 'Sans projet'} · soumise le{' '}
-                      {formatChangeRequestDate(request.createdAt)}
-                      {request.replyCount ? ` · ${request.replyCount} message(s)` : ''}
+                      {request.project
+                        ? t('client.crList.metaProject', {
+                            project: request.project.name,
+                            date: formatChangeRequestDate(request.createdAt),
+                          })
+                        : t('client.crList.metaNoProject', { date: formatChangeRequestDate(request.createdAt) })}
+                      {request.replyCount ? ` · ${t('client.crList.messageCount', { count: request.replyCount })}` : ''}
                     </div>
                   </div>
-                  <span className="portal-badge">{PRIORITY_LABELS[request.priority]}</span>
-                  <span className={`client-project-card-badge ${status.className}`}>{status.label}</span>
+                  <span className="portal-badge">{t(PRIORITY_LABELS[request.priority])}</span>
+                  <span className={`client-project-card-badge ${status.className}`}>{t(status.labelKey)}</span>
                 </Link>
               )
             })}
@@ -118,8 +127,7 @@ const ClientChangeRequests = () => {
       )}
 
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 32, maxWidth: 720 }}>
-        Une demande incluse dans votre maintenance est traitée sans frais. Les évolutions hors périmètre font l’objet
-        d’un devis que vous signez en ligne avant tout démarrage.
+        {t('client.crList.footnote')}
       </p>
     </div>
   )

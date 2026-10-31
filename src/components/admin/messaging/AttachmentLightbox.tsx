@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { downloadMessageAttachment } from '../../../services/messaging'
 import type { InternalMessageAttachment } from '../../../types/messaging.types'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 
 interface AttachmentLightboxProps {
   messageId: string | null
@@ -14,16 +16,29 @@ type PreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'other'
 
 const EXT_MIME: Record<string, string> = {
   // images
-  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
-  webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  avif: 'image/avif',
   heic: 'image/heic',
   // documents
   pdf: 'application/pdf',
   // vidéo
-  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', m4v: 'video/x-m4v',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  m4v: 'video/x-m4v',
   // audio
-  mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4',
-  oga: 'audio/ogg', flac: 'audio/flac',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  m4a: 'audio/mp4',
+  oga: 'audio/ogg',
+  flac: 'audio/flac',
 }
 
 /**
@@ -50,7 +65,12 @@ function detectKind(mimeType: string | undefined, name: string): PreviewKind {
 
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return ''
-  const units = ['o', 'Ko', 'Mo', 'Go']
+  const units = [
+    translate('compB.fileUnit.b'),
+    translate('compB.fileUnit.kb'),
+    translate('compB.fileUnit.mb'),
+    translate('compB.fileUnit.gb'),
+  ]
   let size = bytes
   let index = 0
   while (size >= 1024 && index < units.length - 1) {
@@ -61,6 +81,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function AttachmentLightbox({ messageId, attachments, initialIndex, onClose }: AttachmentLightboxProps) {
+  const { t } = useI18n()
   const [index, setIndex] = useState(initialIndex)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [textContent, setTextContent] = useState<string | null>(null)
@@ -105,7 +126,7 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
         }
       })
       .catch((err) => {
-        if (!canceled) setError(err instanceof Error ? err.message : 'Impossible de charger le fichier')
+        if (!canceled) setError(err instanceof Error ? err.message : t('compB.lightbox.loadError'))
       })
       .finally(() => {
         if (!canceled) setLoading(false)
@@ -114,14 +135,17 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
     return () => {
       canceled = true
     }
-  }, [messageId, index, current, kind])
+  }, [messageId, index, current, kind, t])
 
-  useEffect(() => () => {
-    if (currentUrlRef.current) {
-      URL.revokeObjectURL(currentUrlRef.current)
-      currentUrlRef.current = null
-    }
-  }, [])
+  useEffect(
+    () => () => {
+      if (currentUrlRef.current) {
+        URL.revokeObjectURL(currentUrlRef.current)
+        currentUrlRef.current = null
+      }
+    },
+    [],
+  )
 
   const goPrev = useCallback(() => {
     setIndex((prev) => (prev > 0 ? prev - 1 : prev))
@@ -157,9 +181,9 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
       anchor.remove()
       URL.revokeObjectURL(url)
     } catch {
-      setError('Téléchargement impossible')
+      setError(t('compB.lightbox.downloadError'))
     }
-  }, [messageId, current, index])
+  }, [messageId, current, index, t])
 
   if (!current) return null
 
@@ -175,20 +199,44 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
           <strong title={current.originalName}>{current.originalName}</strong>
           <span>
             {attachments.length > 1 ? `${index + 1} / ${attachments.length} · ` : ''}
-            {current.mimeType?.split('/').pop()?.toUpperCase() || 'FICHIER'}
+            {current.mimeType?.split('/').pop()?.toUpperCase() || t('compB.msg.file')}
             {current.size ? ` · ${formatFileSize(current.size)}` : ''}
           </span>
         </div>
         <div className="attachment-lightbox__actions">
-          <button type="button" className="attachment-lightbox__action" onClick={handleDownload} aria-label="Télécharger">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button
+            type="button"
+            className="attachment-lightbox__action"
+            onClick={handleDownload}
+            aria-label={t('compB.lightbox.download')}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           </button>
-          <button type="button" className="attachment-lightbox__action" onClick={onClose} aria-label="Fermer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button
+            type="button"
+            className="attachment-lightbox__action"
+            onClick={onClose}
+            aria-label={t('common.close')}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -196,16 +244,28 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
         </div>
       </div>
 
-      <div className="attachment-lightbox__stage" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <div
+        className="attachment-lightbox__stage"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) onClose()
+        }}
+      >
         {attachments.length > 1 && (
           <button
             type="button"
             className="attachment-lightbox__nav attachment-lightbox__nav--prev"
             onClick={goPrev}
             disabled={index === 0}
-            aria-label="Précédent"
+            aria-label={t('common.previous')}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
@@ -215,14 +275,14 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
           {loading && (
             <div className="attachment-lightbox__loader">
               <span className="messaging-spinner" aria-hidden="true" />
-              <p>Chargement du fichier…</p>
+              <p>{t('compB.lightbox.loading')}</p>
             </div>
           )}
           {error && !loading && (
             <div className="attachment-lightbox__error">
               <p>{error}</p>
               <button type="button" className="confirm-modal__btn confirm-modal__btn--info" onClick={handleDownload}>
-                Télécharger à la place
+                {t('compB.lightbox.downloadInstead')}
               </button>
             </div>
           )}
@@ -231,13 +291,20 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
           )}
           {!loading && !error && blobUrl && kind === 'video' && (
             <video src={blobUrl} controls playsInline className="attachment-lightbox__video">
-              Votre navigateur ne supporte pas la lecture vidéo.
+              {t('compB.lightbox.noVideo')}
             </video>
           )}
           {!loading && !error && blobUrl && kind === 'audio' && (
             <div className="attachment-lightbox__audio">
               <div className="attachment-lightbox__audio-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
                   <circle cx="18" cy="16" r="3" />
@@ -255,14 +322,25 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
           {!loading && !error && kind === 'other' && (
             <div className="attachment-lightbox__other">
               <div className="attachment-lightbox__other-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
               </div>
-              <p>Aperçu non disponible pour ce type de fichier.</p>
-              <button type="button" className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info" onClick={handleDownload}>
-                Télécharger {current.originalName}
+              <p>{t('compB.lightbox.noPreview')}</p>
+              <button
+                type="button"
+                className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
+                onClick={handleDownload}
+              >
+                {t('compB.lightbox.downloadFile', { name: current.originalName })}
               </button>
             </div>
           )}
@@ -274,15 +352,22 @@ export default function AttachmentLightbox({ messageId, attachments, initialInde
             className="attachment-lightbox__nav attachment-lightbox__nav--next"
             onClick={goNext}
             disabled={index === attachments.length - 1}
-            aria-label="Suivant"
+            aria-label={t('common.next')}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
         )}
       </div>
     </div>,
-    document.body
+    document.body,
   )
 }

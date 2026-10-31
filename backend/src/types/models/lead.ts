@@ -8,6 +8,8 @@ export interface ILead extends Document {
   contactEmail: string
   contactPhone: string
   source: string
+  /** Projet concerné : ARTOSERA, VIGNO, ARROW, VENIO, AUTRE ou '' (non renseigné). */
+  project: '' | 'ARTOSERA' | 'VIGNO' | 'ARROW' | 'VENIO' | 'AUTRE'
   status: CrmStatus
   priority: ProjectPriority
   budget: number | null

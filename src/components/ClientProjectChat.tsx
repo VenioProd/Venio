@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../context/I18nContext'
+import { formatDate, formatTime as formatClock } from '../i18n/format'
 import UserAvatar from './UserAvatar'
 import '../styles/project-chat.css'
 
@@ -25,6 +27,7 @@ interface ClientProjectChatProps {
 
 const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatProps) => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -92,12 +95,12 @@ const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatPr
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
     if (diffDays === 0) {
-      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      return formatClock(date, { hour: '2-digit', minute: '2-digit' })
     }
     if (diffDays === 1) {
-      return `Hier ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+      return t('shared.chat.yesterdayAt', { time: formatClock(date, { hour: '2-digit', minute: '2-digit' }) })
     }
-    return date.toLocaleDateString('fr-FR', {
+    return formatDate(date, {
       day: 'numeric',
       month: 'short',
       hour: '2-digit',
@@ -115,10 +118,10 @@ const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatPr
   }
 
   const getRoleBadge = (role: string) => {
-    if (role === 'CLIENT') return 'Client'
-    if (role === 'SUPER_ADMIN') return 'Super Admin'
-    if (role === 'ADMIN') return 'Admin'
-    if (role === 'VIEWER') return 'Viewer'
+    if (role === 'CLIENT') return t('shared.chat.roleClient')
+    if (role === 'SUPER_ADMIN') return t('shared.chat.roleSuperAdmin')
+    if (role === 'ADMIN') return t('shared.chat.roleAdmin')
+    if (role === 'VIEWER') return t('shared.chat.roleViewer')
     return role
   }
 
@@ -129,7 +132,7 @@ const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatPr
   if (loading) {
     return (
       <div className="project-chat">
-        <div className="project-chat-loading">Chargement des messages...</div>
+        <div className="project-chat-loading">{t('shared.chat.loading')}</div>
       </div>
     )
   }
@@ -140,9 +143,9 @@ const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatPr
         {messages.length === 0 ? (
           <div className="project-chat-empty">
             <div className="project-chat-empty-icon">💬</div>
-            <p>Aucun message pour le moment</p>
+            <p>{t('shared.chat.empty')}</p>
             <p className="project-chat-empty-sub">
-              {canComment ? 'Envoyez un message a votre equipe projet.' : 'Vous avez un accès en lecture seule.'}
+              {canComment ? t('shared.chat.emptyCanComment') : t('shared.chat.emptyReadOnly')}
             </p>
           </div>
         ) : (
@@ -182,7 +185,7 @@ const ClientProjectChat = ({ projectId, canComment = true }: ClientProjectChatPr
       <div className="project-chat-input">
         <textarea
           className="project-chat-textarea"
-          placeholder={canComment ? 'Ecrire un message...' : 'Lecture seule'}
+          placeholder={canComment ? t('shared.chat.placeholder') : t('shared.chat.placeholderReadOnly')}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={handleKeyDown}

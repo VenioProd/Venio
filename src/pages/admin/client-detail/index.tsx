@@ -4,6 +4,7 @@ import { apiFetch } from '../../../lib/api'
 import { useTabState } from '../../../hooks/useTabState'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../context/ToastContext'
+import { useI18n } from '../../../context/I18nContext'
 import {
   archiveAdminClient,
   createAdminClientContact,
@@ -46,6 +47,7 @@ import '../AdminPortal.css'
 const ClientAccountDetail = () => {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { t } = useI18n()
   const { userId } = useParams<{ userId: string }>()
 
   const [activeTab, setActiveTab] = useTabState('overview')
@@ -93,7 +95,7 @@ const ClientAccountDetail = () => {
       })
       setGeneratedPassword(newPwd)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur reinitialisation')
+      setError((err as Error).message || t('adminAccess.clientDetail.resetFailed'))
     } finally {
       setResetting(false)
     }
@@ -101,7 +103,11 @@ const ClientAccountDetail = () => {
 
   const handleCopyClientCredentials = async () => {
     if (!client || !generatedPassword) return
-    const text = `Identifiants de connexion Venio\n\nEmail : ${client.email}\nMot de passe : ${generatedPassword}\n\nConnexion : ${window.location.origin}/login`
+    const text = t('adminAccess.clientNew.credentialsText', {
+      email: client.email,
+      password: generatedPassword,
+      url: `${window.location.origin}/login`,
+    })
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
@@ -118,7 +124,7 @@ const ClientAccountDetail = () => {
       })
       setEmailSent(true)
     } catch (err: unknown) {
-      setEmailError((err as Error).message || "Erreur lors de l'envoi")
+      setEmailError((err as Error).message || t('adminAccess.clientDetail.sendFailed'))
     } finally {
       setSending(false)
     }
@@ -132,7 +138,7 @@ const ClientAccountDetail = () => {
       })
       window.location.assign('/espace-client')
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Erreur', 'error')
+      showToast((err as Error).message || t('adminAccess.clientDetail.genericError'), 'error')
     } finally {
       setImpersonating(false)
     }
@@ -143,9 +149,9 @@ const ClientAccountDetail = () => {
     try {
       const data = await apiFetch<{ resetUrl: string }>(`/api/admin/admins/${userId}/reset-link`, { method: 'POST' })
       await navigator.clipboard.writeText(data.resetUrl)
-      showToast('Lien de reinitialisation copie dans le presse-papiers', 'success')
+      showToast(t('adminAccess.clientDetail.resetLinkCopied'), 'success')
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Erreur', 'error')
+      showToast((err as Error).message || t('adminAccess.clientDetail.genericError'), 'error')
     } finally {
       setResettingClient(false)
     }
@@ -197,7 +203,7 @@ const ClientAccountDetail = () => {
       setCloudInfo((cloudRes.cloud as CloudInfo) || null)
       setFiles((filesRes.files as AdminClientFile[]) || [])
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement compte')
+      setError((err as Error).message || t('adminAccess.clientDetail.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -213,10 +219,10 @@ const ClientAccountDetail = () => {
     try {
       const data = (await updateAdminClient(userId!, patch)) as Record<string, unknown>
       setClient(data.client as Client)
-      showToast('Modifications enregistrees', 'success')
+      showToast(t('adminAccess.clientDetail.saved'), 'success')
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour')
-      showToast('Erreur lors de la mise a jour', 'error')
+      setError((err as Error).message || t('adminAccess.clientDetail.updateFailed'))
+      showToast(t('adminAccess.clientDetail.updateFailedToast'), 'error')
     } finally {
       setSaving(false)
     }
@@ -233,7 +239,7 @@ const ClientAccountDetail = () => {
       setClient(data.client as Client)
       await loadAll()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur archivage')
+      setError((err as Error).message || t('adminAccess.clientDetail.archiveFailed'))
     } finally {
       setSaving(false)
     }
@@ -250,7 +256,7 @@ const ClientAccountDetail = () => {
       const data = (await listAdminClientContacts(userId!)) as Record<string, unknown>
       setContacts((data.contacts as Contact[]) || [])
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout contact')
+      setError((err as Error).message || t('adminAccess.clientDetail.addContactFailed'))
     } finally {
       setSaving(false)
     }
@@ -263,7 +269,7 @@ const ClientAccountDetail = () => {
       await deleteAdminClientContact(userId!, contactId)
       setContacts((current) => current.filter((contact) => contact._id !== contactId))
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression contact')
+      setError((err as Error).message || t('adminAccess.clientDetail.removeContactFailed'))
     } finally {
       setSaving(false)
     }
@@ -275,28 +281,34 @@ const ClientAccountDetail = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-clients">Comptes clients</Link>
+          <Link to="/admin/comptes-clients">{t('adminAccess.clientDetail.breadcrumbList')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{client?.companyName || client?.name || 'Chargement...'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>
+            {client?.companyName || client?.name || t('adminAccess.clientDetail.loading')}
+          </span>
         </div>
 
         {client && (
           <div className="admin-header" style={{ marginBottom: 16 }}>
             <div>
-              <h1 style={{ marginBottom: 8 }}>{client.companyName || client.name || 'Société non renseignée'}</h1>
+              <h1 style={{ marginBottom: 8 }}>
+                {client.companyName || client.name || t('adminAccess.clientDetail.companyMissing')}
+              </h1>
               {client.serviceType && (
                 <p style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}>
-                  Service : {client.serviceType}
+                  {t('adminAccess.clientDetail.serviceLine', { service: client.serviceType })}
                 </p>
               )}
-              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Contact : {client.name}</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                {t('adminAccess.clientDetail.contactLine', { name: client.name })}
+              </p>
               <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>{client.email}</p>
             </div>
             <div className="admin-actions">
               <Link
                 className="portal-button portal-action-link"
                 to={`/admin/projets/nouveau?clientId=${userId}`}
-                title="Ajouter un projet"
+                title={t('adminAccess.clientDetail.addProject')}
               >
                 <span className="portal-action-icon" aria-hidden>
                   <svg
@@ -312,7 +324,7 @@ const ClientAccountDetail = () => {
                     <line x1="8" y1="12" x2="16" y2="12" />
                   </svg>
                 </span>
-                <span className="portal-action-label">Ajouter un projet</span>
+                <span className="portal-action-label">{t('adminAccess.clientDetail.addProject')}</span>
               </Link>
               {canArchive && (
                 <button
@@ -321,7 +333,9 @@ const ClientAccountDetail = () => {
                   onClick={handleArchiveToggle}
                   disabled={saving}
                 >
-                  {client.status === 'ARCHIVE' ? 'Réactiver' : 'Archiver'}
+                  {client.status === 'ARCHIVE'
+                    ? t('adminAccess.clientDetail.reactivate')
+                    : t('adminAccess.clientDetail.archive')}
                 </button>
               )}
             </div>
@@ -337,7 +351,7 @@ const ClientAccountDetail = () => {
             className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -350,7 +364,7 @@ const ClientAccountDetail = () => {
 
       <div className="portal-card" style={{ marginTop: 24 }}>
         {loading ? (
-          <p style={{ margin: 0, opacity: 0.7 }}>Chargement...</p>
+          <p style={{ margin: 0, opacity: 0.7 }}>{t('adminAccess.clientDetail.loading')}</p>
         ) : (
           <>
             {activeTab === 'overview' && (
@@ -394,9 +408,9 @@ const ClientAccountDetail = () => {
       </div>
 
       <div className="portal-card" style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 16 }}>Identifiants de connexion</h2>
+        <h2 style={{ fontSize: 16, marginBottom: 16 }}>{t('adminAccess.clientDetail.credentialsHeading')}</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
-          Generez un nouveau mot de passe pour ce client. Vous pourrez ensuite le copier ou l'envoyer par email.
+          {t('adminAccess.clientDetail.credentialsHint')}
         </p>
 
         {generatedPassword ? (
@@ -411,13 +425,15 @@ const ClientAccountDetail = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('adminAccess.clientDetail.email')}</span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
                   {client?.email}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nouveau mot de passe</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                  {t('adminAccess.clientDetail.newPassword')}
+                </span>
                 <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
                   {generatedPassword}
                 </span>
@@ -430,7 +446,7 @@ const ClientAccountDetail = () => {
                 onClick={handleCopyClientCredentials}
                 style={{ flex: 1, minWidth: 160 }}
               >
-                {copied ? 'Copie !' : 'Copier les identifiants'}
+                {copied ? t('adminAccess.clientDetail.copied') : t('adminAccess.clientDetail.copyCredentials')}
               </button>
               <button
                 className="portal-button secondary"
@@ -439,7 +455,11 @@ const ClientAccountDetail = () => {
                 disabled={sending || emailSent}
                 style={{ flex: 1, minWidth: 160 }}
               >
-                {emailSent ? 'Email envoye !' : sending ? 'Envoi...' : 'Envoyer par email'}
+                {emailSent
+                  ? t('adminAccess.clientDetail.emailSent')
+                  : sending
+                    ? t('adminAccess.clientDetail.sending')
+                    : t('adminAccess.clientDetail.sendByEmail')}
               </button>
               <button
                 className="portal-button secondary"
@@ -448,7 +468,7 @@ const ClientAccountDetail = () => {
                 disabled={resetting}
                 style={{ flex: 1, minWidth: 160 }}
               >
-                {resetting ? 'Generation...' : 'Regenerer'}
+                {resetting ? t('adminAccess.clientDetail.generating') : t('adminAccess.clientDetail.regenerate')}
               </button>
             </div>
             {emailError && (
@@ -459,7 +479,7 @@ const ClientAccountDetail = () => {
           </>
         ) : (
           <button className="portal-button" type="button" onClick={handleResetClientPassword} disabled={resetting}>
-            {resetting ? 'Generation...' : 'Generer un nouveau mot de passe'}
+            {resetting ? t('adminAccess.clientDetail.generating') : t('adminAccess.clientDetail.generate')}
           </button>
         )}
         {user?.role === 'SUPER_ADMIN' && (
@@ -471,7 +491,7 @@ const ClientAccountDetail = () => {
               disabled={impersonating}
               style={{ width: '100%' }}
             >
-              {impersonating ? 'Connexion...' : 'Se connecter en tant que ce client'}
+              {impersonating ? t('adminAccess.clientDetail.signingIn') : t('adminAccess.clientDetail.signInAsClient')}
             </button>
             <button
               className="portal-button secondary"
@@ -480,7 +500,7 @@ const ClientAccountDetail = () => {
               disabled={resettingClient}
               style={{ width: '100%', marginTop: 8 }}
             >
-              {resettingClient ? 'Generation...' : 'Copier lien reinitialisation mdp'}
+              {resettingClient ? t('adminAccess.clientDetail.generating') : t('adminAccess.clientDetail.copyResetLink')}
             </button>
           </div>
         )}

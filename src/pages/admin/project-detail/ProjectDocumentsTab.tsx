@@ -1,30 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import type { ProjectDocumentsTabProps } from './types'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 import {
   listProjectClientFiles,
   projectClientFileDownloadUrl,
   type AdminProjectClientFile,
 } from '../../../services/adminProjectFiles'
 
-const getDocumentTypeLabel = (type: string): string => {
-  switch (type) {
-    case 'DEVIS':
-      return 'Devis'
-    case 'FACTURE':
-      return 'Facture'
-    case 'FICHIER_PROJET':
-      return 'Fichier projet'
-    default:
-      return type
-  }
+const DOCUMENT_TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  DEVIS: 'projects.documents.docTypeQuote',
+  FACTURE: 'projects.documents.docTypeInvoice',
+  FICHIER_PROJET: 'projects.documents.docTypeProjectFile',
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  LOGO: 'Logo',
-  TEXTE: 'Texte',
-  PHOTO: 'Photo',
-  BRIEF: 'Brief',
-  AUTRE: 'Autre',
+const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
+  LOGO: 'projects.documents.categoryLogo',
+  TEXTE: 'projects.documents.categoryText',
+  PHOTO: 'projects.documents.categoryPhoto',
+  BRIEF: 'projects.documents.categoryBrief',
+  AUTRE: 'projects.documents.categoryOther',
 }
 
 const ProjectDocumentsTab: React.FC<ProjectDocumentsTabProps> = ({
@@ -33,6 +29,9 @@ const ProjectDocumentsTab: React.FC<ProjectDocumentsTabProps> = ({
   onUpload,
   projectId,
 }) => {
+  const { t } = useI18n()
+  const getDocumentTypeLabel = (type: string): string =>
+    DOCUMENT_TYPE_LABEL_KEYS[type] ? t(DOCUMENT_TYPE_LABEL_KEYS[type]) : type
   const [clientFiles, setClientFiles] = useState<AdminProjectClientFile[]>([])
 
   useEffect(() => {
@@ -45,31 +44,31 @@ const ProjectDocumentsTab: React.FC<ProjectDocumentsTabProps> = ({
   return (
     <div style={{ marginTop: 24 }}>
       <div className="admin-form-section">
-        <h2>Téléverser un document (ancien système)</h2>
+        <h2>{t('projects.documents.uploadHeading')}</h2>
         {canEditProjects ? (
           <form className="portal-list" onSubmit={onUpload}>
             <select className="portal-input" name="type" required>
-              <option value="">Type de document</option>
-              <option value="DEVIS">Devis</option>
-              <option value="FACTURE">Facture</option>
-              <option value="FICHIER_PROJET">Fichier projet</option>
+              <option value="">{t('projects.documents.typePlaceholder')}</option>
+              <option value="DEVIS">{t('projects.documents.docTypeQuote')}</option>
+              <option value="FACTURE">{t('projects.documents.docTypeInvoice')}</option>
+              <option value="FICHIER_PROJET">{t('projects.documents.docTypeProjectFile')}</option>
             </select>
             <input className="portal-input" type="file" name="file" required style={{ padding: '8px 14px' }} />
             <button className="portal-button" type="submit">
-              📎 Téléverser
+              {t('projects.documents.upload')}
             </button>
           </form>
         ) : (
-          <div className="admin-info">Accès lecture seule aux documents.</div>
+          <div className="admin-info">{t('projects.documents.readOnly')}</div>
         )}
       </div>
 
       <div className="admin-form-section" style={{ marginTop: 24 }}>
-        <h2>Documents</h2>
+        <h2>{t('projects.documents.heading')}</h2>
         <div className="portal-list">
           {documents.length === 0 ? (
             <div className="admin-empty-state" style={{ padding: '24px' }}>
-              <p className="admin-empty-state-text">Aucun document</p>
+              <p className="admin-empty-state-text">{t('projects.documents.empty')}</p>
             </div>
           ) : (
             documents.map((doc) => (
@@ -88,22 +87,22 @@ const ProjectDocumentsTab: React.FC<ProjectDocumentsTabProps> = ({
 
       {clientFiles.length > 0 && (
         <div className="admin-form-section" style={{ marginTop: 24 }}>
-          <h2>Fichiers déposés par le client</h2>
+          <h2>{t('projects.documents.clientFiles')}</h2>
           <div className="portal-list">
             {clientFiles.map((file) => (
               <div key={file.id} className="admin-document-item">
                 <strong>{file.originalName}</strong>
                 <p>
                   <span className="admin-badge" style={{ marginRight: '8px' }}>
-                    {CATEGORY_LABELS[file.category] || file.category}
+                    {CATEGORY_LABEL_KEYS[file.category] ? t(CATEGORY_LABEL_KEYS[file.category]) : file.category}
                   </span>
                   {file.client && (file.client.companyName || file.client.name)}
                   {' · '}
-                  {new Date(file.createdAt).toLocaleDateString('fr-FR')}
+                  {formatDate(file.createdAt)}
                   {file.note && ` · ${file.note}`}
                 </p>
                 <a className="portal-button secondary" href={projectClientFileDownloadUrl(projectId, file.id)}>
-                  Télécharger
+                  {t('projects.documents.download')}
                 </a>
               </div>
             ))}

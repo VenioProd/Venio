@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import { translate } from '../../i18n'
 import {
   createWebhook,
   deleteWebhook,
@@ -31,6 +33,7 @@ import './AdminPortal.css'
  */
 const Webhooks: React.FC = () => {
   const { showToast } = useToast()
+  const { t } = useI18n()
   // `load` ne doit pas se recréer à chaque rendu : la fonction du contexte de
   // toasts n'est pas garantie stable, et une dépendance directe relancerait
   // l'effet de chargement en boucle.
@@ -62,7 +65,7 @@ const Webhooks: React.FC = () => {
       setEndpoints(data.endpoints || [])
       setEventTypes(data.eventTypes || [])
     } catch (err) {
-      toastRef.current((err as Error).message || 'Erreur de chargement des webhooks', 'error')
+      toastRef.current((err as Error).message || translate('adminTech.webhooks.loadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -93,7 +96,7 @@ const Webhooks: React.FC = () => {
     try {
       if (editId) {
         await updateWebhook(editId, form)
-        showToast('Endpoint mis à jour', 'success')
+        showToast(t('adminTech.webhooks.updated'), 'success')
       } else {
         const created = await createWebhook(form)
         setRevealed({ secret: created.secret, name: created.endpoint.name })
@@ -103,7 +106,7 @@ const Webhooks: React.FC = () => {
       setForm(emptyEndpointForm)
       await load()
     } catch (err) {
-      setFormError((err as Error).message || 'Enregistrement impossible')
+      setFormError((err as Error).message || t('adminTech.webhooks.saveError'))
     } finally {
       setSaving(false)
     }
@@ -115,7 +118,7 @@ const Webhooks: React.FC = () => {
       await updateWebhook(endpoint._id, { isActive: !endpoint.isActive })
       await load()
     } catch (err) {
-      showToast((err as Error).message || 'Modification impossible', 'error')
+      showToast((err as Error).message || t('adminTech.webhooks.toggleError'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -128,7 +131,7 @@ const Webhooks: React.FC = () => {
       setRevealed({ secret: rotated.secret, name: endpoint.name })
       await load()
     } catch (err) {
-      showToast((err as Error).message || 'Rotation impossible', 'error')
+      showToast((err as Error).message || t('adminTech.webhooks.rotateError'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -140,12 +143,16 @@ const Webhooks: React.FC = () => {
     try {
       const { outcome } = await testWebhook(endpoint._id)
       const label = outcome?.ok
-        ? `Test réussi — HTTP ${outcome.httpStatus} en ${outcome.durationMs} ms`
-        : `Test échoué — ${outcome?.httpStatus ? `HTTP ${outcome.httpStatus}` : outcome?.error || 'erreur réseau'}`
+        ? t('adminTech.webhooks.testOk', { status: outcome.httpStatus ?? '', ms: outcome.durationMs })
+        : t('adminTech.webhooks.testFailed', {
+            detail: outcome?.httpStatus
+              ? t('adminTech.webhooks.httpStatus', { status: outcome.httpStatus })
+              : outcome?.error || t('adminTech.webhooks.networkError'),
+          })
       setTestResult({ endpointId: endpoint._id, label })
       await load()
     } catch (err) {
-      showToast((err as Error).message || 'Test impossible', 'error')
+      showToast((err as Error).message || t('adminTech.webhooks.testError'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -155,54 +162,58 @@ const Webhooks: React.FC = () => {
     if (!deleteTarget) return
     try {
       await deleteWebhook(deleteTarget._id)
-      showToast('Endpoint supprimé', 'success')
+      showToast(t('adminTech.webhooks.deleted'), 'success')
       if (selected?._id === deleteTarget._id) setSelected(null)
       await load()
     } catch (err) {
-      showToast((err as Error).message || 'Suppression impossible', 'error')
+      showToast((err as Error).message || t('adminTech.webhooks.deleteError'), 'error')
     } finally {
       setDeleteTarget(null)
     }
   }
 
   const healthLabel = (endpoint: WebhookEndpoint): string => {
-    if (endpoint.isActive) return `Actif · dernier succès ${formatDateTime(endpoint.lastSuccessAt)}`
-    if (endpoint.disabledReason === 'AUTO_FAILURES') {
-      return `Désactivé automatiquement le ${formatDateTime(endpoint.disabledAt)}`
+    if (endpoint.isActive) {
+      return t('adminTech.webhooks.healthActive', { date: formatDateTime(endpoint.lastSuccessAt) })
     }
-    return 'Désactivé manuellement'
+    if (endpoint.disabledReason === 'AUTO_FAILURES') {
+      return t('adminTech.webhooks.healthAutoDisabled', { date: formatDateTime(endpoint.disabledAt) })
+    }
+    return t('adminTech.webhooks.healthManuallyDisabled')
   }
 
   return (
     <section className="admin-portal" style={{ paddingTop: '120px', minHeight: '100vh' }}>
       <div className="admin-container">
         <div className="admin-header">
-          <h1>Webhooks sortants</h1>
+          <h1>{t('adminTech.webhooks.title')}</h1>
           <button type="button" className="portal-button" onClick={openCreate}>
-            Nouvel endpoint
+            {t('adminTech.webhooks.newEndpoint')}
           </button>
         </div>
 
         <p style={{ color: 'var(--text-muted)', maxWidth: 720 }}>
-          Chaque événement produisant une notification admin est poussé vers les endpoints actifs, signé avec l’en-tête{' '}
-          <code>X-Venio-Signature</code>. Un endpoint est désactivé automatiquement après 20 échecs consécutifs.
+          {t('adminTech.webhooks.introLead')} <code>X-Venio-Signature</code>
+          {t('adminTech.webhooks.introTail')}
         </p>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Chargement…</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t('adminTech.webhooks.loading')}
+          </div>
         ) : endpoints.length === 0 ? (
           <div className="admin-empty-state">
-            <p className="admin-empty-state-text">Aucun endpoint. Créez-en un pour pousser les événements vers Kuro.</p>
+            <p className="admin-empty-state-text">{t('adminTech.webhooks.empty')}</p>
           </div>
         ) : (
           <div className="admin-table-wrapper">
             <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Endpoint</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Types</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Santé</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Actions</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colEndpoint')}</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colTypes')}</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colHealth')}</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,7 +227,7 @@ const Webhooks: React.FC = () => {
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       {endpoint.eventTypes.length === 0 ? (
-                        <span className="admin-badge">Tous les types</span>
+                        <span className="admin-badge">{t('adminTech.webhooks.allTypes')}</span>
                       ) : (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {endpoint.eventTypes.slice(0, 3).map((type) => (
@@ -234,8 +245,7 @@ const Webhooks: React.FC = () => {
                       <div>{healthLabel(endpoint)}</div>
                       {endpoint.consecutiveFailures > 0 && (
                         <div style={{ color: '#f87171' }}>
-                          {endpoint.consecutiveFailures} échec{endpoint.consecutiveFailures > 1 ? 's' : ''} consécutif
-                          {endpoint.consecutiveFailures > 1 ? 's' : ''}
+                          {t('adminTech.webhooks.consecutiveFailures', { count: endpoint.consecutiveFailures })}
                         </div>
                       )}
                       {testResult?.endpointId === endpoint._id && (
@@ -245,14 +255,14 @@ const Webhooks: React.FC = () => {
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button type="button" className="admin-card-btn" onClick={() => setSelected(endpoint)}>
-                          Journal
+                          {t('adminTech.webhooks.log')}
                         </button>
                         <button
                           type="button"
                           className="admin-card-btn admin-card-btn--edit"
                           onClick={() => openEdit(endpoint)}
                         >
-                          Modifier
+                          {t('common.edit')}
                         </button>
                         <button
                           type="button"
@@ -260,7 +270,7 @@ const Webhooks: React.FC = () => {
                           disabled={busyId === endpoint._id}
                           onClick={() => void sendTest(endpoint)}
                         >
-                          Tester
+                          {t('adminTech.webhooks.test')}
                         </button>
                         <button
                           type="button"
@@ -268,7 +278,7 @@ const Webhooks: React.FC = () => {
                           disabled={busyId === endpoint._id}
                           onClick={() => void toggleActive(endpoint)}
                         >
-                          {endpoint.isActive ? 'Désactiver' : 'Réactiver'}
+                          {endpoint.isActive ? t('adminTech.webhooks.disable') : t('adminTech.webhooks.enable')}
                         </button>
                         <button
                           type="button"
@@ -276,14 +286,14 @@ const Webhooks: React.FC = () => {
                           disabled={busyId === endpoint._id}
                           onClick={() => void rotate(endpoint)}
                         >
-                          Régénérer le secret
+                          {t('adminTech.webhooks.rotateSecret')}
                         </button>
                         <button
                           type="button"
                           className="admin-card-btn admin-card-btn--delete"
                           onClick={() => setDeleteTarget(endpoint)}
                         >
-                          Supprimer
+                          {t('common.delete')}
                         </button>
                       </div>
                     </td>
@@ -321,9 +331,9 @@ const Webhooks: React.FC = () => {
       {deleteTarget && (
         <ConfirmModal
           isOpen
-          title="Supprimer l’endpoint"
-          message={`Supprimer « ${deleteTarget.name} » et tout son journal de livraisons ? Cette action est définitive.`}
-          confirmLabel="Supprimer"
+          title={t('adminTech.webhooks.deleteTitle')}
+          message={t('adminTech.webhooks.deleteMessage', { name: deleteTarget.name })}
+          confirmLabel={t('common.delete')}
           variant="danger"
           onConfirm={() => void confirmDelete()}
           onCancel={() => setDeleteTarget(null)}

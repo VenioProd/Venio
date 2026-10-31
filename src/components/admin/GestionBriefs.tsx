@@ -3,23 +3,26 @@ import { fetchBriefs, createBrief, updateBrief, deleteBrief } from '../../servic
 import { apiFetch } from '../../lib/api'
 import { useConfirm } from '../../hooks/useConfirm'
 import type { MissionBrief, BriefStatus } from '../../types/brief.types'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
+import { formatDate } from '../../i18n/format'
 
-const STATUS_CONFIG: Record<BriefStatus, { label: string; color: string }> = {
-  A_FAIRE: { label: 'A faire', color: '#64748b' },
-  EN_COURS: { label: 'En cours', color: 'var(--primary)' },
-  EN_REVIEW: { label: 'En review', color: '#f59e0b' },
-  VALIDE: { label: 'Valide', color: '#22c55e' },
-  LIVRE: { label: 'Livre', color: 'var(--primary)' },
-  NON_VALIDE: { label: 'Non valide', color: '#ef4444' },
-  A_AMELIORER: { label: 'A ameliorer', color: '#fb923c' },
+const STATUS_CONFIG: Record<BriefStatus, { labelKey: MessageKey; color: string }> = {
+  A_FAIRE: { labelKey: 'compA.briefs.status.todo', color: '#64748b' },
+  EN_COURS: { labelKey: 'compA.briefs.status.inProgress', color: 'var(--primary)' },
+  EN_REVIEW: { labelKey: 'compA.briefs.status.inReview', color: '#f59e0b' },
+  VALIDE: { labelKey: 'compA.briefs.status.valid', color: '#22c55e' },
+  LIVRE: { labelKey: 'compA.briefs.status.delivered', color: 'var(--primary)' },
+  NON_VALIDE: { labelKey: 'compA.briefs.status.invalid', color: '#ef4444' },
+  A_AMELIORER: { labelKey: 'compA.briefs.status.toImprove', color: '#fb923c' },
 }
 
 // Statuts que le super admin peut choisir pour valider/évaluer un brief
-const ADMIN_STATUS_OPTIONS: { key: BriefStatus; label: string }[] = [
-  { key: 'EN_REVIEW', label: 'En review' },
-  { key: 'VALIDE', label: 'Valide' },
-  { key: 'NON_VALIDE', label: 'Non valide' },
-  { key: 'A_AMELIORER', label: 'A ameliorer' },
+const ADMIN_STATUS_OPTIONS: { key: BriefStatus; labelKey: MessageKey }[] = [
+  { key: 'EN_REVIEW', labelKey: 'compA.briefs.status.inReview' },
+  { key: 'VALIDE', labelKey: 'compA.briefs.status.valid' },
+  { key: 'NON_VALIDE', labelKey: 'compA.briefs.status.invalid' },
+  { key: 'A_AMELIORER', labelKey: 'compA.briefs.status.toImprove' },
 ]
 
 const ENTITY_OPTIONS = ['VENIO', 'CREATIO', 'DECISIO', 'FORMATIO']
@@ -56,6 +59,7 @@ const emptyForm = {
 }
 
 export default function GestionBriefs({ projects, user }: Props) {
+  const { t } = useI18n()
   const [briefs, setBriefs] = useState<MissionBrief[]>([])
   const [admins, setAdmins] = useState<Admin[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,7 +125,7 @@ export default function GestionBriefs({ projects, user }: Props) {
   }
 
   const handleDelete = async (briefId: string) => {
-    if (!(await confirm({ message: 'Supprimer ce brief ?', title: 'Suppression' }))) return
+    if (!(await confirm({ message: t('compA.briefs.deleteConfirm'), title: t('compA.briefs.deleteTitle') }))) return
     try {
       await deleteBrief(briefId)
       await loadBriefs()
@@ -149,12 +153,12 @@ export default function GestionBriefs({ projects, user }: Props) {
     return ''
   }
 
-  const formatDate = (d: string | null) => {
+  const formatShortDate = (d: string | null) => {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    return formatDate(d, { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
 
-  if (loading) return <div className="gestion-loading">Chargement...</div>
+  if (loading) return <div className="gestion-loading">{t('common.loading')}</div>
 
   return (
     <div className="gestion-briefs">
@@ -162,19 +166,19 @@ export default function GestionBriefs({ projects, user }: Props) {
       {isSuperAdmin && (
         <div className="gestion-briefs-actions">
           <button className="gestion-export-btn" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Annuler' : '+ Nouveau brief'}
+            {showForm ? t('common.cancel') : t('compA.briefs.new')}
           </button>
         </div>
       )}
 
       {showForm && (
         <div className="gestion-brief-form">
-          <h3>Nouveau brief de mission</h3>
+          <h3>{t('compA.briefs.formTitle')}</h3>
           <div className="gestion-brief-form-grid">
             <div className="gestion-brief-field">
-              <label>Projet *</label>
+              <label>{t('compA.briefs.fProject')}</label>
               <select value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })}>
-                <option value="">Selectionner...</option>
+                <option value="">{t('compA.briefs.select')}</option>
                 {projects.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name}
@@ -183,9 +187,9 @@ export default function GestionBriefs({ projects, user }: Props) {
               </select>
             </div>
             <div className="gestion-brief-field">
-              <label>Destinataire *</label>
+              <label>{t('compA.briefs.fRecipient')}</label>
               <select value={form.destinataire} onChange={(e) => setForm({ ...form, destinataire: e.target.value })}>
-                <option value="">Selectionner...</option>
+                <option value="">{t('compA.briefs.select')}</option>
                 {admins.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.name}
@@ -194,7 +198,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               </select>
             </div>
             <div className="gestion-brief-field">
-              <label>Entite</label>
+              <label>{t('compA.briefs.fEntity')}</label>
               <select value={form.entity} onChange={(e) => setForm({ ...form, entity: e.target.value })}>
                 {ENTITY_OPTIONS.map((e) => (
                   <option key={e} value={e}>
@@ -204,7 +208,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               </select>
             </div>
             <div className="gestion-brief-field">
-              <label>Priorite</label>
+              <label>{t('compA.briefs.fPriority')}</label>
               <select value={form.briefPriority} onChange={(e) => setForm({ ...form, briefPriority: e.target.value })}>
                 {PRIORITY_OPTIONS.map((p) => (
                   <option key={p} value={p}>
@@ -214,7 +218,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               </select>
             </div>
             <div className="gestion-brief-field">
-              <label>Deadline *</label>
+              <label>{t('compA.briefs.fDeadline')}</label>
               <input
                 type="date"
                 value={form.deadline}
@@ -222,7 +226,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field">
-              <label>Point intermediaire</label>
+              <label>{t('compA.briefs.fMilestone')}</label>
               <input
                 type="date"
                 value={form.pointIntermediaire}
@@ -230,16 +234,16 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field full">
-              <label>Intitule de la mission *</label>
+              <label>{t('compA.briefs.fTitle')}</label>
               <input
                 type="text"
                 value={form.intitule}
                 onChange={(e) => setForm({ ...form, intitule: e.target.value })}
-                placeholder="Ex: Maquettes site vitrine"
+                placeholder={t('compA.briefs.fTitlePlaceholder')}
               />
             </div>
             <div className="gestion-brief-field full">
-              <label>Contexte</label>
+              <label>{t('compA.briefs.fContext')}</label>
               <textarea
                 value={form.contexte}
                 onChange={(e) => setForm({ ...form, contexte: e.target.value })}
@@ -247,7 +251,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field full">
-              <label>Livrables attendus</label>
+              <label>{t('compA.briefs.fDeliverables')}</label>
               <textarea
                 value={form.livrablesAttendus}
                 onChange={(e) => setForm({ ...form, livrablesAttendus: e.target.value })}
@@ -255,7 +259,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field full">
-              <label>Format livrable</label>
+              <label>{t('compA.briefs.fFormat')}</label>
               <div className="gestion-brief-formats">
                 {FORMAT_OPTIONS.map((f) => (
                   <label key={f} className="gestion-brief-checkbox">
@@ -266,7 +270,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               </div>
             </div>
             <div className="gestion-brief-field full">
-              <label>Ressources / References</label>
+              <label>{t('compA.briefs.fResources')}</label>
               <textarea
                 value={form.ressources}
                 onChange={(e) => setForm({ ...form, ressources: e.target.value })}
@@ -274,7 +278,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field full">
-              <label>Points de vigilance</label>
+              <label>{t('compA.briefs.fWatchPoints')}</label>
               <textarea
                 value={form.pointsVigilance}
                 onChange={(e) => setForm({ ...form, pointsVigilance: e.target.value })}
@@ -282,7 +286,7 @@ export default function GestionBriefs({ projects, user }: Props) {
               />
             </div>
             <div className="gestion-brief-field">
-              <label>Validation par</label>
+              <label>{t('compA.briefs.fValidatedBy')}</label>
               <select value={form.validationPar} onChange={(e) => setForm({ ...form, validationPar: e.target.value })}>
                 <option value="">—</option>
                 {admins
@@ -296,7 +300,7 @@ export default function GestionBriefs({ projects, user }: Props) {
             </div>
           </div>
           <button className="gestion-export-btn" onClick={handleSubmit} style={{ marginTop: 16 }}>
-            Creer le brief
+            {t('compA.briefs.create')}
           </button>
         </div>
       )}
@@ -304,7 +308,7 @@ export default function GestionBriefs({ projects, user }: Props) {
       {/* Brief list */}
       {briefs.length === 0 ? (
         <div className="gestion-empty-state">
-          <p>Aucun brief de mission</p>
+          <p>{t('compA.briefs.empty')}</p>
         </div>
       ) : (
         <div className="gestion-briefs-list">
@@ -316,7 +320,7 @@ export default function GestionBriefs({ projects, user }: Props) {
                 <div className="gestion-brief-card-header" onClick={() => setExpandedId(isExpanded ? null : brief._id)}>
                   <div className="gestion-brief-card-left">
                     <span className="gestion-brief-status-badge" style={{ background: sc.color }}>
-                      {sc.label}
+                      {t(sc.labelKey)}
                     </span>
                     <span className="gestion-brief-priority-badge">{brief.briefPriority}</span>
                     <strong>{brief.intitule}</strong>
@@ -325,7 +329,7 @@ export default function GestionBriefs({ projects, user }: Props) {
                     <span className="gestion-brief-entity">{brief.entity}</span>
                     <span>{getProjectName(brief.project)}</span>
                     <span>→ {getName(brief.destinataire)}</span>
-                    <span>{formatDate(brief.deadline)}</span>
+                    <span>{formatShortDate(brief.deadline)}</span>
                     <span className="gestion-brief-expand">{isExpanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
@@ -334,50 +338,50 @@ export default function GestionBriefs({ projects, user }: Props) {
                   <div className="gestion-brief-card-body">
                     {brief.contexte && (
                       <div className="gestion-brief-section">
-                        <strong>Contexte :</strong> {brief.contexte}
+                        <strong>{t('compA.briefs.sContext')}</strong> {brief.contexte}
                       </div>
                     )}
                     {brief.livrablesAttendus && (
                       <div className="gestion-brief-section">
-                        <strong>Livrables :</strong> {brief.livrablesAttendus}
+                        <strong>{t('compA.briefs.sDeliverables')}</strong> {brief.livrablesAttendus}
                       </div>
                     )}
                     {brief.formatLivrable.length > 0 && (
                       <div className="gestion-brief-section">
-                        <strong>Format :</strong> {brief.formatLivrable.join(', ')}
+                        <strong>{t('compA.briefs.sFormat')}</strong> {brief.formatLivrable.join(', ')}
                       </div>
                     )}
                     {brief.ressources && (
                       <div className="gestion-brief-section">
-                        <strong>Ressources :</strong> {brief.ressources}
+                        <strong>{t('compA.briefs.sResources')}</strong> {brief.ressources}
                       </div>
                     )}
                     {brief.pointsVigilance && (
                       <div className="gestion-brief-section">
-                        <strong>Points de vigilance :</strong> {brief.pointsVigilance}
+                        <strong>{t('compA.briefs.sWatchPoints')}</strong> {brief.pointsVigilance}
                       </div>
                     )}
                     {brief.pointIntermediaire && (
                       <div className="gestion-brief-section">
-                        <strong>Point intermediaire :</strong> {formatDate(brief.pointIntermediaire)}
+                        <strong>{t('compA.briefs.sMilestone')}</strong> {formatShortDate(brief.pointIntermediaire)}
                       </div>
                     )}
                     {getName(brief.validationPar) && (
                       <div className="gestion-brief-section">
-                        <strong>Validation par :</strong> {getName(brief.validationPar)}
+                        <strong>{t('compA.briefs.sValidatedBy')}</strong> {getName(brief.validationPar)}
                       </div>
                     )}
                     {brief.commentaires && (
                       <div className="gestion-brief-section">
-                        <strong>Commentaires :</strong> {brief.commentaires}
+                        <strong>{t('compA.briefs.sComments')}</strong> {brief.commentaires}
                       </div>
                     )}
                     {brief.datesCles.length > 0 && (
                       <div className="gestion-brief-section">
-                        <strong>Dates cles :</strong>
+                        <strong>{t('compA.briefs.sKeyDates')}</strong>
                         {brief.datesCles.map((d, i) => (
                           <span key={i} className="gestion-brief-date-cle">
-                            {d.label}: {formatDate(d.date)}
+                            {d.label}: {formatShortDate(d.date)}
                           </span>
                         ))}
                       </div>
@@ -386,7 +390,7 @@ export default function GestionBriefs({ projects, user }: Props) {
                     {/* Commentaires — éditable par le destinataire */}
                     {!isSuperAdmin && (
                       <div className="gestion-brief-section" style={{ marginTop: 12 }}>
-                        <strong>Mes commentaires / livrables :</strong>
+                        <strong>{t('compA.briefs.sMyComments')}</strong>
                         {editingComment === brief._id ? (
                           <div style={{ marginTop: 8 }}>
                             <textarea
@@ -394,22 +398,22 @@ export default function GestionBriefs({ projects, user }: Props) {
                               value={commentText}
                               onChange={(e) => setCommentText(e.target.value)}
                               rows={4}
-                              placeholder="Decrivez vos livrables, liens, remarques..."
+                              placeholder={t('compA.briefs.commentPlaceholder')}
                               autoFocus
                             />
                             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                               <button className="gestion-export-btn" onClick={() => handleSaveComment(brief._id)}>
-                                Enregistrer
+                                {t('common.save')}
                               </button>
                               <button className="gestion-delete-btn" onClick={() => setEditingComment(null)}>
-                                Annuler
+                                {t('common.cancel')}
                               </button>
                             </div>
                           </div>
                         ) : (
                           <div style={{ marginTop: 6 }}>
                             <p style={{ color: 'var(--text-muted)', whiteSpace: 'pre-line', margin: '0 0 8px' }}>
-                              {brief.commentaires || '(aucun commentaire)'}
+                              {brief.commentaires || t('compA.briefs.noComment')}
                             </p>
                             <button
                               className="gestion-export-btn"
@@ -419,7 +423,7 @@ export default function GestionBriefs({ projects, user }: Props) {
                               }}
                               style={{ fontSize: 12, padding: '4px 12px' }}
                             >
-                              Modifier
+                              {t('common.edit')}
                             </button>
                           </div>
                         )}
@@ -436,16 +440,16 @@ export default function GestionBriefs({ projects, user }: Props) {
                         >
                           {/* Show current status if not in admin options */}
                           {!ADMIN_STATUS_OPTIONS.some((o) => o.key === brief.statut) && (
-                            <option value={brief.statut}>{sc.label}</option>
+                            <option value={brief.statut}>{t(sc.labelKey)}</option>
                           )}
-                          {ADMIN_STATUS_OPTIONS.map(({ key, label }) => (
+                          {ADMIN_STATUS_OPTIONS.map(({ key, labelKey }) => (
                             <option key={key} value={key}>
-                              {label}
+                              {t(labelKey)}
                             </option>
                           ))}
                         </select>
                         <button className="gestion-delete-btn" onClick={() => handleDelete(brief._id)}>
-                          Supprimer
+                          {t('common.delete')}
                         </button>
                       </div>
                     )}

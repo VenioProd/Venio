@@ -1,4 +1,5 @@
 import { useMemo, type Dispatch, type SetStateAction } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import InternCard from './InternCard'
 import InternForm from './InternForm'
 import { STATUS_CONFIG, type AdminUser, type Intern, type InternFormData } from './types'
@@ -50,6 +51,7 @@ export default function InternsTab({
   onResendCredentials,
   onDelete,
 }: Props) {
+  const { t } = useI18n()
   const filteredInterns = useMemo(
     () => interns.filter((intern) => filterStatus === 'all' || intern.status === filterStatus),
     [filterStatus, interns],
@@ -59,7 +61,7 @@ export default function InternsTab({
     <>
       <div className="ticket-stats" style={{ marginBottom: 16 }}>
         {['all', 'ACTIF', 'TERMINE', 'ANNULE'].map((status) => {
-          const label = status === 'all' ? 'Tous' : STATUS_CONFIG[status]?.label || status
+          const label = status === 'all' ? t('intern.members.all') : t(STATUS_CONFIG[status].labelKey)
           const color = status === 'all' ? 'var(--primary)' : STATUS_CONFIG[status]?.color || '#fff'
           const count = status === 'all' ? interns.length : interns.filter((intern) => intern.status === status).length
           return (
@@ -91,7 +93,9 @@ export default function InternsTab({
 
       <div className="ticket-list">
         {filteredInterns.length === 0 && (
-          <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
+            {t('intern.members.empty')}
+          </p>
         )}
         {filteredInterns.map((intern) => (
           <InternCard

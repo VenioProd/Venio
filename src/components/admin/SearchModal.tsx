@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { globalSearch, type SearchResult } from '../../services/search'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import '../../styles/search-modal.css'
 
 const TYPE_ICONS: Record<string, string> = {
@@ -10,14 +12,15 @@ const TYPE_ICONS: Record<string, string> = {
   lead: '\u{1F525}',
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  project: 'Projet',
-  client: 'Client',
-  task: 'Tache',
-  lead: 'Lead',
+const TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  project: 'compB.search.typeProject',
+  client: 'compB.search.typeClient',
+  task: 'compB.search.typeTask',
+  lead: 'compB.search.typeLead',
 }
 
 export default function SearchModal() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -110,7 +113,7 @@ export default function SearchModal() {
             ref={inputRef}
             className="search-input"
             type="text"
-            placeholder="Rechercher projets, clients, taches, leads..."
+            placeholder={t('compB.search.placeholder')}
             value={query}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -118,12 +121,10 @@ export default function SearchModal() {
           <kbd className="search-kbd">Esc</kbd>
         </div>
 
-        {loading && (
-          <div className="search-loading">Recherche...</div>
-        )}
+        {loading && <div className="search-loading">{t('compB.search.loading')}</div>}
 
         {!loading && query.length >= 2 && results.length === 0 && (
-          <div className="search-empty">Aucun resultat pour "{query}"</div>
+          <div className="search-empty">{t('compB.search.noResult', { query })}</div>
         )}
 
         {results.length > 0 && (
@@ -140,7 +141,9 @@ export default function SearchModal() {
                   <span className="search-result-title">{r.title}</span>
                   <span className="search-result-subtitle">{r.subtitle}</span>
                 </div>
-                <span className="search-result-type">{TYPE_LABELS[r.type] || r.type}</span>
+                <span className="search-result-type">
+                  {TYPE_LABEL_KEYS[r.type] ? t(TYPE_LABEL_KEYS[r.type]) : r.type}
+                </span>
               </button>
             ))}
           </div>
@@ -148,11 +151,18 @@ export default function SearchModal() {
 
         {query.length < 2 && !loading && (
           <div className="search-hints">
-            <p>Tapez au moins 2 caracteres pour lancer la recherche</p>
+            <p>{t('compB.search.minChars')}</p>
             <div className="search-hints-shortcuts">
-              <span><kbd>{'\u2191'}</kbd><kbd>{'\u2193'}</kbd> Naviguer</span>
-              <span><kbd>{'\u21B5'}</kbd> Selectionner</span>
-              <span><kbd>Esc</kbd> Fermer</span>
+              <span>
+                <kbd>{'\u2191'}</kbd>
+                <kbd>{'\u2193'}</kbd> {t('compB.search.navigate')}
+              </span>
+              <span>
+                <kbd>{'\u21B5'}</kbd> {t('compB.search.select')}
+              </span>
+              <span>
+                <kbd>Esc</kbd> {t('common.close')}
+              </span>
             </div>
           </div>
         )}

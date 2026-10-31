@@ -1,4 +1,5 @@
 import { InboxItem, InboxActionKind } from './types'
+import { useI18n } from '../../context/I18nContext'
 
 interface Props {
   item: InboxItem
@@ -7,11 +8,10 @@ interface Props {
 }
 
 const InboxCard = ({ item, focused, onAction }: Props) => {
-  const cls = [
-    'ix-card',
-    focused ? 'ix-card--focused' : '',
-    item.snoozedUntil ? 'ix-card--snoozed' : '',
-  ].filter(Boolean).join(' ')
+  const { t } = useI18n()
+  const cls = ['ix-card', focused ? 'ix-card--focused' : '', item.snoozedUntil ? 'ix-card--snoozed' : '']
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className={cls} data-id={item.id}>
@@ -29,7 +29,9 @@ const InboxCard = ({ item, focused, onAction }: Props) => {
       <div className="ix-card__body">
         <div className="ix-card__title">{item.title}</div>
         <div className="ix-card__meta">
-          {item.meta.map((m, i) => <span key={i}>{m}</span>)}
+          {item.meta.map((m, i) => (
+            <span key={i}>{m}</span>
+          ))}
         </div>
       </div>
       <div className="ix-card__actions">
@@ -39,7 +41,7 @@ const InboxCard = ({ item, focused, onAction }: Props) => {
             type="button"
             className={`ix-btn ix-btn--${a.kind}`}
             onClick={() => onAction(a.kind, item)}
-            title={a.shortcut ? `Raccourci: ${a.shortcut.toUpperCase()}` : undefined}
+            title={a.shortcut ? t('shared.dash.shortcutHint', { key: a.shortcut.toUpperCase() }) : undefined}
           >
             {a.label}
           </button>

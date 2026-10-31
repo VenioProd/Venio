@@ -1,23 +1,39 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import CustomSelect from '../../components/admin/CustomSelect'
+import { useI18n, type MessageKey } from '../../context/I18nContext'
+import { formatDateTime } from '../../i18n/format'
 import { LeadStatusBadge } from './CommercialLeads'
 import {
   commercialApi,
-  formatDate,
+  formatDay,
   REP_EDITABLE_STATUSES,
-  STATUS_LABELS,
+  STATUS_LABEL_KEYS,
   type RepActivity,
   type RepInteraction,
   type RepLead,
   type RepLeadInput,
 } from '../../services/externalSales'
 
-const KIND_LABELS: Record<RepInteraction['kind'], string> = {
-  CALL: 'Appel',
-  MEETING: 'Rendez-vous',
-  EMAIL: 'Email',
-  NOTE: 'Note',
+const KIND_LABEL_KEYS: Record<RepInteraction['kind'], MessageKey> = {
+  CALL: 'commercial.kind.call',
+  MEETING: 'commercial.kind.meeting',
+  EMAIL: 'commercial.kind.email',
+  NOTE: 'commercial.kind.note',
+}
+
+const ACTIVITY_LABEL_KEYS: Partial<Record<string, MessageKey>> = {
+  CREATED: 'commercial.activity.created',
+  READY_TO_CLOSE: 'commercial.activity.readyToClose',
+  CONVERTED: 'commercial.activity.converted',
+}
+
+function activityTitle(activity: RepActivity, t: (key: MessageKey, params?: Record<string, string>) => string) {
+  if (activity.type === 'STATUS_CHANGE' && activity.status) {
+    return t('commercial.activity.statusChange', { status: t(STATUS_LABEL_KEYS[activity.status]) })
+  }
+  const key = ACTIVITY_LABEL_KEYS[activity.type]
+  return key ? t(key) : activity.label
 }
 
 function toDateInput(value: string | null): string {
@@ -25,6 +41,7 @@ function toDateInput(value: string | null): string {
 }
 
 const CommercialLeadDetail = () => {
+  const { t } = useI18n()
   const { id = '' } = useParams()
   const [lead, setLead] = useState<RepLead | null>(null)
   const [activities, setActivities] = useState<RepActivity[]>([])
@@ -87,13 +104,20 @@ const CommercialLeadDetail = () => {
   if (notFound) {
     return (
       <div className="admin-empty-state">
-        <p className="admin-empty-state-text">Ce lead n’existe pas ou ne vous est plus attribué.</p>
-        <Link to="/commercial">Retour à mes leads</Link>
+        <p className="admin-empty-state-text">{t('commercial.detail.notFound')}</p>
+        <Link className="commercial-link" to="/commercial">
+          {t('commercial.detail.back')}
+        </Link>
       </div>
     )
   }
-  if (!lead)
-    return error ? <div className="admin-error">{error}</div> : <div className="admin-loading">Chargement…</div>
+  if (!lead) {
+    return error ? (
+      <div className="admin-error">{error}</div>
+    ) : (
+      <div className="admin-loading">{t('commercial.loading')}</div>
+    )
+  }
 
   const readOnly = Boolean(lead.handedOffAt) || !REP_EDITABLE_STATUSES.includes(lead.status)
   const canHandOff = !readOnly && lead.status !== 'LOST'
@@ -116,7 +140,7 @@ const CommercialLeadDetail = () => {
           budget: form.budget === null || String(form.budget) === '' ? null : Number(form.budget),
           nextActionAt: form.nextActionAt || null,
         }),
-      'Fiche enregistrée',
+      t('commercial.detail.saved'),
     )
   }
 
@@ -125,13 +149,13 @@ const CommercialLeadDetail = () => {
     run(async () => {
       await commercialApi.logInteraction(id, exchange)
       setExchange({ kind: exchange.kind, subject: '', body: '' })
-    }, 'Échange ajouté')
+    }, t('commercial.detail.exchangeAdded'))
   }
 
   return (
     <>
       <div className="admin-breadcrumb">
-        <Link to="/commercial">Mes leads</Link>
+        <Link to="/commercial">{t('commercial.tab.leads')}</Link>
         <span>/</span>
         <span style={{ color: 'var(--text-primary)' }}>{lead.company}</span>
       </div>
@@ -145,22 +169,21 @@ const CommercialLeadDetail = () => {
 
       {lead.handedOffAt ? (
         <div className="commercial-handoff">
-          Dossier transmis pour closing le {formatDate(lead.handedOffAt)}. Il reste à votre crédit ; l’équipe vous
-          tiendra au courant de la signature.
+          {t('commercial.detail.handedOff', { date: formatDay(lead.handedOffAt) })}
         </div>
       ) : (
         canHandOff && (
           <div className="commercial-handoff">
-            <strong>Le prospect est prêt à signer ?</strong>
+            <strong>{t('commercial.detail.readyTitle')}</strong>
             <p className="commercial-muted" style={{ margin: '6px 0 12px' }}>
-              Transmettez le dossier : l’équipe prépare le devis et conclut. La fiche passe en lecture seule.
+              {t('commercial.detail.readyHint')}
             </p>
             {confirmHandoff ? (
               <>
                 <textarea
                   className="portal-input"
                   rows={3}
-                  placeholder="Contexte pour le closer : budget, décideur, échéance…"
+                  placeholder={t('commercial.detail.readyPlaceholder')}
                   value={handoffMessage}
                   onChange={(event) => setHandoffMessage(event.target.value)}
                 />
@@ -169,18 +192,20 @@ const CommercialLeadDetail = () => {
                     type="button"
                     className="portal-button"
                     disabled={busy}
-                    onClick={() => run(() => commercialApi.readyToClose(id, handoffMessage), 'Dossier transmis')}
+                    onClick={() =>
+                      run(() => commercialApi.readyToClose(id, handoffMessage), t('commercial.detail.readyDone'))
+                    }
                   >
-                    Confirmer la transmission
+                    {t('commercial.detail.readyConfirm')}
                   </button>
                   <button type="button" className="portal-button secondary" onClick={() => setConfirmHandoff(false)}>
-                    Annuler
+                    {t('commercial.detail.readyCancel')}
                   </button>
                 </div>
               </>
             ) : (
               <button type="button" className="portal-button" onClick={() => setConfirmHandoff(true)}>
-                Prêt à closer
+                {t('commercial.detail.readyButton')}
               </button>
             )}
           </div>
@@ -191,85 +216,85 @@ const CommercialLeadDetail = () => {
         <form className="portal-card" onSubmit={save}>
           <div className="commercial-form-grid">
             <label className="commercial-wide">
-              Entreprise
+              {t('commercial.field.company')}
               <input {...field('company')} required />
             </label>
             <label>
-              Contact
+              {t('commercial.field.contact')}
               <input {...field('contactName')} />
             </label>
             <label>
-              Email
+              {t('commercial.field.email')}
               <input {...field('contactEmail', 'email')} />
             </label>
             <label>
-              Téléphone
+              {t('commercial.field.phone')}
               <input {...field('contactPhone')} />
             </label>
             <label>
-              Source
+              {t('commercial.field.source')}
               <input {...field('source')} />
             </label>
             <label>
-              Statut
+              {t('commercial.field.status')}
               {readOnly ? (
-                <input className="portal-input" disabled value={STATUS_LABELS[lead.status]} />
+                <input className="portal-input" disabled value={t(STATUS_LABEL_KEYS[lead.status])} />
               ) : (
                 <CustomSelect
                   className="portal-input"
                   value={String(form.status)}
                   onChange={(value) => setForm({ ...form, status: value as RepLead['status'] })}
-                  options={REP_EDITABLE_STATUSES.map((key) => ({ value: key, label: STATUS_LABELS[key] }))}
+                  options={REP_EDITABLE_STATUSES.map((key) => ({ value: key, label: t(STATUS_LABEL_KEYS[key]) }))}
                 />
               )}
             </label>
             <label>
-              Prochaine action
+              {t('commercial.field.nextAction')}
               <input {...field('nextActionAt', 'date')} />
             </label>
             <label>
-              Budget estimé (€ HT)
+              {t('commercial.field.budget')}
               <input {...field('budget', 'number')} min={0} />
             </label>
             <label className="commercial-wide">
-              Notes
+              {t('commercial.field.notes')}
               <textarea {...field('notes')} rows={4} />
             </label>
           </div>
           {!readOnly && (
             <div className="admin-button-group" style={{ marginTop: 16 }}>
               <button className="portal-button" type="submit" disabled={busy}>
-                Enregistrer
+                {t('commercial.detail.save')}
               </button>
             </div>
           )}
         </form>
 
         <div className="portal-card">
-          <h2 style={{ marginTop: 0 }}>Échanges</h2>
+          <h2 style={{ marginTop: 0 }}>{t('commercial.detail.exchanges')}</h2>
           {!readOnly && (
             <form onSubmit={logExchange} style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
               <CustomSelect
                 className="portal-input"
                 value={exchange.kind}
                 onChange={(value) => setExchange({ ...exchange, kind: value as RepInteraction['kind'] })}
-                options={Object.entries(KIND_LABELS).map(([value, label]) => ({ value, label }))}
+                options={Object.entries(KIND_LABEL_KEYS).map(([value, key]) => ({ value, label: t(key) }))}
               />
               <input
                 className="portal-input"
-                placeholder="Objet"
+                placeholder={t('commercial.detail.exchangeSubject')}
                 value={exchange.subject}
                 onChange={(event) => setExchange({ ...exchange, subject: event.target.value })}
               />
               <textarea
                 className="portal-input"
                 rows={3}
-                placeholder="Ce qui s’est dit"
+                placeholder={t('commercial.detail.exchangeBody')}
                 value={exchange.body}
                 onChange={(event) => setExchange({ ...exchange, body: event.target.value })}
               />
               <button className="portal-button secondary" type="submit" disabled={busy}>
-                Ajouter l’échange
+                {t('commercial.detail.exchangeAdd')}
               </button>
             </form>
           )}
@@ -278,14 +303,14 @@ const CommercialLeadDetail = () => {
               ...interactions.map((item) => ({
                 key: item._id,
                 at: item.occurredAt,
-                title: `${KIND_LABELS[item.kind]}${item.subject ? ` · ${item.subject}` : ''}`,
+                title: `${t(KIND_LABEL_KEYS[item.kind])}${item.subject ? ` · ${item.subject}` : ''}`,
                 body: item.body,
               })),
               ...activities.map((item) => ({
                 key: item._id,
                 at: item.createdAt,
-                title: item.label,
-                body: item.actorName ? `par ${item.actorName}` : '',
+                title: activityTitle(item, t),
+                body: item.actorName ? t('commercial.detail.byActor', { name: item.actorName }) : '',
               })),
             ]
               .sort((a, b) => b.at.localeCompare(a.at))
@@ -293,7 +318,7 @@ const CommercialLeadDetail = () => {
                 <li key={item.key}>
                   <strong>{item.title}</strong>
                   {item.body && <div style={{ whiteSpace: 'pre-wrap' }}>{item.body}</div>}
-                  <small>{new Date(item.at).toLocaleString('fr-FR')}</small>
+                  <small>{formatDateTime(item.at)}</small>
                 </li>
               ))}
           </ul>

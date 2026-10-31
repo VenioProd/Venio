@@ -1,4 +1,5 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { PilotageResponse } from '../../../../types/pilotage.types'
 
 interface CoverageNoticeProps {
@@ -12,13 +13,12 @@ interface CoverageNoticeProps {
  * précision que les chiffres n'ont pas.
  */
 const CoverageNotice: React.FC<CoverageNoticeProps> = ({ coverage }) => {
+  const { t } = useI18n()
   if (coverage.withoutHistory === 0) return null
 
   return (
     <p className="pilotage-coverage">
-      {coverage.withoutHistory} lead{coverage.withoutHistory > 1 ? 's' : ''} sur {coverage.total}{' '}
-      {coverage.withoutHistory > 1 ? 'ont' : 'a'} progressé sans que leur parcours soit journalisé. Ils comptent dans
-      l'entonnoir à leur étape actuelle, mais pas dans les durées.
+      {t('adminTech.pilotage.coverageNotice', { count: coverage.withoutHistory, total: coverage.total })}
     </p>
   )
 }

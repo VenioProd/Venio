@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import './ClientPortal.css'
@@ -23,6 +24,7 @@ function readInvitationToken(): string | null {
 }
 
 export default function ProjectInvitationAccept() {
+  const { t } = useI18n()
   const { user, loading } = useAuth()
   const navigate = useNavigate()
   const [token] = useState<string | null>(readInvitationToken)
@@ -45,14 +47,14 @@ export default function ProjectInvitationAccept() {
           body: JSON.stringify({ token: invitationToken }),
         })
         setState('success')
-        setMessage('Invitation acceptée. Ouverture du projet…')
+        setMessage(t('client.invitation.accepted'))
         navigate(`/espace-client/projets/${result.projectId}`, { replace: true })
       } catch (err: unknown) {
         setState('error')
-        setMessage(err instanceof Error && err.message ? err.message : 'Impossible d’accepter cette invitation')
+        setMessage(err instanceof Error && err.message ? err.message : t('client.invitation.acceptError'))
       }
     },
-    [navigate],
+    [navigate, t],
   )
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function ProjectInvitationAccept() {
     return (
       <div className="portal-container">
         <div className="portal-card">
-          <p>Vérification de l’invitation…</p>
+          <p>{t('client.invitation.checking')}</p>
         </div>
       </div>
     )
@@ -75,8 +77,8 @@ export default function ProjectInvitationAccept() {
     return (
       <div className="portal-container">
         <div className="portal-card">
-          <h1>Invitation invalide</h1>
-          <p>Ce lien d’invitation est incomplet ou n’est plus disponible.</p>
+          <h1>{t('client.invitation.invalidTitle')}</h1>
+          <p>{t('client.invitation.invalidBody')}</p>
         </div>
       </div>
     )
@@ -90,8 +92,8 @@ export default function ProjectInvitationAccept() {
     return (
       <div className="portal-container">
         <div className="portal-card">
-          <h1>Compte client requis</h1>
-          <p>Connectez-vous avec un compte client pour accepter cette invitation.</p>
+          <h1>{t('client.invitation.clientRequiredTitle')}</h1>
+          <p>{t('client.invitation.clientRequiredBody')}</p>
         </div>
       </div>
     )
@@ -100,8 +102,8 @@ export default function ProjectInvitationAccept() {
   return (
     <div className="portal-container">
       <div className="portal-card">
-        <h1>Invitation au projet</h1>
-        {state === 'accepting' && <p>Acceptation de l’invitation…</p>}
+        <h1>{t('client.invitation.title')}</h1>
+        {state === 'accepting' && <p>{t('client.invitation.accepting')}</p>}
         {state === 'success' && <p>{message}</p>}
         {state === 'error' && (
           <>
@@ -114,7 +116,7 @@ export default function ProjectInvitationAccept() {
                 if (token) void accept(token)
               }}
             >
-              Réessayer
+              {t('client.invitation.retry')}
             </button>
           </>
         )}

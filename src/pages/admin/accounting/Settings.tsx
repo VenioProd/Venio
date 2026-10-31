@@ -16,15 +16,16 @@ import {
 } from '../../../services/accounting'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type {
-  ICompanySettings,
-  IFiscalYear,
-  IExternalSource,
-  ExternalSourceStatus,
-} from '../../../types/accounting'
+import type { ICompanySettings, IFiscalYear, IExternalSource, ExternalSourceStatus } from '../../../types/accounting'
 import FiscalYearsSection from './settings-sections/FiscalYearsSection'
 import { IntegrationsSection } from './settings-sections/integrations-section'
-import { CreateIntegrationModal, RevokeIntegrationModal, CredentialsModal } from './settings-sections/integrations-modals'
+import {
+  CreateIntegrationModal,
+  RevokeIntegrationModal,
+  CredentialsModal,
+} from './settings-sections/integrations-modals'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]+$/
 
@@ -37,16 +38,16 @@ interface GeneratedCredentials {
   context: 'created' | 'rotated'
 }
 
-const FISCAL_REGIMES = [
-  { value: 'REEL_NORMAL', label: 'Réel normal (CA3 mensuel/trim.)' },
-  { value: 'REEL_SIMPLIFIE', label: 'Réel simplifié (CA12 annuel)' },
-  { value: 'MICRO', label: 'Micro-entreprise / franchise TVA' },
+const FISCAL_REGIMES: { value: string; labelKey: MessageKey }[] = [
+  { value: 'REEL_NORMAL', labelKey: 'accVat.settings.regimeNormal' },
+  { value: 'REEL_SIMPLIFIE', labelKey: 'accVat.settings.regimeSimplified' },
+  { value: 'MICRO', labelKey: 'accVat.settings.regimeMicro' },
 ]
 
-const VAT_PERIODICITIES = [
-  { value: 'MENSUEL', label: 'Mensuelle' },
-  { value: 'TRIMESTRIEL', label: 'Trimestrielle' },
-  { value: 'ANNUEL', label: 'Annuelle' },
+const VAT_PERIODICITIES: { value: string; labelKey: MessageKey }[] = [
+  { value: 'MENSUEL', labelKey: 'accVat.settings.periodMonthly' },
+  { value: 'TRIMESTRIEL', labelKey: 'accVat.settings.periodQuarterly' },
+  { value: 'ANNUEL', labelKey: 'accVat.settings.periodAnnual' },
 ]
 
 interface NewYearForm {
@@ -57,6 +58,7 @@ interface NewYearForm {
 }
 
 const AccountingSettings = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
   const canLock = hasPermission(user, PERMISSIONS.LOCK_ACCOUNTING)
@@ -95,7 +97,7 @@ const AccountingSettings = () => {
       setFiscalYears(fy)
       setExternalSources(sources)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setLoading(false)
     }
@@ -139,21 +141,16 @@ const AccountingSettings = () => {
         context: 'created',
       })
       setCreateOpen(false)
-      setSuccess(`Intégration « ${result.source.name} » créée.`)
+      setSuccess(t('accVat.settings.integrationCreated', { name: result.source.name }))
       await reloadExternalSources()
       return null
     } catch (err) {
-      return err instanceof Error ? err.message : 'Erreur lors de la création'
+      return err instanceof Error ? err.message : t('accVat.settings.createError')
     }
   }
 
   async function handleRotate(source: IExternalSource) {
-    if (
-      !confirm(
-        `Régénérer les clés invalidera l'ancienne immédiatement. « ${source.name} » ne pourra plus pousser tant que les nouvelles clés ne sont pas déployées. Continuer ?`
-      )
-    )
-      return
+    if (!confirm(t('accVat.settings.confirmRotate', { name: source.name }))) return
     setRotatingId(source._id)
     setError('')
     setSuccess('')
@@ -169,7 +166,7 @@ const AccountingSettings = () => {
       })
       await reloadExternalSources()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la rotation')
+      setError(err instanceof Error ? err.message : t('accVat.settings.rotateError'))
     } finally {
       setRotatingId(null)
     }
@@ -179,11 +176,11 @@ const AccountingSettings = () => {
     try {
       await deleteExternalSource(source._id)
       setRevokeTarget(null)
-      setSuccess(`Intégration « ${source.name} » révoquée.`)
+      setSuccess(t('accVat.settings.integrationRevoked', { name: source.name }))
       await reloadExternalSources()
       return null
     } catch (err) {
-      return err instanceof Error ? err.message : 'Erreur lors de la révocation'
+      return err instanceof Error ? err.message : t('accVat.settings.revokeError')
     }
   }
 
@@ -200,25 +197,29 @@ const AccountingSettings = () => {
     try {
       const updated = await updateAccountingSettings({ ...settings, isConfigured: true })
       setSettings(updated)
-      setSuccess('Paramètres enregistrés.')
+      setSuccess(t('accVat.settings.saved'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handleSeed() {
-    if (!confirm('Initialiser le plan comptable, les journaux et les taux TVA par défaut ?')) return
+    if (!confirm(t('accVat.settings.confirmSeed'))) return
     setError('')
     setSuccess('')
     try {
       const r = await seedPCG()
       setSuccess(
-        `Initialisé : ${r.created.accounts} comptes, ${r.created.journals} journaux, ${r.created.vatRates} taux TVA.`
+        t('accVat.settings.seeded', {
+          accounts: r.created.accounts,
+          journals: r.created.journals,
+          vatRates: r.created.vatRates,
+        }),
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
@@ -235,55 +236,46 @@ const AccountingSettings = () => {
       setNewYear({ code: '', label: '', startDate: '', endDate: '' })
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   async function handleClose(id: string) {
-    if (!confirm("Clôturer cet exercice ? Cette opération verrouille toutes les écritures.")) return
+    if (!confirm(t('accVat.settings.confirmClose'))) return
     try {
       await closeFiscalYear(id)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   if (loading || !settings) {
     return (
-      <AccountingLayout title="Paramètres comptables">
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+      <AccountingLayout title={t('accVat.settings.title')}>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
       </AccountingLayout>
     )
   }
 
   return (
-    <AccountingLayout title="Paramètres comptables" subtitle="Société, régime fiscal et exercices">
+    <AccountingLayout title={t('accVat.settings.title')} subtitle={t('accVat.settings.subtitle')}>
       {error && <div className="accounting-message error">{error}</div>}
       {success && <div className="accounting-message success">{success}</div>}
 
       <section className="accounting-card">
-        <h2>Initialisation</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-          Si vous démarrez, cliquez ci-dessous pour créer le plan comptable agence par défaut (60+ comptes),
-          les journaux usuels (VE, AC, BQ, OD, AN) et les taux de TVA standards (20 / 10 / 5,5 / 2,1 / 0 %).
-          L'opération est idempotente — vous pouvez la relancer.
-        </p>
-        <button
-          className="portal-button"
-          onClick={handleSeed}
-          disabled={!canManage}
-          style={{ marginTop: 8 }}
-        >
-          Initialiser PCG / Journaux / TVA
+        <h2>{t('accVat.settings.initHeading')}</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>{t('accVat.settings.initText')}</p>
+        <button className="portal-button" onClick={handleSeed} disabled={!canManage} style={{ marginTop: 8 }}>
+          {t('accVat.settings.initButton')}
         </button>
       </section>
 
       <form className="accounting-card" onSubmit={handleSave}>
-        <h2>Identité juridique</h2>
+        <h2>{t('accVat.settings.legalHeading')}</h2>
         <div className="accounting-form">
           <div className="accounting-form-field">
-            <label>Raison sociale</label>
+            <label>{t('accVat.settings.legalName')}</label>
             <input
               className="portal-input"
               value={settings.legalName || ''}
@@ -292,12 +284,12 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Forme juridique</label>
+            <label>{t('accVat.settings.legalForm')}</label>
             <input
               className="portal-input"
               value={settings.legalForm || ''}
               onChange={(e) => setSettings({ ...settings, legalForm: e.target.value })}
-              placeholder="SAS, SARL, EURL…"
+              placeholder={t('accVat.settings.legalFormPlaceholder')}
               disabled={!canManage}
             />
           </div>
@@ -320,7 +312,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>N° TVA intracom</label>
+            <label>{t('accVat.settings.vatNumber')}</label>
             <input
               className="portal-input"
               value={settings.vatNumber || ''}
@@ -330,7 +322,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Code APE/NAF</label>
+            <label>{t('accVat.settings.apeNaf')}</label>
             <input
               className="portal-input"
               value={settings.apeNafCode || ''}
@@ -348,7 +340,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Capital social (€)</label>
+            <label>{t('accVat.settings.shareCapital')}</label>
             <input
               type="number"
               className="portal-input"
@@ -363,7 +355,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field full">
-            <label>Adresse — ligne 1</label>
+            <label>{t('accVat.settings.addressLine1')}</label>
             <input
               className="portal-input"
               value={settings.address?.line1 || ''}
@@ -377,7 +369,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Code postal</label>
+            <label>{t('accVat.settings.zip')}</label>
             <input
               className="portal-input"
               value={settings.address?.zip || ''}
@@ -391,7 +383,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Ville</label>
+            <label>{t('accVat.settings.city')}</label>
             <input
               className="portal-input"
               value={settings.address?.city || ''}
@@ -405,10 +397,10 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field">
-            <label>Pays</label>
+            <label>{t('accVat.settings.country')}</label>
             <input
               className="portal-input"
-              value={settings.address?.country || 'France'}
+              value={settings.address?.country || t('accVat.settings.countryDefault')}
               onChange={(e) =>
                 setSettings({
                   ...settings,
@@ -420,10 +412,10 @@ const AccountingSettings = () => {
           </div>
         </div>
 
-        <h2 style={{ marginTop: 28 }}>Régime fiscal & TVA</h2>
+        <h2 style={{ marginTop: 28 }}>{t('accVat.settings.taxHeading')}</h2>
         <div className="accounting-form">
           <div className="accounting-form-field">
-            <label>Régime</label>
+            <label>{t('accVat.settings.regime')}</label>
             <select
               className="portal-input"
               value={settings.fiscalRegime || 'REEL_NORMAL'}
@@ -437,13 +429,13 @@ const AccountingSettings = () => {
             >
               {FISCAL_REGIMES.map((r) => (
                 <option key={r.value} value={r.value}>
-                  {r.label}
+                  {t(r.labelKey)}
                 </option>
               ))}
             </select>
           </div>
           <div className="accounting-form-field">
-            <label>Périodicité TVA</label>
+            <label>{t('accVat.settings.vatPeriodicity')}</label>
             <select
               className="portal-input"
               value={settings.vatPeriodicity || 'MENSUEL'}
@@ -457,40 +449,36 @@ const AccountingSettings = () => {
             >
               {VAT_PERIODICITIES.map((p) => (
                 <option key={p.value} value={p.value}>
-                  {p.label}
+                  {t(p.labelKey)}
                 </option>
               ))}
             </select>
           </div>
           <div className="accounting-form-field">
-            <label>Mois de début d'exercice</label>
+            <label>{t('accVat.settings.fiscalStartMonth')}</label>
             <input
               type="number"
               min="1"
               max="12"
               className="portal-input"
               value={settings.fiscalYearStartMonth || 1}
-              onChange={(e) =>
-                setSettings({ ...settings, fiscalYearStartMonth: Number(e.target.value) })
-              }
+              onChange={(e) => setSettings({ ...settings, fiscalYearStartMonth: Number(e.target.value) })}
               disabled={!canManage}
             />
           </div>
           <div className="accounting-form-field">
-            <label>Délai paiement par défaut (jours)</label>
+            <label>{t('accVat.settings.paymentTerms')}</label>
             <input
               type="number"
               min="0"
               className="portal-input"
               value={settings.paymentTermsDays ?? 30}
-              onChange={(e) =>
-                setSettings({ ...settings, paymentTermsDays: Number(e.target.value) })
-              }
+              onChange={(e) => setSettings({ ...settings, paymentTermsDays: Number(e.target.value) })}
               disabled={!canManage}
             />
           </div>
           <div className="accounting-form-field full">
-            <label>Mention pénalités de retard</label>
+            <label>{t('accVat.settings.lateNote')}</label>
             <textarea
               className="portal-input"
               rows={2}
@@ -500,7 +488,7 @@ const AccountingSettings = () => {
             />
           </div>
           <div className="accounting-form-field full">
-            <label>Mentions légales additionnelles (facture)</label>
+            <label>{t('accVat.settings.legalMentions')}</label>
             <textarea
               className="portal-input"
               rows={3}
@@ -513,7 +501,7 @@ const AccountingSettings = () => {
 
         <div className="accounting-toolbar" style={{ marginTop: 20, justifyContent: 'flex-end' }}>
           <button type="submit" className="portal-button" disabled={!canManage || saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? t('accVat.settings.saving') : t('common.save')}
           </button>
         </div>
       </form>
@@ -546,11 +534,7 @@ const AccountingSettings = () => {
       )}
 
       {revokeTarget && (
-        <RevokeIntegrationModal
-          source={revokeTarget}
-          onCancel={() => setRevokeTarget(null)}
-          onConfirm={handleRevoke}
-        />
+        <RevokeIntegrationModal source={revokeTarget} onCancel={() => setRevokeTarget(null)} onConfirm={handleRevoke} />
       )}
 
       {credentials && (
@@ -564,6 +548,5 @@ const AccountingSettings = () => {
     </AccountingLayout>
   )
 }
-
 
 export default AccountingSettings

@@ -23,6 +23,9 @@ const buttonStyle: React.CSSProperties = {
 const LanguageSwitch = () => {
   const { locale, setLocale } = useI18n()
 
+  // i18n-ignore : le libellé du bouton est volontairement dans la langue cible
+  const label = locale === 'fr' ? 'Switch to English' : 'Passer en français'
+
   const toggle = () => {
     setLocale(locale === 'fr' ? 'en' : 'fr')
   }
@@ -42,8 +45,8 @@ const LanguageSwitch = () => {
         e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
         e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
       }}
-      aria-label={locale === 'fr' ? 'Switch to English' : 'Passer en français'}
-      title={locale === 'fr' ? 'Switch to English' : 'Passer en français'}
+      aria-label={label}
+      title={label}
     >
       {locale === 'fr' ? 'FR' : 'EN'}
     </button>

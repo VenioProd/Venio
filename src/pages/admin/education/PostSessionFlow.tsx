@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { X, Check, Plus } from 'lucide-react'
 import {
-  formatDate,
   updateSession,
   type EducationAssignment,
   type EducationSession,
@@ -9,6 +10,7 @@ import {
 } from '../../../services/education'
 import { AssignmentForm } from './assignment-parts'
 import { SessionForm } from './session-parts'
+import { formatShortDate as formatDate } from './eduFormat'
 
 /**
  * Enchaînement post-séance — checklist guidée après le passage d'une séance
@@ -39,6 +41,7 @@ export function PostSessionFlow({
   onClose: () => void
   onChanged: () => void
 }) {
+  const { t } = useI18n()
   const classId = typeof session.classId === 'string' ? session.classId : session.classId._id
   const className = typeof session.classId === 'string' ? null : session.classId.name
 
@@ -66,7 +69,7 @@ export function PostSessionFlow({
       setError(null)
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de sauvegarde du compte-rendu')
+      setError(err instanceof Error ? err.message : translate('eduB.postFlow.recapSaveFailed'))
     } finally {
       setRecapSaving(false)
     }
@@ -75,18 +78,18 @@ export function PostSessionFlow({
   return (
     <>
       <div className="edu-drawer-backdrop edu-postflow-backdrop" onClick={onClose} />
-      <div className="edu-drawer edu-postflow" role="dialog" aria-label="Enchaînement post-séance">
+      <div className="edu-drawer edu-postflow" role="dialog" aria-label={t('eduB.postFlow.dialog')}>
         <div className="edu-drawer-head">
           <div>
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-              Séance terminée — enchaînement
+              {t('eduB.postFlow.title')}
             </h2>
             <div className="edu-postflow-subtitle">
               {session.title}
               {className ? ` · ${className}` : ''}
             </div>
           </div>
-          <button className="edu-btn-icon" onClick={onClose} title="Fermer">
+          <button className="edu-btn-icon" onClick={onClose} title={t('common.close')}>
             <X size={18} />
           </button>
         </div>
@@ -96,30 +99,30 @@ export function PostSessionFlow({
             <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
               {error}
               <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
-                Fermer
+                {t('common.close')}
               </button>
             </div>
           )}
           <p className="edu-sub" style={{ marginBottom: 4 }}>
-            Trois étapes optionnelles pour boucler la séance et préparer la suite.
+            {t('eduB.postFlow.intro')}
           </p>
 
           {/* Étape 1 — compte-rendu */}
           <div className="edu-postflow-step">
             <StepBadge done={recapDone} index={1} />
             <div className="edu-postflow-step-body">
-              <strong>Compléter le compte-rendu</strong>
+              <strong>{t('eduB.postFlow.step1')}</strong>
               <textarea
                 className="edu-textarea"
                 value={recap}
                 onChange={(e) => setRecap(e.target.value)}
-                placeholder="Ce qui s'est passé, points clés, à reprendre la prochaine fois…"
+                placeholder={t('eduB.postFlow.recapPlaceholder')}
                 style={{ minHeight: 110 }}
-                aria-label="Compte-rendu de séance"
+                aria-label={t('eduB.shared.recapTitle')}
               />
               <div>
                 <button className="edu-btn" disabled={recapSaving} onClick={saveRecap}>
-                  {recapSaving ? 'Enregistrement…' : 'Enregistrer'}
+                  {recapSaving ? t('eduB.autosave.saving') : t('common.save')}
                 </button>
               </div>
             </div>
@@ -129,15 +132,17 @@ export function PostSessionFlow({
           <div className="edu-postflow-step">
             <StepBadge done={assignmentDone} index={2} />
             <div className="edu-postflow-step-body">
-              <strong>Créer le devoir donné</strong>
+              <strong>{t('eduB.postFlow.step2')}</strong>
               {assignmentDone ? (
                 <span className="edu-postflow-done-note">
-                  Devoir créé{createdAssignment ? ` : ${createdAssignment.title}` : ''}
+                  {createdAssignment
+                    ? t('eduB.postFlow.assignmentDoneNamed', { title: createdAssignment.title })
+                    : t('eduB.postFlow.assignmentDone')}
                 </span>
               ) : (
                 <div>
                   <button className="edu-btn" onClick={() => setShowAssignmentForm(true)}>
-                    <Plus size={14} /> Créer un devoir
+                    <Plus size={14} /> {t('eduB.postFlow.createAssignment')}
                   </button>
                 </div>
               )}
@@ -148,19 +153,23 @@ export function PostSessionFlow({
           <div className="edu-postflow-step">
             <StepBadge done={nextSessionDone} index={3} />
             <div className="edu-postflow-step-body">
-              <strong>Planifier la prochaine séance</strong>
+              <strong>{t('eduB.postFlow.step3')}</strong>
               {nextSessionDone ? (
                 <span className="edu-postflow-done-note">
-                  Séance planifiée
-                  {createdSession ? ` : ${createdSession.title} — ${formatDate(createdSession.date, true)}` : ''}
+                  {createdSession
+                    ? t('eduB.postFlow.sessionDoneNamed', {
+                        title: createdSession.title,
+                        date: formatDate(createdSession.date, true),
+                      })
+                    : t('eduB.postFlow.sessionDone')}
                 </span>
               ) : (
                 <div>
                   <button className="edu-btn" onClick={() => setShowSessionForm(true)}>
-                    <Plus size={14} /> Planifier
+                    <Plus size={14} /> {t('eduB.postFlow.schedule')}
                   </button>
                   <span className="edu-sub" style={{ marginLeft: 10 }}>
-                    Date proposée : +7 jours, même heure.
+                    {t('eduB.postFlow.proposedDate')}
                   </span>
                 </div>
               )}
@@ -170,7 +179,7 @@ export function PostSessionFlow({
 
         <div className="edu-drawer-foot">
           <button className="edu-btn" onClick={onClose}>
-            Terminer
+            {t('eduB.postFlow.finish')}
           </button>
         </div>
       </div>
@@ -213,8 +222,12 @@ export function PostSessionFlow({
 
 /** Pastille d'étape : numéro, ou coche verte quand l'étape est faite. */
 function StepBadge({ done, index }: { done: boolean; index: number }) {
+  const { t } = useI18n()
   return (
-    <span className={`edu-postflow-badge${done ? ' done' : ''}`} aria-label={done ? 'Étape faite' : `Étape ${index}`}>
+    <span
+      className={`edu-postflow-badge${done ? ' done' : ''}`}
+      aria-label={done ? t('eduB.postFlow.stepDone') : t('eduB.postFlow.stepN', { n: index })}
+    >
       {done ? <Check size={14} /> : index}
     </span>
   )

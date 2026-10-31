@@ -1,6 +1,7 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG } from './types'
+import { useI18n } from '../../../context/I18nContext'
 
 interface TicketFiltersProps {
   filterCategory: string
@@ -15,6 +16,7 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
   filterPriority,
   setFilterPriority,
 }) => {
+  const { t } = useI18n()
   return (
     <div className="ticket-filters">
       <CustomSelect
@@ -22,8 +24,8 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
         value={filterCategory}
         onChange={(v) => setFilterCategory(v)}
         options={[
-          { value: 'all', label: 'Toutes les categories' },
-          ...Object.entries(CATEGORY_CONFIG).map(([k, v]) => ({ value: k, label: v.label })),
+          { value: 'all', label: t('orgs.tickets.filters.allCategories') },
+          ...Object.entries(CATEGORY_CONFIG).map(([k, v]) => ({ value: k, label: t(v.labelKey) })),
         ]}
       />
       <CustomSelect
@@ -31,16 +33,19 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
         value={filterPriority}
         onChange={(v) => setFilterPriority(v)}
         options={[
-          { value: 'all', label: 'Toutes les priorites' },
-          ...Object.entries(PRIORITY_CONFIG).map(([k, v]) => ({ value: k, label: v.label })),
+          { value: 'all', label: t('orgs.tickets.filters.allPriorities') },
+          ...Object.entries(PRIORITY_CONFIG).map(([k, v]) => ({ value: k, label: t(v.labelKey) })),
         ]}
       />
       {(filterCategory !== 'all' || filterPriority !== 'all') && (
         <button
           className="gestion-filter-clear"
-          onClick={() => { setFilterCategory('all'); setFilterPriority('all') }}
+          onClick={() => {
+            setFilterCategory('all')
+            setFilterPriority('all')
+          }}
         >
-          Reinitialiser
+          {t('orgs.tickets.filters.reset')}
         </button>
       )}
     </div>

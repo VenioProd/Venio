@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 import { useTabState } from '../../hooks/useTabState'
 import { apiDownload, apiFetch } from '../../lib/api'
 import type {
@@ -40,6 +43,7 @@ const statusClass: Record<string, string> = {
 }
 
 const ClientProjectDetail = () => {
+  const { t } = useI18n()
   const { id } = useParams()
   const [project, setProject] = useState<Project | null>(null)
   const [accessRole, setAccessRole] = useState<ProjectAccessRole>('OWNER')
@@ -83,13 +87,13 @@ const ClientProjectDetail = () => {
         setActivities(activityData.activities || [])
         setPhases(phasesData.phases || [])
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement projet')
+        setError((err as Error).message || t('client.project.loadError'))
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [id])
+  }, [id, t])
 
   const loadMoreActivities = useCallback(async () => {
     if (activities.length === 0 || loadingMore) return
@@ -121,7 +125,7 @@ const ClientProjectDetail = () => {
       link.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Telechargement impossible')
+      setError((err as Error).message || t('client.project.downloadDocError'))
     }
   }
 
@@ -137,7 +141,7 @@ const ClientProjectDetail = () => {
       link.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Téléchargement impossible')
+      setError((err as Error).message || t('client.project.downloadItemError'))
     }
   }
 
@@ -155,7 +159,7 @@ const ClientProjectDetail = () => {
       })
       await reloadPhases()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Validation impossible')
+      setError((err as Error).message || t('client.project.validateError'))
     }
   }
 
@@ -168,18 +172,18 @@ const ClientProjectDetail = () => {
       })
       await reloadPhases()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Demande de retouches impossible')
+      setError((err as Error).message || t('client.project.revisionError'))
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'EN_COURS':
-        return 'En cours'
+        return t('client.projectStatus.inProgress')
       case 'EN_ATTENTE':
-        return 'En attente'
+        return t('client.projectStatus.pending')
       case 'TERMINE':
-        return 'Terminé'
+        return t('client.projectStatus.done')
       default:
         return status
     }
@@ -199,18 +203,18 @@ const ClientProjectDetail = () => {
   }
 
   const getActivityLabel = (action: string) => {
-    const labels: Record<string, string> = {
-      STATUS_CHANGED: 'Statut modifié',
-      UPDATE_POSTED: 'Mise à jour publiée',
-      DOCUMENT_UPLOADED: 'Document ajouté',
-      ITEM_CREATED: 'Élément ajouté',
-      TASK_CREATED: 'Tâche créée',
-      TASK_MOVED: 'Tâche déplacée',
-      PHASE_STATUS_CHANGED: 'Étape mise à jour',
-      PHASE_VALIDATED: 'Étape validée',
-      PHASE_REVISION_REQUESTED: 'Retouches demandées',
+    const labels: Record<string, MessageKey> = {
+      STATUS_CHANGED: 'client.project.actionStatusChanged',
+      UPDATE_POSTED: 'client.project.actionUpdatePosted',
+      DOCUMENT_UPLOADED: 'client.project.actionDocumentUploaded',
+      ITEM_CREATED: 'client.project.actionItemCreated',
+      TASK_CREATED: 'client.project.actionTaskCreated',
+      TASK_MOVED: 'client.project.actionTaskMoved',
+      PHASE_STATUS_CHANGED: 'client.project.actionPhaseUpdated',
+      PHASE_VALIDATED: 'client.project.actionPhaseValidated',
+      PHASE_REVISION_REQUESTED: 'client.project.actionRevisionRequested',
     }
-    return labels[action] || action
+    return labels[action] ? t(labels[action]) : action
   }
 
   const getActivityIcon = (action: string) => {
@@ -233,27 +237,27 @@ const ClientProjectDetail = () => {
     const date = new Date(dateStr)
     const diffMs = now.getTime() - date.getTime()
     const diffMin = Math.floor(diffMs / 60000)
-    if (diffMin < 1) return "À l'instant"
-    if (diffMin < 60) return `Il y a ${diffMin} min`
+    if (diffMin < 1) return t('client.project.justNow')
+    if (diffMin < 60) return t('client.project.minutesAgo', { count: diffMin })
     const diffH = Math.floor(diffMin / 60)
-    if (diffH < 24) return `Il y a ${diffH}h`
+    if (diffH < 24) return t('client.project.hoursAgo', { count: diffH })
     const diffD = Math.floor(diffH / 24)
-    if (diffD < 7) return `Il y a ${diffD}j`
+    if (diffD < 7) return t('client.project.daysAgo', { count: diffD })
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }
 
-  const priorityLabels: Record<string, string> = {
-    BASSE: 'Basse',
-    NORMALE: 'Normale',
-    HAUTE: 'Haute',
-    URGENTE: 'Urgente',
+  const priorityLabelKeys: Record<string, MessageKey> = {
+    BASSE: 'client.crPriority.low',
+    NORMALE: 'client.crPriority.normal',
+    HAUTE: 'client.crPriority.high',
+    URGENTE: 'client.crPriority.urgent',
   }
 
-  const statusTaskLabels: Record<string, string> = {
-    A_FAIRE: 'À faire',
-    EN_COURS: 'En cours',
-    EN_REVIEW: 'En review',
-    TERMINE: 'Terminé',
+  const statusTaskLabelKeys: Record<string, MessageKey> = {
+    A_FAIRE: 'client.project.taskTodo',
+    EN_COURS: 'client.projectStatus.inProgress',
+    EN_REVIEW: 'client.project.taskReview',
+    TERMINE: 'client.projectStatus.done',
   }
 
   const statusTaskColors: Record<string, string> = {
@@ -281,7 +285,7 @@ const ClientProjectDetail = () => {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          <span>Mes projets</span>
+          <span>{t('client.dashboard.projectsTitle')}</span>
         </Link>
         <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>/</span>
         <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>
@@ -292,7 +296,7 @@ const ClientProjectDetail = () => {
       {loading && (
         <div className="client-dashboard-loading">
           <div className="client-dashboard-spinner" />
-          <p>Chargement du projet…</p>
+          <p>{t('client.project.loading')}</p>
         </div>
       )}
 
@@ -336,7 +340,7 @@ const ClientProjectDetail = () => {
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                 <polyline points="13 2 13 9 20 9" />
               </svg>
-              <span>Contenu</span>
+              <span>{t('client.project.tabContent')}</span>
             </button>
             <button
               className={`client-project-tab ${activeTab === 'updates' ? 'active' : ''}`}
@@ -352,7 +356,7 @@ const ClientProjectDetail = () => {
               >
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
-              <span>Mises à jour</span>
+              <span>{t('client.project.tabUpdates')}</span>
             </button>
             <button
               className={`client-project-tab ${activeTab === 'progress' ? 'active' : ''}`}
@@ -370,7 +374,7 @@ const ClientProjectDetail = () => {
                 <line x1="12" y1="20" x2="12" y2="4" />
                 <line x1="6" y1="20" x2="6" y2="14" />
               </svg>
-              <span>Avancement</span>
+              <span>{t('client.project.tabProgress')}</span>
             </button>
             <button
               className={`client-project-tab ${activeTab === 'documents' ? 'active' : ''}`}
@@ -390,7 +394,7 @@ const ClientProjectDetail = () => {
                 <line x1="16" y1="17" x2="8" y2="17" />
                 <polyline points="10 9 9 9 8 9" />
               </svg>
-              <span>Documents</span>
+              <span>{t('client.project.tabDocuments')}</span>
             </button>
             <button
               className={`client-project-tab ${activeTab === 'messages' ? 'active' : ''}`}
@@ -406,7 +410,7 @@ const ClientProjectDetail = () => {
               >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              <span>Messages</span>
+              <span>{t('client.project.tabMessages')}</span>
             </button>
             {accessRole === 'OWNER' && (
               <button
@@ -425,7 +429,7 @@ const ClientProjectDetail = () => {
                   <circle cx="9" cy="7" r="4" />
                   <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <span>Collaborateurs</span>
+                <span>{t('client.project.tabCollaborators')}</span>
               </button>
             )}
           </div>
@@ -456,7 +460,7 @@ const ClientProjectDetail = () => {
               {getItemsBySection(section._id).length === 0 ? (
                 <div className="client-project-empty">
                   <span className="client-project-empty-icon">📭</span>
-                  <p>Aucun élément dans cette section</p>
+                  <p>{t('client.project.sectionEmpty')}</p>
                 </div>
               ) : (
                 <div className="client-project-items">
@@ -471,8 +475,8 @@ const ClientProjectDetail = () => {
           {sections.length === 0 && getItemsWithoutSection().length === 0 && (
             <div className="client-project-empty-state">
               <div className="client-project-empty-state-icon">📁</div>
-              <h3>Aucun contenu disponible</h3>
-              <p>Le contenu du projet sera ajouté ici par votre équipe.</p>
+              <h3>{t('client.project.contentEmptyTitle')}</h3>
+              <p>{t('client.project.contentEmptyBody')}</p>
             </div>
           )}
         </div>
@@ -483,15 +487,15 @@ const ClientProjectDetail = () => {
           {updates.length === 0 ? (
             <div className="client-project-empty-state">
               <div className="client-project-empty-state-icon">📢</div>
-              <h3>Aucune mise à jour</h3>
-              <p>Les dernières nouvelles de votre projet apparaîtront ici.</p>
+              <h3>{t('client.project.updatesEmptyTitle')}</h3>
+              <p>{t('client.project.updatesEmptyBody')}</p>
             </div>
           ) : (
             <div className="client-project-updates">
               {updates.map((update) => (
                 <div key={update._id} className="client-project-update">
                   <div className="client-project-update-date">
-                    {new Date(update.createdAt).toLocaleDateString('fr-FR', {
+                    {formatDate(update.createdAt, {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',
@@ -521,21 +525,21 @@ const ClientProjectDetail = () => {
           {/* Project Info */}
           {project && (
             <div className="client-progress-info">
-              <h2 className="client-progress-section-title">Informations du projet</h2>
+              <h2 className="client-progress-section-title">{t('client.project.infoTitle')}</h2>
               <div className="client-progress-info-grid">
                 {project.priority && (
                   <div className="client-progress-info-item">
-                    <span className="client-progress-info-label">Priorité</span>
+                    <span className="client-progress-info-label">{t('client.project.infoPriority')}</span>
                     <span className="client-progress-info-value">
-                      {priorityLabels[project.priority] || project.priority}
+                      {priorityLabelKeys[project.priority] ? t(priorityLabelKeys[project.priority]) : project.priority}
                     </span>
                   </div>
                 )}
                 {project.startDate && (
                   <div className="client-progress-info-item">
-                    <span className="client-progress-info-label">Date de début</span>
+                    <span className="client-progress-info-label">{t('client.project.infoStart')}</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.startDate).toLocaleDateString('fr-FR', {
+                      {formatDate(project.startDate, {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
@@ -545,9 +549,9 @@ const ClientProjectDetail = () => {
                 )}
                 {project.endDate && (
                   <div className="client-progress-info-item">
-                    <span className="client-progress-info-label">Date de fin prévue</span>
+                    <span className="client-progress-info-label">{t('client.project.infoEnd')}</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.endDate).toLocaleDateString('fr-FR', {
+                      {formatDate(project.endDate, {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
@@ -557,9 +561,9 @@ const ClientProjectDetail = () => {
                 )}
                 {project.deliveredAt && (
                   <div className="client-progress-info-item">
-                    <span className="client-progress-info-label">Livré le</span>
+                    <span className="client-progress-info-label">{t('client.project.infoDelivered')}</span>
                     <span className="client-progress-info-value">
-                      {new Date(project.deliveredAt).toLocaleDateString('fr-FR', {
+                      {formatDate(project.deliveredAt, {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
@@ -570,12 +574,12 @@ const ClientProjectDetail = () => {
               </div>
               {project.deadlines && project.deadlines.length > 0 && (
                 <div className="client-progress-deadlines">
-                  <h3 className="client-progress-deadlines-title">Échéances</h3>
+                  <h3 className="client-progress-deadlines-title">{t('client.project.deadlines')}</h3>
                   {project.deadlines.map((d, i) => (
                     <div key={i} className="client-progress-deadline">
                       <span className="client-progress-deadline-label">{d.label}</span>
                       <span className="client-progress-deadline-date">
-                        {new Date(d.dueAt).toLocaleDateString('fr-FR', {
+                        {formatDate(d.dueAt, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -591,12 +595,14 @@ const ClientProjectDetail = () => {
           {/* Task Progress */}
           {taskProgress && taskProgress.total > 0 ? (
             <div className="client-progress-tasks">
-              <h2 className="client-progress-section-title">Avancement des tâches</h2>
+              <h2 className="client-progress-section-title">{t('client.project.tasksTitle')}</h2>
               <div className="client-progress-bar-container">
                 <div className="client-progress-bar-header">
-                  <span className="client-progress-bar-label">{taskProgress.percent}% complété</span>
+                  <span className="client-progress-bar-label">
+                    {t('client.project.percentDone', { percent: taskProgress.percent })}
+                  </span>
                   <span className="client-progress-bar-count">
-                    {taskProgress.byStatus.TERMINE}/{taskProgress.total} tâches
+                    {t('client.project.tasksCount', { done: taskProgress.byStatus.TERMINE, total: taskProgress.total })}
                   </span>
                 </div>
                 <div className="client-progress-bar">
@@ -607,7 +613,7 @@ const ClientProjectDetail = () => {
                 {(['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'TERMINE'] as const).map((status) => (
                   <div key={status} className="client-progress-status-item">
                     <div className="client-progress-status-dot" style={{ background: statusTaskColors[status] }} />
-                    <span className="client-progress-status-label">{statusTaskLabels[status]}</span>
+                    <span className="client-progress-status-label">{t(statusTaskLabelKeys[status])}</span>
                     <span className="client-progress-status-count">{taskProgress.byStatus[status]}</span>
                   </div>
                 ))}
@@ -616,15 +622,15 @@ const ClientProjectDetail = () => {
           ) : (
             <div className="client-project-empty-state">
               <div className="client-project-empty-state-icon">📊</div>
-              <h3>Pas de tâches pour le moment</h3>
-              <p>Les tâches du projet apparaîtront ici avec leur avancement.</p>
+              <h3>{t('client.project.tasksEmptyTitle')}</h3>
+              <p>{t('client.project.tasksEmptyBody')}</p>
             </div>
           )}
 
           {/* Activity Feed */}
           {activities.length > 0 && (
             <div className="client-progress-activity">
-              <h2 className="client-progress-section-title">Activité récente</h2>
+              <h2 className="client-progress-section-title">{t('client.project.activityTitle')}</h2>
               <div className="client-activity-list">
                 {activities.map((a) => (
                   <div key={a._id} className="client-activity-item">
@@ -642,7 +648,7 @@ const ClientProjectDetail = () => {
               </div>
               {activities.length >= 15 && (
                 <button className="client-activity-load-more" onClick={loadMoreActivities} disabled={loadingMore}>
-                  {loadingMore ? 'Chargement...' : 'Charger plus'}
+                  {loadingMore ? t('client.project.loadingMore') : t('client.project.loadMore')}
                 </button>
               )}
             </div>
@@ -655,8 +661,8 @@ const ClientProjectDetail = () => {
           {documents.length === 0 ? (
             <div className="client-project-empty-state">
               <div className="client-project-empty-state-icon">📄</div>
-              <h3>Aucun document</h3>
-              <p>Les documents liés à votre projet seront disponibles ici.</p>
+              <h3>{t('client.project.docsEmptyTitle')}</h3>
+              <p>{t('client.project.docsEmptyBody')}</p>
             </div>
           ) : (
             <div className="client-project-documents">
@@ -699,7 +705,7 @@ const ClientProjectDetail = () => {
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                    Télécharger
+                    {t('client.billing.download')}
                   </button>
                 </div>
               ))}

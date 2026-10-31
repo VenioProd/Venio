@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { type VenioIconName } from '../VenioIcon'
 import FormulaThumb, { type FormulaKind } from '../graphics/FormulaThumb'
 
@@ -65,6 +66,7 @@ const buildMarks = (count: number): Mark[] => {
 }
 
 const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
+  const { t: tr } = useI18n()
   const marks = useMemo(() => buildMarks(tiers.length), [tiers.length])
   const initial = Math.max(
     0,
@@ -159,10 +161,10 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
               y2="303"
             />
             <text className="mh-dial-scale" x={marks[0].point.x} y="320">
-              Être trouvé
+              {tr('pubHome.dial.scaleStart')}
             </text>
             <text className="mh-dial-scale" x={marks[marks.length - 1].point.x} y="320" textAnchor="end">
-              Faire tourner l'activité
+              {tr('pubHome.dial.scaleEnd')}
             </text>
           </svg>
 
@@ -172,7 +174,7 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
             className="mh-dial-hits"
             viewBox="-116 62 1132 274"
             role="radiogroup"
-            aria-label="Cinq formules de sites web"
+            aria-label={tr('pubHome.home.dialLabel')}
           >
             {marks.map((m, i) => (
               <circle
@@ -186,7 +188,7 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
                 r="30"
                 role="radio"
                 aria-checked={i === active}
-                aria-label={`Formule ${tiers[i].num} — ${tiers[i].name}`}
+                aria-label={tr('pubHome.dial.hitLabel', { num: tiers[i].num, name: tiers[i].name })}
                 tabIndex={i === active ? 0 : -1}
                 onClick={() => move(i)}
                 onKeyDown={(event) => onKeyDown(event, i)}
@@ -204,8 +206,7 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
             </div>
           )}
           <span className="mh-mono mh-tier-num">
-            Formule {tier.num}
-            {tier.featured ? ' — la plus choisie' : ''}
+            {tr(tier.featured ? 'pubHome.dial.tierNumFeatured' : 'pubHome.dial.tierNum', { num: tier.num })}
           </span>
           <h3 className="mh-tier-name">{tier.name}</h3>
           <p className="mh-tier-tag">{tier.tag}</p>
@@ -213,14 +214,14 @@ const TierDial = ({ tiers }: { tiers: HomeTier[] }) => {
         </div>
 
         <div className="mh-tier-side">
-          <span className="mh-mono mh-tier-side-label">Ce qui est inclus</span>
+          <span className="mh-mono mh-tier-side-label">{tr('pubHome.dial.included')}</span>
           <ul className="mh-tier-incl">
             {tier.incl.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
           <Link className="mh-tier-go" to="/contact" data-analytics-cta="home_dial_chiffrage">
-            Demander un chiffrage <span aria-hidden="true">→</span>
+            {tr('pubHome.dial.quote')} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>

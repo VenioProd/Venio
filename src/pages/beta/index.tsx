@@ -9,6 +9,9 @@ import {
   type TesterRun,
   type TesterSession,
 } from '../../services/betaTester'
+import { useI18n } from '../../context/I18nContext'
+import { translate } from '../../i18n'
+import { formatDate } from '../../i18n/format'
 import SEO from '../../components/SEO'
 import ScenarioCard from './ScenarioCard'
 import ScenarioTable from './ScenarioTable'
@@ -16,6 +19,7 @@ import { pickScenarioToResume, readProgress } from './progress'
 import './BetaTester.css'
 
 export default function BetaTesterSpace() {
+  const { t } = useI18n()
   const { token } = useParams<{ token: string }>()
   const [session, setSession] = useState<TesterSession | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +35,7 @@ export default function BetaTesterSpace() {
     } catch {
       // Le serveur répond la même chose pour un lien inconnu, révoqué ou
       // périmé : on reprend ce message unique, sans en dire plus.
-      setError('Ce lien n’est plus valable. Demandez-en un nouveau à votre contact.')
+      setError(translate('beta.tester.linkInvalid'))
     } finally {
       setLoading(false)
     }
@@ -75,13 +79,13 @@ export default function BetaTesterSpace() {
 
   // La page est atteignable sans compte : on la tient hors des moteurs de
   // recherche, quel que soit l'état de chargement.
-  const seo = <SEO title="Beta test" description="Espace de test réservé aux testeurs invités." noindex />
+  const seo = <SEO title={t('beta.tester.seoTitle')} description={t('beta.tester.seoDescription')} noindex />
 
   if (loading)
     return (
       <main className="bt-shell">
         {seo}
-        <p>Chargement…</p>
+        <p>{t('beta.shared.loading')}</p>
       </main>
     )
   if (error) {
@@ -89,7 +93,7 @@ export default function BetaTesterSpace() {
       <main className="bt-shell">
         {seo}
         <div className="bt-gate">
-          <h1>Lien indisponible</h1>
+          <h1>{t('beta.tester.gateTitle')}</h1>
           <p>{error}</p>
         </div>
       </main>
@@ -105,21 +109,21 @@ export default function BetaTesterSpace() {
     <main className="bt-shell">
       {seo}
       <header className="bt-header">
-        <p className="bt-hello">Bonjour {session.tester.name}</p>
+        <p className="bt-hello">{t('beta.tester.hello', { name: session.tester.name })}</p>
         <h1>{session.campaign.name}</h1>
         {session.campaign.description && <p className="bt-desc">{session.campaign.description}</p>}
 
         <div className="bt-header-row">
           {session.campaign.targetUrl && (
             <a className="bt-btn bt-btn-primary" href={session.campaign.targetUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={14} aria-hidden /> Ouvrir le site à tester
+              <ExternalLink size={14} aria-hidden /> {t('beta.tester.openSite')}
             </a>
           )}
           <div className="bt-progress" role="status">
             <span className="bt-progress-count">
               {tested} / {total}
             </span>
-            <span className="bt-hint">démarches testées</span>
+            <span className="bt-hint">{t('beta.tester.testedLabel')}</span>
             <div className="bt-progress-bar" aria-hidden>
               <span style={{ width: total === 0 ? '0%' : `${Math.round((tested / total) * 100)}%` }} />
             </div>
@@ -128,19 +132,14 @@ export default function BetaTesterSpace() {
 
         {session.campaign.endsAt && (
           <p className="bt-hint">
-            La campagne se termine le{' '}
-            {new Date(session.campaign.endsAt).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
+            {t('beta.tester.endsOn', {
+              date: formatDate(session.campaign.endsAt, { day: 'numeric', month: 'long' }),
             })}
-            .
           </p>
         )}
       </header>
 
-      {session.scenarios.length === 0 && (
-        <p className="bt-desc">Rien à tester pour l’instant. Revenez un peu plus tard.</p>
-      )}
+      {session.scenarios.length === 0 && <p className="bt-desc">{t('beta.tester.nothingToTest')}</p>}
 
       <ScenarioTable
         scenarios={session.scenarios}
@@ -169,7 +168,7 @@ export default function BetaTesterSpace() {
 
       {myFindings.length > 0 && (
         <section className="bt-card">
-          <h2>Mes retours et les réponses de l’équipe</h2>
+          <h2>{t('beta.tester.findingsHeading')}</h2>
           {myFindings.map((run) => (
             <Thread key={run._id} token={token} run={run} />
           ))}
@@ -180,6 +179,7 @@ export default function BetaTesterSpace() {
 }
 
 function Thread({ token, run }: { token: string; run: TesterRun }) {
+  const { t } = useI18n()
   const [comments, setComments] = useState<TesterComment[] | null>(null)
   const [draft, setDraft] = useState('')
 
@@ -191,22 +191,24 @@ function Thread({ token, run }: { token: string; run: TesterRun }) {
   return (
     <article className="bt-thread">
       <header>
-        <strong>{run.title || 'Retour sans titre'}</strong>
-        {run.status === 'FIXED' && <span className="bt-badge bt-badge-ok">Corrigé, à revérifier</span>}
-        {run.status === 'ACKNOWLEDGED' && <span className="bt-badge">Pris en compte</span>}
-        {run.status === 'REJECTED' && <span className="bt-badge">Classé sans suite</span>}
+        <strong>{run.title || t('beta.tester.untitledFinding')}</strong>
+        {run.status === 'FIXED' && <span className="bt-badge bt-badge-ok">{t('beta.shared.toRecheck')}</span>}
+        {run.status === 'ACKNOWLEDGED' && <span className="bt-badge">{t('beta.shared.acknowledged')}</span>}
+        {run.status === 'REJECTED' && <span className="bt-badge">{t('beta.tester.dismissed')}</span>}
       </header>
 
       {comments === null ? (
         <button type="button" className="bt-btn bt-btn-small" onClick={() => void load()}>
-          <MessageSquare size={12} aria-hidden /> Voir la discussion
+          <MessageSquare size={12} aria-hidden /> {t('beta.tester.seeThread')}
         </button>
       ) : (
         <>
-          {comments.length === 0 && <p className="bt-hint">Aucun message pour l’instant.</p>}
+          {comments.length === 0 && <p className="bt-hint">{t('beta.tester.noMessages')}</p>}
           {comments.map((comment) => (
             <p key={comment._id} className={`bt-message bt-message-${comment.author}`}>
-              <span className="bt-message-author">{comment.author === 'me' ? 'Vous' : 'L’équipe'}</span>
+              <span className="bt-message-author">
+                {comment.author === 'me' ? t('beta.tester.authorMe') : t('beta.tester.authorTeam')}
+              </span>
               {comment.body}
             </p>
           ))}
@@ -223,11 +225,11 @@ function Thread({ token, run }: { token: string; run: TesterRun }) {
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               rows={2}
-              placeholder="Ajouter une précision…"
-              aria-label="Votre message"
+              placeholder={t('beta.tester.addDetailPlaceholder')}
+              aria-label={t('beta.tester.messageAria')}
             />
             <button type="submit" className="bt-btn bt-btn-small" disabled={!draft.trim()}>
-              Envoyer
+              {t('beta.shared.send')}
             </button>
           </form>
         </>

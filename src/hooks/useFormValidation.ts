@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { translate } from '../i18n'
 
 // ── Validator types ──────────────────────────────────────────────
 
@@ -30,12 +31,7 @@ interface PatternRule {
   message?: string
 }
 
-export type ValidationRule =
-  | RequiredRule
-  | EmailRule
-  | MinLengthRule
-  | MaxLengthRule
-  | PatternRule
+export type ValidationRule = RequiredRule | EmailRule | MinLengthRule | MaxLengthRule | PatternRule
 
 export type ValidationSchema<T extends string = string> = Record<T, ValidationRule[]>
 
@@ -58,27 +54,27 @@ function runRule(rule: ValidationRule, value: unknown): string | null {
   switch (rule.type) {
     case 'required':
       if (str.trim().length === 0) {
-        return rule.message ?? 'Ce champ est requis.'
+        return rule.message ?? translate('shell.validation.required')
       }
       break
     case 'email':
       if (str.length > 0 && !EMAIL_REGEX.test(str)) {
-        return rule.message ?? 'Adresse email invalide.'
+        return rule.message ?? translate('shell.validation.email')
       }
       break
     case 'minLength':
       if (str.length > 0 && str.length < rule.value) {
-        return rule.message ?? `Minimum ${rule.value} caractères.`
+        return rule.message ?? translate('shell.validation.minLength', { count: rule.value })
       }
       break
     case 'maxLength':
       if (str.length > rule.value) {
-        return rule.message ?? `Maximum ${rule.value} caractères.`
+        return rule.message ?? translate('shell.validation.maxLength', { count: rule.value })
       }
       break
     case 'pattern':
       if (str.length > 0 && !rule.value.test(str)) {
-        return rule.message ?? 'Format invalide.'
+        return rule.message ?? translate('shell.validation.pattern')
       }
       break
   }
@@ -87,9 +83,7 @@ function runRule(rule: ValidationRule, value: unknown): string | null {
 
 // ── Hook ─────────────────────────────────────────────────────────
 
-export function useFormValidation<T extends string>(
-  schema: ValidationSchema<T>,
-): UseFormValidationReturn<T> {
+export function useFormValidation<T extends string>(schema: ValidationSchema<T>): UseFormValidationReturn<T> {
   const [errors, setErrors] = useState<Record<T, string>>({} as Record<T, string>)
 
   const validateField = useCallback(

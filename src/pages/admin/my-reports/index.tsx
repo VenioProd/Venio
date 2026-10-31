@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
+import { useI18n } from '../../../context/I18nContext'
 import { REPORT_STATUS_CONFIG, formatDate, formatDateTime, formatFileSize, isImage } from '../intern-list/types'
 import type { ActivityReport } from '../intern-list/types'
 import '../../espace-client/ClientPortal.css'
@@ -10,6 +11,7 @@ import '../AdminPortal.css'
 import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const MyReports = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -69,7 +71,11 @@ const MyReports = () => {
   }
 
   const handleDelete = async (reportId: string) => {
-    const ok = await confirm({ message: 'Supprimer ce rapport ?', title: 'Suppression', variant: 'danger' })
+    const ok = await confirm({
+      message: t('adminOps.reports.confirmDelete'),
+      title: t('adminOps.reports.confirmTitle'),
+      variant: 'danger',
+    })
     if (!ok) return
     try {
       await apiFetch(`/api/admin/interns/reports/${reportId}`, { method: 'DELETE' })
@@ -82,7 +88,7 @@ const MyReports = () => {
   if (loading)
     return (
       <div className="portal-container" style={{ textAlign: 'center', color: '#fff' }}>
-        Chargement...
+        {t('common.loading')}
       </div>
     )
 
@@ -106,17 +112,17 @@ const MyReports = () => {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour au dashboard
+            {t('adminOps.reports.backToDashboard')}
           </Link>
-          <h1 className="ticket-hero-title">Mes rapports d'activite</h1>
-          <p className="ticket-hero-subtitle">Redigez vos rapports d'activite quotidiens</p>
+          <h1 className="ticket-hero-title">{t('adminOps.reports.title')}</h1>
+          <p className="ticket-hero-subtitle">{t('adminOps.reports.subtitle')}</p>
         </div>
         <button className="ticket-new-btn" onClick={() => setShowForm(!showForm)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Nouveau rapport
+          {t('adminOps.reports.newReport')}
         </button>
       </div>
 
@@ -124,9 +130,9 @@ const MyReports = () => {
       {showForm && (
         <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
           <div className="ticket-form">
-            <h3 style={{ margin: '0 0 16px', color: 'var(--primary)' }}>Nouveau rapport d'activite</h3>
+            <h3 style={{ margin: '0 0 16px', color: 'var(--primary)' }}>{t('adminOps.reports.formTitle')}</h3>
             <div className="ticket-form-field">
-              <label>Date</label>
+              <label>{t('adminOps.reports.dateLabel')}</label>
               <input
                 type="date"
                 value={reportForm.date}
@@ -134,28 +140,28 @@ const MyReports = () => {
               />
             </div>
             <div className="ticket-form-field">
-              <label>Ce que j'ai fait aujourd'hui *</label>
+              <label>{t('adminOps.reports.contentLabel')}</label>
               <textarea
                 rows={5}
-                placeholder="Decrivez vos activites de la journee..."
+                placeholder={t('adminOps.reports.contentPlaceholder')}
                 value={reportForm.contenu}
                 onChange={(e) => setReportForm({ ...reportForm, contenu: e.target.value })}
               />
             </div>
             <div className="ticket-form-field">
-              <label>Taches realisees (une par ligne)</label>
+              <label>{t('adminOps.reports.tasksLabel')}</label>
               <textarea
                 rows={3}
-                placeholder="Tache 1&#10;Tache 2&#10;..."
+                placeholder={t('adminOps.reports.tasksPlaceholder')}
                 value={reportForm.taches}
                 onChange={(e) => setReportForm({ ...reportForm, taches: e.target.value })}
               />
             </div>
             <div className="ticket-form-field">
               <label>
-                Pieces jointes{' '}
+                {t('adminOps.reports.attachmentsLabel')}{' '}
                 <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 400 }}>
-                  (max 50 Mo par fichier)
+                  {t('adminOps.reports.attachmentsHint')}
                 </span>
               </label>
               <input
@@ -217,10 +223,10 @@ const MyReports = () => {
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>
-                  Cliquez ou glissez vos fichiers ici
+                  {t('adminOps.reports.dropPrompt')}
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 4 }}>
-                  PDF, images, documents, videos, archives
+                  {t('adminOps.reports.dropFormats')}
                 </div>
               </div>
               {reportFiles.length > 0 && (
@@ -247,7 +253,9 @@ const MyReports = () => {
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
                         {f.name}
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>{sizeMo} Mo</span>
+                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>
+                          {t('adminOps.reports.fileSize', { size: sizeMo })}
+                        </span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -273,7 +281,7 @@ const MyReports = () => {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <button className="ticket-new-btn" disabled={submitting || !reportForm.contenu} onClick={handleCreate}>
-                {submitting ? 'Envoi...' : 'Envoyer le rapport'}
+                {submitting ? t('adminOps.reports.sending') : t('adminOps.reports.send')}
               </button>
               <button
                 className="ticket-back-btn"
@@ -282,7 +290,7 @@ const MyReports = () => {
                   setReportFiles([])
                 }}
               >
-                Annuler
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -293,7 +301,7 @@ const MyReports = () => {
       <div className="ticket-list">
         {reports.length === 0 && (
           <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
-            Aucun rapport. Cliquez sur "Nouveau rapport" pour commencer.
+            {t('adminOps.reports.empty')}
           </p>
         )}
         {reports.map((report) => {
@@ -310,7 +318,7 @@ const MyReports = () => {
                   <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
                   {report.taches.length > 0 && (
                     <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
-                      {report.taches.length} tache(s)
+                      {t('adminOps.reports.taskCount', { count: report.taches.length })}
                     </span>
                   )}
                 </div>
@@ -328,7 +336,7 @@ const MyReports = () => {
                       color: sCfg.color,
                     }}
                   >
-                    {sCfg.label}
+                    {t(sCfg.labelKey)}
                   </span>
                   <span
                     style={{
@@ -344,7 +352,9 @@ const MyReports = () => {
               {expanded && (
                 <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ marginBottom: 12 }}>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      {t('adminOps.reports.summaryLabel')}
+                    </span>
                     <p
                       style={{
                         color: 'rgba(255,255,255,0.8)',
@@ -360,7 +370,9 @@ const MyReports = () => {
 
                   {report.taches.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Taches realisees</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                        {t('adminOps.reports.tasksDoneLabel')}
+                      </span>
                       <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
                         {report.taches.map((t, i) => (
                           <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
@@ -373,7 +385,9 @@ const MyReports = () => {
 
                   {report.attachments.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                        {t('adminOps.reports.attachmentsLabel')}
+                      </span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                         {report.attachments.map((f, i) => (
                           <button
@@ -417,7 +431,9 @@ const MyReports = () => {
                         borderLeft: '3px solid var(--primary)',
                       }}
                     >
-                      <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>Commentaire admin</span>
+                      <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
+                        {t('adminOps.reports.adminComment')}
+                      </span>
                       <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
                         {report.commentaireAdmin}
                       </p>
@@ -426,8 +442,10 @@ const MyReports = () => {
 
                   {report.status === 'VALIDE' && report.validePar && (
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
-                      Valide par {report.validePar.name}
-                      {report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
+                      {t('adminOps.reports.validatedBy', { name: report.validePar.name })}
+                      {report.valideAt
+                        ? t('adminOps.reports.validatedOn', { date: formatDateTime(report.valideAt) })
+                        : ''}
                     </div>
                   )}
 
@@ -438,7 +456,7 @@ const MyReports = () => {
                         style={{ fontSize: 12, color: '#ef4444' }}
                         onClick={() => handleDelete(report._id)}
                       >
-                        Supprimer
+                        {t('common.delete')}
                       </button>
                     </div>
                   )}

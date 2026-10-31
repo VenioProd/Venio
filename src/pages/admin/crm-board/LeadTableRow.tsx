@@ -1,13 +1,19 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate, formatMoney } from '../../../i18n/format'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
   CRM_STATUSES,
   CRM_PRIORITIES,
   CRM_TEMPERATURES,
   PRIORITY_MAP,
+  PROJECT_MAP,
   TEMPERATURE_MAP,
+  SERVICE_TYPE_LABEL_KEYS,
+  SOURCE_LABEL_KEYS,
   getLeadAlerts,
+  labelOfValue,
 } from './constants'
 import { useCrmThresholds } from './thresholdsContext'
 
@@ -46,24 +52,27 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   isSelected,
   onToggleSelect,
 }) => {
+  const { t } = useI18n()
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
   const priorityInfo = PRIORITY_MAP[lead.priority || '']
+  const projectInfo = PROJECT_MAP[lead.project || '']
   const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
 
   return (
     <tr
-      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''}`}
+      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''} ${onToggleSelect ? 'crm-row-selectable' : ''}`}
     >
       {onToggleSelect && (
-        <td className="crm-td" style={{ padding: '0 8px', width: 36 }} onClick={(e) => e.stopPropagation()}>
+        <td className="crm-td crm-td-select" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
+            className="crm-select-checkbox"
             checked={!!isSelected}
             onChange={onToggleSelect}
-            style={{ cursor: 'pointer', width: 15, height: 15 }}
+            aria-label={t('crm.row.select', { company: lead.company })}
           />
         </td>
       )}
@@ -84,8 +93,10 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           </span>
         )}
       </td>
-      <td className="crm-td">{lead.contactName || '\u2014'}</td>
-      <td className="crm-td crm-td-email">
+      <td className="crm-td" data-label={t('crm.col.contact')}>
+        {lead.contactName || '\u2014'}
+      </td>
+      <td className="crm-td crm-td-email" data-label={t('crm.col.email')}>
         {lead.contactEmail ? (
           <a href={`mailto:${lead.contactEmail}`} className="crm-email-link">
             {lead.contactEmail}
@@ -94,38 +105,59 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           '\u2014'
         )}
       </td>
-      <td className="crm-td">{lead.contactPhone || '\u2014'}</td>
-      <td className="crm-td">{lead.source ? <span className="crm-table-badge">{lead.source}</span> : '\u2014'}</td>
-      <td className="crm-td">
+      <td className="crm-td" data-label={t('crm.col.phone')}>
+        {lead.contactPhone || '\u2014'}
+      </td>
+      <td className="crm-td" data-label={t('crm.col.source')}>
+        {lead.source ? (
+          <span className="crm-table-badge">{labelOfValue(t, SOURCE_LABEL_KEYS, lead.source)}</span>
+        ) : (
+          '\u2014'
+        )}
+      </td>
+      <td className="crm-td crm-td-project" data-label={t('crm.col.project')}>
+        {projectInfo ? (
+          <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
+            {t(projectInfo.labelKey)}
+          </span>
+        ) : (
+          '\u2014'
+        )}
+      </td>
+      <td className="crm-td" data-label={t('crm.col.priority')}>
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select"
             value={lead.priority || 'NORMALE'}
             onChange={(v) => onUpdateLead(lead._id, { priority: v })}
-            options={CRM_PRIORITIES.map((p) => ({ value: p.key, label: p.label }))}
+            options={CRM_PRIORITIES.map((p) => ({ value: p.key, label: t(p.labelKey) }))}
           />
         ) : (
           <span
             className="crm-priority-badge"
             style={{ '--priority-color': priorityInfo?.color || 'var(--primary)' } as React.CSSProperties}
           >
-            {priorityInfo?.label || lead.priority}
+            {priorityInfo ? t(priorityInfo.labelKey) : lead.priority}
           </span>
         )}
       </td>
-      <td className="crm-td crm-td-budget">
-        {lead.budget != null ? `${lead.budget.toLocaleString('fr-FR')} \u20ac` : '\u2014'}
+      <td className="crm-td crm-td-budget" data-label={t('crm.col.budget')}>
+        {lead.budget != null ? formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 2 }) : '\u2014'}
       </td>
-      <td className="crm-td crm-td-service">
-        {lead.serviceType ? <span className="crm-table-badge">{lead.serviceType}</span> : '\u2014'}
+      <td className="crm-td crm-td-service" data-label={t('crm.col.service')}>
+        {lead.serviceType ? (
+          <span className="crm-table-badge">{labelOfValue(t, SERVICE_TYPE_LABEL_KEYS, lead.serviceType)}</span>
+        ) : (
+          '\u2014'
+        )}
       </td>
-      <td className="crm-td crm-td-temperature">
+      <td className="crm-td crm-td-temperature" data-label={t('crm.col.temperature')}>
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select"
             value={lead.leadTemperature || 'TIEDE'}
             onChange={(v) => onUpdateLead(lead._id, { leadTemperature: v })}
-            options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
+            options={CRM_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}
           />
         ) : (
           <span
@@ -134,31 +166,33 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               { '--temp-color': TEMPERATURE_MAP[lead.leadTemperature || '']?.color || '#f59e0b' } as React.CSSProperties
             }
           >
-            {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}
+            {TEMPERATURE_MAP[lead.leadTemperature || '']
+              ? t(TEMPERATURE_MAP[lead.leadTemperature || ''].labelKey)
+              : lead.leadTemperature}
           </span>
         )}
       </td>
-      <td className="crm-td">
+      <td className="crm-td crm-td-assignee" data-label={t('crm.col.sales')}>
         {canManageCrm ? (
           <CustomSelect
             className="crm-inline-select crm-inline-assignee"
             value={lead.assignedTo || ''}
             onChange={(v) => onUpdateLead(lead._id, { assignedTo: v || null })}
             options={[
-              { value: '', label: 'Non assign\u00e9' },
+              { value: '', label: t('crm.common.unassigned') },
               ...admins.map((a) => ({ value: a._id, label: a.name })),
             ]}
           />
         ) : (
-          <span>{assigned?.name || 'Non assign\u00e9'}</span>
+          <span>{assigned?.name || t('crm.common.unassigned')}</span>
         )}
       </td>
-      <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`}>
-        {lead.nextActionAt ? new Date(lead.nextActionAt).toLocaleDateString('fr-FR') : '\u2014'}
-        {isOverdue && <span className="crm-overdue-tag">En retard</span>}
+      <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`} data-label={t('crm.col.nextAction')}>
+        {lead.nextActionAt ? formatDate(lead.nextActionAt) : '\u2014'}
+        {isOverdue && <span className="crm-overdue-tag">{t('crm.alert.overdue')}</span>}
       </td>
-      <td className="crm-td crm-td-date">
-        {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString('fr-FR') : '\u2014'}
+      <td className="crm-td crm-td-date" data-label={t('crm.col.updatedAt')}>
+        {lead.updatedAt ? formatDate(lead.updatedAt) : '\u2014'}
       </td>
       {canManageCrm && (
         <td className="crm-td crm-td-actions">
@@ -168,14 +202,14 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               className="crm-inline-select crm-inline-status"
               value={lead.status}
               onChange={(v) => onUpdateLead(lead._id, { status: v })}
-              options={CRM_STATUSES.map((s) => ({ value: s.key, label: `\u2192 ${s.label}` }))}
+              options={CRM_STATUSES.map((s) => ({ value: s.key, label: `\u2192 ${t(s.labelKey)}` }))}
             />
             {/* Transfer to Arrow button */}
             {onTransferToArrow && (
               <button
                 className="crm-btn-notes"
                 onClick={() => onTransferToArrow(lead._id)}
-                title="Transf\u00e9rer vers Arrow \u00c9coles"
+                title={t('crm.row.transferToArrow')}
                 style={{ color: 'var(--primary)' }}
               >
                 <svg
@@ -192,11 +226,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               </button>
             )}
             {/* Notes button */}
-            <button
-              className="crm-btn-notes"
-              onClick={() => onExpandLead(lead)}
-              title="Voir/\u00e9diter les notes d'interactions"
-            >
+            <button className="crm-btn-notes" onClick={() => onExpandLead(lead)} title={t('crm.row.viewNotes')}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -218,7 +248,7 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
                 className="crm-btn-convert"
                 onClick={() => onConvertToClient(lead)}
                 disabled={converting === lead._id}
-                title="Convertir en client"
+                title={t('crm.row.convertToClient')}
               >
                 {converting === lead._id ? (
                   '...'
@@ -243,14 +273,18 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
             {deleteConfirm === lead._id ? (
               <div className="crm-delete-confirm">
                 <button className="crm-btn-confirm-delete" onClick={() => onDeleteLead(lead._id)}>
-                  Oui
+                  {t('common.yes')}
                 </button>
                 <button className="crm-btn-cancel-delete" onClick={() => onSetDeleteConfirm(null)}>
-                  Non
+                  {t('common.no')}
                 </button>
               </div>
             ) : (
-              <button className="crm-btn-delete" onClick={() => onSetDeleteConfirm(lead._id)} title="Supprimer">
+              <button
+                className="crm-btn-delete"
+                onClick={() => onSetDeleteConfirm(lead._id)}
+                title={t('common.delete')}
+              >
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"

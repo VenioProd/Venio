@@ -1,5 +1,7 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { apiFetch, ApiError } from '../../../../lib/api'
+import { translate } from '../../../../i18n'
+import type { MessageKey } from '../../../../i18n'
 import type { ProjectPhase } from '../../../../types/project.types'
 
 export type PhaseTransition = 'start' | 'request-validation' | 'complete' | 'cancel-validation-request' | 'revert'
@@ -20,12 +22,12 @@ const initialPhaseForm: PhaseForm = {
   linkedItems: [],
 }
 
-const TRANSITION_ERRORS: Record<PhaseTransition, string> = {
-  start: 'Erreur au démarrage de l’étape',
-  'request-validation': 'Erreur à la demande de validation',
-  complete: 'Erreur à la clôture de l’étape',
-  'cancel-validation-request': 'Erreur à l’annulation de la demande',
-  revert: 'Erreur à la réouverture de l’étape',
+const TRANSITION_ERROR_KEYS: Record<PhaseTransition, MessageKey> = {
+  start: 'projects.phases.err.start',
+  'request-validation': 'projects.phases.err.requestValidation',
+  complete: 'projects.phases.err.complete',
+  'cancel-validation-request': 'projects.phases.err.cancelRequest',
+  revert: 'projects.phases.err.revert',
 }
 
 interface UseProjectPhasesOptions {
@@ -55,7 +57,7 @@ export function useProjectPhases({
       const data = await apiFetch<{ phases?: ProjectPhase[] }>(`/api/admin/projects/${projectId}/phases`)
       setPhases(data.phases || [])
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement des étapes')
+      setError((err as Error).message || translate('projects.phases.err.load'))
     }
   }, [projectId, canViewPhases, setError])
 
@@ -64,9 +66,7 @@ export function useProjectPhases({
     if (err instanceof ApiError) {
       const payload = (err.payload || {}) as { code?: string; blockingPhase?: { title?: string } }
       if (payload.code === 'PHASE_LOCKED' && payload.blockingPhase?.title) {
-        setError(
-          `Impossible de démarrer cette étape : « ${payload.blockingPhase.title} » doit d’abord être validée par le client.`,
-        )
+        setError(translate('projects.phases.err.locked', { title: payload.blockingPhase.title }))
         return
       }
     }
@@ -92,7 +92,7 @@ export function useProjectPhases({
   const handleSubmitPhase = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canManagePhases, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManagePhases, translate('projects.detail.readOnly'))) return
     try {
       const path = editingPhaseId
         ? `/api/admin/projects/${projectId}/phases/${editingPhaseId}`
@@ -110,37 +110,43 @@ export function useProjectPhases({
       cancelEditPhase()
       await loadPhases()
     } catch (err: unknown) {
-      reportError(err, 'Erreur enregistrement de l’étape')
+      reportError(err, translate('projects.phases.err.save'))
     }
   }
 
   const handleDeletePhase = async (phaseId: string) => {
-    if (!ensurePermission(canManagePhases, 'Accès en lecture seule.')) return
-    if (!(await confirm({ message: 'Supprimer cette étape ?', title: 'Suppression' }))) return
+    if (!ensurePermission(canManagePhases, translate('projects.detail.readOnly'))) return
+    if (
+      !(await confirm({
+        message: translate('projects.phases.confirmDelete'),
+        title: translate('projects.phases.confirmDeleteTitle'),
+      }))
+    )
+      return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${projectId}/phases/${phaseId}`, { method: 'DELETE' })
       if (editingPhaseId === phaseId) cancelEditPhase()
       await loadPhases()
     } catch (err: unknown) {
-      reportError(err, 'Erreur suppression de l’étape')
+      reportError(err, translate('projects.phases.err.delete'))
     }
   }
 
   const handleTransition = async (phaseId: string, transition: PhaseTransition) => {
     setError('')
-    if (!ensurePermission(canManagePhases, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManagePhases, translate('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${projectId}/phases/${phaseId}/${transition}`, { method: 'POST' })
       await loadPhases()
     } catch (err: unknown) {
-      reportError(err, TRANSITION_ERRORS[transition])
+      reportError(err, translate(TRANSITION_ERROR_KEYS[transition]))
     }
   }
 
   const handleMovePhase = async (phaseId: string, direction: -1 | 1) => {
     setError('')
-    if (!ensurePermission(canManagePhases, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManagePhases, translate('projects.detail.readOnly'))) return
     const index = phases.findIndex((phase) => phase._id === phaseId)
     const target = index + direction
     if (index < 0 || target < 0 || target >= phases.length) return
@@ -155,20 +161,20 @@ export function useProjectPhases({
       })
       await loadPhases()
     } catch (err: unknown) {
-      reportError(err, 'Erreur réordonnancement des étapes')
+      reportError(err, translate('projects.phases.err.reorder'))
     }
   }
 
   const handleResolveRevision = async (phaseId: string, revisionId: string) => {
     setError('')
-    if (!ensurePermission(canManagePhases, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManagePhases, translate('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${projectId}/phases/${phaseId}/revisions/${revisionId}/resolve`, {
         method: 'POST',
       })
       await loadPhases()
     } catch (err: unknown) {
-      reportError(err, 'Erreur traitement de la demande de retouches')
+      reportError(err, translate('projects.phases.err.resolve'))
     }
   }
 

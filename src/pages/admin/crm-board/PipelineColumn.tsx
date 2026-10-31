@@ -1,5 +1,6 @@
 import React from 'react'
 import LeadCard from './LeadCard'
+import { useI18n } from '../../../context/I18nContext'
 import { STATUS_MAP } from './constants'
 import type { Lead, PipelineColumn as PipelineColumnType, AdminUser } from '../../../types/crm.types'
 
@@ -26,6 +27,7 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
   onDrop,
   onDragStart,
 }) => {
+  const { t } = useI18n()
   const status = STATUS_MAP[column.status]
 
   return (
@@ -36,7 +38,7 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
       style={{ '--column-color': status?.color || 'var(--primary)' } as React.CSSProperties}
     >
       <div className="crm-column-header">
-        <span className="crm-column-title">{status?.label || column.status}</span>
+        <span className="crm-column-title">{status ? t(status.labelKey) : column.status}</span>
         <span className="crm-column-count">{column.leads?.length || 0}</span>
       </div>
       {(column.leads || []).map((lead) => (

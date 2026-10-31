@@ -1,7 +1,9 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate, formatMoney } from '../../../i18n/format'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { getLeadAlerts } from './constants'
+import { PRIORITY_MAP, PROJECT_MAP, SOURCE_LABEL_KEYS, getLeadAlerts, labelOfValue } from './constants'
 import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadCardProps {
@@ -25,8 +27,10 @@ const LeadCard: React.FC<LeadCardProps> = ({
   onConvertToClient,
   onDragStart,
 }) => {
+  const { t } = useI18n()
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
+  const projectInfo = PROJECT_MAP[lead.project || '']
   const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
@@ -38,7 +42,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       onDragStart={(e) => onDragStart(e, lead._id)}
     >
       <p className="crm-card-title">{lead.company}</p>
-      <p className="crm-card-meta">{lead.contactName || 'Contact non renseign\u00e9'}</p>
+      <p className="crm-card-meta">{lead.contactName || t('crm.card.contactMissing')}</p>
       {alerts.length > 0 && (
         <div className="crm-card-alerts">
           {alerts.map((alert) => (
@@ -53,16 +57,30 @@ const LeadCard: React.FC<LeadCardProps> = ({
         </div>
       )}
       <div className="crm-card-row">
-        {lead.priority && <span className="crm-badge">{lead.priority}</span>}
-        {lead.source && <span className="crm-badge">{lead.source}</span>}
-        {lead.budget != null && <span className="crm-badge">{lead.budget} \u20ac</span>}
+        {projectInfo && (
+          <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
+            {t(projectInfo.labelKey)}
+          </span>
+        )}
+        {lead.priority && (
+          <span className="crm-badge">
+            {PRIORITY_MAP[lead.priority] ? t(PRIORITY_MAP[lead.priority].labelKey) : lead.priority}
+          </span>
+        )}
+        {lead.source && <span className="crm-badge">{labelOfValue(t, SOURCE_LABEL_KEYS, lead.source)}</span>}
+        {lead.budget != null && (
+          <span className="crm-badge">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 2 })}</span>
+        )}
       </div>
-      <div className="crm-card-row" style={{ marginTop: 8 }}>
+      <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>
         <CustomSelect
           className="portal-input"
           value={lead.assignedTo || ''}
           onChange={(v) => onUpdateLead(lead._id, { assignedTo: v || null })}
-          options={[{ value: '', label: 'Non assign\u00e9' }, ...admins.map((a) => ({ value: a._id, label: a.name }))]}
+          options={[
+            { value: '', label: t('crm.common.unassigned') },
+            ...admins.map((a) => ({ value: a._id, label: a.name })),
+          ]}
         />
         {assigned && (
           <span className="crm-card-meta" style={{ margin: 0 }}>
@@ -72,7 +90,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       </div>
       {lead.nextActionAt && (
         <p className="crm-card-meta" style={{ marginTop: 8 }}>
-          Prochaine action : {new Date(lead.nextActionAt).toLocaleDateString()}
+          {t('crm.card.nextAction', { date: formatDate(lead.nextActionAt) })}
         </p>
       )}
       {lead.status === 'WON' && !lead.clientAccountId && canManageCrm && (
@@ -81,7 +99,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
           onClick={() => onConvertToClient(lead)}
           disabled={converting === lead._id}
         >
-          {converting === lead._id ? 'Conversion...' : 'Cr\u00e9er client'}
+          {converting === lead._id ? t('crm.common.converting') : t('crm.card.createClient')}
         </button>
       )}
     </div>

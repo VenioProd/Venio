@@ -1,3 +1,5 @@
+import { useI18n } from '../../../context/I18nContext'
+
 interface Props {
   text: string
   onTextChange: (text: string) => void
@@ -6,6 +8,7 @@ interface Props {
 }
 
 export default function CommentModal({ text, onTextChange, onClose, onSubmit }: Props) {
+  const { t } = useI18n()
   return (
     <div className="confirm-modal-overlay" onClick={onClose}>
       <div
@@ -15,8 +18,13 @@ export default function CommentModal({ text, onTextChange, onClose, onSubmit }: 
         aria-modal="true"
       >
         <div className="confirm-modal__header">
-          <h2 className="confirm-modal__title">Commentaire pour le stagiaire</h2>
-          <button className="confirm-modal__close" onClick={onClose} type="button" aria-label="Fermer">
+          <h2 className="confirm-modal__title">{t('intern.comment.title')}</h2>
+          <button
+            className="confirm-modal__close"
+            onClick={onClose}
+            type="button"
+            aria-label={t('intern.comment.close')}
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -32,10 +40,10 @@ export default function CommentModal({ text, onTextChange, onClose, onSubmit }: 
         </div>
         <div className="confirm-modal__body">
           <div className="ticket-form-field">
-            <label>Votre commentaire</label>
+            <label>{t('intern.comment.label')}</label>
             <textarea
               rows={4}
-              placeholder="Ecrivez votre retour sur le rapport..."
+              placeholder={t('intern.comment.placeholder')}
               value={text}
               onChange={(event) => onTextChange(event.target.value)}
               autoFocus
@@ -44,14 +52,14 @@ export default function CommentModal({ text, onTextChange, onClose, onSubmit }: 
         </div>
         <div className="confirm-modal__footer">
           <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={onClose} type="button">
-            Annuler
+            {t('intern.comment.cancel')}
           </button>
           <button
             className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
             onClick={onSubmit}
             type="button"
           >
-            Envoyer
+            {t('intern.comment.send')}
           </button>
         </div>
       </div>

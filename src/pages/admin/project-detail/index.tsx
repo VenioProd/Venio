@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { Link, useParams } from 'react-router-dom'
 import { useTabState } from '../../../hooks/useTabState'
@@ -25,6 +26,7 @@ import { useProjectPhases } from './hooks/useProjectPhases'
 const ProjectAccountingTab = React.lazy(() => import('../accounting/projects/ProjectAccountingTab'))
 
 const AdminProjectDetail = () => {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const { confirm, ConfirmDialog } = useConfirm()
@@ -97,11 +99,11 @@ const AdminProjectDetail = () => {
   const getStatusLabel = (status: string): string => {
     switch (status) {
       case 'EN_COURS':
-        return 'En cours'
+        return t('projects.status.inProgress')
       case 'EN_ATTENTE':
-        return 'En attente'
+        return t('projects.status.onHold')
       case 'TERMINE':
-        return 'Terminé'
+        return t('projects.status.done')
       default:
         return status
     }
@@ -200,7 +202,7 @@ const AdminProjectDetail = () => {
         })
       }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement projet')
+      setError((err as Error).message || t('projects.detail.loadError'))
     }
   }
 
@@ -238,7 +240,7 @@ const AdminProjectDetail = () => {
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditProjects, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditProjects, t('projects.detail.readOnly'))) return
     try {
       const payload = {
         name: form.name,
@@ -283,7 +285,7 @@ const AdminProjectDetail = () => {
       })
       setProject(data.project || null)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise a jour')
+      setError((err as Error).message || t('projects.detail.updateError'))
     }
   }
 
@@ -353,51 +355,51 @@ const AdminProjectDetail = () => {
 
   const handleCreateQuote = async () => {
     setError('')
-    if (!ensurePermission(canManageBilling, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManageBilling, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/billing/projects/${id}/quotes`, { method: 'POST', body: JSON.stringify({}) })
       await refreshBillingDocuments()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur création devis')
+      setError((err as Error).message || t('projects.detail.createQuoteError'))
     }
   }
 
   const handleCreateInvoice = async () => {
     setError('')
-    if (!ensurePermission(canManageBilling, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManageBilling, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/billing/projects/${id}/invoices`, { method: 'POST', body: JSON.stringify({}) })
       await refreshBillingDocuments()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur création facture')
+      setError((err as Error).message || t('projects.detail.createInvoiceError'))
     }
   }
 
   const handleGeneratePdf = async (docId: string) => {
     setError('')
-    if (!ensurePermission(canManageBilling, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManageBilling, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/billing/${docId}/generate-pdf`, { method: 'POST' })
       await refreshBillingDocuments()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur génération PDF')
+      setError((err as Error).message || t('projects.detail.pdfError'))
     }
   }
 
   const handleMarkSent = async (docId: string) => {
     setError('')
-    if (!ensurePermission(canManageBilling, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManageBilling, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/billing/${docId}/send`, { method: 'POST' })
       await refreshBillingDocuments()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur')
+      setError((err as Error).message || t('common.error'))
     }
   }
 
   const handleMarkPaid = async (docId: string) => {
     setError('')
-    if (!ensurePermission(canManageBilling, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canManageBilling, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/billing/${docId}`, {
         method: 'PATCH',
@@ -405,14 +407,14 @@ const AdminProjectDetail = () => {
       })
       await refreshBillingDocuments()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur')
+      setError((err as Error).message || t('common.error'))
     }
   }
 
   const handleAddUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditProjects, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditProjects, t('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${id}/updates`, {
         method: 'POST',
@@ -421,14 +423,14 @@ const AdminProjectDetail = () => {
       setUpdateForm({ title: '', description: '' })
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout mise a jour')
+      setError((err as Error).message || t('projects.detail.addUpdateError'))
     }
   }
 
   const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditProjects, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditProjects, t('projects.detail.readOnly'))) return
     const formEl = event.target as HTMLFormElement
     try {
       const formData = new FormData(formEl)
@@ -436,7 +438,7 @@ const AdminProjectDetail = () => {
       await load()
       formEl.reset()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur upload')
+      setError((err as Error).message || t('projects.detail.uploadError'))
     }
   }
 
@@ -447,7 +449,9 @@ const AdminProjectDetail = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{project?.name || 'Projet'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>
+            {project?.name || t('projects.detail.breadcrumbProject')}
+          </span>
         </div>
         {project && (
           <div className="admin-header">
@@ -470,7 +474,7 @@ const AdminProjectDetail = () => {
                   a.click()
                   window.URL.revokeObjectURL(url)
                 } catch {
-                  alert('Erreur lors de la génération du PDF')
+                  alert(t('projects.detail.recapPdfAlert'))
                 }
               }}
             >
@@ -489,7 +493,7 @@ const AdminProjectDetail = () => {
                 <line x1="16" y1="13" x2="8" y2="13" />
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
-              Récap PDF
+              {t('projects.detail.recapPdf')}
             </button>
           </div>
         )}
@@ -508,61 +512,61 @@ const AdminProjectDetail = () => {
             className={`admin-tab ${activeTab === 'accounting' ? 'active' : ''}`}
             onClick={() => setActiveTab('accounting')}
           >
-            Comptabilité
+            {t('projects.detail.tab.accounting')}
           </button>
         )}
         <button
           className={`admin-tab ${activeTab === 'details' ? 'active' : ''}`}
           onClick={() => setActiveTab('details')}
         >
-          Détails
+          {t('projects.detail.tab.details')}
         </button>
         <button
           className={`admin-tab ${activeTab === 'content' ? 'active' : ''}`}
           onClick={() => setActiveTab('content')}
         >
-          Contenu du projet
+          {t('projects.detail.tab.content')}
         </button>
         {canViewPhases && (
           <button
             className={`admin-tab ${activeTab === 'phases' ? 'active' : ''}`}
             onClick={() => setActiveTab('phases')}
           >
-            Étapes
+            {t('projects.detail.tab.phases')}
           </button>
         )}
         <button className={`admin-tab ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
-          Taches
+          {t('projects.detail.tab.tasks')}
         </button>
         <button
           className={`admin-tab ${activeTab === 'activity' ? 'active' : ''}`}
           onClick={() => setActiveTab('activity')}
         >
-          Activite
+          {t('projects.detail.tab.activity')}
         </button>
         <button
           className={`admin-tab ${activeTab === 'updates' ? 'active' : ''}`}
           onClick={() => setActiveTab('updates')}
         >
-          Mises à jour
+          {t('projects.detail.tab.updates')}
         </button>
         <button
           className={`admin-tab ${activeTab === 'documents' ? 'active' : ''}`}
           onClick={() => setActiveTab('documents')}
         >
-          Documents (ancien)
+          {t('projects.detail.tab.documents')}
         </button>
         <button
           className={`admin-tab ${activeTab === 'messages' ? 'active' : ''}`}
           onClick={() => setActiveTab('messages')}
         >
-          Messages
+          {t('projects.detail.tab.messages')}
         </button>
       </div>
 
       {/* Contenu des onglets */}
       {activeTab === 'accounting' && id && canViewAccounting && (
-        <React.Suspense fallback={<p role="status">Chargement de la comptabilité…</p>}>
+        <React.Suspense fallback={<p role="status">{t('projects.detail.accountingLoading')}</p>}>
           <ProjectAccountingTab key={id} projectId={id} clientId={project?.client?._id} />
         </React.Suspense>
       )}
@@ -655,7 +659,7 @@ const AdminProjectDetail = () => {
 
       {activeTab === 'activity' && id && (
         <div className="admin-form-section" style={{ marginTop: 24 }}>
-          <h2>Activite du projet</h2>
+          <h2>{t('projects.detail.activityHeading')}</h2>
           <ActivityTimeline projectId={id} />
         </div>
       )}
@@ -681,7 +685,7 @@ const AdminProjectDetail = () => {
 
       {activeTab === 'messages' && id && (
         <div className="admin-form-section" style={{ marginTop: 24 }}>
-          <h2>Messages</h2>
+          <h2>{t('projects.detail.tab.messages')}</h2>
           <ProjectChat projectId={id} />
         </div>
       )}

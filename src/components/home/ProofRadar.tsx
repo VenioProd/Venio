@@ -1,4 +1,6 @@
 import { useId } from 'react'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import '../../styles/monolithe-home.css'
 
 /**
@@ -16,26 +18,26 @@ import '../../styles/monolithe-home.css'
 
 type Asset = {
   name: string
-  sub: string
+  sub: MessageKey
   /** Angle en degrés depuis le haut, sens horaire. */
   deg: number
   ring: 0 | 1
-  status: string
+  status: MessageKey
 }
 
 const SAAS: Asset[] = [
-  { name: 'Jiraya', sub: 'formation', deg: -145, ring: 0, status: 'En ligne' },
-  { name: 'LeadForge', sub: 'acquisition', deg: -110, ring: 1, status: 'En construction' },
-  { name: 'Lucid', sub: 'comptabilité', deg: -70, ring: 1, status: 'En construction' },
-  { name: 'Yumi', sub: 'RH', deg: -35, ring: 0, status: 'En ligne' },
+  { name: 'Jiraya', sub: 'pubHome.radar.subTraining', deg: -145, ring: 0, status: 'pubHome.radar.statusLive' },
+  { name: 'LeadForge', sub: 'pubHome.radar.subAcquisition', deg: -110, ring: 1, status: 'pubHome.radar.statusWip' },
+  { name: 'Lucid', sub: 'pubHome.radar.subAccounting', deg: -70, ring: 1, status: 'pubHome.radar.statusWip' },
+  { name: 'Yumi', sub: 'pubHome.radar.subHr', deg: -35, ring: 0, status: 'pubHome.radar.statusLive' },
 ]
 
 const SITES: Asset[] = [
-  { name: 'Decisio', sub: 'juridique', deg: 25, ring: 0, status: 'En ligne' },
-  { name: 'Formatio', sub: 'formation', deg: 60, ring: 0, status: 'En ligne' },
-  { name: 'Creatio', sub: 'pédagogie', deg: 90, ring: 0, status: 'En ligne' },
-  { name: 'Absys', sub: 'client', deg: 120, ring: 0, status: 'En ligne' },
-  { name: 'Cauchemar', sub: 'client', deg: 155, ring: 0, status: 'En ligne' },
+  { name: 'Decisio', sub: 'pubHome.radar.subLegal', deg: 25, ring: 0, status: 'pubHome.radar.statusLive' },
+  { name: 'Formatio', sub: 'pubHome.radar.subTraining', deg: 60, ring: 0, status: 'pubHome.radar.statusLive' },
+  { name: 'Creatio', sub: 'pubHome.radar.subPedagogy', deg: 90, ring: 0, status: 'pubHome.radar.statusLive' },
+  { name: 'Absys', sub: 'pubHome.radar.subClient', deg: 120, ring: 0, status: 'pubHome.radar.statusLive' },
+  { name: 'Cauchemar', sub: 'pubHome.radar.subClient', deg: 155, ring: 0, status: 'pubHome.radar.statusLive' },
 ]
 
 const C = 200
@@ -71,34 +73,34 @@ const Blip = ({ asset }: { asset: Asset }) => {
   )
 }
 
-const Register = ({ title, assets }: { title: string; assets: Asset[] }) => (
-  <div className="mh-rd-group">
-    <h4 className="mh-rd-title">{title}</h4>
-    <ul>
-      {assets.map((asset) => (
-        <li key={asset.name} className={asset.ring === 1 ? 'is-wip' : undefined}>
-          {asset.name}
-          <span>
-            {asset.sub} · {asset.status.toLowerCase()}
-          </span>
-        </li>
-      ))}
-    </ul>
-  </div>
-)
+const Register = ({ title, assets }: { title: string; assets: Asset[] }) => {
+  const { t } = useI18n()
+  return (
+    <div className="mh-rd-group">
+      <h4 className="mh-rd-title">{title}</h4>
+      <ul>
+        {assets.map((asset) => (
+          <li key={asset.name} className={asset.ring === 1 ? 'is-wip' : undefined}>
+            {asset.name}
+            <span>
+              {t(asset.sub)} · {t(asset.status).toLowerCase()}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 const ProofRadar = () => {
+  const { t } = useI18n()
   // Un id par instance : deux radars sur une page ne partagent pas leur dégradé.
   const gradient = `mh-rd-sweep-${useId().replace(/:/g, '')}`
 
   return (
     <div className="mh-radar">
       <div className="mh-radar-face">
-        <svg
-          viewBox="0 0 400 400"
-          role="img"
-          aria-label="Ce que Venio a construit. Nos logiciels : Jiraya et Yumi sont en ligne, LeadForge et Lucid en construction. Nos sites : Decisio, Formatio, Creatio, Absys et Cauchemar sont tous en ligne."
-        >
+        <svg viewBox="0 0 400 400" role="img" aria-label={t('pubHome.radar.aria')}>
           <defs>
             <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="0">
               <stop className="mh-rd-cone-a" offset="0" />
@@ -112,10 +114,10 @@ const ProofRadar = () => {
           <line className="mh-rd-axis" x1={C} y1="10" x2={C} y2="390" />
           <line className="mh-rd-axis" x1="10" y1={C} x2="390" y2={C} />
           <text className="mh-rd-lbl" x="206" y="148">
-            En construction
+            {t('pubHome.radar.statusWip')}
           </text>
           <text className="mh-rd-lbl" x="206" y="46">
-            En ligne
+            {t('pubHome.radar.statusLive')}
           </text>
 
           <g className="mh-rd-sweep">
@@ -135,8 +137,8 @@ const ProofRadar = () => {
       </div>
 
       <div className="mh-rd-lists">
-        <Register title="Nos logiciels" assets={SAAS} />
-        <Register title="Nos sites" assets={SITES} />
+        <Register title={t('pubHome.radar.software')} assets={SAAS} />
+        <Register title={t('pubHome.radar.sites')} assets={SITES} />
       </div>
     </div>
   )

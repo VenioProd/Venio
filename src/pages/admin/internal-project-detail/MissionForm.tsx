@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { Member, MissionFormState } from './types'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function MissionForm({ form, setForm, members, saving, onSubmit, onCancel }: Props) {
+  const { t } = useI18n()
   return (
     <form
       onSubmit={onSubmit}
@@ -24,29 +26,31 @@ export default function MissionForm({ form, setForm, members, saving, onSubmit, 
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ gridColumn: '1 / -1' }}>
-          <label className="portal-label">Titre *</label>
+          <label className="portal-label">{t('projB.form.titleLabel')}</label>
           <input
             className="portal-input"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Ex: Créer les maquettes landing page"
+            placeholder={t('projB.form.titlePlaceholder')}
           />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
-          <label className="portal-label">Description</label>
+          <label className="portal-label">{t('projB.form.descriptionLabel')}</label>
           <textarea
             className="portal-input"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={2}
             style={{ resize: 'vertical' }}
-            placeholder="Détails de la mission..."
+            placeholder={t('projB.form.descriptionPlaceholder')}
           />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label className="portal-label">
-            Assigner à *{' '}
-            <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: 11 }}>(plusieurs possibles)</span>
+            {t('projB.form.assignLabel')}{' '}
+            <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: 11 }}>
+              {t('projB.form.multipleHint')}
+            </span>
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
             {members.map((a) => {
@@ -98,13 +102,12 @@ export default function MissionForm({ form, setForm, members, saving, onSubmit, 
           </div>
           {form.assignedTo.length > 0 && (
             <div style={{ fontSize: 11, color: '#6ee7b7', marginTop: 4 }}>
-              {form.assignedTo.length} personne{form.assignedTo.length > 1 ? 's' : ''} sélectionnée
-              {form.assignedTo.length > 1 ? 's' : ''}
+              {t('projB.form.selectedCount', { count: form.assignedTo.length })}
             </div>
           )}
         </div>
         <div>
-          <label className="portal-label">Deadline</label>
+          <label className="portal-label">{t('projB.form.deadline')}</label>
           <input
             type="date"
             className="portal-input"
@@ -115,10 +118,10 @@ export default function MissionForm({ form, setForm, members, saving, onSubmit, 
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button className="portal-button" type="submit" disabled={saving} style={{ fontSize: 13 }}>
-          {saving ? 'Création...' : 'Créer la mission'}
+          {saving ? t('projB.form.creating') : t('projB.form.create')}
         </button>
         <button className="portal-button secondary" type="button" onClick={onCancel} style={{ fontSize: 13 }}>
-          Annuler
+          {t('common.cancel')}
         </button>
       </div>
     </form>

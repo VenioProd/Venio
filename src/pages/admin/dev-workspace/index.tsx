@@ -20,6 +20,8 @@ import {
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { useConfirm } from '../../../hooks/useConfirm'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { ACCENT, DEV_PRIORITY_COLORS, DEV_STATUS_COLORS } from '../../../lib/chartColors'
 import {
   listDevProjects,
@@ -109,10 +111,11 @@ function issueIdentifier(issue: DevIssue) {
 }
 
 function creatorModelLabel(issue: DevIssue): string {
-  return issue.createdByModel || 'Non renseigné'
+  return issue.createdByModel || translate('devA.workspace.creatorModelUnset')
 }
 
 const DevWorkspace = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
   const { confirm, ConfirmDialog } = useConfirm()
@@ -227,11 +230,11 @@ const DevWorkspace = () => {
       setIssues(pendingId ? data.issues.filter((i) => i._id !== pendingId) : data.issues)
     } catch (e) {
       if (request === issueRequest.current)
-        setIssueError(e instanceof Error ? e.message : 'Impossible de charger les tickets')
+        setIssueError(e instanceof Error ? e.message : t('devA.workspace.loadIssuesError'))
     } finally {
       if (request === issueRequest.current) setLoading(false)
     }
-  }, [filters])
+  }, [filters, t])
 
   const loadStats = useCallback(async () => {
     try {
@@ -252,11 +255,11 @@ const DevWorkspace = () => {
       if (request === analyticsRequest.current) setAnalytics(data)
     } catch (e) {
       if (request === analyticsRequest.current)
-        setAnalyticsError(e instanceof Error ? e.message : 'Impossible de charger les graphiques')
+        setAnalyticsError(e instanceof Error ? e.message : t('devA.workspace.loadChartsError'))
     } finally {
       if (request === analyticsRequest.current) setAnalyticsLoading(false)
     }
-  }, [filters.project])
+  }, [filters.project, t])
 
   const loadOverview = useCallback(async () => {
     try {
@@ -481,9 +484,9 @@ const DevWorkspace = () => {
     } catch (err) {
       console.error(err)
       setIssues((prev) => (prev.some((i) => i._id === pending.issue._id) ? prev : [...prev, pending.issue]))
-      setDeleteError(`Échec de la suppression de ${issueIdentifier(pending.issue)} — issue restaurée`)
+      setDeleteError(t('devA.workspace.deleteFailed', { id: issueIdentifier(pending.issue) }))
     }
-  }, [loadStats, loadOverview, loadDailyPriorities, loadAnalyticsIssues])
+  }, [loadStats, loadOverview, loadDailyPriorities, loadAnalyticsIssues, t])
 
   const undoDelete = () => {
     const pending = pendingDeleteRef.current
@@ -496,7 +499,13 @@ const DevWorkspace = () => {
   }
 
   const handleDeleteIssue = async (id: string) => {
-    if (!(await confirm({ message: 'Supprimer définitivement cette issue ?', title: 'Suppression' }))) return
+    if (
+      !(await confirm({
+        message: t('devA.workspace.confirmDeleteIssue'),
+        title: t('devA.workspace.confirmDeleteTitle'),
+      }))
+    )
+      return
     const issue = issues.find((i) => i._id === id)
     if (!issue) return
     // Une seule suppression en attente à la fois : flush immédiat de la précédente.
@@ -544,7 +553,13 @@ const DevWorkspace = () => {
 
   const handleDeleteComment = async (commentId: string) => {
     if (!selectedIssue) return
-    if (!(await confirm({ message: 'Supprimer ce commentaire ?', title: 'Suppression' }))) return
+    if (
+      !(await confirm({
+        message: t('devA.workspace.confirmDeleteComment'),
+        title: t('devA.workspace.confirmDeleteTitle'),
+      }))
+    )
+      return
     try {
       await deleteDevIssueComment(selectedIssue._id, commentId)
       setComments((prev) => prev.filter((c) => c._id !== commentId))
@@ -557,7 +572,7 @@ const DevWorkspace = () => {
     e.preventDefault()
     setProjectError(null)
     if (!projectForm.key.trim() || !projectForm.name.trim()) {
-      setProjectError('Clé et nom requis')
+      setProjectError(t('devA.workspace.projectKeyNameRequired'))
       return
     }
     setSavingProject(true)
@@ -574,7 +589,7 @@ const DevWorkspace = () => {
       setFilters((f) => ({ ...f, project: created._id }))
       setQuickCreate((q) => ({ ...q, project: created._id }))
     } catch (err) {
-      setProjectError(err instanceof Error ? err.message : 'Erreur')
+      setProjectError(err instanceof Error ? err.message : t('common.error'))
     } finally {
       setSavingProject(false)
     }
@@ -606,7 +621,7 @@ const DevWorkspace = () => {
 
   // Group issues for display
   const grouped = useMemo(() => {
-    if (groupBy === 'none') return [{ key: 'Toutes', issues: sortIssues(issues), count: issues.length }]
+    if (groupBy === 'none') return [{ key: t('devA.list.groupAll'), issues: sortIssues(issues), count: issues.length }]
     if (groupBy === 'priority') {
       return PRIORITY_ORDER.map((p) => {
         const list = sortIssues(issues.filter((i) => i.priority === p))
@@ -617,7 +632,7 @@ const DevWorkspace = () => {
       const list = sortIssues(issues.filter((i) => i.status === s))
       return { key: STATUS_LABEL[s], color: STATUS_COLOR[s], issues: list, count: list.length }
     }).filter((g) => g.count > 0)
-  }, [issues, groupBy, sortIssues])
+  }, [issues, groupBy, sortIssues, t])
 
   // Vue « Ma journée » (A5) : 3 groupes calculés client, ordre fixe, vides masqués.
   // Une issue n'apparaît que dans son premier groupe éligible.
@@ -655,11 +670,29 @@ const DevWorkspace = () => {
       .filter((i) => !used.has(i._id) && i.status === 'IN_PROGRESS')
       .sort((a, b) => ts(b.updatedAt) - ts(a.updatedAt))
     return [
-      { key: 'À valider', color: 'var(--primary)', issues: review, count: review.length, reviewShortcut: true },
-      { key: 'Urgentes & en retard', color: '#ef4444', issues: urgent, count: urgent.length, reviewShortcut: false },
-      { key: 'En cours', color: '#eab308', issues: inProgress, count: inProgress.length, reviewShortcut: false },
+      {
+        key: t('devA.list.groupReview'),
+        color: 'var(--primary)',
+        issues: review,
+        count: review.length,
+        reviewShortcut: true,
+      },
+      {
+        key: t('devA.list.groupUrgent'),
+        color: '#ef4444',
+        issues: urgent,
+        count: urgent.length,
+        reviewShortcut: false,
+      },
+      {
+        key: t('devA.list.groupInProgress'),
+        color: '#eab308',
+        issues: inProgress,
+        count: inProgress.length,
+        reviewShortcut: false,
+      },
     ].filter((g) => g.count > 0)
-  }, [issues, quickView])
+  }, [issues, quickView, t])
 
   // Ordre plat des issues visibles (pour la sélection par plage avec Shift).
   const visibleFlat = useMemo(
@@ -705,7 +738,7 @@ const DevWorkspace = () => {
       const failed = results.filter((r) => r.status === 'rejected').length
       if (failed > 0) {
         console.error(`Bulk : ${failed} mise(s) à jour en échec`, results)
-        setBulkError(`${failed} mise(s) à jour en échec`)
+        setBulkError(t('devA.workspace.bulkFailed', { count: failed }))
       }
       await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
     } finally {
@@ -748,12 +781,22 @@ const DevWorkspace = () => {
   const miniStats: MiniStatItem[] = useMemo(() => {
     if (!stats) return []
     return [
-      { key: 'open', label: 'Ouvertes', value: stats.open, tone: 'neutral' },
-      { key: 'urgent', label: 'Urgentes', value: stats.urgent ?? stats.byPriority.URGENT ?? 0, tone: 'critical' },
-      { key: 'blocked', label: 'Bloquées', value: stats.blocked ?? stats.byStatus.BLOCKED ?? 0, tone: 'serious' },
-      { key: 'done14', label: 'Finies · 14j', value: stats.completedRecent, tone: 'good' },
+      { key: 'open', label: t('devA.overview.statOpen'), value: stats.open, tone: 'neutral' },
+      {
+        key: 'urgent',
+        label: t('devA.quickView.urgent'),
+        value: stats.urgent ?? stats.byPriority.URGENT ?? 0,
+        tone: 'critical',
+      },
+      {
+        key: 'blocked',
+        label: t('devA.quickView.blocked'),
+        value: stats.blocked ?? stats.byStatus.BLOCKED ?? 0,
+        tone: 'serious',
+      },
+      { key: 'done14', label: t('devA.overview.statDone14'), value: stats.completedRecent, tone: 'good' },
     ]
-  }, [stats])
+  }, [stats, t])
 
   const statusSegments = useMemo(() => {
     if (!stats) return []
@@ -827,14 +870,14 @@ const DevWorkspace = () => {
         </span>
         <span
           className={`dev-row-model${issue.createdByModel ? '' : ' unknown'}`}
-          title={`Modèle créateur : ${creatorModelLabel(issue)}`}
+          title={t('devA.workspace.creatorModelTitle', { model: creatorModelLabel(issue) })}
         >
           {creatorModelLabel(issue)}
         </span>
         <span className="dev-row-date">{formatRelative(issue.updatedAt)}</span>
         <span
           className={`dev-row-assignee${issue.assignee ? ' filled' : ''}`}
-          title={issue.assignee?.name || issue.assignee?.email || 'Non assignée'}
+          title={issue.assignee?.name || issue.assignee?.email || t('devA.workspace.unassignedFem')}
         >
           {issue.assignee ? userInitial(issue.assignee) : '?'}
         </span>
@@ -849,39 +892,43 @@ const DevWorkspace = () => {
         <div className="dev-empty" role="alert">
           {dataError}{' '}
           <button className="dev-btn" onClick={refreshWorkspace}>
-            Réessayer
+            {t('devA.common.retry')}
           </button>
         </div>
       )}
 
       <div className="dev-header">
         <div className="dev-header-left">
-          <h1 className="dev-title">Suivi développement</h1>
+          <h1 className="dev-title">{t('devA.workspace.title')}</h1>
           <span className="dev-subtitle">
-            {stats?.totalProjects ?? 0} projet(s) · {stats?.open ?? 0} issue(s) ouverte(s)
+            {t('devA.workspace.subtitle', { projects: stats?.totalProjects ?? 0, open: stats?.open ?? 0 })}
           </span>
         </div>
         <div className="dev-header-actions">
-          <button className="dev-btn subtle" onClick={refreshWorkspace} title="Rafraîchir le cockpit">
+          <button className="dev-btn subtle" onClick={refreshWorkspace} title={t('devA.workspace.refreshTitle')}>
             <RefreshCw size={13} />
           </button>
           {(stats?.byStatus?.IN_REVIEW ?? 0) > 0 && (
-            <button className="dev-btn review" onClick={() => setShowReviewQueue(true)} title="Ouvrir la file de revue">
-              <Check size={13} /> À valider ({stats!.byStatus.IN_REVIEW})
+            <button
+              className="dev-btn review"
+              onClick={() => setShowReviewQueue(true)}
+              title={t('devA.workspace.openReviewQueue')}
+            >
+              <Check size={13} /> {t('devA.workspace.toValidateCount', { count: stats!.byStatus.IN_REVIEW })}
             </button>
           )}
           {canManage && (
             <>
               <button className="dev-btn subtle" onClick={() => setShowProjectModal(true)}>
-                <Plus size={13} /> Projet
+                <Plus size={13} /> {t('devA.workspace.addProject')}
               </button>
               <button
                 className="dev-btn primary"
                 onClick={() => setShowQuickCreate((s) => !s)}
                 disabled={projects.length === 0}
-                title={projects.length === 0 ? "Créez d'abord un projet" : undefined}
+                title={projects.length === 0 ? t('devA.workspace.createProjectFirst') : undefined}
               >
-                <Plus size={13} /> Nouvelle issue
+                <Plus size={13} /> {t('devA.workspace.newIssue')}
               </button>
             </>
           )}
@@ -897,59 +944,59 @@ const DevWorkspace = () => {
                 <CompletionRing percent={globalCompletion} />
                 <div className="dev-command-ring-caption">
                   <span className="dev-command-ring-value">{globalCompletion}%</span>
-                  <span className="dev-command-ring-label">complétion globale</span>
+                  <span className="dev-command-ring-label">{t('devA.overview.completion')}</span>
                 </div>
               </div>
             </div>
             <MiniStats items={miniStats} />
           </section>
 
-          <section className="dev-viz-grid" aria-label="Visualisations du suivi développement">
+          <section className="dev-viz-grid" aria-label={t('devA.overview.vizAria')}>
             <div className="dev-viz-card">
-              <span className="dev-kicker">Vélocité · 14 derniers jours</span>
-              <h3>Issues terminées / jour</h3>
+              <span className="dev-kicker">{t('devA.overview.velocityKicker')}</span>
+              <h3>{t('devA.overview.velocityTitle')}</h3>
               {analyticsLoading ? (
-                <div className="dev-viz-loading">Chargement…</div>
+                <div className="dev-viz-loading">{t('devA.common.loading')}</div>
               ) : (
                 <VelocityChart data={velocitySeries} />
               )}
             </div>
             <div className="dev-viz-card">
-              <span className="dev-kicker">Répartition</span>
-              <h3>Issues par statut</h3>
+              <span className="dev-kicker">{t('devA.overview.breakdownKicker')}</span>
+              <h3>{t('devA.overview.byStatus')}</h3>
               <StatusBreakdownBar segments={statusSegments} />
             </div>
             <div className="dev-viz-card">
-              <span className="dev-kicker">Sévérité</span>
-              <h3>Issues par priorité</h3>
-              <HorizontalBarList rows={priorityRows} ariaLabel="Issues par priorité" />
+              <span className="dev-kicker">{t('devA.overview.severityKicker')}</span>
+              <h3>{t('devA.overview.byPriority')}</h3>
+              <HorizontalBarList rows={priorityRows} ariaLabel={t('devA.overview.byPriority')} />
             </div>
             <div className="dev-viz-card">
-              <span className="dev-kicker">Origine</span>
-              <h3>Issues par modèle créateur</h3>
+              <span className="dev-kicker">{t('devA.overview.originKicker')}</span>
+              <h3>{t('devA.overview.byCreatorModel')}</h3>
               {analyticsLoading ? (
-                <div className="dev-viz-loading">Chargement…</div>
+                <div className="dev-viz-loading">{t('devA.common.loading')}</div>
               ) : (
-                <HorizontalBarList rows={creatorModelRows} ariaLabel="Issues par modèle créateur" />
+                <HorizontalBarList rows={creatorModelRows} ariaLabel={t('devA.overview.byCreatorModel')} />
               )}
             </div>
           </section>
 
           {dailyPriorities && (
-            <section className="dev-daily-priorities" aria-label="Priorités du jour">
+            <section className="dev-daily-priorities" aria-label={t('devA.daily.aria')}>
               <header className="dev-daily-header">
                 <div>
-                  <span className="dev-kicker">P0 · Aujourd’hui</span>
-                  <h2>Priorités opérationnelles</h2>
+                  <span className="dev-kicker">{t('devA.daily.kicker')}</span>
+                  <h2>{t('devA.daily.title')}</h2>
                 </div>
                 <span className="dev-daily-freshness">
-                  Sources vérifiées {formatRelative(dailyPriorities.generatedAt)}
+                  {t('devA.daily.freshness', { when: formatRelative(dailyPriorities.generatedAt) })}
                 </span>
               </header>
               {dailyPriorities.items.length === 0 ? (
                 <div className="dev-daily-empty">
                   <ShieldCheck size={16} aria-hidden />
-                  Aucun bloquant, build cassé ou signal prioritaire détecté sur les projets actifs.
+                  {t('devA.daily.empty')}
                 </div>
               ) : (
                 <ol className="dev-daily-list">
@@ -976,15 +1023,17 @@ const DevWorkspace = () => {
                         </div>
                         <span>{item.description}</span>
                         <small>
-                          Source :{' '}
-                          {item.source.type === 'ci'
-                            ? 'CI'
-                            : item.source.type === 'pull_request'
-                              ? 'PR'
-                              : item.source.type === 'freshness'
-                                ? 'Fraîcheur'
-                                : 'Issue'}{' '}
-                          · mise à jour {formatRelative(item.source.observedAt)}
+                          {t('devA.daily.source', {
+                            source:
+                              item.source.type === 'ci'
+                                ? t('devA.daily.sourceCi')
+                                : item.source.type === 'pull_request'
+                                  ? t('devA.daily.sourcePr')
+                                  : item.source.type === 'freshness'
+                                    ? t('devA.daily.sourceFreshness')
+                                    : t('devA.daily.sourceIssue'),
+                            when: formatRelative(item.source.observedAt),
+                          })}
                         </small>
                       </div>
                       {item.action.href ? (
@@ -1013,14 +1062,16 @@ const DevWorkspace = () => {
           )}
 
           {projectOverview.length > 0 && (
-            <section className="dev-project-overview-block" aria-label="Projets triés par dernière modification">
+            <section className="dev-project-overview-block" aria-label={t('devA.projects.aria')}>
               <div className="dev-project-strip-header">
-                <span>Projets récents</span>
-                <small>Triés par dernière modification, du plus récent au plus ancien</small>
+                <span>{t('devA.projects.heading')}</span>
+                <small>{t('devA.projects.sortNote')}</small>
                 {projectOverview.length > 6 && (
                   <button type="button" className="dev-project-toggle" onClick={() => setShowAllProjects((v) => !v)}>
                     {showAllProjects ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    {showAllProjects ? 'Réduire' : `Voir les ${projectOverview.length} projets`}
+                    {showAllProjects
+                      ? t('devA.projects.collapse')
+                      : t('devA.projects.showAll', { count: projectOverview.length })}
                   </button>
                 )}
               </div>
@@ -1044,27 +1095,33 @@ const DevWorkspace = () => {
                       className={'dev-project-card' + (filters.project === project._id ? ' selected' : '')}
                       onClick={() => navigate(`/admin/dev/projects/${project._id}`)}
                       style={{ ['--project-color' as never]: project.color || '#7c5cff' }}
-                      title="Ouvrir le cockpit du projet"
+                      title={t('devA.projects.openCockpit')}
                     >
                       <span className="dev-project-card-key">{project.key}</span>
                       <strong>{project.name}</strong>
                       <span className="dev-project-card-meta">
-                        {done}/{total} terminées · {active} actives
+                        {t('devA.projects.doneActive', { done, total, active })}
                       </span>
-                      <span className="dev-project-card-activity">Mis à jour {formatRelative(lastActivityAt)}</span>
+                      <span className="dev-project-card-activity">
+                        {t('devA.projects.updated', { when: formatRelative(lastActivityAt) })}
+                      </span>
                       <span className="dev-project-progress">
                         <span style={{ width: percent + '%' }} />
                       </span>
                       <span className="dev-project-card-footer">
-                        <span className={urgent ? 'warn' : ''}>{urgent} urgent(s)</span>
+                        <span className={urgent ? 'warn' : ''}>
+                          {t('devA.projects.urgentCount', { count: urgent })}
+                        </span>
                         <span className={blocked ? 'warn' : ''}>
-                          {blocked ? `${blocked} bloqué(s)` : `${percent}% progression`}
+                          {blocked
+                            ? t('devA.projects.blockedCount', { count: blocked })
+                            : t('devA.projects.progressPercent', { percent })}
                         </span>
                       </span>
                       <span className={`dev-project-next-action${healthState === 'healthy' ? ' healthy' : ''}`}>
                         {nextAction
-                          ? `Prochaine action : ${nextAction.issue.identifier}`
-                          : 'État sain · aucune action P0'}
+                          ? t('devA.projects.nextAction', { id: nextAction.issue.identifier })
+                          : t('devA.projects.healthy')}
                       </span>
                     </button>
                   ),
@@ -1078,13 +1135,13 @@ const DevWorkspace = () => {
       <div className="dev-quick-views">
         {(
           [
-            ['today', 'Ma journée'],
-            ['all', 'Toutes ouvertes'],
-            ['mine', 'Mes issues'],
-            ['urgent', 'Urgentes'],
-            ['blocked', 'Bloquées'],
-            ['review', 'En revue'],
-            ['backlog', 'Backlog'],
+            ['today', t('devA.quickView.today')],
+            ['all', t('devA.quickView.all')],
+            ['mine', t('devA.quickView.mine')],
+            ['urgent', t('devA.quickView.urgent')],
+            ['blocked', t('devA.quickView.blocked')],
+            ['review', t('devA.quickView.review')],
+            ['backlog', t('devA.quickView.backlog')],
           ] as Array<[typeof quickView, string]>
         ).map(([key, label]) => (
           <button
@@ -1101,17 +1158,17 @@ const DevWorkspace = () => {
             type="button"
             className={'dev-view-mode-btn' + (viewMode === 'list' ? ' active' : '')}
             onClick={() => setViewMode('list')}
-            title="Vue liste"
+            title={t('devA.view.listTitle')}
           >
-            Liste
+            {t('devA.view.list')}
           </button>
           <button
             type="button"
             className={'dev-view-mode-btn' + (viewMode === 'kanban' ? ' active' : '')}
             onClick={() => setViewMode('kanban')}
-            title="Vue Kanban (statuts)"
+            title={t('devA.view.kanbanTitle')}
           >
-            Kanban
+            {t('devA.view.kanban')}
           </button>
         </div>
       </div>
@@ -1120,7 +1177,7 @@ const DevWorkspace = () => {
         <input
           ref={searchRef}
           className="dev-search"
-          placeholder="Rechercher (titre, identifiant)…"
+          placeholder={t('devA.toolbar.searchPlaceholder')}
           value={filters.q || ''}
           onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
         />
@@ -1132,7 +1189,7 @@ const DevWorkspace = () => {
             setFilters((f) => ({ ...f, project: next }))
           }}
         >
-          <option value="all">Tous projets</option>
+          <option value="all">{t('devA.toolbar.allProjects')}</option>
           {projects.map((p) => (
             <option key={p._id} value={p._id}>
               {p.key} · {p.name}
@@ -1144,9 +1201,9 @@ const DevWorkspace = () => {
             type="button"
             className="dev-btn subtle"
             onClick={() => navigate(`/admin/dev/projects/${filters.project}`)}
-            title="Ouvrir le cockpit projet"
+            title={t('devA.toolbar.openProjectCockpit')}
           >
-            <Target size={12} /> Cockpit projet
+            <Target size={12} /> {t('devA.toolbar.projectCockpit')}
           </button>
         )}
         <select
@@ -1154,8 +1211,8 @@ const DevWorkspace = () => {
           value={filters.status || 'open'}
           onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as IssueFilters['status'] }))}
         >
-          <option value="open">Ouvertes</option>
-          <option value="all">Toutes</option>
+          <option value="open">{t('devA.toolbar.statusOpen')}</option>
+          <option value="all">{t('devA.toolbar.statusAll')}</option>
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>
               {STATUS_LABEL[s]}
@@ -1167,7 +1224,7 @@ const DevWorkspace = () => {
           value={filters.priority || 'all'}
           onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value as IssueFilters['priority'] }))}
         >
-          <option value="all">Toutes priorités</option>
+          <option value="all">{t('devA.toolbar.allPriorities')}</option>
           {PRIORITY_ORDER.map((p) => (
             <option key={p} value={p}>
               {PRIORITY_LABEL[p]}
@@ -1179,7 +1236,7 @@ const DevWorkspace = () => {
           value={filters.type || 'all'}
           onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value as IssueFilters['type'] }))}
         >
-          <option value="all">Tous types</option>
+          <option value="all">{t('devA.toolbar.allTypes')}</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
@@ -1191,29 +1248,29 @@ const DevWorkspace = () => {
           value={filters.assignee || 'all'}
           onChange={(e) => setFilters((f) => ({ ...f, assignee: e.target.value as IssueFilters['assignee'] }))}
         >
-          <option value="all">Tous assignés</option>
-          <option value="me">Moi</option>
-          <option value="unassigned">Non assignées</option>
+          <option value="all">{t('devA.toolbar.allAssignees')}</option>
+          <option value="me">{t('devA.toolbar.assigneeMe')}</option>
+          <option value="unassigned">{t('devA.toolbar.assigneeNone')}</option>
         </select>
         <select
           className="dev-select"
           value={groupBy}
           onChange={(e) => setGroupBy(e.target.value as 'status' | 'priority' | 'none')}
         >
-          <option value="status">Groupé par statut</option>
-          <option value="priority">Groupé par priorité</option>
-          <option value="none">Pas de groupe</option>
+          <option value="status">{t('devA.toolbar.groupStatus')}</option>
+          <option value="priority">{t('devA.toolbar.groupPriority')}</option>
+          <option value="none">{t('devA.toolbar.groupNone')}</option>
         </select>
         <select
           className="dev-select"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortBy)}
-          title="Tri des issues"
+          title={t('devA.toolbar.sortTitle')}
         >
-          <option value="activity">Tri : activité</option>
-          <option value="created">Tri : création</option>
-          <option value="priority">Tri : priorité</option>
-          <option value="due">Tri : échéance</option>
+          <option value="activity">{t('devA.toolbar.sortActivity')}</option>
+          <option value="created">{t('devA.toolbar.sortCreated')}</option>
+          <option value="priority">{t('devA.toolbar.sortPriority')}</option>
+          <option value="due">{t('devA.toolbar.sortDue')}</option>
         </select>
       </div>
 
@@ -1233,7 +1290,7 @@ const DevWorkspace = () => {
               </select>
               <input
                 className="title"
-                placeholder="Titre de l'issue…"
+                placeholder={t('devA.quickCreate.titlePlaceholder')}
                 value={quickCreate.title}
                 onChange={(e) => setQuickCreate((q) => ({ ...q, title: e.target.value }))}
                 autoFocus
@@ -1269,23 +1326,23 @@ const DevWorkspace = () => {
                 ))}
               </select>
               <button type="submit" className="dev-btn primary" disabled={creating || !quickCreate.title.trim()}>
-                {creating ? '…' : 'Créer'}
+                {creating ? '…' : t('devA.quickCreate.submit')}
               </button>
               <button type="button" className="dev-btn subtle" onClick={() => setShowQuickCreate(false)}>
-                Annuler
+                {t('common.cancel')}
               </button>
             </form>
           )}
 
           {loading ? (
-            <div className="dev-loading">Chargement…</div>
+            <div className="dev-loading">{t('devA.common.loading')}</div>
           ) : issues.length === 0 ? (
             <div className="dev-empty">
-              Aucune issue.
+              {t('devA.list.empty')}
               {projects.length === 0 && canManage && (
                 <div style={{ marginTop: 12 }}>
                   <button className="dev-btn primary" onClick={() => setShowProjectModal(true)}>
-                    Créer le premier projet
+                    {t('devA.list.createFirstProject')}
                   </button>
                 </div>
               )}
@@ -1380,7 +1437,7 @@ const DevWorkspace = () => {
           ) : quickView === 'today' ? (
             // Vue « Ma journée » : 3 groupes client à accent couleur (A5).
             todayGroups.length === 0 ? (
-              <div className="dev-empty">Rien à traiter aujourd'hui 🎉</div>
+              <div className="dev-empty">{t('devA.list.todayEmpty')}</div>
             ) : (
               todayGroups.map((group) => (
                 <div key={group.key}>
@@ -1389,7 +1446,7 @@ const DevWorkspace = () => {
                     <span className="dev-list-group-count">{group.count}</span>
                     {group.reviewShortcut && (
                       <button type="button" className="dev-today-review-link" onClick={() => setShowReviewQueue(true)}>
-                        → Ouvrir la file de revue
+                        {t('devA.list.openReviewQueue')}
                       </button>
                     )}
                   </div>
@@ -1433,19 +1490,19 @@ const DevWorkspace = () => {
           {bulkError ? (
             <>
               <span className="dev-bulk-error">{bulkError}</span>
-              <button className="dev-btn subtle" onClick={() => setBulkError(null)} title="Fermer">
+              <button className="dev-btn subtle" onClick={() => setBulkError(null)} title={t('common.close')}>
                 <X size={12} />
               </button>
             </>
           ) : (
             <>
-              <span className="dev-bulk-count">{selectedIds.size} sélectionnée(s)</span>
+              <span className="dev-bulk-count">{t('devA.bulk.selected', { count: selectedIds.size })}</span>
               <select
                 className="dev-select"
                 value={bulkStatus}
                 onChange={(e) => setBulkStatus(e.target.value as '' | DevIssueStatus)}
               >
-                <option value="">Statut…</option>
+                <option value="">{t('devA.bulk.status')}</option>
                 {STATUS_ORDER.map((s) => (
                   <option key={s} value={s}>
                     {STATUS_LABEL[s]}
@@ -1457,7 +1514,7 @@ const DevWorkspace = () => {
                 value={bulkPriority}
                 onChange={(e) => setBulkPriority(e.target.value as '' | DevIssuePriority)}
               >
-                <option value="">Priorité…</option>
+                <option value="">{t('devA.bulk.priority')}</option>
                 {PRIORITY_ORDER.map((p) => (
                   <option key={p} value={p}>
                     {PRIORITY_LABEL[p]}
@@ -1466,7 +1523,7 @@ const DevWorkspace = () => {
               </select>
               <input
                 className="dev-bulk-label-input"
-                placeholder="+ label"
+                placeholder={t('devA.bulk.labelPlaceholder')}
                 value={bulkLabel}
                 onChange={(e) => setBulkLabel(e.target.value)}
                 onKeyDown={(e) => {
@@ -1478,9 +1535,9 @@ const DevWorkspace = () => {
                 onClick={() => void applyBulk()}
                 disabled={bulkApplying || (!bulkStatus && !bulkPriority && !bulkLabel.trim())}
               >
-                {bulkApplying ? '…' : 'Appliquer'}
+                {bulkApplying ? '…' : t('devA.bulk.apply')}
               </button>
-              <button className="dev-btn subtle" onClick={() => setSelectedIds(new Set())} title="Vider la sélection">
+              <button className="dev-btn subtle" onClick={() => setSelectedIds(new Set())} title={t('devA.bulk.clear')}>
                 <X size={12} />
               </button>
             </>
@@ -1495,9 +1552,9 @@ const DevWorkspace = () => {
           role="status"
           aria-live="polite"
         >
-          <span>Issue {issueIdentifier(pendingDelete.issue)} supprimée</span>
+          <span>{t('devA.undo.deleted', { id: issueIdentifier(pendingDelete.issue) })}</span>
           <button type="button" className="dev-undo-toast-btn" onClick={undoDelete}>
-            Annuler
+            {t('common.cancel')}
           </button>
         </div>
       )}
@@ -1517,7 +1574,12 @@ const DevWorkspace = () => {
           role="alert"
         >
           <span>{deleteError}</span>
-          <button type="button" className="dev-undo-toast-btn" onClick={() => setDeleteError(null)} title="Fermer">
+          <button
+            type="button"
+            className="dev-undo-toast-btn"
+            onClick={() => setDeleteError(null)}
+            title={t('common.close')}
+          >
             <X size={12} />
           </button>
         </div>

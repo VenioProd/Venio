@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Apple, CalendarDays, Clock, ExternalLink, MapPin, Plus, RefreshCw, StickyNote } from 'lucide-react'
 import {
-  formatDate,
-  formatRelative,
   ASSIGNMENT_KIND_LABEL,
   ASSIGNMENT_STATUS_COLOR,
   ASSIGNMENT_STATUS_LABEL,
@@ -10,7 +8,12 @@ import {
   type EducationDashboard,
   type EducationDashboardAlert,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate as formatIntlDate } from '../../../i18n/format'
 import { EducationAiDraftPanel } from './EducationAiDraft'
+import { formatRelativeDate as formatRelative, formatShortDate as formatDate } from './eduFormat'
+import { formatClock, formatRange, messageWithNode } from './calendarFormat'
 import {
   fetchUpcomingCalendar,
   type UpcomingCalendarEvent,
@@ -57,6 +60,7 @@ export function DashboardView({
   reloadError: string | null
   onReload: () => void
 }) {
+  const { t } = useI18n()
   const [checklist, setChecklist] = useState('')
   if (!dashboard) {
     return (
@@ -65,11 +69,11 @@ export function DashboardView({
           <div className="edu-banner-error" role="alert">
             {reloadError}
             <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>
-              Réessayer
+              {t('eduB.shared.retry')}
             </button>
           </div>
         ) : (
-          <p className="edu-sub">Chargement…</p>
+          <p className="edu-sub">{t('eduB.shared.loading')}</p>
         )}
       </div>
     )
@@ -84,17 +88,15 @@ export function DashboardView({
         <div className="edu-banner-error" role="alert" style={{ marginBottom: 16 }}>
           {reloadError}
           <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={onReload}>
-            Réessayer
+            {t('eduB.shared.retry')}
           </button>
         </div>
       )}
 
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="edu-h1">Cockpit intervenant</h1>
-          <p className="edu-sub">
-            Ton point d'entrée quotidien — aujourd'hui, cette semaine et ce qui attend ton attention.
-          </p>
+          <h1 className="edu-h1">{t('eduB.dashboard.title')}</h1>
+          <p className="edu-sub">{t('eduB.dashboard.subtitle')}</p>
         </div>
         <div className="edu-row" style={{ gap: 8, flexWrap: 'wrap' }}>
           {schoolsToShow.length > 0 && (
@@ -103,9 +105,9 @@ export function DashboardView({
               style={{ width: 'auto', minWidth: 180 }}
               value={selectedSchool}
               onChange={(e) => onChangeSchool(e.target.value)}
-              aria-label="Filtrer par école"
+              aria-label={t('eduB.dashboard.filterSchool')}
             >
-              <option value="">Toutes les écoles</option>
+              <option value="">{t('eduB.dashboard.allSchools')}</option>
               {schoolsToShow.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -114,21 +116,21 @@ export function DashboardView({
             </select>
           )}
           <button className="edu-btn" onClick={onCreateClass}>
-            <Plus size={14} /> Nouvelle classe
+            <Plus size={14} /> {t('eduB.dashboard.newClass')}
           </button>
         </div>
       </div>
 
       <div className="edu-kpi-grid">
-        <Kpi label="Classes actives" value={c.activeClasses} />
-        <Kpi label="Étudiants suivis" value={c.totalStudents} />
-        <Kpi label="Aujourd'hui" value={c.todaySessions} sub="séance(s)" />
-        <Kpi label="Cette semaine" value={c.weekSessions} sub="séance(s)" />
-        <Kpi label="À préparer" value={c.toPrepare} sub="prochaines 72 h" />
+        <Kpi label={t('eduB.dashboard.kpiActiveClasses')} value={c.activeClasses} />
+        <Kpi label={t('eduB.dashboard.kpiStudents')} value={c.totalStudents} />
+        <Kpi label={t('eduB.dashboard.today')} value={c.todaySessions} sub={t('eduB.dashboard.kpiSessionsSub')} />
+        <Kpi label={t('eduB.dashboard.thisWeek')} value={c.weekSessions} sub={t('eduB.dashboard.kpiSessionsSub')} />
+        <Kpi label={t('eduB.dashboard.toPrepare')} value={c.toPrepare} sub={t('eduB.dashboard.kpiNext72')} />
         <Kpi
-          label="À corriger"
+          label={t('eduB.dashboard.toGrade')}
           value={c.toGrade}
-          sub={c.lateSubmissions > 0 ? `${c.lateSubmissions} en retard` : undefined}
+          sub={c.lateSubmissions > 0 ? t('eduB.dashboard.kpiLate', { count: c.lateSubmissions }) : undefined}
         />
       </div>
 
@@ -141,7 +143,7 @@ export function DashboardView({
       />
       {checklist && (
         <div className="edu-form-group" style={{ marginBottom: 20 }}>
-          <label>Ma checklist (brouillon local, à compléter avant toute action)</label>
+          <label>{t('eduB.dashboard.checklistLabel')}</label>
           <textarea className="edu-textarea" value={checklist} onChange={(event) => setChecklist(event.target.value)} />
         </div>
       )}
@@ -154,18 +156,18 @@ export function DashboardView({
       />
 
       {/* Aujourd'hui */}
-      <Section title="Aujourd'hui">
+      <Section title={t('eduB.dashboard.today')}>
         {dashboard.today.length === 0 ? (
-          <p className="edu-empty">Pas de séance aujourd'hui.</p>
+          <p className="edu-empty">{t('eduB.dashboard.todayEmpty')}</p>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Heure</th>
-                <th>Classe</th>
-                <th>École</th>
-                <th>Séance</th>
-                <th>Statut</th>
+                <th>{t('eduB.cols.time')}</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.school')}</th>
+                <th>{t('eduB.cols.session')}</th>
+                <th>{t('eduB.cols.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -174,14 +176,14 @@ export function DashboardView({
                 const school = (cls as { school?: string } | null)?.school
                 return (
                   <tr key={s._id}>
-                    <td>{new Date(s.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>{formatClock(s.date)}</td>
                     <td>
                       {cls && (
                         <button
                           type="button"
                           className="edu-btn ghost"
                           onClick={() => onOpenClass(cls._id)}
-                          aria-label={`Ouvrir la classe ${cls.name}`}
+                          aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
@@ -200,9 +202,9 @@ export function DashboardView({
                         <button
                           className="edu-btn ghost"
                           onClick={() => onStartLive(s._id)}
-                          aria-label={`Lancer la séance ${s.title}`}
+                          aria-label={t('eduB.dashboard.startSession', { title: s.title })}
                         >
-                          Séance live
+                          {t('eduB.dashboard.live')}
                         </button>
                       )}
                     </td>
@@ -215,17 +217,17 @@ export function DashboardView({
       </Section>
 
       {/* Cette semaine */}
-      <Section title="Cette semaine">
+      <Section title={t('eduB.dashboard.thisWeek')}>
         {dashboard.week.length === 0 ? (
-          <p className="edu-empty">Pas de séance planifiée cette semaine.</p>
+          <p className="edu-empty">{t('eduB.dashboard.weekEmpty')}</p>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Classe</th>
-                <th>École</th>
-                <th>Séance</th>
+                <th>{t('eduB.cols.date')}</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.school')}</th>
+                <th>{t('eduB.cols.session')}</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +243,7 @@ export function DashboardView({
                           type="button"
                           className="edu-btn ghost"
                           onClick={() => onOpenClass(cls._id)}
-                          aria-label={`Ouvrir la classe ${cls.name}`}
+                          aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
@@ -263,17 +265,17 @@ export function DashboardView({
       </Section>
 
       {/* À préparer */}
-      <Section title="À préparer" subtitle="Séances planifiées dans les 72h prochaines">
+      <Section title={t('eduB.dashboard.toPrepare')} subtitle={t('eduB.dashboard.toPrepareSubtitle')}>
         {dashboard.toPrepare.length === 0 ? (
-          <p className="edu-empty">Rien à préparer dans l'immédiat.</p>
+          <p className="edu-empty">{t('eduB.dashboard.toPrepareEmpty')}</p>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Quand</th>
-                <th>Classe</th>
-                <th>Séance</th>
-                <th>Lieu</th>
+                <th>{t('eduB.cols.when')}</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.session')}</th>
+                <th>{t('eduB.cols.location')}</th>
               </tr>
             </thead>
             <tbody>
@@ -288,7 +290,7 @@ export function DashboardView({
                           type="button"
                           className="edu-btn ghost"
                           onClick={() => onOpenClass(cls._id)}
-                          aria-label={`Ouvrir la classe ${cls.name}`}
+                          aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
@@ -312,20 +314,22 @@ export function DashboardView({
 
       {/* À corriger */}
       <Section
-        title="À corriger"
-        subtitle={c.toGrade > 0 ? `${c.toGrade} copie(s) en attente` : 'Aucune correction en attente'}
+        title={t('eduB.dashboard.toGrade')}
+        subtitle={
+          c.toGrade > 0 ? t('eduB.dashboard.toGradeSubtitle', { count: c.toGrade }) : t('eduB.dashboard.toGradeNone')
+        }
       >
         {dashboard.toCorrect.length === 0 ? (
-          <p className="edu-empty">Aucune copie en attente de correction.</p>
+          <p className="edu-empty">{t('eduB.dashboard.toGradeEmpty')}</p>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Devoir</th>
-                <th>Classe</th>
-                <th>Type</th>
-                <th>Échéance</th>
-                <th>Statut</th>
+                <th>{t('eduB.cols.assignment')}</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.type')}</th>
+                <th>{t('eduB.cols.due')}</th>
+                <th>{t('eduB.cols.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -337,9 +341,9 @@ export function DashboardView({
                       <button
                         className="edu-btn ghost"
                         onClick={() => onStartCorrection(a._id)}
-                        aria-label={`Corriger ${a.title}`}
+                        aria-label={t('eduB.dashboard.gradeLabel', { title: a.title })}
                       >
-                        {a.title} · Corriger
+                        {t('eduB.dashboard.gradeButton', { title: a.title })}
                       </button>
                     </td>
                     <td>
@@ -348,7 +352,7 @@ export function DashboardView({
                           type="button"
                           className="edu-btn ghost"
                           onClick={() => onOpenClass(cls._id)}
-                          aria-label={`Ouvrir la classe ${cls.name}`}
+                          aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
                           <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
                           {cls.name}
@@ -372,18 +376,18 @@ export function DashboardView({
       </Section>
 
       {/* Dernière séance par classe */}
-      <Section title="Dernière séance par classe" subtitle="Rappel rapide : où on en est dans chaque classe.">
+      <Section title={t('eduB.dashboard.lastByClass')} subtitle={t('eduB.dashboard.lastByClassSubtitle')}>
         {dashboard.lastSessionByClass.length === 0 ? (
-          <p className="edu-empty">Aucune classe active.</p>
+          <p className="edu-empty">{t('eduB.dashboard.noActiveClass')}</p>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Classe</th>
-                <th>École</th>
-                <th>Dernière séance</th>
-                <th>Quand</th>
-                <th>Statut</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.school')}</th>
+                <th>{t('eduB.cols.lastSession')}</th>
+                <th>{t('eduB.cols.when')}</th>
+                <th>{t('eduB.cols.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -428,23 +432,17 @@ export function DashboardView({
 
       {/* Points d'attention pédagogiques (devoirs en retard) */}
       {c.lateSubmissions > 0 && (
-        <Section title="Points d'attention pédagogiques" subtitle="Devoirs rendus en retard à corriger en priorité.">
-          <p className="edu-sub">
-            {c.lateSubmissions} soumission{c.lateSubmissions > 1 ? 's' : ''} en retard à examiner.
-          </p>
+        <Section title={t('eduB.dashboard.attentionTitle')} subtitle={t('eduB.dashboard.attentionSubtitle')}>
+          <p className="edu-sub">{t('eduB.dashboard.lateSubmissions', { count: c.lateSubmissions })}</p>
         </Section>
       )}
 
       <Section
-        title="Suivi pédagogique"
-        subtitle={
-          dashboard.alerts.length > 0
-            ? 'Signaux calculés à partir des présences et des travaux échus. Ouvre la fiche étudiant pour consigner le suivi.'
-            : 'Aucun signal de suivi dans le périmètre affiché.'
-        }
+        title={t('eduB.dashboard.followUp')}
+        subtitle={dashboard.alerts.length > 0 ? t('eduB.dashboard.followUpSome') : t('eduB.dashboard.followUpNone')}
       >
         {dashboard.alerts.length > 0 && (
-          <div className="edu-alert-list" role="list" aria-label="Signaux de suivi pédagogique">
+          <div className="edu-alert-list" role="list" aria-label={t('eduB.dashboard.followUpAria')}>
             {dashboard.alerts.map((alert) => (
               <button
                 key={`${alert.type}-${alert.student._id}`}
@@ -457,7 +455,7 @@ export function DashboardView({
                 <span className="edu-alert-main">
                   <strong>
                     {[alert.student.firstName, alert.student.lastName.toUpperCase()].filter(Boolean).join(' ') ||
-                      'Étudiant sans nom'}
+                      t('eduB.dashboard.unnamedStudent')}
                   </strong>
                   <span>{alert.message}</span>
                 </span>
@@ -472,7 +470,7 @@ export function DashboardView({
         )}
       </Section>
 
-      <Section title="Activité récente">
+      <Section title={t('eduB.dashboard.recentActivity')}>
         {dashboard.activity.length === 0 ? (
           <p className="edu-empty">—</p>
         ) : (
@@ -533,6 +531,7 @@ function UpcomingCalendarSection({
   onOpenCalendar?: () => void
   onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
+  const { t } = useI18n()
   const [payload, setPayload] = useState<UpcomingCalendarPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -553,7 +552,7 @@ function UpcomingCalendarSection({
         setUnconfigured(true)
         setPayload(null)
       } else {
-        setError(e.message || 'Impossible de charger le calendrier.')
+        setError(e.message || translate('eduB.upcoming.loadFallback'))
       }
     } finally {
       setLoading(false)
@@ -571,16 +570,19 @@ function UpcomingCalendarSection({
         <div>
           <h2 className="edu-h2" style={{ marginBottom: 4 }}>
             <CalendarDays size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-            Prochains cours
+            {t('eduB.upcoming.title')}
           </h2>
           <p className="edu-sub" style={{ marginBottom: 0 }}>
-            Calendrier Apple — 14 prochains jours, lecture seule.
+            {t('eduB.upcoming.subtitle')}
             {payload?.fetchedAt && (
               <>
                 {' '}
-                · Sync :{' '}
-                <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{formatRelative(payload.fetchedAt)}</strong>
-                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>(cache)</span>}
+                {messageWithNode(
+                  'eduB.upcoming.sync',
+                  'when',
+                  <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{formatRelative(payload.fetchedAt)}</strong>,
+                )}
+                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>{t('eduB.calendar.cache')}</span>}
               </>
             )}
           </p>
@@ -590,13 +592,13 @@ function UpcomingCalendarSection({
             className="edu-btn ghost"
             onClick={() => load({ silent: true })}
             disabled={refreshing || loading}
-            title="Rafraîchir depuis le cache serveur"
+            title={t('eduB.upcoming.refreshTitle')}
           >
-            <RefreshCw size={13} className={refreshing ? 'edu-spin' : ''} /> Rafraîchir
+            <RefreshCw size={13} className={refreshing ? 'edu-spin' : ''} /> {t('eduB.upcoming.refresh')}
           </button>
           {onOpenCalendar && (
-            <button className="edu-btn ghost" onClick={onOpenCalendar} title="Ouvrir la vue Calendrier complète">
-              <Apple size={13} /> Voir le calendrier
+            <button className="edu-btn ghost" onClick={onOpenCalendar} title={t('eduB.upcoming.viewCalendarTitle')}>
+              <Apple size={13} /> {t('eduB.upcoming.viewCalendar')}
             </button>
           )}
         </div>
@@ -608,10 +610,8 @@ function UpcomingCalendarSection({
             📅
           </span>
           <div>
-            <div style={{ fontWeight: 600 }}>Calendrier Apple non configuré.</div>
-            <div style={{ opacity: 0.75, fontSize: 13 }}>
-              Connectez votre calendrier Apple pour retrouver vos prochains cours ici.
-            </div>
+            <div style={{ fontWeight: 600 }}>{t('eduB.upcoming.unconfigured')}</div>
+            <div style={{ opacity: 0.75, fontSize: 13 }}>{t('eduB.upcoming.unconfiguredHint')}</div>
           </div>
         </div>
       )}
@@ -622,18 +622,18 @@ function UpcomingCalendarSection({
             !
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>Erreur de chargement</div>
+            <div style={{ fontWeight: 600 }}>{t('eduB.shared.loadErrorTitle')}</div>
             <div style={{ opacity: 0.85, fontSize: 13 }}>{error}</div>
           </div>
           <button className="edu-btn ghost" onClick={() => load()}>
-            Réessayer
+            {t('eduB.shared.retry')}
           </button>
         </div>
       )}
 
       {loading && !payload && !error && !unconfigured && (
         <div className="edu-cockpit-cal-state" aria-busy="true">
-          Chargement du calendrier…
+          {t('eduB.calendar.loading')}
         </div>
       )}
 
@@ -662,11 +662,12 @@ function UpcomingList({
   onOpenCalendar?: () => void
   onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
+  const { t } = useI18n()
   const now = Date.now()
   const upcoming = events.filter((ev) => new Date(ev.end).getTime() >= now).slice(0, 8)
 
   if (upcoming.length === 0) {
-    return <p className="edu-empty">Pas de cours dans le calendrier sur les 14 prochains jours.</p>
+    return <p className="edu-empty">{t('eduB.upcoming.empty')}</p>
   }
 
   const byDay = new Map<string, UpcomingCalendarEvent[]>()
@@ -709,8 +710,7 @@ function UpcomingItem({
   onOpenCalendar?: () => void
   onOpenCalendarEvent?: (event: UpcomingCalendarEvent) => void
 }) {
-  const start = new Date(event.start)
-  const end = new Date(event.end)
+  const { t } = useI18n()
   const matchColor = event.match?.color || 'var(--primary)'
   const matchLabel = event.match?.className
   const schoolBadge = event.match?.school || event.school
@@ -728,29 +728,33 @@ function UpcomingItem({
     }
   }
 
-  const primaryLabel = onOpenCalendarEvent ? 'Ouvrir la fiche' : event.match ? 'Ouvrir la classe' : 'Voir le calendrier'
+  const primaryLabel = onOpenCalendarEvent
+    ? t('eduB.upcoming.openSheet')
+    : event.match
+      ? t('eduB.event.openClass')
+      : t('eduB.upcoming.viewCalendar')
 
   return (
     <div className="edu-cockpit-cal-item" style={{ borderLeftColor: matchColor }}>
       <div className="edu-cockpit-cal-item-main">
         <div className="edu-cockpit-cal-item-time">
           <Clock size={12} />
-          {event.allDay
-            ? 'Journée entière'
-            : `${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+          {formatRange(event.start, event.end, event.allDay)}
         </div>
         <div className="edu-cockpit-cal-item-title">{event.title}</div>
         <div className="edu-cockpit-cal-item-meta">
           {matchLabel ? (
             <span
               className="edu-pill"
-              title={`Classe rattachée (${event.match?.reason === 'exact-name' ? 'nom exact' : 'tokens'})`}
+              title={
+                event.match?.reason === 'exact-name' ? t('eduB.upcoming.matchExact') : t('eduB.upcoming.matchTokens')
+              }
             >
               <span className="edu-pill-dot" style={{ background: matchColor }} />
               {matchLabel}
             </span>
           ) : (
-            <span className="edu-cockpit-cal-item-loose">Non rattaché</span>
+            <span className="edu-cockpit-cal-item-loose">{t('eduB.upcoming.unlinked')}</span>
           )}
           {schoolBadge && <span className="edu-cockpit-cal-school">{schoolBadge}</span>}
           {event.location && (
@@ -758,7 +762,7 @@ function UpcomingItem({
               <MapPin size={11} /> {event.location}
             </span>
           )}
-          <span className="edu-cockpit-cal-source" title="Source : Apple Calendar (lecture seule)">
+          <span className="edu-cockpit-cal-source" title={t('eduB.upcoming.sourceTitle')}>
             <Apple size={11} /> Apple
           </span>
         </div>
@@ -772,11 +776,11 @@ function UpcomingItem({
               e.stopPropagation()
               onOpenClass(event.match!.classId)
             }}
-            aria-label="Ouvrir la classe"
-            title="Ouvrir la classe rattachée"
+            aria-label={t('eduB.event.openClass')}
+            title={t('eduB.upcoming.linkedClassTitle')}
           >
             <ExternalLink size={13} />
-            <span className="edu-cockpit-cal-item-action-label">Classe</span>
+            <span className="edu-cockpit-cal-item-action-label">{t('eduB.upcoming.classShort')}</span>
           </button>
         )}
         <button
@@ -809,7 +813,7 @@ function formatDayLabel(iso: string): string {
   tomorrow.setDate(today.getDate() + 1)
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-  if (isSameDay(d, today)) return 'Aujourd’hui'
-  if (isSameDay(d, tomorrow)) return 'Demain'
-  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'short' })
+  if (isSameDay(d, today)) return translate('eduB.upcoming.todayLabel')
+  if (isSameDay(d, tomorrow)) return translate('eduB.upcoming.tomorrow')
+  return formatIntlDate(d, { weekday: 'long', day: '2-digit', month: 'short' })
 }

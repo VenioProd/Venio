@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../context/I18nContext'
+
 export interface StatusSegment {
   key: string
   label: string
@@ -11,14 +13,15 @@ interface StatusBreakdownBarProps {
 
 /** Barre horizontale empilée (statuts) — 2px de gap entre segments, légende dessous. */
 export const StatusBreakdownBar = ({ segments }: StatusBreakdownBarProps) => {
+  const { t } = useI18n()
   const visible = segments.filter((s) => s.value > 0)
   const total = visible.reduce((sum, s) => sum + s.value, 0)
   if (total === 0) {
-    return <div className="dev-viz-empty">Aucune issue</div>
+    return <div className="dev-viz-empty">{t('devB.charts.noIssue')}</div>
   }
   return (
     <div className="dev-viz-stackbar-wrap">
-      <div className="dev-viz-stackbar" role="img" aria-label="Répartition des issues par statut">
+      <div className="dev-viz-stackbar" role="img" aria-label={t('devB.charts.statusBreakdownAria')}>
         {visible.map((seg) => (
           <span
             key={seg.key}

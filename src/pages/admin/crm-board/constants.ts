@@ -1,36 +1,96 @@
-import type { CrmStatusConfig, Lead, LeadAlert, WorklistThresholds } from '../../../types/crm.types'
+import type { Lead, LeadAlert, WorklistThresholds } from '../../../types/crm.types'
+import { translate, type MessageKey } from '../../../i18n'
 
-export const CRM_STATUSES = [
-  { key: 'LEAD', label: 'Lead', color: '#6366f1' },
-  { key: 'QUALIFIED', label: 'Qualifi\u00e9', color: '#0ea5e9' },
-  { key: 'CONTACTED', label: 'Contact\u00e9', color: '#8b5cf6' },
-  { key: 'DEMO', label: 'D\u00e9mo', color: '#f59e0b' },
-  { key: 'PROPOSAL', label: 'Proposition', color: '#f97316' },
-  { key: 'WON', label: 'Gagn\u00e9', color: '#22c55e' },
-  { key: 'LOST', label: 'Perdu', color: '#ef4444' },
+/**
+ * Entrée d'une liste de référence du CRM : `key` est la valeur métier envoyée
+ * à l'API, `labelKey` la clé du libellé affiché (à passer à `t()` au rendu).
+ */
+export interface CrmOption {
+  key: string
+  labelKey: MessageKey
+  color: string
+}
+
+export const CRM_STATUSES: CrmOption[] = [
+  { key: 'LEAD', labelKey: 'crm.status.lead', color: '#6366f1' },
+  { key: 'QUALIFIED', labelKey: 'crm.status.qualified', color: '#0ea5e9' },
+  { key: 'CONTACTED', labelKey: 'crm.status.contacted', color: '#8b5cf6' },
+  { key: 'DEMO', labelKey: 'crm.status.demo', color: '#f59e0b' },
+  { key: 'PROPOSAL', labelKey: 'crm.status.proposal', color: '#f97316' },
+  { key: 'WON', labelKey: 'crm.status.won', color: '#22c55e' },
+  { key: 'LOST', labelKey: 'crm.status.lost', color: '#ef4444' },
 ]
 
-export const CRM_PRIORITIES = [
-  { key: 'BASSE', label: 'Basse', color: '#64748b' },
-  { key: 'NORMALE', label: 'Normale', color: '#0ea5e9' },
-  { key: 'HAUTE', label: 'Haute', color: '#f59e0b' },
-  { key: 'URGENTE', label: 'Urgente', color: '#ef4444' },
+export const CRM_PRIORITIES: CrmOption[] = [
+  { key: 'BASSE', labelKey: 'crm.priority.low', color: '#64748b' },
+  { key: 'NORMALE', labelKey: 'crm.priority.normal', color: '#0ea5e9' },
+  { key: 'HAUTE', labelKey: 'crm.priority.high', color: '#f59e0b' },
+  { key: 'URGENTE', labelKey: 'crm.priority.urgent', color: '#ef4444' },
 ]
 
+// i18n-ignore : valeurs métier envoyées à l'API (le libellé affiché passe par SOURCE_LABEL_KEYS)
 export const CRM_SOURCES = ['Ads', 'Site', 'Referral', 'R\u00e9seaux sociaux', 'Email', 'Autre']
 
-export const CRM_TEMPERATURES = [
-  { key: 'FROID', label: 'Froid \u2744\ufe0f', color: '#64748b' },
-  { key: 'TIEDE', label: 'Ti\u00e8de \ud83c\udf24\ufe0f', color: '#f59e0b' },
-  { key: 'CHAUD', label: 'Chaud \ud83d\udd25', color: '#f97316' },
-  { key: 'TRES_CHAUD', label: 'Tr\u00e8s chaud \ud83d\udd25\ud83d\udd25', color: '#ef4444' },
+/** Valeur métier → clé du libellé affiché. Une valeur inconnue est affichée telle quelle. */
+export const SOURCE_LABEL_KEYS: Record<string, MessageKey> = {
+  Ads: 'crm.source.ads',
+  Site: 'crm.source.site',
+  Referral: 'crm.source.referral',
+  // i18n-ignore : valeur métier envoyée à l'API, clé de la table de libellés
+  'R\u00e9seaux sociaux': 'crm.source.social',
+  Email: 'crm.source.email',
+  Autre: 'crm.source.other',
+}
+
+/** Idem pour CRM_SERVICE_TYPES (src/lib/formatUtils.ts), dont les valeurs partent à l'API. */
+export const SERVICE_TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  Communication: 'crm.service.communication',
+  // i18n-ignore : valeur métier envoyée à l'API, clé de la table de libellés
+  'D\u00e9veloppement web': 'crm.service.webDev',
+  // i18n-ignore : valeur métier envoyée à l'API, clé de la table de libellés
+  'D\u00e9veloppement mobile': 'crm.service.mobileDev',
+  // i18n-ignore : valeur métier envoyée à l'API, clé de la table de libellés
+  'Conseil strat\u00e9gique': 'crm.service.consulting',
+  'Design & UX': 'crm.service.design',
+  'Marketing digital': 'crm.service.marketing',
+  'SEO/SEA': 'crm.service.seo',
+  Formation: 'crm.service.training',
+  Maintenance: 'crm.service.maintenance',
+  Autre: 'crm.service.other',
+}
+
+/** Libellé affiché d'une valeur métier ; une valeur absente de la table reste telle quelle. */
+export function labelOfValue(
+  t: (key: MessageKey) => string,
+  table: Record<string, MessageKey>,
+  value: string | undefined | null,
+): string {
+  if (!value) return ''
+  const key = table[value]
+  return key ? t(key) : value
+}
+
+// Projet / produit concerné par un lead. Les leads historiques n'en ont pas
+// (project vide) : l'interface affiche alors « — ».
+export const CRM_PROJECTS: CrmOption[] = [
+  { key: 'ARTOSERA', labelKey: 'crm.project.artosera', color: '#ec4899' },
+  { key: 'VIGNO', labelKey: 'crm.project.vigno', color: '#22c55e' },
+  { key: 'ARROW', labelKey: 'crm.project.arrow', color: '#0ea5e9' },
+  { key: 'VENIO', labelKey: 'crm.project.venio', color: '#8b5cf6' },
+  { key: 'AUTRE', labelKey: 'crm.project.other', color: '#64748b' },
 ]
 
-export const STATUS_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, s]))
-export const PRIORITY_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(CRM_PRIORITIES.map((p) => [p.key, p]))
-export const TEMPERATURE_MAP: Record<string, CrmStatusConfig> = Object.fromEntries(
-  CRM_TEMPERATURES.map((t) => [t.key, t]),
-)
+export const CRM_TEMPERATURES: CrmOption[] = [
+  { key: 'FROID', labelKey: 'crm.temperature.cold', color: '#64748b' },
+  { key: 'TIEDE', labelKey: 'crm.temperature.warm', color: '#f59e0b' },
+  { key: 'CHAUD', labelKey: 'crm.temperature.hot', color: '#f97316' },
+  { key: 'TRES_CHAUD', labelKey: 'crm.temperature.veryHot', color: '#ef4444' },
+]
+
+export const STATUS_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, s]))
+export const PRIORITY_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_PRIORITIES.map((p) => [p.key, p]))
+export const PROJECT_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_PROJECTS.map((p) => [p.key, p]))
+export const TEMPERATURE_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_TEMPERATURES.map((t) => [t.key, t]))
 
 export const EMPTY_FORM = {
   company: '',
@@ -38,6 +98,7 @@ export const EMPTY_FORM = {
   contactEmail: '',
   contactPhone: '',
   source: '',
+  project: '',
   budget: '',
   priority: 'NORMALE',
   status: 'LEAD',
@@ -76,18 +137,18 @@ export const getLeadAlerts = (
   if (thresholds.coldEnabled && lead.lastContactAt) {
     const days = daysSince(lead.lastContactAt)
     if (days >= thresholds.coldDays) {
-      alerts.push({ type: 'cold', label: `Froid (${days}j)`, color: '#64748b' })
+      alerts.push({ type: 'cold', label: translate('crm.alert.cold', { days }), color: '#64748b' })
     }
   }
 
   if (thresholds.overdueEnabled && lead.nextActionAt && new Date(lead.nextActionAt) < new Date()) {
-    alerts.push({ type: 'overdue', label: 'En retard', color: '#ef4444' })
+    alerts.push({ type: 'overdue', label: translate('crm.alert.overdue'), color: '#ef4444' })
   }
 
   if (thresholds.staleEnabled && lead.statusChangedAt) {
     const days = daysSince(lead.statusChangedAt)
     if (days >= thresholds.staleDays) {
-      alerts.push({ type: 'stale', label: `Bloqué (${days}j)`, color: '#f59e0b' })
+      alerts.push({ type: 'stale', label: translate('crm.alert.stale', { days }), color: '#f59e0b' })
     }
   }
 

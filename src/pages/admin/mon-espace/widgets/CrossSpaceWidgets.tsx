@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { GitPullRequest, GraduationCap, MapPin } from 'lucide-react'
 import { listDevIssues, type DevIssue } from '../../../../services/dev'
 import { listSessions, formatDate, type EducationSession } from '../../../../services/education'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate } from '../../../../i18n'
+import { formatDate as formatShortDate } from '../../../../i18n/format'
 
 // Helper local (équivalent de dev-workspace/helpers) pour rester dans le périmètre mon-espace.
 function formatRelative(date: string | null | undefined): string {
@@ -11,11 +14,11 @@ function formatRelative(date: string | null | undefined): string {
   const minute = 60_000
   const hour = 60 * minute
   const day = 24 * hour
-  if (diff < minute) return "à l'instant"
-  if (diff < hour) return `il y a ${Math.floor(diff / minute)} min`
-  if (diff < day) return `il y a ${Math.floor(diff / hour)} h`
-  if (diff < 7 * day) return `il y a ${Math.floor(diff / day)} j`
-  return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  if (diff < minute) return translate('adminAccess.widgets.relNow')
+  if (diff < hour) return translate('adminAccess.widgets.relMinutes', { n: Math.floor(diff / minute) })
+  if (diff < day) return translate('adminAccess.widgets.relHours', { n: Math.floor(diff / hour) })
+  if (diff < 7 * day) return translate('adminAccess.widgets.relDays', { n: Math.floor(diff / day) })
+  return formatShortDate(date, { day: '2-digit', month: 'short' })
 }
 
 function projectColor(project: DevIssue['project']): string {
@@ -23,6 +26,7 @@ function projectColor(project: DevIssue['project']): string {
 }
 
 export function DevReviewWidget() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [issues, setIssues] = useState<DevIssue[] | null>(null)
   const [error, setError] = useState(false)
@@ -45,11 +49,11 @@ export function DevReviewWidget() {
   return (
     <div className="widget">
       <div className="widget-title">
-        <GitPullRequest size={15} /> Dev — à valider
+        <GitPullRequest size={15} /> {t('adminAccess.widgets.devReviewTitle')}
         {issues && issues.length > 0 && <span className="widget-count">{issues.length}</span>}
       </div>
-      {error && <p className="widget-empty">Impossible de charger les issues</p>}
-      {!error && issues && issues.length === 0 && <p className="widget-empty">Rien à valider 🎉</p>}
+      {error && <p className="widget-empty">{t('adminAccess.widgets.devLoadFailed')}</p>}
+      {!error && issues && issues.length === 0 && <p className="widget-empty">{t('adminAccess.widgets.devNothing')}</p>}
       {!error && issues && issues.length > 0 && (
         <ul className="widget-list">
           {issues.slice(0, 6).map((issue) => (
@@ -66,7 +70,7 @@ export function DevReviewWidget() {
         </ul>
       )}
       <Link to="/admin/dev" className="widget-footer-link">
-        Ouvrir le suivi dev →
+        {t('adminAccess.widgets.devOpen')}
       </Link>
     </div>
   )
@@ -81,18 +85,20 @@ function sessionClass(classId: EducationSession['classId']): { name: string; col
 // Compte à rebours simple jusqu'à la séance.
 function countdown(date: string): string {
   const diff = new Date(date).getTime() - Date.now()
-  if (diff <= 0) return 'maintenant'
+  if (diff <= 0) return translate('adminAccess.widgets.countdownNow')
   const min = Math.round(diff / 60_000)
-  if (min < 60) return `dans ${min} min`
+  if (min < 60) return translate('adminAccess.widgets.countdownMinutes', { n: min })
   const h = Math.round(min / 60)
-  if (h < 24) return `dans ${h} h`
+  if (h < 24) return translate('adminAccess.widgets.countdownHours', { n: h })
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  if (new Date(date).toDateString() === tomorrow.toDateString()) return 'demain'
-  return `dans ${Math.round(h / 24)} j`
+  if (new Date(date).toDateString() === tomorrow.toDateString())
+    return translate('adminAccess.widgets.countdownTomorrow')
+  return translate('adminAccess.widgets.countdownDays', { n: Math.round(h / 24) })
 }
 
 export function NextSessionWidget() {
+  const { t } = useI18n()
   const [session, setSession] = useState<EducationSession | null>(null)
   const [loaded, setLoaded] = useState(false)
 
@@ -120,12 +126,12 @@ export function NextSessionWidget() {
   return (
     <div className="widget">
       <div className="widget-title">
-        <GraduationCap size={15} /> Prochaine séance
+        <GraduationCap size={15} /> {t('adminAccess.widgets.nextSessionTitle')}
       </div>
-      {loaded && !session && <p className="widget-empty">Aucune séance planifiée</p>}
+      {loaded && !session && <p className="widget-empty">{t('adminAccess.widgets.nextSessionEmpty')}</p>}
       {session && (
         <Link to="/admin/education" className="widget-session">
-          <span className="widget-session__name">{session.title || 'Séance'}</span>
+          <span className="widget-session__name">{session.title || t('adminAccess.widgets.sessionFallback')}</span>
           {cls && (
             <span className="widget-session__class" style={{ color: cls.color, borderColor: cls.color }}>
               {cls.name}

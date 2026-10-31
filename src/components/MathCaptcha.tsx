@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useI18n } from '../context/I18nContext'
 import './MathCaptcha.css'
 
 interface MathCaptchaProps {
@@ -6,6 +7,7 @@ interface MathCaptchaProps {
 }
 
 const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
+  const { t } = useI18n()
   const [num1, setNum1] = useState<number>(0)
   const [num2, setNum2] = useState<number>(0)
   const [answer, setAnswer] = useState<string>('')
@@ -44,18 +46,23 @@ const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
     } else {
       setIsValid(false)
       onVerify(false)
-      setError('Réponse incorrecte')
+      setError(t('pubForms.captcha.wrongAnswer'))
     }
   }
 
   return (
     <div className="math-captcha">
       <div className="captcha-question">
-        <span className="captcha-label">Etes-vous un bot ou un humain, vérifions !</span>
+        <span className="captcha-label">{t('pubForms.captcha.prompt')}</span>
         <span className="captcha-numbers">
           {num1} + {num2} = ?
         </span>
-        <button type="button" className="captcha-refresh" onClick={generateQuestion} aria-label="Nouvelle question">
+        <button
+          type="button"
+          className="captcha-refresh"
+          onClick={generateQuestion}
+          aria-label={t('pubForms.captcha.newQuestion')}
+        >
           ↻
         </button>
       </div>
@@ -63,10 +70,10 @@ const MathCaptcha = ({ onVerify }: MathCaptchaProps) => {
         <input
           type="number"
           className={`captcha-input ${error ? 'error' : ''} ${isValid ? 'valid' : ''}`}
-          aria-label="Réponse au calcul de vérification"
+          aria-label={t('pubForms.captcha.answerAria')}
           value={answer}
           onChange={handleChange}
-          placeholder="Réponse"
+          placeholder={t('pubForms.captcha.answerPlaceholder')}
           required
           min="0"
         />

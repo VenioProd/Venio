@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { fetchActivities } from '../../services/activityLog'
 import type { ActivityLog, ActivityAction } from '../../types/activity.types'
+import { translate } from '../../i18n'
+import { formatDate } from '../../i18n/format'
+import { useI18n } from '../../context/I18nContext'
 import '../../styles/activity-timeline.css'
 
 interface Props {
@@ -46,19 +49,20 @@ function formatRelativeTime(dateStr: string): string {
   const diffHour = Math.floor(diffMs / 3600000)
   const diffDay = Math.floor(diffMs / 86400000)
 
-  if (diffMin < 1) return "A l'instant"
-  if (diffMin < 60) return `Il y a ${diffMin}min`
-  if (diffHour < 24) return `Il y a ${diffHour}h`
-  if (diffDay < 7) return `Il y a ${diffDay}j`
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+  if (diffMin < 1) return translate('compB.activity.justNow')
+  if (diffMin < 60) return translate('compB.activity.minutesAgo', { n: diffMin })
+  if (diffHour < 24) return translate('compB.activity.hoursAgo', { n: diffHour })
+  if (diffDay < 7) return translate('compB.activity.daysAgo', { n: diffDay })
+  return formatDate(date, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function getActorName(actor: ActivityLog['actor']): string {
   if (typeof actor === 'object' && actor !== null) return actor.name || actor.email
-  return 'Utilisateur'
+  return translate('compB.activity.unknownActor')
 }
 
 export default function ActivityTimeline({ projectId }: Props) {
+  const { t } = useI18n()
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
@@ -95,14 +99,14 @@ export default function ActivityTimeline({ projectId }: Props) {
   }
 
   if (loading) {
-    return <div className="activity-loading">Chargement de l'activite...</div>
+    return <div className="activity-loading">{t('compB.activity.loading')}</div>
   }
 
   if (activities.length === 0) {
     return (
       <div className="activity-empty">
         <div className="activity-empty-icon">{'\u{1F4CB}'}</div>
-        <p>Aucune activite enregistree pour ce projet</p>
+        <p>{t('compB.activity.empty')}</p>
       </div>
     )
   }
@@ -117,11 +121,11 @@ export default function ActivityTimeline({ projectId }: Props) {
     yesterday.setDate(yesterday.getDate() - 1)
     let label: string
     if (d.toDateString() === today.toDateString()) {
-      label = "Aujourd'hui"
+      label = t('compB.activity.today')
     } else if (d.toDateString() === yesterday.toDateString()) {
-      label = 'Hier'
+      label = t('compB.activity.yesterday')
     } else {
-      label = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      label = formatDate(d, { day: 'numeric', month: 'long', year: 'numeric' })
     }
     if (label !== currentLabel) {
       groups.push({ label, items: [] })
@@ -160,7 +164,7 @@ export default function ActivityTimeline({ projectId }: Props) {
       ))}
       {hasMore && (
         <button className="activity-load-more" onClick={loadMore}>
-          Charger plus
+          {t('compB.activity.loadMore')}
         </button>
       )}
     </div>

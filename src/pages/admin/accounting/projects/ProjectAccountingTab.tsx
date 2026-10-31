@@ -2,6 +2,7 @@ import FinanceExports from './FinanceExports'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../../../context/AuthContext'
+import { useI18n } from '../../../../context/I18nContext'
 import { hasPermission, PERMISSIONS } from '../../../../lib/permissions'
 import { apiFetch } from '../../../../lib/api'
 import { ACCOUNTING, errorText, Metrics } from './shared'
@@ -36,6 +37,7 @@ interface TabData {
 
 export default function ProjectAccountingTab({ projectId, clientId }: { projectId: string; clientId?: string }) {
   const { user } = useAuth()
+  const { t } = useI18n()
   const canView = hasPermission(user, PERMISSIONS.VIEW_ACCOUNTING)
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
   const canIssue = hasPermission(user, PERMISSIONS.MANAGE_BILLING)
@@ -85,11 +87,11 @@ export default function ProjectAccountingTab({ projectId, clientId }: { projectI
             className="portal-button secondary"
             onClick={() => void load().catch((error) => setError(errorText(error)))}
           >
-            Actualiser
+            {t('accProjects.common.refresh')}
           </button>
         </p>
       )}
-      {!data && !error && <p role="status">Chargement de la comptabilité du projet…</p>}
+      {!data && !error && <p role="status">{t('accProjects.tab.loading')}</p>}
       {data && (
         <>
           <FinanceExports projectId={projectId} />
@@ -113,9 +115,7 @@ export default function ProjectAccountingTab({ projectId, clientId }: { projectI
               onSaved={load}
             />
           )}
-          {!data.finance.finance && (
-            <p>Enregistrez une configuration financière pour suivre les factures dans cet onglet.</p>
-          )}
+          {!data.finance.finance && <p>{t('accProjects.tab.configureFirst')}</p>}
           <FinanceShares
             projectId={projectId}
             data={data.finance}

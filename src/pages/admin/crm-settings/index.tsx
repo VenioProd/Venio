@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { AdminUser } from '../../../types/crm.types'
 import type { CrmSettingsData, CrmSettingsMessage } from './types'
@@ -19,6 +21,7 @@ import '../AdminPortal.css'
 
 export default function CrmSettings() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_CRM)
 
   const [settings, setSettings] = useState<CrmSettingsData | null>(null)
@@ -39,7 +42,7 @@ export default function CrmSettings() {
       setAdmins(adminsRes.users || [])
     } catch (err: unknown) {
       console.error('Error fetching CRM settings:', err)
-      setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' })
+      setMessage({ type: 'error', text: translate('crm.settings.loadError') })
     } finally {
       setLoading(false)
     }
@@ -61,11 +64,11 @@ export default function CrmSettings() {
         method: 'PATCH',
         body: JSON.stringify({ [key]: value }),
       })
-      setMessage({ type: 'success', text: 'Paramètre mis à jour' })
+      setMessage({ type: 'success', text: t('crm.settings.updated') })
       setTimeout(() => setMessage(null), 2000)
     } catch (err: unknown) {
       setSettings((s) => (s ? { ...s, [key]: prev } : s))
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour' })
+      setMessage({ type: 'error', text: t('crm.settings.updateError') })
     } finally {
       setSaving(false)
     }
@@ -86,14 +89,14 @@ export default function CrmSettings() {
         method: 'PATCH',
         body: JSON.stringify({ [`${parent}.${key}`]: value }),
       })
-      setMessage({ type: 'success', text: 'Paramètre mis à jour' })
+      setMessage({ type: 'success', text: t('crm.settings.updated') })
       setTimeout(() => setMessage(null), 2000)
     } catch (err: unknown) {
       setSettings((s) => {
         if (!s) return s
         return { ...s, [parent]: { ...s[parent], [key]: prev } }
       })
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour' })
+      setMessage({ type: 'error', text: t('crm.settings.updateError') })
     } finally {
       setSaving(false)
     }
@@ -110,7 +113,7 @@ export default function CrmSettings() {
   if (loading) {
     return (
       <div className="portal-container crm-page-container">
-        <div className="portal-loading">Chargement...</div>
+        <div className="portal-loading">{t('common.loading')}</div>
       </div>
     )
   }
@@ -118,7 +121,7 @@ export default function CrmSettings() {
   if (!settings) {
     return (
       <div className="portal-container crm-page-container">
-        <div className="portal-error">Impossible de charger les paramètres</div>
+        <div className="portal-error">{t('crm.settings.cannotLoad')}</div>
       </div>
     )
   }
@@ -141,9 +144,9 @@ export default function CrmSettings() {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Retour au CRM
+          {t('crm.settings.backToCrm')}
         </Link>
-        <h1>Configuration des automatisations CRM</h1>
+        <h1>{t('crm.settings.title')}</h1>
       </div>
 
       {message && <div className={`crm-settings-message crm-settings-message-${message.type}`}>{message.text}</div>}
@@ -160,7 +163,7 @@ export default function CrmSettings() {
         <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
       </div>
 
-      {saving && <div className="crm-settings-saving">Enregistrement...</div>}
+      {saving && <div className="crm-settings-saving">{t('crm.common.saving')}</div>}
     </div>
   )
 }

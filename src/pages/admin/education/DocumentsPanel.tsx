@@ -9,11 +9,12 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { Download, FileText, Loader2, Plus, Trash2 } from 'lucide-react'
 import { apiDownload } from '../../../lib/api'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatFileSize, formatShortDate } from './eduFormat'
 import {
   deleteDocument,
   documentDownloadUrl,
-  formatDate,
-  formatFileSize,
   listDocuments,
   uploadDocument,
   type EducationDocument,
@@ -29,6 +30,7 @@ export function DocumentsPanel({
   parentType: EducationDocumentParentType
   parentId: string
 }) {
+  const { t } = useI18n()
   const [docs, setDocs] = useState<EducationDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -42,7 +44,7 @@ export function DocumentsPanel({
       const r = await listDocuments({ parentType, parentId })
       setDocs(r.documents)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger les documents')
+      setError(err instanceof Error ? err.message : translate('eduA.docs.loadError'))
     } finally {
       setLoading(false)
     }
@@ -58,7 +60,7 @@ export function DocumentsPanel({
     setError(null)
     const tooBig = list.find((f) => f.size > MAX_FILE_SIZE)
     if (tooBig) {
-      setError(`« ${tooBig.name} » dépasse la limite de 25 Mo (${formatFileSize(tooBig.size)}).`)
+      setError(translate('eduA.docsPanel.tooBig', { name: tooBig.name, size: formatFileSize(tooBig.size) }))
       return
     }
     setUploading(true)
@@ -69,7 +71,7 @@ export function DocumentsPanel({
       }
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur pendant l'envoi du fichier")
+      setError(err instanceof Error ? err.message : translate('eduA.docsPanel.uploadError'))
     } finally {
       setUploading(false)
     }
@@ -94,14 +96,14 @@ export function DocumentsPanel({
       a.remove()
       URL.revokeObjectURL(href)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de téléchargement')
+      setError(err instanceof Error ? err.message : translate('eduA.docsPanel.downloadError'))
     } finally {
       setDownloadingId(null)
     }
   }
 
   async function handleDelete(doc: EducationDocument) {
-    if (!confirm(`Supprimer « ${doc.title || doc.originalName} » ?`)) return
+    if (!confirm(translate('eduA.docsPanel.deleteConfirm', { name: doc.title || doc.originalName }))) return
     // Optimiste : retrait immédiat, rollback si l'API échoue.
     const prev = docs
     setDocs((d) => d.filter((x) => x._id !== doc._id))
@@ -109,7 +111,7 @@ export function DocumentsPanel({
       await deleteDocument(doc._id)
     } catch (err) {
       setDocs(prev)
-      setError(err instanceof Error ? err.message : 'Suppression impossible')
+      setError(err instanceof Error ? err.message : translate('eduA.common.deleteFailed'))
     }
   }
 
@@ -136,9 +138,9 @@ export function DocumentsPanel({
       )}
 
       {loading ? (
-        <div className="edu-docs-empty">Chargement…</div>
+        <div className="edu-docs-empty">{t('eduA.docsPanel.loading')}</div>
       ) : docs.length === 0 ? (
-        <div className="edu-docs-empty">Aucun fichier. Glisse-dépose ou ajoute un fichier (max 25 Mo).</div>
+        <div className="edu-docs-empty">{t('eduA.docsPanel.empty')}</div>
       ) : (
         <div className="edu-docs-list">
           {docs.map((doc) => (
@@ -146,26 +148,26 @@ export function DocumentsPanel({
               <FileText size={16} className="edu-docs-icon" />
               <div className="edu-docs-info">
                 <div className="edu-docs-name" title={doc.originalName || doc.title}>
-                  {doc.title || doc.originalName || '(Sans titre)'}
+                  {doc.title || doc.originalName || t('eduA.docsPanel.untitled')}
                 </div>
                 <div className="edu-docs-meta">
-                  {formatFileSize(doc.size)} · {formatDate(doc.createdAt)}
+                  {formatFileSize(doc.size)} · {formatShortDate(doc.createdAt)}
                 </div>
               </div>
               <button
                 className="edu-btn-icon"
                 onClick={() => handleDownload(doc)}
                 disabled={downloadingId === doc._id}
-                title="Télécharger"
-                aria-label={`Télécharger ${doc.title || doc.originalName}`}
+                title={t('eduA.docsPanel.download')}
+                aria-label={t('eduA.docsPanel.downloadLabel', { name: doc.title || doc.originalName })}
               >
                 {downloadingId === doc._id ? <Loader2 size={14} className="edu-spin" /> : <Download size={14} />}
               </button>
               <button
                 className="edu-btn-icon"
                 onClick={() => handleDelete(doc)}
-                title="Supprimer"
-                aria-label={`Supprimer ${doc.title || doc.originalName}`}
+                title={t('common.delete')}
+                aria-label={t('eduA.docsPanel.deleteLabel', { name: doc.title || doc.originalName })}
               >
                 <Trash2 size={14} />
               </button>
@@ -188,15 +190,15 @@ export function DocumentsPanel({
         <button className="edu-btn ghost" onClick={() => inputRef.current?.click()} disabled={uploading}>
           {uploading ? (
             <>
-              <Loader2 size={14} className="edu-spin" /> Envoi…
+              <Loader2 size={14} className="edu-spin" /> {t('eduA.docsPanel.uploading')}
             </>
           ) : (
             <>
-              <Plus size={14} /> Ajouter un fichier
+              <Plus size={14} /> {t('eduA.docsPanel.addFile')}
             </>
           )}
         </button>
-        <span className="edu-docs-hint">ou glisse-dépose ici · 25 Mo max</span>
+        <span className="edu-docs-hint">{t('eduA.docsPanel.dropHint')}</span>
       </div>
     </div>
   )

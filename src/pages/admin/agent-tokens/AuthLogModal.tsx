@@ -1,3 +1,4 @@
+import { useI18n } from '../../../context/I18nContext'
 import type { AgentToken, AgentAuthLogEvent } from './types'
 import { formatDate } from './types'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function AuthLogModal({ token, events, loading, onClose }: Props) {
+  const { t } = useI18n()
   return (
     <div className="confirm-modal-overlay" onClick={onClose}>
       <div
@@ -19,26 +21,19 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
         aria-modal="true"
       >
         <div className="confirm-modal__header">
-          <h2 className="confirm-modal__title">Journal token : {token.name}</h2>
-          <button
-            type="button"
-            className="confirm-modal__close"
-            onClick={onClose}
-            aria-label="Fermer"
-          >
+          <h2 className="confirm-modal__title">{t('adminTech.agentTokens.logTitle', { name: token.name })}</h2>
+          <button type="button" className="confirm-modal__close" onClick={onClose} aria-label={t('common.close')}>
             ✕
           </button>
         </div>
         <div className="confirm-modal__body">
           <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
-            Connexions réussies/refusées liées au préfixe {token.prefix}…
+            {t('adminTech.agentTokens.logIntro', { prefix: token.prefix })}
           </p>
           {loading ? (
-            <p style={{ color: 'var(--text-secondary)' }}>Chargement…</p>
+            <p style={{ color: 'var(--text-secondary)' }}>{t('adminTech.agentTokens.loading')}</p>
           ) : events.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Aucun événement de connexion enregistré pour ce token.
-            </p>
+            <p style={{ color: 'var(--text-secondary)' }}>{t('adminTech.agentTokens.logEmpty')}</p>
           ) : (
             <div style={{ display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
               {events.map((event) => {
@@ -63,7 +58,7 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
                       }}
                     >
                       <strong style={{ color: success ? '#6ee7b7' : '#f87171' }}>
-                        {success ? 'Connexion réussie' : 'Connexion refusée'}
+                        {success ? t('adminTech.agentTokens.logSuccess') : t('adminTech.agentTokens.logFailure')}
                       </strong>
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                         {formatDate(event.createdAt)}
@@ -79,19 +74,19 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
                       }}
                     >
                       <span>
-                        <strong>Route :</strong> {event.metadata?.method || '—'}{' '}
+                        <strong>{t('adminTech.agentTokens.logRoute')}</strong> {event.metadata?.method || '—'}{' '}
                         {event.metadata?.path || '—'}
                       </span>
                       <span>
-                        <strong>IP :</strong> {event.ip || '—'}
+                        <strong>{t('adminTech.agentTokens.logIp')}</strong> {event.ip || '—'}
                       </span>
                       {event.metadata?.reason && (
                         <span>
-                          <strong>Raison :</strong> {event.metadata.reason}
+                          <strong>{t('adminTech.agentTokens.logReason')}</strong> {event.metadata.reason}
                         </span>
                       )}
                       <span style={{ wordBreak: 'break-word' }}>
-                        <strong>User-agent :</strong> {event.userAgent || '—'}
+                        <strong>{t('adminTech.agentTokens.logUserAgent')}</strong> {event.userAgent || '—'}
                       </span>
                     </div>
                   </div>
@@ -106,7 +101,7 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
             className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
             onClick={onClose}
           >
-            Fermer
+            {t('common.close')}
           </button>
         </div>
       </div>

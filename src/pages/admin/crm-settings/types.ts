@@ -1,4 +1,5 @@
 import type { AdminUser } from '../../../types/crm.types'
+import type { MessageKey } from '../../../i18n'
 
 export interface CrmSettingsMessage {
   type: string
@@ -10,7 +11,7 @@ export type CrmSettingsData = Record<string, any>
 
 export interface AutomationCategory {
   id: string
-  label: string
+  labelKey: MessageKey
   icon: React.ReactNode
 }
 

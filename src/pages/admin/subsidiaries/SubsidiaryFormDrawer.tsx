@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Plus, X } from 'lucide-react'
 import { apiFetch, ApiError } from '../../../lib/api'
 import { useToast } from '../../../context/ToastContext'
+import { useI18n } from '../../../context/I18nContext'
 import type { Subsidiary, SubsidiaryPerson } from '../../../types/subsidiary.types'
-import { STATUS_LABELS, HEALTH_LABELS, LINK_TYPE_LABELS } from '../../../types/subsidiary.types'
+import { STATUS_LABEL_KEYS, HEALTH_LABEL_KEYS, LINK_TYPE_LABEL_KEYS } from './labels'
+import type { SubsidiaryHealth, SubsidiaryLinkType, SubsidiaryStatus } from '../../../types/subsidiary.types'
 
 interface FormState {
   name: string
@@ -92,6 +94,7 @@ interface Props {
 }
 
 export default function SubsidiaryFormDrawer({ initial, admins, entities, onSaved, onClose }: Props) {
+  const { t } = useI18n()
   const { showToast } = useToast()
   const [form, setForm] = useState<FormState>(() => toForm(initial))
   const [saving, setSaving] = useState(false)
@@ -103,7 +106,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!form.name.trim()) {
-      showToast('Le nom est requis', 'error')
+      showToast(t('orgs.subsidiary.form.nameRequired'), 'error')
       return
     }
     setSaving(true)
@@ -146,7 +149,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
       alerts: form.alerts.filter((a) => a.label.trim()),
       tags: form.tags
         .split(',')
-        .map((t) => t.trim())
+        .map((tag) => tag.trim())
         .filter(Boolean),
     }
     try {
@@ -159,10 +162,10 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             method: 'POST',
             body: JSON.stringify(payload),
           })
-      showToast(initial ? 'Filiale mise à jour' : 'Filiale créée', 'success')
+      showToast(initial ? t('orgs.subsidiary.form.updatedToast') : t('orgs.subsidiary.form.createdToast'), 'success')
       onSaved(res.subsidiary)
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Erreur lors de l’enregistrement', 'error')
+      showToast(err instanceof ApiError ? err.message : t('orgs.subsidiary.form.saveError'), 'error')
     } finally {
       setSaving(false)
     }
@@ -171,70 +174,70 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
   return (
     <div className="portal-card" style={{ marginTop: 20 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
-        {initial ? `Modifier ${initial.name}` : 'Nouvelle filiale'}
+        {initial ? t('orgs.subsidiary.form.editTitle', { name: initial.name }) : t('orgs.subsidiary.form.newTitle')}
       </h2>
       <form onSubmit={onSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
-            <label className="portal-label">Nom *</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.nameLabel')}</label>
             <input
               className="portal-input"
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="Ex : Yumi"
+              placeholder={t('orgs.subsidiary.form.namePlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Secteur</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.sectorLabel')}</label>
             <input
               className="portal-input"
               value={form.sector}
               onChange={(e) => set('sector', e.target.value)}
-              placeholder="Ex : SaaS B2C"
+              placeholder={t('orgs.subsidiary.form.sectorPlaceholder')}
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Accroche</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.taglineLabel')}</label>
             <input
               className="portal-input"
               value={form.tagline}
               onChange={(e) => set('tagline', e.target.value)}
-              placeholder="Une phrase qui résume la filiale"
+              placeholder={t('orgs.subsidiary.form.taglinePlaceholder')}
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Description</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.descriptionLabel')}</label>
             <textarea
               className="portal-input"
               rows={3}
               style={{ resize: 'vertical' }}
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
-              placeholder="Contexte, mission, modèle..."
+              placeholder={t('orgs.subsidiary.form.descriptionPlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Statut</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.statusLabel')}</label>
             <select className="portal-input" value={form.status} onChange={(e) => set('status', e.target.value)}>
-              {Object.entries(STATUS_LABELS).map(([v, l]) => (
+              {(Object.keys(STATUS_LABEL_KEYS) as SubsidiaryStatus[]).map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {t(STATUS_LABEL_KEYS[v])}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="portal-label">Santé</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.healthLabel')}</label>
             <select className="portal-input" value={form.health} onChange={(e) => set('health', e.target.value)}>
-              {Object.entries(HEALTH_LABELS).map(([v, l]) => (
+              {(Object.keys(HEALTH_LABEL_KEYS) as SubsidiaryHealth[]).map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {t(HEALTH_LABEL_KEYS[v])}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="portal-label">Responsable</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.leadLabel')}</label>
             <select className="portal-input" value={form.lead} onChange={(e) => set('lead', e.target.value)}>
               <option value="">—</option>
               {admins.map((a) => (
@@ -245,7 +248,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             </select>
           </div>
           <div>
-            <label className="portal-label">Année de création</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.foundedLabel')}</label>
             <input
               className="portal-input"
               type="number"
@@ -255,13 +258,13 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Entité projets liée (auto)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.entityLabel')}</label>
             <select
               className="portal-input"
               value={form.linkedEntity}
               onChange={(e) => set('linkedEntity', e.target.value)}
             >
-              <option value="">— Aucune —</option>
+              <option value="">{t('orgs.subsidiary.form.entityNone')}</option>
               {entities.map((en) => (
                 <option key={en} value={en}>
                   {en}
@@ -270,7 +273,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             </select>
           </div>
           <div>
-            <label className="portal-label">Couleur d’accent</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.accentLabel')}</label>
             <input
               className="portal-input"
               type="color"
@@ -281,7 +284,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           </div>
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Équipe</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.teamLabel')}</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
               {admins.map((a) => (
                 <button
@@ -303,11 +306,11 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         </div>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Indicateurs (KPI)
+          {t('orgs.subsidiary.form.kpiHeading')}
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           <div>
-            <label className="portal-label">CA / mois (€)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiRevenue')}</label>
             <input
               className="portal-input"
               type="number"
@@ -316,7 +319,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Δ CA (%)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiRevenueDelta')}</label>
             <input
               className="portal-input"
               type="number"
@@ -325,7 +328,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Marge (%)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiMargin')}</label>
             <input
               className="portal-input"
               type="number"
@@ -334,7 +337,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Marge cible (%)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiMarginTarget')}</label>
             <input
               className="portal-input"
               type="number"
@@ -343,7 +346,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Trésorerie (€)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiTreasury')}</label>
             <input
               className="portal-input"
               type="number"
@@ -352,7 +355,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Runway (mois)</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiRunway')}</label>
             <input
               className="portal-input"
               type="number"
@@ -361,7 +364,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Effectif</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiHeadcount')}</label>
             <input
               className="portal-input"
               type="number"
@@ -370,7 +373,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Effectif cible</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.kpiHeadcountTarget')}</label>
             <input
               className="portal-input"
               type="number"
@@ -381,20 +384,20 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         </div>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Objectif du trimestre
+          {t('orgs.subsidiary.form.objectiveHeading')}
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 12 }}>
           <div>
-            <label className="portal-label">Libellé</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.objLabel')}</label>
             <input
               className="portal-input"
               value={form.objLabel}
               onChange={(e) => set('objLabel', e.target.value)}
-              placeholder="Ex : Utilisateurs payants"
+              placeholder={t('orgs.subsidiary.form.objLabelPlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Actuel</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.objCurrent')}</label>
             <input
               className="portal-input"
               type="number"
@@ -403,7 +406,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Cible</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.objTarget')}</label>
             <input
               className="portal-input"
               type="number"
@@ -412,7 +415,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             />
           </div>
           <div>
-            <label className="portal-label">Unité</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.objUnit')}</label>
             <input
               className="portal-input"
               value={form.objUnit}
@@ -423,57 +426,57 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
         </div>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Dossier — comprendre & suivre l’activité
+          {t('orgs.subsidiary.form.dossierHeading')}
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
-            <label className="portal-label">Description du produit</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.productLabel')}</label>
             <textarea
               className="portal-input"
               rows={4}
               style={{ resize: 'vertical' }}
               value={form.productDescription}
               onChange={(e) => set('productDescription', e.target.value)}
-              placeholder="Ce que fait le produit, ses fonctionnalités clés, son positionnement…"
+              placeholder={t('orgs.subsidiary.form.productPlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Description du service</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.serviceLabel')}</label>
             <textarea
               className="portal-input"
               rows={4}
               style={{ resize: 'vertical' }}
               value={form.serviceDescription}
               onChange={(e) => set('serviceDescription', e.target.value)}
-              placeholder="Prestations, accompagnement, livrables, modalités…"
+              placeholder={t('orgs.subsidiary.form.servicePlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Business model</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.businessModelLabel')}</label>
             <textarea
               className="portal-input"
               rows={4}
               style={{ resize: 'vertical' }}
               value={form.businessModel}
               onChange={(e) => set('businessModel', e.target.value)}
-              placeholder="Sources de revenus, pricing, marges, canaux d’acquisition…"
+              placeholder={t('orgs.subsidiary.form.businessModelPlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Business plan</label>
+            <label className="portal-label">{t('orgs.subsidiary.form.businessPlanLabel')}</label>
             <textarea
               className="portal-input"
               rows={4}
               style={{ resize: 'vertical' }}
               value={form.businessPlan}
               onChange={(e) => set('businessPlan', e.target.value)}
-              placeholder="Vision, jalons, projections, besoins de financement…"
+              placeholder={t('orgs.subsidiary.form.businessPlanPlaceholder')}
             />
           </div>
         </div>
 
         <h4 style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', marginTop: 16, marginBottom: 8 }}>
-          Sections libres
+          {t('orgs.subsidiary.form.sectionsHeading')}
         </h4>
         {form.sections.map((sec, i) => (
           <div
@@ -484,7 +487,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               <input
                 className="portal-input"
                 style={{ flex: 1 }}
-                placeholder="Titre de la section (ex : Concurrence, Roadmap, Risques)"
+                placeholder={t('orgs.subsidiary.form.sectionTitlePlaceholder')}
                 value={sec.title}
                 onChange={(e) =>
                   set(
@@ -510,7 +513,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               className="portal-input"
               rows={4}
               style={{ resize: 'vertical' }}
-              placeholder="Contenu…"
+              placeholder={t('orgs.subsidiary.form.sectionContentPlaceholder')}
               value={sec.content}
               onChange={(e) =>
                 set(
@@ -526,11 +529,11 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           className="sub-icon-btn"
           onClick={() => set('sections', [...form.sections, { title: '', content: '' }])}
         >
-          <Plus size={14} /> Ajouter une section
+          <Plus size={14} /> {t('orgs.subsidiary.form.addSection')}
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Liens & accès
+          {t('orgs.subsidiary.form.linksHeading')}
         </h3>
         {form.links.map((l, i) => (
           <div className="sub-repeat-row" key={i}>
@@ -545,16 +548,16 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
                 )
               }
             >
-              {Object.entries(LINK_TYPE_LABELS).map(([v, lbl]) => (
+              {(Object.keys(LINK_TYPE_LABEL_KEYS) as SubsidiaryLinkType[]).map((v) => (
                 <option key={v} value={v}>
-                  {lbl}
+                  {t(LINK_TYPE_LABEL_KEYS[v])}
                 </option>
               ))}
             </select>
             <input
               className="portal-input"
               style={{ flex: '0 0 130px' }}
-              placeholder="Libellé"
+              placeholder={t('orgs.subsidiary.form.linkLabelPlaceholder')}
               value={l.label}
               onChange={(e) =>
                 set(
@@ -594,18 +597,18 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           className="sub-icon-btn"
           onClick={() => set('links', [...form.links, { type: 'repo', label: '', url: '' }])}
         >
-          <Plus size={14} /> Ajouter un lien
+          <Plus size={14} /> {t('orgs.subsidiary.form.addLink')}
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Infos (clé → valeur)
+          {t('orgs.subsidiary.form.infosHeading')}
         </h3>
         {form.infos.map((info, i) => (
           <div className="sub-repeat-row" key={i}>
             <input
               className="portal-input"
               style={{ flex: '0 0 180px' }}
-              placeholder="Clé (ex : SIRET, Banque, Stack)"
+              placeholder={t('orgs.subsidiary.form.infoKeyPlaceholder')}
               value={info.label}
               onChange={(e) =>
                 set(
@@ -617,7 +620,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
             <input
               className="portal-input"
               style={{ flex: 1 }}
-              placeholder="Valeur"
+              placeholder={t('orgs.subsidiary.form.infoValuePlaceholder')}
               value={info.value}
               onChange={(e) =>
                 set(
@@ -645,11 +648,11 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           className="sub-icon-btn"
           onClick={() => set('infos', [...form.infos, { label: '', value: '' }])}
         >
-          <Plus size={14} /> Ajouter une info
+          <Plus size={14} /> {t('orgs.subsidiary.form.addInfo')}
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Contacts
+          {t('orgs.subsidiary.form.contactsHeading')}
         </h3>
         {form.contacts.map((c, i) => (
           <div
@@ -660,7 +663,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               <input
                 className="portal-input"
                 style={{ flex: 1 }}
-                placeholder="Nom"
+                placeholder={t('orgs.subsidiary.form.contactNamePlaceholder')}
                 value={c.name}
                 onChange={(e) =>
                   set(
@@ -672,7 +675,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               <input
                 className="portal-input"
                 style={{ flex: 1 }}
-                placeholder="Rôle"
+                placeholder={t('orgs.subsidiary.form.contactRolePlaceholder')}
                 value={c.role}
                 onChange={(e) =>
                   set(
@@ -698,7 +701,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               <input
                 className="portal-input"
                 style={{ flex: 1 }}
-                placeholder="Email"
+                placeholder={t('orgs.subsidiary.form.contactEmailPlaceholder')}
                 value={c.email}
                 onChange={(e) =>
                   set(
@@ -710,7 +713,7 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
               <input
                 className="portal-input"
                 style={{ flex: 1 }}
-                placeholder="Téléphone"
+                placeholder={t('orgs.subsidiary.form.contactPhonePlaceholder')}
                 value={c.phone}
                 onChange={(e) =>
                   set(
@@ -727,18 +730,18 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           className="sub-icon-btn"
           onClick={() => set('contacts', [...form.contacts, { name: '', role: '', email: '', phone: '', notes: '' }])}
         >
-          <Plus size={14} /> Ajouter un contact
+          <Plus size={14} /> {t('orgs.subsidiary.form.addContact')}
         </button>
 
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 22, marginBottom: 10 }}>
-          Alertes
+          {t('orgs.subsidiary.form.alertsHeading')}
         </h3>
         {form.alerts.map((a, i) => (
           <div className="sub-repeat-row" key={i}>
             <input
               className="portal-input"
               style={{ flex: 1 }}
-              placeholder="Description de l’alerte"
+              placeholder={t('orgs.subsidiary.form.alertPlaceholder')}
               value={a.label}
               onChange={(e) =>
                 set(
@@ -758,9 +761,9 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
                 )
               }
             >
-              <option value="INFO">Info</option>
-              <option value="WARNING">Attention</option>
-              <option value="CRITICAL">Critique</option>
+              <option value="INFO">{t('orgs.subsidiary.form.levelInfo')}</option>
+              <option value="WARNING">{t('orgs.subsidiary.form.levelWarning')}</option>
+              <option value="CRITICAL">{t('orgs.subsidiary.form.levelCritical')}</option>
             </select>
             <button
               type="button"
@@ -781,11 +784,11 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
           className="sub-icon-btn"
           onClick={() => set('alerts', [...form.alerts, { label: '', level: 'WARNING' }])}
         >
-          <Plus size={14} /> Ajouter une alerte
+          <Plus size={14} /> {t('orgs.subsidiary.form.addAlert')}
         </button>
 
         <div style={{ marginTop: 18 }}>
-          <label className="portal-label">Tags (séparés par des virgules)</label>
+          <label className="portal-label">{t('orgs.subsidiary.form.tagsLabel')}</label>
           <input
             className="portal-input"
             value={form.tags}
@@ -796,10 +799,14 @@ export default function SubsidiaryFormDrawer({ initial, admins, entities, onSave
 
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
           <button type="submit" className="portal-button" disabled={saving}>
-            {saving ? 'Enregistrement...' : initial ? 'Enregistrer' : 'Créer la filiale'}
+            {saving
+              ? t('orgs.subsidiary.credentials.saving')
+              : initial
+                ? t('common.save')
+                : t('orgs.subsidiary.form.createButton')}
           </button>
           <button type="button" className="portal-button secondary" onClick={onClose} disabled={saving}>
-            Annuler
+            {t('common.cancel')}
           </button>
         </div>
       </form>

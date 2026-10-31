@@ -1,4 +1,5 @@
 import type React from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import { eventTypeLabel, type EndpointFormState } from './types'
 
 interface Props {
@@ -26,6 +27,7 @@ export default function EndpointEditorModal({
   onSubmit,
   onClose,
 }: Props) {
+  const { t } = useI18n()
   const toggleType = (type: string) => {
     onChange({
       ...form,
@@ -45,8 +47,10 @@ export default function EndpointEditorModal({
         aria-modal="true"
       >
         <div className="confirm-modal__header">
-          <h2 className="confirm-modal__title">{isEdit ? 'Modifier l’endpoint' : 'Nouvel endpoint'}</h2>
-          <button type="button" className="confirm-modal__close" onClick={onClose} aria-label="Fermer">
+          <h2 className="confirm-modal__title">
+            {isEdit ? t('adminTech.webhooks.editTitle') : t('adminTech.webhooks.newEndpoint')}
+          </h2>
+          <button type="button" className="confirm-modal__close" onClick={onClose} aria-label={t('common.close')}>
             ✕
           </button>
         </div>
@@ -59,20 +63,20 @@ export default function EndpointEditorModal({
             )}
 
             <label>
-              <div style={{ marginBottom: 4 }}>Nom</div>
+              <div style={{ marginBottom: 4 }}>{t('adminTech.webhooks.nameLabel')}</div>
               <input
                 type="text"
                 className="portal-input"
                 value={form.name}
                 onChange={(e) => onChange({ ...form, name: e.target.value })}
-                placeholder="ex. Kuro prod"
+                placeholder={t('adminTech.webhooks.namePlaceholder')}
                 required
                 maxLength={120}
               />
             </label>
 
             <label>
-              <div style={{ marginBottom: 4 }}>URL de destination</div>
+              <div style={{ marginBottom: 4 }}>{t('adminTech.webhooks.urlLabel')}</div>
               <input
                 type="text"
                 className="portal-input"
@@ -81,18 +85,16 @@ export default function EndpointEditorModal({
                 placeholder="https://kuro.example.com/hooks/venio"
                 required
               />
-              <small style={{ color: 'var(--text-muted)' }}>
-                HTTPS obligatoire (http toléré uniquement en local, hors production).
-              </small>
+              <small style={{ color: 'var(--text-muted)' }}>{t('adminTech.webhooks.urlHint')}</small>
             </label>
 
             <div>
               <div style={{ marginBottom: 8 }}>
-                Types d’événement{' '}
+                {t('adminTech.webhooks.eventTypesLabel')}{' '}
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   {form.eventTypes.length === 0
-                    ? '(aucun sélectionné = tous les types)'
-                    : `(${form.eventTypes.length} sélectionné${form.eventTypes.length > 1 ? 's' : ''})`}
+                    ? t('adminTech.webhooks.noneSelected')
+                    : t('adminTech.webhooks.selectedCount', { count: form.eventTypes.length })}
                 </span>
               </div>
               <div
@@ -117,10 +119,10 @@ export default function EndpointEditorModal({
           </div>
           <div className="confirm-modal__footer">
             <button type="button" className="confirm-modal__btn" onClick={onClose}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="confirm-modal__btn confirm-modal__btn--confirm" disabled={saving}>
-              {isEdit ? 'Enregistrer' : 'Créer'}
+              {isEdit ? t('common.save') : t('adminTech.webhooks.create')}
             </button>
           </div>
         </form>

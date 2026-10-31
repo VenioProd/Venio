@@ -252,6 +252,8 @@ router.get('/leads/:id', async (req: Request, res: Response, next: NextFunction)
         _id: activity._id,
         type: activity.type,
         label: activity.label,
+        // Le libellé est en français ; l'écran traduit à partir du type et du nouveau statut.
+        status: activity.type === 'STATUS_CHANGE' ? ((activity.payload as { to?: string })?.to ?? null) : null,
         actorName: activity.actorId?.name ?? null,
         createdAt: activity.createdAt,
       })),

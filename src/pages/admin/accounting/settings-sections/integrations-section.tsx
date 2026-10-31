@@ -1,5 +1,18 @@
 import { Link } from 'react-router-dom'
 import type { IExternalSource, ExternalSourceStatus } from '../../../../types/accounting'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate } from '../../../../i18n'
+import type { MessageKey } from '../../../../i18n'
+import { formatDate, formatDateTime } from '../../../../i18n/format'
+
+const FULL_DATE_TIME: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+}
 
 // ---- Sous-composants Intégrations externes ----
 
@@ -16,6 +29,7 @@ interface IntegrationsSectionProps {
 
 export function IntegrationsSection(props: IntegrationsSectionProps) {
   const { canManage, sources, rotatingId, onOpenCreate, onRotate, onRequestRevoke } = props
+  const { t } = useI18n()
 
   return (
     <section className="accounting-card">
@@ -28,9 +42,9 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
           flexWrap: 'wrap',
         }}
       >
-        <h2 style={{ margin: 0 }}>Intégrations externes</h2>
+        <h2 style={{ margin: 0 }}>{t('accVat.integ.heading')}</h2>
         <button type="button" className="portal-button" onClick={onOpenCreate} disabled={!canManage}>
-          + Nouvelle intégration
+          {t('accVat.integ.new')}
         </button>
       </div>
 
@@ -46,23 +60,18 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
           color: 'rgba(255,255,255,0.82)',
         }}
       >
-        <p style={{ margin: 0 }}>
-          Tout service tiers (Stripe, Shopify, Arrow, votre propre back-office…) peut pousser ses écritures comptables
-          dans Venio via une API sécurisée. Chaque intégration dispose&nbsp;:
-        </p>
+        <p style={{ margin: 0 }}>{t('accVat.integ.intro')}</p>
         <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
           <div>
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>🔑 Clé API (X-Api-Key)</span>
+            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>🔑 {t('accVat.integ.apiKeyTitle')}</span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
-              Identifie le service qui parle. Comme un mot de passe d'application.
+              {t('accVat.integ.apiKeyText')}
             </div>
           </div>
           <div>
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>✍️ Secret HMAC (X-Venio-Signature)</span>
+            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>✍️ {t('accVat.integ.hmacTitle')}</span>
             <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
-              Signature cryptographique sur chaque requête. Empêche les attaques «&nbsp;man-in-the-middle&nbsp;»
-              (modification du contenu en transit) et garantit l'authenticité de l'émetteur, même si la clé API était
-              compromise.
+              {t('accVat.integ.hmacText')}
             </div>
           </div>
         </div>
@@ -73,7 +82,7 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
             color: 'rgba(255,255,255,0.55)',
           }}
         >
-          📚 Documentation complète&nbsp;:{' '}
+          📚 {t('accVat.integ.docs')}{' '}
           <code
             style={{
               background: 'rgba(15,15,20,0.6)',
@@ -90,8 +99,8 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
       {sources.length === 0 ? (
         <div className="accounting-empty" style={{ marginTop: 18 }}>
           <div style={{ fontSize: '2rem', opacity: 0.45 }}>🔌</div>
-          Aucune intégration configurée.
-          <div className="hint">Cliquez sur «&nbsp;+ Nouvelle intégration&nbsp;» pour commencer.</div>
+          {t('accVat.integ.empty')}
+          <div className="hint">{t('accVat.integ.emptyHint')}</div>
         </div>
       ) : (
         <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
@@ -120,6 +129,7 @@ interface IntegrationCardProps {
 }
 
 export function IntegrationCard({ source, canManage, rotating, onRotate, onRequestRevoke }: IntegrationCardProps) {
+  const { t } = useI18n()
   return (
     <div
       style={{
@@ -160,7 +170,7 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
               color: 'rgba(255,255,255,0.55)',
             }}
           >
-            Slug&nbsp;:{' '}
+            {t('accVat.integ.slugLabel')}{' '}
             <code
               style={{
                 fontFamily: "'SF Mono', Menlo, Consolas, monospace",
@@ -191,16 +201,16 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
             className="portal-button secondary"
             style={{ textDecoration: 'none' }}
           >
-            ⚙️ Configuration détaillée
+            ⚙️ {t('accVat.integ.configure')}
           </Link>
           <button
             type="button"
             className="portal-button secondary"
             onClick={onRotate}
             disabled={!canManage || rotating}
-            title="Génère une nouvelle paire clé / secret et invalide l'ancienne"
+            title={t('accVat.integ.rotateTitle')}
           >
-            {rotating ? '⏳ Rotation…' : '🔄 Régénérer les clés'}
+            {rotating ? t('accVat.integ.rotating') : t('accVat.integ.rotate')}
           </button>
           <button
             type="button"
@@ -212,9 +222,9 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
               border: '1px solid rgba(220,38,38,0.45)',
               color: '#fecaca',
             }}
-            title="Supprime définitivement l'intégration"
+            title={t('accVat.integ.revokeTitle')}
           >
-            🗑️ Révoquer
+            🗑️ {t('accVat.integ.revoke')}
           </button>
         </div>
       </div>
@@ -228,15 +238,19 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
           fontSize: '0.82rem',
         }}
       >
-        <StatCell label="Préfixe clé" value={source.apiKeyPrefix ? `${source.apiKeyPrefix}…` : '—'} mono />
         <StatCell
-          label="Dernier ping"
-          value={source.lastSeenAt ? formatRelative(source.lastSeenAt) : 'Jamais'}
-          title={source.lastSeenAt ? new Date(source.lastSeenAt).toLocaleString('fr-FR') : undefined}
+          label={t('accVat.integ.keyPrefix')}
+          value={source.apiKeyPrefix ? `${source.apiKeyPrefix}…` : '—'}
+          mono
         />
-        <StatCell label="Ingérées" value={String(source.totalIngested ?? 0)} />
-        <StatCell label="Rejetées" value={String(source.totalRejected ?? 0)} />
-        <StatCell label="Doublons" value={String(source.totalDuplicates ?? 0)} />
+        <StatCell
+          label={t('accVat.integ.lastPing')}
+          value={source.lastSeenAt ? formatRelative(source.lastSeenAt) : t('accVat.integ.never')}
+          title={source.lastSeenAt ? formatDateTime(source.lastSeenAt, FULL_DATE_TIME) : undefined}
+        />
+        <StatCell label={t('accVat.integ.ingested')} value={String(source.totalIngested ?? 0)} />
+        <StatCell label={t('accVat.integ.rejected')} value={String(source.totalRejected ?? 0)} />
+        <StatCell label={t('accVat.integ.duplicates')} value={String(source.totalDuplicates ?? 0)} />
       </div>
 
       {source.lastError && (
@@ -251,11 +265,9 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
             color: '#fecaca',
           }}
         >
-          ⚠️ Dernière erreur&nbsp;: {source.lastError}
+          ⚠️ {t('accVat.integ.lastError')} {source.lastError}
           {source.lastErrorAt && (
-            <span style={{ opacity: 0.7, marginLeft: 6 }}>
-              ({new Date(source.lastErrorAt).toLocaleString('fr-FR')})
-            </span>
+            <span style={{ opacity: 0.7, marginLeft: 6 }}>({formatDateTime(source.lastErrorAt, FULL_DATE_TIME)})</span>
           )}
         </div>
       )}
@@ -264,11 +276,12 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
 }
 
 export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
-  const map: Record<ExternalSourceStatus, { className: string; label: string; style?: React.CSSProperties }> = {
-    ACTIVE: { className: 'accounting-badge validated', label: 'Active' },
+  const { t } = useI18n()
+  const map: Record<ExternalSourceStatus, { className: string; labelKey: MessageKey; style?: React.CSSProperties }> = {
+    ACTIVE: { className: 'accounting-badge validated', labelKey: 'accVat.integ.statusActive' },
     PAUSED: {
       className: 'accounting-badge',
-      label: 'En pause',
+      labelKey: 'accVat.integ.statusPaused',
       style: {
         background: 'rgba(251,146,60,0.15)',
         color: '#fdba74',
@@ -277,7 +290,7 @@ export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
     },
     DISABLED: {
       className: 'accounting-badge',
-      label: 'Désactivée',
+      labelKey: 'accVat.integ.statusDisabled',
       style: {
         background: 'rgba(255,255,255,0.06)',
         color: 'rgba(255,255,255,0.55)',
@@ -287,8 +300,12 @@ export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
   }
   const entry = map[status] || map.DISABLED
   return (
-    <span className={entry.className} style={{ fontSize: '0.7rem', ...entry.style }} title={`Statut: ${status}`}>
-      {entry.label}
+    <span
+      className={entry.className}
+      style={{ fontSize: '0.7rem', ...entry.style }}
+      title={t('accVat.integ.statusTitle', { status })}
+    >
+      {t(entry.labelKey)}
     </span>
   )
 }
@@ -343,14 +360,14 @@ export function formatRelative(iso: string): string {
   const diffMs = Date.now() - date.getTime()
   if (Number.isNaN(diffMs)) return iso
   const sec = Math.floor(diffMs / 1000)
-  if (sec < 60) return "à l'instant"
+  if (sec < 60) return translate('accVat.integ.relNow')
   const min = Math.floor(sec / 60)
-  if (min < 60) return `il y a ${min} min`
+  if (min < 60) return translate('accVat.integ.relMin', { n: min })
   const hr = Math.floor(min / 60)
-  if (hr < 24) return `il y a ${hr} h`
+  if (hr < 24) return translate('accVat.integ.relHour', { n: hr })
   const day = Math.floor(hr / 24)
-  if (day < 30) return `il y a ${day} j`
-  return date.toLocaleDateString('fr-FR')
+  if (day < 30) return translate('accVat.integ.relDay', { n: day })
+  return formatDate(date)
 }
 
 // ---- Modal de création ----

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Maximize2, X, GripVertical } from 'lucide-react'
 import type { WidgetConfig } from '../../../types/workspace.types'
+import { useI18n } from '../../../context/I18nContext'
 
 const SIZES = [
   { w: 3, h: 3 },
@@ -22,6 +23,7 @@ interface BentoGridProps {
 }
 
 export default function BentoGrid({ widgets, editing, onChange, renderWidget }: BentoGridProps) {
+  const { t } = useI18n()
   const [dragKey, setDragKey] = useState<string | null>(null)
 
   const visible = widgets.filter((w) => w.enabled)
@@ -62,10 +64,10 @@ export default function BentoGrid({ widgets, editing, onChange, renderWidget }: 
             <div className="bento-tile__bar">
               <GripVertical size={14} className="bento-tile__grip" />
               <div className="bento-tile__actions">
-                <button aria-label="Changer la taille" onClick={() => cycleSize(w.key)}>
+                <button aria-label={t('adminAccess.monEspace.resize')} onClick={() => cycleSize(w.key)}>
                   <Maximize2 size={14} />
                 </button>
-                <button aria-label="Masquer le widget" onClick={() => disable(w.key)}>
+                <button aria-label={t('adminAccess.monEspace.hideWidget')} onClick={() => disable(w.key)}>
                   <X size={14} />
                 </button>
               </div>

@@ -1,3 +1,4 @@
+import { useI18n } from '../../../../context/I18nContext'
 import { formatMoney, parseMoney } from './money'
 import { ACCOUNTING, ActionForm, dateLabel, Field, Table, text, today, write } from './shared'
 import type { CostLine, ProjectCost } from './types'
@@ -15,12 +16,22 @@ export default function FinanceCosts({
   canManage: boolean
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   return (
     <section className="accounting-card">
-      <h2>Coûts directs</h2>
-      {!lines.length && <p>Aucun coût direct.</p>}
+      <h2>{t('accProjects.costs.title')}</h2>
+      {!lines.length && <p>{t('accProjects.costs.empty')}</p>}
       {!!lines.length && (
-        <Table headers={['Date', 'Compte', 'Libellé', 'Fournisseur', 'Coût HT', 'TVA']}>
+        <Table
+          headers={[
+            t('accProjects.cols.date'),
+            t('accProjects.cols.account'),
+            t('accProjects.cols.label'),
+            t('accProjects.cols.supplier'),
+            t('accProjects.cols.costHt'),
+            t('accProjects.cols.vat'),
+          ]}
+        >
           {lines.map((line) => {
             const detail = costDetails.find((cost) => cost.entry === line.entry._id)
             return (
@@ -38,9 +49,9 @@ export default function FinanceCosts({
       )}
       {canManage && (
         <details>
-          <summary>Ajouter un coût direct</summary>
+          <summary>{t('accProjects.costs.add')}</summary>
           <ActionForm
-            label="Enregistrer le coût"
+            label={t('accProjects.costs.save')}
             onSaved={onSaved}
             submit={(data, key) =>
               write(
@@ -59,22 +70,22 @@ export default function FinanceCosts({
             }
           >
             <div className="pf-grid">
-              <Field label="Compte de classe 6">
+              <Field label={t('accProjects.costs.class6Account')}>
                 <input name="accountCode" pattern="6[0-9]*" required />
               </Field>
-              <Field label="Libellé">
+              <Field label={t('accProjects.cols.label')}>
                 <input name="label" required />
               </Field>
-              <Field label="Fournisseur">
+              <Field label={t('accProjects.cols.supplier')}>
                 <input name="supplier" required />
               </Field>
-              <Field label="Montant HT (€)">
+              <Field label={t('accProjects.common.amountHtEur')}>
                 <input name="ht" inputMode="decimal" required />
               </Field>
-              <Field label="Montant de TVA (€)">
+              <Field label={t('accProjects.common.vatAmountEur')}>
                 <input name="vat" inputMode="decimal" defaultValue="0" required />
               </Field>
-              <Field label="Date">
+              <Field label={t('accProjects.cols.date')}>
                 <input name="date" type="date" defaultValue={today()} required />
               </Field>
             </div>

@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import AccountingLayout from './AccountingLayout'
-import {
-  listAccounts,
-  createAccount,
-  updateAccount,
-  deactivateAccount,
-} from '../../../services/accounting'
+import { listAccounts, createAccount, updateAccount, deactivateAccount } from '../../../services/accounting'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { AccountType, IChartOfAccount } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
 
 const TYPES: AccountType[] = ['ACTIF', 'PASSIF', 'CHARGE', 'PRODUIT', 'CAPITAUX', 'SPECIAL']
+
+const TYPE_LABEL_KEYS: Record<AccountType, MessageKey> = {
+  ACTIF: 'accAccounts.accountType.ACTIF',
+  PASSIF: 'accAccounts.accountType.PASSIF',
+  CHARGE: 'accAccounts.accountType.CHARGE',
+  PRODUIT: 'accAccounts.accountType.PRODUIT',
+  CAPITAUX: 'accAccounts.accountType.CAPITAUX',
+  SPECIAL: 'accAccounts.accountType.SPECIAL',
+}
 
 interface AccountForm {
   code: string
@@ -32,6 +39,7 @@ const EMPTY_FORM: AccountForm = {
 }
 
 const ChartOfAccounts = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
 
@@ -57,7 +65,7 @@ const ChartOfAccounts = () => {
       })
       setAccounts(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -82,7 +90,7 @@ const ChartOfAccounts = () => {
       setShowForm(false)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -100,19 +108,19 @@ const ChartOfAccounts = () => {
   }
 
   async function handleDeactivate(id: string) {
-    if (!confirm('Désactiver ce compte ? (soft delete — réversible)')) return
+    if (!confirm(t('accAccounts.accounts.deactivateConfirm'))) return
     try {
       await deactivateAccount(id)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
   return (
     <AccountingLayout
-      title="Plan comptable"
-      subtitle="Comptes du PCG utilisés par votre comptabilité"
+      title={t('accAccounts.nav.chartOfAccounts')}
+      subtitle={t('accAccounts.accounts.subtitle')}
       actions={
         canManage && (
           <button
@@ -123,7 +131,7 @@ const ChartOfAccounts = () => {
               setShowForm(!showForm)
             }}
           >
-            {showForm ? 'Fermer' : '✚ Nouveau compte'}
+            {showForm ? t('common.close') : t('accAccounts.accounts.newAccount')}
           </button>
         )
       }
@@ -132,10 +140,10 @@ const ChartOfAccounts = () => {
 
       {showForm && canManage && (
         <form className="accounting-card" onSubmit={handleSubmit}>
-          <h2>{editId ? 'Modifier le compte' : 'Nouveau compte'}</h2>
+          <h2>{editId ? t('accAccounts.accounts.editTitle') : t('accAccounts.accounts.newTitle')}</h2>
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Code</label>
+              <label>{t('accAccounts.col.code')}</label>
               <input
                 className="portal-input"
                 value={form.code}
@@ -146,7 +154,7 @@ const ChartOfAccounts = () => {
               />
             </div>
             <div className="accounting-form-field" style={{ gridColumn: 'span 2' }}>
-              <label>Libellé</label>
+              <label>{t('accAccounts.col.label')}</label>
               <input
                 className="portal-input"
                 value={form.label}
@@ -155,7 +163,7 @@ const ChartOfAccounts = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Classe</label>
+              <label>{t('accAccounts.accounts.class')}</label>
               <select
                 className="portal-input"
                 value={form.accountClass}
@@ -163,21 +171,21 @@ const ChartOfAccounts = () => {
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
                   <option key={c} value={c}>
-                    Classe {c}
+                    {t('accAccounts.accounts.classN', { n: c })}
                   </option>
                 ))}
               </select>
             </div>
             <div className="accounting-form-field">
-              <label>Type</label>
+              <label>{t('accAccounts.accounts.type')}</label>
               <select
                 className="portal-input"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as AccountType })}
               >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {TYPES.map((ty) => (
+                  <option key={ty} value={ty}>
+                    {t(TYPE_LABEL_KEYS[ty])}
                   </option>
                 ))}
               </select>
@@ -189,11 +197,11 @@ const ChartOfAccounts = () => {
                   checked={form.isLettrable}
                   onChange={(e) => setForm({ ...form, isLettrable: e.target.checked })}
                 />{' '}
-                Lettrable
+                {t('accAccounts.accounts.reconcilable')}
               </label>
             </div>
             <div className="accounting-form-field full">
-              <label>Description (optionnel)</label>
+              <label>{t('accAccounts.accounts.descriptionOptional')}</label>
               <input
                 className="portal-input"
                 value={form.description}
@@ -211,10 +219,10 @@ const ChartOfAccounts = () => {
                 setForm(EMPTY_FORM)
               }}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="portal-button">
-              {editId ? 'Enregistrer' : 'Créer'}
+              {editId ? t('common.save') : t('accAccounts.accounts.create')}
             </button>
           </div>
         </form>
@@ -224,7 +232,7 @@ const ChartOfAccounts = () => {
         <div className="accounting-toolbar">
           <input
             className="portal-input"
-            placeholder="Rechercher un code ou libellé…"
+            placeholder={t('accAccounts.accounts.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -232,60 +240,48 @@ const ChartOfAccounts = () => {
             }}
             style={{ minWidth: 220 }}
           />
-          <select
-            className="portal-input"
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
-          >
-            <option value="">Toutes les classes</option>
+          <select className="portal-input" value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+            <option value="">{t('accAccounts.accounts.allClasses')}</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
               <option key={c} value={c}>
-                Classe {c}
+                {t('accAccounts.accounts.classN', { n: c })}
               </option>
             ))}
           </select>
-          <select
-            className="portal-input"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="">Tous types</option>
-            {TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
+          <select className="portal-input" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <option value="">{t('accAccounts.accounts.allTypes')}</option>
+            {TYPES.map((ty) => (
+              <option key={ty} value={ty}>
+                {t(TYPE_LABEL_KEYS[ty])}
               </option>
             ))}
           </select>
           <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-            />{' '}
-            Inclure inactifs
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />{' '}
+            {t('accAccounts.accounts.includeInactive')}
           </label>
           <button className="portal-button secondary" onClick={() => reload()}>
-            Rechercher
+            {t('common.search')}
           </button>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : accounts.length === 0 ? (
           <div className="accounting-empty">
-            Aucun compte trouvé.
-            <div className="hint">Allez dans Paramètres → "Initialiser PCG" pour démarrer.</div>
+            {t('accAccounts.accounts.empty')}
+            <div className="hint">{t('accAccounts.accounts.emptyHint')}</div>
           </div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Libellé</th>
-                <th>Classe</th>
-                <th>Type</th>
-                <th>Lettrable</th>
-                <th>Statut</th>
+                <th>{t('accAccounts.col.code')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th>{t('accAccounts.accounts.class')}</th>
+                <th>{t('accAccounts.accounts.type')}</th>
+                <th>{t('accAccounts.accounts.reconcilable')}</th>
+                <th>{t('accAccounts.col.status')}</th>
                 {canManage && <th></th>}
               </tr>
             </thead>
@@ -295,20 +291,20 @@ const ChartOfAccounts = () => {
                   <td className="code">{a.code}</td>
                   <td>{a.label}</td>
                   <td>{a.accountClass}</td>
-                  <td>{a.type}</td>
-                  <td>{a.isLettrable ? 'Oui' : '—'}</td>
+                  <td>{TYPE_LABEL_KEYS[a.type] ? t(TYPE_LABEL_KEYS[a.type]) : a.type}</td>
+                  <td>{a.isLettrable ? t('common.yes') : '—'}</td>
                   <td>
                     <span className={`accounting-badge ${a.isActive ? 'validated' : 'locked'}`}>
-                      {a.isActive ? 'Actif' : 'Inactif'}
+                      {a.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
                     </span>
                   </td>
                   {canManage && (
                     <td>
                       <div className="accounting-row-actions">
-                        <button onClick={() => startEdit(a)}>Modifier</button>
+                        <button onClick={() => startEdit(a)}>{t('common.edit')}</button>
                         {a.isActive && (
                           <button className="danger" onClick={() => handleDeactivate(a._id)}>
-                            Désactiver
+                            {t('accAccounts.accounts.deactivate')}
                           </button>
                         )}
                       </div>

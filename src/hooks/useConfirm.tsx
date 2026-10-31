@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import ConfirmModal from '../components/ConfirmModal'
+import { useI18n } from '../context/I18nContext'
 
 interface ConfirmOptions {
   title?: string
@@ -10,6 +11,7 @@ interface ConfirmOptions {
 }
 
 export function useConfirm() {
+  const { t } = useI18n()
   const [state, setState] = useState<{
     options: ConfirmOptions
     resolve: (value: boolean) => void
@@ -35,10 +37,10 @@ export function useConfirm() {
   const ConfirmDialog = state ? (
     <ConfirmModal
       isOpen
-      title={state.options.title || 'Confirmation'}
+      title={state.options.title || t('shell.confirm.defaultTitle')}
       message={state.options.message}
-      confirmLabel={state.options.confirmLabel || 'Supprimer'}
-      cancelLabel={state.options.cancelLabel || 'Annuler'}
+      confirmLabel={state.options.confirmLabel || t('common.delete')}
+      cancelLabel={state.options.cancelLabel || t('common.cancel')}
       variant={state.options.variant || 'danger'}
       onConfirm={handleConfirm}
       onCancel={handleCancel}

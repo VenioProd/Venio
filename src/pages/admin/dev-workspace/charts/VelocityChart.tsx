@@ -1,5 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ACCENT, ACCENT_BRIGHT, GRID_LINE, INK_MUTED, withAlpha } from '../../../../lib/chartColors'
+import { useI18n } from '../../../../context/I18nContext'
 import type { VelocityPoint } from './aggregate'
 
 interface VelocityTooltipPayload {
@@ -7,15 +8,14 @@ interface VelocityTooltipPayload {
 }
 
 const VelocityTooltip = ({ active, payload }: { active?: boolean; payload?: VelocityTooltipPayload[] }) => {
+  const { t } = useI18n()
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   if (!point) return null
   return (
     <div className="dev-viz-tooltip">
       <strong>{point.label}</strong>
-      <span>
-        {point.count} issue{point.count > 1 ? 's' : ''} terminée{point.count > 1 ? 's' : ''}
-      </span>
+      <span>{t('devB.charts.doneIssues', { count: point.count })}</span>
     </div>
   )
 }

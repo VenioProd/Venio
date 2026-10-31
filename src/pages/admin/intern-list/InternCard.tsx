@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDateTime } from '../../../i18n/format'
 import { STATUS_CONFIG, daysRemaining, formatDate, type Intern } from './types'
 
 interface Props {
@@ -27,6 +29,7 @@ export default function InternCard({
   onResendCredentials,
   onDelete,
 }: Props) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const status = STATUS_CONFIG[intern.status]
   const days = daysRemaining(intern.dateFin)
@@ -53,17 +56,17 @@ export default function InternCard({
             <span
               style={{ fontSize: 11, color: days <= 7 ? '#ef4444' : days <= 30 ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}
             >
-              {days > 0 ? `${days}j restants` : 'Termine'}
+              {days > 0 ? t('intern.card.daysLeft', { count: days }) : t('intern.status.finished')}
             </span>
           )}
           <Badge
             color={intern.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b'}
             background={intern.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155,155,155,0.15)'}
           >
-            {intern.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+            {intern.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
           </Badge>
           <Badge color={status.color} background={status.color + '22'}>
-            {status.label}
+            {t(status.labelKey)}
           </Badge>
           <span
             style={{
@@ -82,49 +85,49 @@ export default function InternCard({
           className="ticket-card-body"
           style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <Progress progress={progress} color={status.color} />
+          <Progress progress={progress} color={status.color} label={t('intern.card.progress')} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', marginBottom: 16 }}>
             <div>
-              <FieldLabel label="Type" />
+              <FieldLabel label={t('intern.card.fieldType')} />
               <select
                 value={intern.type || 'STAGIAIRE'}
                 onChange={(event) => onTypeChange(intern._id, event.target.value as 'STAGIAIRE' | 'ALTERNANT')}
                 style={typeSelectStyle}
               >
-                <option value="STAGIAIRE">Stagiaire</option>
-                <option value="ALTERNANT">Alternant</option>
+                <option value="STAGIAIRE">{t('intern.type.intern')}</option>
+                <option value="ALTERNANT">{t('intern.type.apprentice')}</option>
               </select>
             </div>
-            <Field label="Email">{intern.userId.email}</Field>
-            {intern.userId.phone && <Field label="Telephone">{intern.userId.phone}</Field>}
-            <Field label="Derniere connexion">
+            <Field label={t('intern.card.fieldEmail')}>{intern.userId.email}</Field>
+            {intern.userId.phone && <Field label={t('intern.card.fieldPhone')}>{intern.userId.phone}</Field>}
+            <Field label={t('intern.card.fieldLastLogin')}>
               <span style={{ color: intern.userId.lastLoginAt ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 13 }}>
                 {intern.userId.lastLoginAt
-                  ? new Date(intern.userId.lastLoginAt).toLocaleString('fr-FR', {
+                  ? formatDateTime(intern.userId.lastLoginAt, {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
                     })
-                  : 'Jamais connecte'}
+                  : t('intern.card.neverLoggedIn')}
               </span>
             </Field>
-            {intern.ecole && <Field label="Ecole">{intern.ecole}</Field>}
-            {intern.formation && <Field label="Formation">{intern.formation}</Field>}
-            {intern.tuteur && <Field label="Tuteur">{intern.tuteur.name}</Field>}
+            {intern.ecole && <Field label={t('intern.card.fieldSchool')}>{intern.ecole}</Field>}
+            {intern.formation && <Field label={t('intern.card.fieldTraining')}>{intern.formation}</Field>}
+            {intern.tuteur && <Field label={t('intern.card.fieldTutor')}>{intern.tuteur.name}</Field>}
           </div>
-          {intern.notes && <Notes>{intern.notes}</Notes>}
+          {intern.notes && <Notes label={t('intern.card.notes')}>{intern.notes}</Notes>}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               className="ticket-new-btn"
               style={{ fontSize: 12, padding: '6px 14px' }}
               onClick={() => navigate(`/admin/stagiaires/${intern._id}`)}
             >
-              Voir fiche
+              {t('intern.card.viewProfile')}
             </button>
             <button className="ticket-back-btn" onClick={() => onEdit(intern)}>
-              Modifier
+              {t('intern.card.edit')}
             </button>
             {intern.status === 'ACTIF' && (
               <button
@@ -132,7 +135,7 @@ export default function InternCard({
                 style={{ color: 'var(--ink-faint)' }}
                 onClick={() => onStatusChange(intern._id, 'TERMINE')}
               >
-                Marquer termine
+                {t('intern.card.markFinished')}
               </button>
             )}
             {intern.status === 'ACTIF' && (
@@ -141,7 +144,7 @@ export default function InternCard({
                 style={{ color: '#ef4444' }}
                 onClick={() => onStatusChange(intern._id, 'ANNULE')}
               >
-                Annuler
+                {t('intern.card.cancel')}
               </button>
             )}
             {intern.status !== 'ACTIF' && (
@@ -150,7 +153,7 @@ export default function InternCard({
                 style={{ color: '#22c55e' }}
                 onClick={() => onStatusChange(intern._id, 'ACTIF')}
               >
-                Reactiver
+                {t('intern.card.reactivate')}
               </button>
             )}
             {isSuperAdmin && (
@@ -161,10 +164,10 @@ export default function InternCard({
                   onClick={() => onResendCredentials(intern._id)}
                   disabled={resendingCredentials === intern._id}
                 >
-                  {resendingCredentials === intern._id ? 'Envoi...' : 'Renvoyer identifiants'}
+                  {resendingCredentials === intern._id ? t('intern.card.sending') : t('intern.card.resendCredentials')}
                 </button>
                 <button className="ticket-back-btn" style={{ color: '#ef4444' }} onClick={() => onDelete(intern._id)}>
-                  Supprimer
+                  {t('intern.card.delete')}
                 </button>
               </>
             )}
@@ -189,11 +192,11 @@ function Badge({ children, color, background }: { children: string; color: strin
   )
 }
 
-function Progress({ progress, color }: { progress: number; color: string }) {
+function Progress({ progress, color, label }: { progress: number; color: string; label: string }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Progression du stage</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{label}</span>
         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{progress}%</span>
       </div>
       <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
@@ -227,10 +230,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </div>
   )
 }
-function Notes({ children }: { children: ReactNode }) {
+function Notes({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ padding: '10px 14px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', marginBottom: 16 }}>
-      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Notes</span>
+      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{label}</span>
       <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>
         {children}
       </p>

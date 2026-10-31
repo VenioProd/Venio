@@ -1,4 +1,5 @@
 import { apiFetch } from '../lib/api'
+import { translate } from '../i18n'
 import type { BetaReproducibility, BetaRunStatus, BetaSeverity, BetaStep, BetaVerdict } from './beta'
 
 export interface TesterScenario {
@@ -107,7 +108,7 @@ export async function uploadScreenshot(token: string, runId: string, file: File)
     attachments?: TesterAttachment[]
     error?: string
   } | null
-  if (!response.ok) throw new Error(payload?.error ?? 'Envoi impossible')
+  if (!response.ok) throw new Error(payload?.error ?? translate('beta.shared.sendFailed'))
   return payload?.attachments ?? []
 }
 

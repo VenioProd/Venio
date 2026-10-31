@@ -5,34 +5,36 @@ import { getVatDeclaration, submitVatDeclaration } from '../../../services/accou
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { IVatDeclaration, IVatRateBreakdown } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import {
+  formatDate as formatLocaleDate,
+  formatDateTime as formatLocaleDateTime,
+  formatMoney,
+} from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return formatLocaleDate(d) || '—'
 }
 
 function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return (
+    formatLocaleDateTime(d, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }) || '—'
+  )
 }
 
 function formatRate(rate: unknown): string {
@@ -50,6 +52,7 @@ function sumBase(rows: IVatRateBreakdown[] | undefined): number {
 }
 
 const VatDeclarationDetail = () => {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -72,7 +75,7 @@ const VatDeclarationDetail = () => {
       const d = await getVatDeclaration(id)
       setDeclaration(d)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setLoading(false)
     }
@@ -94,7 +97,7 @@ const VatDeclarationDetail = () => {
       setShowSubmitModal(false)
       setSubmittedRef('')
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Erreur')
+      setSubmitError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setSubmitting(false)
     }
@@ -110,30 +113,37 @@ const VatDeclarationDetail = () => {
   const currentCredit = Number(declaration?.currentCredit) || 0
 
   const title = declaration
-    ? `Déclaration ${declaration.type} — ${formatDate(declaration.periodStart)} → ${formatDate(declaration.periodEnd)}`
-    : 'Déclaration de TVA'
+    ? t('accVat.detail.title', {
+        type: declaration.type,
+        start: formatDate(declaration.periodStart),
+        end: formatDate(declaration.periodEnd),
+      })
+    : t('accVat.detail.titleFallback')
 
   return (
     <AccountingLayout
       title={title}
       subtitle={
         declaration
-          ? `Régime : ${declaration.regime || '—'} · Périodicité : ${declaration.periodicity || '—'}`
+          ? t('accVat.detail.subtitle', {
+              regime: declaration.regime || '—',
+              periodicity: declaration.periodicity || '—',
+            })
           : undefined
       }
       actions={
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="portal-button secondary" onClick={() => navigate('/admin/comptabilite/tva')}>
-            ← Liste
+            {t('accVat.detail.backToList')}
           </button>
           {declaration && canManage && isDraft && (
             <button className="portal-button" onClick={() => setShowSubmitModal(true)}>
-              ✓ Soumettre
+              {t('accVat.detail.submit')}
             </button>
           )}
           {declaration && isSubmitted && (
             <button className="portal-button" disabled>
-              Soumise le {formatDate(declaration.submittedAt)}
+              {t('accVat.detail.submittedOn', { date: formatDate(declaration.submittedAt) })}
             </button>
           )}
         </div>
@@ -142,20 +152,20 @@ const VatDeclarationDetail = () => {
       {error && <div className="accounting-message error">{error}</div>}
 
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
       ) : !declaration ? (
         <div className="accounting-empty">
-          Déclaration introuvable.
+          {t('accVat.detail.notFound')}
           <div className="hint">
             <Link to="/admin/comptabilite/tva" style={{ color: 'var(--primary)' }}>
-              Retour à la liste →
+              {t('accVat.detail.backLink')}
             </Link>
           </div>
         </div>
       ) : (
         <>
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Informations</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.detail.info')}</h2>
             <div
               style={{
                 display: 'grid',
@@ -173,7 +183,7 @@ const VatDeclarationDetail = () => {
                     marginBottom: 4,
                   }}
                 >
-                  Type
+                  {t('accVat.list.typeLabel')}
                 </div>
                 <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.type}</div>
               </div>
@@ -187,7 +197,7 @@ const VatDeclarationDetail = () => {
                     marginBottom: 4,
                   }}
                 >
-                  Période
+                  {t('accVat.list.colPeriod')}
                 </div>
                 <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
                   {formatDate(declaration.periodStart)} → {formatDate(declaration.periodEnd)}
@@ -203,7 +213,7 @@ const VatDeclarationDetail = () => {
                     marginBottom: 4,
                   }}
                 >
-                  Régime
+                  {t('accVat.detail.regime')}
                 </div>
                 <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.regime || '—'}</div>
               </div>
@@ -217,7 +227,7 @@ const VatDeclarationDetail = () => {
                     marginBottom: 4,
                   }}
                 >
-                  Périodicité
+                  {t('accVat.detail.periodicity')}
                 </div>
                 <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.periodicity || '—'}</div>
               </div>
@@ -231,11 +241,11 @@ const VatDeclarationDetail = () => {
                     marginBottom: 4,
                   }}
                 >
-                  Statut
+                  {t('accVat.list.colStatus')}
                 </div>
                 <div>
                   <span className={`accounting-badge ${isSubmitted ? 'validated' : 'draft'}`}>
-                    {isSubmitted ? 'Soumise' : 'Brouillon'}
+                    {isSubmitted ? t('accVat.list.statusSubmitted') : t('accVat.list.statusDraft')}
                   </span>
                 </div>
               </div>
@@ -250,7 +260,7 @@ const VatDeclarationDetail = () => {
                       marginBottom: 4,
                     }}
                   >
-                    Référence
+                    {t('accVat.detail.reference')}
                   </div>
                   <div className="code">{declaration.submittedRef}</div>
                 </div>
@@ -266,7 +276,7 @@ const VatDeclarationDetail = () => {
                       marginBottom: 4,
                     }}
                   >
-                    Soumise le
+                    {t('accVat.detail.submittedOnLabel')}
                   </div>
                   <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
                     {formatDateTime(declaration.submittedAt)}
@@ -283,7 +293,7 @@ const VatDeclarationDetail = () => {
               background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.07) 0%, rgba(59,130,246,0.03) 100%)',
             }}
           >
-            <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Récapitulatif</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.detail.summary')}</h2>
             <div
               style={{
                 display: 'grid',
@@ -293,20 +303,20 @@ const VatDeclarationDetail = () => {
               }}
             >
               <div className="accounting-kpi">
-                <div className="label">Total collectée</div>
+                <div className="label">{t('accVat.list.totalCollected')}</div>
                 <div className="value" style={{ color: '#4ade80' }}>
                   {formatEur(totalCollected)}
                 </div>
               </div>
               <div className="accounting-kpi">
-                <div className="label">Total déductible</div>
+                <div className="label">{t('accVat.list.totalDeductible')}</div>
                 <div className="value" style={{ color: 'var(--primary)' }}>
                   {formatEur(totalDeductible)}
                 </div>
               </div>
               {previousCredit > 0 && (
                 <div className="accounting-kpi">
-                  <div className="label">Crédit antérieur</div>
+                  <div className="label">{t('accVat.detail.previousCredit')}</div>
                   <div className="value" style={{ color: '#fbbf24' }}>
                     {formatEur(previousCredit)}
                   </div>
@@ -335,7 +345,7 @@ const VatDeclarationDetail = () => {
                   marginBottom: 8,
                 }}
               >
-                À payer
+                {t('accVat.list.toPay')}
               </div>
               <div
                 style={{
@@ -355,25 +365,23 @@ const VatDeclarationDetail = () => {
                     color: '#fbbf24',
                   }}
                 >
-                  Crédit à reporter : <strong>{formatEur(currentCredit)}</strong>
+                  {t('accVat.detail.creditCarried')} <strong>{formatEur(currentCredit)}</strong>
                 </div>
               )}
             </div>
           </section>
 
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#4ade80' }}>TVA collectée par taux</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#4ade80' }}>{t('accVat.detail.collectedByRate')}</h2>
             {(declaration.collectedByRate || []).length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
-                Aucune TVA collectée sur la période.
-              </p>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accVat.list.collectedNone')}</p>
             ) : (
               <table className="accounting-table">
                 <thead>
                   <tr>
-                    <th>Taux</th>
-                    <th className="amount">Base HT</th>
-                    <th className="amount">TVA</th>
+                    <th>{t('accVat.list.colRate')}</th>
+                    <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                    <th className="amount">{t('accVat.list.colVat')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -387,7 +395,7 @@ const VatDeclarationDetail = () => {
                 </tbody>
                 <tfoot>
                   <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                    <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
+                    <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.collectedByRate))}
                     </td>
@@ -401,18 +409,18 @@ const VatDeclarationDetail = () => {
           </section>
 
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem', color: 'var(--primary)' }}>TVA déductible par taux</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem', color: 'var(--primary)' }}>
+              {t('accVat.detail.deductibleByRate')}
+            </h2>
             {(declaration.deductibleByRate || []).length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
-                Aucune TVA déductible sur la période.
-              </p>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accVat.list.deductibleNone')}</p>
             ) : (
               <table className="accounting-table">
                 <thead>
                   <tr>
-                    <th>Taux</th>
-                    <th className="amount">Base HT</th>
-                    <th className="amount">TVA</th>
+                    <th>{t('accVat.list.colRate')}</th>
+                    <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                    <th className="amount">{t('accVat.list.colVat')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -426,7 +434,7 @@ const VatDeclarationDetail = () => {
                 </tbody>
                 <tfoot>
                   <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                    <td style={{ fontWeight: 700, padding: '14px' }}>Totaux</td>
+                    <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
                     <td className="amount" style={{ fontWeight: 700 }}>
                       {formatEur(sumBase(declaration.deductibleByRate))}
                     </td>
@@ -441,14 +449,14 @@ const VatDeclarationDetail = () => {
 
           {Array.isArray(declaration.declarationLines) && declaration.declarationLines.length > 0 && (
             <section className="accounting-card" style={{ marginBottom: 16 }}>
-              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Lignes CA3</h2>
+              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.list.ca3Lines')}</h2>
               <table className="accounting-table">
                 <thead>
                   <tr>
-                    <th>Code</th>
-                    <th>Libellé</th>
-                    <th className="amount">Base</th>
-                    <th className="amount">Montant</th>
+                    <th>{t('accVat.list.colCode')}</th>
+                    <th>{t('accVat.list.colLabel')}</th>
+                    <th className="amount">{t('accVat.list.colBase')}</th>
+                    <th className="amount">{t('accVat.list.colAmount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -467,7 +475,7 @@ const VatDeclarationDetail = () => {
 
           {declaration.notes && declaration.notes.trim() && (
             <section className="accounting-card">
-              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>Notes</h2>
+              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.list.notes')}</h2>
               <p
                 style={{
                   whiteSpace: 'pre-wrap',
@@ -501,17 +509,14 @@ const VatDeclarationDetail = () => {
             style={{ maxWidth: 480, width: '100%' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Soumettre la déclaration</h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-              Une fois soumise, la déclaration ne pourra plus être modifiée ni supprimée. Vous pouvez optionnellement
-              renseigner la référence retournée par impots.gouv.fr.
-            </p>
+            <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.detail.modalTitle')}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>{t('accVat.detail.modalText')}</p>
             <div className="accounting-form-field">
-              <label>Référence de soumission (optionnel)</label>
+              <label>{t('accVat.detail.refLabel')}</label>
               <input
                 type="text"
                 className="portal-input"
-                placeholder="Ex : FR2026-XXXXX"
+                placeholder={t('accVat.detail.refPlaceholder')}
                 value={submittedRef}
                 onChange={(e) => setSubmittedRef(e.target.value)}
                 disabled={submitting}
@@ -530,10 +535,10 @@ const VatDeclarationDetail = () => {
                 onClick={() => setShowSubmitModal(false)}
                 disabled={submitting}
               >
-                Annuler
+                {t('common.cancel')}
               </button>
               <button className="portal-button" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Soumission…' : '✓ Confirmer la soumission'}
+                {submitting ? t('accVat.detail.submitting') : t('accVat.detail.confirmSubmit')}
               </button>
             </div>
           </div>

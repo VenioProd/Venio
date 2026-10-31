@@ -5,6 +5,9 @@ import { listEntries, listJournals, bulkValidateEntries } from '../../../service
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { IAccountingEntry, IJournal } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate, formatMoney } from '../../../i18n/format'
 
 const STATUSES = ['', 'DRAFT', 'VALIDATED', 'LOCKED']
 const SOURCES = ['', 'MANUAL', 'BILLING', 'PAYMENT', 'EXTERNAL']
@@ -21,6 +24,7 @@ interface EntryFilters {
 }
 
 const Entries = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
 
@@ -51,7 +55,7 @@ const Entries = () => {
       setTotal(data.total || 0)
       setJournals(j)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -72,13 +76,13 @@ const Entries = () => {
   async function handleBulkValidate() {
     const ids = Array.from(selected)
     if (ids.length === 0) return
-    if (!confirm(`Valider ${ids.length} écriture(s) sélectionnée(s) ?`)) return
+    if (!confirm(t('accAccounts.entries.confirmValidateSelected', { count: ids.length }))) return
     try {
       await bulkValidateEntries(ids)
       setSelected(new Set())
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -86,12 +90,12 @@ const Entries = () => {
 
   return (
     <AccountingLayout
-      title="Écritures comptables"
-      subtitle={`${total} écritures au total`}
+      title={t('accAccounts.entries.title')}
+      subtitle={t('accAccounts.entries.subtitle', { count: total })}
       actions={
         canManage && (
           <Link to="/admin/comptabilite/ecritures/nouvelle" className="portal-button">
-            ✚ Nouvelle écriture
+            {t('accAccounts.entries.newEntry')}
           </Link>
         )
       }
@@ -105,7 +109,7 @@ const Entries = () => {
             value={filters.journal}
             onChange={(e) => setFilters({ ...filters, journal: e.target.value, page: 1 })}
           >
-            <option value="">Tous journaux</option>
+            <option value="">{t('accAccounts.entries.allJournals')}</option>
             {journals.map((j) => (
               <option key={j._id} value={j.code}>
                 {j.code} — {j.label}
@@ -117,7 +121,7 @@ const Entries = () => {
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
           >
-            <option value="">Tous statuts</option>
+            <option value="">{t('accAccounts.entries.allStatuses')}</option>
             {STATUSES.filter(Boolean).map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -129,7 +133,7 @@ const Entries = () => {
             value={filters.source}
             onChange={(e) => setFilters({ ...filters, source: e.target.value, page: 1 })}
           >
-            <option value="">Toutes sources</option>
+            <option value="">{t('accAccounts.entries.allSources')}</option>
             {SOURCES.filter(Boolean).map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -150,32 +154,32 @@ const Entries = () => {
           />
           <input
             className="portal-input"
-            placeholder="N° / libellé / pièce…"
+            placeholder={t('accAccounts.entries.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             onKeyDown={(e) => e.key === 'Enter' && reload()}
           />
           <button className="portal-button secondary" onClick={() => reload()}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
 
           <div className="accounting-toolbar-right">
             {canManage && selected.size > 0 && (
               <button className="portal-button" onClick={handleBulkValidate}>
-                Valider {selected.size} sélectionnée(s)
+                {t('accAccounts.entries.validateSelected', { count: selected.size })}
               </button>
             )}
           </div>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : entries.length === 0 ? (
           <div className="accounting-empty">
-            Aucune écriture pour ces filtres.
+            {t('accAccounts.entries.empty')}
             <div className="hint">
               <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: 'var(--primary)' }}>
-                Créer une écriture →
+                {t('accAccounts.entries.createEntry')}
               </Link>
             </div>
           </div>
@@ -185,15 +189,15 @@ const Entries = () => {
               <thead>
                 <tr>
                   {canManage && <th style={{ width: 30 }}></th>}
-                  <th>Numéro</th>
-                  <th>Date</th>
-                  <th>Journal</th>
-                  <th>Libellé</th>
-                  <th>Pièce</th>
-                  <th className="amount">Débit</th>
-                  <th className="amount">Crédit</th>
-                  <th>Source</th>
-                  <th>Statut</th>
+                  <th>{t('accAccounts.col.number')}</th>
+                  <th>{t('accAccounts.col.date')}</th>
+                  <th>{t('accAccounts.col.journal')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th>{t('accAccounts.col.piece')}</th>
+                  <th className="amount">{t('accAccounts.col.debit')}</th>
+                  <th className="amount">{t('accAccounts.col.credit')}</th>
+                  <th>{t('accAccounts.col.source')}</th>
+                  <th>{t('accAccounts.col.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,12 +215,12 @@ const Entries = () => {
                         {e.entryNumber}
                       </Link>
                     </td>
-                    <td>{new Date(e.date).toLocaleDateString('fr-FR')}</td>
+                    <td>{formatDate(e.date)}</td>
                     <td className="code">{e.journalCode}</td>
                     <td>{e.label}</td>
                     <td className="code">{e.pieceRef || '—'}</td>
-                    <td className="amount">{Number(e.totalDebit).toFixed(2)} €</td>
-                    <td className="amount">{Number(e.totalCredit).toFixed(2)} €</td>
+                    <td className="amount">{formatMoney(Number(e.totalDebit))}</td>
+                    <td className="amount">{formatMoney(Number(e.totalCredit))}</td>
                     <td>
                       <span className={`accounting-badge ${e.source === 'EXTERNAL' ? 'source-external' : 'locked'}`}>
                         {e.source}
@@ -237,17 +241,17 @@ const Entries = () => {
                   disabled={filters.page <= 1}
                   onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
                 >
-                  ← Précédent
+                  {t('accAccounts.common.previous')}
                 </button>
                 <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.6)' }}>
-                  Page {filters.page} / {totalPages}
+                  {t('accAccounts.common.page', { page: filters.page, total: totalPages })}
                 </span>
                 <button
                   className="portal-button secondary"
                   disabled={filters.page >= totalPages}
                   onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
                 >
-                  Suivant →
+                  {t('accAccounts.common.next')}
                 </button>
               </div>
             )}

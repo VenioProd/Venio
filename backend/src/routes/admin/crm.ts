@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
-import Lead from '../../models/Lead.js'
+import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
 import CrmSettings from '../../models/CrmSettings.js'
@@ -56,6 +56,7 @@ function normalizeLeadPayload(body: Record<string, any> = {}): Record<string, an
   if (body.contactEmail !== undefined) payload.contactEmail = String(body.contactEmail || '')
   if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
   if (body.source !== undefined) payload.source = String(body.source || '')
+  if (body.project !== undefined && ['', ...LEAD_PROJECTS].includes(body.project)) payload.project = body.project
   if (body.status !== undefined && CRM_STATUSES.includes(body.status)) payload.status = body.status
   if (body.priority !== undefined && ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'].includes(body.priority)) {
     payload.priority = body.priority
@@ -167,6 +168,9 @@ router.get(
       const filter: Record<string, unknown> = { ...scope }
       if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
       if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
+      if (typeof req.query.project === 'string' && (LEAD_PROJECTS as readonly string[]).includes(req.query.project)) {
+        filter.project = req.query.project
+      }
       if (req.query.search) {
         const q = String(req.query.search)
           .trim()
@@ -217,6 +221,10 @@ router.post(
   idempotentRequest,
   body('company').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('Email de contact invalide'),
+  body('project')
+    .optional({ values: 'falsy' })
+    .isIn([...LEAD_PROJECTS])
+    .withMessage('Projet invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -311,8 +319,16 @@ router.patch(
   '/leads/:id',
   requirePermission(PERMISSIONS.MANAGE_CRM),
   idempotentRequest,
+  body('project')
+    .optional({ values: 'falsy' })
+    .isIn([...LEAD_PROJECTS])
+    .withMessage('Projet invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
       const lead = await Lead.findById(req.params.id)
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' })

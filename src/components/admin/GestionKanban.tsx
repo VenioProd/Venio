@@ -1,14 +1,17 @@
 import { useState, type DragEvent } from 'react'
 import type { Task, TaskStatus } from '../../types/task.types'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 
-const COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
-  { key: 'A_FAIRE', label: 'A faire', color: '#64748b' },
-  { key: 'EN_COURS', label: 'En cours', color: 'var(--primary)' },
-  { key: 'EN_REVIEW', label: 'En review', color: '#f59e0b' },
-  { key: 'VALIDE', label: 'Valide', color: '#22c55e' },
-  { key: 'NON_VALIDE', label: 'Non valide', color: '#ef4444' },
-  { key: 'A_MODIFIER', label: 'A modifier', color: '#fb923c' },
-  { key: 'TERMINE', label: 'Termine', color: '#22c55e' },
+const COLUMNS: { key: TaskStatus; labelKey: MessageKey; color: string }[] = [
+  { key: 'A_FAIRE', labelKey: 'compA.taskStatus.todo', color: '#64748b' },
+  { key: 'EN_COURS', labelKey: 'compA.taskStatus.inProgress', color: 'var(--primary)' },
+  { key: 'EN_REVIEW', labelKey: 'compA.taskStatus.inReview', color: '#f59e0b' },
+  { key: 'VALIDE', labelKey: 'compA.taskStatus.valid', color: '#22c55e' },
+  { key: 'NON_VALIDE', labelKey: 'compA.taskStatus.invalid', color: '#ef4444' },
+  { key: 'A_MODIFIER', labelKey: 'compA.taskStatus.toEdit', color: '#fb923c' },
+  { key: 'TERMINE', labelKey: 'compA.taskStatus.done', color: '#22c55e' },
 ]
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -28,6 +31,7 @@ interface Props {
 }
 
 export default function GestionKanban({ tasks, loading, onMove, getProjectId, readOnly }: Props) {
+  const { t } = useI18n()
   const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const getProjectName = (task: Task) => {
@@ -35,10 +39,7 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
     return ''
   }
 
-  const formatDate = (d: string | null) => {
-    if (!d) return ''
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
-  }
+  const formatShortDate = (d: string | null) => formatDate(d, { day: '2-digit', month: '2-digit' })
 
   const handleDragStart = (e: DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId)
@@ -64,7 +65,7 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
     e.preventDefault()
   }
 
-  if (loading) return <div className="gestion-loading">Chargement...</div>
+  if (loading) return <div className="gestion-loading">{t('common.loading')}</div>
 
   return (
     <div className="gestion-kanban">
@@ -78,7 +79,7 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
             onDragOver={handleDragOver}
           >
             <div className="gestion-kanban-header" style={{ borderTopColor: col.color }}>
-              <span className="gestion-kanban-title">{col.label}</span>
+              <span className="gestion-kanban-title">{t(col.labelKey)}</span>
               <span className="gestion-kanban-count">{colTasks.length}</span>
             </div>
             <div className="gestion-kanban-cards">
@@ -112,7 +113,7 @@ export default function GestionKanban({ tasks, loading, onMove, getProjectId, re
                       <span
                         className={`gestion-kanban-date ${task.status !== 'TERMINE' && task.status !== 'VALIDE' && new Date(task.dueDate) < new Date() ? 'overdue' : ''}`}
                       >
-                        {formatDate(task.dueDate)}
+                        {formatShortDate(task.dueDate)}
                       </span>
                     )}
                     {task.progress > 0 && <span className="gestion-kanban-progress">{task.progress}%</span>}

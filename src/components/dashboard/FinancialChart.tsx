@@ -1,5 +1,6 @@
 import { ResponsiveContainer, ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { ACCENT, categoricalAt, withAlpha } from '../../lib/chartColors'
+import { useI18n } from '../../context/I18nContext'
 
 export interface FinancialChartDatum {
   ts: string
@@ -26,12 +27,13 @@ const FinancialChart = ({
   timeline = false,
   formatValue,
 }: FinancialChartProps) => {
+  const { t } = useI18n()
   const accent = timeline ? '#0ea5e9' : ACCENT
   if (data.length === 0) {
     return (
       <div className="dash-fchart" style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="dash-fchart__label">▸ {label}</div>
-        <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Aucune donnée</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('shared.dash.noData')}</p>
       </div>
     )
   }
@@ -66,8 +68,11 @@ const FinancialChart = ({
           <Tooltip
             cursor={{ stroke: withAlpha(accent, 0.4), strokeDasharray: '3 3' }}
             formatter={(value, name) => {
-              if (name === 'volume') return [value, timeline ? 'Éléments attendus' : name]
-              return [formatValue ? formatValue(Number(value)) : value, timeline ? 'TTC attendu' : name]
+              if (name === 'volume') return [value, timeline ? t('shared.dash.chartExpectedItems') : name]
+              return [
+                formatValue ? formatValue(Number(value)) : value,
+                timeline ? t('shared.dash.chartExpectedTtc') : name,
+              ]
             }}
             contentStyle={{
               background: '#000',

@@ -1,13 +1,16 @@
 import React, { useState } from 'react'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 import ItemCard from '../../components/ItemCard'
 import { useConfirm } from '../../hooks/useConfirm'
 import type { PhaseStatus, ProjectAccessRole, ProjectItem, ProjectPhase } from '../../types/project.types'
 
-const PHASE_STATUS_LABELS: Record<PhaseStatus, string> = {
-  A_VENIR: 'À venir',
-  EN_COURS: 'En cours',
-  EN_ATTENTE_VALIDATION: 'En attente de votre validation',
-  TERMINEE: 'Terminée',
+const PHASE_STATUS_LABEL_KEYS: Record<PhaseStatus, MessageKey> = {
+  A_VENIR: 'client.phases.statusUpcoming',
+  EN_COURS: 'client.phases.statusInProgress',
+  EN_ATTENTE_VALIDATION: 'client.phases.statusAwaiting',
+  TERMINEE: 'client.phases.statusDone',
 }
 
 const PHASE_STATUS_MODIFIERS: Record<PhaseStatus, string> = {
@@ -17,8 +20,7 @@ const PHASE_STATUS_MODIFIERS: Record<PhaseStatus, string> = {
   TERMINEE: 'is-done',
 }
 
-const formatDate = (value: string): string =>
-  new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+const formatPhaseDate = (value: string): string => formatDate(value, { day: 'numeric', month: 'long', year: 'numeric' })
 
 interface ClientProjectPhasesProps {
   phases: ProjectPhase[]
@@ -35,6 +37,7 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
   onValidate,
   onRequestRevision,
 }) => {
+  const { t } = useI18n()
   const [comments, setComments] = useState<Record<string, string>>({})
   const [pendingPhaseId, setPendingPhaseId] = useState<string | null>(null)
   const { confirm, ConfirmDialog } = useConfirm()
@@ -53,9 +56,9 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
 
   const handleValidate = async (phase: ProjectPhase) => {
     const confirmed = await confirm({
-      title: 'Valider cette étape',
-      message: `Confirmez-vous la validation de l’étape « ${phase.title} » ? Elle est horodatée et enregistrée à votre nom.`,
-      confirmLabel: 'Valider',
+      title: t('client.phases.confirmTitle'),
+      message: t('client.phases.confirmMessage', { title: phase.title }),
+      confirmLabel: t('client.phases.confirmLabel'),
       variant: 'info',
     })
     if (!confirmed) return
@@ -83,15 +86,15 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
   if (phases.length === 0) {
     return (
       <div className="client-phases">
-        <h2 className="client-progress-section-title">Étapes du projet</h2>
-        <p className="client-phases-empty">Le déroulé du projet apparaîtra ici.</p>
+        <h2 className="client-progress-section-title">{t('client.phases.title')}</h2>
+        <p className="client-phases-empty">{t('client.phases.empty')}</p>
       </div>
     )
   }
 
   return (
     <div className="client-phases">
-      <h2 className="client-progress-section-title">Étapes du projet</h2>
+      <h2 className="client-progress-section-title">{t('client.phases.title')}</h2>
 
       {phases.map((phase, index) => {
         const isWaiting = phase.status === 'EN_ATTENTE_VALIDATION'
@@ -113,15 +116,20 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
                   {index + 1} · {phase.title}
                 </span>
                 <span className={`client-phase-badge ${PHASE_STATUS_MODIFIERS[phase.status]}`}>
-                  {PHASE_STATUS_LABELS[phase.status]}
+                  {t(PHASE_STATUS_LABEL_KEYS[phase.status])}
                 </span>
                 {phase.validation.validatedAt && (
                   <span className="client-phase-meta">
-                    Validée par {phase.validation.validatedByName} le {formatDate(phase.validation.validatedAt)}
+                    {t('client.phases.validatedBy', {
+                      name: phase.validation.validatedByName,
+                      date: formatPhaseDate(phase.validation.validatedAt),
+                    })}
                   </span>
                 )}
                 {phase.dueAt && !phase.validation.validatedAt && (
-                  <span className="client-phase-meta">Prévue le {formatDate(phase.dueAt)}</span>
+                  <span className="client-phase-meta">
+                    {t('client.phases.dueOn', { date: formatPhaseDate(phase.dueAt) })}
+                  </span>
                 )}
               </div>
 
@@ -132,7 +140,7 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
               )}
 
               {blocking && (
-                <span className="client-phase-locked">Se débloque à la validation de « {blocking.title} »</span>
+                <span className="client-phase-locked">{t('client.phases.locked', { title: blocking.title })}</span>
               )}
 
               {isWaiting && phase.linkedItems.length > 0 && (
@@ -147,21 +155,21 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
                 <div className="client-phase-actions">
                   <textarea
                     className="client-phase-comment"
-                    placeholder="Votre commentaire (obligatoire pour des retouches)"
+                    placeholder={t('client.phases.commentPlaceholder')}
                     value={comment}
                     onChange={(event) => setComment(phase._id, event.target.value)}
                     rows={3}
                   />
                   <div className="client-phase-buttons">
                     <button className="client-phase-button" onClick={() => handleValidate(phase)} disabled={busy}>
-                      Valider cette étape
+                      {t('client.phases.approve')}
                     </button>
                     <button
                       className="client-phase-button client-phase-button-ghost"
                       onClick={() => handleRevision(phase)}
                       disabled={busy || !comment.trim()}
                     >
-                      Demander des retouches
+                      {t('client.phases.requestChanges')}
                     </button>
                   </div>
                 </div>
@@ -169,12 +177,12 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
 
               {isWaiting && accessRole !== 'OWNER' && (
                 <div className="client-phase-actions">
-                  <span className="client-phase-meta">En attente de validation par le propriétaire du projet</span>
+                  <span className="client-phase-meta">{t('client.phases.awaitingOwner')}</span>
                   {accessRole === 'EDITOR' && (
                     <>
                       <textarea
                         className="client-phase-comment"
-                        placeholder="Votre commentaire (obligatoire pour des retouches)"
+                        placeholder={t('client.phases.commentPlaceholder')}
                         value={comment}
                         onChange={(event) => setComment(phase._id, event.target.value)}
                         rows={3}
@@ -185,7 +193,7 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
                           onClick={() => handleRevision(phase)}
                           disabled={busy || !comment.trim()}
                         >
-                          Demander des retouches
+                          {t('client.phases.requestChanges')}
                         </button>
                       </div>
                     </>
@@ -198,7 +206,10 @@ const ClientProjectPhases: React.FC<ClientProjectPhasesProps> = ({
                   {openRevisions.map((revision) => (
                     <div key={revision._id} className="client-phase-revision">
                       <span className="client-phase-meta">
-                        Retouches demandées par {revision.requestedByName} le {formatDate(revision.createdAt)}
+                        {t('client.phases.changesRequested', {
+                          name: revision.requestedByName,
+                          date: formatPhaseDate(revision.createdAt),
+                        })}
                       </span>
                       <p className="client-phase-description">{revision.comment}</p>
                     </div>

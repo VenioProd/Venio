@@ -22,8 +22,10 @@ import {
   Sparkles,
   AtSign,
 } from 'lucide-react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
+import { formatRelativeDate } from './eduFormat'
 import {
-  formatRelative,
   searchEducation,
   studentDisplayName,
   type EducationNote,
@@ -73,73 +75,128 @@ export interface BacklinkEntry {
 
 interface BlockTypeDescriptor {
   type: NoteBlockType
-  label: string
-  hint: string
+  labelKey: MessageKey
+  hintKey: MessageKey
   icon: typeof Type
   keywords: string[]
   level?: number
 }
 
 const BLOCK_TYPES: BlockTypeDescriptor[] = [
-  { type: 'paragraph', label: 'Texte', hint: 'Paragraphe simple', icon: Type, keywords: ['p', 'texte', 'paragraph'] },
+  {
+    type: 'paragraph',
+    labelKey: 'eduA.note.block.paragraph',
+    hintKey: 'eduA.note.block.paragraphHint',
+    icon: Type,
+    keywords: ['p', 'texte', 'paragraph'],
+  },
   {
     type: 'heading',
-    label: 'Titre H1',
-    hint: 'Section principale',
+    labelKey: 'eduA.note.block.h1',
+    hintKey: 'eduA.note.block.h1Hint',
     icon: Heading1,
     keywords: ['h1', 'titre'],
     level: 1,
   },
   {
     type: 'heading',
-    label: 'Titre H2',
-    hint: 'Sous-section',
+    labelKey: 'eduA.note.block.h2',
+    hintKey: 'eduA.note.block.h2Hint',
     icon: Heading2,
     keywords: ['h2', 'sous-titre'],
     level: 2,
   },
-  { type: 'heading', label: 'Titre H3', hint: 'Petit titre', icon: Heading3, keywords: ['h3'], level: 3 },
+  {
+    type: 'heading',
+    labelKey: 'eduA.note.block.h3',
+    hintKey: 'eduA.note.block.h3Hint',
+    icon: Heading3,
+    keywords: ['h3'],
+    level: 3,
+  },
   {
     type: 'checklist',
-    label: 'À faire',
-    hint: 'Case à cocher',
+    labelKey: 'eduA.note.block.checklist',
+    hintKey: 'eduA.note.block.checklistHint',
     icon: ListChecks,
     keywords: ['todo', 'tache', 'check', 'cocher'],
   },
-  { type: 'bullet', label: 'Liste', hint: 'Liste à puces', icon: List, keywords: ['liste', 'puces', 'bullet'] },
-  { type: 'numbered', label: 'Numéro', hint: 'Liste numérotée', icon: ListOrdered, keywords: ['numero', 'ordered'] },
-  { type: 'quote', label: 'Citation', hint: 'Bloc de citation', icon: Quote, keywords: ['quote', 'citation'] },
+  {
+    type: 'bullet',
+    labelKey: 'eduA.note.block.bullet',
+    hintKey: 'eduA.note.block.bulletHint',
+    icon: List,
+    keywords: ['liste', 'puces', 'bullet'],
+  },
+  {
+    type: 'numbered',
+    labelKey: 'eduA.note.block.numbered',
+    hintKey: 'eduA.note.block.numberedHint',
+    icon: ListOrdered,
+    keywords: ['numero', 'ordered'],
+  },
+  {
+    type: 'quote',
+    labelKey: 'eduA.note.block.quote',
+    hintKey: 'eduA.note.block.quoteHint',
+    icon: Quote,
+    keywords: ['quote', 'citation'],
+  },
   {
     type: 'callout',
-    label: 'Encadré',
-    hint: 'Astuce ou attention',
+    labelKey: 'eduA.note.block.callout',
+    hintKey: 'eduA.note.block.calloutHint',
     icon: Lightbulb,
     keywords: ['callout', 'encadre', 'tip'],
   },
-  { type: 'code', label: 'Code', hint: 'Bloc de code monospace', icon: Code, keywords: ['code'] },
+  {
+    type: 'code',
+    labelKey: 'eduA.note.block.code',
+    hintKey: 'eduA.note.block.codeHint',
+    icon: Code,
+    keywords: ['code'],
+  },
   {
     type: 'divider',
-    label: 'Séparateur',
-    hint: 'Trait horizontal',
+    labelKey: 'eduA.note.block.divider',
+    hintKey: 'eduA.note.block.dividerHint',
     icon: Minus,
     keywords: ['divider', 'hr', 'separateur'],
   },
-  { type: 'link', label: 'Lien', hint: 'URL en clair', icon: Link2, keywords: ['link', 'url', 'lien'] },
+  {
+    type: 'link',
+    labelKey: 'eduA.note.block.link',
+    hintKey: 'eduA.note.block.linkHint',
+    icon: Link2,
+    keywords: ['link', 'url', 'lien'],
+  },
   {
     type: 'subpage',
-    label: 'Sous-page',
-    hint: 'Page enfant imbriquée',
+    labelKey: 'eduA.note.block.subpage',
+    hintKey: 'eduA.note.block.subpageHint',
     icon: FileText,
     keywords: ['page', 'sous-page', 'subpage', 'enfant'],
   },
   {
     type: 'mention',
-    label: 'Mention',
-    hint: 'Lien vers étudiant/séance…',
+    labelKey: 'eduA.note.block.mention',
+    hintKey: 'eduA.note.block.mentionHint',
     icon: AtSign,
     keywords: ['mention', 'lien', 'reference', 'arobase', '@'],
   },
 ]
+
+/** Libellé enregistré dans `meta.kind` du bloc (donnée stockée) ; l'affichage passe par `mentionKindText`. */
+const STORED_MENTION_KIND: Record<NoteLinkType, string> = {
+  // i18n-ignore: valeurs stockées dans le bloc
+  student: 'Étudiant',
+  // i18n-ignore: valeurs stockées dans le bloc
+  session: 'Séance',
+  // i18n-ignore: valeurs stockées dans le bloc
+  assignment: 'Devoir',
+  // i18n-ignore: valeurs stockées dans le bloc
+  class: 'Classe',
+}
 
 export interface MentionOption {
   refType: NoteLinkType
@@ -199,6 +256,7 @@ export function NoteEditor({
   onOpenSubpage,
   onOpenMention,
 }: NoteEditorProps) {
+  const { t } = useI18n()
   const [slashFor, setSlashFor] = useState<{ idx: number; query: string } | null>(null)
   const [mentionFor, setMentionFor] = useState<{ idx: number } | null>(null)
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
@@ -380,8 +438,10 @@ export function NoteEditor({
     if (!slashFor) return BLOCK_TYPES
     const q = slashFor.query.toLowerCase().trim()
     if (!q) return BLOCK_TYPES
-    return BLOCK_TYPES.filter((t) => t.label.toLowerCase().includes(q) || t.keywords.some((k) => k.includes(q)))
-  }, [slashFor])
+    return BLOCK_TYPES.filter(
+      (bt) => t(bt.labelKey).toLowerCase().includes(q) || bt.keywords.some((k) => k.includes(q)),
+    )
+  }, [slashFor, t])
 
   return (
     <div>
@@ -391,32 +451,40 @@ export function NoteEditor({
             <input
               className="edu-note-title"
               value={note.title}
-              placeholder="Sans titre"
+              placeholder={t('eduA.note.untitled')}
               onChange={(e) => update({ title: e.target.value })}
             />
             <div className="edu-row" style={{ gap: 4 }}>
               {templates && templates.length > 0 && (
                 <button
                   className="edu-btn-icon"
-                  title="Insérer depuis un template"
+                  title={t('eduA.note.insertTemplate')}
                   onClick={() => setShowTemplates((v) => !v)}
                   aria-expanded={showTemplates}
                 >
                   <Sparkles size={16} color={showTemplates ? 'var(--primary)' : undefined} />
                 </button>
               )}
-              <button className="edu-btn-icon" title="Épingler" onClick={() => update({ pinned: !note.pinned })}>
+              <button
+                className="edu-btn-icon"
+                title={t('eduA.note.pin')}
+                onClick={() => update({ pinned: !note.pinned })}
+              >
                 <Pin size={16} color={note.pinned ? 'var(--primary)' : undefined} />
               </button>
-              <button className="edu-btn-icon" title="Archiver" onClick={() => update({ archived: !note.archived })}>
+              <button
+                className="edu-btn-icon"
+                title={t('eduA.note.archive')}
+                onClick={() => update({ archived: !note.archived })}
+              >
                 <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
               </button>
-              <button className="edu-btn-icon" title="Supprimer" onClick={onDelete}>
+              <button className="edu-btn-icon" title={t('common.delete')} onClick={onDelete}>
                 <Trash2 size={16} />
               </button>
             </div>
           </div>
-          <div className="edu-note-meta">Mis à jour {formatRelative(note.updatedAt)}</div>
+          <div className="edu-note-meta">{t('eduA.note.updated', { when: formatRelativeDate(note.updatedAt) })}</div>
         </>
       )}
 
@@ -425,7 +493,7 @@ export function NoteEditor({
         <div className="edu-row" style={{ justifyContent: 'flex-end', marginBottom: 4 }}>
           <button
             className="edu-btn-icon"
-            title="Insérer depuis un template"
+            title={t('eduA.note.insertTemplate')}
             onClick={() => setShowTemplates((v) => !v)}
             aria-expanded={showTemplates}
           >
@@ -436,9 +504,9 @@ export function NoteEditor({
 
       {showTemplates && templates && (
         <TemplatePicker
-          templates={templates.filter((t) => t.kind === 'note')}
-          onPick={(t) => {
-            if (onApplyTemplate) onApplyTemplate(t)
+          templates={templates.filter((tpl) => tpl.kind === 'note')}
+          onPick={(tpl) => {
+            if (onApplyTemplate) onApplyTemplate(tpl)
             setShowTemplates(false)
           }}
         />
@@ -468,8 +536,8 @@ export function NoteEditor({
               onDragStart={() => setDraggingIdx(i)}
               onDragEnd={() => setDraggingIdx(null)}
               onClick={() => insertBlockAfter(i, 'paragraph')}
-              title="Glisser pour réordonner, cliquer pour ajouter un bloc"
-              aria-label="Réordonner le bloc"
+              title={t('eduA.note.dragHint')}
+              aria-label={t('eduA.note.reorder')}
               type="button"
             >
               <GripVertical size={14} />
@@ -482,7 +550,7 @@ export function NoteEditor({
                 if (b.type === 'paragraph') setSlashFor({ idx: i, query: '' })
                 else setBlockType(i, 'paragraph')
               }}
-              title={`Type : ${desc.label} (clique pour changer)`}
+              title={t('eduA.note.typeTitle', { label: t(desc.labelKey) })}
             >
               <Icon size={14} />
             </button>
@@ -493,7 +561,7 @@ export function NoteEditor({
                 className="edu-block-checkbox"
                 checked={b.checked}
                 onChange={(e) => updateBlock(i, { checked: e.target.checked })}
-                aria-label="Cocher"
+                aria-label={t('eduA.note.check')}
               />
             )}
 
@@ -507,12 +575,14 @@ export function NoteEditor({
                   const cid = b.meta?.childId
                   if (cid && onOpenSubpage) onOpenSubpage(String(cid))
                 }}
-                title="Ouvrir la sous-page"
+                title={t('eduA.note.openSubpage')}
               >
                 <span className="edu-block-subpage-icon">
                   {b.meta?.emoji ? String(b.meta.emoji) : <FileText size={15} />}
                 </span>
-                <span className="edu-block-subpage-title">{String(b.meta?.label || b.text || 'Sans titre')}</span>
+                <span className="edu-block-subpage-title">
+                  {String(b.meta?.label || b.text || t('eduA.note.untitled'))}
+                </span>
                 <ChevronRight size={14} className="edu-block-subpage-caret" />
               </button>
             ) : b.type === 'mention' ? (
@@ -524,11 +594,15 @@ export function NoteEditor({
                   const ri = b.meta?.refId
                   if (rt && ri && onOpenMention) onOpenMention(String(rt) as NoteLinkType, String(ri))
                 }}
-                title="Ouvrir la référence"
+                title={t('eduA.note.openReference')}
               >
                 <AtSign size={13} className="edu-block-mention-icon" />
-                {b.meta?.kind ? <span className="edu-block-mention-kind">{String(b.meta.kind)}</span> : null}
-                <span className="edu-block-mention-label">{String(b.meta?.label || b.text || 'Référence')}</span>
+                {b.meta?.kind ? (
+                  <span className="edu-block-mention-kind">{mentionKindText(b.meta.refType, String(b.meta.kind))}</span>
+                ) : null}
+                <span className="edu-block-mention-label">
+                  {String(b.meta?.label || b.text || t('eduA.note.reference'))}
+                </span>
               </button>
             ) : (
               <div className="edu-block-input-wrap">
@@ -568,7 +642,7 @@ export function NoteEditor({
       })}
 
       <button className="edu-btn ghost edu-block-add" onClick={() => insertBlockAfter(note.blocks.length - 1)}>
-        <Plus size={13} /> Ajouter un bloc
+        <Plus size={13} /> {t('eduA.note.addBlock')}
       </button>
 
       <BacklinksPanel backlinks={backlinks} />
@@ -579,23 +653,27 @@ export function NoteEditor({
 function placeholderFor(b: NoteBlock): string {
   switch (b.type) {
     case 'heading':
-      return b.level === 1 ? 'Titre…' : b.level === 2 ? 'Sous-titre…' : 'Petit titre…'
+      return b.level === 1
+        ? translate('eduA.note.placeholder.h1')
+        : b.level === 2
+          ? translate('eduA.note.placeholder.h2')
+          : translate('eduA.note.placeholder.h3')
     case 'checklist':
-      return 'À faire…'
+      return translate('eduA.note.placeholder.checklist')
     case 'bullet':
-      return 'Élément de liste…'
+      return translate('eduA.note.placeholder.bullet')
     case 'numbered':
-      return 'Élément numéroté…'
+      return translate('eduA.note.placeholder.numbered')
     case 'quote':
-      return 'Citation…'
+      return translate('eduA.note.placeholder.quote')
     case 'callout':
-      return 'Astuce, attention, idée…'
+      return translate('eduA.note.placeholder.callout')
     case 'code':
-      return 'Code…'
+      return translate('eduA.note.placeholder.code')
     case 'link':
-      return 'URL ou texte de lien…'
+      return translate('eduA.note.placeholder.link')
     default:
-      return 'Écris quelque chose, ou tape « / » pour les commandes…'
+      return translate('eduA.note.placeholder.default')
   }
 }
 
@@ -607,6 +685,7 @@ interface SlashMenuProps {
 }
 
 function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
+  const { t } = useI18n()
   const [active, setActive] = useState(0)
   useEffect(() => {
     setActive(0)
@@ -641,17 +720,17 @@ function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
   if (options.length === 0) {
     return (
       <div className="edu-slash-menu" role="listbox">
-        <div className="edu-slash-empty">Aucun type ne correspond à « /{query} »</div>
+        <div className="edu-slash-empty">{t('eduA.note.slashEmpty', { query })}</div>
       </div>
     )
   }
   return (
-    <div className="edu-slash-menu" role="listbox" aria-label="Sélecteur de type de bloc">
+    <div className="edu-slash-menu" role="listbox" aria-label={t('eduA.note.slashAria')}>
       {options.map((opt, idx) => {
         const Icon = opt.icon
         return (
           <button
-            key={`${opt.type}-${opt.level ?? 0}-${opt.label}`}
+            key={`${opt.type}-${opt.level ?? 0}-${opt.labelKey}`}
             className={`edu-slash-item ${idx === active ? 'active' : ''}`}
             onMouseEnter={() => setActive(idx)}
             onClick={() => onPick(opt)}
@@ -660,8 +739,8 @@ function SlashMenu({ query, options, onPick, onClose }: SlashMenuProps) {
             <span className="edu-slash-icon">
               <Icon size={14} />
             </span>
-            <span className="edu-slash-label">{opt.label}</span>
-            <span className="edu-slash-hint">{opt.hint}</span>
+            <span className="edu-slash-label">{t(opt.labelKey)}</span>
+            <span className="edu-slash-hint">{t(opt.hintKey)}</span>
           </button>
         )
       })}
@@ -675,6 +754,7 @@ interface MentionMenuProps {
 }
 
 function MentionMenu({ onPick, onClose }: MentionMenuProps) {
+  const { t } = useI18n()
   const [q, setQ] = useState('')
   const [results, setResults] = useState<MentionOption[]>([])
   const [active, setActive] = useState(0)
@@ -694,7 +774,7 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
     }
     let cancelled = false
     setLoading(true)
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const r = await searchEducation(query)
         if (cancelled) return
@@ -703,17 +783,26 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
             refType: 'student' as NoteLinkType,
             refId: s._id,
             label: studentDisplayName(s),
-            kind: 'Étudiant',
+            kind: STORED_MENTION_KIND.student,
           })),
-          ...r.results.sessions
-            .slice(0, 5)
-            .map((s) => ({ refType: 'session' as NoteLinkType, refId: s._id, label: s.title, kind: 'Séance' })),
-          ...r.results.assignments
-            .slice(0, 5)
-            .map((a) => ({ refType: 'assignment' as NoteLinkType, refId: a._id, label: a.title, kind: 'Devoir' })),
-          ...r.results.classes
-            .slice(0, 5)
-            .map((c) => ({ refType: 'class' as NoteLinkType, refId: c._id, label: c.name, kind: 'Classe' })),
+          ...r.results.sessions.slice(0, 5).map((s) => ({
+            refType: 'session' as NoteLinkType,
+            refId: s._id,
+            label: s.title,
+            kind: STORED_MENTION_KIND.session,
+          })),
+          ...r.results.assignments.slice(0, 5).map((a) => ({
+            refType: 'assignment' as NoteLinkType,
+            refId: a._id,
+            label: a.title,
+            kind: STORED_MENTION_KIND.assignment,
+          })),
+          ...r.results.classes.slice(0, 5).map((c) => ({
+            refType: 'class' as NoteLinkType,
+            refId: c._id,
+            label: c.name,
+            kind: STORED_MENTION_KIND.class,
+          })),
         ]
         setResults(opts)
         setActive(0)
@@ -723,7 +812,7 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
     }, 220)
     return () => {
       cancelled = true
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [q])
 
@@ -752,12 +841,12 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
   }
 
   return (
-    <div className="edu-slash-menu edu-mention-menu" role="dialog" aria-label="Mentionner une entité">
+    <div className="edu-slash-menu edu-mention-menu" role="dialog" aria-label={t('eduA.note.mentionAria')}>
       <input
         ref={inputRef}
         className="edu-mention-input"
         value={q}
-        placeholder="Mentionner un étudiant, une séance, un devoir…"
+        placeholder={t('eduA.note.mentionPlaceholder')}
         onChange={(e) => setQ(e.target.value)}
         onKeyDown={onKeyDown}
         onBlur={() => {
@@ -765,11 +854,11 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
         }}
       />
       {q.trim().length < 1 ? (
-        <div className="edu-slash-empty">Tape pour rechercher…</div>
+        <div className="edu-slash-empty">{t('eduA.note.mentionTyping')}</div>
       ) : loading ? (
-        <div className="edu-slash-empty">Recherche…</div>
+        <div className="edu-slash-empty">{t('eduA.note.mentionSearching')}</div>
       ) : results.length === 0 ? (
-        <div className="edu-slash-empty">Aucun résultat pour « {q.trim()} »</div>
+        <div className="edu-slash-empty">{t('eduA.note.mentionNoResult', { query: q.trim() })}</div>
       ) : (
         results.map((opt, idx) => (
           <button
@@ -782,7 +871,7 @@ function MentionMenu({ onPick, onClose }: MentionMenuProps) {
             }}
             type="button"
           >
-            <span className="edu-mention-kind">{opt.kind}</span>
+            <span className="edu-mention-kind">{mentionKindText(opt.refType, opt.kind)}</span>
             <span className="edu-slash-label" style={{ fontWeight: 500 }}>
               {opt.label}
             </span>
@@ -798,24 +887,23 @@ function TemplatePicker({
   onPick,
 }: {
   templates: EducationTemplate[]
-  onPick: (t: EducationTemplate) => void
+  onPick: (tpl: EducationTemplate) => void
 }) {
+  const { t } = useI18n()
   if (templates.length === 0) {
     return (
       <div className="edu-template-picker">
-        <div className="edu-template-picker-empty">
-          Aucun template de note pour l'instant. Crée-en depuis l'onglet « Templates ».
-        </div>
+        <div className="edu-template-picker-empty">{t('eduA.note.pickerEmpty')}</div>
       </div>
     )
   }
   return (
     <div className="edu-template-picker">
-      <div className="edu-template-picker-head">Insérer depuis un template</div>
-      {templates.map((t) => (
-        <button key={t._id} className="edu-template-picker-item" onClick={() => onPick(t)} type="button">
-          <span className="edu-template-picker-name">{t.name}</span>
-          {t.description && <span className="edu-template-picker-desc">{t.description}</span>}
+      <div className="edu-template-picker-head">{t('eduA.note.insertTemplate')}</div>
+      {templates.map((tpl) => (
+        <button key={tpl._id} className="edu-template-picker-item" onClick={() => onPick(tpl)} type="button">
+          <span className="edu-template-picker-name">{tpl.name}</span>
+          {tpl.description && <span className="edu-template-picker-desc">{tpl.description}</span>}
         </button>
       ))}
     </div>
@@ -823,6 +911,7 @@ function TemplatePicker({
 }
 
 function BacklinksPanel({ backlinks }: { backlinks?: BacklinkEntry[] }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const list = useMemo(() => backlinks ?? [], [backlinks])
   if (list.length === 0) return null
@@ -831,7 +920,7 @@ function BacklinksPanel({ backlinks }: { backlinks?: BacklinkEntry[] }) {
       <button type="button" className="edu-backlinks-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <ChevronRight size={12} className={`edu-backlinks-caret ${open ? 'open' : ''}`} />
         <FileText size={12} />
-        {list.length} lien{list.length > 1 ? 's' : ''} dans cette note
+        {t('eduA.note.backlinks', { count: list.length })}
       </button>
       {open && (
         <div className="edu-backlinks-list">
@@ -857,14 +946,21 @@ function BacklinksPanel({ backlinks }: { backlinks?: BacklinkEntry[] }) {
 function kindLabel(t: NoteLinkType): string {
   switch (t) {
     case 'class':
-      return 'Classe'
+      return translate('eduA.note.kind.class')
     case 'session':
-      return 'Séance'
+      return translate('eduA.note.kind.session')
     case 'assignment':
-      return 'Devoir'
+      return translate('eduA.note.kind.assignment')
     case 'student':
-      return 'Étudiant'
+      return translate('eduA.note.kind.student')
   }
+}
+
+/** Libellé affiché d'une mention : suit la langue active, sinon retombe sur le libellé stocké. */
+function mentionKindText(refType: unknown, stored: string): string {
+  return refType === 'class' || refType === 'session' || refType === 'assignment' || refType === 'student'
+    ? kindLabel(refType)
+    : stored
 }
 
 /* Petit utilitaire callback pour évite de garder un closure stale dans les setTimeout. */

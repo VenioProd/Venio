@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import User from '../../models/User.js'
-import Lead from '../../models/Lead.js'
+import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import ClientContact from '../../models/ClientContact.js'
 import { findClientNote, listClientNotes, logInteraction, toClientNoteShape } from '../../lib/interactions.js'
@@ -261,6 +261,9 @@ router.get('/leads', requireScope('read:crm'), async (req: Request, res: Respons
     if (typeof req.query.assignedTo === 'string' && isValidObjectId(req.query.assignedTo)) {
       filter.assignedTo = req.query.assignedTo
     }
+    if (typeof req.query.project === 'string' && (LEAD_PROJECTS as readonly string[]).includes(req.query.project)) {
+      filter.project = req.query.project
+    }
 
     const sort = parseSort(req.query.sort, { updatedAt: -1 }, [
       'createdAt',
@@ -321,6 +324,10 @@ router.post(
   body('leadTemperature')
     .optional()
     .isIn(TEMPERATURES as unknown as string[]),
+  body('project')
+    .optional({ values: 'falsy' })
+    .isIn([...LEAD_PROJECTS])
+    .withMessage('Projet invalide'),
   body('budget').optional({ nullable: true }).isNumeric(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
@@ -355,6 +362,10 @@ router.patch(
   '/leads/:id',
   requireScope('write:crm'),
   param('id').isMongoId(),
+  body('project')
+    .optional({ values: 'falsy' })
+    .isIn([...LEAD_PROJECTS])
+    .withMessage('Projet invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
@@ -689,6 +700,9 @@ function normalizeLeadPayload(body: Record<string, unknown>): Record<string, unk
   if (body.contactEmail !== undefined) payload.contactEmail = String(body.contactEmail || '')
   if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
   if (body.source !== undefined) payload.source = String(body.source || '')
+  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project)) {
+    payload.project = body.project
+  }
   if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status)) {
     payload.status = body.status
   }

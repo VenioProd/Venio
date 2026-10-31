@@ -1,4 +1,5 @@
 import type { WidgetConfig } from '../../../../types/workspace.types'
+import type { MessageKey } from '../../../../i18n'
 
 export const WIDGET_KEYS = [
   'todo',
@@ -22,24 +23,24 @@ export const WIDGET_KEYS = [
 
 export type WidgetKey = (typeof WIDGET_KEYS)[number]
 
-export const WIDGET_LABELS: Record<WidgetKey, string> = {
-  todo: 'Tâches à faire',
-  doing: 'Tâches en cours',
-  overdue: 'En retard',
-  week: 'Cette semaine',
-  notes: 'Notes',
-  postit: 'Post-it',
-  notebook: 'Notebook',
-  ideas: 'Idées',
-  kpis: 'Mes chiffres',
-  pinned: 'Épinglés',
-  activity: 'Activité',
-  shortcuts: 'Raccourcis',
-  clock: 'Horloge',
-  pomodoro: 'Focus',
-  goal: 'Objectif du jour',
-  devReview: 'Dev — à valider',
-  nextSession: 'Prochaine séance',
+export const WIDGET_LABELS: Record<WidgetKey, MessageKey> = {
+  todo: 'adminAccess.monEspace.widgetTodo',
+  doing: 'adminAccess.monEspace.widgetDoing',
+  overdue: 'adminAccess.monEspace.widgetOverdue',
+  week: 'adminAccess.monEspace.widgetWeek',
+  notes: 'adminAccess.monEspace.widgetNotes',
+  postit: 'adminAccess.monEspace.widgetPostit',
+  notebook: 'adminAccess.monEspace.widgetNotebook',
+  ideas: 'adminAccess.monEspace.widgetIdeas',
+  kpis: 'adminAccess.monEspace.widgetKpis',
+  pinned: 'adminAccess.monEspace.widgetPinned',
+  activity: 'adminAccess.monEspace.widgetActivity',
+  shortcuts: 'adminAccess.monEspace.widgetShortcuts',
+  clock: 'adminAccess.monEspace.widgetClock',
+  pomodoro: 'adminAccess.monEspace.widgetPomodoro',
+  goal: 'adminAccess.monEspace.widgetGoal',
+  devReview: 'adminAccess.monEspace.widgetDevReview',
+  nextSession: 'adminAccess.monEspace.widgetNextSession',
 }
 
 export const DEFAULT_SIZE: Record<WidgetKey, { w: number; h: number }> = {

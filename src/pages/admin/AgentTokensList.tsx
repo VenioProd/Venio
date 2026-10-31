@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
@@ -35,6 +36,7 @@ import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../../lib/sensitiveAc
 
 const AgentTokensList: React.FC = () => {
   const { showToast } = useToast()
+  const { t: tr } = useI18n()
 
   const [tokens, setTokens] = useState<AgentToken[]>([])
   const [scopesCatalog, setScopesCatalog] = useState<ScopesCatalog | null>(null)
@@ -72,7 +74,7 @@ const AgentTokensList: React.FC = () => {
       setTokens(list.tokens || [])
       if (!scopesCatalog) setScopesCatalog(cat)
     } catch (err) {
-      showToast((err as Error).message || 'Erreur chargement tokens', 'error')
+      showToast((err as Error).message || tr('adminTech.agentTokens.loadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -92,6 +94,7 @@ const AgentTokensList: React.FC = () => {
         continue
       }
       const parts = s.split(':')
+      // i18n-ignore: identifiant de groupe (clé de regroupement), traduit à l'affichage
       const module = parts[1] || 'autre'
       const list = groups.get(module) || []
       list.push(s)
@@ -147,11 +150,11 @@ const AgentTokensList: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
-      showToast('Le nom est requis', 'error')
+      showToast(tr('adminTech.agentTokens.nameRequired'), 'error')
       return
     }
     if (form.scopes.length === 0) {
-      showToast('Au moins un scope est requis', 'error')
+      showToast(tr('adminTech.agentTokens.scopeRequired'), 'error')
       return
     }
     setSaving(true)
@@ -175,7 +178,7 @@ const AgentTokensList: React.FC = () => {
           body: JSON.stringify(payload),
           headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.AGENT_TOKEN_UPDATE),
         })
-        showToast('Token mis à jour', 'success')
+        showToast(tr('adminTech.agentTokens.updated'), 'success')
         closeForm()
         await load()
       } else {
@@ -195,7 +198,7 @@ const AgentTokensList: React.FC = () => {
         await load()
       }
     } catch (err) {
-      showToast((err as Error).message || 'Erreur enregistrement', 'error')
+      showToast((err as Error).message || tr('adminTech.agentTokens.saveError'), 'error')
     } finally {
       setSaving(false)
     }
@@ -206,9 +209,9 @@ const AgentTokensList: React.FC = () => {
     try {
       await navigator.clipboard.writeText(revealedSecret)
       setCopied(true)
-      showToast('Secret copié dans le presse-papiers', 'success')
+      showToast(tr('adminTech.agentTokens.secretCopied'), 'success')
     } catch {
-      showToast('Impossible de copier — sélectionnez et copiez manuellement', 'error')
+      showToast(tr('adminTech.agentTokens.copyFailed'), 'error')
     }
   }
 
@@ -219,11 +222,11 @@ const AgentTokensList: React.FC = () => {
         method: 'POST',
         headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.AGENT_TOKEN_REVOKE),
       })
-      showToast('Token révoqué', 'success')
+      showToast(tr('adminTech.agentTokens.revoked'), 'success')
       setRevokeTarget(null)
       await load()
     } catch (err) {
-      showToast((err as Error).message || 'Erreur révocation', 'error')
+      showToast((err as Error).message || tr('adminTech.agentTokens.revokeError'), 'error')
     }
   }
 
@@ -237,7 +240,7 @@ const AgentTokensList: React.FC = () => {
       )
       setAuthLogEvents(data.events || [])
     } catch (err) {
-      showToast((err as Error).message || 'Erreur chargement journal', 'error')
+      showToast((err as Error).message || tr('adminTech.agentTokens.logLoadError'), 'error')
     } finally {
       setAuthLogLoading(false)
     }
@@ -249,15 +252,15 @@ const AgentTokensList: React.FC = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Agents API</span>
+          <span style={{ color: 'var(--text-primary)' }}>{tr('adminTech.agentTokens.title')}</span>
         </div>
         <div className="admin-header">
           <div>
-            <h1>Agents API</h1>
+            <h1>{tr('adminTech.agentTokens.title')}</h1>
             <p className="admin-subtitle">
-              Personal Access Tokens (PAT) pour piloter Venio depuis Kuro et autres outils externes. Cf.{' '}
+              {tr('adminTech.agentTokens.subtitleLead')}{' '}
               <a href="/docs/api-agent.md" target="_blank" rel="noopener noreferrer">
-                spec API
+                {tr('adminTech.agentTokens.specLink')}
               </a>
               .
             </p>
@@ -267,7 +270,7 @@ const AgentTokensList: React.FC = () => {
               <span className="portal-action-icon" aria-hidden>
                 +
               </span>
-              <span className="portal-action-label">Nouveau token</span>
+              <span className="portal-action-label">{tr('adminTech.agentTokens.newToken')}</span>
             </button>
           </div>
         </div>
@@ -283,7 +286,11 @@ const AgentTokensList: React.FC = () => {
                 background: statusFilter === s ? 'var(--accent-bg, rgba(14, 165, 233, 0.15))' : '',
               }}
             >
-              {s === 'ACTIVE' ? 'Actifs' : s === 'REVOKED' ? 'Révoqués' : 'Tous'}
+              {s === 'ACTIVE'
+                ? tr('adminTech.agentTokens.filterActive')
+                : s === 'REVOKED'
+                  ? tr('adminTech.agentTokens.filterRevoked')
+                  : tr('adminTech.agentTokens.filterAll')}
             </button>
           ))}
         </div>
@@ -292,7 +299,7 @@ const AgentTokensList: React.FC = () => {
       <div style={{ marginTop: 24 }}>
         {loading ? (
           <div className="portal-card">
-            <p style={{ color: 'var(--text-secondary)' }}>Chargement…</p>
+            <p style={{ color: 'var(--text-secondary)' }}>{tr('adminTech.agentTokens.loading')}</p>
           </div>
         ) : tokens.length === 0 ? (
           <div className="portal-card">
@@ -300,8 +307,8 @@ const AgentTokensList: React.FC = () => {
               <div className="admin-empty-state-icon">🔑</div>
               <p className="admin-empty-state-text">
                 {statusFilter === 'REVOKED'
-                  ? 'Aucun token révoqué'
-                  : "Aucun token actif. Créez-en un pour que Kuro puisse appeler l'API."}
+                  ? tr('adminTech.agentTokens.emptyRevoked')
+                  : tr('adminTech.agentTokens.emptyActive')}
               </p>
             </div>
           </div>
@@ -369,27 +376,32 @@ const AgentTokensList: React.FC = () => {
                   }}
                 >
                   <div>
-                    <strong>Rate limit :</strong> {t.rateLimitPerMin}/min
+                    <strong>{tr('adminTech.agentTokens.rateLimit')}</strong> {t.rateLimitPerMin}/min
                   </div>
                   <div>
-                    <strong>Dernière utilisation :</strong> {formatDate(t.lastUsedAt)}
+                    <strong>{tr('adminTech.agentTokens.lastUsed')}</strong> {formatDate(t.lastUsedAt)}
                   </div>
                   <div>
-                    <strong>Requêtes :</strong> {t.totalRequests} ({t.totalMutations} mutations)
+                    <strong>{tr('adminTech.agentTokens.requests')}</strong>{' '}
+                    {tr('adminTech.agentTokens.requestsValue', {
+                      requests: t.totalRequests,
+                      mutations: t.totalMutations,
+                    })}
                   </div>
                   {t.expiresAt && (
                     <div>
-                      <strong>Expire le :</strong> {formatDate(t.expiresAt)}
+                      <strong>{tr('adminTech.agentTokens.expiresOn')}</strong> {formatDate(t.expiresAt)}
                     </div>
                   )}
                   <div>
-                    <strong>Créé par :</strong> {t.createdBy?.name || t.createdBy?.email || '—'} ·{' '}
-                    {formatDate(t.createdAt)}
+                    <strong>{tr('adminTech.agentTokens.createdBy')}</strong>{' '}
+                    {t.createdBy?.name || t.createdBy?.email || '—'} · {formatDate(t.createdAt)}
                   </div>
                   {t.status === 'REVOKED' && (
                     <div style={{ color: '#f87171' }}>
-                      <strong>Révoqué :</strong> {formatDate(t.revokedAt)}
-                      {t.revokedBy && ` par ${t.revokedBy.name || t.revokedBy.email}`}
+                      <strong>{tr('adminTech.agentTokens.revokedLabel')}</strong> {formatDate(t.revokedAt)}
+                      {t.revokedBy &&
+                        ` ${tr('adminTech.agentTokens.revokedBy', { name: t.revokedBy.name || t.revokedBy.email || '' })}`}
                     </div>
                   )}
                 </div>
@@ -397,20 +409,20 @@ const AgentTokensList: React.FC = () => {
                 {t.status === 'ACTIVE' && (
                   <div className="admin-card-actions" style={{ marginTop: 12, flexWrap: 'wrap' }}>
                     <button type="button" className="admin-card-btn admin-card-btn--edit" onClick={() => openEdit(t)}>
-                      Modifier
+                      {tr('common.edit')}
                     </button>
                     <button
                       type="button"
                       className="admin-card-btn admin-card-btn--delete"
                       onClick={() => setRevokeTarget(t)}
                     >
-                      Révoquer
+                      {tr('adminTech.agentTokens.revoke')}
                     </button>
                   </div>
                 )}
                 <div className="admin-card-actions" style={{ marginTop: 8 }}>
                   <button type="button" className="admin-card-btn" onClick={() => openAuthLog(t)}>
-                    Journal
+                    {tr('adminTech.agentTokens.log')}
                   </button>
                 </div>
               </div>
@@ -430,8 +442,15 @@ const AgentTokensList: React.FC = () => {
             aria-modal="true"
           >
             <div className="confirm-modal__header">
-              <h2 className="confirm-modal__title">{editId ? 'Modifier le token' : 'Nouveau token agent'}</h2>
-              <button type="button" className="confirm-modal__close" onClick={closeForm} aria-label="Fermer">
+              <h2 className="confirm-modal__title">
+                {editId ? tr('adminTech.agentTokens.editTitle') : tr('adminTech.agentTokens.createTitle')}
+              </h2>
+              <button
+                type="button"
+                className="confirm-modal__close"
+                onClick={closeForm}
+                aria-label={tr('common.close')}
+              >
                 ✕
               </button>
             </div>
@@ -439,13 +458,13 @@ const AgentTokensList: React.FC = () => {
               <div className="confirm-modal__body" style={{ display: 'grid', gap: 16 }}>
                 <label>
                   <div style={{ marginBottom: 4 }}>
-                    Nom <span style={{ color: '#f87171' }}>*</span>
+                    {tr('adminTech.agentTokens.nameLabel')} <span style={{ color: '#f87171' }}>*</span>
                   </div>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="ex. Kuro prod, intégration tierce…"
+                    placeholder={tr('adminTech.agentTokens.namePlaceholder')}
                     className="portal-input"
                     required
                     maxLength={120}
@@ -464,9 +483,9 @@ const AgentTokensList: React.FC = () => {
                     }}
                   >
                     <div>
-                      Scopes <span style={{ color: '#f87171' }}>*</span>{' '}
+                      {tr('adminTech.agentTokens.scopesLabel')} <span style={{ color: '#f87171' }}>*</span>{' '}
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        ({form.scopes.length} sélectionné{form.scopes.length > 1 ? 's' : ''})
+                        {tr('adminTech.agentTokens.selectedCount', { count: form.scopes.length })}
                       </span>
                     </div>
                     <button
@@ -483,7 +502,9 @@ const AgentTokensList: React.FC = () => {
                         cursor: 'pointer',
                       }}
                     >
-                      {allScopesSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+                      {allScopesSelected
+                        ? tr('adminTech.agentTokens.deselectAll')
+                        : tr('adminTech.agentTokens.selectAll')}
                     </button>
                   </div>
                   <div
@@ -509,7 +530,7 @@ const AgentTokensList: React.FC = () => {
                             marginBottom: 4,
                           }}
                         >
-                          {group.module}
+                          {group.module === 'autre' ? tr('adminTech.agentTokens.groupOther') : group.module}
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                           {group.scopes.map((s) => (
@@ -548,7 +569,7 @@ const AgentTokensList: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <label>
-                    <div style={{ marginBottom: 4 }}>Rate limit (req/min)</div>
+                    <div style={{ marginBottom: 4 }}>{tr('adminTech.agentTokens.rateLimitLabel')}</div>
                     <input
                       type="number"
                       min={1}
@@ -564,7 +585,7 @@ const AgentTokensList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    <div style={{ marginBottom: 4 }}>Expiration (optionnel)</div>
+                    <div style={{ marginBottom: 4 }}>{tr('adminTech.agentTokens.expirationLabel')}</div>
                     <input
                       type="date"
                       value={form.expiresAt}
@@ -575,11 +596,11 @@ const AgentTokensList: React.FC = () => {
                 </div>
 
                 <label>
-                  <div style={{ marginBottom: 4 }}>Notes (optionnel)</div>
+                  <div style={{ marginBottom: 4 }}>{tr('adminTech.agentTokens.notesLabel')}</div>
                   <textarea
                     value={form.notes}
                     onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                    placeholder="Contexte d'utilisation, qui a accès au secret, etc."
+                    placeholder={tr('adminTech.agentTokens.notesPlaceholder')}
                     className="portal-input"
                     rows={3}
                     maxLength={1000}
@@ -593,14 +614,18 @@ const AgentTokensList: React.FC = () => {
                   onClick={closeForm}
                   disabled={saving}
                 >
-                  Annuler
+                  {tr('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
                   disabled={saving}
                 >
-                  {saving ? 'Enregistrement…' : editId ? 'Mettre à jour' : 'Créer le token'}
+                  {saving
+                    ? tr('adminTech.agentTokens.saving')
+                    : editId
+                      ? tr('adminTech.agentTokens.update')
+                      : tr('adminTech.agentTokens.create')}
                 </button>
               </div>
             </form>
@@ -622,14 +647,14 @@ const AgentTokensList: React.FC = () => {
       {/* Confirmation révocation */}
       <ConfirmModal
         isOpen={revokeTarget !== null}
-        title="Révoquer le token"
+        title={tr('adminTech.agentTokens.revokeTitle')}
         message={
           revokeTarget
-            ? `Révoquer "${revokeTarget.name}" (${revokeTarget.prefix}…) ? Cette action est irréversible. Le token ne pourra plus appeler l'API.`
+            ? tr('adminTech.agentTokens.revokeMessage', { name: revokeTarget.name, prefix: revokeTarget.prefix })
             : ''
         }
-        confirmLabel="Révoquer"
-        cancelLabel="Annuler"
+        confirmLabel={tr('adminTech.agentTokens.revoke')}
+        cancelLabel={tr('common.cancel')}
         variant="danger"
         onConfirm={handleRevoke}
         onCancel={() => setRevokeTarget(null)}

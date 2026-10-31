@@ -1,12 +1,16 @@
 import React, { type FormEvent } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate as formatLocaleDate } from '../../../i18n/format'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
 import type { PhaseStatus, ProjectItem, ProjectPhase } from '../../../types/project.types'
 import type { PhaseForm, PhaseTransition } from './hooks/useProjectPhases'
 
-const PHASE_STATUS_LABELS: Record<PhaseStatus, string> = {
-  A_VENIR: 'À venir',
-  EN_COURS: 'En cours',
-  EN_ATTENTE_VALIDATION: 'En attente de validation client',
-  TERMINEE: 'Terminée',
+const PHASE_STATUS_LABEL_KEYS: Record<PhaseStatus, MessageKey> = {
+  A_VENIR: 'projects.phases.statusUpcoming',
+  EN_COURS: 'projects.phases.statusInProgress',
+  EN_ATTENTE_VALIDATION: 'projects.phases.statusAwaitingValidation',
+  TERMINEE: 'projects.phases.statusDone',
 }
 
 const PHASE_STATUS_MODIFIERS: Record<PhaseStatus, string> = {
@@ -17,28 +21,28 @@ const PHASE_STATUS_MODIFIERS: Record<PhaseStatus, string> = {
 }
 
 const formatDate = (value: string): string =>
-  new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  formatLocaleDate(value, { day: 'numeric', month: 'long', year: 'numeric' })
 
 /** Transitions proposées par statut — miroir exact du tableau backend. */
 function transitionsFor(phase: ProjectPhase): Array<{ label: string; transition: PhaseTransition }> {
   switch (phase.status) {
     case 'A_VENIR':
-      return [{ label: 'Démarrer', transition: 'start' }]
+      return [{ label: translate('projects.phases.start'), transition: 'start' }]
     case 'EN_COURS':
       return phase.requiresClientValidation
         ? [
-            { label: 'Demander la validation client', transition: 'request-validation' },
-            { label: 'Remettre à venir', transition: 'revert' },
+            { label: translate('projects.phases.requestValidation'), transition: 'request-validation' },
+            { label: translate('projects.phases.revert'), transition: 'revert' },
           ]
         : [
-            { label: 'Marquer terminée', transition: 'complete' },
-            { label: 'Remettre à venir', transition: 'revert' },
+            { label: translate('projects.phases.complete'), transition: 'complete' },
+            { label: translate('projects.phases.revert'), transition: 'revert' },
           ]
     case 'EN_ATTENTE_VALIDATION':
-      return [{ label: 'Annuler la demande', transition: 'cancel-validation-request' }]
+      return [{ label: translate('projects.phases.cancelRequest'), transition: 'cancel-validation-request' }]
     case 'TERMINEE':
       // Une étape validée par le client ne se rouvre pas (hors périmètre assumé).
-      return phase.validation.validatedAt ? [] : [{ label: 'Rouvrir', transition: 'revert' }]
+      return phase.validation.validatedAt ? [] : [{ label: translate('projects.phases.reopen'), transition: 'revert' }]
     default:
       return []
   }
@@ -75,6 +79,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
   onMovePhase,
   onResolveRevision,
 }) => {
+  const { t } = useI18n()
   const toggleLinkedItem = (itemId: string) => {
     const next = phaseForm.linkedItems.includes(itemId)
       ? phaseForm.linkedItems.filter((id) => id !== itemId)
@@ -84,9 +89,9 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
 
   return (
     <div className="admin-form-section" style={{ marginTop: 24 }}>
-      <h2>Étapes de production</h2>
+      <h2>{t('projects.phases.heading')}</h2>
 
-      {phases.length === 0 && <p className="client-phases-empty">Aucune étape pour ce projet.</p>}
+      {phases.length === 0 && <p className="client-phases-empty">{t('projects.phases.empty')}</p>}
 
       {phases.map((phase, index) => {
         const validated = Boolean(phase.validation.validatedAt)
@@ -99,18 +104,27 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                 {index + 1} · {phase.title}
               </span>
               <span className={`client-phase-badge ${PHASE_STATUS_MODIFIERS[phase.status]}`}>
-                {PHASE_STATUS_LABELS[phase.status]}
+                {t(PHASE_STATUS_LABEL_KEYS[phase.status])}
               </span>
-              {phase.requiresClientValidation && <span className="client-phase-badge">Validation client requise</span>}
-              {phase.dueAt && <span className="client-phase-meta">Échéance : {formatDate(phase.dueAt)}</span>}
+              {phase.requiresClientValidation && (
+                <span className="client-phase-badge">{t('projects.phases.clientValidationRequired')}</span>
+              )}
+              {phase.dueAt && (
+                <span className="client-phase-meta">
+                  {t('projects.phases.dueDate', { date: formatDate(phase.dueAt) })}
+                </span>
+              )}
               {validated && (
                 <span className="client-phase-meta">
-                  Validée par {phase.validation.validatedByName} le {formatDate(phase.validation.validatedAt as string)}
+                  {t('projects.phases.validatedBy', {
+                    name: phase.validation.validatedByName,
+                    date: formatDate(phase.validation.validatedAt as string),
+                  })}
                 </span>
               )}
               {openRevisions.length > 0 && (
                 <span className="client-phase-badge is-waiting">
-                  {openRevisions.length} retouche{openRevisions.length > 1 ? 's' : ''} en attente
+                  {t('projects.phases.openRevisions', { count: openRevisions.length })}
                 </span>
               )}
             </div>
@@ -122,7 +136,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                 {phase.linkedItems.map((item) => (
                   <li key={item._id} className="client-phase-meta">
                     {item.title}
-                    {item.isVisible === false && <strong> — Masqué au client</strong>}
+                    {item.isVisible === false && <strong>{t('projects.phases.hiddenFromClient')}</strong>}
                   </li>
                 ))}
               </ul>
@@ -146,7 +160,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                   onClick={() => onMovePhase(phase._id, -1)}
                   disabled={index === 0}
                 >
-                  Monter
+                  {t('projects.phases.moveUp')}
                 </button>
                 <button
                   type="button"
@@ -154,7 +168,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                   onClick={() => onMovePhase(phase._id, 1)}
                   disabled={index === phases.length - 1}
                 >
-                  Descendre
+                  {t('projects.phases.moveDown')}
                 </button>
                 <button
                   type="button"
@@ -162,7 +176,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                   onClick={() => onStartEdit(phase)}
                   disabled={validated}
                 >
-                  Modifier
+                  {t('projects.phases.edit')}
                 </button>
                 <button
                   type="button"
@@ -170,7 +184,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                   onClick={() => onDeletePhase(phase._id)}
                   disabled={validated}
                 >
-                  Supprimer
+                  {t('projects.phases.delete')}
                 </button>
               </div>
             )}
@@ -185,7 +199,9 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                       {revision.requestedByName} · {formatDate(revision.createdAt)}
                     </span>
                     <span className={`client-phase-badge ${revision.resolvedAt ? 'is-done' : 'is-waiting'}`}>
-                      {revision.resolvedAt ? `Traitée le ${formatDate(revision.resolvedAt)}` : 'En attente'}
+                      {revision.resolvedAt
+                        ? t('projects.phases.resolvedOn', { date: formatDate(revision.resolvedAt) })
+                        : t('projects.phases.pending')}
                     </span>
                     <p className="client-phase-description">{revision.comment}</p>
                     {canManagePhases && !revision.resolvedAt && (
@@ -194,7 +210,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                         className="client-phase-button client-phase-button-ghost"
                         onClick={() => onResolveRevision(phase._id, revision._id)}
                       >
-                        Marquer traitée
+                        {t('projects.phases.markResolved')}
                       </button>
                     )}
                   </div>
@@ -207,8 +223,8 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
 
       {canManagePhases && (
         <form onSubmit={onSubmitPhase} className="admin-phase-form">
-          <h3>{editingPhaseId ? 'Modifier l’étape' : 'Ajouter une étape'}</h3>
-          <label htmlFor="phase-title">Titre de l’étape</label>
+          <h3>{editingPhaseId ? t('projects.phases.editStep') : t('projects.phases.addStepHeading')}</h3>
+          <label htmlFor="phase-title">{t('projects.phases.stepTitle')}</label>
           <input
             id="phase-title"
             className="portal-input"
@@ -217,7 +233,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
             required
           />
 
-          <label htmlFor="phase-description">Description</label>
+          <label htmlFor="phase-description">{t('projects.phases.description')}</label>
           <textarea
             id="phase-description"
             className="portal-input"
@@ -226,7 +242,7 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
             onChange={(event) => setPhaseForm({ ...phaseForm, description: event.target.value })}
           />
 
-          <label htmlFor="phase-due">Échéance indicative</label>
+          <label htmlFor="phase-due">{t('projects.phases.indicativeDue')}</label>
           <input
             id="phase-due"
             type="date"
@@ -241,12 +257,12 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
               checked={phaseForm.requiresClientValidation}
               onChange={(event) => setPhaseForm({ ...phaseForm, requiresClientValidation: event.target.checked })}
             />{' '}
-            Validation client requise
+            {t('projects.phases.clientValidationRequired')}
           </label>
 
           <fieldset className="admin-phase-items-picker">
-            <legend>Livrables liés</legend>
-            {items.length === 0 && <span className="client-phase-meta">Aucun livrable dans ce projet.</span>}
+            <legend>{t('projects.phases.linkedDeliverables')}</legend>
+            {items.length === 0 && <span className="client-phase-meta">{t('projects.phases.noDeliverable')}</span>}
             {items.map((item) => (
               <label key={item._id} className="client-phase-meta">
                 <input
@@ -255,18 +271,18 @@ const ProjectPhasesTab: React.FC<ProjectPhasesTabProps> = ({
                   onChange={() => toggleLinkedItem(item._id)}
                 />{' '}
                 {item.title}
-                {!item.isVisible && <strong> — Masqué au client</strong>}
+                {!item.isVisible && <strong>{t('projects.phases.hiddenFromClient')}</strong>}
               </label>
             ))}
           </fieldset>
 
           <div className="client-phase-buttons">
             <button type="submit" className="client-phase-button">
-              {editingPhaseId ? 'Enregistrer' : 'Ajouter l’étape'}
+              {editingPhaseId ? t('projects.phases.save') : t('projects.phases.addStep')}
             </button>
             {editingPhaseId && (
               <button type="button" className="client-phase-button client-phase-button-ghost" onClick={onCancelEdit}>
-                Annuler
+                {t('projects.phases.cancel')}
               </button>
             )}
           </div>

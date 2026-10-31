@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate } from '../../../../i18n'
 import { fetchPilotage } from '../../../../services/pilotage'
 import { apiFetch } from '../../../../lib/api'
 import type { PilotagePeriod, PilotageResponse } from '../../../../types/pilotage.types'
@@ -18,6 +20,7 @@ import './PilotageSection.css'
  * taux de passage.
  */
 const PilotageSection: React.FC = () => {
+  const { t } = useI18n()
   const [period, setPeriod] = useState<PilotagePeriod>('90d')
   const [data, setData] = useState<PilotageResponse | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
@@ -30,7 +33,7 @@ const PilotageSection: React.FC = () => {
       setData(await fetchPilotage(period))
       setError('')
     } catch (err) {
-      setError((err as Error).message || 'Impossible de charger le pilotage commercial')
+      setError((err as Error).message || translate('adminTech.pilotage.loadError'))
     } finally {
       setLoading(false)
     }
@@ -55,13 +58,10 @@ const PilotageSection: React.FC = () => {
     <section className="analytics-chart-card pilotage-section" style={{ marginTop: 24 }}>
       <div className="pilotage-header">
         <div>
-          <h3>Pilotage commercial</h3>
-          <p className="pilotage-subtext">
-            Sur les leads créés pendant la période — un taux mesuré sur deux populations différentes ne voudrait rien
-            dire.
-          </p>
+          <h3>{t('adminTech.pilotage.title')}</h3>
+          <p className="pilotage-subtext">{t('adminTech.pilotage.subtext')}</p>
         </div>
-        <div className="pilotage-periods" role="group" aria-label="Période d'analyse">
+        <div className="pilotage-periods" role="group" aria-label={t('adminTech.pilotage.periodLabel')}>
           {PILOTAGE_PERIODS.map((option) => (
             <button
               key={option.key}
@@ -69,7 +69,7 @@ const PilotageSection: React.FC = () => {
               className={period === option.key ? 'active' : ''}
               onClick={() => setPeriod(option.key)}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           ))}
         </div>
@@ -78,42 +78,42 @@ const PilotageSection: React.FC = () => {
       {error && <div className="admin-error">{error}</div>}
 
       {loading && !data ? (
-        <div className="admin-loading">Chargement du pilotage…</div>
+        <div className="admin-loading">{t('adminTech.pilotage.loading')}</div>
       ) : data ? (
         <div className="pilotage-grid">
           <div className="pilotage-block">
-            <h4 className="pilotage-subtitle">Entonnoir — {data.funnel.total} leads</h4>
+            <h4 className="pilotage-subtitle">{t('adminTech.pilotage.funnelTitle', { count: data.funnel.total })}</h4>
             <FunnelChart stages={data.funnel.stages} total={data.funnel.total} />
             <CoverageNotice coverage={data.coverage} />
           </div>
 
           <div className="pilotage-block">
-            <h4 className="pilotage-subtitle">Vélocité</h4>
+            <h4 className="pilotage-subtitle">{t('adminTech.pilotage.velocityTitle')}</h4>
             <VelocityPanel velocity={data.velocity} />
           </div>
 
           <div className="pilotage-block pilotage-block-wide">
-            <h4 className="pilotage-subtitle">Chiffre d'affaires</h4>
+            <h4 className="pilotage-subtitle">{t('adminTech.pilotage.revenueTitle')}</h4>
             <PipelinePanel pipeline={data.pipeline} revenue={data.revenue} />
           </div>
 
           <div className="pilotage-block pilotage-block-wide">
-            <h4 className="pilotage-subtitle">Affaires perdues — {data.losses.total}</h4>
+            <h4 className="pilotage-subtitle">{t('adminTech.pilotage.lossesTitle', { count: data.losses.total })}</h4>
             <LossPanel losses={data.losses} />
           </div>
 
           <div className="pilotage-block pilotage-block-wide">
-            <h4 className="pilotage-subtitle">Par source</h4>
-            <PerformanceTable rows={data.bySource} emptyLabel="Aucun lead sur la période." />
+            <h4 className="pilotage-subtitle">{t('adminTech.pilotage.bySource')}</h4>
+            <PerformanceTable rows={data.bySource} emptyLabel={t('adminTech.pilotage.noLeads')} />
           </div>
 
           {data.byOwner && (
             <div className="pilotage-block pilotage-block-wide">
-              <h4 className="pilotage-subtitle">Par commercial</h4>
+              <h4 className="pilotage-subtitle">{t('adminTech.pilotage.byOwner')}</h4>
               <PerformanceTable
                 rows={data.byOwner}
                 resolveLabel={resolveOwner}
-                emptyLabel="Aucun lead sur la période."
+                emptyLabel={t('adminTech.pilotage.noLeads')}
               />
             </div>
           )}

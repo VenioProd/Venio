@@ -1,3 +1,5 @@
+import { formatDateTime } from '../../../i18n/format'
+
 /**
  * Types et helpers partagés pour les composants de la page Agent API.
  * Cf. docs/api-agent.md pour la spec complète.
@@ -68,9 +70,7 @@ export const emptyForm: FormState = {
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
   try {
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+    return formatDateTime(iso, { dateStyle: 'short', timeStyle: 'short' }) || '—'
   } catch {
     return '—'
   }

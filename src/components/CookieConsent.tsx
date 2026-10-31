@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../context/I18nContext'
 import './CookieConsent.css'
 
 const COOKIE_KEY = 'venio_cookie_consent'
 
 const CookieConsent = () => {
+  const { t } = useI18n()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -32,17 +34,14 @@ const CookieConsent = () => {
     <div className="cookie-banner">
       <div className="cookie-banner-content">
         <p>
-          Ce site utilise uniquement des cookies techniques necessaires a son fonctionnement.
-          Aucun cookie de tracking ou publicitaire n'est utilise.
-          Pour en savoir plus, consultez notre{' '}
-          <Link to="/confidentialite">politique de confidentialite</Link>.
+          {t('pubHome.cookie.text')} <Link to="/confidentialite">{t('pubHome.cookie.link')}</Link>.
         </p>
         <div className="cookie-banner-actions">
           <button className="cookie-btn cookie-btn--accept" onClick={handleAccept}>
-            Accepter
+            {t('pubHome.cookie.accept')}
           </button>
           <button className="cookie-btn cookie-btn--refuse" onClick={handleRefuse}>
-            Refuser
+            {t('pubHome.cookie.refuse')}
           </button>
         </div>
       </div>

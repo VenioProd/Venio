@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
+import { useI18n } from '../../context/I18nContext'
+import { formatNumber } from '../../i18n/format'
 import {
   commercialApi,
   formatCents,
-  formatDate,
+  formatDay,
   type CommissionTotals,
   type RepClient,
   type RepCommission,
 } from '../../services/externalSales'
 
 export const CommercialClients = () => {
+  const { t } = useI18n()
   const [clients, setClients] = useState<RepClient[] | null>(null)
   const [error, setError] = useState('')
 
@@ -20,13 +23,11 @@ export const CommercialClients = () => {
   }, [])
 
   if (error) return <div className="admin-error">{error}</div>
-  if (!clients) return <div className="admin-loading">Chargement…</div>
+  if (!clients) return <div className="admin-loading">{t('commercial.loading')}</div>
   if (clients.length === 0) {
     return (
       <div className="admin-empty-state">
-        <p className="admin-empty-state-text">
-          Vos clients apparaîtront ici dès qu’un de vos leads transmis sera signé.
-        </p>
+        <p className="admin-empty-state-text">{t('commercial.clients.empty')}</p>
       </div>
     )
   }
@@ -35,11 +36,11 @@ export const CommercialClients = () => {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Client</th>
-            <th>Contact</th>
-            <th>Signé le</th>
-            <th className="commercial-amount">Encaissé HT</th>
-            <th className="commercial-amount">Votre commission</th>
+            <th>{t('commercial.clients.colClient')}</th>
+            <th>{t('commercial.clients.colContact')}</th>
+            <th>{t('commercial.clients.colSigned')}</th>
+            <th className="commercial-amount">{t('commercial.clients.colCollected')}</th>
+            <th className="commercial-amount">{t('commercial.clients.colCommission')}</th>
           </tr>
         </thead>
         <tbody>
@@ -50,7 +51,7 @@ export const CommercialClients = () => {
                 {client.name}
                 <div className="commercial-muted">{client.email}</div>
               </td>
-              <td>{formatDate(client.signedAt)}</td>
+              <td>{formatDay(client.signedAt)}</td>
               <td className="commercial-amount">{formatCents(client.collectedHtCents)}</td>
               <td className="commercial-amount">{formatCents(client.commissionCents)}</td>
             </tr>
@@ -62,6 +63,7 @@ export const CommercialClients = () => {
 }
 
 export const CommercialCommissions = () => {
+  const { t } = useI18n()
   const [data, setData] = useState<{ rateBp: number; totals: CommissionTotals; commissions: RepCommission[] } | null>(
     null,
   )
@@ -75,60 +77,60 @@ export const CommercialCommissions = () => {
   }, [])
 
   if (error) return <div className="admin-error">{error}</div>
-  if (!data) return <div className="admin-loading">Chargement…</div>
+  if (!data) return <div className="admin-loading">{t('commercial.loading')}</div>
   return (
     <>
       <div className="commercial-stats">
         <div className="commercial-stat">
-          <span className="commercial-muted">Encaissé HT sur vos clients</span>
+          <span className="commercial-muted">{t('commercial.commissions.collected')}</span>
           <span className="commercial-stat-value">{formatCents(data.totals.collectedHtCents)}</span>
         </div>
         <div className="commercial-stat">
-          <span className="commercial-muted">Commissions à percevoir</span>
+          <span className="commercial-muted">{t('commercial.commissions.due')}</span>
           <span className="commercial-stat-value">{formatCents(data.totals.dueCents)}</span>
         </div>
         <div className="commercial-stat">
-          <span className="commercial-muted">Commissions versées</span>
+          <span className="commercial-muted">{t('commercial.commissions.paid')}</span>
           <span className="commercial-stat-value">{formatCents(data.totals.paidCents)}</span>
         </div>
       </div>
-      <p className="commercial-muted">
-        {data.rateBp / 100} % du HT réellement encaissé. Un remboursement au client réduit la commission d’autant.
-      </p>
+      <p className="commercial-muted">{t('commercial.commissions.rule', { rate: formatNumber(data.rateBp / 100) })}</p>
       {data.commissions.length === 0 ? (
         <div className="admin-empty-state">
-          <p className="admin-empty-state-text">Aucune commission pour l’instant.</p>
+          <p className="admin-empty-state-text">{t('commercial.commissions.empty')}</p>
         </div>
       ) : (
         <div className="admin-table-wrapper">
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Client · facture</th>
-                <th className="commercial-amount">Encaissé HT</th>
-                <th className="commercial-amount">Commission</th>
-                <th>Statut</th>
+                <th>{t('commercial.commissions.colDate')}</th>
+                <th>{t('commercial.commissions.colInvoice')}</th>
+                <th className="commercial-amount">{t('commercial.commissions.colCollected')}</th>
+                <th className="commercial-amount">{t('commercial.commissions.colAmount')}</th>
+                <th>{t('commercial.commissions.colStatus')}</th>
               </tr>
             </thead>
             <tbody>
               {data.commissions.map((line) => (
                 <tr key={line._id}>
-                  <td>{formatDate(line.receivedAt)}</td>
+                  <td>{formatDay(line.receivedAt)}</td>
                   <td>
                     {line.clientName}
                     <div className="commercial-muted">
                       {line.invoiceNumber}
-                      {line.kind === 'REFUND' && ' · remboursement'}
+                      {line.kind === 'REFUND' && ` · ${t('commercial.commissions.refund')}`}
                     </div>
                   </td>
                   <td className="commercial-amount">{formatCents(line.baseHtCents)}</td>
                   <td className="commercial-amount">{formatCents(line.amountCents)}</td>
                   <td>
                     {line.status === 'PAID' ? (
-                      <span className="admin-badge status-termine">Versée le {formatDate(line.paidAt)}</span>
+                      <span className="admin-badge status-termine">
+                        {t('commercial.commissions.paidOn', { date: formatDay(line.paidAt) })}
+                      </span>
                     ) : (
-                      <span className="admin-badge status-en-attente">À verser</span>
+                      <span className="admin-badge status-en-attente">{t('commercial.commissions.toPay')}</span>
                     )}
                   </td>
                 </tr>

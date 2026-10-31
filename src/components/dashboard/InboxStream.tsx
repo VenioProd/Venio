@@ -5,8 +5,10 @@ import { InboxItem, InboxActionKind, InboxResponse } from './types'
 import InboxCard from './InboxCard'
 import InboxFilters, { InboxFilter } from './InboxFilters'
 import SnoozePopover from './SnoozePopover'
+import { useI18n } from '../../context/I18nContext'
 
 const InboxStream = () => {
+  const { t } = useI18n()
   const [data, setData] = useState<InboxResponse | null>(null)
   const [filter, setFilter] = useState<InboxFilter>('all')
   const [loading, setLoading] = useState(true)
@@ -53,7 +55,7 @@ const InboxStream = () => {
           })
           break
         case 'reject': {
-          const c = window.prompt('Motif du rejet :') ?? ''
+          const c = window.prompt(t('shared.dash.rejectReasonPrompt')) ?? ''
           await apiFetch(`/api/admin/decisions/${item.sourceId}/reject`, {
             method: 'POST',
             body: JSON.stringify({ comment: c }),
@@ -77,7 +79,7 @@ const InboxStream = () => {
       }
       await fetchInbox()
     } catch (e) {
-      window.alert((e as Error).message || 'Erreur')
+      window.alert((e as Error).message || t('common.error'))
     }
   }
 
@@ -127,13 +129,13 @@ const InboxStream = () => {
     return () => window.removeEventListener('keydown', onKey)
   }, [filteredItems, focusedIndex, focusedItem])
 
-  if (loading && !data) return <p style={{ padding: 20, color: 'var(--text-muted)' }}>Chargement…</p>
+  if (loading && !data) return <p style={{ padding: 20, color: 'var(--text-muted)' }}>{t('shared.dash.loading')}</p>
 
   return (
     <div className="ix-stream">
       <header className="ix-stream__header">
-        <span className="ix-stream__title">⚡ INBOX — {data?.counts.all ?? 0} à traiter</span>
-        <span className="ix-stream__shortcut">↑↓ · A/R · S snooze · ⏎ ouvrir · F fait</span>
+        <span className="ix-stream__title">{t('shared.dash.inboxTitle', { count: data?.counts.all ?? 0 })}</span>
+        <span className="ix-stream__shortcut">{t('shared.dash.inboxShortcuts')}</span>
       </header>
       <InboxFilters
         value={filter}
@@ -142,7 +144,9 @@ const InboxStream = () => {
         onChange={setFilter}
       />
       {filteredItems.length === 0 ? (
-        <p style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>🎉 Inbox vide</p>
+        <p style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+          {t('shared.dash.inboxEmpty')}
+        </p>
       ) : (
         filteredItems.map((it) => (
           <InboxCard key={it.id} item={it} focused={it.id === focusedId} onAction={handleAction} />

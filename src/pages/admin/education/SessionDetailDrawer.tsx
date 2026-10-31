@@ -1,11 +1,12 @@
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useCallback, useEffect, useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { X, ChevronDown, ChevronRight, Play } from 'lucide-react'
 import {
   ATTENDANCE_COLOR,
   ATTENDANCE_LABEL,
   SESSION_STATUS_LABEL,
-  formatDate,
   getSession,
   studentDisplayName,
   updateAttendance,
@@ -16,6 +17,7 @@ import {
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionLiveMode } from './SessionLiveMode'
+import { formatShortDate as formatDate } from './eduFormat'
 import { DocumentsPanel } from './DocumentsPanel'
 import { useEducationAutosave } from './useEducationAutosave'
 import { AutosaveStatus } from './AutosaveStatus'
@@ -59,6 +61,7 @@ export function SessionDetailDrawer({
   onClose: () => void
   onChanged: () => void
 }) {
+  const { t } = useI18n()
   const [session, setSession] = useState<EducationSession | null>(null)
   const { stage, restore, flush, status: recapSaveStatus, error: recapSaveError } = useEducationAutosave()
   const onClose = useCallback(async () => {
@@ -100,7 +103,7 @@ export function SessionDetailDrawer({
       setDuties(restored.duties || [])
       setStatus(r.session.status)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger la séance')
+      setError(err instanceof Error ? err.message : translate('eduB.sessionDrawer.loadFailed'))
     }
   }, [sessionId, restore])
 
@@ -115,7 +118,7 @@ export function SessionDetailDrawer({
         <div className="edu-drawer">
           <div className="edu-drawer-head">
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-              Séance
+              {t('eduB.sessionDrawer.session')}
             </h2>
             <button className="edu-btn-icon" onClick={onClose}>
               <X size={18} />
@@ -127,7 +130,7 @@ export function SessionDetailDrawer({
                 {error}
               </div>
             ) : (
-              <p className="edu-sub">Chargement…</p>
+              <p className="edu-sub">{t('eduB.shared.loading')}</p>
             )}
           </div>
         </div>
@@ -149,7 +152,7 @@ export function SessionDetailDrawer({
       onChanged()
     } catch (err) {
       setSaveState('error')
-      setError(err instanceof Error ? err.message : 'Erreur de sauvegarde du statut')
+      setError(err instanceof Error ? err.message : translate('eduB.sessionDrawer.statusSaveFailed'))
     }
   }
 
@@ -170,9 +173,9 @@ export function SessionDetailDrawer({
               onClick={async () => {
                 if (await flush()) setLiveOpen(true)
               }}
-              title="Ouvrir le mode séance (présence un-tap)"
+              title={t('eduB.sessionDrawer.liveModeTitle')}
             >
-              <Play size={14} /> Mode séance
+              <Play size={14} /> {t('eduB.live.mode')}
             </button>
             <select
               className="edu-select"
@@ -203,14 +206,14 @@ export function SessionDetailDrawer({
                   refresh()
                 }}
               >
-                Recharger
+                {t('eduB.shared.reload')}
               </button>
             </div>
           )}
 
           {postBanner && (
             <div className="edu-postflow-banner" role="status">
-              <span style={{ flex: 1 }}>Lancer l'enchaînement post-séance ?</span>
+              <span style={{ flex: 1 }}>{t('eduB.sessionDrawer.postflowPrompt')}</span>
               <button
                 className="edu-btn"
                 onClick={() => {
@@ -218,23 +221,23 @@ export function SessionDetailDrawer({
                   setPostFlowOpen(true)
                 }}
               >
-                Lancer
+                {t('eduB.sessionDrawer.launch')}
               </button>
               <button className="edu-btn ghost" onClick={() => setPostBanner(false)}>
-                Ignorer
+                {t('eduB.sessionDrawer.dismiss')}
               </button>
             </div>
           )}
 
           <AutosaveStatus status={recapSaveStatus} error={recapSaveError} onRetry={flush} />
-          <h2 className="edu-h2">Compte-rendu de séance</h2>
+          <h2 className="edu-h2">{t('eduB.shared.recapTitle')}</h2>
           <textarea
             className="edu-textarea"
             value={recap}
             onChange={(e) => changeRecap(e.target.value)}
-            placeholder="Ce qui s'est passé, ce qu'il faut retenir, les points clés pour la prochaine séance…"
+            placeholder={t('eduB.sessionDrawer.recapPlaceholder')}
             style={{ minHeight: 200 }}
-            aria-label="Compte-rendu de séance"
+            aria-label={t('eduB.shared.recapTitle')}
           />
           <EducationAiDraftPanel
             mode="session_synthesis"
@@ -289,7 +292,7 @@ export function SessionDetailDrawer({
             aria-expanded={attendanceOpen}
           >
             {attendanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span>Présence (note légère)</span>
+            <span>{t('eduB.sessionDrawer.attendanceToggle')}</span>
             <span className="edu-side-badge">
               {attendanceFilled} / {session.attendance.length}
             </span>
@@ -297,16 +300,16 @@ export function SessionDetailDrawer({
           {attendanceOpen && (
             <div style={{ marginTop: 10 }}>
               <p className="edu-sub" style={{ marginBottom: 8 }}>
-                Optionnel — pour ton propre suivi pédagogique. Ce n'est pas un bloc administratif.
+                {t('eduB.sessionDrawer.attendanceHint')}
               </p>
               {session.attendance.length === 0 ? (
-                <div className="edu-empty">Aucun étudiant inscrit dans la classe.</div>
+                <div className="edu-empty">{t('eduB.shared.noStudents')}</div>
               ) : (
                 <table className="edu-table">
                   <thead>
                     <tr>
-                      <th>Étudiant</th>
-                      <th>État</th>
+                      <th>{t('eduB.cols.student')}</th>
+                      <th>{t('eduB.cols.state')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -332,7 +335,11 @@ export function SessionDetailDrawer({
                                   setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
                                 } catch (err) {
                                   setSaveState('error')
-                                  setError(err instanceof Error ? err.message : 'Erreur de sauvegarde de la présence')
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : translate('eduB.sessionDrawer.attendanceSaveFailed'),
+                                  )
                                 }
                               }}
                             >
@@ -354,13 +361,13 @@ export function SessionDetailDrawer({
 
           {/* Supports de séance (documents uploadés) */}
           <h2 className="edu-h2" style={{ marginTop: 18 }}>
-            Supports
+            {t('eduB.sessionDrawer.materials')}
           </h2>
           <DocumentsPanel parentType="session" parentId={session._id} />
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
         </div>
       </div>

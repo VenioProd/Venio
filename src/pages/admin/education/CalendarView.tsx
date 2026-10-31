@@ -17,34 +17,16 @@ import {
   type AppleCalendarEvent,
   type AppleCalendarPayload,
 } from '../../../services/educationCalendar'
-import {
-  createSession,
-  listSessions,
-  formatDate,
-  type EducationClass,
-  type EducationSession,
-} from '../../../services/education'
+import { createSession, listSessions, type EducationClass, type EducationSession } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate as formatIntlDate, formatDateTime } from '../../../i18n/format'
 import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
+import { formatShortDate } from './eduFormat'
+import { formatClock, formatRange, messageWithNode, monthName, weekdayShort } from './calendarFormat'
 
 type Mode = 'week' | 'month'
-
-const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-const DAY_NAMES_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-const MONTH_NAMES = [
-  'Janvier',
-  'Février',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Août',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Décembre',
-]
 
 function startOfWeek(d: Date): Date {
   const out = new Date(d)
@@ -80,22 +62,6 @@ function formatDayKey(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatRange(start: string, end: string, allDay: boolean): string {
-  if (allDay) return 'Journée entière'
-  return `${formatTime(start)} – ${formatTime(end)}`
-}
-
-function durationLabel(min: number): string {
-  if (min < 60) return `${min} min`
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`
-}
-
 function eventColor(ev: AppleCalendarEvent): string {
   // Couleur stable par école/classe pour aider Raphael à scanner.
   const key = (ev.school || ev.classLabel || ev.title || ev.uid).toLowerCase()
@@ -117,6 +83,7 @@ function groupEventsByDay(events: AppleCalendarEvent[]): Map<string, AppleCalend
 }
 
 export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
+  const { t } = useI18n()
   const [mode, setMode] = useState<Mode>('week')
   const [anchor, setAnchor] = useState<Date>(() => new Date())
   const [payload, setPayload] = useState<AppleCalendarPayload | null>(null)
@@ -147,7 +114,7 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
           setUnconfigured(true)
           setPayload(null)
         } else {
-          setError(e.message || 'Impossible de charger le calendrier Apple.')
+          setError(e.message || translate('eduB.calendar.loadFallback'))
         }
       } finally {
         setLoading(false)
@@ -180,7 +147,7 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
       await load({ refresh: true })
     } catch (err) {
       const e = err as { message?: string }
-      setError(e.message || 'Erreur pendant le rafraîchissement.')
+      setError(e.message || translate('eduB.calendar.refreshFallback'))
     } finally {
       setRefreshing(false)
     }
@@ -191,12 +158,23 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
       const ws = startOfWeek(anchor)
       const we = addDays(ws, 6)
       if (ws.getMonth() === we.getMonth()) {
-        return `Semaine du ${ws.getDate()} – ${we.getDate()} ${MONTH_NAMES[ws.getMonth()]} ${ws.getFullYear()}`
+        return t('eduB.calendar.weekSameMonth', {
+          start: ws.getDate(),
+          end: we.getDate(),
+          month: monthName(ws),
+          year: ws.getFullYear(),
+        })
       }
-      return `${ws.getDate()} ${MONTH_NAMES[ws.getMonth()]} – ${we.getDate()} ${MONTH_NAMES[we.getMonth()]} ${we.getFullYear()}`
+      return t('eduB.calendar.weekRange', {
+        startDay: ws.getDate(),
+        startMonth: monthName(ws),
+        endDay: we.getDate(),
+        endMonth: monthName(we),
+        year: we.getFullYear(),
+      })
     }
-    return `${MONTH_NAMES[anchor.getMonth()]} ${anchor.getFullYear()}`
-  }, [mode, anchor])
+    return t('eduB.calendar.monthYear', { month: monthName(anchor), year: anchor.getFullYear() })
+  }, [mode, anchor, t])
 
   return (
     <div className="edu-cal">
@@ -204,18 +182,28 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
         <div>
           <h1 className="edu-h1">
             <CalendarDays size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            Calendrier pédagogique
+            {t('eduB.calendar.title')}
           </h1>
           <p className="edu-sub">
-            Lecture seule depuis Apple Calendar (iCloud). Cache 15 min.
+            {t('eduB.calendar.subtitle')}
             {payload?.fetchedAt && (
               <>
                 {' '}
-                · Dernier sync :{' '}
-                <strong style={{ color: 'rgba(255,255,255,0.75)' }}>
-                  {new Date(payload.fetchedAt).toLocaleString('fr-FR')}
-                </strong>
-                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>(cache)</span>}
+                {messageWithNode(
+                  'eduB.calendar.lastSync',
+                  'date',
+                  <strong style={{ color: 'rgba(255,255,255,0.75)' }}>
+                    {formatDateTime(payload.fetchedAt, {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                  </strong>,
+                )}
+                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>{t('eduB.calendar.cache')}</span>}
               </>
             )}
           </p>
@@ -226,29 +214,34 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
             onClick={() => setMode('week')}
             aria-pressed={mode === 'week'}
           >
-            Semaine
+            {t('eduB.calendar.week')}
           </button>
           <button
             className={`edu-btn ghost ${mode === 'month' ? 'is-active' : ''}`}
             onClick={() => setMode('month')}
             aria-pressed={mode === 'month'}
           >
-            Mois
+            {t('eduB.calendar.month')}
           </button>
-          <button className="edu-btn ghost" onClick={manualRefresh} disabled={refreshing} title="Forcer un sync iCloud">
-            <RefreshCw size={14} className={refreshing ? 'edu-spin' : ''} /> Sync
+          <button
+            className="edu-btn ghost"
+            onClick={manualRefresh}
+            disabled={refreshing}
+            title={t('eduB.calendar.syncTitle')}
+          >
+            <RefreshCw size={14} className={refreshing ? 'edu-spin' : ''} /> {t('eduB.calendar.sync')}
           </button>
         </div>
       </div>
 
       <div className="edu-row edu-cal-nav">
-        <button className="edu-btn-icon" onClick={goPrev} aria-label="Précédent">
+        <button className="edu-btn-icon" onClick={goPrev} aria-label={t('common.previous')}>
           <ChevronLeft size={16} />
         </button>
         <button className="edu-btn ghost" onClick={goToday}>
-          Aujourd'hui
+          {t('eduB.calendar.today')}
         </button>
-        <button className="edu-btn-icon" onClick={goNext} aria-label="Suivant">
+        <button className="edu-btn-icon" onClick={goNext} aria-label={t('common.next')}>
           <ChevronRight size={16} />
         </button>
         <div className="edu-cal-label">{headerLabel}</div>
@@ -258,10 +251,13 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
         <div className="edu-cal-state" role="alert">
           <AlertTriangle size={18} />
           <div>
-            <div style={{ fontWeight: 600 }}>Calendrier Apple non configuré côté serveur.</div>
+            <div style={{ fontWeight: 600 }}>{t('eduB.calendar.unconfiguredTitle')}</div>
             <div style={{ opacity: 0.75, fontSize: 13 }}>
-              Définir la variable d'environnement <code>EDUCATION_APPLE_CALENDAR_ICS_URL</code> avec le lien iCloud
-              public de partage.
+              {messageWithNode(
+                'eduB.calendar.unconfiguredHint',
+                'variable',
+                <code>EDUCATION_APPLE_CALENDAR_ICS_URL</code>,
+              )}
             </div>
           </div>
         </div>
@@ -271,25 +267,27 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
         <div className="edu-cal-state edu-cal-state-error" role="alert">
           <AlertTriangle size={18} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>Erreur de chargement</div>
+            <div style={{ fontWeight: 600 }}>{t('eduB.shared.loadErrorTitle')}</div>
             <div style={{ opacity: 0.85, fontSize: 13 }}>{error}</div>
           </div>
           <button className="edu-btn ghost" onClick={() => load()}>
-            Réessayer
+            {t('eduB.shared.retry')}
           </button>
         </div>
       )}
 
       {loading && !payload && (
         <div className="edu-cal-state" aria-busy="true">
-          Chargement du calendrier…
+          {t('eduB.calendar.loading')}
         </div>
       )}
 
       {createdSession && (
         <div className="edu-cal-state edu-cal-state-success" role="status">
           <div style={{ flex: 1 }}>
-            Séance « <strong>{createdSession.title}</strong> » créée ({formatDate(createdSession.date, true)}).
+            {messageWithNode('eduB.calendar.sessionCreated', 'title', <strong>{createdSession.title}</strong>, {
+              date: formatShortDate(createdSession.date, true),
+            })}
           </div>
           <button
             className="edu-btn"
@@ -298,9 +296,13 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
               setCreatedSession(null)
             }}
           >
-            Ouvrir
+            {t('eduB.calendar.open')}
           </button>
-          <button className="edu-btn-icon" onClick={() => setCreatedSession(null)} aria-label="Fermer la notification">
+          <button
+            className="edu-btn-icon"
+            onClick={() => setCreatedSession(null)}
+            aria-label={t('eduB.calendar.closeNotice')}
+          >
             <X size={14} />
           </button>
         </div>
@@ -386,6 +388,7 @@ function WeekGrid({
   eventsByDay: Map<string, AppleCalendarEvent[]>
   onPick: (ev: AppleCalendarEvent) => void
 }) {
+  const { t } = useI18n()
   const today = new Date()
   const days: Date[] = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return (
@@ -397,7 +400,7 @@ function WeekGrid({
         return (
           <div key={key} className={`edu-cal-week-col ${isToday ? 'is-today' : ''}`}>
             <div className="edu-cal-week-head">
-              <span>{DAY_NAMES_SHORT[i]}</span>
+              <span>{weekdayShort(i)}</span>
               <strong>{day.getDate()}</strong>
             </div>
             <div className="edu-cal-week-body">
@@ -409,7 +412,9 @@ function WeekGrid({
                   style={{ borderLeftColor: eventColor(ev) }}
                   onClick={() => onPick(ev)}
                 >
-                  <div className="edu-cal-event-time">{ev.allDay ? 'Journée' : formatTime(ev.start)}</div>
+                  <div className="edu-cal-event-time">
+                    {ev.allDay ? t('eduB.calendar.dayAllDay') : formatClock(ev.start)}
+                  </div>
                   <div className="edu-cal-event-title">{ev.title}</div>
                   {ev.location && (
                     <div className="edu-cal-event-meta">
@@ -438,6 +443,7 @@ function MonthGrid({
   eventsByDay: Map<string, AppleCalendarEvent[]>
   onPick: (ev: AppleCalendarEvent) => void
 }) {
+  const { t } = useI18n()
   const ms = startOfMonth(anchor)
   const gridStart = startOfWeek(ms)
   const today = new Date()
@@ -445,8 +451,8 @@ function MonthGrid({
   return (
     <div className="edu-cal-month">
       <div className="edu-cal-month-head">
-        {DAY_NAMES_SHORT.map((d) => (
-          <div key={d}>{d}</div>
+        {Array.from({ length: 7 }, (_, i) => (
+          <div key={i}>{weekdayShort(i)}</div>
         ))}
       </div>
       <div className="edu-cal-month-body">
@@ -466,11 +472,15 @@ function MonthGrid({
                     style={{ borderLeftColor: eventColor(ev) }}
                     onClick={() => onPick(ev)}
                   >
-                    <span className="edu-cal-event-time">{ev.allDay ? '·' : formatTime(ev.start)}</span>
+                    <span className="edu-cal-event-time">{ev.allDay ? '·' : formatClock(ev.start)}</span>
                     <span className="edu-cal-event-title">{ev.title}</span>
                   </button>
                 ))}
-                {dayEvents.length > 3 && <div className="edu-cal-event-more">+{dayEvents.length - 3} de plus</div>}
+                {dayEvents.length > 3 && (
+                  <div className="edu-cal-event-more">
+                    {t('eduB.calendar.moreEvents', { count: dayEvents.length - 3 })}
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -483,22 +493,23 @@ function MonthGrid({
 // ───────────────────────────── Prochains événements ────────────────────────
 
 function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
+  const { t } = useI18n()
   const now = Date.now()
   const upcoming = events.filter((e) => new Date(e.end).getTime() >= now).slice(0, 8)
   if (upcoming.length === 0) {
     return (
       <div className="edu-cal-upcoming">
-        <h2 className="edu-h2">Prochains événements</h2>
+        <h2 className="edu-h2">{t('eduB.calendar.upcomingTitle')}</h2>
         <div className="edu-empty">
           <div className="edu-empty-icon">📅</div>
-          <div>Pas de prochain événement dans la fenêtre actuelle.</div>
+          <div>{t('eduB.calendar.upcomingEmpty')}</div>
         </div>
       </div>
     )
   }
   return (
     <div className="edu-cal-upcoming">
-      <h2 className="edu-h2">Prochains événements</h2>
+      <h2 className="edu-h2">{t('eduB.calendar.upcomingTitle')}</h2>
       <div className="edu-cal-upcoming-list">
         {upcoming.map((ev) => (
           <div key={ev.occurrenceId} className="edu-cal-upcoming-item" style={{ borderLeftColor: eventColor(ev) }}>
@@ -506,7 +517,7 @@ function UpcomingList({ events }: { events: AppleCalendarEvent[] }) {
               <div className="edu-cal-upcoming-title">{ev.title}</div>
               <div className="edu-cal-upcoming-meta">
                 <Clock size={12} />
-                {new Date(ev.start).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}
+                {formatIntlDate(ev.start, { weekday: 'short', day: '2-digit', month: 'short' })}
                 {' · '}
                 {formatRange(ev.start, ev.end, ev.allDay)}
                 {ev.location && (
@@ -578,6 +589,7 @@ function CreateSessionModal({
   onClose: () => void
   onCreated: (session: EducationSession) => void
 }) {
+  const { t } = useI18n()
   // Durée = (end − start) en minutes, défaut 120 (journée entière incluse).
   const initialDuration = (() => {
     if (event.allDay) return 120
@@ -586,7 +598,7 @@ function CreateSessionModal({
   })()
 
   const [classId, setClassId] = useState<string>(() => guessClassId(event, classes) ?? '')
-  const [title, setTitle] = useState(event.title || 'Séance')
+  const [title, setTitle] = useState(event.title || t('eduB.createSession.defaultTitle'))
   const [date, setDate] = useState(() => toLocalInputValue(event.start))
   const [durationMin, setDurationMin] = useState(initialDuration)
   const [location, setLocation] = useState(event.location || '')
@@ -622,7 +634,7 @@ function CreateSessionModal({
       })
       onCreated(r.session)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de créer la séance')
+      setError(err instanceof Error ? err.message : t('eduB.createSession.failed'))
     } finally {
       setSaving(false)
     }
@@ -634,9 +646,9 @@ function CreateSessionModal({
       <div className="edu-drawer" style={{ width: 'min(520px, 92vw)' }}>
         <div className="edu-drawer-head">
           <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Créer la séance
+            {t('eduB.createSession.title')}
           </h2>
-          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer">
+          <button className="edu-btn-icon" onClick={onClose} aria-label={t('common.close')}>
             <X size={18} />
           </button>
         </div>
@@ -647,9 +659,9 @@ function CreateSessionModal({
             </div>
           )}
           <div className="edu-form-group">
-            <label>Classe *</label>
+            <label>{t('eduB.createSession.classLabel')}</label>
             <select className="edu-select" value={classId} onChange={(e) => setClassId(e.target.value)} autoFocus>
-              <option value="">Choisir une classe…</option>
+              <option value="">{t('eduB.createSession.classPlaceholder')}</option>
               {classes.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.name}
@@ -658,17 +670,17 @@ function CreateSessionModal({
             </select>
             {(event.classLabel || event.school) && !classId && (
               <p className="edu-sub" style={{ marginTop: 4 }}>
-                Aucune classe ne correspond à « {event.classLabel || event.school} » — choisis-la manuellement.
+                {t('eduB.createSession.noMatch', { label: event.classLabel || event.school || '' })}
               </p>
             )}
           </div>
           <div className="edu-form-group">
-            <label>Titre</label>
+            <label>{t('eduB.createSession.titleLabel')}</label>
             <input className="edu-input" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Date & heure</label>
+              <label>{t('eduB.createSession.dateLabel')}</label>
               <input
                 type="datetime-local"
                 className="edu-input"
@@ -677,7 +689,7 @@ function CreateSessionModal({
               />
             </div>
             <div className="edu-form-group">
-              <label>Durée (min)</label>
+              <label>{t('eduB.createSession.durationLabel')}</label>
               <input
                 type="number"
                 className="edu-input"
@@ -687,7 +699,7 @@ function CreateSessionModal({
             </div>
           </div>
           <div className="edu-form-group">
-            <label>Lieu</label>
+            <label>{t('eduB.createSession.locationLabel')}</label>
             <input className="edu-input" value={location} onChange={(e) => setLocation(e.target.value)} />
           </div>
 
@@ -695,22 +707,24 @@ function CreateSessionModal({
             <div className="edu-cal-state edu-cal-state-warn" role="alert">
               <AlertTriangle size={16} />
               <div style={{ fontSize: 12.5 }}>
-                Une séance existe déjà à ±1 h pour cette classe :{' '}
-                <strong>
-                  {duplicate.title} — {formatDate(duplicate.date, true)}
-                </strong>
-                . Créer quand même ?
+                {messageWithNode(
+                  'eduB.createSession.duplicate',
+                  'session',
+                  <strong>
+                    {duplicate.title} — {formatShortDate(duplicate.date, true)}
+                  </strong>,
+                )}
               </div>
             </div>
           )}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </button>
           {duplicate ? (
             <button className="edu-btn" disabled={saving} onClick={() => submit(true)}>
-              {saving ? 'Création…' : 'Créer quand même'}
+              {saving ? t('eduB.createSession.creating') : t('eduB.createSession.createAnyway')}
             </button>
           ) : (
             <button
@@ -718,7 +732,7 @@ function CreateSessionModal({
               disabled={!classId || !title.trim() || !date || saving}
               onClick={() => submit(false)}
             >
-              {saving ? 'Création…' : 'Créer la séance'}
+              {saving ? t('eduB.createSession.creating') : t('eduB.createSession.title')}
             </button>
           )}
         </div>
@@ -734,6 +748,7 @@ function CreateSessionModal({
 
 function CalendarStyles() {
   return (
+    // i18n-ignore: CSS (commentaire de style, pas de texte affiché)
     <style>{`
       .edu-cal { display: flex; flex-direction: column; gap: 14px; }
       .edu-cal-toolbar { gap: 12px; flex-wrap: wrap; }

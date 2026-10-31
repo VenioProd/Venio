@@ -1,24 +1,27 @@
 import { useTheme } from '../context/ThemeContext'
 import type { ColorAccent } from '../context/ThemeContext'
 import { apiFetch } from '../lib/api'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 
-const ACCENTS: { id: ColorAccent; color: string; label: string }[] = [
-  { id: 'sky',     color: '#0ea5e9', label: 'Bleu Venio' },
-  { id: 'indigo',  color: '#6366f1', label: 'Indigo' },
-  { id: 'violet',  color: '#8b5cf6', label: 'Violet' },
-  { id: 'fuchsia', color: '#d946ef', label: 'Fuchsia' },
-  { id: 'rose',    color: '#ec4899', label: 'Rose' },
-  { id: 'coral',   color: '#f97316', label: 'Corail' },
-  { id: 'amber',   color: '#f59e0b', label: 'Ambre' },
-  { id: 'yellow',  color: '#f9f041', label: 'Jaune' },
-  { id: 'lime',    color: '#84cc16', label: 'Lime' },
-  { id: 'emerald', color: '#10b981', label: 'Émeraude' },
-  { id: 'teal',    color: '#14b8a6', label: 'Teal' },
-  { id: 'slate',   color: '#94a3b8', label: 'Graphite' },
+const ACCENTS: { id: ColorAccent; color: string; labelKey: MessageKey }[] = [
+  { id: 'sky', color: '#0ea5e9', labelKey: 'shell.accent.sky' },
+  { id: 'indigo', color: '#6366f1', labelKey: 'shell.accent.indigo' },
+  { id: 'violet', color: '#8b5cf6', labelKey: 'shell.accent.violet' },
+  { id: 'fuchsia', color: '#d946ef', labelKey: 'shell.accent.fuchsia' },
+  { id: 'rose', color: '#ec4899', labelKey: 'shell.accent.rose' },
+  { id: 'coral', color: '#f97316', labelKey: 'shell.accent.coral' },
+  { id: 'amber', color: '#f59e0b', labelKey: 'shell.accent.amber' },
+  { id: 'yellow', color: '#f9f041', labelKey: 'shell.accent.yellow' },
+  { id: 'lime', color: '#84cc16', labelKey: 'shell.accent.lime' },
+  { id: 'emerald', color: '#10b981', labelKey: 'shell.accent.emerald' },
+  { id: 'teal', color: '#14b8a6', labelKey: 'shell.accent.teal' },
+  { id: 'slate', color: '#94a3b8', labelKey: 'shell.accent.slate' },
 ]
 
 export function ColorThemePicker() {
   const { colorAccent, setColorAccent } = useTheme()
+  const { t } = useI18n()
 
   const handleSelect = (accent: ColorAccent) => {
     setColorAccent(accent)
@@ -33,7 +36,7 @@ export function ColorThemePicker() {
   return (
     <div>
       <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-        Couleur d&apos;accent
+        {t('shell.theme.accentTitle')}
       </p>
       <div
         style={{
@@ -44,8 +47,9 @@ export function ColorThemePicker() {
           maxWidth: '320px',
         }}
       >
-        {ACCENTS.map(({ id, color, label }) => {
+        {ACCENTS.map(({ id, color, labelKey }) => {
           const isActive = colorAccent === id
+          const label = t(labelKey)
           return (
             <button
               key={id}
@@ -63,19 +67,17 @@ export function ColorThemePicker() {
                 padding: 0,
                 transition: 'transform 0.15s, box-shadow 0.15s',
                 transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                boxShadow: isActive
-                  ? `0 0 0 2px #fff, 0 0 0 4px ${color}`
-                  : 'none',
+                boxShadow: isActive ? `0 0 0 2px #fff, 0 0 0 4px ${color}` : 'none',
                 opacity: isActive ? 1 : 0.7,
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'
+                  ;(e.currentTarget as HTMLButtonElement).style.opacity = '0.9'
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
-                  (e.currentTarget as HTMLButtonElement).style.opacity = '0.7'
+                  ;(e.currentTarget as HTMLButtonElement).style.opacity = '0.7'
                 }
               }}
             />

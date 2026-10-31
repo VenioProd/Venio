@@ -1,4 +1,5 @@
 import { ACCENT, ACCENT_BRIGHT } from '../../../../lib/chartColors'
+import { useI18n } from '../../../../context/I18nContext'
 
 interface CompletionRingProps {
   percent: number
@@ -8,6 +9,7 @@ interface CompletionRingProps {
 
 /** Anneau de complétion — dégradé cyan ACCENT→ACCENT_BRIGHT avec léger glow. */
 export const CompletionRing = ({ percent, size = 96, strokeWidth = 10 }: CompletionRingProps) => {
+  const { t } = useI18n()
   const clamped = Math.max(0, Math.min(100, Math.round(percent)))
   const r = (size - strokeWidth) / 2
   const c = 2 * Math.PI * r
@@ -20,7 +22,7 @@ export const CompletionRing = ({ percent, size = 96, strokeWidth = 10 }: Complet
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       role="img"
-      aria-label={`Complétion globale ${clamped}%`}
+      aria-label={t('devB.charts.ringAria', { percent: clamped })}
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">

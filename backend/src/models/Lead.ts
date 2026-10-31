@@ -4,6 +4,9 @@ import type { ILead } from '../types/models/index.js'
 import { createNotification } from '../lib/notifications.js'
 import logger from '../lib/logger.js'
 
+// Projet / produit concerné par le lead. Vide pour les leads historiques.
+export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
+
 const leadSchema = new mongoose.Schema<ILead>(
   {
     company: { type: String, required: true, trim: true },
@@ -11,6 +14,7 @@ const leadSchema = new mongoose.Schema<ILead>(
     contactEmail: { type: String, default: '' },
     contactPhone: { type: String, default: '' },
     source: { type: String, default: '' },
+    project: { type: String, enum: ['', ...LEAD_PROJECTS], default: '' },
     status: {
       type: String,
       enum: ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'],
@@ -89,6 +93,7 @@ leadSchema.post('save', async function (lead) {
 leadSchema.index({ status: 1, priority: 1 })
 leadSchema.index({ assignedTo: 1, nextActionAt: 1 })
 leadSchema.index({ company: 1 })
+leadSchema.index({ project: 1 })
 leadSchema.index({ clientAccountId: 1 })
 leadSchema.index({ externalRep: 1, updatedAt: -1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score

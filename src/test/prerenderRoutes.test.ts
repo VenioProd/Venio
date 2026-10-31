@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { publicRoutes } from '../../scripts/public-routes.js'
+import pubHome from '../i18n/fr/pubHome'
 
 /**
  * `scripts/public-routes.js` produit le HTML statique servi aux moteurs de
@@ -98,7 +99,8 @@ describe('prerender des pages publiques', () => {
       const page = ROUTE_TO_PAGE[route.path]
       expect(page, `aucun composant associé à ${path}`).toBeTruthy()
 
-      const source = aplatir(read(`src/pages/${page}.tsx`))
+      // Les textes des pages vivent désormais dans le dictionnaire fr : on le joint au source de la page.
+      const source = aplatir(`${read(`src/pages/${page}.tsx`)} ${Object.values(pubHome).join(' ')}`)
       if (!source.includes(aplatir(route.h1))) {
         divergences.push(`${path} → le prerender annonce « ${route.h1} », absent de ${page}.tsx`)
       }

@@ -1,0 +1,41 @@
+.language-select {
+  display: inline-flex;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.language-select__option {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim, inherit);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.language-select__option + .language-select__option {
+  border-left: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+}
+
+.language-select__option:hover {
+  background: var(--accent-surface, rgba(255, 255, 255, 0.06));
+}
+
+.language-select__option.is-active {
+  background: var(--accent-surface-strong, rgba(255, 255, 255, 0.12));
+  color: var(--ink-strong, inherit);
+}
+
+.language-select__option:focus-visible {
+  outline: 2px solid var(--accent-ring, currentColor);
+  outline-offset: -2px;
+}
+
+.language-select--compact .language-select__option {
+  min-height: 32px;
+  padding: 0 10px;
+  letter-spacing: 0.04em;
+}

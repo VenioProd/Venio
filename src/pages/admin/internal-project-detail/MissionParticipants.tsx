@@ -1,4 +1,5 @@
-import { MSC, MSBg, MSBo, MSL, type Mission } from './types'
+import { useI18n } from '../../../context/I18nContext'
+import { MSC, MSBg, MSBo, MSL_KEYS, type Mission } from './types'
 
 interface MissionParticipantsProps {
   mission: Mission
@@ -17,6 +18,7 @@ export default function MissionParticipants({
   currentUserId,
   onParticipantUpdate: handleParticipantUpdate,
 }: MissionParticipantsProps) {
+  const { t } = useI18n()
   return (
     <>
       {/* Participants — suivi individuel */}
@@ -38,7 +40,7 @@ export default function MissionParticipants({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  👥 Avancement par membre
+                  {t('projB.detail.byMember')}
                 </span>
                 {blockedCount > 0 && (
                   <span
@@ -51,7 +53,7 @@ export default function MissionParticipants({
                       color: '#f87171',
                     }}
                   >
-                    🚫 {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}
+                    {t('projB.detail.blockedCount', { count: blockedCount })}
                   </span>
                 )}
               </div>
@@ -129,7 +131,7 @@ export default function MissionParticipants({
                                 padding: '1px 6px',
                               }}
                             >
-                              Moi
+                              {t('projB.detail.me')}
                             </span>
                           )}
                           {p.blocked ? (
@@ -144,7 +146,7 @@ export default function MissionParticipants({
                                 fontWeight: 600,
                               }}
                             >
-                              🚫 Bloqué
+                              {t('projB.detail.blocked')}
                             </span>
                           ) : (
                             <span
@@ -157,7 +159,7 @@ export default function MissionParticipants({
                                 border: `1px solid ${MSBo[p.status] || 'rgba(255,255,255,0.1)'}`,
                               }}
                             >
-                              {MSL[p.status] || p.status}
+                              {MSL_KEYS[p.status] ? t(MSL_KEYS[p.status]) : p.status}
                             </span>
                           )}
                           {isBehind && !p.blocked && (
@@ -171,7 +173,7 @@ export default function MissionParticipants({
                                 color: '#fbbf24',
                               }}
                             >
-                              ⚠ En retard
+                              {t('projB.mission.late')}
                             </span>
                           )}
                         </div>
@@ -238,7 +240,7 @@ export default function MissionParticipants({
                                 border: '1px solid rgba(255,255,255,0.06)',
                               }}
                             >
-                              ✅ {myStepsDone}/{mySteps.length} étapes
+                              {t('projB.detail.ownSteps', { done: myStepsDone, total: mySteps.length })}
                             </span>
                           )}
                           {commonSteps.length > 0 && (
@@ -252,7 +254,7 @@ export default function MissionParticipants({
                                 border: '1px solid rgba(255,255,255,0.06)',
                               }}
                             >
-                              {commonDone}/{commonSteps.length} communes
+                              {t('projB.detail.commonSteps', { done: commonDone, total: commonSteps.length })}
                             </span>
                           )}
                           {myDelivs.length > 0 && (
@@ -266,7 +268,7 @@ export default function MissionParticipants({
                                 border: '1px solid rgba(255,255,255,0.06)',
                               }}
                             >
-                              📦 {myDelivsDone}/{myDelivs.length} livrables
+                              {t('projB.detail.ownDeliverables', { done: myDelivsDone, total: myDelivs.length })}
                             </span>
                           )}
                         </div>
@@ -289,7 +291,7 @@ export default function MissionParticipants({
                                   transition: 'all .15s',
                                 }}
                               >
-                                {MSL[v]}
+                                {t(MSL_KEYS[v])}
                               </button>
                             ))}
                             <button
@@ -312,7 +314,7 @@ export default function MissionParticipants({
                                 transition: 'all .15s',
                               }}
                             >
-                              {p.blocked ? '🚫 Débloquer' : '🚫 Bloquer'}
+                              {p.blocked ? t('projB.detail.unblock') : t('projB.detail.block')}
                             </button>
                           </div>
                         )}
@@ -332,7 +334,7 @@ export default function MissionParticipants({
                               onBlur={(e) =>
                                 handleParticipantUpdate(mission._id, p.user?._id, { blockedReason: e.target.value })
                               }
-                              placeholder="Décris le blocage…"
+                              placeholder={t('projB.detail.blockPlaceholder')}
                               rows={2}
                               style={{
                                 width: '100%',
@@ -353,7 +355,7 @@ export default function MissionParticipants({
                             </p>
                           ) : (
                             <p style={{ fontSize: 11, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}>
-                              Aucune raison précisée
+                              {t('projB.detail.noReason')}
                             </p>
                           )}
                         </div>

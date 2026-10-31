@@ -1,18 +1,29 @@
+import { translate } from '../i18n'
+
 export interface ServiceOfferLink {
   label: string
   description: string
   to: string
 }
 
+/** Libellés lus à l'accès : ils suivent la langue active. */
 export const serviceOffers: readonly ServiceOfferLink[] = [
   {
-    label: 'Sites web',
-    description: 'Sites vitrines, e-commerce et plateformes sur mesure.',
+    get label() {
+      return translate('pubHome.offers.sitesLabel')
+    },
+    get description() {
+      return translate('pubHome.offers.sitesDescription')
+    },
     to: '/services/sites',
   },
   {
-    label: 'Conseil & communication',
-    description: 'Diagnostic, positionnement, plan de communication, contenus et mesure.',
+    get label() {
+      return translate('pubHome.offers.conseilLabel')
+    },
+    get description() {
+      return translate('pubHome.offers.conseilDescription')
+    },
     to: '/conseil-communication',
   },
 ]

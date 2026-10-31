@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 
 export type AttentionSeverity = 'critical' | 'serious' | 'warning'
 
@@ -20,11 +22,11 @@ const SEVERITY_RANK: Record<AttentionSeverity, number> = {
   warning: 1,
 }
 
-const SEVERITY_LABEL: Record<AttentionSeverity, string> = {
-  critical: 'Critique',
-  serious: 'Sérieux',
-  warning: 'Attention',
-}
+const SEVERITY_LABEL_KEYS = {
+  critical: 'shared.dash.severityCritical',
+  serious: 'shared.dash.severitySerious',
+  warning: 'shared.dash.severityWarning',
+} as const satisfies Record<AttentionSeverity, MessageKey>
 
 /**
  * Liste d'exceptions triée par gravité décroissante — remplace la bannière
@@ -32,6 +34,7 @@ const SEVERITY_LABEL: Record<AttentionSeverity, string> = {
  * de gravité + pastille de niveau (jamais la couleur seule).
  */
 const AttentionPanel = ({ items }: Props) => {
+  const { t } = useI18n()
   const nonZero = items
     .filter((i) => i.count > 0)
     .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || b.count - a.count)
@@ -40,7 +43,7 @@ const AttentionPanel = ({ items }: Props) => {
     return (
       <div className="dash-attention__empty">
         <CheckCircle2 size={16} style={{ opacity: 0.6, marginBottom: 4 }} />
-        <div>Aucune exception en cours — tout est sous contrôle.</div>
+        <div>{t('shared.dash.attentionEmpty')}</div>
       </div>
     )
   }
@@ -56,7 +59,7 @@ const AttentionPanel = ({ items }: Props) => {
             }}
           >
             <span className="dash-attention__label">{item.label}</span>
-            <span className={`dash-pill dash-pill--${item.severity}`}>{SEVERITY_LABEL[item.severity]}</span>
+            <span className={`dash-pill dash-pill--${item.severity}`}>{t(SEVERITY_LABEL_KEYS[item.severity])}</span>
             <span className="dash-attention__count">{item.count}</span>
           </div>
         )

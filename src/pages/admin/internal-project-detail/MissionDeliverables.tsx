@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { Mission } from './types'
 
 type DeliverableInput = { title: string; description: string; assignedTo: string }
@@ -21,6 +22,7 @@ export default function MissionDeliverables({
   onToggle: handleDeliverableToggle,
   onDelete: handleDeliverableDelete,
 }: MissionDeliverablesProps) {
+  const { t } = useI18n()
   const delivDone = (mission.deliverables || []).filter((deliverable) => deliverable.done).length
 
   return (
@@ -38,7 +40,7 @@ export default function MissionDeliverables({
                 color: 'var(--text-secondary)',
               }}
             >
-              📦 Livrables attendus
+              {t('projB.detail.deliverablesHeading')}
             </span>
             {(mission.deliverables || []).length > 0 && (
               <span
@@ -56,7 +58,9 @@ export default function MissionDeliverables({
             )}
           </div>
           {(mission.deliverables || []).length === 0 ? (
-            <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.3)', margin: '0 0 8px' }}>Aucun livrable défini</p>
+            <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.3)', margin: '0 0 8px' }}>
+              {t('projB.detail.noDeliverables')}
+            </p>
           ) : (
             (mission.deliverables || []).map((d) => {
               const da = d.assignedTo ? (mission.assignedTo || []).find((a) => a._id === d.assignedTo) : null
@@ -153,7 +157,7 @@ export default function MissionDeliverables({
             <div style={{ marginTop: 6 }}>
               {(mission.assignedTo || []).length > 1 && (
                 <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('projB.detail.forLabel')}</span>
                   <button
                     type="button"
                     onClick={() =>
@@ -174,7 +178,7 @@ export default function MissionDeliverables({
                       cursor: 'pointer',
                     }}
                   >
-                    Tous
+                    {t('projB.detail.everyone')}
                   </button>
                   {(mission.assignedTo || []).map((a) => (
                     <button
@@ -244,7 +248,7 @@ export default function MissionDeliverables({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleDeliverableAdd(mission._id, mission)
                   }}
-                  placeholder="Livrable attendu…"
+                  placeholder={t('projB.detail.deliverablePlaceholder')}
                   style={{ fontSize: 12, padding: '5px 9px', flex: 1 }}
                 />
                 <button
@@ -275,7 +279,7 @@ export default function MissionDeliverables({
                     },
                   }))
                 }
-                placeholder="Description optionnelle"
+                placeholder={t('projB.detail.deliverableDescriptionPlaceholder')}
                 style={{ fontSize: 11, padding: '4px 9px', width: '100%', marginTop: 4, boxSizing: 'border-box' }}
               />
             </div>

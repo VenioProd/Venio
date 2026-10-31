@@ -3,46 +3,60 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
 import type { User, AdminRole } from '../../types/auth.types'
 import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-const roleLabels: Record<string, string> = {
-  SUPER_ADMIN: 'Super admin',
-  PDG: 'PDG',
-  ADMIN: 'Contributeur',
-  RH: 'RH',
-  COMMERCIAL: 'Commercial',
-  VIEWER: 'Lecture seule',
-  STAGIAIRE: 'Stagiaire',
-  COMMERCIAL_EXTERNE: 'Commercial externe',
+const ROLE_LABEL_KEYS: Record<string, MessageKey> = {
+  SUPER_ADMIN: 'projects.admin.role.superAdmin',
+  PDG: 'projects.admin.role.pdg',
+  ADMIN: 'projects.admin.role.contributor',
+  RH: 'projects.admin.role.hr',
+  COMMERCIAL: 'projects.admin.role.sales',
+  VIEWER: 'projects.admin.role.viewer',
+  STAGIAIRE: 'projects.admin.role.intern',
+  COMMERCIAL_EXTERNE: 'projects.admin.role.externalSales',
 }
 
-const permissionLabels: Record<string, string> = {
-  [PERMISSIONS.MANAGE_ADMINS]: 'Gestion des administrateurs',
-  [PERMISSIONS.MANAGE_CLIENTS]: 'Gestion des comptes clients',
-  [PERMISSIONS.VIEW_CRM]: 'Lecture du CRM',
-  [PERMISSIONS.MANAGE_CRM]: 'Gestion du CRM',
-  [PERMISSIONS.VIEW_PROJECTS]: 'Lecture des projets',
-  [PERMISSIONS.EDIT_PROJECTS]: 'Modification des projets',
-  [PERMISSIONS.VIEW_CONTENT]: 'Lecture du contenu',
-  [PERMISSIONS.EDIT_CONTENT]: 'Modification du contenu',
-  [PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS]: 'Ajout de documents aux projets',
-  [PERMISSIONS.VIEW_BILLING]: 'Lecture de la facturation',
-  [PERMISSIONS.MANAGE_BILLING]: 'Gestion de la facturation',
-  [PERMISSIONS.MANAGE_TASKS]: 'Gestion des tâches',
-  [PERMISSIONS.VIEW_QUALIOPI]: 'Lecture Qualiopi',
-  [PERMISSIONS.MANAGE_QUALIOPI]: 'Gestion Qualiopi',
-  [PERMISSIONS.VIEW_TICKETS]: 'Lecture des tickets',
-  [PERMISSIONS.CREATE_TICKETS]: 'Creation de tickets',
-  [PERMISSIONS.MANAGE_TICKETS]: 'Gestion des tickets',
+const PERMISSION_LABEL_KEYS: Record<string, MessageKey> = {
+  [PERMISSIONS.MANAGE_ADMINS]: 'projects.admin.perm.manageAdmins',
+  [PERMISSIONS.MANAGE_CLIENTS]: 'projects.admin.perm.manageClients',
+  [PERMISSIONS.VIEW_CRM]: 'projects.admin.perm.viewCrm',
+  [PERMISSIONS.MANAGE_CRM]: 'projects.admin.perm.manageCrm',
+  [PERMISSIONS.VIEW_PROJECTS]: 'projects.admin.perm.viewProjects',
+  [PERMISSIONS.EDIT_PROJECTS]: 'projects.admin.perm.editProjects',
+  [PERMISSIONS.VIEW_CONTENT]: 'projects.admin.perm.viewContent',
+  [PERMISSIONS.EDIT_CONTENT]: 'projects.admin.perm.editContent',
+  [PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS]: 'projects.admin.perm.uploadDocs',
+  [PERMISSIONS.VIEW_BILLING]: 'projects.admin.perm.viewBilling',
+  [PERMISSIONS.MANAGE_BILLING]: 'projects.admin.perm.manageBilling',
+  [PERMISSIONS.MANAGE_TASKS]: 'projects.admin.perm.manageTasks',
+  [PERMISSIONS.VIEW_QUALIOPI]: 'projects.admin.perm.viewQualiopi',
+  [PERMISSIONS.MANAGE_QUALIOPI]: 'projects.admin.perm.manageQualiopi',
+  [PERMISSIONS.VIEW_TICKETS]: 'projects.admin.perm.viewTickets',
+  [PERMISSIONS.CREATE_TICKETS]: 'projects.admin.perm.createTickets',
+  [PERMISSIONS.MANAGE_TICKETS]: 'projects.admin.perm.manageTickets',
+  [PERMISSIONS.MANAGE_EXTERNAL_SALES]: 'projects.admin.perm.manageExternalSales',
+}
+
+const DAY_LABEL_KEYS: Record<string, MessageKey> = {
+  lundi: 'projects.admin.day.lundi',
+  mardi: 'projects.admin.day.mardi',
+  mercredi: 'projects.admin.day.mercredi',
+  jeudi: 'projects.admin.day.jeudi',
+  vendredi: 'projects.admin.day.vendredi',
+  samedi: 'projects.admin.day.samedi',
+  dimanche: 'projects.admin.day.dimanche',
 }
 
 const allPermissions = Object.values(PERMISSIONS)
 
 const AdminEdit = () => {
+  const { t } = useI18n()
   const { userId } = useParams<{ userId: string }>()
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
@@ -134,7 +148,7 @@ const AdminEdit = () => {
           }
         }
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement admin')
+        setError((err as Error).message || t('projects.admin.loadError'))
       }
     }
     load()
@@ -199,10 +213,10 @@ const AdminEdit = () => {
         setSavedPassword(form.password)
       }
       setForm((prev) => ({ ...prev, password: '' }))
-      showToast('Modifications enregistrees', 'success')
+      showToast(t('projects.admin.savedToast'), 'success')
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour admin')
-      showToast('Erreur lors de la mise a jour', 'error')
+      setError((err as Error).message || t('projects.admin.updateError'))
+      showToast(t('projects.admin.updateToastError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -211,7 +225,7 @@ const AdminEdit = () => {
   if (!admin && !error) {
     return (
       <div className="portal-container">
-        <div className="admin-loading">Chargement...</div>
+        <div className="admin-loading">{t('common.loading')}</div>
       </div>
     )
   }
@@ -222,15 +236,17 @@ const AdminEdit = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-admin">Comptes admin</Link>
+          <Link to="/admin/comptes-admin">{t('projects.admin.adminAccounts')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{admin?.name || 'Administrateur'}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{admin?.name || t('projects.admin.administrator')}</span>
         </div>
         <div className="admin-header">
           <div>
-            <h1 style={{ marginBottom: '8px' }}>{admin?.name || 'Administrateur'}</h1>
+            <h1 style={{ marginBottom: '8px' }}>{admin?.name || t('projects.admin.administrator')}</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              {admin?.email} · {admin?.title || roleLabels[admin?.role || ''] || admin?.role}
+              {admin?.email} ·{' '}
+              {admin?.title ||
+                (admin?.role && ROLE_LABEL_KEYS[admin.role] ? t(ROLE_LABEL_KEYS[admin.role]) : admin?.role)}
               {admin?.tags?.includes('STAGIAIRE') && (
                 <span
                   style={{
@@ -244,7 +260,7 @@ const AdminEdit = () => {
                     color: 'var(--primary)',
                   }}
                 >
-                  Stagiaire
+                  {t('projects.admin.internBadge')}
                 </span>
               )}
             </p>
@@ -262,8 +278,7 @@ const AdminEdit = () => {
         <div className="portal-card" style={{ marginTop: 24 }}>
           <div style={{ padding: '8px 0' }}>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 14 }}>
-              Le mot de passe de <strong style={{ color: 'var(--text-primary)' }}>{admin.name}</strong> a ete mis a
-              jour. Voici les nouveaux identifiants :
+              {t('projects.admin.passwordUpdated', { name: admin.name })}
             </p>
             <div
               style={{
@@ -275,13 +290,13 @@ const AdminEdit = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Email</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.email')}</span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
                   {admin.email}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Mot de passe</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.password')}</span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
                   {savedPassword}
                 </span>
@@ -292,13 +307,17 @@ const AdminEdit = () => {
               type="button"
               style={{ width: '100%' }}
               onClick={async () => {
-                const text = `Identifiants de connexion Venio\n\nEmail : ${admin.email}\nMot de passe : ${savedPassword}\n\nConnexion : ${window.location.origin}/admin/login`
+                const text = t('projects.admin.credentialsText', {
+                  email: admin.email,
+                  password: savedPassword,
+                  url: `${window.location.origin}/admin/login`,
+                })
                 await navigator.clipboard.writeText(text)
                 setCopiedCreds(true)
                 setTimeout(() => setCopiedCreds(false), 2500)
               }}
             >
-              {copiedCreds ? 'Copie !' : 'Copier les identifiants'}
+              {copiedCreds ? t('projects.admin.copied') : t('projects.admin.copyCredentials')}
             </button>
           </div>
         </div>
@@ -308,11 +327,11 @@ const AdminEdit = () => {
         <form className="portal-list" onSubmit={handleSubmit}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Nom complet
+              {t('projects.admin.fullName')}
             </label>
             <input
               className="portal-input"
-              placeholder="Nom complet"
+              placeholder={t('projects.admin.fullName')}
               value={form.name}
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
               required
@@ -320,33 +339,35 @@ const AdminEdit = () => {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Titre / Fonction{' '}
-              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>(optionnel — ex: PDG, Directeur...)</span>
+              {t('projects.admin.titleLabel')}{' '}
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('projects.admin.titleHint')}</span>
             </label>
             <input
               className="portal-input"
-              placeholder="Ex : PDG, Directeur commercial..."
+              placeholder={t('projects.admin.titlePlaceholder')}
               value={form.title}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title: e.target.value })}
             />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Rôle
+              {t('projects.admin.roleLabel')}
             </label>
             <CustomSelect
               className="portal-input"
               value={form.role}
               onChange={(v) => setForm({ ...form, role: v })}
               options={[
-                ...(admin?.role === 'SUPER_ADMIN' ? [{ value: 'SUPER_ADMIN', label: 'Super admin' }] : []),
-                { value: 'PDG', label: 'PDG' },
-                { value: 'ADMIN', label: 'Contributeur' },
-                { value: 'RH', label: 'RH' },
-                { value: 'COMMERCIAL', label: 'Commercial' },
-                { value: 'VIEWER', label: 'Lecture seule' },
-                { value: 'STAGIAIRE', label: 'Stagiaire' },
-                { value: 'COMMERCIAL_EXTERNE', label: 'Commercial externe' },
+                ...(admin?.role === 'SUPER_ADMIN'
+                  ? [{ value: 'SUPER_ADMIN', label: t('projects.admin.role.superAdmin') }]
+                  : []),
+                { value: 'PDG', label: t('projects.admin.role.pdg') },
+                { value: 'ADMIN', label: t('projects.admin.role.contributor') },
+                { value: 'RH', label: t('projects.admin.role.hr') },
+                { value: 'COMMERCIAL', label: t('projects.admin.role.sales') },
+                { value: 'VIEWER', label: t('projects.admin.role.viewer') },
+                { value: 'STAGIAIRE', label: t('projects.admin.role.intern') },
+                { value: 'COMMERCIAL_EXTERNE', label: t('projects.admin.role.externalSales') },
               ]}
             />
           </div>
@@ -366,10 +387,10 @@ const AdminEdit = () => {
                 checked={form.isAssociate}
                 onChange={(e) => setForm({ ...form, isAssociate: e.target.checked })}
               />
-              Associé
+              {t('projects.admin.associate')}
             </label>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
-              Un commercial associé lit tous les projets, sans pouvoir les modifier.
+              {t('projects.admin.associateHelp')}
             </p>
           </div>
           {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
@@ -385,12 +406,12 @@ const AdminEdit = () => {
                 }}
               >
                 <input type="checkbox" checked={customMode} onChange={handleToggleCustom} />
-                Personnaliser les droits
+                {t('projects.admin.customizePerms')}
               </label>
               {customMode ? (
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
-                    Droits personnalisés
+                    {t('projects.admin.customPerms')}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
                     {allPermissions.map((perm) => (
@@ -410,7 +431,7 @@ const AdminEdit = () => {
                           checked={customPermissions.includes(perm)}
                           onChange={() => handlePermToggle(perm)}
                         />
-                        {permissionLabels[perm] || perm}
+                        {PERMISSION_LABEL_KEYS[perm] ? t(PERMISSION_LABEL_KEYS[perm]) : perm}
                       </label>
                     ))}
                   </div>
@@ -418,11 +439,11 @@ const AdminEdit = () => {
               ) : (
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
-                    Droits par défaut du rôle
+                    {t('projects.admin.defaultPerms')}
                   </div>
                   <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
                     {roleDefaults.map((perm) => (
-                      <li key={perm}>{permissionLabels[perm] || perm}</li>
+                      <li key={perm}>{PERMISSION_LABEL_KEYS[perm] ? t(PERMISSION_LABEL_KEYS[perm]) : perm}</li>
                     ))}
                   </ul>
                 </div>
@@ -444,14 +465,14 @@ const AdminEdit = () => {
                   }}
                 >
                   <input type="checkbox" checked={isStagiaire} onChange={(e) => setIsStagiaire(e.target.checked)} />
-                  <span style={{ fontWeight: 600 }}>Membre de l'équipe (stage / alternance)</span>
+                  <span style={{ fontWeight: 600 }}>{t('projects.admin.teamMember')}</span>
                 </label>
                 {isStagiaire && (
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {(['STAGIAIRE', 'ALTERNANT'] as const).map((t) => (
+                    {(['STAGIAIRE', 'ALTERNANT'] as const).map((kind) => (
                       <span
-                        key={t}
-                        onClick={() => setInternForm({ ...internForm, type: t })}
+                        key={kind}
+                        onClick={() => setInternForm({ ...internForm, type: kind })}
                         style={{
                           cursor: 'pointer',
                           padding: '3px 10px',
@@ -459,22 +480,22 @@ const AdminEdit = () => {
                           fontSize: 11,
                           fontWeight: 600,
                           background:
-                            internForm.type === t
-                              ? t === 'ALTERNANT'
+                            internForm.type === kind
+                              ? kind === 'ALTERNANT'
                                 ? 'rgba(155,155,155,0.15)'
                                 : 'rgba(14, 165, 233, 0.15)'
                               : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${internForm.type === t ? (t === 'ALTERNANT' ? '#9b9b9b' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`,
+                          border: `1px solid ${internForm.type === kind ? (kind === 'ALTERNANT' ? '#9b9b9b' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`,
                           color:
-                            internForm.type === t
-                              ? t === 'ALTERNANT'
+                            internForm.type === kind
+                              ? kind === 'ALTERNANT'
                                 ? '#9b9b9b'
                                 : '#0ea5e9'
                               : 'rgba(255,255,255,0.4)',
                           userSelect: 'none',
                         }}
                       >
-                        {t === 'STAGIAIRE' ? 'Stagiaire' : 'Alternant'}
+                        {kind === 'STAGIAIRE' ? t('projects.admin.typeIntern') : t('projects.admin.typeApprentice')}
                       </span>
                     ))}
                   </div>
@@ -492,29 +513,29 @@ const AdminEdit = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Poste / Mission
+                        {t('projects.admin.position')}
                       </label>
                       <input
                         className="portal-input"
-                        placeholder="Ex: Commercial, Communication..."
+                        placeholder={t('projects.admin.positionPlaceholder')}
                         value={internForm.poste}
                         onChange={(e) => setInternForm({ ...internForm, poste: e.target.value })}
                       />
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Departement
+                        {t('projects.admin.department')}
                       </label>
                       <input
                         className="portal-input"
-                        placeholder="Departement"
+                        placeholder={t('projects.admin.department')}
                         value={internForm.departement}
                         onChange={(e) => setInternForm({ ...internForm, departement: e.target.value })}
                       />
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Date de debut
+                        {t('projects.admin.startDate')}
                       </label>
                       <input
                         className="portal-input"
@@ -525,7 +546,7 @@ const AdminEdit = () => {
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Date de fin
+                        {t('projects.admin.endDate')}
                       </label>
                       <input
                         className="portal-input"
@@ -536,14 +557,14 @@ const AdminEdit = () => {
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Tuteur
+                        {t('projects.admin.tutor')}
                       </label>
                       <select
                         className="portal-input"
                         value={internForm.tuteur}
                         onChange={(e) => setInternForm({ ...internForm, tuteur: e.target.value })}
                       >
-                        <option value="">— Aucun —</option>
+                        <option value="">{t('projects.admin.noneOption')}</option>
                         {admins
                           .filter((a) => a._id !== userId)
                           .map((a) => (
@@ -555,29 +576,29 @@ const AdminEdit = () => {
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Ecole / Universite
+                        {t('projects.admin.school')}
                       </label>
                       <input
                         className="portal-input"
-                        placeholder="Ecole"
+                        placeholder={t('projects.admin.schoolPlaceholder')}
                         value={internForm.ecole}
                         onChange={(e) => setInternForm({ ...internForm, ecole: e.target.value })}
                       />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Formation
+                        {t('projects.admin.training')}
                       </label>
                       <input
                         className="portal-input"
-                        placeholder="Formation"
+                        placeholder={t('projects.admin.training')}
                         value={internForm.formation}
                         onChange={(e) => setInternForm({ ...internForm, formation: e.target.value })}
                       />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Jours de présence
+                        {t('projects.admin.presenceDays')}
                       </label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
@@ -603,7 +624,7 @@ const AdminEdit = () => {
                                 transition: 'all 0.15s',
                               }}
                             >
-                              {jour.charAt(0).toUpperCase() + jour.slice(1)}
+                              {DAY_LABEL_KEYS[jour] ? t(DAY_LABEL_KEYS[jour]) : jour}
                             </span>
                           )
                         })}
@@ -647,7 +668,7 @@ const AdminEdit = () => {
                         <span
                           style={{ fontSize: 13, color: internForm.inclureEquipe ? '#fff' : 'rgba(255,255,255,0.4)' }}
                         >
-                          Inclure dans la gestion équipe
+                          {t('projects.admin.includeInTeam')}
                         </span>
                       </label>
                     </div>
@@ -659,13 +680,13 @@ const AdminEdit = () => {
 
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Nouveau mot de passe (optionnel)
+              {t('projects.admin.newPassword')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
                 className="portal-input"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Laisser vide pour ne pas changer"
+                placeholder={t('projects.admin.keepPasswordPlaceholder')}
                 value={form.password}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                   setForm({ ...form, password: event.target.value })
@@ -693,10 +714,10 @@ const AdminEdit = () => {
           </div>
           <div className="admin-button-group">
             <button className="portal-button" type="submit" disabled={loading}>
-              {loading ? 'Mise à jour...' : 'Enregistrer'}
+              {loading ? t('projects.admin.updating') : t('projects.admin.save')}
             </button>
             <button className="portal-button secondary" type="button" onClick={() => navigate('/admin/comptes-admin')}>
-              Retour
+              {t('projects.admin.back')}
             </button>
           </div>
         </form>

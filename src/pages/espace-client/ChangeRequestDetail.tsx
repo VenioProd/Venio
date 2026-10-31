@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { useAuth } from '../../context/AuthContext'
 import UserAvatar from '../../components/UserAvatar'
 import {
@@ -10,6 +11,7 @@ import {
   validateChangeRequest,
 } from '../../services/changeRequests'
 import type { ClientChangeRequest } from '../../types/changeRequest.types'
+import type { MessageKey } from '../../i18n'
 import {
   CLIENT_STATUS_CONFIG,
   PRIORITY_LABELS,
@@ -20,13 +22,13 @@ import './ClientPortal.css'
 
 /** Frise de suivi : « Qualification » agrège l'arbitrage incluse / à chiffrer. */
 const STEPS = [
-  { key: 'SOUMISE', label: 'Soumise' },
-  { key: 'QUALIFICATION', label: 'Qualification' },
-  { key: 'PLANIFIEE', label: 'Planifiée' },
-  { key: 'EN_COURS', label: 'En cours' },
-  { key: 'LIVREE', label: 'Livrée' },
-  { key: 'VALIDEE', label: 'Validée' },
-] as const
+  { key: 'SOUMISE', labelKey: 'client.crStatus.submitted' },
+  { key: 'QUALIFICATION', labelKey: 'client.crDetail.stepQualification' },
+  { key: 'PLANIFIEE', labelKey: 'client.crStatus.planned' },
+  { key: 'EN_COURS', labelKey: 'client.crStatus.inProgress' },
+  { key: 'LIVREE', labelKey: 'client.crDetail.stepDelivered' },
+  { key: 'VALIDEE', labelKey: 'client.crStatus.validated' },
+] as const satisfies readonly { key: string; labelKey: MessageKey }[]
 
 const STEP_ORDER: Record<string, number> = {
   SOUMISE: 0,
@@ -38,6 +40,7 @@ const STEP_ORDER: Record<string, number> = {
 }
 
 const ClientChangeRequestDetail = () => {
+  const { t } = useI18n()
   const { id = '' } = useParams()
   const { user } = useAuth()
   const [changeRequest, setChangeRequest] = useState<ClientChangeRequest | null>(null)
@@ -51,8 +54,8 @@ const ClientChangeRequestDetail = () => {
   const load = useCallback(() => {
     getChangeRequest(id)
       .then((data) => setChangeRequest(data.changeRequest))
-      .catch((err: Error) => setError(err.message || 'Demande indisponible'))
-  }, [id])
+      .catch((err: Error) => setError(err.message || t('client.crDetail.loadError')))
+  }, [id, t])
 
   useEffect(load, [load])
 
@@ -66,7 +69,7 @@ const ClientChangeRequestDetail = () => {
       setFiles([])
       load()
     } catch (err) {
-      setError((err as Error).message || 'Envoi impossible')
+      setError((err as Error).message || t('client.crNew.sendError'))
     } finally {
       setBusy(false)
     }
@@ -80,7 +83,7 @@ const ClientChangeRequestDetail = () => {
       setChangeRequest(result.changeRequest)
       load()
     } catch (err) {
-      setError((err as Error).message || 'Action impossible')
+      setError((err as Error).message || t('client.crDetail.actionError'))
     } finally {
       setBusy(false)
     }
@@ -105,29 +108,32 @@ const ClientChangeRequestDetail = () => {
   const isAccountOwner = user?._id === changeRequest.client
   const qualificationLabel =
     changeRequest.qualification === 'INCLUSE'
-      ? 'Incluse dans votre contrat'
+      ? t('client.crDetail.qualIncluded')
       : changeRequest.qualification === 'A_CHIFFRER'
-        ? 'Devis lié'
+        ? t('client.crDetail.qualQuote')
         : ''
 
   return (
     <div className="portal-container">
       <Link to="/espace-client/demandes" className="portal-link">
-        ← Vos demandes
+        {t('client.crNew.backToList')}
       </Link>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 16 }}>
         <h1 style={{ margin: 0 }}>{changeRequest.title}</h1>
-        <span className={`client-project-card-badge ${status.className}`}>{status.label}</span>
+        <span className={`client-project-card-badge ${status.className}`}>{t(status.labelKey)}</span>
       </div>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-        Soumise le {formatChangeRequestDate(changeRequest.createdAt)} par {changeRequest.createdByName}
+        {t('client.crDetail.submittedBy', {
+          date: formatChangeRequestDate(changeRequest.createdAt),
+          name: changeRequest.createdByName,
+        })}
       </p>
 
       {error && <p role="alert">{error}</p>}
 
       {changeRequest.status === 'REFUSEE' ? (
         <div className="portal-card" role="status" style={{ borderColor: 'var(--mono-danger-border, #ff5c5c)' }}>
-          <strong>Demande refusée</strong>
+          <strong>{t('client.crDetail.refusedTitle')}</strong>
           <p style={{ margin: '8px 0 0' }}>{changeRequest.refusalReason}</p>
         </div>
       ) : (
@@ -140,7 +146,7 @@ const ClientChangeRequestDetail = () => {
             const entry = changeRequest.statusHistory.find((history) => history.status === step.key)
             return (
               <li key={step.key} style={{ flex: '1 1 120px', opacity: done ? 1 : 0.45 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{step.label}</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{t(step.labelKey)}</div>
                 {step.key === 'QUALIFICATION' && qualificationLabel && (
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{qualificationLabel}</div>
                 )}
@@ -159,14 +165,15 @@ const ClientChangeRequestDetail = () => {
         <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{changeRequest.description}</p>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: '0.85rem' }}>
           <span>
-            <strong>Projet</strong> — {changeRequest.project ? changeRequest.project.name : 'Sans projet'}
+            <strong>{t('client.crDetail.projectLabel')}</strong> —{' '}
+            {changeRequest.project ? changeRequest.project.name : t('client.crDetail.noProject')}
           </span>
           <span>
-            <strong>Priorité</strong> — {PRIORITY_LABELS[changeRequest.priority]}
+            <strong>{t('client.crDetail.priorityLabel')}</strong> — {t(PRIORITY_LABELS[changeRequest.priority])}
           </span>
           {changeRequest.pageUrl && (
             <span>
-              <strong>Page concernée</strong> —{' '}
+              <strong>{t('client.crDetail.pageLabel')}</strong> —{' '}
               <a className="portal-link" href={changeRequest.pageUrl} target="_blank" rel="noopener noreferrer">
                 {changeRequest.pageUrl}
               </a>
@@ -192,20 +199,24 @@ const ClientChangeRequestDetail = () => {
 
       {changeRequest.linkedProposal && (
         <div className="portal-card" style={{ marginTop: 16 }}>
-          <strong>Devis lié — {changeRequest.linkedProposal.status === 'SIGNED' ? 'signé' : 'à signer'}</strong>
+          <strong>
+            {changeRequest.linkedProposal.status === 'SIGNED'
+              ? t('client.crDetail.linkedQuoteSigned')
+              : t('client.crDetail.linkedQuoteToSign')}
+          </strong>
           <p style={{ margin: '8px 0' }}>{changeRequest.linkedProposal.title}</p>
           <Link
             className="portal-link"
             to={`/espace-client/projets/${changeRequest.linkedProposal.projectId}/propositions/${changeRequest.linkedProposal.proposalId}`}
           >
-            Voir le devis
+            {t('client.crDetail.viewQuote')}
           </Link>
         </div>
       )}
 
       {changeRequest.status === 'LIVREE' && (
         <div className="portal-card" style={{ marginTop: 16, display: 'grid', gap: 12 }}>
-          <strong>Cette demande est livrée</strong>
+          <strong>{t('client.crDetail.deliveredTitle')}</strong>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAccountOwner && (
               <button
@@ -215,7 +226,7 @@ const ClientChangeRequestDetail = () => {
                 style={{ padding: '10px 18px' }}
                 onClick={() => runAction(() => validateChangeRequest(id))}
               >
-                Valider la livraison
+                {t('client.crDetail.validateDelivery')}
               </button>
             )}
             <button
@@ -224,12 +235,12 @@ const ClientChangeRequestDetail = () => {
               style={{ padding: '10px 18px' }}
               onClick={() => setShowCorrection((previous) => !previous)}
             >
-              Demander une correction
+              {t('client.crDetail.requestCorrection')}
             </button>
           </div>
           {showCorrection && (
             <div style={{ display: 'grid', gap: 8 }}>
-              <label htmlFor="correction-comment">Que faut-il corriger ?</label>
+              <label htmlFor="correction-comment">{t('client.crDetail.correctionQuestion')}</label>
               <textarea
                 id="correction-comment"
                 className="portal-input"
@@ -249,7 +260,7 @@ const ClientChangeRequestDetail = () => {
                   })
                 }
               >
-                Envoyer la correction
+                {t('client.crDetail.sendCorrection')}
               </button>
             </div>
           )}
@@ -257,7 +268,7 @@ const ClientChangeRequestDetail = () => {
       )}
 
       <section style={{ marginTop: 32 }}>
-        <h2>Fil de la demande</h2>
+        <h2>{t('client.crDetail.threadTitle')}</h2>
         <div className="portal-list">
           {changeRequest.replies.map((reply) => (
             <div key={reply._id} className="portal-card" style={{ display: 'flex', gap: 12 }}>
@@ -284,7 +295,7 @@ const ClientChangeRequestDetail = () => {
         </div>
 
         <form onSubmit={handleReply} style={{ display: 'grid', gap: 8, marginTop: 16, maxWidth: 720 }}>
-          <label htmlFor="reply-message">Écrire un message</label>
+          <label htmlFor="reply-message">{t('client.crDetail.writeMessage')}</label>
           <textarea
             id="reply-message"
             className="portal-input"
@@ -296,7 +307,7 @@ const ClientChangeRequestDetail = () => {
             className="portal-input"
             type="file"
             multiple
-            aria-label="Pièces jointes du message"
+            aria-label={t('client.crDetail.attachmentsAria')}
             onChange={(event) => setFiles(Array.from(event.target.files || []))}
           />
           <button
@@ -305,7 +316,7 @@ const ClientChangeRequestDetail = () => {
             disabled={busy}
             style={{ padding: '10px 18px', justifySelf: 'start' }}
           >
-            Envoyer
+            {t('client.crDetail.send')}
           </button>
         </form>
       </section>

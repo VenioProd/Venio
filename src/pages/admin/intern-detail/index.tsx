@@ -2,10 +2,14 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ApiError, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { useConfirm } from '../../../hooks/useConfirm'
 import {
   REPORT_STATUS_CONFIG,
   STATUS_CONFIG,
+  INTERN_DAYS,
+  INTERN_DAY_LABEL_KEYS,
   formatDate,
   formatDateTime,
   formatFileSize,
@@ -70,6 +74,7 @@ const InternDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -161,7 +166,7 @@ const InternDetail = () => {
       setEditing(false)
       loadData()
     } catch (err: any) {
-      alert(err.message || 'Erreur')
+      alert(err.message || translate('intern.error.generic'))
     } finally {
       setSubmitting(false)
     }
@@ -169,8 +174,8 @@ const InternDetail = () => {
 
   const handleDelete = async () => {
     const ok = await confirm({
-      message: 'Supprimer definitivement ce stagiaire et tous ses rapports ?',
-      title: 'Suppression',
+      message: translate('intern.delete.confirmIntern'),
+      title: translate('intern.delete.title'),
       variant: 'danger',
     })
     if (!ok) return
@@ -211,7 +216,7 @@ const InternDetail = () => {
       await apiUpload(`/api/admin/interns/${id}/convention`, fd)
       loadData()
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Erreur réseau')
+      alert(err instanceof ApiError ? err.message : translate('intern.detail.networkError'))
     } finally {
       setConventionUploading(false)
       e.target.value = ''
@@ -219,7 +224,11 @@ const InternDetail = () => {
   }
 
   const handleConventionDelete = async (filename: string, originalName: string) => {
-    const ok = await confirm({ message: `Supprimer "${originalName}" ?`, title: 'Suppression', variant: 'danger' })
+    const ok = await confirm({
+      message: translate('intern.detail.confirmDeleteFile', { name: originalName }),
+      title: translate('intern.delete.title'),
+      variant: 'danger',
+    })
     if (!ok) return
     try {
       await apiFetch(`/api/admin/interns/${id}/convention/${encodeURIComponent(filename)}`, { method: 'DELETE' })
@@ -232,7 +241,7 @@ const InternDetail = () => {
   if (loading)
     return (
       <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>
-        Chargement...
+        {t('intern.list.loading')}
       </div>
     )
   if (!data) return null
@@ -258,12 +267,12 @@ const InternDetail = () => {
             aria-modal="true"
           >
             <div className="confirm-modal__header">
-              <h2 className="confirm-modal__title">Commentaire pour le stagiaire</h2>
+              <h2 className="confirm-modal__title">{t('intern.comment.title')}</h2>
               <button
                 className="confirm-modal__close"
                 onClick={() => setCommentModal(null)}
                 type="button"
-                aria-label="Fermer"
+                aria-label={t('intern.comment.close')}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -280,10 +289,10 @@ const InternDetail = () => {
             </div>
             <div className="confirm-modal__body">
               <div className="ticket-form-field">
-                <label>Votre commentaire</label>
+                <label>{t('intern.comment.label')}</label>
                 <textarea
                   rows={4}
-                  placeholder="Ecrivez votre retour..."
+                  placeholder={t('intern.detail.commentPlaceholder')}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   autoFocus
@@ -292,13 +301,13 @@ const InternDetail = () => {
             </div>
             <div className="confirm-modal__footer">
               <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={() => setCommentModal(null)}>
-                Annuler
+                {t('intern.comment.cancel')}
               </button>
               <button
                 className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
                 onClick={handleSubmitComment}
               >
-                Envoyer
+                {t('intern.comment.send')}
               </button>
             </div>
           </div>
@@ -321,7 +330,7 @@ const InternDetail = () => {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour à l'équipe
+            {t('intern.detail.backToTeam')}
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
             <div
@@ -359,7 +368,7 @@ const InternDetail = () => {
                 color: 'var(--primary)',
               }}
             >
-              {intern.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+              {intern.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
             </span>
             <span
               style={{
@@ -371,7 +380,7 @@ const InternDetail = () => {
                 color: statusCfg.color,
               }}
             >
-              {statusCfg.label}
+              {t(statusCfg.labelKey)}
             </span>
           </div>
         </div>
@@ -379,10 +388,10 @@ const InternDetail = () => {
           {isSuperAdmin && !editing && (
             <>
               <button className="ticket-new-btn" onClick={() => setEditing(true)} style={{ fontSize: 13 }}>
-                Modifier
+                {t('intern.card.edit')}
               </button>
               <button className="ticket-back-btn" onClick={handleDelete} style={{ fontSize: 13, color: '#ef4444' }}>
-                Supprimer
+                {t('intern.card.delete')}
               </button>
             </>
           )}
@@ -391,12 +400,20 @@ const InternDetail = () => {
 
       {/* Stats cards */}
       <div className="ticket-stats" style={{ marginBottom: 20 }}>
-        <StatCard value={String(stats.totalReports)} label="Rapports total" color="var(--primary)" />
-        <StatCard value={String(stats.reportsThisWeek)} label="Cette semaine" color="#22c55e" />
-        <StatCard value={`${stats.validationRate}%`} label="Taux validation" color="var(--primary)" />
+        <StatCard
+          value={String(stats.totalReports)}
+          label={t('intern.detail.statTotalReports')}
+          color="var(--primary)"
+        />
+        <StatCard value={String(stats.reportsThisWeek)} label={t('intern.dash.thisWeek')} color="#22c55e" />
+        <StatCard
+          value={`${stats.validationRate}%`}
+          label={t('intern.detail.statValidationRate')}
+          color="var(--primary)"
+        />
         <StatCard
           value={String(stats.pendingReports)}
-          label="En attente"
+          label={t('intern.detail.statPending')}
           color={stats.pendingReports > 0 ? '#f59e0b' : 'rgba(255,255,255,0.3)'}
         />
         <StatCard
@@ -404,10 +421,10 @@ const InternDetail = () => {
             stats.daysSinceLastReport === null
               ? '—'
               : stats.daysSinceLastReport === 0
-                ? "Aujourd'hui"
-                : `${stats.daysSinceLastReport}j`
+                ? t('intern.dash.today')
+                : t('intern.detail.daysShort', { count: stats.daysSinceLastReport })
           }
-          label="Dernier rapport"
+          label={t('intern.dash.colLastReport')}
           color={
             stats.daysSinceLastReport === null
               ? 'rgba(255,255,255,0.3)'
@@ -424,7 +441,7 @@ const InternDetail = () => {
       <div className="portal-card" style={{ marginBottom: 20 }}>
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ margin: 0, color: 'var(--primary)', fontSize: 16 }}>Informations du stage</h3>
+            <h3 style={{ margin: 0, color: 'var(--primary)', fontSize: 16 }}>{t('intern.detail.infoTitle')}</h3>
             {editing && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -433,14 +450,14 @@ const InternDetail = () => {
                   disabled={submitting}
                   style={{ fontSize: 12, padding: '6px 14px' }}
                 >
-                  {submitting ? 'Enregistrement...' : 'Enregistrer'}
+                  {submitting ? t('intern.settings.saving') : t('intern.settings.save')}
                 </button>
                 <button
                   className="ticket-back-btn"
                   onClick={() => setEditing(false)}
                   style={{ fontSize: 12, padding: '6px 14px' }}
                 >
-                  Annuler
+                  {t('intern.card.cancel')}
                 </button>
               </div>
             )}
@@ -448,28 +465,38 @@ const InternDetail = () => {
 
           {!editing ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-              <InfoField label="Email" value={intern.userId.email} />
-              <InfoField label="Telephone" value={intern.userId.phone || '—'} />
-              <InfoField label="Poste / Mission" value={intern.poste} />
-              <InfoField label="Departement" value={intern.departement || '—'} />
-              <InfoField label="Date de debut" value={formatDate(intern.dateDebut)} />
-              <InfoField label="Date de fin" value={formatDate(intern.dateFin)} />
-              <InfoField label="Tuteur" value={intern.tuteur?.name || '—'} />
-              <InfoField label="Ecole" value={intern.ecole || '—'} />
-              <InfoField label="Formation" value={intern.formation || '—'} />
+              <InfoField label={t('intern.card.fieldEmail')} value={intern.userId.email} />
+              <InfoField label={t('intern.card.fieldPhone')} value={intern.userId.phone || '—'} />
+              <InfoField label={t('intern.detail.mission')} value={intern.poste} />
+              <InfoField label={t('intern.form.department')} value={intern.departement || '—'} />
+              <InfoField label={t('intern.detail.startDate')} value={formatDate(intern.dateDebut)} />
+              <InfoField label={t('intern.detail.endDate')} value={formatDate(intern.dateFin)} />
+              <InfoField label={t('intern.card.fieldTutor')} value={intern.tuteur?.name || '—'} />
+              <InfoField label={t('intern.card.fieldSchool')} value={intern.ecole || '—'} />
+              <InfoField label={t('intern.card.fieldTraining')} value={intern.formation || '—'} />
               <InfoField
-                label="Jours de présence"
+                label={t('intern.form.presenceDays')}
                 value={
                   intern.joursPresence?.length
-                    ? intern.joursPresence.map((j) => j.charAt(0).toUpperCase() + j.slice(1)).join(', ')
+                    ? intern.joursPresence
+                        .map((j) =>
+                          INTERN_DAY_LABEL_KEYS[j]
+                            ? t(INTERN_DAY_LABEL_KEYS[j])
+                            : j.charAt(0).toUpperCase() + j.slice(1),
+                        )
+                        .join(', ')
                     : '—'
                 }
               />
-              <InfoField label="Statut" value={statusCfg.label} color={statusCfg.color} />
-              <InfoField label="Cree par" value={intern.createdBy?.name || '—'} />
+              <InfoField label={t('intern.detail.status')} value={t(statusCfg.labelKey)} color={statusCfg.color} />
+              <InfoField label={t('intern.detail.createdBy')} value={intern.createdBy?.name || '—'} />
               <InfoField
-                label="Jours restants"
-                value={stats.daysRemaining > 0 ? `${stats.daysRemaining} jours` : 'Termine'}
+                label={t('intern.detail.daysRemaining')}
+                value={
+                  stats.daysRemaining > 0
+                    ? t('intern.detail.daysCount', { count: stats.daysRemaining })
+                    : t('intern.status.finished')
+                }
                 color={stats.daysRemaining <= 7 ? '#ef4444' : stats.daysRemaining <= 30 ? '#f59e0b' : undefined}
               />
             </div>
@@ -477,7 +504,7 @@ const InternDetail = () => {
             <div className="ticket-form">
               <div className="ticket-form-row">
                 <div className="ticket-form-field">
-                  <label>Type</label>
+                  <label>{t('intern.card.fieldType')}</label>
                   <select
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value as 'STAGIAIRE' | 'ALTERNANT' })}
@@ -491,22 +518,22 @@ const InternDetail = () => {
                       fontSize: 14,
                     }}
                   >
-                    <option value="STAGIAIRE">Stagiaire</option>
-                    <option value="ALTERNANT">Alternant</option>
+                    <option value="STAGIAIRE">{t('intern.type.intern')}</option>
+                    <option value="ALTERNANT">{t('intern.type.apprentice')}</option>
                   </select>
                 </div>
                 <div className="ticket-form-field">
-                  <label>Poste / Mission</label>
+                  <label>{t('intern.detail.mission')}</label>
                   <input value={form.poste} onChange={(e) => setForm({ ...form, poste: e.target.value })} />
                 </div>
                 <div className="ticket-form-field">
-                  <label>Departement</label>
+                  <label>{t('intern.form.department')}</label>
                   <input value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} />
                 </div>
               </div>
               <div className="ticket-form-row">
                 <div className="ticket-form-field">
-                  <label>Date de debut</label>
+                  <label>{t('intern.detail.startDate')}</label>
                   <input
                     type="date"
                     value={form.dateDebut}
@@ -514,7 +541,7 @@ const InternDetail = () => {
                   />
                 </div>
                 <div className="ticket-form-field">
-                  <label>Date de fin</label>
+                  <label>{t('intern.detail.endDate')}</label>
                   <input
                     type="date"
                     value={form.dateFin}
@@ -524,9 +551,9 @@ const InternDetail = () => {
               </div>
               <div className="ticket-form-row">
                 <div className="ticket-form-field">
-                  <label>Tuteur</label>
+                  <label>{t('intern.card.fieldTutor')}</label>
                   <select value={form.tuteur} onChange={(e) => setForm({ ...form, tuteur: e.target.value })}>
-                    <option value="">— Aucun —</option>
+                    <option value="">{t('intern.detail.noTutor')}</option>
                     {admins.map((a) => (
                       <option key={a._id} value={a._id}>
                         {a.name}
@@ -535,32 +562,32 @@ const InternDetail = () => {
                   </select>
                 </div>
                 <div className="ticket-form-field">
-                  <label>Statut</label>
+                  <label>{t('intern.detail.status')}</label>
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                    <option value="ACTIF">Actif</option>
-                    <option value="TERMINE">Termine</option>
-                    <option value="ANNULE">Annule</option>
+                    <option value="ACTIF">{t('intern.status.active')}</option>
+                    <option value="TERMINE">{t('intern.status.finished')}</option>
+                    <option value="ANNULE">{t('intern.status.cancelled')}</option>
                   </select>
                 </div>
               </div>
               <div className="ticket-form-row">
                 <div className="ticket-form-field">
-                  <label>Ecole / Universite</label>
+                  <label>{t('intern.form.school')}</label>
                   <input value={form.ecole} onChange={(e) => setForm({ ...form, ecole: e.target.value })} />
                 </div>
                 <div className="ticket-form-field">
-                  <label>Formation</label>
+                  <label>{t('intern.card.fieldTraining')}</label>
                   <input value={form.formation} onChange={(e) => setForm({ ...form, formation: e.target.value })} />
                 </div>
               </div>
               <div className="ticket-form-field">
-                <label>Notes internes</label>
+                <label>{t('intern.form.internalNotes')}</label>
                 <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
               <div className="ticket-form-field">
-                <label>Jours de présence</label>
+                <label>{t('intern.form.presenceDays')}</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-                  {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((jour) => {
+                  {INTERN_DAYS.map((jour) => {
                     const checked = form.joursPresence.includes(jour)
                     return (
                       <label
@@ -585,7 +612,7 @@ const InternDetail = () => {
                           userSelect: 'none',
                         }}
                       >
-                        {jour.charAt(0).toUpperCase() + jour.slice(1)}
+                        {t(INTERN_DAY_LABEL_KEYS[jour])}
                       </label>
                     )
                   })}
@@ -597,7 +624,7 @@ const InternDetail = () => {
           {/* Barre de progression du stage */}
           <div style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Progression du stage</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{t('intern.card.progress')}</span>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{stats.progress}%</span>
             </div>
             <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
@@ -628,7 +655,9 @@ const InternDetail = () => {
                 borderLeft: '3px solid var(--primary)',
               }}
             >
-              <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>Notes internes</span>
+              <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
+                {t('intern.form.internalNotes')}
+              </span>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>
                 {intern.notes}
               </p>
@@ -647,7 +676,9 @@ const InternDetail = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>Compte Nextcloud</span>
+                <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
+                  {t('intern.detail.nextcloudAccount')}
+                </span>
                 <a
                   href="https://cloud.susanoo.app"
                   target="_blank"
@@ -662,13 +693,13 @@ const InternDetail = () => {
                     background: 'rgba(14, 165, 233, 0.08)',
                   }}
                 >
-                  Ouvrir Nextcloud
+                  {t('intern.detail.openNextcloud')}
                 </a>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>
-                    Identifiant
+                    {t('intern.detail.username')}
                   </span>
                   <code
                     style={{
@@ -685,7 +716,7 @@ const InternDetail = () => {
                 {intern.nextcloudPassword && (
                   <div>
                     <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>
-                      Mot de passe initial
+                      {t('intern.detail.initialPassword')}
                     </span>
                     <code
                       style={{
@@ -711,10 +742,10 @@ const InternDetail = () => {
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h3 style={{ margin: 0, color: '#f59e0b', fontSize: 16 }}>
-              Conventions de stage
+              {t('intern.detail.agreementsTitle')}
               {(intern.conventions?.length ?? 0) > 0 && (
                 <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>
-                  {intern.conventions!.length} fichier{intern.conventions!.length > 1 ? 's' : ''}
+                  {t('intern.detail.agreementsCount', { count: intern.conventions!.length })}
                 </span>
               )}
             </h3>
@@ -731,7 +762,7 @@ const InternDetail = () => {
                 cursor: conventionUploading ? 'not-allowed' : 'pointer',
               }}
             >
-              {conventionUploading ? 'Envoi...' : '+ Ajouter'}
+              {conventionUploading ? t('intern.card.sending') : t('intern.detail.addAgreement')}
               <input
                 type="file"
                 accept=".pdf,.doc,.docx"
@@ -743,7 +774,7 @@ const InternDetail = () => {
           </div>
 
           {(intern.conventions?.length ?? 0) === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>Aucune convention déposée</p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>{t('intern.detail.noAgreement')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {intern.conventions!.map((conv) => (
@@ -809,7 +840,7 @@ const InternDetail = () => {
                       flexShrink: 0,
                     }}
                   >
-                    Voir
+                    {t('intern.detail.view')}
                   </button>
                   <a
                     href={`/api/admin/interns/conventions/files/${conv.filename}`}
@@ -826,7 +857,7 @@ const InternDetail = () => {
                       flexShrink: 0,
                     }}
                   >
-                    Télécharger
+                    {t('intern.detail.download')}
                   </a>
                   {isSuperAdmin && (
                     <button
@@ -842,7 +873,7 @@ const InternDetail = () => {
                         flexShrink: 0,
                       }}
                     >
-                      Supprimer
+                      {t('intern.card.delete')}
                     </button>
                   )}
                 </div>
@@ -854,7 +885,9 @@ const InternDetail = () => {
 
       {/* Rapports d'activite */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, color: '#fff', fontSize: 16 }}>Rapports d'activite ({reports.length})</h3>
+        <h3 style={{ margin: 0, color: '#fff', fontSize: 16 }}>
+          {t('intern.detail.reportsTitle', { count: reports.length })}
+        </h3>
         <div style={{ display: 'flex', gap: 6 }}>
           {(['cards', 'liste'] as const).map((v) => (
             <button
@@ -872,21 +905,30 @@ const InternDetail = () => {
                 transition: 'all 0.2s',
               }}
             >
-              {v === 'cards' ? 'Cards' : 'Liste'}
+              {v === 'cards' ? t('intern.detail.viewCards') : t('intern.reports.viewList')}
             </button>
           ))}
         </div>
       </div>
 
       {reports.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun rapport soumis</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
+          {t('intern.detail.noReports')}
+        </p>
       ) : reportView === 'liste' ? (
         /* ── VUE LISTE (tableau) ── */
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                {['Date', 'Statut', 'Taches', 'Fichiers', 'Compte-rendu', 'Actions'].map((h) => (
+                {[
+                  t('intern.dash.logDate'),
+                  t('intern.detail.status'),
+                  t('intern.detail.colTasks'),
+                  t('intern.detail.colFiles'),
+                  t('intern.report.summary'),
+                  t('intern.detail.colActions'),
+                ].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -928,7 +970,7 @@ const InternDetail = () => {
                           color: sCfg.color,
                         }}
                       >
-                        {sCfg.label}
+                        {t(sCfg.labelKey)}
                       </span>
                     </td>
                     <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }}>{report.taches.length}</td>
@@ -959,7 +1001,7 @@ const InternDetail = () => {
                             color: 'var(--primary)',
                           }}
                         >
-                          {expandedReport === report._id ? 'Fermer' : 'Voir'}
+                          {expandedReport === report._id ? t('intern.comment.close') : t('intern.detail.view')}
                         </button>
                         {isSuperAdmin && report.status === 'SOUMIS' && (
                           <button
@@ -974,7 +1016,7 @@ const InternDetail = () => {
                               color: '#22c55e',
                             }}
                           >
-                            Valider
+                            {t('intern.report.validate')}
                           </button>
                         )}
                       </div>
@@ -1013,7 +1055,7 @@ const InternDetail = () => {
                           color: sCfg.color,
                         }}
                       >
-                        {sCfg.label}
+                        {t(sCfg.labelKey)}
                       </span>
                     </div>
                     <p
@@ -1029,9 +1071,9 @@ const InternDetail = () => {
                     </p>
                     {report.taches.length > 0 && (
                       <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-                        {report.taches.map((t, i) => (
+                        {report.taches.map((task, i) => (
                           <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
-                            {t}
+                            {task}
                           </li>
                         ))}
                       </ul>
@@ -1076,7 +1118,7 @@ const InternDetail = () => {
                         }}
                       >
                         <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
-                          Commentaire admin
+                          {t('intern.report.adminComment')}
                         </span>
                         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
                           {report.commentaireAdmin}
@@ -1085,8 +1127,12 @@ const InternDetail = () => {
                     )}
                     {report.status === 'VALIDE' && report.validePar && (
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                        Valide par {report.validePar.name}
-                        {report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
+                        {report.valideAt
+                          ? t('intern.report.validatedByOn', {
+                              name: report.validePar.name,
+                              date: formatDateTime(report.valideAt),
+                            })
+                          : t('intern.report.validatedBy', { name: report.validePar.name })}
                       </div>
                     )}
                   </div>
@@ -1111,14 +1157,14 @@ const InternDetail = () => {
                     <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
                     {report.taches.length > 0 && (
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
-                        {report.taches.length} tache(s)
+                        {t('intern.reports.taskCount', { count: report.taches.length })}
                       </span>
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {report.attachments.length > 0 && (
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                        {report.attachments.length} fichier(s)
+                        {t('intern.detail.fileCount', { count: report.attachments.length })}
                       </span>
                     )}
                     <span
@@ -1131,7 +1177,7 @@ const InternDetail = () => {
                         color: sCfg.color,
                       }}
                     >
-                      {sCfg.label}
+                      {t(sCfg.labelKey)}
                     </span>
                     <span
                       style={{
@@ -1147,7 +1193,7 @@ const InternDetail = () => {
                 {expanded && (
                   <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Compte-rendu</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{t('intern.report.summary')}</span>
                       <p
                         style={{
                           color: 'rgba(255,255,255,0.8)',
@@ -1162,11 +1208,13 @@ const InternDetail = () => {
                     </div>
                     {report.taches.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Taches realisees</span>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                          {t('intern.report.tasksDone')}
+                        </span>
                         <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
-                          {report.taches.map((t, i) => (
+                          {report.taches.map((task, i) => (
                             <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
-                              {t}
+                              {task}
                             </li>
                           ))}
                         </ul>
@@ -1174,7 +1222,9 @@ const InternDetail = () => {
                     )}
                     {report.attachments.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Pieces jointes</span>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                          {t('intern.report.attachments')}
+                        </span>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                           {report.attachments.map((f, i) => (
                             <button
@@ -1218,7 +1268,7 @@ const InternDetail = () => {
                         }}
                       >
                         <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
-                          Commentaire admin
+                          {t('intern.report.adminComment')}
                         </span>
                         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
                           {report.commentaireAdmin}
@@ -1227,8 +1277,12 @@ const InternDetail = () => {
                     )}
                     {report.status === 'VALIDE' && report.validePar && (
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
-                        Valide par {report.validePar.name}
-                        {report.valideAt ? ` le ${formatDateTime(report.valideAt)}` : ''}
+                        {report.valideAt
+                          ? t('intern.report.validatedByOn', {
+                              name: report.validePar.name,
+                              date: formatDateTime(report.valideAt),
+                            })
+                          : t('intern.report.validatedBy', { name: report.validePar.name })}
                       </div>
                     )}
                     {isSuperAdmin && (
@@ -1239,7 +1293,7 @@ const InternDetail = () => {
                             style={{ fontSize: 12, padding: '6px 14px' }}
                             onClick={() => handleValidateReport(report._id, 'VALIDE')}
                           >
-                            Valider
+                            {t('intern.report.validate')}
                           </button>
                         )}
                         <button
@@ -1250,7 +1304,7 @@ const InternDetail = () => {
                             setCommentText(report.commentaireAdmin || '')
                           }}
                         >
-                          Commenter
+                          {t('intern.report.comment')}
                         </button>
                       </div>
                     )}

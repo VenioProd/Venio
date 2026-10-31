@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useI18n } from '../../../context/I18nContext'
 import { useAuth } from '../../../context/AuthContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { hasPermission } from '../../../lib/permissions'
@@ -28,6 +29,7 @@ interface ProjectOption {
 
 const AdminChangeRequestDetail = () => {
   const { id = '' } = useParams()
+  const { t } = useI18n()
   const { user } = useAuth()
   const { confirm, ConfirmDialog } = useConfirm()
   const canManage = hasPermission(user, 'manage_change_requests')
@@ -51,8 +53,8 @@ const AdminChangeRequestDetail = () => {
         setChangeRequest(data.changeRequest)
         setQuoteProjectId(data.changeRequest.project?._id || '')
       })
-      .catch((err: Error) => setError(err.message || 'Demande indisponible'))
-  }, [id])
+      .catch((err: Error) => setError(err.message || t('changeReq.detail.unavailable')))
+  }, [id, t])
 
   useEffect(load, [load])
 
@@ -74,7 +76,7 @@ const AdminChangeRequestDetail = () => {
       setChangeRequest(result.changeRequest)
       load()
     } catch (err) {
-      setError((err as Error).message || 'Action impossible')
+      setError((err as Error).message || t('changeReq.detail.actionFailed'))
     } finally {
       setBusy(false)
     }
@@ -93,7 +95,7 @@ const AdminChangeRequestDetail = () => {
 
   const refusalBlock = (inputId: string) => (
     <div style={{ display: 'grid', gap: 8 }}>
-      <label htmlFor={inputId}>Motif du refus</label>
+      <label htmlFor={inputId}>{t('changeReq.detail.refusalReason')}</label>
       <textarea
         id={inputId}
         className="portal-input"
@@ -115,7 +117,7 @@ const AdminChangeRequestDetail = () => {
           })
         }
       >
-        Refuser la demande
+        {t('changeReq.detail.refuseRequest')}
       </button>
     </div>
   )
@@ -134,25 +136,29 @@ const AdminChangeRequestDetail = () => {
     )
 
   const status = ADMIN_STATUS_CONFIG[changeRequest.status]
+  const priorityConfig = ADMIN_PRIORITY_CONFIG[changeRequest.priority]
 
   return (
     <div className="portal-container">
       {/* useConfirm renvoie un ÉLÉMENT JSX (ou null), pas un composant. */}
       {ConfirmDialog}
       <Link to="/admin/demandes-clients" className="portal-link">
-        ← Demandes clients
+        {t('changeReq.detail.back')}
       </Link>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 16, flexWrap: 'wrap' }}>
         <h1 style={{ margin: 0 }}>{changeRequest.title}</h1>
         <span className="portal-badge" style={{ color: status.color }}>
-          {status.label}
+          {t(status.labelKey)}
         </span>
       </div>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-        {changeRequest.client?.companyName || changeRequest.client?.name} ·{' '}
-        {changeRequest.project ? changeRequest.project.name : 'Sans projet'} · priorité{' '}
-        {ADMIN_PRIORITY_CONFIG[changeRequest.priority]?.label} · reçue le {formatAdminDate(changeRequest.createdAt)}
+        {t('changeReq.detail.meta', {
+          client: changeRequest.client?.companyName || changeRequest.client?.name || '',
+          project: changeRequest.project ? changeRequest.project.name : t('changeReq.list.noProject'),
+          priority: priorityConfig ? t(priorityConfig.labelKey) : '',
+          date: formatAdminDate(changeRequest.createdAt),
+        })}
       </p>
 
       {error && <p role="alert">{error}</p>}
@@ -180,8 +186,10 @@ const AdminChangeRequestDetail = () => {
       <ol className="portal-card" style={{ listStyle: 'none', display: 'grid', gap: 6, margin: '16px 0', padding: 20 }}>
         {changeRequest.statusHistory.map((entry, index) => (
           <li key={`${entry.status}-${index}`} style={{ fontSize: '0.8rem' }}>
-            <strong>{ADMIN_STATUS_CONFIG[entry.status]?.label ?? entry.status}</strong> ·{' '}
-            {formatAdminDateTime(entry.at)} · {entry.byName}
+            <strong>
+              {ADMIN_STATUS_CONFIG[entry.status] ? t(ADMIN_STATUS_CONFIG[entry.status].labelKey) : entry.status}
+            </strong>{' '}
+            · {formatAdminDateTime(entry.at)} · {entry.byName}
             {entry.note ? ` — ${entry.note}` : ''}
           </li>
         ))}
@@ -189,7 +197,7 @@ const AdminChangeRequestDetail = () => {
 
       {changeRequest.status === 'SOUMISE' && canManage && (
         <div className="portal-card" style={{ display: 'grid', gap: 12 }}>
-          <strong>Qualifier la demande</strong>
+          <strong>{t('changeReq.detail.qualifyTitle')}</strong>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -198,15 +206,15 @@ const AdminChangeRequestDetail = () => {
               style={{ padding: '10px 18px' }}
               onClick={async () => {
                 const ok = await confirm({
-                  title: 'Inclure cette demande ?',
-                  message: 'Elle passera directement en « Planifiée », sans devis.',
-                  confirmLabel: 'Inclure',
+                  title: t('changeReq.detail.includeConfirmTitle'),
+                  message: t('changeReq.detail.includeConfirmMessage'),
+                  confirmLabel: t('changeReq.detail.includeConfirmLabel'),
                   variant: 'info',
                 })
                 if (ok) run(() => qualifyInclude(id))
               }}
             >
-              Incluse dans la maintenance
+              {t('changeReq.detail.includeInMaintenance')}
             </button>
             {canBill && (
               <button
@@ -215,7 +223,7 @@ const AdminChangeRequestDetail = () => {
                 style={{ padding: '10px 18px' }}
                 onClick={() => setShowQuoteForm((previous) => !previous)}
               >
-                À chiffrer — créer le devis
+                {t('changeReq.detail.toQuote')}
               </button>
             )}
             <button
@@ -224,27 +232,27 @@ const AdminChangeRequestDetail = () => {
               style={{ padding: '10px 18px' }}
               onClick={() => setShowRefusal((previous) => !previous)}
             >
-              Refuser avec motif
+              {t('changeReq.detail.refuseWithReason')}
             </button>
           </div>
 
           {showQuoteForm && (
             <div style={{ display: 'grid', gap: 8 }}>
-              <label htmlFor="quote-project">Projet du devis</label>
+              <label htmlFor="quote-project">{t('changeReq.detail.quoteProject')}</label>
               <select
                 id="quote-project"
                 className="portal-input"
                 value={quoteProjectId}
                 onChange={(event) => setQuoteProjectId(event.target.value)}
               >
-                <option value="">Sélectionner un projet</option>
+                <option value="">{t('changeReq.detail.selectProject')}</option>
                 {projects.map((project) => (
                   <option key={project._id} value={project._id}>
                     {project.name}
                   </option>
                 ))}
               </select>
-              <label htmlFor="quote-expires">Valable jusqu’au (optionnel)</label>
+              <label htmlFor="quote-expires">{t('changeReq.detail.quoteExpires')}</label>
               <input
                 id="quote-expires"
                 className="portal-input"
@@ -268,10 +276,10 @@ const AdminChangeRequestDetail = () => {
                   })
                 }
               >
-                Créer le devis prérempli
+                {t('changeReq.detail.createPrefilledQuote')}
               </button>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
-                À la signature du client, la demande passera automatiquement en « Planifiée ».
+                {t('changeReq.detail.quoteSignedHint')}
               </p>
             </div>
           )}
@@ -282,10 +290,14 @@ const AdminChangeRequestDetail = () => {
 
       {changeRequest.status === 'A_CHIFFRER' && canManage && (
         <div className="portal-card" style={{ display: 'grid', gap: 12, marginTop: 16 }}>
-          <strong>Devis lié — {changeRequest.quoteProposal?.status ?? 'inconnu'}</strong>
+          <strong>
+            {t('changeReq.detail.linkedQuoteTitle', {
+              status: changeRequest.quoteProposal?.status ?? t('changeReq.detail.quoteUnknown'),
+            })}
+          </strong>
           {changeRequest.project && (
             <Link className="portal-link" to={`/admin/projets/${changeRequest.project._id}`}>
-              Ouvrir le projet {changeRequest.project.name}
+              {t('changeReq.detail.openProject', { name: changeRequest.project.name })}
             </Link>
           )}
           {canBill && changeRequest.quoteProposal?.status === 'DRAFT' && (
@@ -300,13 +312,13 @@ const AdminChangeRequestDetail = () => {
                   await sendLinkedProposal(changeRequest.quoteProposal!._id)
                   load()
                 } catch (err) {
-                  setError((err as Error).message || 'Envoi impossible')
+                  setError((err as Error).message || t('changeReq.detail.sendFailed'))
                 } finally {
                   setBusy(false)
                 }
               }}
             >
-              Envoyer au client
+              {t('changeReq.detail.sendToClient')}
             </button>
           )}
           <button
@@ -315,7 +327,7 @@ const AdminChangeRequestDetail = () => {
             style={{ padding: '10px 18px', justifySelf: 'start' }}
             onClick={() => setShowRefusal((previous) => !previous)}
           >
-            Refuser (devis expiré ou décliné)
+            {t('changeReq.detail.refuseQuote')}
           </button>
           {showRefusal && refusalBlock('refusal-reason-quote')}
         </div>
@@ -331,7 +343,7 @@ const AdminChangeRequestDetail = () => {
               style={{ padding: '10px 18px' }}
               onClick={() => run(() => startChangeRequest(id))}
             >
-              Démarrer
+              {t('changeReq.detail.start')}
             </button>
           ) : (
             <button
@@ -341,7 +353,7 @@ const AdminChangeRequestDetail = () => {
               style={{ padding: '10px 18px' }}
               onClick={() => run(() => deliverChangeRequest(id))}
             >
-              Marquer livrée
+              {t('changeReq.detail.markDelivered')}
             </button>
           )}
         </div>
@@ -349,12 +361,12 @@ const AdminChangeRequestDetail = () => {
 
       {changeRequest.status === 'LIVREE' && (
         <p className="portal-card" role="status" style={{ marginTop: 16 }}>
-          En attente de validation client.
+          {t('changeReq.detail.awaitingClient')}
         </p>
       )}
 
       <section style={{ marginTop: 32 }}>
-        <h2>Fil de la demande</h2>
+        <h2>{t('changeReq.detail.threadTitle')}</h2>
         <div className="portal-list">
           {changeRequest.replies.map((reply) => (
             <div key={reply._id} className="portal-card" style={{ display: 'flex', gap: 12 }}>
@@ -382,7 +394,7 @@ const AdminChangeRequestDetail = () => {
 
         {canManage && (
           <form onSubmit={handleReply} style={{ display: 'grid', gap: 8, marginTop: 16, maxWidth: 720 }}>
-            <label htmlFor="admin-reply">Répondre au client</label>
+            <label htmlFor="admin-reply">{t('changeReq.detail.replyLabel')}</label>
             <textarea
               id="admin-reply"
               className="portal-input"
@@ -394,7 +406,7 @@ const AdminChangeRequestDetail = () => {
               className="portal-input"
               type="file"
               multiple
-              aria-label="Pièces jointes de la réponse"
+              aria-label={t('changeReq.detail.replyAttachments')}
               onChange={(event) => setFiles(Array.from(event.target.files || []))}
             />
             <button
@@ -403,7 +415,7 @@ const AdminChangeRequestDetail = () => {
               disabled={busy}
               style={{ padding: '10px 18px', justifySelf: 'start' }}
             >
-              Envoyer
+              {t('changeReq.detail.send')}
             </button>
           </form>
         )}

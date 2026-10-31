@@ -3,7 +3,7 @@ import { apiFetch } from '../lib/api'
 import { resolveUserPermissions } from '../lib/permissions'
 import type { AuthContextValue, LoginResult, User } from '../types/auth.types'
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

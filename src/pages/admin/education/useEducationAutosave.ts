@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAuth } from '../../../context/AuthContext'
+import { translate } from '../../../i18n'
 import { updateClass, updateNote, updateSession } from '../../../services/education'
 
 import { updateCalendarEventWorkspace } from '../../../services/educationCalendar'
@@ -66,7 +67,7 @@ function getEntry(owner: string, kind: Kind, id: string): Entry {
     task: null,
     timer: null,
     saved: false,
-    error: hasFields(pending) ? 'Brouillon local récupéré. Enregistrez-le pour reprendre.' : null,
+    error: hasFields(pending) ? translate('eduD.autosave.recovered') : null,
   }
   entries.set(key, entry)
   return entry
@@ -96,7 +97,7 @@ async function flushEntry(entry: Entry): Promise<boolean> {
       } catch (err) {
         entry.pending = { ...patch, ...entry.pending }
         entry.sending = null
-        entry.error = err instanceof Error ? err.message : 'Échec de sauvegarde'
+        entry.error = err instanceof Error ? err.message : translate('eduD.autosave.failed')
         remember(entry)
         return false
       }
